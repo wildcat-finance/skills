@@ -666,7 +666,7 @@ class Builder:
                 "epochs": self.epochs,
                 "format": RECEIPT_FORMAT,
                 "reconciliation": reconciliation["reconciliation"],
-                "shards": _receipt_shards(reconciliation["shards"], self.epochs),
+                "shards": _receipt_shards(reconciliation["shards"]),
             },
             "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
             "interval-plan": self.plan,
@@ -736,6 +736,16 @@ class Builder:
                 "name": "registry-entries",
                 "record_count": record_count,
                 "selector": "/entries",
+            }]
+        else:
+            # The plan and the reconciliation record are single documents, but
+            # Alexandria will not call a coverage complete without a counted
+            # collection, and each of them does carry one: its shard table.
+            record_count = len(document["shards"])
+            collections = [{
+                "name": f"{component}-shards",
+                "record_count": record_count,
+                "selector": "/shards",
             }]
         gaps = _gaps(component, self.plan, self.registry, reconciliation)
         unsupported = _unsupported(component)
@@ -847,19 +857,19 @@ def _gaps(component: str, plan, registry, reconciliation) -> list:
             )
     if reconciliation["reconciliation"]["status"] == "unreconciled":
         gaps.append("the interval was not reconciled against a second provider")
-    gaps.append(
-        f"the interval's first block, {plan['interval']['start']}, was not read, so this "
-        f"scope binds no start hash and its finality class is provider-reported rather "
-        f"than {plan['finality']['policy']}"
-    )
     if component in EVIDENCE_CLASSES:
+        gaps.append(
+            f"the interval's first block, {plan['interval']['start']}, was not read, so this "
+            f"scope binds no start hash and its finality class is provider-reported rather "
+            f"than {plan['finality']['policy']}"
+        )
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
     return gaps
 
 
-def _receipt_shards(shards, epochs) -> list:
+def _receipt_shards(shards) -> list:
     return [
         {
             "end": shard["end"],
@@ -999,6 +1009,7 @@ def check_interval(release_root: Path) -> dict:
         shard["index"] for shard in shards if shard["status"] != "complete"
     }
     captures = {capture["id"]: capture for capture in manifest["captures"]}
+    derived = {shard["index"]: {} for shard in plan["shards"]}
     for name in EVIDENCE_CLASSES:
         journal = documents[name]
         if journal["format"] != JOURNAL_FORMAT or journal["class"] != name:
@@ -1008,6 +1019,15 @@ def check_interval(release_root: Path) -> dict:
         staged = {record["shard"] for record in journal["records"]}
         if staged != {shard["index"] for shard in plan["shards"]}:
             raise AlexandriaError(f"the {name} journal does not cover every shard")
+        for record in journal["records"]:
+            envelope = load_bytes(
+                record["response"].encode(), f"{name} response for shard {record['shard']}",
+                max_bytes=MAX_RAW_COMPONENT_BYTES,
+            )
+            result = envelope.get("result")
+            derived[record["shard"]][name] = (
+                len(result) if isinstance(result, list) else 1
+            )
         gaps = captures[name]["coverage"]["gaps"]
         for index in sorted(disputed):
             if not any(f"shard {index}," in gap for gap in gaps):
@@ -1017,6 +1037,12 @@ def check_interval(release_root: Path) -> dict:
         if disputed and captures[name]["coverage"]["status"] == "complete":
             raise AlexandriaError(
                 f"the {name} coverage reports complete while a shard is not"
+            )
+
+    for shard in shards:
+        if shard["record_counts"] != derived[shard["index"]]:
+            raise AlexandriaError(
+                f"shard {shard['index']} declares record counts the journals do not carry"
             )
 
     return {

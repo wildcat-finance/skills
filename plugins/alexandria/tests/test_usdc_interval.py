@@ -945,7 +945,7 @@ class IntervalCheckTests(CollectorTestCase):
     def test_a_receipt_disagreeing_with_the_reconciliation_refuses_at_check(self):
         staging, output = self.pipeline("disagree")
         with mock.patch("usdc_interval._receipt_shards", autospec=True) as shards:
-            def flip(table, epochs):
+            def flip(table, *_arguments):
                 rows = deepcopy(table)
                 rows[0]["status"] = "partial"
                 return rows
@@ -954,6 +954,58 @@ class IntervalCheckTests(CollectorTestCase):
             self.build(staging, output)
         with self.assertRaisesRegex(AlexandriaError, "disagree about a shard"):
             check_interval(output)
+
+    def test_a_receipt_whose_counts_the_journals_do_not_carry_refuses(self):
+        """A self-consistent release must still not be able to inflate a count."""
+
+        class Inflating(Builder):
+            def build(self, output):
+                original = usdc_interval._receipt_shards
+
+                def inflate(*arguments):
+                    rows = original(*arguments)
+                    for row in rows:
+                        row["record_counts"]["logs"] *= 100
+                    return rows
+
+                usdc_interval._receipt_shards = inflate
+                try:
+                    return super().build(output)
+                finally:
+                    usdc_interval._receipt_shards = original
+
+        staging, output = self.pipeline("inflated-receipt")
+        Inflating(
+            self.plan, staging, self.epochs, self.registry, created_at=CREATED_AT
+        ).build(output)
+        with self.assertRaisesRegex(AlexandriaError, "record counts the journals do not carry"):
+            check_interval(output)
+
+    def test_the_receipt_counts_come_from_the_journals(self):
+        staging, output = self.pipeline("counted")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        receipt = json.loads(
+            (output / next(
+                component["object_path"] for component in manifest["components"]
+                if component["name"] == "epoch-table"
+            )).read_text()
+        )
+        for shard in receipt["shards"]:
+            self.assertEqual(
+                shard["record_counts"], {"boundary-blocks": 1, "logs": 3, "traces": 2}
+            )
+
+    def test_only_the_evidence_components_carry_the_unread_first_block_gap(self):
+        staging, output = self.pipeline("gap-scope")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        naming = {
+            capture["id"]
+            for capture in manifest["captures"]
+            if any("first block" in gap for gap in capture["coverage"]["gaps"])
+        }
+        self.assertEqual(naming, set(EVIDENCE_CLASSES))
 
     def test_the_check_opens_no_socket_and_changes_no_file(self):
         staging, output = self.pipeline("read-only")
