@@ -8,9 +8,12 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 
+from scripts import shoggoth_topology
 from scripts.shoggoth_topology import (
     MAX_MANIFEST_BYTES,
+    MAX_SKILL_ENTRIES,
     TopologyError,
     discover_topology,
 )
@@ -243,6 +246,75 @@ class ShoggothTopologyTests(unittest.TestCase):
             with self.assertRaisesRegex(TopologyError, r"T003 input exceeds"):
                 discover_topology(root)
 
+    def test_manifest_changed_while_read_is_rejected(self):
+        fixture = _fixture_document("valid-17-26.json")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _build_tree(root, fixture)
+            manifest = root / ".claude-plugin" / "marketplace.json"
+            manifest_inode = manifest.stat().st_ino
+            replacement = manifest.read_text(encoding="utf-8").replace(
+                "./plugins/alexandria", "./plugins/anaXandria", 1
+            )
+            real_read = shoggoth_topology.os.read
+            changed = False
+
+            def racing_read(descriptor, amount):
+                nonlocal changed
+                chunk = real_read(descriptor, amount)
+                if (
+                    not changed
+                    and shoggoth_topology.os.fstat(descriptor).st_ino
+                    == manifest_inode
+                ):
+                    manifest.write_text(replacement, encoding="utf-8")
+                    changed = True
+                return chunk
+
+            with patch.object(shoggoth_topology.os, "read", racing_read):
+                with self.assertRaisesRegex(TopologyError, r"T019 input changed"):
+                    discover_topology(root)
+            self.assertTrue(changed)
+
+    def test_entry_ceiling_stops_scan_before_consuming_the_rest(self):
+        fixture = _fixture_document("valid-17-26.json")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _build_tree(root, fixture)
+            wide = root / "plugins" / "alexandria" / "skills"
+            for index in range(MAX_SKILL_ENTRIES + 2):
+                (wide / f"dummy-{index:04d}").touch()
+
+            real_scandir = shoggoth_topology.os.scandir
+
+            class CappedScan:
+                def __init__(self, target):
+                    self.context = real_scandir(target)
+                    self.iterator = None
+                    self.count = 0
+
+                def __enter__(self):
+                    self.iterator = self.context.__enter__()
+                    return self
+
+                def __exit__(self, *arguments):
+                    return self.context.__exit__(*arguments)
+
+                def __iter__(self):
+                    return self
+
+                def __next__(self):
+                    self.count += 1
+                    if self.count > MAX_SKILL_ENTRIES + 1:
+                        raise AssertionError(
+                            "scanner consumed past the declared entry ceiling"
+                        )
+                    return next(self.iterator)
+
+            with patch.object(shoggoth_topology.os, "scandir", CappedScan):
+                with self.assertRaisesRegex(TopologyError, r"T010 skill tree exceeds"):
+                    discover_topology(root)
+
     def test_symlinked_skill_directory_is_rejected(self):
         fixture = _fixture_document("valid-17-26.json")
         with tempfile.TemporaryDirectory() as temporary:
@@ -253,6 +325,21 @@ class ShoggothTopologyTests(unittest.TestCase):
             skill.rename(outside)
             skill.symlink_to(outside, target_is_directory=True)
             with self.assertRaisesRegex(TopologyError, r"T011 symlinked skill-tree entry"):
+                discover_topology(root)
+
+    def test_symlinked_plugins_directory_is_rejected_without_following_it(self):
+        fixture = _fixture_document("valid-17-26.json")
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            root = base / "root"
+            outside = base / "outside"
+            root.mkdir()
+            _build_tree(outside, fixture)
+            _write_manifests(root, fixture)
+            (root / "plugins").symlink_to(
+                outside / "plugins", target_is_directory=True
+            )
+            with self.assertRaisesRegex(TopologyError, r"T009 directory .*symlinked"):
                 discover_topology(root)
 
     def test_symlinked_manifest_is_rejected_without_following_it(self):
