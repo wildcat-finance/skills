@@ -1,0 +1,7 @@
+{
+  "schema": "shoggoth-topology-fixture-mutation/v1",
+  "base": "valid-17-26.json",
+  "operation": "duplicate-plugin",
+  "host": "claude",
+  "plugin": "alexandria"
+}

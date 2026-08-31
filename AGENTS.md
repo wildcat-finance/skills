@@ -161,8 +161,7 @@ The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
 The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
 selectors, numbers, dates, links, quotations, severities, verdicts, status, the
-`Fiat-Required` line, the `carryover` block, and required host structure. Do not
-publish after a failed check, changed prefix or body opening, missing protected
+`Fiat-Required` line, the `carryover` block, and required host structure. Do not publish after a failed check, changed prefix or body opening, missing protected
 item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from
 these instructions.
