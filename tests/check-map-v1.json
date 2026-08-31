@@ -311,6 +311,7 @@
     {"path": "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-064-check-current-dead-code-suppressions-separately.md", "scope": "dead-code"},
     {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
+    {"path": "distribution/skills-runtime", "scope": "root"},
     {"path": "repo_contract.py", "scope": "root"},
     {"path": "schemas", "scope": "schemas"},
     {"path": "schemas/dead-code-report-v1.schema.json", "scope": "dead-code"},

@@ -583,20 +583,50 @@ request is opened from it. Before the receipt will take it, that file has to
 name everything this run found and did not finish: an audit lead left
 unpursued, a finding accepted rather than fixed, a boundary the run would not
 cross, a claim it could not verify, a fix that belongs to another skill's held
-job. Put them under a heading a reader can find, `## Carried forward`, one line
-each, with where the evidence lives. This is the last thing the run writes into
-the repository, and the next study over the same target reads it as prior art
-under `protasis` item 2, so an item missing here is an item the next run
-rediscovers from nothing. A run that finished everything says that under the
-same heading rather than dropping it: an absent section cannot be told apart
-from an unasked question.
+job. Put them under a heading a reader can find, `## Carried forward`, holding
+one fenced `carryover` block whose rows are `<id> | <disposition> | <reference>`:
 
-`done integrate` refuses without it, and names which of the three faults it
-found: the file unreadable, the heading absent, or the heading standing empty.
-A later heading ends the section, so later sections cannot stand in for this
-one. What passes is recorded on the receipt as the line count and the digest of
-the body, so the ledger holds what the run published rather than a promise that
-it did.
+````text
+## Carried forward
+
+```carryover
+plugin-ci-workflow | filed | https://github.com/wildcat-finance/skills/issues/1041
+xray-source-drift | duplicate | https://github.com/wildcat-finance/skills/issues/842
+comment-density-nit | none | one docstring line, fixed in the same commit
+```
+````
+
+The id is kebab-case and used once. The disposition says what the item now has.
+`filed` points at the issue this run opened for it. `duplicate` points at the
+issue that already carries it, which means looking before filing a second copy.
+`none` says why the item earns neither, and it is the disposition to use rather
+than filing an issue to fill a row, which the hard rules forbid. A run that
+finished everything writes the single row
+`none | none | <why nothing is carried>` rather than dropping the section: an
+absent section cannot be told apart from an unasked question.
+
+This is the last thing the run writes into the repository, and the next study
+over the same target reads it as prior art under `protasis` item 2, so an item
+missing here is an item the next run rediscovers from nothing. An item disposed
+of in prose alone is worse: it reads as handled and is filed nowhere.
+
+`done integrate` refuses without it, and names what it found: the file
+unreadable, the heading absent, the heading standing empty, no `carryover` block
+under it, or a row that does not dispose of its item. A later heading ends the
+section, so a block in a later section cannot stand in for this one. What passes
+is recorded on the receipt as the parsed rows, the ids filed, the ids pointing at
+an existing issue, the line count and the digest of the body, so the ledger holds
+what the run published rather than a promise that it did.
+
+The row is shape, not judgement. A `duplicate` pointing at a real issue about
+something else passes, the referenced issue is never opened, and a `none` reason
+nobody should have accepted still counts as an answer. The reviewer owns whether
+the disposition was right; the receipt owns whether one was made.
+
+The same two decisions govern any issue this run files, and
+[ADR-067](../../../../../docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md)
+holds the reasoning. Check a candidate body with
+`hexctl issue-check --body <path>` before publishing it.
 
 Every primary author the push receipts recorded also has to remain attributable
 from the merge. Either the commit that carried it is still an ancestor of the

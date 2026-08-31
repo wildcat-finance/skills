@@ -3470,12 +3470,31 @@ class TestProseAndPush(HexctlCase):
         proc = self.run_ctl(*args, expect=2)
         self.assertIn("nothing under it", proc.stderr)
 
+        # Prose that names the item but disposes of nothing. The section is not
+        # empty, so the older check passed it; the item still has no issue.
         self.write_run_pr(carried="- no CI workflow for this plugin yet\n")
+        proc = self.run_ctl(*args, expect=2)
+        self.assertIn("carries no `carryover` block", proc.stderr)
+        self.assertIn("Integration cannot proceed", proc.stderr)
+
+        self.write_run_pr(
+            rows="plugin-ci-workflow | filed | "
+                 "https://github.com/wildcat-finance/skills/issues/1041\n"
+                 "xray-source-drift | duplicate | "
+                 "https://github.com/wildcat-finance/skills/issues/842\n"
+                 "comment-density-nit | none | fixed in the same commit\n"
+        )
         self.run_ctl(*args)
         receipt = self.state()["receipts"]["integrate"]["carried_forward"]
-        self.assertEqual(receipt["lines"], 1)
+        self.assertEqual(receipt["lines"], 5)
         self.assertEqual(receipt["path"], ".hexaemeron/run-pr.md")
         self.assertEqual(len(receipt["sha256"]), 64)
+        self.assertEqual(receipt["filed"], ["plugin-ci-workflow"])
+        self.assertEqual(receipt["duplicates"], ["xray-source-drift"])
+        self.assertEqual(
+            [row["id"] for row in receipt["carryover"]],
+            ["plugin-ci-workflow", "xray-source-drift", "comment-density-nit"],
+        )
         self.run_ctl("verify")
 
     def test_reset_refuses_a_run_whose_stack_has_not_landed(self):

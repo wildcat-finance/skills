@@ -1,2 +1,0 @@
-{"method":"eth_getBlockByNumber","observed_at":"2026-08-25T08:30:45.123456Z","params":["0x0",false],"returned":{"chain_id":"0x1","hash":"0x3c3e7fe4bb3a9bba45cfdbb6bbd5c19e3acea5e71c6cf53d1b7a4c6fe050016f","number":"0x0"},"schema_version":1,"source_id":"archive-a"}
-{"method":"eth_getBlockByNumber","observed_at":"2026-08-25T08:30:45.123456Z","params":["0x0",false],"returned":{"chain_id":"0x1","hash":"0x3c3e7fe4bb3a9bba45cfdbb6bbd5c19e3acea5e71c6cf53d1b7a4c6fe050016f","number":"0x0"},"schema_version":1,"source_id":"archive-b"}

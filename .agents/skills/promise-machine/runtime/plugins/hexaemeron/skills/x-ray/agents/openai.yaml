@@ -1,4 +1,0 @@
-interface:
-  display_name: "X-Ray (Pashov)"
-  short_description: "Pre-audit scan: threat model, invariants, entry points, and git analysis"
-  default_prompt: "Use the x-ray skill from $hexaemeron to generate a pre-audit report for this codebase."

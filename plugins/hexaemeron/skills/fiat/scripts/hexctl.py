@@ -14,7 +14,17 @@ The integrate phase merges the stack into the run branch in step order, then
 merges the run branch into the recorded base exactly once and closes any
 recorded task issue.
 
+A run called against an issue is gated on what that issue filed. `init` reads
+the issue's `Fiat-Required` line over REST and refuses to create any state,
+worktree or branch when it says 0, because that filing decided the work is one
+independent pull request rather than a run. The same read requires the issue's
+`carryover` block, and `done integrate` requires it of the run's own pull
+request body, so an outstanding item is either filed as its own issue, pointed
+at the issue that already carries it, or refused with a stated reason.
+`issue-check` runs that contract over a candidate body before anything is filed.
+
 Exit codes: 0 success, 2 validation/usage error, 1 unexpected failure.
+`issue-check` exits 1 on findings, which is a report rather than a crash.
 Stdout from `next` and `status --json` is a single JSON object; everything
 human-facing goes to plain text or stderr.
 """
@@ -61,6 +71,32 @@ RUN_PR_FILE = "run-pr.md"
 WORKTREE_FILE = "worktree"
 """The one line the origin checkout keeps, naming the tree the run works in."""
 CARRIED_FORWARD_HEADING = "## Carried forward"
+
+# What a run leaves unfinished, and what an issue leaves untriaged, are the same
+# question asked at two moments, so they take one grammar rather than two. Each
+# row is `id | disposition | reference`, and the disposition says what the item
+# now has: an issue of its own, an existing issue that already carries it, or a
+# stated reason it earns neither. Prose under the heading could say all three
+# and be read by nobody; a row cannot be half written.
+CARRYOVER_INFO = "carryover"
+CARRYOVER_FILED = "filed"
+CARRYOVER_DUPLICATE = "duplicate"
+CARRYOVER_NONE = "none"
+CARRYOVER_DISPOSITIONS = (CARRYOVER_FILED, CARRYOVER_DUPLICATE, CARRYOVER_NONE)
+CARRYOVER_REFERENCE_DISPOSITIONS = (CARRYOVER_FILED, CARRYOVER_DUPLICATE)
+CARRYOVER_ROWS_MAX = 128
+CARRYOVER_REASON_BYTES_MAX = 512
+
+# The filing decision an issue carries: 1 when the work needs a Fiat run, 0 when
+# one independent pull request will do. `init` reads it and refuses to start a
+# run the filer already decided does not need one, because a runbook written for
+# a wonky regular expression costs more than the fix.
+FIAT_REQUIRED_KEY = "Fiat-Required"
+FIAT_REQUIRED_LINE_RE = re.compile(
+    r"^ {0,3}(?:[-*+]\s+|>\s*)?\*{0,2}Fiat-Required\*{0,2}\s*:\s*(?P<value>.*?)\s*$"
+)
+FIAT_REQUIRED_VALUES = ("0", "1")
+ISSUE_BODY_BYTES_MAX = 262144
 
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
@@ -340,6 +376,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.44.1",
         "fiat-v5.45.1",
         "fiat-v5.46.1",
+        "fiat-v5.47.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -2421,11 +2458,37 @@ def cmd_init(args) -> None:
     worktree = check_worktree_path(repo_root, candidate)
     refuse_checked_out_branch(args.dir, run_branch)
 
-    # The currency observation is the last pre-mutation check because it is
-    # the only one that may wait on the network: every cheaper refusal has
-    # already had its chance. A proven-behind controller stops the run here,
-    # while a refusal still costs nothing; anything the observation could not
-    # prove proceeds as `unknown` with the nulls recorded rather than guessed.
+    # The two network reads are the last pre-mutation checks, because every
+    # cheaper refusal has already had its chance. The filing decision goes
+    # first: whether this work earned a run at all precedes any question about
+    # the controller that would run it, and a `0` verdict must cost the operator
+    # nothing but the read. A run naming no issue reads no decision, and says so
+    # rather than passing quietly for the same reason the carried-forward
+    # heading is mandatory: an absent answer cannot be told apart from a
+    # question nobody asked.
+    if args.task_issue is not None:
+        task_issue_contract = read_task_issue_contract(args.dir, args.task_issue)
+    else:
+        task_issue_contract = {
+            "issue": None,
+            "repository": None,
+            "number": None,
+            "fiat_required": None,
+            "carryover": [],
+            "sha256": None,
+            "reason": "this run named no task issue, so no filing decision was read",
+        }
+        print(
+            "hexctl: warning: this run names no task issue, so no filed "
+            f"`{FIAT_REQUIRED_KEY}` decision was read and the receipt records "
+            "the nulls. The gate binds a run called against an issue; nothing "
+            "here says this work earned a run rather than one pull request.",
+            file=sys.stderr,
+        )
+
+    # A proven-behind controller stops the run here, while a refusal still costs
+    # nothing; anything the observation could not prove proceeds as `unknown`
+    # with the nulls recorded rather than guessed.
     currency = observe_controller_currency()
     if currency["verdict"] == "behind" and waiver is None:
         die(
@@ -2486,7 +2549,10 @@ def cmd_init(args) -> None:
         remove_run_worktree(args.dir, worktree)
         die(f"could not write the run's state into {root}")
 
-    receipts = {"controller_currency": provenance}
+    receipts = {
+        "controller_currency": provenance,
+        "task_issue_contract": task_issue_contract,
+    }
     if args.task_issue is not None:
         receipts["task_issue"] = args.task_issue
 
@@ -2515,6 +2581,7 @@ def cmd_init(args) -> None:
         "run_branch": run_branch,
         "contracts": state["contracts"],
         "controller_currency": provenance,
+        "task_issue_contract": task_issue_contract,
         "starting_commit": starting_commit,
     }
     if args.task_issue is not None:
@@ -4205,8 +4272,8 @@ def version_resolution_status(base_dir: str, state: dict) -> dict:
     return {"status": "active", **common, "reason": None}
 
 
-def carried_forward_lines(text: str) -> list[str] | None:
-    """The lines under the carried-forward heading, or None when it is absent.
+def carried_forward_section(text: str) -> str | None:
+    """The text under the carried-forward heading, or None when it is absent.
 
     Reading stops at the next heading, so a later section cannot stand in for
     this one.
@@ -4215,23 +4282,322 @@ def carried_forward_lines(text: str) -> list[str] | None:
     for index, line in enumerate(lines):
         if line.strip() != CARRIED_FORWARD_HEADING:
             continue
-        said = []
+        body = []
         for candidate in lines[index + 1:]:
             if candidate.startswith("#"):
                 break
-            if candidate.strip():
-                said.append(candidate.strip())
-        return said
+            body.append(candidate)
+        return "\n".join(body) + "\n"
     return None
+
+
+def carried_forward_lines(text: str) -> list[str] | None:
+    """The non-blank lines under the carried-forward heading, or None."""
+    section = carried_forward_section(text)
+    if section is None:
+        return None
+    return [line.strip() for line in section.splitlines() if line.strip()]
+
+
+def fenced_block_rows(text: str, info: str) -> tuple[list[str] | None, str | None]:
+    """The rows inside the one fenced block whose info string is exactly `info`.
+
+    Returns ``(rows, fault)``. ``rows`` is None only when no block carrying that
+    info string opened at all, which is a different answer from a block that
+    opened and holds nothing: an absent block cannot be told apart from a
+    question nobody asked, and an empty one is a filer who started the sentence.
+
+    A block opened under another info string is content, so an example quoted
+    inside a Markdown fence earns no verdict. The scan is the one
+    ``parse_design_lock_source`` uses, for the same reason: two fence trackers
+    drift, and the one that drifts is the one nothing exercises.
+    """
+    lines = text.splitlines(keepends=True)
+    blocks = []
+    open_mark = None
+    open_length = None
+    opened = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        fence_info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = fence_info.split()
+            opened = (
+                (index, fence_info == info)
+                if words and words[0] == info
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not fence_info:
+            if opened is not None:
+                blocks.append((*opened, index, True))
+            open_mark, open_length, opened = None, None, None
+    if opened is not None:
+        blocks.append((*opened, len(lines) - 1, False))
+    if not blocks:
+        return None, None
+    if len(blocks) != 1:
+        return None, f"carries more than one `{info}` block, so no row is authoritative"
+    opening, exact_info, closing, closed = blocks[0]
+    if not exact_info:
+        return None, f"the `{info}` fence must carry only that exact info string"
+    if not closed:
+        return None, f"the `{info}` block is not closed"
+    return [line.rstrip("\r\n") for line in lines[opening + 1:closing]], None
+
+
+def carryover_reference_fault(disposition: str, reference: str) -> str | None:
+    """Why one row's third field does not answer its disposition, or None."""
+    if disposition in CARRYOVER_REFERENCE_DISPOSITIONS:
+        if github_issue_identity(reference) is None:
+            return (
+                f"a `{disposition}` row must point at one canonical GitHub issue "
+                f"URL, and {reference!r} is not one"
+            )
+        return None
+    if not reference:
+        return "a `none` row must say why the item earns no issue of its own"
+    if len(reference.encode("utf-8")) > CARRYOVER_REASON_BYTES_MAX:
+        return (
+            f"a `none` row's reason is longer than "
+            f"{CARRYOVER_REASON_BYTES_MAX} bytes"
+        )
+    return None
+
+
+def carryover_row_faults(rows: list[str]) -> tuple[list[dict], list[str]]:
+    """Parse carryover triage rows, returning what parsed and what is wrong.
+
+    The shape is read, never the judgement. A row that files a real concern
+    against the wrong issue passes here, and so does a `none` reason nobody
+    should have accepted. Whether an item deserved an issue stays with the
+    reviewer; whether the filer answered the question at all is settled here.
+    """
+    entries = [row for row in rows if row.strip()]
+    if not entries:
+        return [], [
+            f"the `{CARRYOVER_INFO}` block holds no rows; give every outstanding "
+            f"item a row, or write the single row "
+            f"`none | none | <why nothing is carried>`"
+        ]
+    if len(entries) > CARRYOVER_ROWS_MAX:
+        return [], [
+            f"the `{CARRYOVER_INFO}` block holds {len(entries)} rows, above the "
+            f"{CARRYOVER_ROWS_MAX} this check will track, so the tail went "
+            f"unchecked"
+        ]
+    parsed: list[dict] = []
+    faults: list[str] = []
+    seen: set[str] = set()
+    for number, row in enumerate(entries, start=1):
+        text = row.strip()
+        if _contains_nonprinting_character(text):
+            faults.append(f"row {number} contains a control character")
+            continue
+        fields = [field.strip() for field in text.split("|")]
+        if len(fields) != 3:
+            faults.append(
+                f"row {number} carries {len(fields)} field(s), not the three the "
+                f"shape fixes (id | disposition | reference)"
+            )
+            continue
+        item, disposition, reference = fields
+        row_faults = []
+        if item == CARRYOVER_NONE:
+            if len(entries) != 1 or disposition != CARRYOVER_NONE:
+                row_faults.append(
+                    f"row {number} uses the reserved id `none`, which is only "
+                    f"valid as the sole row and only with the `none` disposition"
+                )
+        elif VERSION_RELATION_SKILL_RE.fullmatch(item) is None:
+            row_faults.append(f"row {number} id {item!r} is not kebab-case")
+        elif item in seen:
+            row_faults.append(
+                f"row {number} repeats the id {item!r}, so no disposition on it "
+                f"is authoritative"
+            )
+        else:
+            seen.add(item)
+        if disposition not in CARRYOVER_DISPOSITIONS:
+            row_faults.append(
+                f"row {number} disposition {disposition!r} is not one of "
+                + ", ".join(f"`{value}`" for value in CARRYOVER_DISPOSITIONS)
+            )
+        else:
+            reference_fault = carryover_reference_fault(disposition, reference)
+            if reference_fault:
+                row_faults.append(f"row {number}: {reference_fault}")
+        if row_faults:
+            faults.extend(row_faults)
+            continue
+        parsed.append({
+            "id": item,
+            "disposition": disposition,
+            "reference": reference,
+        })
+    return parsed, faults
+
+
+def carryover_triage(text: str, label: str) -> tuple[list[dict], list[str]]:
+    """The triage rows one document carries, and every fault in them."""
+    rows, fault = fenced_block_rows(text, CARRYOVER_INFO)
+    if fault:
+        return [], [f"{label} {fault}"]
+    if rows is None:
+        return [], [
+            f"{label} carries no `{CARRYOVER_INFO}` block. Every outstanding, "
+            f"carried-forward or unaddressed item needs its own issue or a "
+            f"pointer at the issue that already carries it, and this is where "
+            f"that decision is recorded"
+        ]
+    parsed, faults = carryover_row_faults(rows)
+    return parsed, [f"{label}: {fault}" for fault in faults]
+
+
+def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
+    """The filing decision one issue body declares, and every fault in it.
+
+    Read outside fenced code, so a body quoting the line as an example does not
+    decide anything. More than one declaration is a fault rather than a
+    precedence rule: an issue carrying both answers has made no decision.
+    """
+    declarations = []
+    for physical in _unfenced_markdown_lines(text):
+        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
+        if match is not None:
+            declarations.append(match.group("value"))
+    if not declarations:
+        return None, [
+            f"{label} declares no `{FIAT_REQUIRED_KEY}` line. Add exactly one "
+            f"`{FIAT_REQUIRED_KEY}: 1` when the work needs a Fiat run, or "
+            f"`{FIAT_REQUIRED_KEY}: 0` when one independent pull request will do"
+        ]
+    if len(declarations) != 1:
+        return None, [
+            f"{label} declares `{FIAT_REQUIRED_KEY}` {len(declarations)} times, "
+            f"so it has made no decision"
+        ]
+    value = declarations[0]
+    if value not in FIAT_REQUIRED_VALUES:
+        return None, [
+            f"{label} declares `{FIAT_REQUIRED_KEY}: {value}`, which is neither "
+            f"1 (a Fiat run) nor 0 (one independent pull request)"
+        ]
+    return value, []
+
+
+def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
+    """Everything the filing contract asks of one candidate issue body.
+
+    Both questions are asked, and both answers are reported, so a filer fixing
+    one does not discover the other on the next attempt.
+    """
+    value, value_faults = fiat_required_value(text, label)
+    carryover, carryover_faults = carryover_triage(text, label)
+    record = {
+        "fiat_required": None if value is None else int(value),
+        "carryover": carryover,
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    }
+    return record, [*value_faults, *carryover_faults]
+
+
+def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
+    """The filing decisions one GitHub issue carries, read over REST.
+
+    Fail-closed in both directions. A body that declares nothing refuses, and so
+    does a tracker this reader cannot open, because a run that starts on an
+    unread decision is exactly the run this gate exists to stop. A request
+    GitHub never answered refuses in the transport shape ``github_rest``
+    already owns, which says nothing about whether the work earned a run.
+    """
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        # `task_issue` deliberately accepts other HTTP issue trackers, and this
+        # reader cannot open one. Refusing every such run would delete a
+        # capability the rule does not reach: the four repositories the filing
+        # contract governs keep their issues on GitHub, so a tracker that is not
+        # GitHub is out of its scope rather than evading it. The gap is recorded
+        # and said out loud rather than passed over, because a null nobody
+        # mentioned reads as a 1.
+        print(
+            f"hexctl: warning: --task-issue {issue_url} is not a GitHub issue, "
+            f"so no `{FIAT_REQUIRED_KEY}` line could be read and the receipt "
+            "records the nulls. Nothing here says this work earned a run rather "
+            "than one pull request.",
+            file=sys.stderr,
+        )
+        return {
+            "issue": issue_url,
+            "repository": None,
+            "number": None,
+            "fiat_required": None,
+            "carryover": [],
+            "sha256": None,
+            "reason": "the task issue is not a GitHub issue, so no filing "
+                      "decision could be read",
+        }
+    repository, number = identity
+    label = f"task issue {repository}#{number}"
+    payload = github_rest(
+        base_dir, f"repos/{repository}/issues/{number}", label
+    )
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(
+            label,
+            f"repos/{repository}/issues/{number}",
+            "returned a body that is not text",
+        )
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            f"reader will parse, so its filing decisions went unread"
+        )
+    record, faults = issue_contract_faults(body, label)
+    if faults:
+        die(
+            "the filing contract is not satisfied: "
+            + "; ".join(faults)
+            + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
+            f"line and one `{CARRYOVER_INFO}` block, then start the run again"
+        )
+    if record["fiat_required"] == 0:
+        die(
+            f"{label} declares `{FIAT_REQUIRED_KEY}: 0`: the filer decided this "
+            f"work does not need a Fiat run. No run state, worktree or branch "
+            f"was created. Do the work as one independent pull request, point "
+            f"the issue at that pull request, and close it there. If that "
+            f"decision was wrong, change the issue to "
+            f"`{FIAT_REQUIRED_KEY}: 1` and say why in the issue before "
+            f"starting a run.",
+            1,
+        )
+    return {
+        "issue": issue_url,
+        "repository": repository,
+        "number": number,
+        **record,
+    }
 
 
 def carried_forward_fault(path: str) -> str | None:
     """Why this run has not said what it leaves unfinished, or None.
 
     A run that gives up on something records it in the body of the last pull
-    request it lands, because that is what the next study reads. A run that
-    finished everything still writes the section: an absent heading cannot be
-    told apart from a question nobody asked.
+    request it lands, because that is what the next study reads, and each item
+    records what it now has: an issue of its own, the existing issue that
+    already carries it, or a stated reason it earns neither. A run that finished
+    everything still writes the section: an absent heading cannot be told apart
+    from a question nobody asked.
     """
     try:
         with open(path, encoding="utf-8") as fh:
@@ -4241,16 +4607,26 @@ def carried_forward_fault(path: str) -> str | None:
                 f"({exc}); the prose phase writes it and the integration pull "
                 f"request is opened from it")
 
-    said = carried_forward_lines(text)
-    if said is None:
+    section = carried_forward_section(text)
+    if section is None:
         return (f"{path} has no '{CARRIED_FORWARD_HEADING}' section; name every "
                 f"lead left unpursued, finding accepted rather than fixed, "
                 f"boundary refused and claim left unverified, or say plainly "
                 f"that this run leaves none")
-    if not said:
+    if not section.strip():
         return (f"{path} carries a '{CARRIED_FORWARD_HEADING}' heading with "
                 f"nothing under it; say what is unfinished, or say that "
                 f"nothing is")
+    _, faults = carryover_triage(
+        section, f"the '{CARRIED_FORWARD_HEADING}' section of {path}"
+    )
+    if faults:
+        return (
+            "; ".join(faults)
+            + f". Integration cannot proceed until every outstanding item under "
+            f"'{CARRIED_FORWARD_HEADING}' has been considered for an issue of "
+            f"its own and compared against what is already filed"
+        )
     return None
 
 
@@ -4258,10 +4634,17 @@ def carried_forward_record(path: str) -> dict:
     """What the receipt keeps about the section, once it has passed."""
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
+    section = carried_forward_section(text) or ""
+    rows, _ = carryover_triage(section, path)
     return {
         "path": os.path.join(STATE_DIR_NAME, RUN_PR_FILE),
         "lines": len(carried_forward_lines(text) or []),
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "carryover": rows,
+        "filed": [row["id"] for row in rows
+                  if row["disposition"] == CARRYOVER_FILED],
+        "duplicates": [row["id"] for row in rows
+                       if row["disposition"] == CARRYOVER_DUPLICATE],
     }
 
 
@@ -4867,6 +5250,14 @@ def cmd_record(args) -> None:
         # rewrite would replace the recorded verdict and waiver with a
         # value nothing observed (S2-R1-01).
         die("controller_currency is init's observation; only `hexctl init` writes it")
+    if args.key == "task_issue_contract":
+        # Protected for the same reason and more sharply: a run that could
+        # rewrite this receipt could start against `Fiat-Required: 0` and then
+        # record that it had read a 1.
+        die(
+            "task_issue_contract is init's read of the filed decision; only "
+            "`hexctl init` writes it"
+        )
     if state.get("halted") and args.key != "halt_note":
         # Recording context while halted is allowed; progress commands are not.
         pass
@@ -4884,6 +5275,79 @@ def cmd_record(args) -> None:
     state["receipts"][args.key] = value
     commit(args.dir, state, "record", {"key": args.key, "value": value})
     print(f"recorded {args.key}")
+
+
+def cmd_issue_check(args) -> None:
+    """Check one candidate or filed issue body against the filing contract.
+
+    Stateless, so it runs before an issue exists and outside any run. Both
+    questions are reported together: the `Fiat-Required` decision, and whether
+    every outstanding item has been considered for an issue of its own and
+    compared against what is already filed.
+
+    Shape alone. A `duplicate` row pointing at a real issue about something else
+    passes here, an issue that exists is never opened, and a `none` reason
+    nobody should have accepted still counts as an answer. Whether the
+    disposition was the right one stays with the reviewer; whether the filer
+    answered at all is settled here.
+    """
+    if bool(args.body) == bool(args.issue):
+        die("issue-check needs exactly one of --body <path> or --issue <url>")
+    if args.body:
+        label = args.body
+        try:
+            with open(args.body, "rb") as handle:
+                raw = handle.read(ISSUE_BODY_BYTES_MAX + 1)
+        except OSError as exc:
+            die(f"{args.body} cannot be read ({exc})")
+        if len(raw) > ISSUE_BODY_BYTES_MAX:
+            die(f"{args.body} is above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+                f"reader will parse")
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            die(f"{args.body} is not UTF-8")
+    else:
+        identity = github_issue_identity(args.issue)
+        if identity is None:
+            die(f"--issue {args.issue} is not a canonical GitHub issue URL")
+        repository, number = identity
+        label = f"{repository}#{number}"
+        payload = github_rest(
+            args.dir, f"repos/{repository}/issues/{number}", f"issue {label}"
+        )
+        text = payload.get("body") or ""
+        if not isinstance(text, str):
+            github_unreachable(
+                f"issue {label}",
+                f"repos/{repository}/issues/{number}",
+                "returned a body that is not text",
+            )
+
+    record, faults = issue_contract_faults(text, label)
+    for fault in faults:
+        print(f"{label}: {fault}" if not fault.startswith(label) else fault,
+              file=sys.stderr)
+    if faults:
+        print(
+            f"{len(faults)} finding(s); this issue is not ready to file",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    route = "a Fiat run" if record["fiat_required"] == 1 else \
+        "one independent pull request"
+    filed = [row for row in record["carryover"]
+             if row["disposition"] == CARRYOVER_FILED]
+    duplicates = [row for row in record["carryover"]
+                  if row["disposition"] == CARRYOVER_DUPLICATE]
+    print(f"{label}: clean")
+    print(f"{FIAT_REQUIRED_KEY}: {record['fiat_required']} ({route})")
+    print(
+        f"carryover: {len(record['carryover'])} row(s), {len(filed)} filed, "
+        f"{len(duplicates)} pointing at an existing issue"
+    )
+    for row in record["carryover"]:
+        print(f"  {row['id']} | {row['disposition']} | {row['reference']}")
 
 
 def ledger_entries(base_dir: str) -> list[dict]:
@@ -6486,6 +6950,28 @@ def _integrate_directive(
                 "from the base; a squash or rebase merge rewrites them, and "
                 "then the merge commit itself has to carry each identity as "
                 "author or in a Co-authored-by trailer"
+            ),
+        },
+        "carried_forward": {
+            "path": os.path.join(STATE_DIR_NAME, RUN_PR_FILE),
+            "heading": CARRIED_FORWARD_HEADING,
+            "block": CARRYOVER_INFO,
+            "row": "<id> | <disposition> | <reference>",
+            "dispositions": list(CARRYOVER_DISPOSITIONS),
+            "rule": (
+                "one row per outstanding, carried-forward or unaddressed item; "
+                "`filed` and `duplicate` each point at one canonical GitHub "
+                "issue URL, the item's own new issue or the existing issue that "
+                "already carries it, and `none` states why the item earns "
+                "neither. Compare against what is already open before filing a "
+                "second copy, and never file an issue merely to fill a row. A "
+                "run that leaves nothing writes the single row "
+                "`none | none | <why nothing is carried>`"
+            ),
+            "gate": (
+                "done integrate reads the section and refuses prose that "
+                "disposes of nothing, so integration does not proceed on "
+                "leftovers nothing was decided about"
             ),
         },
         **({"version_resolution": resolution} if resolution is not None else {}),
@@ -13913,6 +14399,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(fn=cmd_currency)
+
+    sp = sub.add_parser(
+        "issue-check",
+        help="check one candidate or filed issue against the filing contract",
+    )
+    sp.add_argument("--body", help="path to the candidate issue body")
+    sp.add_argument("--issue", help="canonical GitHub issue URL to read")
+    sp.set_defaults(fn=cmd_issue_check)
 
     sp = sub.add_parser("next", help="emit the single next action as JSON")
     sp.set_defaults(fn=cmd_next)

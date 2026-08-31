@@ -1,4 +1,0 @@
-interface:
-  display_name: "Elenchus"
-  short_description: "Works an observed failure down to its cause"
-  default_prompt: "Use $hexaemeron:elenchus to find the root cause of a failing test or build and guard it."
