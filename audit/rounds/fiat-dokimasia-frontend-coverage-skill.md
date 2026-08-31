@@ -46,3 +46,19 @@ Elenchus verdict: guarded
 | S2-R1-02 | medium | plugins/dokimasia/scripts/dokimasia_lib/inventory.py | `_matchers` scanned a forty-token window after a `matcher` key and returned whatever it had found. A matcher list longer than that window was truncated with no signal, so a middleware guard would have been recorded as covering fewer paths than it does, and the gap would have been invisible in the inventory. Fixed by capping the scan at 512 tokens and refusing by name when the list does not close inside it. Guarded by a test that drives an unclosed matcher list and requires the refusal. | fixed in b2ebd65bc990160ce4a2af59cadab097ff6f21ec |
 
 Leads not pursued: `read_source` decodes with `errors="replace"`, so a file carrying invalid UTF-8 under a source extension is scanned as replacement characters rather than refused. The byte cap bounds the damage and the scanner cannot produce an item from noise, so this is accepted rather than repaired. Export clauses are not alias-resolved, which records a name the module does not answer on; the inventory rules state it and the alternative is a scope resolver this step does not need.
+
+## Step 2, round 2 -- 2026-08-31T21:47:21Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; partial-write=reviewed; evidence-digest-binding=reviewed; marketplace-boundary=reviewed; router-corpus-drift=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable; disposition-closure=not-applicable
+
+Not checked: the same negative space as round 1; no workbook or reconciliation code exists to audit, the rule set was exercised against one framework only, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the two accepted items from round 1 stand unchanged.
