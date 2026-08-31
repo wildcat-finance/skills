@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import os
+import secrets
 import stat
 import sys
 
@@ -122,8 +123,15 @@ class Events:
         self.emitted.append(event)
         if self.path is not None:
             line = json.dumps(event, sort_keys=True, separators=(",", ":"))
-            with open(self.path, "a", encoding="utf-8") as handle:
-                handle.write(line + "\n")
+            # Append without following a symlink: an operator-named stream path
+            # is untrusted, and a link there would redirect every refusal we
+            # write into a file we never meant to touch.
+            flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(self.path, flags, 0o600)
+            try:
+                os.write(descriptor, (line + "\n").encode("utf-8"))
+            finally:
+                os.close(descriptor)
 
 
 def read_bounded(path, cap, what):
@@ -167,9 +175,19 @@ def text(value, where, limit=500):
     return value
 
 
+def _no_duplicate_keys(pairs):
+    """Refuse a duplicated key rather than silently keeping the last one."""
+    seen = {}
+    for key, value in pairs:
+        if key in seen:
+            raise Refusal("A025", f"policy declares {quote(key)} twice")
+        seen[key] = value
+    return seen
+
+
 def parse_policy(raw, where):
     try:
-        policy = json.loads(raw.decode("utf-8"))
+        policy = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise Refusal("A020", f"{where} is not valid JSON: {quote(error)}")
     closed_object(policy, POLICY_KEYS, "policy")
@@ -406,11 +424,20 @@ def write_report(path, criterion, value, command):
         raise Refusal("A080", f"report exceeds the {MAX_REPORT_BYTES}-byte cap")
     parent = os.path.dirname(os.path.abspath(path))
     os.makedirs(parent, exist_ok=True)
-    staging = path + ".partial"
-    with open(staging, "wb") as handle:
-        handle.write(encoded)
-        handle.flush()
-        os.fsync(handle.fileno())
+    # Stage under a name this process alone creates, refusing to open through a
+    # symlink or over an existing file, then promote atomically. A fixed
+    # ".partial" suffix let a second run write into the first run's staging.
+    staging = f"{path}.{os.getpid()}.{secrets.token_hex(8)}.partial"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(staging, flags, 0o600)
+    try:
+        os.write(descriptor, encoded)
+        os.fsync(descriptor)
+    except BaseException:
+        os.close(descriptor)
+        os.unlink(staging)
+        raise
+    os.close(descriptor)
     os.replace(staging, path)
     return report
 
