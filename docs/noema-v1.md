@@ -758,9 +758,10 @@ direct carrier edge; it does not prove the shallow checkout descends from the
 carrier. The full Fiat/controller checkout remains the publication ancestry
 gate.
 The first cohort, all three ledger snapshots and their digests remain beside
-the canonical files. Both exact same-packet cohorts scored 16/16. Four
-transient provider-envelope refusals recovered under their preregistered
-second attempts, and the ledgers retain all four uncertain reservations. This
+the canonical files. Both exact same-packet cohorts scored 16/16, recorded all
+32 calls on their first attempts and retain no reservation. The accepted
+measurement instead recovered one Google invocation after two HTTP 502
+attempts and retains both uncertain reservations, totalling $0.01521135. This
 is a cross-family capability record, not a deterministic-recurrence claim or
 evidence that a small local decoder meets the same boundary. The exact counts,
 earlier rejected runs and shadow-only decision live in ADR-066; raw provider
