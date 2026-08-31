@@ -143,6 +143,25 @@ class AlexandriaScaffoldTests(unittest.TestCase):
         self.assertTrue(
             statement_document.startswith("# Alexandria release statements\n")
         )
+        interval_study = (
+            PLUGIN_ROOT / "docs" / "usdc-interval-study.md"
+        ).read_text(encoding="utf-8")
+        interval_runbook = (
+            PLUGIN_ROOT / "docs" / "usdc-interval-runbook.md"
+        ).read_text(encoding="utf-8")
+        self.assertTrue(
+            interval_study.startswith(
+                "# Study: the resumable Ethereum USDC interval collector\n"
+            )
+        )
+        self.assertTrue(
+            interval_runbook.startswith(
+                "# Runbook: the resumable Ethereum USDC interval collector\n"
+            )
+        )
+        self.assertEqual(interval_runbook.count("## Step "), 6)
+        self.assertIn("1c1137898bce9086c34310bd29b5cf8a889f800c", interval_runbook)
+        self.assertIn("```design-lock", interval_runbook)
 
     def test_scaffold_directories_and_licence_are_present(self):
         for relative in (

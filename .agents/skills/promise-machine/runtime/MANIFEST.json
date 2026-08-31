@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 995,
-  "total_bytes": 21663769,
+  "total_bytes": 21664542,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -273,9 +273,9 @@
       "source": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json"
     },
     {
-      "bytes": 3310,
+      "bytes": 4083,
       "path": "plugins/alexandria/schemas/README.md",
-      "sha256": "786ae7e794a37bdd6c214b9ceecfee782dd72c342cd05a0aea0dae34e974cd42",
+      "sha256": "ac8c212735e53841e5e697e02c0a3e60f830b3e972c3b4f4315a5d3b69ce083f",
       "source": "plugins/alexandria/schemas/README.md"
     },
     {

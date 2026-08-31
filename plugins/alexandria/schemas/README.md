@@ -51,3 +51,15 @@ Compound v3 Phase 0 adds `compound-v3-registry-v1.schema.json` for the pinned
 `compound-v3-method-receipt-v1.schema.json` for the bounded archive, nested
 call, ordered-storage and provider-reported finality gate outcomes. Runtime
 checks bind these contracts to the exact upstream commit and raw RPC objects.
+
+The resumable interval collector adds three more.
+`interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
+interval, shard width, evidence classes and the named finality policy that
+fixed the interval's end. `interval-checkpoint-v1.schema.json` covers the
+working state a killed collection resumes from: the next shard, the last
+accepted block and hash, and each journal's committed byte offset. It is not
+release truth and no release names it. `interval-receipt-v1.schema.json`
+covers what a collected interval turns out to hold: its code-hash-bound
+implementation epochs, its shards with their status and record counts, and
+what a second provider said about it. Runtime checks bind a checkpoint to its
+own plan's digest and refuse a shard outside it.
