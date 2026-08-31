@@ -1,8 +1,8 @@
 {
   "name": "homologia",
   "displayName": "Homologia",
-  "version": "0.1.0",
-  "description": "Scaffold for a future integer comparison between one on-chain computation and one off-chain mirror; substantive operations currently refuse.",
+  "version": "1.1.0",
+  "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

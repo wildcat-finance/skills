@@ -1,0 +1,139 @@
+{
+  "$defs": {
+    "canonicalInteger": {
+      "pattern": "^(?:0|-?[1-9][0-9]*)$",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*//).+$",
+      "type": "string"
+    },
+    "provenance": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "class": {
+              "const": "proved"
+            },
+            "lazarus_artifact": {
+              "$ref": "#/$defs/path"
+            }
+          },
+          "required": [
+            "class",
+            "lazarus_artifact"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "block_hash": {
+              "pattern": "^0x[0-9A-Fa-f]{64}$",
+              "type": "string"
+            },
+            "block_number": {
+              "pattern": "^(?:0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            "chain_id": {
+              "pattern": "^(?:0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            "class": {
+              "const": "recorded"
+            }
+          },
+          "required": [
+            "class",
+            "chain_id",
+            "block_number",
+            "block_hash"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "author": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "class": {
+              "const": "asserted"
+            }
+          },
+          "required": [
+            "class",
+            "author"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "tolerance": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute": {
+          "pattern": "^(?:0|[1-9][0-9]*)$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "absolute"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://wildcat.finance/schemas/homologia/vectors-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expected": {
+      "additionalProperties": false,
+      "properties": {
+        "integer": {
+          "$ref": "#/$defs/canonicalInteger"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
+      },
+      "required": [
+        "integer",
+        "provenance"
+      ],
+      "type": "object"
+    },
+    "id": {
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "type": "string"
+    },
+    "inputs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/canonicalInteger"
+      },
+      "minProperties": 1,
+      "propertyNames": {
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      },
+      "type": "object"
+    },
+    "tolerance": {
+      "$ref": "#/$defs/tolerance"
+    }
+  },
+  "required": [
+    "id",
+    "inputs",
+    "expected"
+  ],
+  "title": "One Homologia vector version 1 JSONL record",
+  "type": "object"
+}

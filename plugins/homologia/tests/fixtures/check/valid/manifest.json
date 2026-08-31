@@ -1,0 +1,29 @@
+{
+  "pair": {
+    "chain": {
+      "contract": "0x1111111111111111111111111111111111111111",
+      "function": "accrue(uint256,uint256)",
+      "id": "1"
+    },
+    "id": "wad-interest-v0",
+    "mirror": {
+      "id": "python-reference",
+      "revision": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scale": {
+        "decimals": 18,
+        "id": "wad"
+      }
+    }
+  },
+  "schema": "homologia-manifest/v1",
+  "vector_sets": [
+    {
+      "id": "asserted-small",
+      "path": "vectors.jsonl",
+      "scale": {
+        "decimals": 18,
+        "id": "wad"
+      }
+    }
+  ]
+}
