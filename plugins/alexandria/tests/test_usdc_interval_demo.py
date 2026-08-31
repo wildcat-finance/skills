@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-import shutil
 import socket
 import subprocess
 import sys
