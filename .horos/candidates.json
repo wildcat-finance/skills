@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16810019,
+    "bytes_blob": 16782376,
     "bytes_generated": 98
   },
   "entries": [
@@ -238,14 +238,7 @@
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
     },
     {
-      "bytes": 139352,
-      "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 69676",
-      "grade": "candidate",
-      "path": "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.md"
-    },
-    {
-      "bytes": 141190,
+      "bytes": 152763,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -540,37 +533,37 @@
       "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
     },
     {
-      "bytes": 37332,
+      "bytes": 36939,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 37332 bytes",
+      "evidence": "no newline in the first 4096 bytes of 36939 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/noema-v1/evidence/answers-cohort-1.json"
     },
     {
-      "bytes": 37339,
+      "bytes": 36942,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 37339 bytes",
+      "evidence": "no newline in the first 4096 bytes of 36942 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/noema-v1/evidence/answers.json"
     },
     {
-      "bytes": 62804,
+      "bytes": 125173,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 62804 bytes",
+      "evidence": "no newline in the first 4096 bytes of 125173 bytes",
       "grade": "candidate",
-      "path": "tests/fixtures/noema-v1/evidence/measurement-6e48bb02-attempt-1.json"
+      "path": "tests/fixtures/noema-v1/evidence/measurement-0fd3801b-attempt-2.json"
     },
     {
-      "bytes": 92916,
+      "bytes": 130866,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 92916 bytes",
+      "evidence": "no newline in the first 4096 bytes of 130866 bytes",
       "grade": "candidate",
-      "path": "tests/fixtures/noema-v1/evidence/measurement-6e48bb02-attempt-2.json"
+      "path": "tests/fixtures/noema-v1/evidence/measurement-3806eb24-attempt-1.json"
     },
     {
-      "bytes": 164949,
+      "bytes": 165556,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 164949 bytes",
+      "evidence": "no newline in the first 4096 bytes of 165556 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/noema-v1/evidence/measurement.json"
     }

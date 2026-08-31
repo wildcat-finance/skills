@@ -77,6 +77,9 @@
     },
     {
       "$ref": "#/$defs/corpusEvidence"
+    },
+    {
+      "$ref": "#/$defs/gitAnchorWitness"
     }
   ],
   "$defs": {
@@ -2747,13 +2750,49 @@
         }
       }
     },
+    "gitWitnessObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_base64", "oid", "type"],
+      "properties": {
+        "data_base64": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 174764,
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+        },
+        "oid": { "$ref": "#/$defs/gitObject" },
+        "type": { "enum": ["commit", "tree"] }
+      }
+    },
+    "gitAnchorWitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "carrier_commit", "objects", "repository_commit", "repository_tree", "schema"
+      ],
+      "properties": {
+        "carrier_commit": { "$ref": "#/$defs/gitObject" },
+        "objects": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/gitWitnessObject" }
+        },
+        "repository_commit": { "$ref": "#/$defs/gitObject" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "schema": { "const": "noema-git-anchor-witness/v1" }
+      }
+    },
     "corpusEvidence": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "answers", "answers_sha256", "case_set_sha256", "evaluation",
         "evaluation_sha256", "measurement", "measurement_sha256", "packet_sha256",
-        "profile_set_sha256", "profiles", "repository_commit", "repository_tree", "schema"
+        "profile_set_sha256", "profiles", "repository_commit", "repository_tree",
+        "repository_witness", "repository_witness_sha256", "schema"
       ],
       "properties": {
         "answers": { "const": "evidence/answers.json" },
@@ -2768,6 +2807,8 @@
         "profiles": { "const": "profiles/measurement.json" },
         "repository_commit": { "$ref": "#/$defs/gitObject" },
         "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "repository_witness": { "const": "evidence/git-anchor-witness.json" },
+        "repository_witness_sha256": { "$ref": "#/$defs/sha256" },
         "schema": { "const": "noema-corpus-evidence/v1" }
       }
     },

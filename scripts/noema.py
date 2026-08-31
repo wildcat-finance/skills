@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 from collections.abc import Iterable
 import copy
 from datetime import date
 from decimal import Decimal, InvalidOperation, localcontext
 import fcntl
-from hashlib import sha256
+from hashlib import sha1, sha256
 import heapq
 import io
 import json
@@ -166,6 +168,9 @@ EVALUATION_REPORT_SCHEMA = "noema-evaluation/v1"
 LEGACY_BUDGET_LEDGER_SCHEMA = "noema-budget-ledger/v1"
 BUDGET_LEDGER_SCHEMA = "noema-budget-ledger/v2"
 CORPUS_EVIDENCE_SCHEMA = "noema-corpus-evidence/v1"
+GIT_ANCHOR_WITNESS_SCHEMA = "noema-git-anchor-witness/v1"
+MAX_GIT_WITNESS_OBJECT_BYTES = 131_072
+MAX_GIT_WITNESS_BASE64_BYTES = 174_764
 MAX_SPECIMENS = 16
 MAX_SOURCE_SPANS = 32_768
 MAX_QUESTIONS = 256
@@ -8950,6 +8955,8 @@ def _corpus_evidence_record(value: object, field: str = "corpus.evidence") -> di
             "profiles",
             "repository_commit",
             "repository_tree",
+            "repository_witness",
+            "repository_witness_sha256",
             "schema",
         },
         field,
@@ -8961,6 +8968,7 @@ def _corpus_evidence_record(value: object, field: str = "corpus.evidence") -> di
         "evaluation": "evidence/evaluation.json",
         "measurement": "evidence/measurement.json",
         "profiles": "profiles/measurement.json",
+        "repository_witness": "evidence/git-anchor-witness.json",
     }
     for name, expected in expected_paths.items():
         if _relative_path(record[name], f"{field}.{name}") != expected:
@@ -8972,6 +8980,7 @@ def _corpus_evidence_record(value: object, field: str = "corpus.evidence") -> di
         "measurement_sha256",
         "packet_sha256",
         "profile_set_sha256",
+        "repository_witness_sha256",
     ):
         _digest(record[name], f"{field}.{name}")
     for name in ("repository_commit", "repository_tree"):
@@ -8980,7 +8989,163 @@ def _corpus_evidence_record(value: object, field: str = "corpus.evidence") -> di
     return record
 
 
-def _verify_git_anchor(root: Path, commit: str, tree: str) -> None:
+def _git_object_id(kind: str, raw: bytes) -> str:
+    header = f"{kind} {len(raw)}\0".encode("ascii")
+    return sha1(header + raw, usedforsecurity=False).hexdigest()
+
+
+def _git_commit_shape(raw: bytes, field: str) -> tuple[str, list[str]]:
+    headers, separator, _message = raw.partition(b"\n\n")
+    if not separator:
+        refuse("NOE-E-EVALUATION.TREE", field, "witness commit has no header boundary")
+    lines = headers.split(b"\n")
+    top_level = [line for line in lines if not line.startswith(b" ")]
+    trees = [line[5:] for line in top_level if line.startswith(b"tree ")]
+    parents = [line[7:] for line in top_level if line.startswith(b"parent ")]
+    signatures = [
+        index for index, line in enumerate(lines)
+        if line.startswith(b"gpgsig ")
+    ]
+    if (
+        not lines
+        or lines[0].startswith(b" ")
+        or not top_level
+        or len(trees) != 1
+        or top_level[0] != b"tree " + trees[0]
+    ):
+        refuse("NOE-E-EVALUATION.TREE", field, "witness commit tree header is invalid")
+    references = [*trees, *parents]
+    if any(re.fullmatch(rb"[0-9a-f]{40}", value) is None for value in references):
+        refuse("NOE-E-EVALUATION.TREE", field, "witness commit object identity is invalid")
+    if len(signatures) != 1:
+        refuse("NOE-E-EVALUATION.TREE", field, "witness commit lacks one SSH signature block")
+    start = signatures[0]
+    end = next(
+        (
+            index for index in range(start + 1, len(lines))
+            if not lines[index].startswith(b" ")
+        ),
+        len(lines),
+    )
+    signature = lines[start:end]
+    if (
+        signature[0] != b"gpgsig -----BEGIN SSH SIGNATURE-----"
+        or len(signature) < 3
+        or signature[-1] != b" -----END SSH SIGNATURE-----"
+        or any(not line.startswith(b" ") for line in signature[1:])
+    ):
+        refuse("NOE-E-EVALUATION.TREE", field, "witness commit SSH signature block is malformed")
+    return trees[0].decode("ascii"), [value.decode("ascii") for value in parents]
+
+
+def _git_anchor_witness(
+    value: object,
+    commit: str,
+    tree: str,
+    field: str = "corpus.evidence.repository_witness",
+) -> dict[str, object]:
+    record = _exact_keys(
+        value,
+        {
+            "carrier_commit",
+            "objects",
+            "repository_commit",
+            "repository_tree",
+            "schema",
+        },
+        field,
+    )
+    if record["schema"] != GIT_ANCHOR_WITNESS_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", f"{field}.schema", "unsupported Git-anchor witness schema")
+    if record["repository_commit"] != commit or record["repository_tree"] != tree:
+        refuse("NOE-E-EVALUATION.TREE", field, "witness names a different evidence anchor")
+    carrier = str(record["carrier_commit"])
+    for name, value_ in (
+        ("carrier_commit", carrier),
+        ("repository_commit", commit),
+        ("repository_tree", tree),
+    ):
+        if re.fullmatch(r"[0-9a-f]{40}", value_) is None:
+            refuse("NOE-E-EVALUATION.TREE", f"{field}.{name}", "witness Git identity is invalid")
+    objects_value = record["objects"]
+    if not isinstance(objects_value, list) or len(objects_value) != 3:
+        refuse("NOE-E-EVALUATION.TREE", f"{field}.objects", "witness must carry exactly three Git objects")
+    objects: dict[str, tuple[str, bytes]] = {}
+    for index, value_ in enumerate(objects_value):
+        item_field = f"{field}.objects[{index}]"
+        item = _exact_keys(value_, {"data_base64", "oid", "type"}, item_field)
+        kind = item["type"]
+        if not isinstance(kind, str) or kind not in {"commit", "tree"}:
+            refuse("NOE-E-EVALUATION.TREE", f"{item_field}.type", "witness Git object type is invalid")
+        oid = str(item["oid"])
+        if re.fullmatch(r"[0-9a-f]{40}", oid) is None:
+            refuse("NOE-E-EVALUATION.TREE", f"{item_field}.oid", "witness Git object identity is invalid")
+        encoded = _safe_text(
+            item["data_base64"],
+            f"{item_field}.data_base64",
+            MAX_GIT_WITNESS_BASE64_BYTES,
+        )
+        try:
+            raw = base64.b64decode(encoded, validate=True)
+        except (binascii.Error, ValueError):
+            refuse("NOE-E-EVALUATION.TREE", f"{item_field}.data_base64", "witness Git object is not canonical base64")
+        if (
+            not raw
+            or len(raw) > MAX_GIT_WITNESS_OBJECT_BYTES
+            or base64.b64encode(raw).decode("ascii") != encoded
+        ):
+            refuse("NOE-E-EVALUATION.TREE", f"{item_field}.data_base64", "witness Git object is not canonical base64")
+        if _git_object_id(str(kind), raw) != oid:
+            refuse("NOE-E-EVALUATION.TREE", item_field, "witness Git object bytes disagree with their identity")
+        if oid in objects:
+            refuse("NOE-E-EVALUATION.TREE", f"{field}.objects", "witness Git object identity is repeated")
+        objects[oid] = (str(kind), raw)
+    expected = {commit, tree, carrier}
+    if set(objects) != expected or len(expected) != 3:
+        refuse("NOE-E-EVALUATION.TREE", f"{field}.objects", "witness Git object inventory differs from its anchor")
+    anchor_kind, anchor_raw = objects[commit]
+    tree_kind, _tree_raw = objects[tree]
+    carrier_kind, carrier_raw = objects[carrier]
+    if (anchor_kind, tree_kind, carrier_kind) != ("commit", "tree", "commit"):
+        refuse("NOE-E-EVALUATION.TREE", f"{field}.objects", "witness Git object roles are invalid")
+    anchor_tree, _anchor_parents = _git_commit_shape(anchor_raw, f"{field}.repository_commit")
+    carrier_tree, carrier_parents = _git_commit_shape(carrier_raw, f"{field}.carrier_commit")
+    if anchor_tree != tree:
+        refuse("NOE-E-EVALUATION.TREE", field, "witness commit names a different repository tree")
+    if carrier_parents != [commit] or re.fullmatch(r"[0-9a-f]{40}", carrier_tree) is None:
+        refuse("NOE-E-EVALUATION.TREE", field, "witness carrier is not one direct child of the anchor")
+    return record
+
+
+def _load_git_anchor_witness(
+    root: Path,
+    evidence: dict[str, object],
+    *,
+    snapshots: _SnapshotSet | None = None,
+) -> dict[str, object]:
+    relative = str(evidence["repository_witness"])
+    field = "corpus.evidence.repository_witness"
+    raw, identity = _read_repository_regular(root, relative, field, MAX_INPUT_BYTES)
+    if snapshots is not None:
+        snapshots.add_file(root / relative, identity, field)
+    if sha256(raw).hexdigest() != evidence["repository_witness_sha256"]:
+        refuse("NOE-E-DIGEST.EVIDENCE", field, "witness bytes differ from the corpus anchor")
+    value = _decode_json(raw, field, canonical=True, maximum_depth=MAX_DEPTH + 4)
+    return _git_anchor_witness(
+        value,
+        str(evidence["repository_commit"]),
+        str(evidence["repository_tree"]),
+        field,
+    )
+
+
+def _verify_git_anchor(
+    root: Path,
+    commit: str,
+    tree: str,
+    witness: dict[str, object],
+) -> None:
+    _git_anchor_witness(witness, commit, tree)
     try:
         resolved = subprocess.run(
             ["/usr/bin/git", "-C", str(root), "rev-parse", f"{commit}^{{tree}}"],
@@ -8999,13 +9164,42 @@ def _verify_git_anchor(root: Path, commit: str, tree: str) -> None:
     except (OSError, subprocess.TimeoutExpired):
         refuse("NOE-E-EVALUATION.TREE", "repository", "evidence Git anchor is unavailable")
     resolved_tree = resolved.stdout.decode("ascii", errors="ignore").strip()
-    if resolved.returncode != 0 or resolved_tree != tree or ancestor.returncode != 0:
-        refuse("NOE-E-EVALUATION.TREE", "repository", "evidence Git anchor is absent, changed or outside current history")
+    if resolved.returncode == 0 and resolved_tree != tree:
+        refuse("NOE-E-EVALUATION.TREE", "repository", "evidence Git anchor resolves to a different tree")
+    if resolved.returncode == 0 and ancestor.returncode == 0:
+        return
+    try:
+        shallow = subprocess.run(
+            ["/usr/bin/git", "-C", str(root), "rev-parse", "--is-shallow-repository"],
+            check=False,
+            capture_output=True,
+            timeout=10,
+            env={},
+        )
+        head = subprocess.run(
+            ["/usr/bin/git", "-C", str(root), "rev-parse", "--verify", "HEAD^{commit}"],
+            check=False,
+            capture_output=True,
+            timeout=10,
+            env={},
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        refuse("NOE-E-EVALUATION.TREE", "repository", "evidence Git anchor is unavailable")
+    head_commit = head.stdout.decode("ascii", errors="ignore").strip()
+    if (
+        shallow.returncode == 0
+        and shallow.stdout == b"true\n"
+        and head.returncode == 0
+        and re.fullmatch(r"[0-9a-f]{40}", head_commit) is not None
+    ):
+        return
+    refuse("NOE-E-EVALUATION.TREE", "repository", "evidence Git anchor is absent, changed or outside current history")
 
 
 def _repository_anchor(
     corpus: dict[str, object],
     root: Path,
+    manifest_path: Path,
     *,
     require_clean: bool = False,
 ) -> tuple[str, str]:
@@ -9014,7 +9208,8 @@ def _repository_anchor(
     evidence = _corpus_evidence_record(corpus["evidence"])
     commit = str(evidence["repository_commit"])
     tree = str(evidence["repository_tree"])
-    _verify_git_anchor(root, commit, tree)
+    witness = _load_git_anchor_witness(manifest_path.parent, evidence)
+    _verify_git_anchor(root, commit, tree, witness)
     return commit, tree
 
 
@@ -9475,6 +9670,7 @@ def measure_corpus(
     repository_commit, repository_tree = _repository_anchor(
         corpus,
         repository_root,
+        manifest_path,
         require_clean=live_profiles,
     )
     results: list[dict[str, object]] = []
@@ -10820,6 +11016,7 @@ def emit_evaluation_packet(
     commit_sha, tree_sha = _repository_anchor(
         corpus,
         repository_root,
+        manifest_path,
         require_clean=live_profiles,
     )
     packet, manifest_raw, files = _build_evaluation_packet(
@@ -11702,7 +11899,8 @@ def _verify_corpus_evidence(
     repository_root = Path(__file__).resolve().parents[1]
     repository_commit = str(evidence["repository_commit"])
     repository_tree = str(evidence["repository_tree"])
-    _verify_git_anchor(repository_root, repository_commit, repository_tree)
+    witness = _load_git_anchor_witness(root, evidence, snapshots=snapshots)
+    _verify_git_anchor(repository_root, repository_commit, repository_tree, witness)
 
     profiles_relative = str(evidence["profiles"])
     profiles_raw, profiles_identity = _read_repository_regular(
