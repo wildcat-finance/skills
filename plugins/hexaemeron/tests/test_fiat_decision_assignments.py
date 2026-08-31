@@ -1,0 +1,435 @@
+"""Issue 888: Fiat binds merge-time ADR assignments to signed composition.
+
+The Hypomnema allocator owns numbering and byte transformation.  These cases
+exercise only Fiat's evidence boundary: replay the canonical report, compare
+the immutable candidate tree, verify the signed trailer sequence, and retain
+only a replayable active receipt.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest import mock
+
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+HEXCTL = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+ALLOCATOR = (
+    ROOT
+    / "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
+)
+COAUTHOR = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
+ORIGIN = "Wildcat-Origin: shoggoth"
+
+
+def controller_module():
+    spec = importlib.util.spec_from_file_location(
+        "hexctl_fiat_decision_assignments_under_test", HEXCTL
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def git(directory: Path, *args: str, check: bool = True) -> str:
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_")
+    }
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(directory),
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "tag.gpgsign=false",
+            *args,
+        ],
+        check=check,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+    return result.stdout.strip()
+
+
+def write(directory: Path, relative: str, content: str) -> None:
+    target = directory / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+
+
+def commit_all(directory: Path, message: str) -> str:
+    git(directory, "add", "-A")
+    git(directory, "commit", "--quiet", "--no-gpg-sign", "-m", message)
+    return git(directory, "rev-parse", "HEAD")
+
+
+class AssignmentRepository:
+    def __init__(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.path = Path(self.temporary.name)
+        git(self.path, "init", "--quiet", "-b", "main")
+        git(self.path, "config", "user.name", "Fixture")
+        git(self.path, "config", "user.email", "fixture@example.invalid")
+        write(self.path, ".gitignore", ".hexaemeron/\n")
+        write(
+            self.path,
+            "docs/decisions/ADR-060-existing.md",
+            "# ADR-060: Existing\n\nStatus: accepted\n",
+        )
+        self.base = commit_all(self.path, "base")
+        git(self.path, "checkout", "--quiet", "-b", "product")
+        write(
+            self.path,
+            "docs/decisions/drafts/alpha-choice.md",
+            "# Decision: Alpha choice\n\nStatus: proposed\n",
+        )
+        self.product = commit_all(self.path, "product")
+        self.report_path = ".hexaemeron/assignments.json"
+        self.plan()
+        self.report = self.read_report()
+        self.materialize_result_tree()
+        self.candidate = self.make_candidate()
+        git(
+            self.path,
+            "update-ref",
+            "refs/heads/candidate",
+            self.candidate,
+        )
+
+    def cleanup(self) -> None:
+        self.temporary.cleanup()
+
+    def plan(self) -> None:
+        subprocess.run(
+            [
+                "python3",
+                str(ALLOCATOR),
+                "plan",
+                "--repo",
+                str(self.path),
+                "--base",
+                self.base,
+                "--base-ref",
+                "refs/heads/main",
+                "--product",
+                self.product,
+                "--report",
+                self.report_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    def read_report(self) -> dict:
+        return json.loads((self.path / self.report_path).read_text(encoding="ascii"))
+
+    def materialize_result_tree(self) -> None:
+        subprocess.run(
+            [
+                "python3",
+                str(ALLOCATOR),
+                "apply",
+                "--repo",
+                str(self.path),
+                "--report",
+                self.report_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        git(self.path, "add", "-A")
+        self.asserted_result_tree = git(self.path, "write-tree")
+        if self.asserted_result_tree != self.report["result_tree"]:
+            raise AssertionError("fixture apply did not materialize the reported tree")
+        git(self.path, "reset", "--quiet", "--hard", self.product)
+
+    def write_report(self, report: dict) -> None:
+        raw = json.dumps(
+            report,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ) + "\n"
+        (self.path / self.report_path).write_text(raw, encoding="ascii")
+
+    def message(self, *, mappings=None, base=None) -> str:
+        rows = self.report["mappings"] if mappings is None else mappings
+        base = self.base if base is None else base
+        lines = ["Assign decision records", "", f"ADR-Assignment-Base: {base}"]
+        lines.extend(
+            f"ADR-Assignment: {row['identity']}=ADR-{row['number_text']}"
+            for row in rows
+        )
+        lines.extend((COAUTHOR, ORIGIN))
+        return "\n".join(lines)
+
+    def make_candidate(
+        self,
+        *,
+        tree: str | None = None,
+        parent: str | None = None,
+        message: str | None = None,
+    ) -> str:
+        return git(
+            self.path,
+            "commit-tree",
+            "--no-gpg-sign",
+            tree or self.report["result_tree"],
+            "-p",
+            parent or self.product,
+            "-m",
+            message or self.message(),
+        )
+
+
+class FiatDecisionAssignmentTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.module = controller_module()
+
+    def setUp(self) -> None:
+        self.repo = AssignmentRepository()
+
+    def tearDown(self) -> None:
+        self.repo.cleanup()
+
+    def refusal(self, callable_object, *args, **kwargs) -> str:
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as stopped:
+            callable_object(*args, **kwargs)
+        self.assertEqual(stopped.exception.code, 2)
+        return stderr.getvalue()
+
+    def receipt(self, *, candidate=None, candidate_ref="refs/heads/candidate"):
+        with mock.patch.object(
+            self.module,
+            "verify_local_commit",
+            return_value=candidate or self.repo.candidate,
+        ) as verifier:
+            receipt = self.module.decision_assignment_receipt(
+                str(self.repo.path),
+                self.repo.report_path,
+                candidate or self.repo.candidate,
+                candidate_ref=candidate_ref,
+            )
+        verifier.assert_called_once()
+        return receipt
+
+    def test_exact_report_candidate_and_ordered_trailers_are_receipted(self):
+        receipt = self.receipt()
+        self.assertEqual(receipt["schema"], "fiat-decision-assignment-composition/v1")
+        self.assertEqual(receipt["report_schema"], "fiat-decision-assignments/v1")
+        self.assertEqual(receipt["base"], self.repo.base)
+        self.assertEqual(receipt["product"], self.repo.product)
+        self.assertEqual(receipt["candidate"], self.repo.candidate)
+        self.assertEqual(receipt["result_tree"], self.repo.report["result_tree"])
+        self.assertEqual(receipt["mappings"], self.repo.report["mappings"])
+        self.assertRegex(receipt["report_sha256"], r"\A[0-9a-f]{64}\Z")
+        self.assertRegex(receipt["commit_message_sha256"], r"\A[0-9a-f]{64}\Z")
+
+    def test_stale_base_ref_refuses_before_a_receipt(self):
+        git(self.repo.path, "checkout", "--quiet", "main")
+        write(self.repo.path, "base-advance.txt", "advanced\n")
+        commit_all(self.repo.path, "base advance")
+        git(self.repo.path, "checkout", "--quiet", "product")
+        with mock.patch.object(self.module, "verify_local_commit"):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                self.repo.candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_altered_candidate_tree_refuses(self):
+        candidate = self.repo.make_candidate(
+            tree=git(self.repo.path, "rev-parse", f"{self.repo.product}^{{tree}}")
+        )
+        git(self.repo.path, "update-ref", "refs/heads/candidate", candidate)
+        with mock.patch.object(self.module, "verify_local_commit", return_value=candidate):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_mismatched_input_blob_refuses(self):
+        report = self.repo.read_report()
+        report["mappings"][0]["input_blob"] = "0" * len(
+            report["mappings"][0]["input_blob"]
+        )
+        self.repo.write_report(report)
+        with mock.patch.object(self.module, "verify_local_commit"):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                self.repo.candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_mismatched_output_blob_refuses(self):
+        report = self.repo.read_report()
+        report["mappings"][0]["output_blob"] = "0" * len(
+            report["mappings"][0]["output_blob"]
+        )
+        self.repo.write_report(report)
+        with mock.patch.object(self.module, "verify_local_commit"):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                self.repo.candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_unordered_assignment_trailers_refuse(self):
+        second = dict(self.repo.report["mappings"][0])
+        second["identity"] = "adr/zeta-choice"
+        second["number_text"] = "062"
+        message = self.repo.message(mappings=[second, self.repo.report["mappings"][0]])
+        candidate = self.repo.make_candidate(message=message)
+        git(self.repo.path, "update-ref", "refs/heads/candidate", candidate)
+        with mock.patch.object(self.module, "verify_local_commit", return_value=candidate):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_extra_assignment_trailer_refuses(self):
+        message = self.repo.message() + "\nADR-Assignment: adr/extra=ADR-999"
+        candidate = self.repo.make_candidate(message=message)
+        git(self.repo.path, "update-ref", "refs/heads/candidate", candidate)
+        with mock.patch.object(self.module, "verify_local_commit", return_value=candidate):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_unsigned_candidate_refuses(self):
+        message = self.refusal(
+            self.module.decision_assignment_receipt,
+            str(self.repo.path),
+            self.repo.report_path,
+            self.repo.candidate,
+            candidate_ref="refs/heads/candidate",
+        )
+        self.assertIn("signature", message)
+
+    def test_moved_candidate_ref_refuses(self):
+        git(
+            self.repo.path,
+            "update-ref",
+            "refs/heads/candidate",
+            self.repo.product,
+        )
+        with mock.patch.object(self.module, "verify_local_commit"):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                self.repo.candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+
+    def test_dirty_worktree_refuses_without_mutation(self):
+        write(self.repo.path, "dirty.txt", "dirty\n")
+        before = git(self.repo.path, "status", "--porcelain=v1")
+        with mock.patch.object(self.module, "verify_local_commit"):
+            self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                self.repo.candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+        self.assertEqual(git(self.repo.path, "status", "--porcelain=v1"), before)
+
+    def test_partial_receipt_refuses_replay(self):
+        receipt = self.receipt()
+        receipt.pop("result_tree")
+        with mock.patch.object(self.module, "verify_local_commit"):
+            self.refusal(
+                self.module.replay_decision_assignment_receipt,
+                str(self.repo.path),
+                receipt,
+            )
+
+    def test_canonical_receipt_replays_after_recovery_round_trip(self):
+        receipt = self.receipt()
+        recovered = json.loads(json.dumps(receipt, sort_keys=True))
+        with mock.patch.object(
+            self.module,
+            "verify_local_commit",
+            return_value=self.repo.candidate,
+        ):
+            replayed = self.module.replay_decision_assignment_receipt(
+                str(self.repo.path), recovered
+            )
+        self.assertEqual(replayed, receipt)
+
+    def test_superseded_assignment_cannot_remain_in_active_ancestry(self):
+        old = self.receipt()
+        descendant = self.repo.make_candidate(parent=self.repo.candidate)
+        current = dict(old, candidate=descendant)
+        self.refusal(
+            self.module.require_decision_assignment_supersession,
+            str(self.repo.path),
+            old,
+            current,
+        )
+
+    def test_replacement_assignment_may_be_a_sibling(self):
+        old = self.receipt()
+        replacement = self.repo.make_candidate(
+            message=self.repo.message().replace(
+                "Assign decision record", "Replace decision assignment", 1
+            )
+        )
+        self.assertNotEqual(replacement, self.repo.candidate)
+        current = dict(old, candidate=replacement)
+        self.module.require_decision_assignment_supersession(
+            str(self.repo.path), old, current
+        )
+
+    def test_read_only_command_is_exposed(self):
+        args = self.module.build_parser().parse_args(
+            [
+                "verify-decision-assignments",
+                "--report",
+                self.repo.report_path,
+                "--candidate",
+                self.repo.candidate,
+                "--candidate-ref",
+                "refs/heads/candidate",
+            ]
+        )
+        self.assertIs(args.fn, self.module.cmd_verify_decision_assignments)
+
+
+if __name__ == "__main__":
+    unittest.main()

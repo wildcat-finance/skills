@@ -401,7 +401,11 @@ class IncidentAggregateTests(unittest.TestCase):
                 mock.patch.object(
                     self.module,
                     "remote_branch_tip",
-                    side_effect=[self.fixture["sync_commit"], self.fixture["base_head"]],
+                    side_effect=[
+                        self.fixture["sync_commit"],
+                        self.fixture["base_head"],
+                        self.fixture["sync_commit"],
+                    ],
                 ),
                 mock.patch.object(
                     self.module,

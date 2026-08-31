@@ -555,6 +555,31 @@
       "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
       "selector": "test_restore_ref_substitution_and_replay_refuse_without_rewrite"
     },
+    "fiat-decision-assignment-m": {
+      "claim": "A partial or malformed composition receipt refuses before it can be replayed or carried to integration.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_partial_receipt_refuses_replay"
+    },
+    "fiat-decision-assignment-o": {
+      "claim": "The contract keeps Fiat read-only and leaves number allocation and the report transform under Hypomnema's authority.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_decision_assignment_contract_is_read_only_and_source_bound"
+    },
+    "fiat-decision-assignment-p": {
+      "claim": "The exact canonical report, signed candidate, immutable blobs and ordered stable-identity trailers produce one replayable receipt.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_exact_report_candidate_and_ordered_trailers_are_receipted"
+    },
+    "fiat-decision-assignment-r": {
+      "claim": "The canonical receipt survives a JSON recovery round trip and replays from unchanged immutable evidence.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_canonical_receipt_replays_after_recovery_round_trip"
+    },
+    "fiat-decision-assignment-s": {
+      "claim": "A superseded assignment retained in active ancestry cannot inherit the replacement receipt's authority.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_superseded_assignment_cannot_remain_in_active_ancestry"
+    },
     "fiat-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
@@ -1795,6 +1820,22 @@
       },
       "group": "executable",
       "promise_id": "fiat-controller-checkpoint",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-decision-assignment-m",
+        "O": "fiat-decision-assignment-o",
+        "P": "fiat-decision-assignment-p",
+        "R": "fiat-decision-assignment-r",
+        "S": "fiat-decision-assignment-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-decision-assignment-composition",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -3060,7 +3101,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc"
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3298,7 +3339,21 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
+      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    },
+    "fiat-decision-assignment-composition": {
+      "bindings": {
+        "evidence_classes": "checked immutable composition evidence and recorded receipt joined to the canonical Evidence classes field",
+        "evidence_references": "canonical report digest, exact base and product, signed candidate tree, ordered mappings, input and output blobs, message trailers, clean worktree, stable refs and supersession history",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the read-only verifier, receipt schema and canonical promise heading",
+        "scope": "one canonical Hypomnema report and its exact immutable Git composition objects",
+        "subject": "assignment base, unnumbered product, signed candidate and ordered stable-identity mapping",
+        "transition": "verified decision assignment receipt carried to active sync and final integration joined to the canonical Authorises field",
+        "unknowns": "decision-text correctness, publication, external merge enforcement and number reservation"
+      },
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -3312,7 +3367,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3326,7 +3381,7 @@
         "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -3340,7 +3395,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3354,7 +3409,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3368,7 +3423,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -3382,7 +3437,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -3396,7 +3451,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

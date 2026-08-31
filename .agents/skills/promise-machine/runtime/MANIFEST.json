@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 995,
-  "total_bytes": 21614415,
+  "total_bytes": 21646811,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1911,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 55162,
+      "bytes": 55830,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "6980d0339aa4c6c6d172599428f784acdab83794fe1cbb8d13fc8d102dc6ed00",
+      "sha256": "f647e87b91d8948f0446f4c74b1d80526a514973e829d5b88dd1ab57a93b1321",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 64405,
+      "bytes": 68004,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "0edddef2732be86831f560762808e6bb298574b300580a08a852b16dd6404ddc",
+      "sha256": "f8422405d5369fb4d11a4511416f0940e755170976ef96b2f1cd9bb85434deb4",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1953,9 +1953,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 34195,
+      "bytes": 36239,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "c648de4b406df0e0685c527435191ccd7d8ba548f02d297a95d3ecb9303b4b0b",
+      "sha256": "80f6a4c12d287ad27540c5e1fbfd7f2c8a799685fec199e233b570c618c596ee",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
@@ -1983,9 +1983,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 530341,
+      "bytes": 556426,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
+      "sha256": "a2d7cf12247854ad341f1dbc42b41411643592382c0440e8b7b1f2c14133c4f3",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
