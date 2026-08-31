@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21557376,
+  "total_bytes": 21558478,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1911,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 54453,
+      "bytes": 55555,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "3c9a61a77bba422af1ca17a70adff67b0f43db0856da932a675df1fe0ca43529",
+      "sha256": "23ad56b3e1fcaa4991734d0a340a0cfd37a57a4795d8eaab47aa2d1cae1bc52c",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
       "bytes": 64331,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "9bd94e7977d1df73dad27b59f9b179b9dc835bd0b866f435094dd4f297a89cc2",
+      "sha256": "ed0e0708937d209bebc58d127c3a9c1c108662140ce8c4f096b504f1f768f20a",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
