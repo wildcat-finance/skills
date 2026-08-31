@@ -11,7 +11,8 @@
       "name": "fuzz campaign: foundry invariant",
       "argv": [
         "forge",
-        "test"
+        "test",
+        "-vv"
       ],
       "determinism": "nondeterministic",
       "detail": {
@@ -26,9 +27,1343 @@
         "corpus_digest": {
           "sha256": "89b4703ab78cb18db933e8faf5c38d964993648542c0e068827f6525fb333da0"
         },
-        "laws_searched": 10,
+        "laws_exercised": {
+          "conservation/value-conserved/v1": {
+            "surfaces": [
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_is_empty_for_the_pair_laws_before_the_first_call",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ConservationCounterexamples",
+                "function": "test_value_conserved_counterexample",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sound_system_at_rest_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sum_that_overflows_is_reported_as_a_violation",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_accrues_at_rest_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_claim_haircut_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_compounds_per_step_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_debt_forgiven_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_every_law_returns_a_detail_whichever_way_it_decides",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_fee_from_queued_breaks_the_pooled_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_minted_claims_breaks_conservation_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_no_law_reverts_at_the_arithmetic_limit",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_promised_breaks_the_partition_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_reserved_breaks_reserve_backing_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_payable_beyond_reserves_breaks_the_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_queue_jumped_breaks_the_ordering_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_the_sound_reference_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_a_queueless_target_still_gets_the_core_reasons",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_both_prefixes_answer_for_the_new_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_echidna_entry_points_answer",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_carries_a_reason_for_every_verdict",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_judges_a_target_it_does_not_front",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_delinquent_market_can_take_no_fee_from_a_queued_batch",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_holds_every_one_state_law_it_claims",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "SoundInvariantTest",
+                "function": "invariant_value_is_conserved",
+                "kind": "invariant-fuzz",
+                "outcome": "passed"
+              }
+            ],
+            "evaluations": 64
+          },
+          "conservation/reserves-backed-by-claims/v1": {
+            "surfaces": [
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_is_empty_for_the_pair_laws_before_the_first_call",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ConservationCounterexamples",
+                "function": "test_reserves_backed_by_claims_counterexample",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sound_system_at_rest_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sum_that_overflows_is_reported_as_a_violation",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_accrues_at_rest_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_claim_haircut_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_compounds_per_step_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_debt_forgiven_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_every_law_returns_a_detail_whichever_way_it_decides",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_fee_from_queued_breaks_the_pooled_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_minted_claims_breaks_conservation_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_no_law_reverts_at_the_arithmetic_limit",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_promised_breaks_the_partition_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_reserved_breaks_reserve_backing_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_payable_beyond_reserves_breaks_the_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_queue_jumped_breaks_the_ordering_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_the_sound_reference_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_a_queueless_target_still_gets_the_core_reasons",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_both_prefixes_answer_for_the_new_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_carries_a_reason_for_every_verdict",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_judges_a_target_it_does_not_front",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_delinquent_market_can_take_no_fee_from_a_queued_batch",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_holds_every_one_state_law_it_claims",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "SoundInvariantTest",
+                "function": "invariant_reserves_are_backed_by_claims",
+                "kind": "invariant-fuzz",
+                "outcome": "passed"
+              }
+            ],
+            "evaluations": 64
+          },
+          "conservation/held-assets-partitioned/v1": {
+            "surfaces": [
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_is_empty_for_the_pair_laws_before_the_first_call",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ConservationCounterexamples",
+                "function": "test_held_assets_partitioned_counterexample",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sound_system_at_rest_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sum_that_overflows_is_reported_as_a_violation",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_accrues_at_rest_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_claim_haircut_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_compounds_per_step_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_debt_forgiven_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_every_law_returns_a_detail_whichever_way_it_decides",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_fee_from_queued_breaks_the_pooled_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_minted_claims_breaks_conservation_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_no_law_reverts_at_the_arithmetic_limit",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_promised_breaks_the_partition_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_reserved_breaks_reserve_backing_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_payable_beyond_reserves_breaks_the_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_queue_jumped_breaks_the_ordering_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_the_sound_reference_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_a_queueless_target_still_gets_the_core_reasons",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_carries_a_reason_for_every_verdict",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_judges_a_target_it_does_not_front",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_borrower_cannot_take_the_required_reserve",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_holds_every_one_state_law_it_claims",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "SoundInvariantTest",
+                "function": "invariant_held_assets_stay_partitioned",
+                "kind": "invariant-fuzz",
+                "outcome": "passed"
+              }
+            ],
+            "evaluations": 64
+          },
+          "accrual/debt-falls-only-against-payment/v1": {
+            "surfaces": [
+              {
+                "contract": "AccrualCounterexamples",
+                "function": "test_debt_falls_only_against_payment_counterexample",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_accrues_at_rest_breaks_the_rest_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_claim_haircut_breaks_the_claim_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_debt_forgiven_breaks_the_payment_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_no_transition_of_the_sound_reference_breaks_a_pair_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_laws_that_need_no_queue_judge_a_pair_without_one",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_one_state_specimens_break_no_pair_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_other_pair_specimens_break_no_pair_law_in_passing",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_driver_catches_a_claim_written_down",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_no_transition_of_the_model_breaks_a_succession_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              }
+            ],
+            "recorded_calls": 5
+          },
+          "accrual/no-accrual-at-rest/v1": {
+            "surfaces": [
+              {
+                "contract": "AccrualCounterexamples",
+                "function": "test_no_accrual_at_rest_counterexample",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_a_pair_at_different_times_is_refused",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_accrues_at_rest_breaks_the_rest_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_claim_haircut_breaks_the_claim_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_debt_forgiven_breaks_the_payment_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_no_transition_of_the_sound_reference_breaks_a_pair_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_laws_that_need_no_queue_judge_a_pair_without_one",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_one_state_specimens_break_no_pair_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_other_pair_specimens_break_no_pair_law_in_passing",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_driver_catches_a_claim_written_down",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_no_transition_of_the_model_breaks_a_succession_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              }
+            ],
+            "recorded_calls": 5
+          },
+          "accrual/path-independent/v1": {
+            "surfaces": [
+              {
+                "contract": "AccrualCounterexamples",
+                "function": "test_accrual_path_independent_counterexample",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_a_bound_built_for_the_wrong_run_is_wrong_in_both_directions",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_a_pair_at_different_times_is_refused",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_compounding_per_step_breaks_path_independence_alone",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_no_other_specimen_breaks_path_independence",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_bound_holds_at_its_edge_and_not_beyond",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_sound_reference_is_path_independent",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_a_probe_built_for_the_wrong_run_passes_a_broken_system",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_probe_catches_compounding_and_clears_the_reference",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_penalised_market_is_not_path_independent",
+                "kind": "probe",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_solvent_market_is_path_independent",
+                "kind": "probe",
+                "outcome": "passed"
+              }
+            ]
+          },
+          "claims/recorded-claim-never-shrinks/v1": {
+            "surfaces": [
+              {
+                "contract": "ClaimsCounterexamples",
+                "function": "test_recorded_claim_never_shrinks_counterexample",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_accrues_at_rest_breaks_the_rest_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_an_unobserved_queue_is_refused",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_claim_haircut_breaks_the_claim_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_debt_forgiven_breaks_the_payment_law_alone",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_no_transition_of_the_sound_reference_breaks_a_pair_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_one_state_specimens_break_no_pair_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "PairsTest",
+                "function": "test_the_other_pair_specimens_break_no_pair_law_in_passing",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_driver_catches_a_claim_written_down",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_closed_batch_satisfies_the_claim_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_an_open_batch_grows_and_the_claim_law_refuses_it",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_no_transition_of_the_model_breaks_a_succession_law",
+                "kind": "deterministic-transition",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              }
+            ],
+            "recorded_calls": 5
+          },
+          "claims/queue-order-preserved/v1": {
+            "surfaces": [
+              {
+                "contract": "ClaimsCounterexamples",
+                "function": "test_queue_order_preserved_counterexample",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_is_empty_for_the_pair_laws_before_the_first_call",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sound_system_at_rest_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_accrues_at_rest_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_claim_haircut_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_compounds_per_step_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_debt_forgiven_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_every_law_returns_a_detail_whichever_way_it_decides",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_fee_from_queued_breaks_the_pooled_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_minted_claims_breaks_conservation_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_promised_breaks_the_partition_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_reserved_breaks_reserve_backing_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_payable_beyond_reserves_breaks_the_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_queue_jumped_breaks_the_ordering_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_the_sound_reference_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_echidna_entry_points_answer",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_carries_a_reason_for_every_verdict",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_judges_a_target_it_does_not_front",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_batch_paid_pro_rata_does_not_break_the_ordering",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_an_older_batch_is_settled_first",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_holds_every_one_state_law_it_claims",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "SoundInvariantTest",
+                "function": "invariant_the_queue_stays_in_order",
+                "kind": "invariant-fuzz",
+                "outcome": "passed"
+              }
+            ],
+            "evaluations": 64
+          },
+          "claims/reserves-cover-payable/v1": {
+            "surfaces": [
+              {
+                "contract": "ClaimsCounterexamples",
+                "function": "test_reserves_cover_payable_counterexample",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_is_empty_for_the_pair_laws_before_the_first_call",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sound_system_at_rest_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_accrues_at_rest_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_claim_haircut_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_compounds_per_step_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_debt_forgiven_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_every_law_returns_a_detail_whichever_way_it_decides",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_fee_from_queued_breaks_the_pooled_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_minted_claims_breaks_conservation_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_promised_breaks_the_partition_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_reserved_breaks_reserve_backing_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_payable_beyond_reserves_breaks_the_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_queue_jumped_breaks_the_ordering_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_the_sound_reference_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_carries_a_reason_for_every_verdict",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_judges_a_target_it_does_not_front",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_holds_every_one_state_law_it_claims",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_runs_through_the_shipped_adapter",
+                "kind": "driver-adapter",
+                "outcome": "passed"
+              },
+              {
+                "contract": "SoundInvariantTest",
+                "function": "invariant_reserves_cover_what_is_payable",
+                "kind": "invariant-fuzz",
+                "outcome": "passed"
+              }
+            ],
+            "evaluations": 64
+          },
+          "claims/pooled-claims-cover-open-batches/v1": {
+            "surfaces": [
+              {
+                "contract": "ClaimsCounterexamples",
+                "function": "test_pooled_claims_cover_open_batches_counterexample",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_a_pair_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_carries_the_reason_the_new_law_gave",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_is_empty_for_the_pair_laws_before_the_first_call",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "ExplainTest",
+                "function": "test_explain_names_the_quantities_that_disagreed",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_queue_law_reports_its_own_overflow",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_a_sound_system_at_rest_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_accrues_at_rest_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_claim_haircut_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_compounds_per_step_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_debt_forgiven_holds_every_one_state_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_every_law_returns_a_detail_whichever_way_it_decides",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_fee_from_queued_breaks_the_pooled_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_minted_claims_breaks_conservation_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_promised_breaks_the_partition_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_over_reserved_breaks_reserve_backing_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_payable_beyond_reserves_breaks_the_cover_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_queue_jumped_breaks_the_ordering_alone",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "CorpusTest",
+                "function": "test_the_sound_reference_holds_every_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_both_prefixes_answer_for_the_new_law",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_carries_a_reason_for_every_verdict",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "AdaptersTest",
+                "function": "test_the_observer_judges_a_target_it_does_not_front",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_a_delinquent_market_can_take_no_fee_from_a_queued_batch",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "WildcatTest",
+                "function": "test_the_model_holds_every_one_state_law_it_claims",
+                "kind": "deterministic",
+                "outcome": "passed"
+              },
+              {
+                "contract": "SoundInvariantTest",
+                "function": "invariant_pooled_claims_cover_open_batches",
+                "kind": "invariant-fuzz",
+                "outcome": "passed"
+              }
+            ],
+            "evaluations": 64
+          }
+        },
         "outcome": "passed",
-        "engine_version": "forge Version: 1.7.1"
+        "engine_version": "forge Version: 1.8.0"
       }
     }
   ]
