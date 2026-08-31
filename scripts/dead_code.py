@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Build a report-only dead-code inventory for one clean Git tree.
+"""Build a report-only dead-code inventory for one Git source snapshot.
 
 The command discovers tracked paths, applies hard Horos classifications and
 renders one model as text or JSON. Callers select bounded Python, repository,
 coverage and optional Solidity signals explicitly; selecting none records that
-no reachability result was established. It never deletes source and a finding
-count is never an exit gate.
+no reachability result was established. Committed reports and every baseline
+operation require a clean tree; ``report --worktree`` captures mutable tracked
+bytes into an immutable, baseline-ineligible snapshot. It never deletes source
+and a finding count is never an exit gate.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import importlib
 import io
 import json
 import os
@@ -32,10 +35,14 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable, Iterable, Sequence
 
-SCHEMA_ID = "dead-code-report/v1"
+SCHEMA_ID = "dead-code-report/v2"
 TOOL_ID = "dead-code"
 TOOL_VERSION = "1"
 STATUS_ID = "analysis"
+COMMIT_SOURCE_KIND = "commit"
+WORKTREE_SOURCE_KIND = "worktree-snapshot"
+SOURCE_KINDS = frozenset({COMMIT_SOURCE_KIND, WORKTREE_SOURCE_KIND})
+SNAPSHOT_RUNNER_MODULES = ("scripts.run_checks", "run_checks")
 BOUNDARY_PATH = Path(".horos") / "boundary.json"
 BOUNDARY_SCHEMA = 2
 BOUNDARY_TOOL = "horos"
@@ -197,6 +204,26 @@ class Universe:
 
 
 @dataclass(frozen=True)
+class SourceIdentity:
+    kind: str
+    identity: str
+    head_commit: str
+    git_tree: str
+    worktree_identity: str | None
+    baseline_eligible: bool
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "kind": self.kind,
+            "id": self.identity,
+            "head_commit": self.head_commit,
+            "git_tree": self.git_tree,
+            "worktree_identity": self.worktree_identity,
+            "baseline_eligible": self.baseline_eligible,
+        }
+
+
+@dataclass(frozen=True)
 class AnalyserRecord:
     record_id: str
     kind: str
@@ -296,6 +323,10 @@ class Report:
     universe: Universe
     statuses: tuple[AnalyserStatus, ...]
     findings: tuple[Finding, ...]
+    source: SourceIdentity | None = None
+
+    def resolved_source(self) -> SourceIdentity:
+        return self.source or committed_source(self.universe)
 
     def analysis_status(self) -> dict[str, str]:
         if not self.statuses:
@@ -322,10 +353,7 @@ class Report:
         return {
             "schema": SCHEMA_ID,
             "tool": {"id": TOOL_ID, "version": TOOL_VERSION},
-            "tree": {
-                "commit": self.universe.commit,
-                "git_tree": self.universe.tree,
-            },
+            "source": self.resolved_source().as_dict(),
             "universe": self.universe.as_dict(),
             "status": self.analysis_status(),
             "analysers": [status.as_dict() for status in self.statuses],
@@ -341,6 +369,38 @@ def digest_json(value: object) -> str:
         sort_keys=True,
     ).encode("utf-8")
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def source_identity(
+    kind: str,
+    head_commit: str,
+    git_tree: str,
+    worktree_identity: str | None,
+) -> str:
+    return digest_json(
+        {
+            "kind": kind,
+            "head_commit": head_commit,
+            "git_tree": git_tree,
+            "worktree_identity": worktree_identity,
+        }
+    )
+
+
+def committed_source(universe: Universe) -> SourceIdentity:
+    return SourceIdentity(
+        kind=COMMIT_SOURCE_KIND,
+        identity=source_identity(
+            COMMIT_SOURCE_KIND,
+            universe.commit,
+            universe.tree,
+            None,
+        ),
+        head_commit=universe.commit,
+        git_tree=universe.tree,
+        worktree_identity=None,
+        baseline_eligible=True,
+    )
 
 
 def _stop_process(process: subprocess.Popen[bytes]) -> None:
@@ -765,12 +825,14 @@ def discover(
     *,
     root_fd: int | None = None,
     commit: str | None = None,
+    require_clean: bool = True,
 ) -> Universe:
     owns_root_fd = root_fd is None
     if root_fd is None:
         root_fd = open_repository_directory(root)
     try:
-        require_clean_tree(root, root_fd=root_fd)
+        if require_clean:
+            require_clean_tree(root, root_fd=root_fd)
         recorded_commit = (
             resolve_commit(root, root_fd=root_fd)
             if commit is None
@@ -793,7 +855,8 @@ def discover(
                 f"discovery returned {len(analysed)} analysable paths from "
                 f"{len(tracked)} tracked; this is a collapsed walk"
             )
-        require_clean_tree(root, root_fd=root_fd)
+        if require_clean:
+            require_clean_tree(root, root_fd=root_fd)
     finally:
         if owns_root_fd:
             os.close(root_fd)
@@ -3278,7 +3341,7 @@ def collect(
 
 def validate_report(report: Report) -> None:
     universe = report.universe
-    _require_oid(universe.commit, "report commit")
+    _require_oid(universe.commit, "report revision")
     _require_oid(universe.tree, "report tree")
     if not universe.analysed:
         raise Refusal("report universe has no analysed paths")
@@ -3298,6 +3361,42 @@ def validate_report(report: Report) -> None:
     )
     if universe.identity != expected_universe_id:
         raise Refusal("report universe identity does not match its paths")
+
+    source = report.resolved_source()
+    if source.kind not in SOURCE_KINDS:
+        raise Refusal(f"report source kind is unknown: {source.kind}")
+    _require_sha256_identity(source.identity, "report source identity")
+    _require_oid(source.head_commit, "report source HEAD")
+    _require_oid(source.git_tree, "report source tree")
+    if source.git_tree != universe.tree:
+        raise Refusal("report source tree does not match the report universe")
+    if source.worktree_identity is not None:
+        _require_sha256_identity(
+            source.worktree_identity,
+            "report worktree identity",
+        )
+    expected_source_identity = source_identity(
+        source.kind,
+        source.head_commit,
+        source.git_tree,
+        source.worktree_identity,
+    )
+    if source.identity != expected_source_identity:
+        raise Refusal("report source identity does not match its fields")
+    if source.kind == COMMIT_SOURCE_KIND:
+        if source.worktree_identity is not None:
+            raise Refusal("committed report carries a worktree identity")
+        if not source.baseline_eligible:
+            raise Refusal("committed report is not baseline-eligible")
+        if source.head_commit != universe.commit:
+            raise Refusal("committed report source does not match its revision")
+    else:
+        if source.worktree_identity is None:
+            raise Refusal("worktree report has no captured worktree identity")
+        if source.baseline_eligible:
+            raise Refusal("worktree report cannot be baseline-eligible")
+        if universe.commit != universe.tree:
+            raise Refusal("worktree report revision is not its immutable snapshot tree")
 
     status_ids: set[str] = set()
     for item in report.statuses:
@@ -3387,11 +3486,179 @@ def build_report(
     analyser_ids: tuple[str, ...] = (),
     coverage_path: str | None = None,
     commit: str | None = None,
+    require_clean: bool = True,
+    source: SourceIdentity | None = None,
 ) -> Report:
-    universe = discover(root, root_fd=root_fd, commit=commit)
+    universe = discover(
+        root,
+        root_fd=root_fd,
+        commit=commit,
+        require_clean=require_clean,
+    )
     statuses, findings = collect(root, universe, analyser_ids, coverage_path)
-    report = Report(universe=universe, statuses=statuses, findings=findings)
+    report = Report(
+        universe=universe,
+        statuses=statuses,
+        findings=findings,
+        source=source,
+    )
     validate_report(report)
+    return report
+
+
+def _load_snapshot_runner():
+    failures: list[str] = []
+    for module_name in SNAPSHOT_RUNNER_MODULES:
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError as error:
+            top_level = module_name.partition(".")[0]
+            if error.name not in {module_name, top_level}:
+                raise
+            failures.append(module_name)
+            continue
+        required = (
+            "PlanError",
+            "SnapshotError",
+            "make_snapshot",
+            "snapshot_source_identity",
+            "verify_snapshot_sources",
+            "remove_snapshot",
+        )
+        missing = [name for name in required if not hasattr(module, name)]
+        if missing:
+            raise Refusal(
+                "checked snapshot runner omits required member(s): "
+                + ", ".join(missing)
+            )
+        return module
+    raise Refusal(
+        "checked snapshot runner is unavailable: " + ", ".join(failures)
+    )
+
+
+def _snapshot_git_environment() -> dict[str, str]:
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_") or name == "GIT_EXEC_PATH"
+    }
+    environment["GIT_CONFIG_NOSYSTEM"] = "1"
+    environment["GIT_CONFIG_GLOBAL"] = os.devnull
+    environment["GIT_PAGER"] = "cat"
+    environment["GIT_TERMINAL_PROMPT"] = "0"
+    environment.pop("GIT_EDITOR", None)
+    return environment
+
+
+def _snapshot_git(snapshot: Path, *arguments: str) -> str:
+    stdout, stderr, returncode = run_process(
+        ["git", *arguments],
+        cwd=snapshot,
+        timeout_seconds=GIT_TIMEOUT_SECONDS,
+        output_limit=MAX_GIT_OUTPUT_BYTES,
+        env=_snapshot_git_environment(),
+    )
+    if returncode != 0:
+        detail = decode_output(stderr, "snapshot git stderr").strip()
+        raise Refusal(
+            f"worktree snapshot git {arguments[0]} failed: "
+            + (detail or f"exit {returncode}")
+        )
+    return decode_output(stdout, "snapshot git stdout")
+
+
+def _materialise_worktree_tree(snapshot: Path) -> tuple[str, str]:
+    head_commit = _require_oid(
+        _snapshot_git(snapshot, "rev-parse", "HEAD").strip(),
+        "worktree snapshot HEAD",
+    )
+    _snapshot_git(snapshot, "add", "--update", "--", ".")
+    git_tree = _require_oid(
+        _snapshot_git(snapshot, "write-tree").strip(),
+        "worktree snapshot tree",
+    )
+    return head_commit, git_tree
+
+
+def build_worktree_report(
+    root: Path,
+    *,
+    analyser_ids: tuple[str, ...] = (),
+    coverage_path: str | None = None,
+) -> Report:
+    if coverage_path is not None or "coverage" in analyser_ids:
+        raise Refusal(
+            "--worktree cannot consume commit-bound coverage; "
+            "run a committed report for --coverage"
+        )
+
+    runner = _load_snapshot_runner()
+    nonce = "dead-code-" + uuid.uuid4().hex
+    snapshot: Path | None = None
+    report: Report | None = None
+    caught: BaseException | None = None
+    try:
+        snapshot = runner.make_snapshot(
+            root,
+            nonce,
+            share_objects=True,
+        )
+        raw_identity = runner.snapshot_source_identity(root, nonce)
+        if not isinstance(raw_identity, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", raw_identity
+        ):
+            raise Refusal("checked snapshot runner returned an invalid source identity")
+        worktree_identity = "sha256:" + raw_identity
+        integrity = runner.verify_snapshot_sources(root, nonce, snapshot)
+        if integrity.get("status") != "intact":
+            raise Refusal(
+                "worktree snapshot source verification did not remain intact: "
+                + json.dumps(integrity, sort_keys=True)
+            )
+        head_commit, git_tree = _materialise_worktree_tree(snapshot)
+        source = SourceIdentity(
+            kind=WORKTREE_SOURCE_KIND,
+            identity=source_identity(
+                WORKTREE_SOURCE_KIND,
+                head_commit,
+                git_tree,
+                worktree_identity,
+            ),
+            head_commit=head_commit,
+            git_tree=git_tree,
+            worktree_identity=worktree_identity,
+            baseline_eligible=False,
+        )
+        report = build_report(
+            snapshot,
+            analyser_ids=analyser_ids,
+            commit=git_tree,
+            require_clean=False,
+            source=source,
+        )
+    except (runner.PlanError, runner.SnapshotError) as error:
+        detail = getattr(error, "message", str(error))
+        caught = Refusal(f"worktree snapshot refused: {detail}")
+        caught.__cause__ = error
+    except BaseException as error:
+        caught = error
+
+    cleanup = runner.remove_snapshot(root, nonce)
+    cleanup_failed = cleanup not in {"removed", "not-owned"}
+    if report is not None and cleanup != "removed":
+        cleanup_failed = True
+    if cleanup_failed:
+        cleanup_error = Refusal(
+            f"worktree snapshot cleanup returned {cleanup}; inspect tmp/check-runner/{nonce}"
+        )
+        if caught is not None:
+            raise cleanup_error from caught
+        raise cleanup_error
+    if caught is not None:
+        raise caught
+    if report is None:
+        raise Refusal("worktree snapshot produced no report")
     return report
 
 
@@ -3853,13 +4120,16 @@ def _text_field(value: object) -> str:
 
 def render_text(report: Report) -> str:
     document = report.as_dict()
-    tree = document["tree"]
+    source = document["source"]
     universe = document["universe"]
     status = document["status"]
+    baseline = "eligible" if source["baseline_eligible"] else "ineligible"
     lines = [
         f"{TOOL_ID} {TOOL_VERSION} report  schema {document['schema']}",
-        f"commit    {tree['commit']}",
-        f"tree      {tree['git_tree']}",
+        f"source    {_text_field(source['kind'])}  {source['id']}",
+        f"head      {source['head_commit']}",
+        f"tree      {source['git_tree']}",
+        f"baseline  {baseline}",
         f"universe  {universe['id']}",
         (
             f"paths     {universe['tracked_count']} tracked, "
@@ -3868,6 +4138,8 @@ def render_text(report: Report) -> str:
         ),
         f"status    {_text_field(status['state'])}  {_text_field(status['detail'])}",
     ]
+    if source["worktree_identity"] is not None:
+        lines.insert(4, f"worktree  {source['worktree_identity']}")
     by_category = universe["excluded_by_category"]
     if by_category:
         summary = ", ".join(
@@ -4102,12 +4374,19 @@ def command_report(arguments: argparse.Namespace) -> int:
         coverage_path = getattr(arguments, "coverage", None)
         if arguments.output is not None:
             target = confine(root, arguments.output)
-        report = build_report(
-            root,
-            root_fd=root_fd,
-            analyser_ids=analyser_ids,
-            coverage_path=coverage_path,
-        )
+        if getattr(arguments, "worktree", False):
+            report = build_worktree_report(
+                root,
+                analyser_ids=analyser_ids,
+                coverage_path=coverage_path,
+            )
+        else:
+            report = build_report(
+                root,
+                root_fd=root_fd,
+                analyser_ids=analyser_ids,
+                coverage_path=coverage_path,
+            )
         rendered = render_json(report) if arguments.json else render_text(report)
         if arguments.output is None:
             sys.stdout.write(rendered)
@@ -4258,6 +4537,14 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument(
         "--coverage",
         help="coverage record below the owned .dead-code sink",
+    )
+    report.add_argument(
+        "--worktree",
+        action="store_true",
+        help=(
+            "analyse an immutable snapshot of tracked worktree bytes; "
+            "the report is never baseline-eligible"
+        ),
     )
     report.set_defaults(handler=command_report)
     baseline = subparsers.add_parser(
