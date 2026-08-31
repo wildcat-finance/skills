@@ -5063,6 +5063,30 @@ class SourceBindingTests(unittest.TestCase):
             for right in SPECIMEN_NAMES[index + 1 :]:
                 self.assertFalse(vocabularies[left] & vocabularies[right])
 
+    def test_source_authority_conditions_are_explicit_checked_facts(self):
+        expected = {
+            "fiat": "fiat-request-explicit",
+            "sapheneia": "destructive-action-confirmed",
+        }
+        for specimen, evidence in expected.items():
+            directory = specimen_directory(specimen)
+            records = noema._parse_source_lines((directory / "source.noe").read_bytes())
+            rule = next(
+                record
+                for record in records
+                if record[:2] == ["rule", "rule.authorized"]
+            )
+            proposition = rule[2][2][1]
+            self.assertEqual(
+                proposition,
+                ["core.checked", [":", "evidence", evidence]],
+            )
+            facts = {
+                item["id"]: item
+                for item in read_json(directory / "selection.json")["facts"]
+            }
+            self.assertEqual(facts[noema.fact_id(proposition)]["value"], "true")
+
     def test_corpus_record_cannot_promote_a_fully_mapped_specimen(self):
         record = copy.deepcopy(read_json(CORPUS_MANIFEST)["specimens"][0])
         record["unsupported_remainders"] = 0
