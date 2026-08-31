@@ -4885,10 +4885,13 @@ def validate_runtime_result(
                 "inspectable_evidence",
                 "level-three inspectable evidence does not resolve the bound source",
             )
-        if inspectable["path"] == authority["reference"]["path"]:
+        if (
+            inspectable["path"] == authority["reference"]["path"]
+            or inspectable["sha256"] == authority["reference"]["sha256"]
+        ):
             return refuse(
                 "inspectable_evidence",
-                "level-three authority and inspectable evidence are not independent references",
+                "level-three authority and inspectable evidence are not independent paths and bytes",
             )
     return []
 

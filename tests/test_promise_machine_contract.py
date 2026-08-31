@@ -3404,6 +3404,63 @@ class PromiseCoverageTests(unittest.TestCase):
         self.assertEqual(semantic_codes(findings), ["PM095"])
         self.assertIn("authority", findings[0].message)
 
+    def test_level_three_authority_and_evidence_require_distinct_bytes(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "ariadne-verify-statement"
+        record = records[promise_id]
+        binding = copy.deepcopy(coverage["runtime"][promise_id])
+        positive = load_runtime_selector(binding["positive"])
+        source_path = Path(binding["source"])
+        authority_path = Path(
+            promise_machine_module.runtime_authority_path(ROOT, record)
+        )
+        payload = (ROOT / source_path).read_bytes()
+        digest = hashlib.sha256(payload).hexdigest()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (source_path, authority_path):
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(payload)
+            binding["sha256"] = digest
+            result = mutate_runtime_field(
+                positive, binding, "source_digest", digest
+            )
+            references = copy.deepcopy(
+                result["promise_machine"]["evidence_references"]
+            )
+            for reference in references:
+                reference["sha256"] = digest
+            result = mutate_runtime_field(
+                result, binding, "evidence_references", references
+            )
+            inspectable = copy.deepcopy(
+                result["promise_machine"]["inspectable_evidence"]
+            )
+            inspectable["sha256"] = digest
+            result = mutate_runtime_field(
+                result, binding, "inspectable_evidence", inspectable
+            )
+            authority = copy.deepcopy(result["promise_machine"]["authority"])
+            authority["reference"]["sha256"] = digest
+            result = mutate_runtime_field(result, binding, "authority", authority)
+            findings = promise_machine_module.validate_runtime_result(
+                root,
+                record,
+                binding,
+                result,
+                "same-bytes-different-paths",
+            )
+
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("inspectable_evidence", findings[0].message)
+
     def test_runtime_binding_refuses_missing_evidence_reference_and_header_mismatch(self):
         coverage = json.loads(
             (ROOT / "tests" / "promise_machine_coverage.json").read_text(
