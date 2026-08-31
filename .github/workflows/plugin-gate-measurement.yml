@@ -12,8 +12,12 @@ name: plugin-gate-measurement
 # so the arm durations are the scaling curve on the hardware that actually
 # gates a pull request.
 #
-# Arm budgets map to suite workers as `max(2, budget // 2) - 1`:
-# control 1, 6 -> 2, 8 -> 3, 10 -> 4.
+# Arm budgets map to suite workers as `max(2, budget // 2) - 1`.
+#
+# Run 33438750597 measured the first four arms and is not repeated here.
+# Control, at one worker, did not finish: `run_checks.py` killed it on its
+# 1800-second per-check timeout. The rest passed, at 1083s for two workers,
+# 954s for three and 830s for four. This round looks for the knee above four.
 #
 # Delete this file once #992 records the measurement.
 
@@ -41,10 +45,9 @@ jobs:
       fail-fast: false
       matrix:
         budget:
-          - 0
-          - 6
-          - 8
-          - 10
+          - 12
+          - 14
+          - 16
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
