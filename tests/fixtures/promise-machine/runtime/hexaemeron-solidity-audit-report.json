@@ -13,15 +13,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "inferred",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-                "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+                "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+                "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
               }
             ]
           },
@@ -30,13 +28,13 @@
           },
           "inspectable_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           },
           "promise": "hexaemeron-solidity-audit-report",
           "scope": "structural binding for hexaemeron-solidity-audit-report",
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-          "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
           "transition": {
             "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
             "operation_ran": false,
@@ -59,15 +57,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "inferred",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           }
         ],
         "exception": {
@@ -75,13 +71,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-          "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+          "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+          "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
         },
         "promise_id": "hexaemeron-solidity-audit-report",
         "scope": "structural binding for hexaemeron-solidity-audit-report",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
           "operation_ran": false,
@@ -108,15 +104,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "inferred",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-                "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+                "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+                "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
               }
             ]
           },
@@ -125,13 +119,13 @@
           },
           "inspectable_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           },
           "promise": "hexaemeron-solidity-audit-report",
           "scope": "structural binding for hexaemeron-solidity-audit-report",
-          "source_digest": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
-          "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+          "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
           "transition": {
             "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
             "operation_ran": false,
@@ -154,15 +148,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "inferred",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           }
         ],
         "exception": {
@@ -170,13 +162,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-          "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+          "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+          "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
         },
         "promise_id": "hexaemeron-solidity-audit-report",
         "scope": "structural binding for hexaemeron-solidity-audit-report",
-        "source_digest": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
-        "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+        "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
           "operation_ran": false,

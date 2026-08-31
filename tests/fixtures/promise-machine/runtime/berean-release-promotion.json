@@ -18,14 +18,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/berean/schemas/promotion-record-v1.json",
-                "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+                "path": "plugins/berean/tests/test_promote.py",
+                "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
               }
             ]
           },
@@ -34,8 +33,8 @@
           },
           "independent_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/berean/schemas/promotion-record-v1.json",
-            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+            "path": "plugins/berean/tests/test_promote.py",
+            "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
           },
           "open_unknowns": [
             {
@@ -49,7 +48,7 @@
           },
           "target": {
             "scope": "structural binding for berean-release-promotion",
-            "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json"
+            "subject": "runtime source plugins/berean/tests/test_promote.py#test_a_clean_report_promotes_and_the_release_is_active"
           }
         }
       },
@@ -62,14 +61,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/berean/schemas/promotion-record-v1.json",
-            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+            "path": "plugins/berean/tests/test_promote.py",
+            "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
           }
         ],
         "exception": {
@@ -77,13 +75,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/berean/schemas/promotion-record-v1.json",
-          "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          "path": "plugins/berean/tests/test_promote.py",
+          "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
         },
         "promise_id": "berean-release-promotion",
         "scope": "structural binding for berean-release-promotion",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json",
+        "subject": "runtime source plugins/berean/tests/test_promote.py#test_a_clean_report_promotes_and_the_release_is_active",
         "transition": {
           "action": "structurally bind berean-release-promotion without running its domain operation",
           "operation_ran": false,
@@ -115,14 +113,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/berean/schemas/promotion-record-v1.json",
-                "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+                "path": "plugins/berean/tests/test_promote.py",
+                "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
               }
             ]
           },
@@ -131,8 +128,8 @@
           },
           "independent_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/berean/schemas/promotion-record-v1.json",
-            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+            "path": "plugins/berean/tests/test_promote.py",
+            "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
           },
           "open_unknowns": [
             {
@@ -142,11 +139,11 @@
           ],
           "promise": "berean-release-promotion",
           "source": {
-            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+            "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
           },
           "target": {
             "scope": "structural binding for berean-release-promotion",
-            "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json"
+            "subject": "runtime source plugins/berean/tests/test_promote.py#test_a_clean_report_promotes_and_the_release_is_active"
           }
         }
       },
@@ -159,14 +156,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/berean/schemas/promotion-record-v1.json",
-            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+            "path": "plugins/berean/tests/test_promote.py",
+            "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
           }
         ],
         "exception": {
@@ -174,13 +170,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/berean/schemas/promotion-record-v1.json",
-          "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          "path": "plugins/berean/tests/test_promote.py",
+          "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
         },
         "promise_id": "berean-release-promotion",
         "scope": "structural binding for berean-release-promotion",
-        "source_digest": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7",
-        "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json",
+        "source_digest": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f",
+        "subject": "runtime source plugins/berean/tests/test_promote.py#test_a_clean_report_promotes_and_the_release_is_active",
         "transition": {
           "action": "structurally bind berean-release-promotion without running its domain operation",
           "operation_ran": false,

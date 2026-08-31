@@ -11,16 +11,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "proved",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/schemas/manifest-v1.json",
-                "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+                "path": "plugins/lazarus/tests/test_goldfinch.py",
+                "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
               }
             ]
           },
@@ -39,22 +36,19 @@
           },
           "target": {
             "scope": "structural binding for lazarus-fixture-capture",
-            "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json"
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "proved",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/schemas/manifest-v1.json",
-            "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           }
         ],
         "exception": {
@@ -63,7 +57,7 @@
         "promise_id": "lazarus-fixture-capture",
         "scope": "structural binding for lazarus-fixture-capture",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-fixture-capture without running its domain operation",
           "operation_ran": false,
@@ -88,16 +82,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "proved",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/schemas/manifest-v1.json",
-                "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+                "path": "plugins/lazarus/tests/test_goldfinch.py",
+                "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
               }
             ]
           },
@@ -112,26 +103,23 @@
           ],
           "promise": "lazarus-fixture-capture",
           "source": {
-            "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           },
           "target": {
             "scope": "structural binding for lazarus-fixture-capture",
-            "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json"
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "proved",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/schemas/manifest-v1.json",
-            "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           }
         ],
         "exception": {
@@ -139,8 +127,8 @@
         },
         "promise_id": "lazarus-fixture-capture",
         "scope": "structural binding for lazarus-fixture-capture",
-        "source_digest": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14",
-        "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json",
+        "source_digest": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-fixture-capture without running its domain operation",
           "operation_ran": false,

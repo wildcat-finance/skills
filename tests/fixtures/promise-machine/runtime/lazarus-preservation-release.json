@@ -18,15 +18,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/schemas/release-v1.json",
-                "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+                "path": "plugins/lazarus/tests/test_goldfinch.py",
+                "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
               }
             ]
           },
@@ -35,8 +33,8 @@
           },
           "independent_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/schemas/release-v1.json",
-            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           },
           "open_unknowns": [
             {
@@ -50,7 +48,7 @@
           },
           "target": {
             "scope": "structural binding for lazarus-preservation-release",
-            "subject": "runtime source plugins/lazarus/schemas/release-v1.json"
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
@@ -63,15 +61,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/schemas/release-v1.json",
-            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           }
         ],
         "exception": {
@@ -79,13 +75,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/lazarus/schemas/release-v1.json",
-          "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          "path": "plugins/lazarus/tests/test_goldfinch.py",
+          "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
         },
         "promise_id": "lazarus-preservation-release",
         "scope": "structural binding for lazarus-preservation-release",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/lazarus/schemas/release-v1.json",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-preservation-release without running its domain operation",
           "operation_ran": false,
@@ -117,15 +113,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/schemas/release-v1.json",
-                "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+                "path": "plugins/lazarus/tests/test_goldfinch.py",
+                "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
               }
             ]
           },
@@ -134,8 +128,8 @@
           },
           "independent_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/schemas/release-v1.json",
-            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           },
           "open_unknowns": [
             {
@@ -145,11 +139,11 @@
           ],
           "promise": "lazarus-preservation-release",
           "source": {
-            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           },
           "target": {
             "scope": "structural binding for lazarus-preservation-release",
-            "subject": "runtime source plugins/lazarus/schemas/release-v1.json"
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
@@ -162,15 +156,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/schemas/release-v1.json",
-            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           }
         ],
         "exception": {
@@ -178,13 +170,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/lazarus/schemas/release-v1.json",
-          "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          "path": "plugins/lazarus/tests/test_goldfinch.py",
+          "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
         },
         "promise_id": "lazarus-preservation-release",
         "scope": "structural binding for lazarus-preservation-release",
-        "source_digest": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d",
-        "subject": "runtime source plugins/lazarus/schemas/release-v1.json",
+        "source_digest": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-preservation-release without running its domain operation",
           "operation_ran": false,

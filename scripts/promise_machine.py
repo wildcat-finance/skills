@@ -520,6 +520,7 @@ RUNTIME_BINDING_KEYS = {
 RUNTIME_LEVEL_THREE_KEYS = {"authority", "inspectable_evidence"}
 RUNTIME_CATALOGUE_KEYS = {
     "source",
+    "selector",
     "sha256",
     "reader",
     "bindings",
@@ -530,11 +531,6 @@ RUNTIME_READER_SCHEMAS = {
     "native-json-v1": "promise-machine-native-json-binding/v1",
     "python-result-adapter-v1": "promise-machine-python-result-adapter/v1",
     "markdown-result-adapter-v1": "promise-machine-markdown-result-adapter/v1",
-}
-RUNTIME_READER_EXTENSIONS = {
-    "native-json-v1": ".json",
-    "python-result-adapter-v1": ".py",
-    "markdown-result-adapter-v1": ".md",
 }
 RUNTIME_READER_CONTAINERS = {
     "native-json-v1": "native_document",
@@ -4044,14 +4040,84 @@ def parse_groups(raw: str):
     return groups
 
 
+def python_selector_resolves(text: str, selector: str):
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return False
+
+    containers = [tree]
+    while containers:
+        container = containers.pop()
+        for node in container.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if node.name == selector:
+                    return True
+            elif isinstance(node, ast.ClassDef):
+                containers.append(node)
+    return False
+
+
+def mask_solidity_non_code(text: str):
+    masked = list(text)
+    index = 0
+    state = "code"
+    quote = ""
+    while index < len(text):
+        if state == "code":
+            if text.startswith("//", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "line-comment"
+                continue
+            if text.startswith("/*", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "block-comment"
+                continue
+            if text[index] in {'"', "'"}:
+                quote = text[index]
+                masked[index] = " "
+                index += 1
+                state = "string"
+                continue
+        elif state == "line-comment":
+            if text[index] == "\n":
+                state = "code"
+            else:
+                masked[index] = " "
+        elif state == "block-comment":
+            if text.startswith("*/", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "code"
+                continue
+            if text[index] != "\n":
+                masked[index] = " "
+        else:
+            if text[index] == "\\" and index + 1 < len(text):
+                masked[index] = " "
+                if text[index + 1] != "\n":
+                    masked[index + 1] = " "
+                index += 2
+                continue
+            if text[index] == quote:
+                state = "code"
+            if text[index] != "\n":
+                masked[index] = " "
+        index += 1
+    return "".join(masked)
+
+
 def selector_resolves(path: Path, text: str, selector: str):
     if path.suffix == ".py":
-        pattern = rf"^\s*def\s+{re.escape(selector)}\s*\("
-    elif path.suffix == ".sol":
-        pattern = rf"^\s*function\s+{re.escape(selector)}\s*\("
-    else:
-        return False
-    return re.search(pattern, text, re.MULTILINE) is not None
+        return python_selector_resolves(text, selector)
+    if path.suffix == ".sol":
+        pattern = rf"^[ \t]*function[ \t]+{re.escape(selector)}[ \t]*\("
+        return re.search(
+            pattern, mask_solidity_non_code(text), re.MULTILINE
+        ) is not None
+    return False
 
 
 def runtime_expected_fields(record: PromiseRecord):
@@ -4165,6 +4231,54 @@ def dotted_runtime_value(document, dotted: str):
     return value, True
 
 
+def set_dotted_runtime_value(document, dotted: str, value):
+    target = document
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        if not isinstance(target, dict) or part not in target:
+            return False
+        target = target[part]
+    if not isinstance(target, dict) or parts[-1] not in target:
+        return False
+    target[parts[-1]] = value
+    return True
+
+
+def runtime_negative_mutation_error(binding, positive, negative):
+    mappings = binding.get("bindings") if isinstance(binding, dict) else None
+    descriptor = binding.get("negative") if isinstance(binding, dict) else None
+    field = descriptor.get("field") if isinstance(descriptor, dict) else None
+    if (
+        not isinstance(mappings, dict)
+        or not closed_non_empty_scalar(field)
+        or field not in mappings
+    ):
+        return "negative specimen does not name one declared runtime field"
+
+    values = []
+    for label, specimen in (("positive", positive), ("negative", negative)):
+        header = specimen.get("promise_machine") if isinstance(specimen, dict) else None
+        native, present = dotted_runtime_value(specimen, mappings[field])
+        if not isinstance(header, dict) or field not in header or not present:
+            return f"{label} specimen does not resolve declared field {field!r} twice"
+        if native != header[field]:
+            return f"{label} specimen does not mirror declared field {field!r}"
+        values.append(header[field])
+    if values[0] == values[1]:
+        return f"negative specimen does not mutate declared field {field!r}"
+
+    normalized = []
+    for specimen in (positive, negative):
+        item = json.loads(json.dumps(specimen))
+        if not set_dotted_runtime_value(item, mappings[field], None):
+            return f"specimen does not resolve declared field {field!r}"
+        item["promise_machine"][field] = None
+        normalized.append(item)
+    if normalized[0] != normalized[1]:
+        return f"negative specimen changes data outside declared field {field!r}"
+    return None
+
+
 def runtime_binding_map_error(reader: str, mappings, expected_fields: set[str]):
     if not isinstance(mappings, dict) or set(mappings) != expected_fields:
         return "native field map does not contain the consequence's exact fields"
@@ -4187,8 +4301,66 @@ def runtime_binding_map_error(reader: str, mappings, expected_fields: set[str]):
     return None
 
 
+def runtime_positive_evidence(document, promise_id: str):
+    rows = document.get("rows") if isinstance(document, dict) else None
+    evidence = document.get("evidence") if isinstance(document, dict) else None
+    if not isinstance(rows, list) or not isinstance(evidence, dict):
+        return None, "coverage rows or evidence catalogue is unavailable"
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, dict) and row.get("promise_id") == promise_id
+    ]
+    if len(matches) != 1:
+        return None, "promise does not have one exact coverage row"
+    cases = matches[0].get("cases")
+    positive_id = cases.get("P") if isinstance(cases, dict) else None
+    descriptor = evidence.get(positive_id) if isinstance(positive_id, str) else None
+    if (
+        not isinstance(descriptor, dict)
+        or not closed_non_empty_scalar(descriptor.get("path"))
+        or not closed_non_empty_scalar(descriptor.get("selector"))
+    ):
+        return None, "promise does not resolve one covered positive evidence surface"
+    return descriptor, None
+
+
+def runtime_positive_source_error(root: Path, binding, positive_evidence):
+    if not isinstance(positive_evidence, dict):
+        return "covered positive evidence is unavailable"
+    expected_source = positive_evidence.get("path")
+    expected_selector = positive_evidence.get("selector")
+    if binding.get("source") != expected_source or binding.get("selector") != expected_selector:
+        return (
+            "runtime source and selector do not match the promise's covered positive "
+            f"evidence surface {expected_source!r}#{expected_selector!r}"
+        )
+    actual, error = runtime_path_digest(root, expected_source, MAX_RUNTIME_SOURCE_BYTES)
+    if error is not None:
+        return f"covered positive evidence source {error}"
+    try:
+        payload = bounded_read_bytes(
+            root / expected_source, root, MAX_RUNTIME_SOURCE_BYTES
+        )
+        text = payload.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return f"covered positive evidence source is not bounded UTF-8: {exc}"
+    if not selector_resolves(Path(expected_source), text, expected_selector):
+        return (
+            f"covered positive selector {expected_selector!r} does not resolve in "
+            f"{expected_source!r}"
+        )
+    if actual != binding.get("sha256"):
+        return "covered positive evidence source and runtime digest disagree"
+    return None
+
+
 def validate_runtime_catalogue_entry(
-    root: Path, record: PromiseRecord, binding, binding_path: str
+    root: Path,
+    record: PromiseRecord,
+    binding,
+    binding_path: str,
+    positive_evidence=None,
 ):
     findings: list[Finding] = []
     if not isinstance(binding, dict) or set(binding) != RUNTIME_CATALOGUE_KEYS:
@@ -4197,7 +4369,7 @@ def validate_runtime_catalogue_entry(
                 "PM070",
                 "structural",
                 binding_path,
-                "runtime binding must contain source, sha256, reader, bindings, positive and negative",
+                "runtime binding must contain source, selector, sha256, reader, bindings, positive and negative",
                 "name one bounded native reader and its source-bound positive and negative specimens",
                 promise_id=record.promise_id,
             )
@@ -4240,7 +4412,23 @@ def validate_runtime_catalogue_entry(
             )
         )
 
+    positive_source_error = runtime_positive_source_error(
+        root, binding, positive_evidence
+    )
+    if positive_source_error is not None:
+        findings.append(
+            Finding(
+                "PM070",
+                "identity",
+                binding_path,
+                positive_source_error,
+                "bind the runtime row to its exact covered P evidence path and selector",
+                promise_id=record.promise_id,
+            )
+        )
+
     reader = binding["reader"]
+    expected_fields = runtime_expected_fields(record)
     if reader not in RUNTIME_READER_BINDINGS:
         findings.append(
             Finding(
@@ -4252,19 +4440,7 @@ def validate_runtime_catalogue_entry(
                 promise_id=record.promise_id,
             )
         )
-    elif isinstance(source, str) and Path(source).suffix != RUNTIME_READER_EXTENSIONS[reader]:
-        findings.append(
-            Finding(
-                "PM070",
-                "structural",
-                binding_path,
-                f"runtime reader {reader!r} does not match source suffix {Path(source).suffix!r}",
-                "select the bounded reader for the source's domain-native format",
-                promise_id=record.promise_id,
-            )
-        )
     else:
-        expected_fields = runtime_expected_fields(record)
         mapping_error = runtime_binding_map_error(
             reader, binding["bindings"], expected_fields
         )
@@ -4282,7 +4458,7 @@ def validate_runtime_catalogue_entry(
 
     descriptor_shapes = {
         "positive": {"path", "selector", "sha256"},
-        "negative": {"path", "selector", "sha256", "finding"},
+        "negative": {"path", "selector", "sha256", "finding", "field"},
     }
     for kind, keys in descriptor_shapes.items():
         descriptor = binding[kind]
@@ -4306,6 +4482,20 @@ def validate_runtime_catalogue_entry(
                     binding_path,
                     "runtime negative specimen does not name stable finding PM095",
                     "bind the hostile specimen to PM095",
+                    promise_id=record.promise_id,
+                )
+            )
+        if kind == "negative" and (
+            not closed_non_empty_scalar(descriptor["field"])
+            or descriptor["field"] not in expected_fields
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    "runtime negative specimen does not name one declared field",
+                    "name the one runtime field isolated by the negative specimen",
                     promise_id=record.promise_id,
                 )
             )
@@ -4401,7 +4591,7 @@ def read_runtime_specimen(
     path = descriptor.get("path") if isinstance(descriptor, dict) else "<runtime>"
     keys = {"path", "selector", "sha256"}
     if kind == "negative":
-        keys.add("finding")
+        keys.update({"finding", "field"})
     if not isinstance(descriptor, dict) or set(descriptor) != keys:
         return None, [
             runtime_finding(
@@ -4580,7 +4770,7 @@ def validate_runtime_result(
             f"result, catalogue, and bounded source digest do not agree ({native['source_digest']!r}, {source_digest!r}, {actual_source!r})",
         )
 
-    expected_subject = f"runtime source {source}"
+    expected_subject = f"runtime source {source}#{binding.get('selector')}"
     expected_scope = f"structural binding for {record.promise_id}"
     if native["promise_id"] != record.promise_id:
         return refuse("promise_id", "result promise identity does not match its runtime row")
@@ -4609,6 +4799,20 @@ def validate_runtime_result(
         error = runtime_reference_error(root, reference, set(evidence_classes))
         if error is not None:
             return refuse("evidence_references", error)
+    reference_keys = [
+        (reference["path"], reference["sha256"], reference["evidence_class"])
+        for reference in references
+    ]
+    if len(set(reference_keys)) != len(reference_keys):
+        return refuse("evidence_references", "digest-bound references are repeated")
+    referenced_classes = {reference["evidence_class"] for reference in references}
+    missing_classes = sorted(set(evidence_classes) - referenced_classes)
+    if missing_classes:
+        return refuse(
+            "evidence_references",
+            "no digest-bound reference represents satisfying evidence "
+            f"class(es) {missing_classes!r}",
+        )
     if not any(
         reference["path"] == source and reference["sha256"] == source_digest
         for reference in references
@@ -4626,8 +4830,15 @@ def validate_runtime_result(
             or not closed_non_empty_scalar(item.get("detail"))
             for item in unknowns
         )
-        or "domain-operation-not-run" not in {item["code"] for item in unknowns if isinstance(item, dict) and "code" in item}
     ):
+        return refuse(
+            "unknowns",
+            "the explicit domain-operation-not-run unknown is absent or malformed",
+        )
+    unknown_codes = [item["code"] for item in unknowns]
+    if len(set(unknown_codes)) != len(unknown_codes):
+        return refuse("unknowns", "unknown codes are repeated")
+    if "domain-operation-not-run" not in set(unknown_codes):
         return refuse(
             "unknowns",
             "the explicit domain-operation-not-run unknown is absent or malformed",
@@ -4674,10 +4885,13 @@ def validate_runtime_result(
                 "inspectable_evidence",
                 "level-three inspectable evidence does not resolve the bound source",
             )
-        if inspectable["path"] == authority["reference"]["path"]:
+        if (
+            inspectable["path"] == authority["reference"]["path"]
+            or inspectable["sha256"] == authority["reference"]["sha256"]
+        ):
             return refuse(
                 "inspectable_evidence",
-                "level-three authority and inspectable evidence are not independent references",
+                "level-three authority and inspectable evidence are not independent paths and bytes",
             )
     return []
 
@@ -4742,30 +4956,45 @@ def check_runtime(root: Path, inventory: Inventory):
         record = records[promise_id]
         binding = catalogue[promise_id]
         binding_path = f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}"
-        catalogue_findings = validate_runtime_catalogue_entry(
-            root, record, binding, binding_path
+        positive_evidence, positive_error = runtime_positive_evidence(
+            document, promise_id
         )
-        if catalogue_findings:
+        if positive_error is not None:
             findings.append(
                 runtime_finding(
                     record,
                     binding,
                     binding_path,
-                    "catalogue",
-                    catalogue_findings[0].message,
+                    "source",
+                    positive_error,
                 )
+            )
+            continue
+        catalogue_findings = validate_runtime_catalogue_entry(
+            root, record, binding, binding_path, positive_evidence
+        )
+        if catalogue_findings:
+            findings.extend(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding_path,
+                    "catalogue",
+                    item.message,
+                )
+                for item in catalogue_findings
             )
             continue
         positive, positive_findings = read_runtime_specimen(
             root, binding["positive"], record, "positive"
         )
         findings.extend(positive_findings)
+        positive_produced = []
         if positive is not None:
-            findings.extend(
-                validate_runtime_result(
-                    root, record, binding, positive, binding["positive"]["path"]
-                )
+            positive_produced = validate_runtime_result(
+                root, record, binding, positive, binding["positive"]["path"]
             )
+            findings.extend(positive_produced)
         negative, negative_findings = read_runtime_specimen(
             root, binding["negative"], record, "negative"
         )
@@ -4781,6 +5010,23 @@ def check_runtime(root: Path, inventory: Inventory):
                 )
             )
         elif negative is not None:
+            mutation_error = None
+            if positive is not None and not positive_produced:
+                mutation_error = runtime_negative_mutation_error(
+                    binding, positive, negative
+                )
+            if mutation_error is not None:
+                findings.append(
+                    runtime_finding(
+                        record,
+                        binding,
+                        binding["negative"]["path"],
+                        "negative",
+                        mutation_error,
+                        code="PM096",
+                    )
+                )
+                continue
             produced = validate_runtime_result(
                 root, record, binding, negative, binding["negative"]["path"]
             )
@@ -5002,12 +5248,14 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             )
         )
     for promise_id in sorted(required_runtime & actual_runtime):
+        positive_evidence, _ = runtime_positive_evidence(document, promise_id)
         findings.extend(
             validate_runtime_catalogue_entry(
                 root,
                 expected[promise_id],
                 runtime_catalog[promise_id],
                 f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}",
+                positive_evidence,
             )
         )
 

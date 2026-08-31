@@ -11,15 +11,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
-                "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+                "path": "plugins/alexandria/tests/test_demo.py",
+                "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
               }
             ]
           },
@@ -38,21 +36,19 @@
           },
           "target": {
             "scope": "structural binding for alexandria-raw-release",
-            "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+            "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly"
           }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
-            "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+            "path": "plugins/alexandria/tests/test_demo.py",
+            "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
           }
         ],
         "exception": {
@@ -61,7 +57,7 @@
         "promise_id": "alexandria-raw-release",
         "scope": "structural binding for alexandria-raw-release",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+        "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly",
         "transition": {
           "action": "structurally bind alexandria-raw-release without running its domain operation",
           "operation_ran": false,
@@ -86,15 +82,13 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
-                "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+                "path": "plugins/alexandria/tests/test_demo.py",
+                "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
               }
             ]
           },
@@ -109,25 +103,23 @@
           ],
           "promise": "alexandria-raw-release",
           "source": {
-            "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+            "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
           },
           "target": {
             "scope": "structural binding for alexandria-raw-release",
-            "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+            "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly"
           }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
-            "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+            "path": "plugins/alexandria/tests/test_demo.py",
+            "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
           }
         ],
         "exception": {
@@ -135,8 +127,8 @@
         },
         "promise_id": "alexandria-raw-release",
         "scope": "structural binding for alexandria-raw-release",
-        "source_digest": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
-        "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+        "source_digest": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567",
+        "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly",
         "transition": {
           "action": "structurally bind alexandria-raw-release without running its domain operation",
           "operation_ran": false,

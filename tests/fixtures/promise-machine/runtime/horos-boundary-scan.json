@@ -7,12 +7,10 @@
           "binding": {
             "promise_id": "horos-boundary-scan",
             "scope": "structural binding for horos-boundary-scan",
-            "subject": "runtime source plugins/horos/skills/horos/scripts/horos.py"
+            "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -20,8 +18,8 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/horos/skills/horos/scripts/horos.py",
-              "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045"
+              "path": "plugins/horos/tests/test_boundary.py",
+              "sha256": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -40,15 +38,13 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/horos/skills/horos/scripts/horos.py",
-            "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045"
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e"
           }
         ],
         "exception": {
@@ -57,7 +53,7 @@
         "promise_id": "horos-boundary-scan",
         "scope": "structural binding for horos-boundary-scan",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/horos/skills/horos/scripts/horos.py",
+        "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary",
         "transition": {
           "action": "structurally bind horos-boundary-scan without running its domain operation",
           "operation_ran": false,
@@ -78,12 +74,10 @@
           "binding": {
             "promise_id": "horos-boundary-scan",
             "scope": "structural binding for horos-boundary-scan",
-            "subject": "runtime source plugins/horos/skills/horos/scripts/horos.py"
+            "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -91,11 +85,11 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/horos/skills/horos/scripts/horos.py",
-              "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045"
+              "path": "plugins/horos/tests/test_boundary.py",
+              "sha256": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e"
             }
           ],
-          "source_digest": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
+          "source_digest": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e",
           "transition": {
             "action": "structurally bind horos-boundary-scan without running its domain operation",
             "operation_ran": false,
@@ -111,15 +105,13 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/horos/skills/horos/scripts/horos.py",
-            "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045"
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e"
           }
         ],
         "exception": {
@@ -127,8 +119,8 @@
         },
         "promise_id": "horos-boundary-scan",
         "scope": "structural binding for horos-boundary-scan",
-        "source_digest": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
-        "subject": "runtime source plugins/horos/skills/horos/scripts/horos.py",
+        "source_digest": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e",
+        "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary",
         "transition": {
           "action": "structurally bind horos-boundary-scan without running its domain operation",
           "operation_ran": false,

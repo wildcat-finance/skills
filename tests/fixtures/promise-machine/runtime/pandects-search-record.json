@@ -14,26 +14,24 @@
           "binding": {
             "promise_id": "pandects-search-record",
             "scope": "structural binding for pandects-search-record",
-            "subject": "runtime source plugins/pandects/scripts/pandects.py"
+            "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes"
           },
           "classes": [
-            "checked",
-            "measured",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/pandects/scripts/pandects.py",
-            "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/pandects/scripts/pandects.py",
-              "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+              "path": "plugins/pandects/tests/test_checker.py",
+              "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -59,15 +57,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "measured",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/pandects/scripts/pandects.py",
-            "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
           }
         ],
         "exception": {
@@ -75,13 +71,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/pandects/scripts/pandects.py",
-          "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+          "path": "plugins/pandects/tests/test_checker.py",
+          "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
         },
         "promise_id": "pandects-search-record",
         "scope": "structural binding for pandects-search-record",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/pandects/scripts/pandects.py",
+        "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes",
         "transition": {
           "action": "structurally bind pandects-search-record without running its domain operation",
           "operation_ran": false,
@@ -109,29 +105,27 @@
           "binding": {
             "promise_id": "pandects-search-record",
             "scope": "structural binding for pandects-search-record",
-            "subject": "runtime source plugins/pandects/scripts/pandects.py"
+            "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes"
           },
           "classes": [
-            "checked",
-            "measured",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/pandects/scripts/pandects.py",
-            "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/pandects/scripts/pandects.py",
-              "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+              "path": "plugins/pandects/tests/test_checker.py",
+              "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
             }
           ],
-          "source_digest": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
+          "source_digest": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2",
           "transition": {
             "action": "structurally bind pandects-search-record without running its domain operation",
             "operation_ran": false,
@@ -154,15 +148,13 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "measured",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/pandects/scripts/pandects.py",
-            "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
           }
         ],
         "exception": {
@@ -170,13 +162,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/pandects/scripts/pandects.py",
-          "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e"
+          "path": "plugins/pandects/tests/test_checker.py",
+          "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2"
         },
         "promise_id": "pandects-search-record",
         "scope": "structural binding for pandects-search-record",
-        "source_digest": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
-        "subject": "runtime source plugins/pandects/scripts/pandects.py",
+        "source_digest": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2",
+        "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes",
         "transition": {
           "action": "structurally bind pandects-search-record without running its domain operation",
           "operation_ran": false,

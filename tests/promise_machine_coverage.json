@@ -781,29 +781,29 @@
       "selector": "test_labelled_subject_mismatch_cases"
     },
     "homologia-scaffold-m": {
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
-      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected"
     },
     "homologia-scaffold-o": {
+      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_no_verb_prints_a_verdict_on_standard_output",
-      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version."
+      "selector": "test_no_verb_prints_a_verdict_on_standard_output"
     },
     "homologia-scaffold-p": {
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
-      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace"
     },
     "homologia-scaffold-r": {
+      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
-      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go."
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from"
     },
     "homologia-scaffold-s": {
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_the_canonical_skill_states_the_declared_version",
-      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
+      "selector": "test_the_canonical_skill_states_the_declared_version"
     },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -2899,20 +2899,20 @@
       "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
     },
     {
-      "promise_id": "homologia-scaffold-identity",
-      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
-      "group": "executable",
       "cases": {
-        "P": "homologia-scaffold-p",
         "M": "homologia-scaffold-m",
-        "S": "homologia-scaffold-s",
         "O": "homologia-scaffold-o",
+        "P": "homologia-scaffold-p",
         "R": "homologia-scaffold-r",
+        "S": "homologia-scaffold-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      }
+      },
+      "group": "executable",
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
     }
   ],
   "run_observation": {
@@ -3137,9 +3137,6 @@
   },
   "runtime": {
     "alexandria-derived-view": {
-      "source": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
-      "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
-      "reader": "native-json-v1",
       "bindings": {
         "evidence_classes": "native_document.alexandria_derived_view.evidence.classes",
         "evidence_references": "native_document.alexandria_derived_view.evidence.references",
@@ -3151,22 +3148,24 @@
         "transition": "native_document.alexandria_derived_view.authorised_transition",
         "unknowns": "native_document.alexandria_derived_view.open_unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
+        "selector": "negative",
+        "sha256": "d254361f493bef83a8f3d1d137366efac05f0c41f8aed3d89fa92b5483556259"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
         "selector": "positive",
-        "sha256": "089bfb0b5a39db2810ce850e212e433f4de7f69c997c3ddbf7f973168283bfc1"
+        "sha256": "d254361f493bef83a8f3d1d137366efac05f0c41f8aed3d89fa92b5483556259"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
-        "selector": "negative",
-        "sha256": "089bfb0b5a39db2810ce850e212e433f4de7f69c997c3ddbf7f973168283bfc1",
-        "finding": "PM095"
-      }
+      "reader": "native-json-v1",
+      "selector": "test_documented_build_and_verify_commands_run_exactly",
+      "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567",
+      "source": "plugins/alexandria/tests/test_demo.py"
     },
     "alexandria-raw-release": {
-      "source": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
-      "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
-      "reader": "native-json-v1",
       "bindings": {
         "evidence_classes": "native_document.alexandria_raw_release.evidence.classes",
         "evidence_references": "native_document.alexandria_raw_release.evidence.references",
@@ -3178,22 +3177,24 @@
         "transition": "native_document.alexandria_raw_release.authorised_transition",
         "unknowns": "native_document.alexandria_raw_release.open_unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
+        "selector": "negative",
+        "sha256": "75768561f8b0808568fad6535b349ee5b95cfa6ea53467404e6fb6063bc680a9"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
         "selector": "positive",
-        "sha256": "df3b1a6b66dc4a914f080333890f0c8924c7a3c83eccf75d6de90c37c75c481a"
+        "sha256": "75768561f8b0808568fad6535b349ee5b95cfa6ea53467404e6fb6063bc680a9"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
-        "selector": "negative",
-        "sha256": "df3b1a6b66dc4a914f080333890f0c8924c7a3c83eccf75d6de90c37c75c481a",
-        "finding": "PM095"
-      }
+      "reader": "native-json-v1",
+      "selector": "test_documented_build_and_verify_commands_run_exactly",
+      "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567",
+      "source": "plugins/alexandria/tests/test_demo.py"
     },
     "ariadne-replay-command": {
-      "source": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.ariadne_replay_command.classes",
         "evidence_references": "adapter_output.ariadne_replay_command.references",
@@ -3205,22 +3206,24 @@
         "transition": "adapter_output.ariadne_replay_command.transition",
         "unknowns": "adapter_output.ariadne_replay_command.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
+        "selector": "negative",
+        "sha256": "989d30c5ad7bffb967854b7eade29f5b6222c91691f5eb6612173ac6e93a753b"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
         "selector": "positive",
-        "sha256": "3336402b8d45317c2a0f82f89611b0ee05c4681b2fd9d7db7a368aeaa594ef12"
+        "sha256": "989d30c5ad7bffb967854b7eade29f5b6222c91691f5eb6612173ac6e93a753b"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
-        "selector": "negative",
-        "sha256": "3336402b8d45317c2a0f82f89611b0ee05c4681b2fd9d7db7a368aeaa594ef12",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_all_examples_verify_with_nothing_unchecked",
+      "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+      "source": "plugins/ariadne/tests/test_examples.py"
     },
     "ariadne-verify-statement": {
-      "source": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.ariadne_verify_statement.authorised_by",
         "evidence_classes": "adapter_output.ariadne_verify_statement.classes",
@@ -3234,22 +3237,24 @@
         "transition": "adapter_output.ariadne_verify_statement.transition",
         "unknowns": "adapter_output.ariadne_verify_statement.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
+        "selector": "negative",
+        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "ed60f2f94436979f2ab96e172be656aa556db9b7010dbeac992812cac8831cca"
+        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
-        "selector": "negative",
-        "sha256": "ed60f2f94436979f2ab96e172be656aa556db9b7010dbeac992812cac8831cca",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_all_examples_verify_with_nothing_unchecked",
+      "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+      "source": "plugins/ariadne/tests/test_examples.py"
     },
     "berean-release-promotion": {
-      "source": "plugins/berean/schemas/promotion-record-v1.json",
-      "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7",
-      "reader": "native-json-v1",
       "bindings": {
         "authority": "native_document.berean_release_promotion.authority",
         "evidence_classes": "native_document.berean_release_promotion.evidence.classes",
@@ -3263,22 +3268,24 @@
         "transition": "native_document.berean_release_promotion.authorised_transition",
         "unknowns": "native_document.berean_release_promotion.open_unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
+        "selector": "negative",
+        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
         "selector": "positive",
-        "sha256": "143f1ee86bdf4862be3993cf312f5b7dd1c2ff700853f248616b4b2b12e6494e"
+        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
-        "selector": "negative",
-        "sha256": "143f1ee86bdf4862be3993cf312f5b7dd1c2ff700853f248616b4b2b12e6494e",
-        "finding": "PM095"
-      }
+      "reader": "native-json-v1",
+      "selector": "test_a_clean_report_promotes_and_the_release_is_active",
+      "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f",
+      "source": "plugins/berean/tests/test_promote.py"
     },
     "elenchus-fixed-and-guarded": {
-      "source": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
-      "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.elenchus_fixed_and_guarded.classes",
         "evidence_references": "adapter_output.elenchus_fixed_and_guarded.references",
@@ -3290,22 +3297,24 @@
         "transition": "adapter_output.elenchus_fixed_and_guarded.transition",
         "unknowns": "adapter_output.elenchus_fixed_and_guarded.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
+        "selector": "negative",
+        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "positive",
-        "sha256": "be952c7dd87379de762ea6b8b5d4466e8f3b93fa84829b96408e28eae2f54a2c"
+        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
-        "selector": "negative",
-        "sha256": "be952c7dd87379de762ea6b8b5d4466e8f3b93fa84829b96408e28eae2f54a2c",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_runner_categories_distinguish_all_three_outcomes",
+      "sha256": "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44",
+      "source": "plugins/hexaemeron/tests/test_elenchus_checker.py"
     },
     "ephoros-observability-review": {
-      "source": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-      "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "evidence_classes": "frontmatter.ephoros_observability_review.evidence.classes",
         "evidence_references": "frontmatter.ephoros_observability_review.evidence.references",
@@ -3317,22 +3326,24 @@
         "transition": "frontmatter.ephoros_observability_review.transition",
         "unknowns": "frontmatter.ephoros_observability_review.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
+        "selector": "negative",
+        "sha256": "b04313df6fb9976b79618419b2c5fa36598f629220456ca791ab8ef78bed98f9"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
         "selector": "positive",
-        "sha256": "e83d4bf0be324740b8d5d7af3fec9d6ccc8d75b9ebee68c3da85b601f3bf82fc"
+        "sha256": "b04313df6fb9976b79618419b2c5fa36598f629220456ca791ab8ef78bed98f9"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
-        "selector": "negative",
-        "sha256": "e83d4bf0be324740b8d5d7af3fec9d6ccc8d75b9ebee68c3da85b601f3bf82fc",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_ephoros_review_positive",
+      "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+      "source": "plugins/hexaemeron/tests/test_promise_cases.py"
     },
     "fiat-controller-checkpoint": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_controller_checkpoint.classes",
         "evidence_references": "adapter_output.fiat_controller_checkpoint.references",
@@ -3344,22 +3355,24 @@
         "transition": "adapter_output.fiat_controller_checkpoint.transition",
         "unknowns": "adapter_output.fiat_controller_checkpoint.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
+        "selector": "negative",
+        "sha256": "104c1c5afa311aec8bc63f7054ed96397cbbb053bdd327faeb426367bf1533ec"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "positive",
-        "sha256": "19c11a8b76c71e82106fb440caf0e47ff26a7d461a3bb16fa2b64e546f0cea83"
+        "sha256": "104c1c5afa311aec8bc63f7054ed96397cbbb053bdd327faeb426367bf1533ec"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
-        "selector": "negative",
-        "sha256": "19c11a8b76c71e82106fb440caf0e47ff26a7d461a3bb16fa2b64e546f0cea83",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_restore_after_source_clone_loss",
+      "sha256": "d4b71f576fd2174a6e1a87752009b3658137de52d0e7f5c41de7780782486aa9",
+      "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py"
     },
     "fiat-final-integration": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.fiat_final_integration.authorised_by",
         "evidence_classes": "adapter_output.fiat_final_integration.classes",
@@ -3373,22 +3386,24 @@
         "transition": "adapter_output.fiat_final_integration.transition",
         "unknowns": "adapter_output.fiat_final_integration.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
+        "selector": "negative",
+        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "db94edccd5e60be3a88e27ceaf23b91dab49e6d104aa40f4afa2f98640714ef0"
+        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
-        "selector": "negative",
-        "sha256": "db94edccd5e60be3a88e27ceaf23b91dab49e6d104aa40f4afa2f98640714ef0",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-local-retirement": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_local_retirement.classes",
         "evidence_references": "adapter_output.fiat_local_retirement.references",
@@ -3400,22 +3415,24 @@
         "transition": "adapter_output.fiat_local_retirement.transition",
         "unknowns": "adapter_output.fiat_local_retirement.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
+        "selector": "negative",
+        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
         "selector": "positive",
-        "sha256": "99299cfb3eece0c3e67c9bbc050afd17ed74e57c77b9f5f8388ea7b9cc14521a"
+        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
-        "selector": "negative",
-        "sha256": "99299cfb3eece0c3e67c9bbc050afd17ed74e57c77b9f5f8388ea7b9cc14521a",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_terminal_archive_is_local_and_ignored_by_git",
+      "sha256": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98",
+      "source": "plugins/hexaemeron/tests/test_fiat_local_retirement.py"
     },
     "fiat-receipted-delivery": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_receipted_delivery.classes",
         "evidence_references": "adapter_output.fiat_receipted_delivery.references",
@@ -3427,22 +3444,24 @@
         "transition": "adapter_output.fiat_receipted_delivery.transition",
         "unknowns": "adapter_output.fiat_receipted_delivery.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
+        "selector": "negative",
+        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "positive",
-        "sha256": "428ca6941b02f89a5484f9e783287eeda9500ff72c1c12a218340085e56ebb7f"
+        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
-        "selector": "negative",
-        "sha256": "428ca6941b02f89a5484f9e783287eeda9500ff72c1c12a218340085e56ebb7f",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_push_advances_steps_then_the_stack_integrates",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-run-observation-binding": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_run_observation_binding.classes",
         "evidence_references": "adapter_output.fiat_run_observation_binding.references",
@@ -3454,22 +3473,24 @@
         "transition": "adapter_output.fiat_run_observation_binding.transition",
         "unknowns": "adapter_output.fiat_run_observation_binding.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
+        "selector": "negative",
+        "sha256": "24fb2229140ebcef6bae6a05ca927a07549943d896fd5b724145ecd91246fc71"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
         "selector": "positive",
-        "sha256": "4490d64c93e74737bd5fa53acb3f9b624718d9603348adf17ef2ef9f3e86ab74"
+        "sha256": "24fb2229140ebcef6bae6a05ca927a07549943d896fd5b724145ecd91246fc71"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
-        "selector": "negative",
-        "sha256": "4490d64c93e74737bd5fa53acb3f9b624718d9603348adf17ef2ef9f3e86ab74",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_normal_prefix_binds_to_the_selected_receipt",
+      "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9",
+      "source": "plugins/hexaemeron/tests/test_run_observation_binding.py"
     },
     "fiat-runbook-amendment": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_runbook_amendment.classes",
         "evidence_references": "adapter_output.fiat_runbook_amendment.references",
@@ -3481,22 +3502,24 @@
         "transition": "adapter_output.fiat_runbook_amendment.transition",
         "unknowns": "adapter_output.fiat_runbook_amendment.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
+        "selector": "negative",
+        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "aa1242d5199d87b44d7cf7b41c9a4f531cab58fe7a2c49ceca2541aaba2a3283"
+        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
-        "selector": "negative",
-        "sha256": "aa1242d5199d87b44d7cf7b41c9a4f531cab58fe7a2c49ceca2541aaba2a3283",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+      "sha256": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3",
+      "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_study_amendment.classes",
         "evidence_references": "adapter_output.fiat_study_amendment.references",
@@ -3508,22 +3531,24 @@
         "transition": "adapter_output.fiat_study_amendment.transition",
         "unknowns": "adapter_output.fiat_study_amendment.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
+        "selector": "negative",
+        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "positive",
-        "sha256": "2ed535e2532401a82983f95dd5475dda1bbf2f417367b4dee9257d254e9b7f95"
+        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
-        "selector": "negative",
-        "sha256": "2ed535e2532401a82983f95dd5475dda1bbf2f417367b4dee9257d254e9b7f95",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-version-resolution": {
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.fiat_version_resolution.classes",
         "evidence_references": "adapter_output.fiat_version_resolution.references",
@@ -3535,22 +3560,24 @@
         "transition": "adapter_output.fiat_version_resolution.transition",
         "unknowns": "adapter_output.fiat_version_resolution.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
+        "selector": "negative",
+        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "positive",
-        "sha256": "9707ffd559ff89c32520432539c1e2ccbcfe0e33561907c12569d54b70e0f1f6"
+        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
-        "selector": "negative",
-        "sha256": "9707ffd559ff89c32520432539c1e2ccbcfe0e33561907c12569d54b70e0f1f6",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
+      "sha256": "8bdf7234a5aac4acd491faa7924504dad5352931fe1a0caeaed06aaf151014aa",
+      "source": "plugins/hexaemeron/tests/test_version_relations.py"
     },
     "hermes-baseline-promotion": {
-      "source": "plugins/hermes/skills/hermes/scripts/hermes.py",
-      "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.hermes_baseline_promotion.classes",
         "evidence_references": "adapter_output.hermes_baseline_promotion.references",
@@ -3562,22 +3589,24 @@
         "transition": "adapter_output.hermes_baseline_promotion.transition",
         "unknowns": "adapter_output.hermes_baseline_promotion.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
+        "selector": "negative",
+        "sha256": "21b7cfde51cb96b1dcf1c0d070b01e4470807bc703694a4789fc76b903456eec"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
         "selector": "positive",
-        "sha256": "93948a31c0146893ba45f67c1b2e8fc508214387457df8cd06963f3b2d3f673d"
+        "sha256": "21b7cfde51cb96b1dcf1c0d070b01e4470807bc703694a4789fc76b903456eec"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
-        "selector": "negative",
-        "sha256": "93948a31c0146893ba45f67c1b2e8fc508214387457df8cd06963f3b2d3f673d",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_accepts_and_promotes_a_fully_verified_candidate",
+      "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
+      "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     "hermes-candidate-acceptance": {
-      "source": "plugins/hermes/skills/hermes/scripts/hermes.py",
-      "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.hermes_candidate_acceptance.classes",
         "evidence_references": "adapter_output.hermes_candidate_acceptance.references",
@@ -3589,22 +3618,24 @@
         "transition": "adapter_output.hermes_candidate_acceptance.transition",
         "unknowns": "adapter_output.hermes_candidate_acceptance.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
+        "selector": "negative",
+        "sha256": "203df62a25d54240c736c2502fa20a5fb6f341f70ae6c1cd42f23258db39ee29"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
         "selector": "positive",
-        "sha256": "ba61e5f17b196faedcdd1a682cfe4b560e5a0ccc94f920c195de15cdeb4939d2"
+        "sha256": "203df62a25d54240c736c2502fa20a5fb6f341f70ae6c1cd42f23258db39ee29"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
-        "selector": "negative",
-        "sha256": "ba61e5f17b196faedcdd1a682cfe4b560e5a0ccc94f920c195de15cdeb4939d2",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_accepts_and_promotes_a_fully_verified_candidate",
+      "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
+      "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     "hexaemeron-fizz-convert-properties": {
-      "source": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md",
-      "sha256": "59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "evidence_classes": "frontmatter.hexaemeron_fizz_convert_properties.evidence.classes",
         "evidence_references": "frontmatter.hexaemeron_fizz_convert_properties.evidence.references",
@@ -3616,22 +3647,24 @@
         "transition": "frontmatter.hexaemeron_fizz_convert_properties.transition",
         "unknowns": "frontmatter.hexaemeron_fizz_convert_properties.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
+        "selector": "negative",
+        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
         "selector": "positive",
-        "sha256": "ad774b6348c6645e0e5f6a450db7e46d1e7115e0ffd533cb6ef87f6fb0586c29"
+        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
-        "selector": "negative",
-        "sha256": "ad774b6348c6645e0e5f6a450db7e46d1e7115e0ffd533cb6ef87f6fb0586c29",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-fizz-harness-campaign": {
-      "source": "plugins/hexaemeron/skills/fizz/SKILL.md",
-      "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "authority": "frontmatter.hexaemeron_fizz_harness_campaign.authority",
         "evidence_classes": "frontmatter.hexaemeron_fizz_harness_campaign.evidence.classes",
@@ -3645,22 +3678,24 @@
         "transition": "frontmatter.hexaemeron_fizz_harness_campaign.transition",
         "unknowns": "frontmatter.hexaemeron_fizz_harness_campaign.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
+        "selector": "negative",
+        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
         "selector": "positive",
-        "sha256": "9a7eaed488e211e2bd8fcb2b51a8706e4cc33559f09e6132c19600834d88d73b"
+        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
-        "selector": "negative",
-        "sha256": "9a7eaed488e211e2bd8fcb2b51a8706e4cc33559f09e6132c19600834d88d73b",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-fizz-sync-drift": {
-      "source": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
-      "sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "evidence_classes": "frontmatter.hexaemeron_fizz_sync_drift.evidence.classes",
         "evidence_references": "frontmatter.hexaemeron_fizz_sync_drift.evidence.references",
@@ -3672,22 +3707,24 @@
         "transition": "frontmatter.hexaemeron_fizz_sync_drift.transition",
         "unknowns": "frontmatter.hexaemeron_fizz_sync_drift.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
+        "selector": "negative",
+        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
         "selector": "positive",
-        "sha256": "deb046fee799d760dcdbbd180e790c86384551ff73c032e1290ae6b5813474d0"
+        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
-        "selector": "negative",
-        "sha256": "deb046fee799d760dcdbbd180e790c86384551ff73c032e1290ae6b5813474d0",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-solidity-audit-report": {
-      "source": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-      "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "authority": "frontmatter.hexaemeron_solidity_audit_report.authority",
         "evidence_classes": "frontmatter.hexaemeron_solidity_audit_report.evidence.classes",
@@ -3701,22 +3738,24 @@
         "transition": "frontmatter.hexaemeron_solidity_audit_report.transition",
         "unknowns": "frontmatter.hexaemeron_solidity_audit_report.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
+        "selector": "negative",
+        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
         "selector": "positive",
-        "sha256": "48af3642a3523d711ab3481109f2a5e14cc34037164bfd9be2c000ca0d74db82"
+        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
-        "selector": "negative",
-        "sha256": "48af3642a3523d711ab3481109f2a5e14cc34037164bfd9be2c000ca0d74db82",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "horos-boundary-scan": {
-      "source": "plugins/horos/skills/horos/scripts/horos.py",
-      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.horos_boundary_scan.classes",
         "evidence_references": "adapter_output.horos_boundary_scan.references",
@@ -3728,22 +3767,24 @@
         "transition": "adapter_output.horos_boundary_scan.transition",
         "unknowns": "adapter_output.horos_boundary_scan.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
+        "selector": "negative",
+        "sha256": "8e17125a15fa60b6724e4dca62fabd5b16735458645de0ce06b57a38ad6720ce"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
         "selector": "positive",
-        "sha256": "680d5d9b99ac36912d2e81e95945a90d413cf3909ad7809d1c83fdf53adc202b"
+        "sha256": "8e17125a15fa60b6724e4dca62fabd5b16735458645de0ce06b57a38ad6720ce"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
-        "selector": "negative",
-        "sha256": "680d5d9b99ac36912d2e81e95945a90d413cf3909ad7809d1c83fdf53adc202b",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_check_passes_on_a_fresh_boundary",
+      "sha256": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e",
+      "source": "plugins/horos/tests/test_boundary.py"
     },
     "hypomnema-record-placement": {
-      "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "evidence_classes": "frontmatter.hypomnema_record_placement.evidence.classes",
         "evidence_references": "frontmatter.hypomnema_record_placement.evidence.references",
@@ -3755,22 +3796,24 @@
         "transition": "frontmatter.hypomnema_record_placement.transition",
         "unknowns": "frontmatter.hypomnema_record_placement.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
+        "selector": "negative",
+        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
         "selector": "positive",
-        "sha256": "5a6ad29898ffe2fd758123a8ba3030c35870a4f208d018ed9c5f1f60cc2fa0b0"
+        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
-        "selector": "negative",
-        "sha256": "5a6ad29898ffe2fd758123a8ba3030c35870a4f208d018ed9c5f1f60cc2fa0b0",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "janus-bounded-conformance": {
-      "source": "plugins/janus/scripts/janus.py",
-      "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.janus_bounded_conformance.authorised_by",
         "evidence_classes": "adapter_output.janus_bounded_conformance.classes",
@@ -3784,22 +3827,24 @@
         "transition": "adapter_output.janus_bounded_conformance.transition",
         "unknowns": "adapter_output.janus_bounded_conformance.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
+        "selector": "negative",
+        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "positive",
-        "sha256": "61e189b40d2eefe2b4a381d1b72caec18674fa15b836cb7afbdc8aa8f2e3de4f"
+        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
-        "selector": "negative",
-        "sha256": "61e189b40d2eefe2b4a381d1b72caec18674fa15b836cb7afbdc8aa8f2e3de4f",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_gate1_and_gate2_honest_deposit",
+      "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
+      "source": "plugins/janus/harness/test/WildcatConformance.t.sol"
     },
     "kronos-fiat-dispatch": {
-      "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-      "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.kronos_fiat_dispatch.authorised_by",
         "evidence_classes": "adapter_output.kronos_fiat_dispatch.classes",
@@ -3813,22 +3858,24 @@
         "transition": "adapter_output.kronos_fiat_dispatch.transition",
         "unknowns": "adapter_output.kronos_fiat_dispatch.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
+        "selector": "negative",
+        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "positive",
-        "sha256": "1b884d48784fe1815b4b0e705096828e61aa098267bf3545db0d79687c605231"
+        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
-        "selector": "negative",
-        "sha256": "1b884d48784fe1815b4b0e705096828e61aa098267bf3545db0d79687c605231",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "kronos-parked-lane": {
-      "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-      "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.kronos_parked_lane.classes",
         "evidence_references": "adapter_output.kronos_parked_lane.references",
@@ -3840,22 +3887,24 @@
         "transition": "adapter_output.kronos_parked_lane.transition",
         "unknowns": "adapter_output.kronos_parked_lane.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
+        "selector": "negative",
+        "sha256": "97d509bbd69bbbcdc6a48733625261b35d54772d881d59e69d52c5515b41b229"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
         "selector": "positive",
-        "sha256": "75b8a632daeeaa1790331731685471305d481a1ed8eb42c31a2c765fa168f145"
+        "sha256": "97d509bbd69bbbcdc6a48733625261b35d54772d881d59e69d52c5515b41b229"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
-        "selector": "negative",
-        "sha256": "75b8a632daeeaa1790331731685471305d481a1ed8eb42c31a2c765fa168f145",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_a_park_stores_the_reason_byte_for_byte",
+      "sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1",
+      "source": "plugins/hexaemeron/tests/test_kronos_scoreboard.py"
     },
     "lazarus-exact-replay": {
-      "source": "plugins/lazarus/scripts/lazarus.py",
-      "sha256": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.lazarus_exact_replay.classes",
         "evidence_references": "adapter_output.lazarus_exact_replay.references",
@@ -3867,22 +3916,24 @@
         "transition": "adapter_output.lazarus_exact_replay.transition",
         "unknowns": "adapter_output.lazarus_exact_replay.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
+        "selector": "negative",
+        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
         "selector": "positive",
-        "sha256": "91480d4fee804e498596bbd69aaccb0c8d54328a1c2f055c2500394fdd5d9775"
+        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
-        "selector": "negative",
-        "sha256": "91480d4fee804e498596bbd69aaccb0c8d54328a1c2f055c2500394fdd5d9775",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
+      "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+      "source": "plugins/lazarus/tests/test_goldfinch.py"
     },
     "lazarus-fixture-capture": {
-      "source": "plugins/lazarus/schemas/manifest-v1.json",
-      "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14",
-      "reader": "native-json-v1",
       "bindings": {
         "evidence_classes": "native_document.lazarus_fixture_capture.evidence.classes",
         "evidence_references": "native_document.lazarus_fixture_capture.evidence.references",
@@ -3894,22 +3945,24 @@
         "transition": "native_document.lazarus_fixture_capture.authorised_transition",
         "unknowns": "native_document.lazarus_fixture_capture.open_unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
+        "selector": "negative",
+        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
         "selector": "positive",
-        "sha256": "229736adca97e5fad815129c0577c28608fbe3db2311f6301d5784b99600c785"
+        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
-        "selector": "negative",
-        "sha256": "229736adca97e5fad815129c0577c28608fbe3db2311f6301d5784b99600c785",
-        "finding": "PM095"
-      }
+      "reader": "native-json-v1",
+      "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
+      "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+      "source": "plugins/lazarus/tests/test_goldfinch.py"
     },
     "lazarus-preservation-release": {
-      "source": "plugins/lazarus/schemas/release-v1.json",
-      "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d",
-      "reader": "native-json-v1",
       "bindings": {
         "authority": "native_document.lazarus_preservation_release.authority",
         "evidence_classes": "native_document.lazarus_preservation_release.evidence.classes",
@@ -3923,22 +3976,24 @@
         "transition": "native_document.lazarus_preservation_release.authorised_transition",
         "unknowns": "native_document.lazarus_preservation_release.open_unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
+        "selector": "negative",
+        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "positive",
-        "sha256": "9dac9b22f6da2d4ef762450def59a46a60154953cff1f9eaa4ede0235c55c202"
+        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
-        "selector": "negative",
-        "sha256": "9dac9b22f6da2d4ef762450def59a46a60154953cff1f9eaa4ede0235c55c202",
-        "finding": "PM095"
-      }
+      "reader": "native-json-v1",
+      "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
+      "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+      "source": "plugins/lazarus/tests/test_goldfinch.py"
     },
     "metron-change-decision": {
-      "source": "plugins/hexaemeron/skills/metron/SKILL.md",
-      "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "evidence_classes": "frontmatter.metron_change_decision.evidence.classes",
         "evidence_references": "frontmatter.metron_change_decision.evidence.references",
@@ -3950,22 +4005,24 @@
         "transition": "frontmatter.metron_change_decision.transition",
         "unknowns": "frontmatter.metron_change_decision.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
+        "selector": "negative",
+        "sha256": "1bb54619c4ce3128796412ba266548dabac5f5204d316bf061a93fc1d82bbdeb"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "positive",
-        "sha256": "e27383f1385375c434227cdf94dde7241e5071aa5bfac9de44b31d6dd733e7c0"
+        "sha256": "1bb54619c4ce3128796412ba266548dabac5f5204d316bf061a93fc1d82bbdeb"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
-        "selector": "negative",
-        "sha256": "e27383f1385375c434227cdf94dde7241e5071aa5bfac9de44b31d6dd733e7c0",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
+      "sha256": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77",
+      "source": "plugins/hexaemeron/tests/test_metron_check.py"
     },
     "pandects-search-record": {
-      "source": "plugins/pandects/scripts/pandects.py",
-      "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.pandects_search_record.authorised_by",
         "evidence_classes": "adapter_output.pandects_search_record.classes",
@@ -3979,22 +4036,24 @@
         "transition": "adapter_output.pandects_search_record.transition",
         "unknowns": "adapter_output.pandects_search_record.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
+        "selector": "negative",
+        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
         "selector": "positive",
-        "sha256": "3160e7631a2914271dfb2b200d7dd43659fdc5a2a549c16096b1e9a27eaab945"
+        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
-        "selector": "negative",
-        "sha256": "3160e7631a2914271dfb2b200d7dd43659fdc5a2a549c16096b1e9a27eaab945",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_a_law_with_every_part_passes",
+      "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2",
+      "source": "plugins/pandects/tests/test_checker.py"
     },
     "phylax-boundary-review": {
-      "source": "plugins/hexaemeron/skills/phylax/SKILL.md",
-      "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
-      "reader": "markdown-result-adapter-v1",
       "bindings": {
         "evidence_classes": "frontmatter.phylax_boundary_review.evidence.classes",
         "evidence_references": "frontmatter.phylax_boundary_review.evidence.references",
@@ -4006,22 +4065,24 @@
         "transition": "frontmatter.phylax_boundary_review.transition",
         "unknowns": "frontmatter.phylax_boundary_review.unknowns"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
+        "selector": "negative",
+        "sha256": "e0e590762c180382b6fa5f05d25889e0c4b87a74e43ba3e219e968d156abdd6e"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
         "selector": "positive",
-        "sha256": "bfd2711a931141ec3e71b08546eb2409ea709bb37a38baba6157bd174bbd1273"
+        "sha256": "e0e590762c180382b6fa5f05d25889e0c4b87a74e43ba3e219e968d156abdd6e"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
-        "selector": "negative",
-        "sha256": "bfd2711a931141ec3e71b08546eb2409ea709bb37a38baba6157bd174bbd1273",
-        "finding": "PM095"
-      }
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_phylax_review_positive",
+      "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+      "source": "plugins/hexaemeron/tests/test_promise_cases.py"
     },
     "probitas-dossier-verification": {
-      "source": "plugins/probitas/scripts/probitas.py",
-      "sha256": "b865685b342b4e853a5084242b17945478e2d5069533cc79933f5970eab361c6",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.probitas_dossier_verification.authorised_by",
         "evidence_classes": "adapter_output.probitas_dossier_verification.classes",
@@ -4035,22 +4096,24 @@
         "transition": "adapter_output.probitas_dossier_verification.transition",
         "unknowns": "adapter_output.probitas_dossier_verification.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
+        "selector": "negative",
+        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "positive",
-        "sha256": "3c31ddccf9abaad5bbbe91ca1a26f1db887905dd351419ac9c8ce65bfc0573d3"
+        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
-        "selector": "negative",
-        "sha256": "3c31ddccf9abaad5bbbe91ca1a26f1db887905dd351419ac9c8ce65bfc0573d3",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_it_exits_zero",
+      "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb",
+      "source": "plugins/probitas/tests/test_demo.py"
     },
     "tabularium-release-build": {
-      "source": "plugins/tabularium/scripts/tabularium.py",
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "evidence_classes": "adapter_output.tabularium_release_build.classes",
         "evidence_references": "adapter_output.tabularium_release_build.references",
@@ -4062,22 +4125,24 @@
         "transition": "adapter_output.tabularium_release_build.transition",
         "unknowns": "adapter_output.tabularium_release_build.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
+        "selector": "negative",
+        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "positive",
-        "sha256": "ac04408e8d951beb877d442a5354e53cf273e0a4e89a88f7e6880561c690a942"
+        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
-        "selector": "negative",
-        "sha256": "ac04408e8d951beb877d442a5354e53cf273e0a4e89a88f7e6880561c690a942",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_committed_release_verifies_offline_and_without_rewrites",
+      "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+      "source": "plugins/tabularium/tests/test_release.py"
     },
     "tabularium-release-verification": {
-      "source": "plugins/tabularium/scripts/tabularium.py",
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
-      "reader": "python-result-adapter-v1",
       "bindings": {
         "authority": "adapter_output.tabularium_release_verification.authorised_by",
         "evidence_classes": "adapter_output.tabularium_release_verification.classes",
@@ -4091,17 +4156,22 @@
         "transition": "adapter_output.tabularium_release_verification.transition",
         "unknowns": "adapter_output.tabularium_release_verification.unresolved"
       },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
+        "selector": "negative",
+        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
+      },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "positive",
-        "sha256": "da20893f9169f9a0636d863ee30b5d1174c9dec4a975ad8027c6e3f411cc392b"
+        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
       },
-      "negative": {
-        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
-        "selector": "negative",
-        "sha256": "da20893f9169f9a0636d863ee30b5d1174c9dec4a975ad8027c6e3f411cc392b",
-        "finding": "PM095"
-      }
+      "reader": "python-result-adapter-v1",
+      "selector": "test_committed_release_verifies_offline_and_without_rewrites",
+      "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+      "source": "plugins/tabularium/tests/test_release.py"
     }
   },
   "schema": "promise-machine-coverage/v1"
