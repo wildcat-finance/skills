@@ -4824,8 +4824,15 @@ def validate_runtime_result(
             or not closed_non_empty_scalar(item.get("detail"))
             for item in unknowns
         )
-        or "domain-operation-not-run" not in {item["code"] for item in unknowns if isinstance(item, dict) and "code" in item}
     ):
+        return refuse(
+            "unknowns",
+            "the explicit domain-operation-not-run unknown is absent or malformed",
+        )
+    unknown_codes = [item["code"] for item in unknowns]
+    if len(set(unknown_codes)) != len(unknown_codes):
+        return refuse("unknowns", "unknown codes are repeated")
+    if "domain-operation-not-run" not in set(unknown_codes):
         return refuse(
             "unknowns",
             "the explicit domain-operation-not-run unknown is absent or malformed",
