@@ -240,6 +240,7 @@ class StagingRootTests(unittest.TestCase):
             (root / "journals").mkdir()
             (root / "journals" / "logs.jsonl").symlink_to(Path(elsewhere) / "captured")
             staging = Staging(root, plan())
+            staging.resume()
             with self.assertRaisesRegex(AlexandriaError, "must not be a symlink"):
                 staging.record(0, "logs", b"{}", b"{}")
             staging.close()
@@ -299,6 +300,7 @@ class StagingTests(unittest.TestCase):
 
     def test_resume_without_a_checkpoint_starts_at_zero_and_discards_orphans(self):
         with Staging(self.root, self.plan) as staging:
+            staging.resume()
             staging.record(0, "logs", b"{}", b"{}")
         with Staging(self.root, self.plan) as staging:
             self.assertEqual(staging.resume(), {"last_accepted": None, "next_shard": 0, "records": 0})
@@ -344,6 +346,7 @@ class StagingTests(unittest.TestCase):
 
     def test_a_shard_outside_the_plan_refuses(self):
         with Staging(self.root, self.plan) as staging:
+            staging.resume()
             with self.assertRaisesRegex(AlexandriaError, "outside the plan"):
                 staging.record(999, "logs", b"{}", b"{}")
             with self.assertRaisesRegex(AlexandriaError, "outside the plan"):
@@ -351,11 +354,13 @@ class StagingTests(unittest.TestCase):
 
     def test_an_unknown_evidence_class_refuses(self):
         with Staging(self.root, self.plan) as staging:
+            staging.resume()
             with self.assertRaisesRegex(AlexandriaError, "unknown evidence class"):
                 staging.record(0, "../escape", b"{}", b"{}")
 
     def test_a_malformed_commit_hash_refuses(self):
         with Staging(self.root, self.plan) as staging:
+            staging.resume()
             with self.assertRaisesRegex(AlexandriaError, "32-byte hash"):
                 staging.commit(0, 1000, "0xnope")
 
@@ -372,6 +377,79 @@ class StagingTests(unittest.TestCase):
             with Staging(self.root, self.plan) as staging:
                 collect(staging, 2)
                 staging.resume()
+
+
+
+class StagingGuardTests(unittest.TestCase):
+    """One case per round-1 audit finding, each failing against the parent."""
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.root = Path(self.directory.name)
+        self.addCleanup(self.directory.cleanup)
+        self.plan = plan(1000, 1099, 25)
+
+    def test_a_symlinked_checkpoint_refuses_instead_of_discarding_the_journals(self):
+        elsewhere = tempfile.TemporaryDirectory()
+        self.addCleanup(elsewhere.cleanup)
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 1)
+        journal = self.root / "journals" / "logs.jsonl"
+        staged = journal.stat().st_size
+        self.assertGreater(staged, 0)
+
+        checkpoint = self.root / "checkpoint.json"
+        moved = Path(elsewhere.name) / "checkpoint.json"
+        moved.write_bytes(checkpoint.read_bytes())
+        checkpoint.unlink()
+        checkpoint.symlink_to(moved)
+
+        with Staging(self.root, self.plan) as staging:
+            with self.assertRaisesRegex(AlexandriaError, "must not be a symlink"):
+                staging.resume()
+        self.assertEqual(journal.stat().st_size, staged)
+
+    def test_a_checkpoint_that_is_not_a_regular_file_refuses(self):
+        (self.root / "checkpoint.json").mkdir()
+        with Staging(self.root, self.plan) as staging:
+            with self.assertRaisesRegex(AlexandriaError, "not a regular file"):
+                staging.resume()
+
+    def test_a_journal_directory_that_is_a_symlinked_file_refuses_without_a_traceback(self):
+        elsewhere = tempfile.TemporaryDirectory()
+        self.addCleanup(elsewhere.cleanup)
+        target = Path(elsewhere.name) / "captured"
+        target.write_text("")
+        root = self.root / "hostile"
+        root.mkdir()
+        (root / "journals").symlink_to(target)
+        with self.assertRaises(AlexandriaError):
+            Staging(root, self.plan)
+
+    def test_a_record_past_the_journal_ceiling_refuses_where_it_is_written(self):
+        with mock.patch("alexandria_lib.interval.MAX_JOURNAL_BYTES", 64):
+            with Staging(self.root, self.plan) as staging:
+                staging.resume()
+                with self.assertRaisesRegex(AlexandriaError, "would exceed"):
+                    staging.record(0, "logs", b"{}", b'{"result":"' + b"x" * 200 + b'"}')
+        self.assertEqual((self.root / "journals" / "logs.jsonl").stat().st_size, 0)
+
+    def test_the_written_journal_can_always_be_read_back(self):
+        with mock.patch("alexandria_lib.interval.MAX_JOURNAL_BYTES", 4096):
+            with Staging(self.root, self.plan) as staging:
+                staging.resume()
+                for shard in range(4):
+                    staging.record(shard, "logs", b"{}", b'{"result":"' + b"x" * 64 + b'"}')
+                staging.commit(3, 1003, HASH)
+                self.assertEqual(len(list(staging.entries("logs"))), 4)
+
+    def test_a_commit_before_resume_refuses_rather_than_undercounting(self):
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 1)
+        with Staging(self.root, self.plan) as staging:
+            staging.record(1, "logs", b"{}", b"{}")
+            with self.assertRaisesRegex(AlexandriaError, "record baseline"):
+                staging.commit(1, 1001, HASH)
 
 
 class SchemaTests(unittest.TestCase):
@@ -400,6 +478,7 @@ class SchemaTests(unittest.TestCase):
     def test_the_checkpoint_schema_accepts_the_fields_the_module_emits(self):
         with tempfile.TemporaryDirectory() as name:
             with Staging(Path(name), plan()) as staging:
+                staging.resume()
                 staging.record(0, "logs", b"{}", b"{}")
                 checkpoint = staging.commit(0, 1000, HASH)
         schema = self.schema("interval-checkpoint-v1")
