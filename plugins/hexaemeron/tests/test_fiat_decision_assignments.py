@@ -304,6 +304,86 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
     def test_worktree_clean_filter_refuses_before_worktree_observation(self):
         self.assert_clean_filter_refuses_without_execution("--worktree")
 
+    def test_filter_added_after_preflight_cannot_execute_during_status(self):
+        with tempfile.TemporaryDirectory() as outside:
+            sentinel = Path(outside) / "clean-filter-executed"
+            write(
+                self.repo.path,
+                ".git/info/attributes",
+                "* filter=hostile\n",
+            )
+            tracked = self.repo.path / "docs/decisions/ADR-060-existing.md"
+            os.utime(tracked, None)
+            original_probe = self.module.bounded_probe
+            config_probes = 0
+            installed = False
+
+            def changing_probe(
+                base_dir,
+                program,
+                argv,
+                extra_env=None,
+                *,
+                environment=None,
+            ):
+                nonlocal config_probes, installed
+                is_status = program == "git" and "status" in argv
+                try:
+                    result = original_probe(
+                        base_dir,
+                        program,
+                        argv,
+                        extra_env,
+                        environment=environment,
+                    )
+                finally:
+                    if is_status and installed:
+                        git(
+                            self.repo.path,
+                            "config",
+                            "--local",
+                            "--unset-all",
+                            "filter.hostile.clean",
+                            check=False,
+                        )
+                if program == "git" and len(argv) > 1 and argv[1] == "config":
+                    config_probes += 1
+                    if config_probes == 2:
+                        git(
+                            self.repo.path,
+                            "config",
+                            "--local",
+                            "filter.hostile.clean",
+                            "sh -c 'touch \"$FILTER_SENTINEL\"; cat'",
+                        )
+                        installed = True
+                return result
+
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"FILTER_SENTINEL": str(sentinel)},
+                ),
+                mock.patch.object(
+                    self.module,
+                    "bounded_probe",
+                    side_effect=changing_probe,
+                ),
+            ):
+                receipt = self.receipt()
+            configured = git(
+                self.repo.path,
+                "config",
+                "--local",
+                "--get-all",
+                "filter.hostile.clean",
+                check=False,
+            )
+            self.assertEqual(
+                (receipt["schema"], sentinel.exists(), configured),
+                ("fiat-decision-assignment-composition/v1", False, ""),
+            )
+
     def test_stale_base_ref_refuses_before_a_receipt(self):
         git(self.repo.path, "checkout", "--quiet", "main")
         write(self.repo.path, "base-advance.txt", "advanced\n")

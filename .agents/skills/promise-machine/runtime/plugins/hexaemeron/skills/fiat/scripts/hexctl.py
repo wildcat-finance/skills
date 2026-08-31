@@ -6801,26 +6801,159 @@ def _decision_assignment_reject_clean_filters(base_dir: str) -> None:
         die("decision assignment repository configures a clean or process filter")
 
 
+def _decision_assignment_index_snapshot(path: str, label: str) -> bytes:
+    """Read one stable regular Git index without following its final path."""
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        named_before = os.lstat(path)
+        if (
+            stat.S_ISLNK(named_before.st_mode)
+            or not stat.S_ISREG(named_before.st_mode)
+            or named_before.st_size > GIT_OUTPUT_MAX
+        ):
+            die(f"decision assignment {label} is not a bounded regular file")
+        descriptor = os.open(path, flags)
+        with os.fdopen(descriptor, "rb") as handle:
+            opened = os.fstat(handle.fileno())
+            raw = handle.read(GIT_OUTPUT_MAX + 1)
+            finished = os.fstat(handle.fileno())
+        named_after = os.lstat(path)
+    except OSError:
+        die(f"decision assignment {label} cannot be read")
+    identity = lambda value: (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+    if (
+        len(raw) > GIT_OUTPUT_MAX
+        or not stat.S_ISREG(opened.st_mode)
+        or identity(named_before) != identity(opened)
+        or identity(opened) != identity(finished)
+        or identity(finished) != identity(named_after)
+        or len(raw) != finished.st_size
+    ):
+        die(f"decision assignment {label} changed during read")
+    return raw
+
+
+def _decision_assignment_private_status(
+    base_dir: str, repository: tuple[str, str], head: str
+) -> bytes:
+    """Observe one worktree through private fixed Git metadata and index bytes."""
+    git_dir, common_dir = repository
+    index_path = os.path.join(git_dir, "index")
+    index = _decision_assignment_index_snapshot(index_path, "worktree index")
+    shared_raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--shared-index-path"],
+        "decision assignment shared index path cannot be read",
+    )
+    try:
+        shared_path = shared_raw.decode("utf-8", "strict").strip()
+    except UnicodeDecodeError:
+        shared_path = "\x00"
+    shared = None
+    if shared_path:
+        shared_name = os.path.basename(shared_path)
+        allowed_parents = {os.path.realpath(git_dir), os.path.realpath(common_dir)}
+        if (
+            not os.path.isabs(shared_path)
+            or os.path.realpath(os.path.dirname(shared_path)) not in allowed_parents
+            or re.fullmatch(r"sharedindex\.[0-9a-f]{40}(?:[0-9a-f]{24})?", shared_name)
+            is None
+        ):
+            die("decision assignment shared index path is malformed")
+        shared = (
+            shared_name,
+            _decision_assignment_index_snapshot(shared_path, "shared worktree index"),
+        )
+    object_format = "sha1" if len(head) == 40 else "sha256"
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="fiat-decision-assignment-worktree-"
+        ) as temporary:
+            private_root = os.path.join(temporary, "repository")
+            bounded_tool(
+                temporary,
+                "git",
+                [
+                    "init",
+                    "--quiet",
+                    f"--object-format={object_format}",
+                    private_root,
+                ],
+                "decision assignment private worktree repository cannot be initialized",
+                environment=_native_relation_environment(),
+            )
+            private_git = os.path.join(private_root, ".git")
+            objects = os.path.join(common_dir, "objects")
+            try:
+                objects_metadata = os.lstat(objects)
+                objects_raw = os.fsencode(objects)
+            except (OSError, UnicodeError):
+                die("decision assignment native object directory cannot be read")
+            if (
+                not stat.S_ISDIR(objects_metadata.st_mode)
+                or stat.S_ISLNK(objects_metadata.st_mode)
+                or not os.path.isabs(objects)
+                or not objects_raw
+                or len(objects_raw) > 4096
+                or any(byte in objects_raw for byte in (b"\x00", b"\n", b"\r"))
+            ):
+                die("decision assignment native object directory is malformed")
+            _write_decision_assignment_replay_file(
+                os.path.join(private_git, "objects", "info", "alternates"),
+                objects_raw + b"\n",
+            )
+            _write_decision_assignment_replay_file(
+                os.path.join(private_git, "index"), index
+            )
+            if shared is not None:
+                _write_decision_assignment_replay_file(
+                    os.path.join(private_git, shared[0]), shared[1]
+                )
+            bounded_tool(
+                private_root,
+                "git",
+                ["--no-replace-objects", "update-ref", "--no-deref", "HEAD", head],
+                "decision assignment private worktree HEAD cannot be fixed",
+                environment=_native_relation_environment(),
+            )
+            return bounded_tool(
+                private_root,
+                "git",
+                [
+                    "--no-replace-objects",
+                    f"--work-tree={os.path.realpath(base_dir)}",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    f"core.hooksPath={os.devnull}",
+                    "status",
+                    "--porcelain=v1",
+                    "-z",
+                    "--untracked-files=all",
+                    "--ignore-submodules=all",
+                ],
+                "decision assignment worktree status cannot be read",
+                environment=_native_relation_environment(),
+            )
+    except OSError:
+        die("decision assignment private worktree repository cannot be prepared")
+
+
 def _decision_assignment_worktree(base_dir: str) -> tuple[tuple[str, str], str, bytes]:
     """Capture the repository, HEAD, and exact clean status without locks."""
     _decision_assignment_reject_clean_filters(base_dir)
     repository = _native_relation_repository_identity(base_dir)
     head = _native_relation_commit(base_dir, "HEAD", "decision assignment worktree HEAD")
-    status = _native_relation_git(
-        base_dir,
-        [
-            "-c",
-            "core.fsmonitor=false",
-            "-c",
-            f"core.hooksPath={os.devnull}",
-            "status",
-            "--porcelain=v1",
-            "-z",
-            "--untracked-files=all",
-            "--ignore-submodules=all",
-        ],
-        "decision assignment worktree status cannot be read",
-    )
+    status = _decision_assignment_private_status(base_dir, repository, head)
     return repository, head, status
 
 
