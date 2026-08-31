@@ -1957,7 +1957,7 @@
       "required": [
         "acquisition", "acquisition_sha256", "adapter", "argv", "context",
         "endpoint", "endpoint_model", "environment_allowlist",
-        "evaluation_output_tokens", "executable", "executable_sha256", "family",
+        "evaluation_output_tokens", "evaluation_seed", "executable", "executable_sha256", "family",
         "fixed_environment", "id", "invocation_files", "max_stderr_bytes",
         "max_stdout_bytes", "max_token_parameter", "measurement_output_tokens",
         "model", "provider", "provider_policy", "roles", "schema",
@@ -1994,6 +1994,12 @@
           "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" }
         },
         "evaluation_output_tokens": { "type": "integer", "minimum": 1, "maximum": 2048 },
+        "evaluation_seed": {
+          "oneOf": [
+            { "const": 0 },
+            { "type": "null" }
+          ]
+        },
         "executable": { "type": "string", "minLength": 1, "maxLength": 1024 },
         "executable_sha256": { "$ref": "#/$defs/sha256" },
         "family": { "$ref": "#/$defs/profileFamily" },

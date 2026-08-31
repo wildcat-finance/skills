@@ -178,6 +178,7 @@ MAX_ADAPTER_ARGV = 32
 MAX_ADAPTER_ENVIRONMENT = 16
 MAX_ANSWER_ID_BYTES = 128
 MAX_PACKET_BYTES = 4_194_304
+EVALUATION_SEED = 0
 MAX_CHAT_TRANSPORT_TOKENS = 4_096
 DECIMAL_WORK_PRECISION = 256
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
@@ -7504,6 +7505,7 @@ def _validate_external_profile(
         "invocation_files",
         "argv",
         "environment_allowlist",
+        "evaluation_seed",
         "fixed_environment",
         "timeout_seconds",
         "max_stdout_bytes",
@@ -7593,6 +7595,26 @@ def _validate_external_profile(
     _bounded_integer(profile["max_stderr_bytes"], f"{field}.max_stderr_bytes", MAX_ADAPTER_STDERR_BYTES, minimum=1)
     _bounded_integer(profile["measurement_output_tokens"], f"{field}.measurement_output_tokens", 16, minimum=1)
     _bounded_integer(profile["evaluation_output_tokens"], f"{field}.evaluation_output_tokens", 2048, minimum=1)
+    if "evaluation" in roles:
+        if (
+            _bounded_integer(
+                profile["evaluation_seed"],
+                f"{field}.evaluation_seed",
+                2_147_483_647,
+            )
+            != EVALUATION_SEED
+        ):
+            refuse(
+                "NOE-E-ADAPTER.PARAMETER",
+                f"{field}.evaluation_seed",
+                "evaluation profiles must use the fixed seed",
+            )
+    elif profile["evaluation_seed"] is not None:
+        refuse(
+            "NOE-E-ADAPTER.PARAMETER",
+            f"{field}.evaluation_seed",
+            "measurement-only profiles cannot carry an evaluation seed",
+        )
     if max(
         int(profile["measurement_output_tokens"]),
         int(profile["evaluation_output_tokens"]),
@@ -7607,7 +7629,7 @@ def _validate_external_profile(
     supported_parameters = set(acquisition["supported_parameters"])
     if profile["max_token_parameter"] not in supported_parameters or (
         "evaluation" in roles
-        and not {"response_format", "structured_outputs"} <= supported_parameters
+        and not {"response_format", "seed", "structured_outputs"} <= supported_parameters
     ):
         refuse(
             "NOE-E-ADAPTER.PARAMETER",
@@ -8262,6 +8284,12 @@ def _adapter_request_bytes(
 ) -> tuple[bytes, str]:
     if mode not in {"evaluation", "measurement"}:
         refuse("NOE-E-ADAPTER.MODE", "adapter_request.mode", "unknown adapter mode")
+    if mode not in profile["roles"]:
+        refuse(
+            "NOE-E-ADAPTER.MODE",
+            "adapter_request.mode",
+            "profile does not authorise this adapter mode",
+        )
     if len(prompt) > MAX_ADAPTER_INPUT_BYTES:
         refuse("NOE-E-ADAPTER.INPUT_CAP", "adapter_request.prompt", "prompt exceeds its bound")
     try:
@@ -8277,6 +8305,7 @@ def _adapter_request_bytes(
         "adapter": profile["adapter"],
         "context_nonce": nonce,
         "endpoint": profile["endpoint"],
+        "evaluation_seed": profile["evaluation_seed"] if mode == "evaluation" else None,
         "max_output_tokens": output_tokens,
         "max_token_parameter": profile["max_token_parameter"],
         "mode": mode,
@@ -8404,6 +8433,7 @@ def _openrouter_adapter() -> int:
                 "adapter",
                 "context_nonce",
                 "endpoint",
+                "evaluation_seed",
                 "max_output_tokens",
                 "max_token_parameter",
                 "mode",
@@ -8423,6 +8453,27 @@ def _openrouter_adapter() -> int:
         mode = request["mode"]
         if mode not in {"measurement", "evaluation"}:
             refuse("NOE-E-ADAPTER.MODE", "adapter_request.mode", "child mode is invalid")
+        evaluation_seed = request["evaluation_seed"]
+        if mode == "evaluation":
+            if (
+                _bounded_integer(
+                    evaluation_seed,
+                    "adapter_request.evaluation_seed",
+                    2_147_483_647,
+                )
+                != EVALUATION_SEED
+            ):
+                refuse(
+                    "NOE-E-ADAPTER.PARAMETER",
+                    "adapter_request.evaluation_seed",
+                    "child evaluation seed is not fixed",
+                )
+        elif evaluation_seed is not None:
+            refuse(
+                "NOE-E-ADAPTER.PARAMETER",
+                "adapter_request.evaluation_seed",
+                "measurement requests cannot carry an evaluation seed",
+            )
         model = _safe_text(request["model"], "adapter_request.model", 256)
         prompt = _safe_text(request["prompt"], "adapter_request.prompt", MAX_ADAPTER_INPUT_BYTES, controls=True)
         _safe_text(request["context_nonce"], "adapter_request.context_nonce", 128)
@@ -8484,6 +8535,7 @@ def _openrouter_adapter() -> int:
             "usage": {"include": True},
         }
         if mode == "evaluation":
+            payload["seed"] = evaluation_seed
             payload["response_format"] = {
                 "json_schema": {
                     "name": "noema_answer",

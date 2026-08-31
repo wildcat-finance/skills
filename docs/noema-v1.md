@@ -644,8 +644,11 @@ and one-through-four-document amortised ratios remain evidence, but a single
 document ratio is not a substitute acceptance gate.
 
 Evaluation emits one answer-free complete-source prompt and one Noema
-kernel/dictionary/slice prompt per case, one fresh process and nonce each. The
-Noema prompt contains no Markdown source excerpt. Both representations receive
+kernel/dictionary/slice prompt per case, one fresh process and nonce each, and
+the fixed evaluation seed `0`. The seed is part of the profile and exact
+adapter request; it reduces sampling variance but is not a provider-determinism
+claim. Measurement requests carry no seed. The Noema prompt contains no
+Markdown source excerpt. Both representations receive
 the same closed runtime context: selected authority, tools, operation, state,
 target and facts. `authority` lists established authorising actors. Facts bind
 exact propositions to `true`, `false` or `unknown`; an absent condition is
@@ -671,8 +674,10 @@ run records that run; it does not predict a rerun or establish model quality.
 requested and endpoint model ids, provider name and exact route tag, context
 and completion caps, quantisation, supported request parameters, uncached
 prompt/completion prices, the explicit per-request price and threshold
-overrides. Its acquisition digest is separate from the complete profile
-digest. A provider-private vocabulary is `null`, never an invented checksum.
+overrides. Evaluation profiles also bind seed `0` and refuse an endpoint whose
+acquisition does not advertise `seed`; measurement-only profiles bind `null`.
+Its acquisition digest is separate from the complete profile digest. A
+provider-private vocabulary is `null`, never an invented checksum.
 
 External tokenizer or model programs are explicit digest-bound argv lists with
 a cleared environment, minimal allowlist, timeout and output cap. The bundled
@@ -682,7 +687,8 @@ mode prevents repository and user-site modules from shadowing its transport.
 Requests bind one provider route, disable fallbacks, require declared
 parameters, deny data collection,
 require zero-data-retention routing and cap prompt, completion and per-request
-price at the acquired base rate. A route reporting no per-request fee records
+price at the acquired base rate. Evaluation calls send the profile-bound seed
+`0`; measurement calls omit it. A route reporting no per-request fee records
 and sends an exact zero rather than leaving that spend class unbounded. The
 credential crosses only as a private regular-file path and is never an
 argument, prompt, result or fixture value.

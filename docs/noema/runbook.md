@@ -358,7 +358,11 @@ critical vectors. Unlike tokenizer identities are never compared as one
 cohort, and dictionary, alias and kernel cost is never hidden.
 
 `emit-evaluation` writes one answer-free source prompt and one Noema prompt per
-case, one context nonce each, and a manifest written last. `tally-evaluation`
+case, one context nonce each, one profile-bound evaluation seed fixed at `0`,
+and a manifest written last. Every evaluation endpoint must advertise `seed`;
+measurement-only profiles carry `null` and measurement requests omit it. The
+fixed seed reduces sampling variance but does not claim provider determinism.
+`tally-evaluation`
 rejects duplicate, missing, extra, unknown or cross-paired answers; binds exact
 tree, source, graph, kernel, projection, profile, case-set and model-family
 identities; and reports each required decision, refusal and unknown separately.
@@ -414,8 +418,9 @@ under-counting, changed executable or vocabulary digest, unavailable profile,
 non-integer and negative counts, unlike cohorts, threshold boundaries, packet
 partial writes, prompt answer leakage, one-case context binding, duplicate and
 missing answers, family aliases, stale tree/profile/model ids, unknown answer
-values, timeout, output cap, environment allowlist, secret-shaped output and
-atomic reports. Audit repairs use
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use
 `python3 tests/run_tests.py --elenchus-report {report}`, format
 `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
 `.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
@@ -466,3 +471,25 @@ record.
 **Steps touched.** Step 5.
 
 **Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Step 5 evaluation profiles bind the fixed seed `0`, require
+the acquired endpoint to advertise `seed`, and send that seed only on
+evaluation requests. Measurement-only profiles bind `null`; measurement
+requests omit the field. Adapter request digests, schemas, fixtures and hostile
+tests cover the boundary. The fixed gates and selected models are unchanged.
+
+**Why.** Two exact unseeded cohorts at the first audit checkpoint both scored
+15/16 when Google permitted the Phylax source case that its Noema arm and both
+OpenAI arms refused. Controlled single-case probes then changed that answer
+under semantically irrelevant request sampling. An unseeded one-shot gate is
+not a reproducible experiment. Seed `0` was selected before the rerun; no seed
+search or quorum rule is permitted. The seed reduces sampling variance but does
+not claim provider determinism, so a repeated fixed-seed cohort remains
+evidence rather than stress testing.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds. Integration remains out of
+scope.

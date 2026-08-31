@@ -274,6 +274,7 @@ def fake_external_profile(
     mode: str = "success",
     answer: str = "answer.fake",
 ):
+    role_values = sorted(roles)
     vocabulary = sha256(f"{family}-vocabulary".encode()).hexdigest()
     endpoint_model = model + "-20260830"
     acquisition = {
@@ -294,7 +295,7 @@ def fake_external_profile(
         "provider": provider,
         "provider_tag": "fake/local",
         "quantization": "exact-test-double",
-        "supported_parameters": ["max_tokens", "response_format", "structured_outputs"],
+        "supported_parameters": ["max_tokens", "response_format", "seed", "structured_outputs"],
         "vocabulary_sha256": vocabulary,
     }
     return {
@@ -313,6 +314,7 @@ def fake_external_profile(
         "endpoint_model": acquisition["endpoint_model"],
         "environment_allowlist": [],
         "evaluation_output_tokens": 64,
+        "evaluation_seed": 0 if "evaluation" in role_values else None,
         "executable": str(executable),
         "executable_sha256": sha256(executable.read_bytes()).hexdigest(),
         "family": family,
@@ -338,7 +340,7 @@ def fake_external_profile(
             "require_parameters": True,
             "zdr": True,
         },
-        "roles": sorted(roles),
+        "roles": role_values,
         "schema": "noema-external-profile/v1",
         "timeout_seconds": 2,
         "tokenizer": model + "/provider-accounting",
@@ -600,7 +602,7 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "d524ea2419a75e4029d4dfc676669643f781ac92f0f88231750ca3d727b3372a",
+            "0ec314eb5ef38f9524c1b79000fbaf647c87ef963a1e3cdb30d8cf684d4e3e3c",
         )
 
     def test_repository_python_pin_is_exact(self):
@@ -683,6 +685,10 @@ class NoemaScaffoldTests(unittest.TestCase):
                 ["measurement"],
                 ["evaluation", "measurement"],
             ],
+        )
+        self.assertEqual(
+            [profile["evaluation_seed"] for profile in profiles],
+            [None, 0, None, 0],
         )
 
     def test_schema_binds_mutation_assignments_and_critical_vectors(self):
@@ -6560,6 +6566,143 @@ class ExternalAdapterTests(unittest.TestCase):
         profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
         self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
 
+    def test_missing_seed_support_refuses_evaluation_profile(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["supported_parameters"].remove("seed")
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_missing_evaluation_seed_refuses(self):
+        profile = self.profile()
+        del profile["evaluation_seed"]
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-TYPE.KEYS")
+
+    def test_changed_evaluation_seed_refuses(self):
+        profile = self.profile(evaluation_seed=1)
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_measurement_only_profile_requires_null_evaluation_seed(self):
+        profile = fake_external_profile(self.executable, roles=("measurement",))
+        self.assertIsNone(profile["evaluation_seed"])
+        self.assertIs(
+            noema._validate_external_profile(profile, ROOT, "profile", verify_files=True),
+            profile,
+        )
+        profile["evaluation_seed"] = 0
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_adapter_request_applies_seed_only_to_evaluation(self):
+        profile = self.profile()
+        evaluation_raw, _evaluation_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        measurement_raw, _measurement_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="measurement",
+            context_nonce="context.measurement",
+        )
+        self.assertEqual(json.loads(evaluation_raw)["evaluation_seed"], 0)
+        self.assertIsNone(json.loads(measurement_raw)["evaluation_seed"])
+
+    def test_measurement_only_profile_cannot_invoke_evaluation(self):
+        profile = fake_external_profile(self.executable, roles=("measurement",))
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._adapter_request_bytes(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.evaluation",
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.MODE")
+
+    def test_openrouter_child_refuses_measurement_seed_leakage(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="measurement",
+            context_nonce="context.measurement",
+        )
+        request = json.loads(request_raw)
+        request["evaluation_seed"] = 0
+        stdin = mock.Mock()
+        stdin.buffer = io.BytesIO(noema._canonical_json(request))
+        stdout = mock.Mock()
+        stdout.buffer = io.BytesIO()
+        with (
+            mock.patch.object(noema.sys, "stdin", stdin),
+            mock.patch.object(noema.sys, "stdout", stdout),
+        ):
+            self.assertEqual(noema._openrouter_adapter(), 0)
+        response = json.loads(stdout.buffer.getvalue())
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.PARAMETER")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_openrouter_child_sends_the_bound_evaluation_seed(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        credential = self.directory / "openrouter-key"
+        write_bytes(credential, b"sk-or-v1-test-only-value\n")
+        credential.chmod(0o600)
+        provider_response = noema._canonical_json(
+            {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"answer_id":"answer.fake"}'},
+                    }
+                ],
+                "id": "generation.test",
+                "model": profile["model"],
+                "provider": profile["provider"],
+                "usage": {"completion_tokens": 1, "cost": "0.000001", "prompt_tokens": 8},
+            }
+        )
+
+        class CaptureOpener:
+            request = None
+
+            def open(self, request, timeout):
+                self.request = request
+                self.timeout = timeout
+                return io.BytesIO(provider_response)
+
+        opener = CaptureOpener()
+        stdin = mock.Mock()
+        stdin.buffer = io.BytesIO(request_raw)
+        stdout = mock.Mock()
+        stdout.buffer = io.BytesIO()
+        with (
+            mock.patch.object(noema.sys, "stdin", stdin),
+            mock.patch.object(noema.sys, "stdout", stdout),
+            mock.patch.object(noema.urllib.request, "build_opener", return_value=opener),
+            mock.patch.dict(
+                noema.os.environ,
+                {noema.OPENROUTER_KEY_PATH_ENV: str(credential)},
+                clear=False,
+            ),
+        ):
+            self.assertEqual(noema._openrouter_adapter(), 0)
+        self.assertIsNotNone(opener.request)
+        self.assertEqual(json.loads(opener.request.data)["seed"], 0)
+        self.assertEqual(json.loads(stdout.buffer.getvalue())["status"], "recorded")
+
     def test_environment_overlap_refuses(self):
         profile = self.profile(environment_allowlist=["NOEMA_FAKE_MODE"])
         self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.ENVIRONMENT")
@@ -6824,6 +6967,10 @@ class ExternalAdapterTests(unittest.TestCase):
         self.assertEqual(
             {profile["evaluation_output_tokens"] for profile in evaluation},
             {2048},
+        )
+        self.assertEqual({profile["evaluation_seed"] for profile in evaluation}, {0})
+        self.assertTrue(
+            all("seed" in profile["acquisition"]["supported_parameters"] for profile in evaluation)
         )
 
     def test_clean_git_identity_rejects_untracked_bytes(self):
