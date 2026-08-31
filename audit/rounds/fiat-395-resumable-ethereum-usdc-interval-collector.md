@@ -104,3 +104,37 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 423 of 423 with zero skips, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:4` with the reorg conformance report passing on seven cases. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `_ask` catches `AlexandriaError` from the transport, so a caller-supplied transport that raises something else propagates without a receipt. `HttpsTransport` raises only `TransportError`, and catching everything would swallow a `KeyboardInterrupt` during a long collection, which is the one exception an operator most wants to work. The three items recorded under round 1 still stand, as do S1-R1-07 and S2-R1-04.
+
+## Step 4, round 1 -- 2026-08-31T05:50:08Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: reconciliation-bias=reviewed; endpoint-leak=reviewed; unbounded-response=reviewed; staging-path-escape=reviewed; torn-shard=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; silent-truncation=not-applicable; reorg-rewind=not-applicable; epoch-gap=not-applicable; coverage-inflation=not-applicable
+
+Not checked: x-ray, solidity-auditor and fizz did not run; the `security_suite` receipt waives them because the run ships no Solidity. `coverage-inflation` belongs to step 5, where the capture plan is emitted, and this step declares no coverage. The three bundled lints ran over the changed command, the changed module and the changed test module and each exited 0. No live second provider answered: the reconciler was driven against a fixture built to disagree in three declared ways, so every claim here is about the comparison rather than about two providers that both answered. The round read the diff for the register's concerns the lints cannot see and drove the reconciler by hand against an interrupted tree.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | medium | plugins/alexandria/scripts/usdc_interval.py | Reconciliation opened the staging tree with `resume`, which truncates every journal back to its checkpoint. On a completely collected tree that changes nothing, so a reconciliation over a finished collection never showed it. On an interrupted tree it discarded the uncommitted bytes and then refused: measured, the journals went from 1902, 7966 and 2595 bytes to 1425, 5973 and 2595 before `the interval is not completely collected` was raised. A reader that mutates what it reads can destroy evidence on the path that refuses to use it. | fixed in 0d8a0a18dbf74d4519b1885bc3f0deac7324d8c6 |
+| S4-R1-02 | medium | plugins/alexandria/scripts/alexandria_lib/interval.py | Both journal readers used `load_bytes` at its default 8,388,608-byte control limit while the collector accepts a response up to 67,108,864 bytes. A staged record in that band could be written and never read back: an 8,388,661-byte record refuses with `exceeds the 8388608-byte limit`. The writer and the reader have to agree about what they hold. | fixed in 0d8a0a18dbf74d4519b1885bc3f0deac7324d8c6 |
+| S4-R1-03 | low | plugins/alexandria/scripts/usdc_interval.py | An interval left unreconciled reported `compared` and `matched` as zero even when several shards had already agreed before the second provider stopped answering, and `validate_reconciliation` required exactly that. The interval genuinely is unreconciled, but discarding the comparisons already made tells a reader less than the run knew. The record keeps the counts it reached. | fixed in 0d8a0a18dbf74d4519b1885bc3f0deac7324d8c6 |
+
+Leads not pursued: the fixes commit changed tests as well as code, and four guards fail against `51e18329fef4576cfa88a85749c2c22708f332a6` by assertion with no infrastructure error, so the verdict is `guarded` and the fixed tree reports 440 of 440 with zero skips. One thing about how that verdict was reached is worth stating: the guard for S4-R1-02 first let `AlexandriaError` escape, which unittest counts as an error, and a mixed report would have been `inconclusive`. It now catches the refusal and calls `self.fail` with the message, because the refusal is the defect under test rather than a failure to run the test. The earlier draft of that guard was weaker still: it wrote a 12 KB record, which the unfixed reader accepts, so it passed against the parent and proved nothing; it now writes a record deliberately just over the control limit and far under the component limit. Two bounded things are recorded rather than fixed. `_staged` keeps the last entry when a journal somehow holds two for one shard and class, which a completed collection cannot produce and a rewind truncates away. And a shard whose logs disagree is `partial` while one whose boundary disagrees is `failed`, which is the harvest specification's own split; nothing here decides which provider is right. S1-R1-07 and S2-R1-04 stay open and accepted.
+
+## Step 4, round 2 -- 2026-08-31T06:02:35Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: reconciliation-bias=reviewed; endpoint-leak=reviewed; unbounded-response=reviewed; staging-path-escape=reviewed; torn-shard=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; silent-truncation=not-applicable; reorg-rewind=not-applicable; epoch-gap=not-applicable; coverage-inflation=not-applicable
+
+Not checked: nothing new. Step 5 still owns coverage and the Pashov pair remains waived. The round re-read the repaired reader for faults the repair could have introduced: `committed` refuses a symlinked or non-regular checkpoint before it reads, returns shard zero for an absent one, and validates the checkpoint against the same plan digest `resume` does, so the two agree about what a checkpoint means; and the unreconciled path now fills any shard counts it had not reached from the staged responses rather than leaving the table short.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 440 of 440 with zero skips, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:5` with the reconciliation conformance report passing on seventeen cases. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `committed` and `resume` now both read and validate the checkpoint, which is the same work twice on the collect path, and folding them would mean one method that sometimes truncates. The two bounded items from round 1 still stand, as do S1-R1-07 and S2-R1-04.

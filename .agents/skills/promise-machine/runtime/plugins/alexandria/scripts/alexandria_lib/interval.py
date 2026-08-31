@@ -451,6 +451,30 @@ class Staging:
             "records": checkpoint["records"],
         }
 
+    def committed(self) -> dict:
+        """Report where the checkpoint stands without changing a single journal.
+
+        `resume` truncates, which is right when a collection is about to
+        continue and wrong for every reader. A reader that has to mutate the
+        thing it reads can destroy evidence on the path that then refuses.
+        """
+        if self.checkpoint_path.is_symlink():
+            raise AlexandriaError("interval checkpoint must not be a symlink")
+        if not self.checkpoint_path.exists():
+            return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
+        if not self.checkpoint_path.is_file():
+            raise AlexandriaError("interval checkpoint is not a regular file")
+        checkpoint = load_bytes(
+            _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
+        )
+        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        return {
+            "history": list(checkpoint["history"]),
+            "last_accepted": checkpoint["last_accepted"],
+            "next_shard": checkpoint["next_shard"],
+            "records": checkpoint["records"],
+        }
+
     def rewind_to(self, shard: int) -> dict:
         """Drop every record above one remembered boundary and continue from it.
 
@@ -517,7 +541,12 @@ class Staging:
             return
         for line in _read_journal(path).splitlines():
             if line:
-                yield load_bytes(line + b"\n", f"journal {name} entry")
+                # The ceiling here is the one `record` enforced when it wrote the
+                # entry. Reading under the smaller control limit would refuse a
+                # record this module had already accepted.
+                yield load_bytes(
+                    line + b"\n", f"journal {name} entry", max_bytes=MAX_JOURNAL_BYTES
+                )
 
     def close(self) -> None:
         for handle in self._handles.values():
@@ -789,6 +818,105 @@ def _quantity(value, label: str) -> int:
         raise AlexandriaError(f"{label} is not a hexadecimal quantity") from exc
 
 
+
+RECONCILIATION_STATUSES = ("agreed", "disputed", "unreconciled")
+SHARD_STATUSES = ("complete", "partial", "failed")
+DISPUTE_KINDS = ("boundary-hash", "log-identity", "transaction-order")
+MAX_DISPUTES = 1_024
+
+
+def log_identity(record) -> str:
+    """The tuple the harvest specification compares, rendered as one string.
+
+    `(blockHash, transactionHash, logIndex, address, topics, data)`. Nothing is
+    normalised beyond case, because two providers disagreeing about the case of
+    a hash is not a disagreement about the chain.
+    """
+    if not isinstance(record, dict):
+        raise AlexandriaError("a log record is not an object")
+    fields = []
+    for name in ("blockHash", "transactionHash", "logIndex", "address"):
+        value = record.get(name)
+        if not isinstance(value, str) or not value:
+            raise AlexandriaError(f"a log record has no {name}")
+        fields.append(value.lower())
+    topics = record.get("topics")
+    if not isinstance(topics, list) or any(not isinstance(item, str) for item in topics):
+        raise AlexandriaError("a log record has no topic list")
+    fields.append(",".join(topic.lower() for topic in topics))
+    data = record.get("data")
+    if not isinstance(data, str):
+        raise AlexandriaError("a log record has no data")
+    fields.append(data.lower())
+    return "|".join(fields)
+
+
+def validate_shard_coverage(shards, plan_shards) -> None:
+    """Check one shard-status table against the plan it claims to cover."""
+    if not isinstance(shards, list) or len(shards) != len(plan_shards):
+        raise AlexandriaError("the shard table does not cover every planned shard")
+    for entry, planned in zip(shards, plan_shards):
+        if not isinstance(entry, dict) or set(entry) != {
+            "end", "end_hash", "index", "record_counts", "start", "status",
+        }:
+            raise AlexandriaError("a shard entry has an unknown shape")
+        if (entry["index"], entry["start"], entry["end"]) != (
+            planned["index"], planned["start"], planned["end"]
+        ):
+            raise AlexandriaError("a shard entry does not match its planned shard")
+        if entry["status"] not in SHARD_STATUSES:
+            raise AlexandriaError("a shard entry status is not recognised")
+        if not isinstance(entry["end_hash"], str) or HASH_RE.fullmatch(entry["end_hash"]) is None:
+            raise AlexandriaError("a shard entry end hash is not a 32-byte hash")
+        counts = entry["record_counts"]
+        if not isinstance(counts, dict) or set(counts) != set(EVIDENCE_CLASSES):
+            raise AlexandriaError("a shard entry does not count every evidence class")
+        for value in counts.values():
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise AlexandriaError("a shard entry record count is not a count")
+
+
+def validate_reconciliation(reconciliation) -> None:
+    """Check one closed reconciliation record."""
+    if reconciliation is None:
+        return
+    if not isinstance(reconciliation, dict) or set(reconciliation) != {
+        "compared", "disputed", "matched", "provider_class", "status",
+    }:
+        raise AlexandriaError("the reconciliation record has an unknown shape")
+    if reconciliation["status"] not in RECONCILIATION_STATUSES:
+        raise AlexandriaError("the reconciliation status is not recognised")
+    provider = reconciliation["provider_class"]
+    if not isinstance(provider, str) or not 1 <= len(provider) <= 256:
+        raise AlexandriaError("the reconciliation provider class is not a bounded name")
+    if any(character in provider for character in ("://", "@")):
+        raise AlexandriaError("the reconciliation provider class must not carry an endpoint")
+    for field in ("compared", "matched"):
+        value = reconciliation[field]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AlexandriaError(f"the reconciliation {field} count is not a count")
+    if reconciliation["matched"] > reconciliation["compared"]:
+        raise AlexandriaError("the reconciliation matched more identities than it compared")
+    disputed = reconciliation["disputed"]
+    if not isinstance(disputed, list) or len(disputed) > MAX_DISPUTES:
+        raise AlexandriaError(f"the reconciliation records more than {MAX_DISPUTES} disputes")
+    for entry in disputed:
+        if not isinstance(entry, dict) or set(entry) != {"identity", "kind", "shard"}:
+            raise AlexandriaError("a dispute entry has an unknown shape")
+        if entry["kind"] not in DISPUTE_KINDS:
+            raise AlexandriaError("a dispute kind is not recognised")
+        if not isinstance(entry["shard"], int) or isinstance(entry["shard"], bool) or entry["shard"] < 0:
+            raise AlexandriaError("a dispute entry names no shard")
+        if not isinstance(entry["identity"], str) or not 1 <= len(entry["identity"]) <= 1024:
+            raise AlexandriaError("a dispute identity is not a bounded string")
+    if reconciliation["status"] == "agreed" and disputed:
+        raise AlexandriaError("an agreed reconciliation cannot carry a dispute")
+    if reconciliation["status"] == "disputed" and not disputed:
+        raise AlexandriaError("a disputed reconciliation names no dispute")
+    if reconciliation["status"] == "unreconciled" and reconciliation["matched"] > reconciliation["compared"]:
+        raise AlexandriaError("an unreconciled interval matched more than it compared")
+
+
 def _text(data: bytes, label: str) -> str:
     try:
         return data.decode("utf-8")
@@ -891,7 +1019,13 @@ __all__ = [
     "plan_digest",
     "plan_shards",
     "resolve_root",
+    "DISPUTE_KINDS",
+    "RECONCILIATION_STATUSES",
+    "SHARD_STATUSES",
+    "log_identity",
     "validate_checkpoint",
     "validate_epochs",
+    "validate_reconciliation",
+    "validate_shard_coverage",
     "validate_plan",
 ]

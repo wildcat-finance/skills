@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1002,
-  "total_bytes": 21793983,
+  "total_bytes": 21813446,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -435,9 +435,9 @@
       "source": "plugins/alexandria/scripts/alexandria_lib/index.py"
     },
     {
-      "bytes": 39538,
+      "bytes": 46644,
       "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
-      "sha256": "63d8cc3bcee9b608385569437a77bdeb8f5ea9f04588c3653c50fc0704f21c87",
+      "sha256": "91a172ad94535c5941d5ba1bfa1994dab1a84a0ce5dd7f81e6c4e388a0b2da64",
       "source": "plugins/alexandria/scripts/alexandria_lib/interval.py"
     },
     {
@@ -507,9 +507,9 @@
       "source": "plugins/alexandria/scripts/compound_v3_phase0.py"
     },
     {
-      "bytes": 16999,
+      "bytes": 29356,
       "path": "plugins/alexandria/scripts/usdc_interval.py",
-      "sha256": "cb1fa023351fb7cebb20a7b1a8f9fddb42edad5387370e285abbec4266052744",
+      "sha256": "6bc2e4c40c12052f4cc3ab99ee6a112ce39607651bb25e550968722c023422a3",
       "source": "plugins/alexandria/scripts/usdc_interval.py"
     },
     {
