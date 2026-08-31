@@ -103,6 +103,7 @@ SOURCE_ALLOW = re.compile(r"hypomnema:\s*allow\s+\S")
 # The bundled Pashov suite is vendored, keeps no ledger, and documents files it
 # generates in the target repository rather than files that live here.
 VENDORED = {"fizz", "x-ray", "solidity-auditor"}
+PORTABLE_RUNTIME = (".agents", "skills", "promise-machine", "runtime")
 
 
 class Finding:
@@ -217,6 +218,37 @@ def _relative_markdown(value: str) -> bool:
     return bool(value and value.lower().endswith(".md")
                 and not value.startswith(("/", "\\"))
                 and not _external(value))
+
+
+def _canonical_portable_source(path: Path) -> Path | None:
+    """Map one byte-identical generated runtime file to its canonical source."""
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError:
+        return None
+    parts = resolved.parts
+    width = len(PORTABLE_RUNTIME)
+    for index in range(len(parts) - width + 1):
+        if tuple(parts[index:index + width]) != PORTABLE_RUNTIME:
+            continue
+        relative = parts[index + width:]
+        if not relative or relative[0] != "plugins":
+            return None
+        source = Path(*parts[:index], *relative)
+        try:
+            if not source.is_file() or source.read_bytes() != resolved.read_bytes():
+                return None
+        except OSError:
+            return None
+        return source
+    return None
+
+
+def _relative_target_exists(path: Path, relative: str) -> bool:
+    if (path.parent / relative).exists():
+        return True
+    source = _canonical_portable_source(path)
+    return source is not None and (source.parent / relative).exists()
 
 
 def _strip_yaml_comment(
@@ -477,18 +509,17 @@ def _stable_references(
         cursor = start + len(STABLE_PREFIX)
         if start and (line[start - 1].isalnum() or line[start - 1] in "_-/"):
             continue
-        # This exact token documents the grammar; it is not a live identity.
-        if line.startswith("<slug>", cursor):
-            cursor += len("<slug>")
-            continue
         end = cursor
         while (
                 end < len(line)
                 and not line[end].isspace()
-                and line[end] not in "`\"'"):
+                and line[end] not in "`\"'="):
             end += 1
         token = line[cursor:end].rstrip(STABLE_TRAILING)
         cursor = max(end, cursor + 1)
+        # This exact token documents the grammar; it is not a live identity.
+        if token == "<slug>":
+            continue
         try:
             encoded = token.encode("ascii")
         except UnicodeEncodeError:
@@ -636,7 +667,7 @@ def check(
             relative = unquote(target.split("#", 1)[0])
             if not relative:
                 continue
-            if not (path.parent / relative).exists():
+            if not _relative_target_exists(path, relative):
                 findings.append(Finding(path, number, "H001",
                                         f"link `{target}` resolves to nothing"))
 

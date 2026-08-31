@@ -84,6 +84,7 @@ class Repository:
     root: Path
     object_format: str
     oid_length: int
+    common_dir: Path
     common_objects: Path
 
 
@@ -335,7 +336,7 @@ def repository(raw: str) -> Repository:
     objects = common / "objects"
     if not objects.is_dir() or objects.is_symlink() or os.pathsep in str(objects):
         refuse("repository")
-    return Repository(root, object_format, oid_length, objects)
+    return Repository(root, object_format, oid_length, common, objects)
 
 
 def valid_oid(repo: Repository, value: Any) -> str:
@@ -373,6 +374,18 @@ def verify_base_ref(repo: Repository, ref: str, base: str) -> None:
     )
     if status != 0 or decode_ascii(output, "base-moved") != base:
         refuse("base-moved")
+
+
+def reject_grafts(repo: Repository) -> None:
+    """Refuse repository-local ancestry overrides before reading ancestry."""
+    grafts = repo.common_dir / "info/grafts"
+    try:
+        grafts.lstat()
+    except FileNotFoundError:
+        return
+    except OSError:
+        refuse("repository-graft")
+    refuse("repository-graft")
 
 
 def tree_entries(repo: Repository, commit: str) -> dict[bytes, TreeEntry]:
@@ -543,6 +556,7 @@ def temporary_object_environment(repo: Repository, directory: Path) -> dict[str,
 def build_report(
     repo: Repository, base: str, product: str, base_ref: str
 ) -> dict[str, Any]:
+    reject_grafts(repo)
     base = valid_oid(repo, base)
     product = valid_oid(repo, product)
     base_ref = valid_ref(base_ref)
@@ -828,6 +842,113 @@ def safe_worktree_path(repo: Repository, relative: str, *, source: bool) -> Path
     return target
 
 
+def config_has_filters(repo: Repository, scope: str) -> bool:
+    status, output = bounded_git(
+        repo.root,
+        [
+            "config", scope, "--includes", "--name-only",
+            "--get-regexp", r"^filter\..*\.(clean|process)$",
+        ],
+        output_cap=MAX_PATH_BYTES,
+    )
+    if status not in {0, 1}:
+        refuse("repository-config")
+    return status == 0 or bool(output)
+
+
+def reject_worktree_filters(repo: Repository) -> None:
+    """Read every enabled repository config scope before Git reads worktree bytes."""
+    if config_has_filters(repo, "--local"):
+        refuse("repository-filter")
+    status, output = bounded_git(
+        repo.root,
+        [
+            "config", "--local", "--includes", "--type=bool",
+            "--get", "extensions.worktreeConfig",
+        ],
+        output_cap=32,
+    )
+    if status == 1:
+        return
+    if status != 0:
+        refuse("repository-config")
+    enabled = decode_ascii(output, "repository-config")
+    if enabled == "false":
+        return
+    if enabled != "true":
+        refuse("repository-config")
+    if config_has_filters(repo, "--worktree"):
+        refuse("repository-filter")
+
+
+def restore_source(path: Path, raw: bytes, mode: int) -> None:
+    """Atomically restore one already-bounded source after a failed apply."""
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=".hypomnema-restore-", dir=path.parent
+    )
+    temp_path = Path(temporary)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(raw)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temp_path, mode)
+        os.replace(temp_path, path)
+    except BaseException:
+        try:
+            temp_path.unlink()
+        except OSError:
+            pass
+        raise
+
+
+def rollback_apply(
+    sources: list[Path],
+    targets: list[Path],
+    originals: list[bytes],
+    source_modes: list[int],
+    prepared: list[Path],
+    backups: list[Path],
+) -> bool:
+    """Best-effort rollback, verified against every original path and byte."""
+    clean = True
+    for target in targets:
+        try:
+            target.unlink()
+        except FileNotFoundError:
+            pass
+        except BaseException:
+            clean = False
+    for source, raw, mode in zip(sources, originals, source_modes, strict=True):
+        try:
+            restore_source(source, raw, mode)
+        except BaseException:
+            clean = False
+    for temporary in (*prepared, *backups):
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        except BaseException:
+            clean = False
+    for source, raw, mode in zip(sources, originals, source_modes, strict=True):
+        try:
+            clean = clean and source.read_bytes() == raw
+            clean = clean and stat.S_IMODE(source.stat().st_mode) == mode
+        except OSError:
+            clean = False
+    for path in (*targets, *prepared, *backups):
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            clean = False
+        else:
+            clean = False
+    return clean
+
+
 def apply_report(repo: Repository, report: dict[str, Any]) -> None:
     head = decode_ascii(
         git(repo.root, ["rev-parse", "--verify", "HEAD"], code="worktree-head", output_cap=128),
@@ -835,18 +956,7 @@ def apply_report(repo: Repository, report: dict[str, Any]) -> None:
     )
     if head != report["product"]:
         refuse("worktree-head")
-    filter_status, filter_config = bounded_git(
-        repo.root,
-        [
-            "config", "--local", "--includes", "--name-only",
-            "--get-regexp", r"^filter\..*\.(clean|process)$",
-        ],
-        output_cap=MAX_PATH_BYTES,
-    )
-    if filter_status not in {0, 1}:
-        refuse("repository-config")
-    if filter_status == 0 or filter_config:
-        refuse("repository-filter")
+    reject_worktree_filters(repo)
     status_raw = git(
         repo.root,
         [
@@ -860,13 +970,16 @@ def apply_report(repo: Repository, report: dict[str, Any]) -> None:
 
     sources: list[Path] = []
     targets: list[Path] = []
+    originals: list[bytes] = []
+    source_modes: list[int] = []
     outputs: list[bytes] = []
     for row in report["mappings"]:
         source = safe_worktree_path(repo, row["draft_path"], source=True)
         target = safe_worktree_path(repo, row["final_path"], source=False)
         try:
             raw = source.read_bytes()
-            executable = bool(source.stat().st_mode & 0o111)
+            source_mode = source.stat().st_mode
+            executable = bool(source_mode & 0o111)
         except OSError:
             refuse("worktree-read")
         expected_executable = row["mode"] == "100755"
@@ -891,13 +1004,13 @@ def apply_report(repo: Repository, report: dict[str, Any]) -> None:
             refuse("report-mismatch")
         sources.append(source)
         targets.append(target)
+        originals.append(raw)
+        source_modes.append(stat.S_IMODE(source_mode))
         outputs.append(output)
 
     verify_base_ref(repo, report["base_ref"], report["base"])
     prepared: list[Path] = []
     backups: list[Path] = []
-    moved = 0
-    installed = 0
     try:
         for target, output, row in zip(targets, outputs, report["mappings"], strict=True):
             descriptor, temporary = tempfile.mkstemp(prefix=".hypomnema-output-", dir=target.parent)
@@ -914,34 +1027,24 @@ def apply_report(repo: Repository, report: dict[str, Any]) -> None:
             backup = Path(temporary)
             backups.append(backup)
             os.replace(source, backup)
-            moved += 1
         for temporary, target in zip(prepared, targets, strict=True):
             os.replace(temporary, target)
-            installed += 1
         for backup in backups:
             backup.unlink()
-    except OSError:
-        for target in targets[:installed]:
-            try:
-                target.unlink()
-            except OSError:
-                pass
-        for index in range(moved - 1, -1, -1):
-            try:
-                os.replace(backups[index], sources[index])
-            except OSError:
-                pass
-        for temporary in prepared[installed:]:
-            try:
-                temporary.unlink()
-            except OSError:
-                pass
-        for backup in backups[moved:]:
-            try:
-                backup.unlink()
-            except OSError:
-                pass
-        refuse("apply-io")
+    except BaseException as error:
+        restored = rollback_apply(
+            sources,
+            targets,
+            originals,
+            source_modes,
+            prepared,
+            backups,
+        )
+        if not restored:
+            refuse("apply-rollback")
+        if isinstance(error, OSError):
+            refuse("apply-io")
+        raise
 
 
 def success(outcome: str, report: dict[str, Any]) -> dict[str, Any]:
