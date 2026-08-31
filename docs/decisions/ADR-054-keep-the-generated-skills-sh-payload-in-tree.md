@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted, 2026-08-30. Extends ADR-040, which stays accepted.
+Superseded, 2026-08-30, by ADR-055. This record's measurements stand; its
+refusal of relocation does not. It treated a cost of moving discovery as a
+loss of it, and it treated a cross-repository push as the only publication
+route. Extends ADR-040, which stays accepted.
 
 ## Context
 

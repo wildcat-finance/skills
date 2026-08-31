@@ -35,10 +35,13 @@ To install the whole collective through the Agent Skills convention, select
 the one dependency-closed router:
 
 ```bash
-npx skills add wildcat-finance/skills --skill promise-machine
+npx skills add wildcat-finance/skills-runtime --skill promise-machine
 ```
 
-The router verifies its local runtime before it selects a specialist. See the
+That package is generated from this repository and published hourly to
+[wildcat-finance/skills-runtime](https://github.com/wildcat-finance/skills-runtime),
+so an install can be up to an hour behind `main`. The router verifies its local
+runtime before it selects a specialist. See the
 [installation guide](./INSTALL.md#local-agents) for the non-interactive Codex
 command and the boundary of that package.
 
@@ -363,8 +366,7 @@ The Pashov suite keeps its upstream invocation and operating instructions.
 .agents/plugins/marketplace.json  the same set, host-neutral
 .agents/skills/promise-machine/   the sole host-neutral suite router
 ├── PORTABLE.md                   isolated-install path and refusal boundary
-├── scripts/verify_runtime.py     installed byte-manifest check
-└── runtime/                      generated dependency-closed fallback
+└── scripts/verify_runtime.py     installed byte-manifest check
 plugins/<name>/
 ├── .claude-plugin/plugin.json    host manifests; discovery and installation only
 ├── .codex-plugin/plugin.json
