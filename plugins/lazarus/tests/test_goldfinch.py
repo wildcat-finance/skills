@@ -28,9 +28,9 @@ ANCHOR_FIXTURE = support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0"
 DEMO_PATH = FIXTURE / "demo.py"
 RECEIPT_DEMO_PATH = RECEIPT_FIXTURE / "demo.py"
 RECEIPTS_ROOT = "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e"
-# Five 5-second RPC bounds and the 2-second join fit inside this outer guard.
-# Keep the complete-demo subprocess bounded while leaving room for shutdown and
-# the fixture checks on supported hosted Darwin runners.
+# The complete demo contains five RPC calls with 5-second socket timeouts and a
+# 2-second thread join, followed by CPU-bound fixture checks. Keep its outer
+# compatibility ceiling explicit; only a hosted run establishes wall-clock fit.
 LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS = 60
 
 
@@ -129,6 +129,32 @@ class GoldfinchDemoTests(unittest.TestCase):
         self.assertGreater(
             LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
             rpc_calls * connection_timeouts[0] + join_timeouts[0],
+        )
+
+    def test_complete_demo_invocation_uses_the_named_outer_bound(self):
+        self.assertEqual(LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS, 60)
+        command = [sys.executable, str(DEMO_PATH)]
+        completed = subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=(
+                "replayed code bytes: 45\n"
+                "replayed logs: 5\n"
+                "slot 0x1 miss: -32070\n"
+                "one-nibble proof mutation: rejected\n"
+                "manifest rebuild: identical\n"
+            ),
+            stderr="",
+        )
+        with mock.patch.object(subprocess, "run", return_value=completed) as runner:
+            self.test_demo_command_runs_the_complete_application_check()
+        runner.assert_called_once_with(
+            command,
+            cwd=support.REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
         )
 
     def test_manifest_rebuild_is_byte_identical(self):
