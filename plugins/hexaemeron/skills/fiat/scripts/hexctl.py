@@ -14029,6 +14029,23 @@ def cmd_next(args) -> None:
         refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
     out = delegation_packet(args.dir, state, directive)
+    brief_out = getattr(args, "brief_out", None)
+    if brief_out is not None and out["brief"]:
+        # The controller delegates this packet rather than reading it, so the
+        # brief body costs it a transcript it never uses. Writing the body out
+        # and naming its path leaves the directive readable and gives the
+        # delegate the exact same bytes. An inline directive carries no brief,
+        # so there is nothing to divert and the packet is left alone.
+        path = scoped_path(args.dir, brief_out, "brief output path")
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(out["brief"], handle, sort_keys=True, indent=2)
+        except OSError:
+            die(f"could not write the brief to {brief_out}")
+        out = dict(out)
+        out["brief"] = {}
+        out["brief_path"] = path
     print(json.dumps(out))
 
 
@@ -14698,6 +14715,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_issue_check)
 
     sp = sub.add_parser("next", help="emit the single next action as JSON")
+    sp.add_argument(
+        "--brief-out",
+        metavar="PATH",
+        help=(
+            "write the delegated brief to PATH and name it in brief_path, "
+            "instead of printing its body"
+        ),
+    )
     sp.set_defaults(fn=cmd_next)
 
     sp = sub.add_parser("record", help="store a named receipt")
