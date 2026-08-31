@@ -114,7 +114,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.45.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.46.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,17 +122,25 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.45.1")
+        self.assertEqual(latest["version"], "fiat-v5.46.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#1000", latest["evidence"])
-        self.assertIn("ADR-061", latest["evidence"])
-        self.assertIn("contracts.design_evidence", latest["change"])
-        self.assertIn("States without the marker", latest["change"])
+        self.assertIn("skills#972", latest["evidence"])
+        self.assertIn("ADR-065", latest["evidence"])
+        self.assertIn("PROSE_PATHS_MAX", latest["change"])
+        self.assertIn("GIT_PATHS_MAX", latest["change"])
+        self.assertIn("held issue 363 job is untouched", latest["change"])
+        design_evidence = by_version["fiat-v5.45.1"]
+        self.assertEqual(design_evidence["axis"], "generation")
+        self.assertEqual(design_evidence["revision"], "state-shape-validation")
+        self.assertIn("skills#1000", design_evidence["evidence"])
+        self.assertIn("ADR-061", design_evidence["evidence"])
+        self.assertIn("contracts.design_evidence", design_evidence["change"])
+        self.assertIn("States without the marker", design_evidence["change"])
         checkpoint = by_version["fiat-v5.44.1"]
         self.assertIn("retiring the Google Drive", checkpoint["evidence"])
         self.assertIn("fixed local store", checkpoint["change"])

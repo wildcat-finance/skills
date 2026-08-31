@@ -1,6 +1,6 @@
 WAI1
 D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
-  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:94a32e6556ac947dd2e2449a4e3cabe93a4e93074cd534738420ff5b65a7c1a2
+  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:3416024dbbb3f8c120f7e9117a3f1f9f2949fbc6ababe1f642f880f74a906e62
   H i9:fiat-loop t8:The\sloop
     R i11:study-phase t115:Research\sthe\stopic\sand\swrite\sthe\sstudy\sand\schecked\sdesign\srecord\sunder\sProtasis,\sthen\sreceipt\sthem\swith\sdone\sstudy.
     R i24:marketplace-reassessment t306:After\sa\ssuccessful\sstudy\sreceipt,\sperform\sthe\spost-spec\smarketplace\sreassessment\sbefore\sasking\sfor\sthe\srunbook\sdirective.\sThis\sis\sthe\sfirst\spoint\sat\swhich\sa\smissing\smarketplace\splugin\smay\sbe\sinstalled.\sRefresh\sskills\sonly\safter\sselected\sinstalls\sfinish,\sand\sresume\sin\sa\snew\schat\swhen\sthe\shost\srequires\sone.
