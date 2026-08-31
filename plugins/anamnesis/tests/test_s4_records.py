@@ -4,6 +4,7 @@ reports are the bytes the record was scored from."""
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import shutil
@@ -11,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 
 PLUGIN_ROOT = Path(__file__).resolve(strict=True).parents[1]
@@ -62,30 +64,34 @@ class CommittedDesignRecord(unittest.TestCase):
 
 
 class StepRunnerRefusesAnEmptySuite(unittest.TestCase):
-    """Steps 5 and 6 are admitted before their test files exist, so an empty
-    suite must refuse rather than report a clean run of nothing."""
+    """A step whose pattern matches no test file must refuse rather than report a
+    clean run of nothing. The condition is forced here rather than borrowed from
+    whichever step currently lacks tests, because that fact changes as the run
+    builds its later steps."""
 
     def setUp(self) -> None:
         self.scratch = Path(tempfile.mkdtemp(dir=WORKTREE))
         self.addCleanup(shutil.rmtree, self.scratch, ignore_errors=True)
+        spec = importlib.util.spec_from_file_location("anamnesis_runner", RUNNER)
+        self.runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.runner)
 
-    def run_step(self, step: int):
-        report = self.scratch / f"step-{step}.json"
-        completed = subprocess.run(
-            [sys.executable, str(RUNNER), "--step", str(step), str(report)],
-            capture_output=True,
-            text=True,
-        )
-        return completed, report
-
-    def test_a_step_with_no_tests_is_refused_and_writes_no_report(self) -> None:
-        completed, report = self.run_step(5)
-        self.assertNotEqual(completed.returncode, 0)
-        self.assertIn("discovered no tests", completed.stderr)
+    def test_an_empty_suite_is_refused_and_writes_no_report(self) -> None:
+        report = self.scratch / "empty.json"
+        with unittest.mock.patch.object(
+            unittest.defaultTestLoader, "discover", return_value=unittest.TestSuite()
+        ):
+            code = self.runner.main(["--step", "4", str(report)])
+        self.assertEqual(code, 3)
         self.assertFalse(report.exists())
 
     def test_a_step_that_has_tests_still_passes_and_writes_its_report(self) -> None:
-        completed, report = self.run_step(1)
+        report = self.scratch / "step-1.json"
+        completed = subprocess.run(
+            [sys.executable, str(RUNNER), "--step", "1", str(report)],
+            capture_output=True,
+            text=True,
+        )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertTrue(report.is_file())
         payload = json.loads(report.read_text(encoding="utf-8"))
