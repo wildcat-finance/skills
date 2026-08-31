@@ -71,3 +71,10 @@ candidate | descriptor-root-alias
 **Why.** Dependency-closed portable synchronisation also copies the two committed decision documents and carries its own Horos boundary. Naming those three paths completes the mechanical generated inventory without expanding the accepted implementation.
 **Steps touched.** Step 1.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Files: `plugins/lazarus/scripts/lazarus_lib/release.py`; `plugins/lazarus/tests/test_release.py`; `plugins/lazarus/docs/macos-path-repair-runbook.md`; `.agents/skills/promise-machine/runtime/plugins/lazarus/scripts/lazarus_lib/release.py`; `.agents/skills/promise-machine/runtime/plugins/lazarus/docs/macos-path-repair-runbook.md`; `.agents/skills/promise-machine/runtime/MANIFEST.json`; `.agents/skills/promise-machine/runtime/.horos/boundary.json`; `.horos/boundary.json`.
+**Why.** The repository requires the dependency-closed Promise Machine installation copy to stay equal to the canonical Lazarus source, the durable runbook copy to retain this accepted scope, and both Horos boundaries to describe changed classified files. These are mechanical consequences of the bounded Step 2 change, not a wider alias surface.
+**Steps touched.** Step 2.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

@@ -31,6 +31,7 @@ import hashlib
 import os
 import shutil
 import stat
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,23 @@ STATEMENT_NAME = "statement.json"
 
 RELEASE_NAME = "release.json"
 """The document binding the other two."""
+
+_DARWIN_ROOT_ALIASES = {
+    "etc": (b"private/etc", ("private", "etc")),
+    "tmp": (b"private/tmp", ("private", "tmp")),
+    "var": (b"private/var", ("private", "var")),
+}
+
+# alias name, exact link text, link identity, target identity. The link state is
+# deliberately kept with the opened target until the final file is held. A new
+# root compatibility alias is a new trust-boundary decision, not another item a
+# caller may supply at runtime.
+_DarwinAliasGuard = tuple[
+    str,
+    bytes,
+    tuple[int, int, int, int, int, int],
+    tuple[int, int],
+]
 
 
 def release_digest(release: dict[str, Any]) -> str:
@@ -410,22 +428,52 @@ def _read_statement(path: str | Path) -> bytes:
         | getattr(os, "O_NOFOLLOW", 0)
         | getattr(os, "O_NONBLOCK", 0)
     )
+    root_descriptor: int | None = None
     current: int | None = None
     descriptor: int | None = None
+    alias_guard: _DarwinAliasGuard | None = None
     failure = None
     try:
-        current = os.open(os.sep, directory_flags)
-        for part in absolute.parts[1:-1]:
+        root_descriptor = os.open(os.sep, directory_flags)
+        current = root_descriptor
+        parents = absolute.parts[1:-1]
+        first_parent = 0
+        if parents:
+            accepted = _open_darwin_root_alias(
+                root_descriptor,
+                parents[0],
+                directory_flags,
+                handed,
+            )
+            if accepted is not None:
+                current, alias_guard = accepted
+                first_parent = 1
+        for part in parents[first_parent:]:
             following = os.open(part, directory_flags, dir_fd=current)
-            os.close(current)
+            if current != root_descriptor:
+                os.close(current)
             current = following
         if absolute.name:
             descriptor = os.open(absolute.name, file_flags, dir_fd=current)
+        if alias_guard is not None:
+            _recheck_darwin_root_alias(
+                root_descriptor,
+                alias_guard,
+                directory_flags,
+                handed,
+            )
     except OSError as exc:
         failure = exc.errno
+    except PathError:
+        if descriptor is not None:
+            os.close(descriptor)
+            descriptor = None
+        raise
     finally:
-        if current is not None:
+        if current is not None and current != root_descriptor:
             os.close(current)
+        if root_descriptor is not None:
+            os.close(root_descriptor)
     if descriptor is None:
         if failure in (errno.ELOOP, errno.ENOTDIR):
             raise PathError(
@@ -469,6 +517,137 @@ def _read_statement(path: str | Path) -> bytes:
     if problem is not None:
         raise problem
     return data
+
+
+def _open_darwin_root_alias(
+    root_fd: int,
+    alias: str,
+    directory_flags: int,
+    handed: Path,
+) -> tuple[int, _DarwinAliasGuard] | None:
+    """Open one fixed Apple root alias through its physical target.
+
+    Ordinary directories still use the no-follow walk. On Darwin, only a
+    symlink with one of the three exact lexical names may enter this exception.
+    Its literal link bytes, link identity and followed target identity are held
+    against the corresponding descriptor-opened ``private/*`` directory.
+    """
+    if sys.platform != "darwin":
+        return None
+    contract = _DARWIN_ROOT_ALIASES.get(alias)
+    if contract is None:
+        return None
+    expected_link, physical = contract
+    first = os.stat(alias, dir_fd=root_fd, follow_symlinks=False)
+    if not stat.S_ISLNK(first.st_mode):
+        return None
+    if os.readlink(os.fsencode(alias), dir_fd=root_fd) != expected_link:
+        raise _root_alias_refusal(handed)
+
+    target_fd: int | None = None
+    try:
+        target_fd = _open_root_directory(root_fd, physical, directory_flags)
+        target = os.fstat(target_fd)
+        followed = os.stat(alias, dir_fd=root_fd, follow_symlinks=True)
+        second = os.stat(alias, dir_fd=root_fd, follow_symlinks=False)
+        second_link = os.readlink(os.fsencode(alias), dir_fd=root_fd)
+        link_identity = _root_link_identity(first)
+        target_identity = _directory_identity(target)
+        if (
+            not stat.S_ISDIR(target.st_mode)
+            or not stat.S_ISDIR(followed.st_mode)
+            or _root_link_identity(second) != link_identity
+            or second_link != expected_link
+            or _directory_identity(followed) != target_identity
+        ):
+            raise _root_alias_refusal(handed)
+        guard: _DarwinAliasGuard = (
+            alias,
+            expected_link,
+            link_identity,
+            target_identity,
+        )
+        return target_fd, guard
+    except BaseException:
+        if target_fd is not None:
+            os.close(target_fd)
+        raise
+
+
+def _recheck_darwin_root_alias(
+    root_fd: int,
+    guard: _DarwinAliasGuard,
+    directory_flags: int,
+    handed: Path,
+) -> None:
+    """Re-prove the accepted root transition immediately before file reads."""
+    try:
+        reopened = _open_darwin_root_alias(
+            root_fd,
+            guard[0],
+            directory_flags,
+            handed,
+        )
+    except OSError:
+        raise _root_alias_refusal(handed) from None
+    if reopened is None:
+        raise _root_alias_refusal(handed)
+    descriptor, observed = reopened
+    try:
+        if observed != guard:
+            raise _root_alias_refusal(handed)
+    finally:
+        os.close(descriptor)
+
+
+def _open_root_directory(
+    root_fd: int,
+    components: tuple[str, ...],
+    directory_flags: int,
+) -> int:
+    """Open a fixed root-relative directory without borrowing the root fd."""
+    current: int | None = None
+    try:
+        for component in components:
+            following = os.open(
+                component,
+                directory_flags,
+                dir_fd=root_fd if current is None else current,
+            )
+            if current is not None:
+                os.close(current)
+            current = following
+        if current is None:
+            raise OSError(errno.ENOENT, "root alias has no physical target")
+        return current
+    except BaseException:
+        if current is not None:
+            os.close(current)
+        raise
+
+
+def _root_link_identity(details: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    """The symlink state whose continuity is required across both checks."""
+    return (
+        details.st_dev,
+        details.st_ino,
+        details.st_mode,
+        details.st_size,
+        details.st_mtime_ns,
+        details.st_ctime_ns,
+    )
+
+
+def _directory_identity(details: os.stat_result) -> tuple[int, int]:
+    """The filesystem identity of the fixed physical target."""
+    return details.st_dev, details.st_ino
+
+
+def _root_alias_refusal(handed: Path) -> PathError:
+    """Keep the public refusal identical to every other symlinked parent."""
+    return PathError(
+        f"statement path contains a symlink or non-directory: {handed}"
+    )
 
 
 def _copy_fixture(source: Path, target: Path, manifest: dict[str, Any]) -> None:
