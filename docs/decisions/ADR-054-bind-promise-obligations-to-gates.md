@@ -75,8 +75,12 @@ renderer sees it. It carries a promise id, an obligation id when known, finding
 code, consequence, blocked transition and recovery. Text and canonical JSON
 therefore derive from the same object. The core checker also scans its own
 Python syntax for network, credential, shell, child-process and dynamic-code
-paths. A test runs the core check with network and child-process constructors
-denied. Neither guard executes an evidence command.
+paths. Direct builtins access and dynamic access through `os`, `Path` and
+`tempfile` fail closed, apart from the two named OS flag lookups used by
+confined reads. A test runs the core check with network and child-process
+constructors, string and byte environment helpers, and mutation primitives
+denied. Its open wrappers reject write-capable modes and reads outside the
+checkout. Neither guard executes an evidence command.
 
 The accepted study and runbook live under
 `docs/promise-machine/obligation-gates/`. They are the build contract for this
