@@ -24,12 +24,13 @@ SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
 VERSION = "0.1.0"
-UNBUILT = ("workbook", "reconcile", "demonstrate")
-KEPT_PROMISES = ("dokimasia-scaffold-identity", "dokimasia-source-inventory")
-UNKEPT_PROMISES = (
+UNBUILT = ("reconcile", "demonstrate")
+KEPT_PROMISES = (
+    "dokimasia-scaffold-identity",
+    "dokimasia-source-inventory",
     "dokimasia-workbook-lineage",
-    "dokimasia-disposition-closure",
 )
+UNKEPT_PROMISES = ("dokimasia-disposition-closure",)
 
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
@@ -97,7 +98,7 @@ class ContractTests(unittest.TestCase):
     def test_the_contract_names_the_step_each_unkept_promise_arrives_with(self):
         # Collapse wrapping: the contract is prose and reflows, the claim does not.
         text = " ".join(SKILL.read_text(encoding="utf-8").split())
-        for promise, step in zip(UNKEPT_PROMISES, ("step 3", "step 4")):
+        for promise, step in zip(UNKEPT_PROMISES, ("step 4",)):
             with self.subTest(promise=promise):
                 self.assertIn(f"`{promise}`", text)
                 self.assertIn(f"{step} owes it", text)
@@ -258,6 +259,11 @@ class CommandTests(unittest.TestCase):
 
     def test_the_inventory_verb_is_built_and_self_checks(self):
         result = run("inventory", "--check")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("check clean", result.stdout)
+
+    def test_the_workbook_verb_is_built_and_self_checks(self):
+        result = run("workbook", "--check")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("check clean", result.stdout)
 

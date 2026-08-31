@@ -72,8 +72,8 @@ space, which is unbounded and which no static compile enumerates.
 | demonstrate | runs one complete scrutiny and emits its digest-bound record |
 | selftest | proves the packaging and the contract agree, and emits its report |
 
-`selftest` and `inventory` are built. Every other verb refuses with the step
-that owes it.
+`selftest`, `inventory` and `workbook` are built. Every other verb refuses
+with the step that owes it.
 
 ## Boundaries
 
@@ -89,20 +89,19 @@ symlink.
 A person owns every disposition. The skill may propose one and may never mark
 an item covered on its own.
 
-## Promises, and why two of them are not here
+## Promises, and why one of them is not here
 
-`dokimasia-scaffold-identity` and `dokimasia-source-inventory` below are the
-promises this version keeps. A promise with no case that could support it is the
-overclaim the root law refuses, so nothing else is declared.
+`dokimasia-scaffold-identity`, `dokimasia-source-inventory` and
+`dokimasia-workbook-lineage` below are the promises this version keeps. A
+promise with no case that could support it is the overclaim the root law
+refuses, so nothing else is declared.
 
-Two more are named here so the runbook has a real interface to build against,
+One more is named here so the runbook has a real interface to build against,
 and so a reader can tell an unbuilt transition from one nobody thought of.
-`dokimasia-workbook-lineage` will establish that a reviewed spreadsheet imported
-without losing a row's id, status, comment, evidence or source label; step 3
-owes it. `dokimasia-disposition-closure` will establish that every scoped item
+`dokimasia-disposition-closure` will establish that every scoped item
 carried exactly one disposition against an exact inventory and workbook digest
-pair; step 4 owes it. Neither is declared as a contract section, because this
-version establishes neither.
+pair; step 4 owes it. It is not declared as a contract section, because this
+version does not establish it.
 
 ## Promise Machine contract
 
@@ -128,4 +127,16 @@ version establishes neither.
 - Consequence: 2
 - Refuses: A symlink root, a root that is not a directory, an absolute or parent-directory path, a path escaping the declared root, a file over the byte cap, a tree over the depth cap, a tree over the file-count cap, and a compile whose two runs disagree.
 - Recovery: Read the refusal, which names the rule or cap and the path that breached it, correct the input or the declared root, and rerun `dokimasia inventory`.
+- Exceptions: none
+
+### dokimasia-workbook-lineage
+
+- Promise: A successful `dokimasia workbook` establishes that one reviewed spreadsheet imported to a closed record in which every case keeps the sheet and row it came from, the identifier it was filed under and every column the header named, that a declared split carries the whole source row onto each atomic case, and that the record rebuilds every source row it read.
+- Evidence: The checked archive members, the bounded reads under the declared member, total and expansion caps, the resolved sheet parts, the shared and inline string tables, the cached cell values with no formula consulted, the header row and its first-occurrence column map, the case rows, the rebuilt source-row map, and the canonical digest over the cases.
+- Evidence classes: checked, recorded
+- Boundary: The record establishes what the workbook said. It does not establish that a recorded status is correct, that a passing row was right to pass, that the cases cover anything, or that a row a reviewer never split describes one thing. Splitting is a declaration this importer applies, not a judgement it makes.
+- Authorises: Using the imported cases as one side of a reconciliation, and opening the runbook step that assigns dispositions.
+- Consequence: 2
+- Refuses: An archive over the member, total or expansion caps, a member name that is absolute or holds a parent-directory segment, a file that is not a zip archive, a sheet naming a missing or absent part, a shared string index the table does not hold, an identifier appearing twice, a workbook over the case cap, and a split whose atomic cases disagree about the row they came from.
+- Recovery: Read the refusal, which names the cap, member or identifier that caused it, correct the workbook or the declared split, and rerun `dokimasia workbook`.
 - Exceptions: none
