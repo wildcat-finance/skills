@@ -254,6 +254,8 @@ elif mode == "invented-unknown":
     response.update(answer_code="NOE-E-ADAPTER.REMOTE", answer_id=None,
                     generation_id="unknown", model="unknown", provider="unknown",
                     status="unknown")
+elif mode == "output-overrun":
+    response["output_tokens"] = request["max_output_tokens"] + 1
 encoded = json.dumps(response, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\\n"
 if mode == "noncanonical":
     encoded = json.dumps(response, sort_keys=True) + "\\n"
@@ -672,8 +674,8 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertEqual(
             [profile["roles"] for profile in profiles],
             [
-                ["evaluation", "measurement"],
                 ["measurement"],
+                ["evaluation", "measurement"],
                 ["measurement"],
                 ["evaluation", "measurement"],
             ],
@@ -6457,6 +6459,9 @@ class ExternalAdapterTests(unittest.TestCase):
     def test_provider_cost_above_reservation_refuses(self):
         self.invoke_refusal("high-cost", "NOE-E-BUDGET.OVERRUN")
 
+    def test_provider_output_above_requested_bound_refuses(self):
+        self.invoke_refusal("output-overrun", "NOE-E-ADAPTER.PARAMETER")
+
     def test_budget_reserve_and_finalize_are_atomic(self):
         request = "a" * 64
         noema._budget_reserve(self.ledger, Decimal("1"), request, Decimal("0.2"))
@@ -6770,6 +6775,14 @@ class MeasurementEvaluationTests(unittest.TestCase):
         value = copy.deepcopy(self.measurement)
         value["profiles"][0]["transport"]["input_tokens"] += 1
         self.assertEqual(self.measurement_refusal(value).code, "NOE-E-TOKENIZER.COUNT")
+
+    def test_measurement_transport_binds_the_fixed_inert_wrapper(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["transport"]["prompt_sha256"] = "0" * 64
+        self.assertEqual(
+            self.measurement_refusal(value).code,
+            "NOE-E-DIGEST.MEASUREMENT",
+        )
 
     def test_measurement_source_must_precede_projection_counts(self):
         value = copy.deepcopy(self.measurement)

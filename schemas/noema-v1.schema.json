@@ -2163,7 +2163,8 @@
       "additionalProperties": false,
       "required": [
         "cost_usd", "finish_reason", "generation_id", "input_tokens",
-        "output_tokens", "request_sha256", "sequence"
+        "output_tokens", "prompt_bytes", "prompt_sha256", "request_sha256",
+        "sequence"
       ],
       "properties": {
         "cost_usd": { "$ref": "#/$defs/decimalAmount" },
@@ -2171,6 +2172,8 @@
         "generation_id": { "type": "string", "minLength": 1, "maxLength": 256 },
         "input_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
         "output_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "prompt_bytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "prompt_sha256": { "$ref": "#/$defs/sha256" },
         "request_sha256": { "$ref": "#/$defs/sha256" },
         "sequence": { "const": 0 }
       }

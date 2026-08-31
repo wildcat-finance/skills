@@ -610,9 +610,10 @@ and safe exit available when their own inputs validate.
 Measurement records bytes and endpoint-reported token deltas separately for
 Markdown source, canonical `.noe`, full projection, operation slice, literals,
 kernel, reachable definitions, alias dictionary, first use, steady state and
-corpus amortisation. Sequence zero measures the empty-message transport; all
-four Markdown observations follow before any derived representation. Each
-content count subtracts that exact endpoint's transport value. Source and
+corpus amortisation. Every payload is wrapped in the same fixed inert-data
+instruction. Sequence zero measures that valid wrapper with an empty payload;
+all four Markdown observations follow before any derived representation. Each
+content count subtracts that exact endpoint's wrapper value. Source and
 projections therefore use one request shape and one exact profile, while the
 private vocabulary digest remains an explicit unknown. These are real provider
 accounting values, not heuristic local estimates or a claim that a private
