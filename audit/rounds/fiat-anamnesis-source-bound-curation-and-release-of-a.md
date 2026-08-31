@@ -100,3 +100,19 @@ Elenchus verdict: guarded
 | S2-R2-02 | low | tests/test_python_contract.py | The runtime-pin prose scan walked every Markdown file under the repository root without excluding tmp/, which is Fiat's documented run-worktree home and where scripts/run_checks.py stages its disposable snapshot. Running the root suite while a check run was in flight reported the snapshot's own copy of a shipped document as stale runtime prose. This was recorded as a lead in step 1 round 4 and hit three more times in this step, so it is fixed rather than carried again | fixed in this round |
 
 Leads not pursued: two observations carry forward from round 1 unchanged, because neither is closed by this round's work. The unknowns map is digest-covered and recomputed against the manifest, so verification establishes that the released map is the map the manifest claims, and not that the map is right; recomputing it needs the sources and a re-curation. The staged release and the conformance report are both promoted with os.rename after an existence check, so a destination created between the two is replaced rather than refused; the check narrows the window and does not close it, and closing it needs a directory-descriptor promotion of the kind the root test runner already uses. A third is new and also carried: resolve_within now guards component paths, so a manifest naming a path outside the release refuses, but the refusal arrives as a path rule rather than a manifest rule, which reads oddly in a release context. Round 2 added twelve guards to plugins/anamnesis/tests/test_s2_curation.py and one to tests/test_python_contract.py; nine of the twelve fail against parent commit 7dbdbad719b414a6af1f82559f3bdec4986938eb and the pin-scan guard fails there on both tmp/ paths.
+
+## Step 2, round 3 -- 2026-08-31T05:46:49Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from rounds 1 and 2. This round re-ran the whole battery over round 2's fixes and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three carried observations stand unchanged and are the honest residue of this step. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the conformance report are promoted with os.rename after an existence check, which narrows rather than closes the window. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct but reads oddly. None of the three admits a bad release: the first is a boundary on what verification establishes, and the other two are narrower guarantees than the root test runner's descriptor-held promotion, recorded as narrower rather than claimed as equal. The step's battery is green: 132 Anamnesis tests, 777 root tests, phylax, ephoros and hypomnema each exit 0, both Promise Machine checks clean, all seven release components rebuild byte-identical from the same inputs, the pilot release measures 168,532 bytes against the 50,000,000-byte cap, design_evidence --transition step:3 exits zero and the working tree is clean.
