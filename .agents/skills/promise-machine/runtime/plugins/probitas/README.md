@@ -12,6 +12,18 @@ Probitas builds a sourced dossier of borrowing and repayment across lending venu
 **Next Fiat job.** Use /hexaemeron:fiat to establish account-attributed debt units for a Morpho Midnight `exit_borrow_secondary` event so a secondary-market close reconciles into the debt ledger instead of refusing the collection. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Probitas when a person considering a counterparty needs a sourced account
+of borrowing and repayment across supported venues. Supply the entity name and
+addresses the subject declared; the result keeps venue coverage, citations,
+figures, and unknowns visible beside the narrative.
+
+It does not discover hidden addresses, identify a legal person, score a
+borrower, set terms, or make an underwriting decision. Morpho Midnight
+secondary-market borrow exits remain unattributable and its curation data has
+not been collected.
+
 ## Place in the collective
 
 Alexandria preserves venue captures and Tabularium turns supported records into

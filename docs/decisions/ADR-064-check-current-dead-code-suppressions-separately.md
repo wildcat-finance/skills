@@ -1,9 +1,9 @@
-# Decision: Check current dead-code suppressions separately
+# ADR-064: Check current dead-code suppressions separately
 
 ## Status
 
-Accepted, 2026-08-31. Integration assigns the next free `ADR-NNN` identity
-against the current default branch and moves current references with it.
+Accepted, 2026-08-31. Implements
+[framework-65](https://github.com/wildcat-finance/skills/issues/962).
 
 ## Context
 

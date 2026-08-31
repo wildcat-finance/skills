@@ -12,6 +12,18 @@ Lazarus captures the finite historical Ethereum state and exact RPC evidence one
 **Next Fiat job.** Use /hexaemeron:fiat to accept an empty ordered receipt witness only when the verified header carries Ethereum's empty trie root, derive zero receipt-trie-proved relations without a target receipt or filtered-log request, and preserve the shipped non-empty Goldfinch relation plus every legacy format. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Lazarus when a test depends on historical Ethereum state or RPC behaviour
+that may no longer be available. It captures a finite fixed-block fixture,
+verifies the supported proof relations offline, and replays only the exact
+requests the fixture contains.
+
+The current release can reconstruct a declared receipt trie for represented
+receipt payloads and log projections. Empty blocks have no receipt witness,
+and recorded transaction hashes, calls, traces, or provider statements do not
+become proved merely because they are in the fixture.
+
 ## Place in the collective
 
 Lazarus preserves one test's finite chain boundary. Alexandria preserves wider

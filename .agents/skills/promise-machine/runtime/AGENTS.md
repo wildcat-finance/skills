@@ -1,9 +1,18 @@
 # Instructions for local agents
 
-This repository distributes agent skills. Do not treat a skill as active merely
-because its files are present in context. Match the user's request through the
-single portable router at `.agents/skills/promise-machine/SKILL.md`, then read
-the selected plugin runtime contract and the one canonical `SKILL.md` it names.
+This repository is the source distribution for Wildcat Labs Skills, the
+Shoggoth. A person can begin with `README.md`; an agent begins here.
+
+The safe loading path is short:
+
+1. read the collective identity and shared Promise Machine contract;
+2. route the request through `.agents/skills/promise-machine/SKILL.md`;
+3. read the selected plugin's `AGENTS.md`; and
+4. read the one canonical `SKILL.md` that contract selects.
+
+Files present in context are not automatically active skills. A router,
+manifest, worker brief, or generated installation copy also does not create a
+general capability or permission.
 
 ## Collective identity
 
@@ -28,7 +37,7 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The fifteen plugins form one marketplace, not fifteen competing descriptions
+The sixteen plugins form one marketplace, not sixteen competing descriptions
 of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
@@ -49,7 +58,8 @@ Pandects supplies the economic laws such a transition must preserve. Synkrisis
 owns the cross-run comparison boundary: it builds one checked cohort from
 declared run observations and infers only bounded relations between named
 events, and any operation whose runbook step has not landed refuses by name
-rather than guessing. Its findings stay bounded inferences: capture,
+rather than guessing. All four current operations ship: cohort, diagnosis,
+rendering, and whole-path verification. Its findings stay bounded inferences: capture,
 redaction, receipt binding, causal triage, and every decision to act stay
 with their owners. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for

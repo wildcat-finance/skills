@@ -3,12 +3,26 @@
 <!-- marketplace-context:start -->
 ## In one line
 
-Homologia compares one pinned on-chain computation with one pinned off-chain mirror over declared vectors, and preserves every divergence as a specimen.
+Homologia defines the future contract-to-mirror integer comparison boundary; its current scaffold packages that contract and refuses every substantive operation.
 
 **Current frontier.** Homologia ships its contracts, packaging and a help-only command. No manifest is checked, no mirror is executed and no verdict is produced, so nothing yet establishes that a pair agrees.
 
 **Next Fiat job.** Use /hexaemeron:fiat to validate a declared manifest, its vector sets and their expected-answer provenance into checked, cap-bounded inputs, refusing a `proved` class with no backing reference and any cap breach before state is written. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
+
+## Start here
+
+Homologia is the planned home for checking whether one pinned contract
+calculation and one pinned off-chain mirror return the same integers over a
+declared vector set. The contract correctly distinguishes agreement from
+correctness: two implementations of the same mistake can agree perfectly.
+
+That comparison does **not** run today. The plugin ships its contract,
+packaging, and a help-only command. Manifest checks, execution, comparison,
+divergence specimens, and verdicts remain to be implemented; substantive
+requests refuse rather than inventing a result.
+
+## Intended boundary
 
 A protocol's arithmetic gets written twice. Once in Solidity, in unsigned
 256-bit integers with an explicit rounding direction and a ray or wad scale.
@@ -21,14 +35,14 @@ the contract agrees with itself. A prose lint asks whether a signing prompt is
 readable, not whether its number is right. So a mirror that is wrong by one
 rounding direction, or by six orders of decimal magnitude, passes everything.
 
-Homologia takes one pinned pair and a declared vector set whose expected answers
-carry a provenance class, then reports whether the pair agrees integer for
-integer and preserves every divergence as a specimen. Exact equality is the
-default; a tolerance must be declared and is echoed in the verdict it weakens.
+The completed design would take one pinned pair and a declared vector set whose
+expected answers carry a provenance class, report whether the pair agrees
+integer for integer, and preserve every divergence as a specimen. Exact
+equality would be the default; any tolerance would be declared and repeated in
+the verdict it weakens.
 
-A verdict says the pair agreed over the vectors it was given. It never says
-either side is correct, because two implementations of the same misunderstanding
-agree perfectly.
+Such a verdict would say only that the pair agreed over the supplied vectors.
+It would never say either side was correct.
 
 ## Contracts
 

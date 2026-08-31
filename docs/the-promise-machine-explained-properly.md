@@ -1,271 +1,278 @@
 # The Promise Machine, explained properly
 
-![A Wildcat controller feeds an evidence packet into a mechanical interlock that opens one authorised route.](assets/promise-machine-cover.png)
+This is the non-specialist guide to how **Wildcat Labs Skills, the Shoggoth,**
+fits together. The repository is its installable distribution; the Promise
+Machine, plugins, skills, workers, and upstream security siblings are its
+working parts. This guide starts with a normal crypto R&D job and introduces
+the internal vocabulary only when it becomes useful.
 
-## A field guide to Wildcat Labs Skills, Hexaemeron, and the part where saying “Fiat” does not summon a daemon
+The normative rules live in [`PROMISE_MACHINE.md`](../PROMISE_MACHINE.md).
+Where this guide and that contract differ, the contract wins.
 
-Wildcat Labs Skills is a collection of specialist working methods for agents. Some preserve evidence. Some inspect contracts. Some reconstruct credit history. One runs a complete delivery. They share a common rule: every result must stay inside the evidence that produced it.
+## Start with an ordinary failure
 
-That shared rule is the **Promise Machine**. The specialist methods are **skills**. **Hexaemeron** is the delivery system that can select the right skills, put work through a visible sequence, and retain evidence that each required stage happened. **Fiat** is the explicit entry point and controller for that delivery system.
+Imagine that a protocol test which used to pass against an archive RPC now
+fails. The team wants to know whether the contract changed, the SDK changed,
+the provider changed, or the original test depended on state nobody preserved.
 
-The shortest honest description is this:
+An unbounded assistant might fetch whatever is available today, repair the
+test, and write a confident explanation. That may produce working code, but it
+does not leave enough evidence to tell which explanation was true.
 
-> The Promise Machine defines what may be claimed. Skills do the specialist work. Hexaemeron organises a delivery. Fiat moves it one evidenced step at a time.
+The collective can split the job into narrower parts:
 
-## 1. The whole framework in one page
+1. **Lazarus** captures the exact block, state, and RPC request-response pairs
+   the test needs. It proves only the relations its verifier supports and marks
+   the rest as recorded.
+2. **Elenchus** reproduces the failure, reduces it, fixes the cause, and leaves
+   a guard that is red on the parent and green with the fix.
+3. **Ariadne** can bind the released fixture or patch digest to the evidence
+   behind it.
+4. **Fiat**, if a person explicitly asked for a full delivery, can control the
+   study, runbook, implementation, audit, prose, push, and integration phases.
 
-Think of a well-run workshop.
+At every hand-off, the next specialist receives the claim that was actually
+established. “This response was recorded” does not become “this value was
+proved.” “This regression test passes” does not become “the protocol is safe.”
 
-The **Promise Machine** is the workshop’s law. It says that a test certificate covers the test that actually ran, on the thing that was actually tested. It does not become a universal guarantee because somebody likes the result.
+That preservation of meaning is the Promise Machine.
 
-**Domain skills** are the specialists. One preserves historic Ethereum state. Another checks hook behaviour. Another builds a sourced counterparty dossier. They have different tools because they answer different questions.
+## What a promise contains
 
-**Phase skills** are working disciplines used across many subjects. They ask whether the problem was specified before work began, whether a new boundary is guarded, whether an unattended service can be understood at 3 a.m., whether a speed claim has measurements, whether a failure was fixed at its cause, and whether an important decision was recorded where somebody will find it.
+A promise is not a prediction and it is not a claim that an agent is generally
+reliable. It is the contract for one operation.
 
-**Hexaemeron**, usually shortened to **Hex**, is the production line. It studies the request, writes the runbook, implements each step, audits it, fixes the writing, opens reviewable changes, and lands the whole run once. It does not contain all knowledge itself. It calls the right specialists and disciplines.
+Every first-party promise answers the same questions:
 
-**Fiat** is Hex’s foreman and ledger. It gives one instruction at a time and will not advance until the required evidence is recorded. The model does the work. Fiat decides what comes next.
-
-This is why “type the thing and say Fiat” appears to work. The phrase is not a spell. It is explicit authority to start a controlled delivery in a named repository. The first thing Hex produces is a study of what the request should mean. Only then does it produce a plan that can be checked.
-
-![Figure 1: the skill architecture](assets/promise-machine-architecture.png)
-
-*Figure 1. One law, two kinds of skill, one delivery system. Hex selects what the job needs; it does not empty the entire tool cabinet onto every task.*
-
-| Layer | Its job | It does not mean |
+| Field | Question | Why it is present |
 | --- | --- | --- |
-| Promise Machine | Sets the evidence boundary for every claim and action | One central tool does all the work |
-| Skills | Perform bounded specialist work | Every skill must run on every job |
-| Hexaemeron | Manages a full delivery and selects the skills it needs | A completed process guarantees a perfect result |
+| Promise | What does success establish? | Names the exact result. |
+| Evidence | Which command, input, result, test, proof, or observation backs it? | Names the basis for that result. |
+| Evidence classes | Was the result checked, recomputed, proved, measured, recorded, attested, inferred, or left unknown? | Prevents one relation from being described as a stronger one. |
+| Boundary | What nearby conclusion is tempting but unsupported? | Stops the result expanding beyond its evidence. |
+| Authorises | What may happen next? | Names the permitted transition. |
+| Consequence | How consequential is that next action? | Sets the evidence strength required for it. |
+| Refuses | What stops if the evidence is absent or wrong? | Defines the local failure. |
+| Recovery | What can still be inspected, repaired, rerun, rolled back, or exited safely? | Keeps useful recovery paths open. |
+| Exceptions | Is any attributed, scoped, recorded waiver permitted? | Makes a permitted waiver explicit. |
 
-## 2. The Promise Machine
+The stable promise id lets another tool refer to this exact contract without
+copying or paraphrasing it.
 
-The Promise Machine is the common contract across the Wildcat Labs suite. Its governing sentence is plain:
+## Evidence words have narrow meanings
 
-> No skill may claim more than its evidence establishes, or authorise a more consequential transition than that evidence warrants.
+The evidence classes describe relations. They are not a league table.
 
-It turns a vague idea of “the agent checked it” into a small, inspectable chain:
-
-1. **Promise.** What narrow claim can this operation make?
-2. **Evidence.** What exact record, test, measurement, proof, or source supports it?
-3. **Boundary.** What nearby conclusion is tempting but unsupported?
-4. **Authorised action.** What may happen if the promise holds?
-5. **Refusal and recovery.** What action stops if it does not hold, and how can somebody inspect, repair, rerun, or leave safely?
-
-The refusal is deliberately contained. If a gate for a new draw fails, it should stop that draw. It should not prevent repayment, investigation, or cure. Applied to software, a failed release gate stops publication, not diagnosis or rollback.
-
-![Figure 2: the Promise Machine circuit](assets/promise-machine-flow.png)
-
-*Figure 2. Evidence is checked before an action opens. A failed check takes the safe route: refuse the dependent action, keep recovery available, then try again with better evidence.*
-
-### Evidence has names
-
-The contract distinguishes several relationships between a claim and its support:
-
-- **Checked** means a named rule or schema accepted the subject.
-- **Measured** means a value was observed using a recorded method and environment.
-- **Recorded** means bytes or a statement were preserved from an identified source.
-- **Attested** means an identified actor or system made the statement.
-- **Proved** means a named proof relation accepted the subject.
-- **Inferred** means a conclusion follows from named evidence under a stated rule.
-- **Unknown** means the matter was not established.
-
-These are not medals arranged from weak to strong. They describe different relationships. An attestation may prove who said something without proving the statement true. A measurement can establish performance on one workload without establishing performance everywhere.
-
-### Consequence grows with evidence
-
-The Promise Machine assigns the **action**, not the whole skill, one of four consequence levels:
-
-| Level | What the result may authorise | Expected care |
+| Word | What it means here | What it does not mean |
 | --- | --- | --- |
-| 0 | A response or presentation | Preserve scope, meaning, and uncertainty |
-| 1 | A derived artefact | Check structure, source, and visible gaps |
-| 2 | A repository or durable-data change | Tests, negative evidence, and a recoverable change |
-| 3 | Publication, deployment, external action, or a security or financial conclusion | A fail-closed gate, recorded authority, and independently inspectable evidence |
+| `checked` | A named deterministic rule or schema accepted the subject. | Everything about the subject is correct. |
+| `recomputed` | A result was derived again from named inputs and a named method. | The inputs or method are authoritative. |
+| `proved` | A named formal, cryptographic, or defined proof relation accepted. | Any neighbouring fact was proved. |
+| `measured` | A value was observed under a recorded method and environment. | The value is universal or caused by the change. |
+| `recorded` | Exact bytes or a statement were preserved from an identified source. | The source was truthful. |
+| `attested` | An identified actor or system made the statement. | The statement is independently true. |
+| `inferred` | A named rule produced a conclusion from named evidence. | The conclusion was directly observed. |
+| `unknown` | The matter was not established. | Anything positive may proceed. |
 
-A rewrite can sit at level 0. A generated evidence file may sit at level 1. A code change belongs at level 2. Merging, deploying, or issuing a security conclusion belongs at level 3.
+This distinction matters in crypto work. A provider response can be recorded
+without being proved. A storage value can be proved against a named state root
+without proving that the provider chose the canonical block. A security tool
+can check a bounded property without proving that a contract has no bugs.
 
-### Composition cannot wash away caveats
+## Consequence changes the gate
 
-Skills can pass work to one another, but the hand-off carries the subject, scope, evidence class, time boundary, and unresolved gaps. A later skill can narrow the evidence or add new evidence. It cannot upgrade “recorded RPC response” into “proved chain truth,” or turn a bounded hook search into “the hook is safe.”
+The contract uses four consequence levels for the transition after a result:
 
-This is the architectural point. The suite is useful because skills compose. It is trustworthy only if their boundaries compose too.
-
-### What the Promise Machine is not
-
-It is not Hexaemeron, not Fiat, and not a universal receipt format. It does not force every skill into one controller. It does not establish that a source told the truth, that a model is correct, or that a clean check proves perfection. It governs the claim and the next action.
-
-## 3. Domain skills: specialists with narrow jobs
-
-“Domain skill” is a useful explanatory label rather than a separate package type. It means a skill whose job is tied to a subject, artefact, or decision. Most can run by themselves. Hex may select one when a delivery needs its work.
-
-### Reading and source preparation
-
-- **Horos** draws an evidence-backed reading boundary around a repository. It classifies generated files, vendored trees, lockfiles, large blobs, and other token sinks so an agent begins with the part worth reading.
-- **Lemma** turns Solidity compiler inputs or Markdown trees into source-linked JSONL chunks. Quotation text stays distinct from text prepared for a model or an embedding.
-
-### Preserving and reconstructing evidence
-
-- **Alexandria** preserves lending-protocol captures by digest and derives only the address-scoped credit view a reviewed mapping supports.
-- **Lazarus** captures the finite part of historical Ethereum state and exact RPC evidence needed by a test, checks the proof-backed part, and replays only exact recorded requests.
-- **Tabularium** rebuilds reproducible credit-event records from preserved venue-native data without flattening every venue into a misleading common story.
-
-### Credit research and grounded releases
-
-- **Probitas** builds a sourced dossier from wallet addresses a counterparty declared. It reports borrowing and repayment evidence, keeps coverage gaps visible, and does not claim to identify a person or issue a Wildcat verdict.
-- **Berean** binds an agent release to a pinned document corpus, exact citations, block-bound reads, evaluation cases, and promotion records. It lets a stranger check what an answer rested on without treating the model as the authority.
-- **Ariadne** writes and verifies evidence statements that bind an artefact digest to the build, test, review, or deployment record behind it. The statement says what evidence covers; it does not invent signer identity or truth.
-
-### Contracts and protocol behaviour
-
-- **Pandects** expresses credit-system laws as executable Solidity components, each paired with a deliberately broken specimen the law must catch.
-- **Janus** checks what a contract hook may observe and change before and after a host action. Its result stays bound to the named host adapter, manifest, recorder, and bounded search.
-- **Hermes** changes Solidity gas use only inside a measured Foundry loop. Each candidate names a rule, reruns behaviour checks, compares storage and selectors, and is kept only when the evidence shows a real saving.
-
-### Communication and interaction
-
-- **Brevitas** applies evidence-preserving structural limits to engineering prose. It cuts padding without cutting addresses, numeric claims, counterexamples, or explicit unknowns.
-- **Sapheneia** shapes replies for AuDHD readers by keeping the action, boundary, state, evidence, and next step visible.
-
-These skills do not become parts of Hex simply because they are in the same suite. Their independence matters. A researcher can use Probitas without running a software delivery. An auditor can use Janus without opening a Fiat run. Hex is a customer of specialist skills, not their owner.
-
-## 4. Phase skills: disciplines that travel between jobs
-
-Hexaemeron contains six first-party phase skills. Each has a clear home in the delivery loop and can also run by itself.
-
-| Skill | Plain-English question | Where Hex uses it |
+| Level | What happens next | Minimum discipline |
 | --- | --- | --- |
-| **Protasis** | Have we stated the problem, assumptions, trade, risks, and checkable finish before building? | Study and runbook |
-| **Phylax** | What new boundary accepts outside data, commands, URLs, secrets, dependencies, or model output, and what control guards it? | Implementation and non-Solidity review |
-| **Ephoros** | What questions will somebody ask when this runs unattended, and what events, metrics, traces, or alerts answer them? | Implementation and non-Solidity review |
-| **Metron** | Is a performance change backed by the same measurement before and after, outside the noise, with correctness still green? | Implementation when speed is in scope |
-| **Elenchus** | Can we reproduce the observed failure, find its mechanism, fix that cause, and leave a test that fails without the fix? | Implementation and audit failures |
-| **Hypomnema** | Which decisions must outlive the people making them, and where will the next person look for the reason? | Prose and durable records |
+| 0 | A response or presentation | Preserve scope, content, and uncertainty. |
+| 1 | A derived artefact | Validate its shape, provenance, and visible gaps. |
+| 2 | A repository or durable-data change | Run tests, preserve negative evidence, and keep recovery possible. |
+| 3 | Publication, deployment, external action, or a security or financial conclusion | Fail closed with recorded authority and independently inspectable evidence. |
 
-The important word is **when**. Metron does not run because performance exists as an abstract concern. It runs when the study names a budget or somebody proposes a speed change. Elenchus does not roam for hypothetical bugs. It starts when a failure has actually appeared. Ephoros applies when a thing will run unattended or needs operational signals.
+The level belongs to the action, not to the personality of the skill. One
+skill can have separate operations at different levels.
 
-This keeps the framework from becoming a ceremonial checklist. The study names the disciplines a step incurs and why. Later review can then ask whether the promised discipline actually ran.
+A level-3 action cannot rest only on model judgement, chat memory, or an
+unchecked receipt. This is why a repository change that looks finished can
+still stop before publication.
 
-Two more skills shape prose but are not phase disciplines in the same sense:
+## Composition keeps the caveats
 
-- **Imprimatur** checks shipped prose for a defined set of machine-writing habits and unsupported technical phrasing.
-- **Vulgate** rewrites the surface into plain human language while keeping every fact, caveat, and commitment unchanged.
+Skills are designed to hand work to siblings, but composition is where
+overclaiming often happens. The consumer must carry forward the producer,
+subject, scope, evidence class, time boundary, conflicts, unknowns, and any
+transformation.
 
-Hex runs Hypomnema first to decide what must be recorded, then Imprimatur, then Vulgate. Meaning first, presentation second.
+Some current examples:
 
-## 5. Hexaemeron: the delivery system
+- Lemma chunks remain source-linked retrieval material. They do not establish
+  that an answer based on them is true.
+- Lazarus RPC responses remain recorded unless a named proof check established
+  a narrower proved relation.
+- Berean citation and evaluation records establish their release gates. They
+  do not establish general model quality or universal factual truth.
+- Janus stays bound to one named host adapter, manifest, recorder, and bounded
+  search. It does not establish hook safety across every execution or host.
+- Ariadne binds an artefact digest to declared evidence. Without a separate
+  signature verifier it does not authenticate the publisher.
+- Synkrisis recomputes a checked cohort, bounded findings, and a report. It
+  does not turn repeated observations into cause or permission to act.
 
-Hexaemeron takes one topic through a full repository delivery. Its name refers to six days of ordered creation and then rest. The joke is visible in the sequence, but the machinery is practical.
+A consumer may add evidence under a separate identity.
+It may not rename the old evidence into something stronger.
 
-1. **Study.** Protasis turns the topic into a proposition: problem, audience, assumptions, current state, options, chosen trade, risks, boundaries, success checks, and records.
-2. **Runbook.** The study becomes discrete steps. Each step has an exact entry, exit command, files, tests, and applicable disciplines.
-3. **Implement.** Hex builds the least complicated construction that satisfies the step. It applies Phylax, Ephoros, Metron, or Elenchus when the step calls for them.
-4. **Audit.** The step is reviewed in rounds. Solidity work uses the bundled X-Ray, Solidity Auditor, and Fizz suite. Findings are fixed on the step branch and another round runs. Non-Solidity work runs the applicable phase checks.
-5. **Prose.** Hypomnema places the records. Imprimatur and Vulgate clean the shipped documents and pull-request text without changing their substance.
-6. **Push.** The step is signed, pushed, and opened as a pull request against the step below it.
-7. **Integrate.** Once every step is ready, the stack merges in order into the run branch. The run branch then lands on the base once.
+## Refusal should be local and useful
 
-![Figure 3: the Hexaemeron production line](assets/hexaemeron-run.png)
+When evidence is missing, stale, malformed, or about the wrong subject, the
+dependent transition stops. The whole system should not become unusable.
 
-*Figure 3. One job moves through visible stations. The audit may send work back to implementation. Each completed stage leaves a receipt, and the base branch receives one final integration rather than a trail of partial changes.*
+A useful refusal names:
 
-### Fiat: controller, ledger, and gatekeeper
+- the promise that failed;
+- the field or evidence at fault;
+- the blocked action;
+- the consequence level; and
+- the recovery action.
 
-Fiat is the explicit Hex entry skill. A deterministic controller called `hexctl` stores state under `.hexaemeron/` and emits one next action. The agent performs that action, records its receipt, and asks again.
+Inspection, diagnosis, repair, rerun, rollback, and safe exit remain available
+unless the promise explains why one of them cannot exist. A checker must never
+delete or rewrite the failing source merely to make its own report pass.
 
-Conversation is not the source of truth. The state and hash-chained ledger are. If a session resets, the controller can reconstruct the next packet from durable artefacts and state. If a required receipt is absent or malformed, Fiat refuses to advance.
+## What the repository checks
 
-The controller is intentionally narrower than the work. It can prove that required transitions and receipt shapes occurred in order. It cannot prove that a test summary is true, that an audit judgement is correct, or that the implementation has no defects. Those claims belong to the evidence recorded by the relevant skill.
+The Promise Machine's structural checks discover the governed skill universe
+from manifests and canonical skill paths. They reject missing declarations,
+duplicate identities, uncovered skills, divergent installation copies, and
+unbound vendored instructions. They also check the shapes of the Promise
+Machine's own operations for run observations, contributor ranking, router
+selection, and first-party licensing.
 
-### Branches show the shape of the work
+This is a wiring and contract check. Behavioural evidence still comes from the
+named domain tests, broken specimens, proof checks, measurements, and manual
+demonstrations. Green wiring cannot prove a false domain claim true.
 
-A run has one integration branch and a stack of step branches. Step 1 targets the run branch. Step 2 targets Step 1. A reviewer sees one step’s change rather than the whole programme. Nothing lands on the base during the steps. At the end, the stack collapses in order and the run reaches the base through one integration.
+## The specialists
 
-This is workflow evidence rather than administrative theatre. The branch shape records dependency order, keeps each review small, and prevents a half-built sequence from leaking into the base.
+The current distribution has 16 plugins and 25 governed first-party skills.
+They are easier to understand as parts of a few R&D paths than as one long
+alphabetical list.
 
-### The bundled security suite
+### Preparing and preserving evidence
 
-Hex ships a third-party Pashov suite for Solidity work:
+- **Horos** bounds initial repository reading.
+- **Lemma** prepares source-linked document or Solidity chunks.
+- **Lazarus** preserves finite historical Ethereum state and exact RPC traffic.
+- **Ariadne** binds release digests to evidence statements.
 
-- **X-Ray** creates pre-audit views of the named repository, likely attack paths, invariants, integrations, tests, and history.
-- **Solidity Auditor** runs the prescribed security-review roles over the named scope and combines their results only after all have returned.
-- **Fizz** builds or refreshes an Echidna or Medusa stateful fuzz harness and records the campaign that actually ran.
+### Building and comparing checkable releases
 
-These instructions remain upstream-owned and unchanged. Wildcat’s claims about their outputs live in digest-bound overlays. If upstream bytes change, the overlay stops applying until reviewed. That is the Promise Machine guarding provenance without pretending Wildcat authored the method.
+- **Berean** evaluates protocol-agent releases against pinned documents and
+  block-bound chain reads.
+- **Synkrisis** compares declared observations from several runs under one
+  comparison policy and bounded rule catalogue.
 
-### Kronos: the optional loop around Fiat
+### Protocol behaviour and contract safety
 
-Kronos ranks held, eligible skill-frontier jobs, selects the most worthwhile one, sends it through a complete Fiat run, then ranks again. It is useful for advancing the skills suite itself. It is not part of an ordinary product delivery, and it stops when there is no eligible frontier worth seasoning further.
+- **Janus** checks host-specific hook-effect boundaries.
+- **Pandects** supplies executable credit laws with broken specimens.
+- **Hermes** performs measured Solidity gas work.
+- **Homologia** is the planned integer-parity specialist, but today it is a
+  refusing scaffold rather than an operational comparison tool.
+- The unchanged upstream **X-Ray**, **Solidity Auditor**, **Fizz**, **Fizz
+  Convert**, and **Fizz Sync** skills cover audit preparation, contract review,
+  and stateful fuzz harnesses.
 
-## 6. How Hex chooses skills
+### Lending records and dossiers
 
-Hex does not run every skill. Selection follows four questions.
+- **Alexandria** preserves raw lending inputs.
+- **Tabularium** maps supported venue records into reproducible events.
+- **Probitas** assembles a declared-address dossier without making the lending
+  decision.
 
-1. **What is the job about?** That selects domain skills. A historical-state fixture points to Lazarus. A hook boundary points to Janus. A counterparty lending record points to Probitas.
-2. **What does this step introduce?** That selects phase skills. A new URL fetch invokes Phylax. An unattended worker invokes Ephoros. A speed claim invokes Metron. A red test invokes Elenchus.
-3. **What is being shipped?** Solidity activates the bundled security suite. Prose activates the record and voice sequence. A repository change activates signed commits, branch gates, and review.
-4. **What evidence exists now?** A skill may run only when its preconditions exist. No failure means no Elenchus diagnosis. No baseline means no performance change. Missing evidence blocks the dependent action.
+### Delivery, engineering, and communication
 
-### Worked example: a source-grounded credit agent
+- **Fiat** controls the full repository delivery.
+- **Protasis**, **Phylax**, **Ephoros**, **Metron**, **Elenchus**, and
+  **Hypomnema** govern readiness, off-chain security, observability,
+  non-gas performance, failure reduction, and durable explanation.
+- **Imprimatur**, **Vulgate**, **Sapheneia**, and **Brevitas** diagnose, rewrite,
+  shape, and constrain prose without owning its facts.
+- **Kronos** can rank eligible held frontier work and dispatch it through Fiat
+  when explicitly asked.
 
-Suppose the topic is: “Build an agent that answers questions about a borrower’s historic lending activity, with citations a reviewer can check.”
+The root [`README.md`](../README.md) gives examples and current gaps for these
+groups. [`FUTUREPROOFING.md`](../FUTUREPROOFING.md) separates shipped behaviour
+from plausible final forms member by member.
 
-Protasis would first pin down the subject, declared addresses, venues, time range, source classes, demo questions, and what “checkable” means. The runbook might then split the work into preserved evidence, credit-event reconstruction, answer generation, and release evidence.
+## Hexaemeron and Fiat
 
-The domain selection could be:
+Hexaemeron is the delivery plugin. Fiat is its controller. Fiat is not an
+always-on mode and the word “deliver” is not enough to activate it. A person
+must explicitly ask to start, run, resume, recover, or continue Fiat or
+Hexaemeron.
 
-- Alexandria to preserve and digest the heterogeneous lending captures.
-- Tabularium to turn venue-native records into qualified credit events.
-- Probitas to build the address-scoped borrowing dossier.
-- Lemma to prepare source-linked text chunks when documents are involved.
-- Berean to bind answers to pinned bytes, chain reads, and evaluations.
-- Ariadne to attach the final release digest to its evidence statement.
+A normal run moves through:
 
-The phase selection depends on each step:
+```text
+study -> runbook -> implementation step(s) -> audit round(s) -> prose -> push -> integration
+```
 
-- Phylax guards RPC responses, fetched documents, subprocesses, paths, credentials, and model output.
-- Ephoros applies if harvesting or answering runs unattended.
-- Metron applies only if the study sets a response-time or harvest-time budget.
-- Elenchus starts when a test, build, or evaluation actually fails.
-- Hypomnema records expensive choices such as the event schema or evidence-class mapping.
+The exact path can include amendments, deferrals, stacked pull requests, and
+recovery. Durable state and receipts, rather than chat, decide where the run is.
 
-Hex then manages the delivery sequence, receipts, branch stack, audit rounds, prose, and integration. The Promise Machine keeps the hand-offs honest. A recorded venue response does not become proved borrower-wide truth. A citation that matches pinned bytes does not prove the source sentence true. The final release can still be useful because it says exactly what was established and what remains unknown.
+Four worker roles may execute bounded packets:
 
-### A much smaller example
+- **Surveyor** writes one source-bound study.
+- **Mason** implements and tests one exact runbook step.
+- **Warden** performs one audit round and returns preserved findings, fixes,
+  and an Elenchus verdict.
+- **Scribe** performs one bounded prose pass.
 
-Suppose the task is only: “This launch post sounds like a machine wrote it.” No repository delivery is needed. Imprimatur can identify the known writing patterns. Vulgate can rewrite the surface into the house voice. Fiat adds nothing useful, so Hex stays in the cupboard.
+They cannot advance Fiat, receipt their own work, widen their packet, or claim
+publication authority. Fiat may perform a packet inline when a separate worker
+is unavailable.
 
-That is a feature of the framework. A large system that insists on appearing in every job has confused consistency with ceremony.
+[`fiat-in-plain-english.md`](./fiat-in-plain-english.md) explains the run without
+the controller vocabulary. The exact controller contract remains the Fiat
+`SKILL.md`.
 
-## 7. Receipts, refusals, and what “done” means
+## The router
 
-A receipt is a durable statement that a named phase crossed its required boundary. It may include an artefact path, exact commit, test summary, audit round, skills that ran, pull-request URL, or merge SHA. Fiat chains those receipts so order and later tampering are visible.
+Portable agents discover one host-neutral `promise-machine` router. The router
+first determines whether it is in a full checkout or an isolated installed
+copy, loads the shared contract and plugin runtime, and then selects the
+narrowest canonical skill that owns the request.
 
-Receipts solve a practical agent problem: chat history is fragile. A week-long run may cross new sessions, context limits, interrupted tools, or another operator. The durable state says where the work is. Nobody has to reconstruct it from “I think we were on step three.”
+The router does no domain work. If two skills appear to match, it must read the
+boundary that separates them. If the repository defines no owner, it stops at
+inspection and reports the uncovered boundary instead of inventing a general
+capability.
 
-The Promise Machine prevents receipts from becoming magical proof. A receipt that says an audit round ran establishes that the round was recorded in the required place. Whether the review was good depends on the named audit evidence. A receipt never becomes stronger because it is in a ledger.
+## What “done” means
 
-Fiat stops for decisions that belong to a human or for evidence it cannot establish: unresolved audit findings at the round cap, a rejected push, a missing security-suite decision for Solidity work, or failed ledger verification. The stop is recorded. Recovery remains available.
+For a single operation, done means the named promise passed and the result
+contains its evidence, boundary, and recovery information.
 
-“Done” therefore has a strict but bounded meaning: the recorded delivery reached the named base through the required process and all required gates accepted their subjects. It does not mean the software is perfect, the model is infallible, or tomorrow cannot reveal a new requirement.
+For a Fiat delivery, done means the controller has accepted every required
+receipt and the authorised integration conditions hold. A convincing chat
+summary, a green test from an older tree, or a branch that merely contains code
+is not a substitute.
 
-## 8. The naming without the asylum
+For the collective as a research project, there is no final “all done.” The
+useful standard is smaller: each claimed capability should have a real user, a
+finite checked operation, a hostile or broken specimen, a visible frontier,
+and a reason to keep maintaining it. Where those are missing, the public prose
+should say so.
 
-| Term | Kind | Meaning |
-| --- | --- | --- |
-| Promise Machine | Shared law | Ties claims and actions to evidence |
-| Skill | Working method | Owns one bounded promise |
-| Domain skill | Explanatory category | A subject specialist |
-| Phase skill | Hexaemeron category | A reusable discipline attached to a stage of work |
-| Hexaemeron / Hex | Delivery system | Contains Fiat, phase skills, prose tools, and the security suite |
-| Fiat | Controller | Runs one explicit delivery; “Let there be light” is the invocation joke |
-| Kronos | Optional outer loop | Ranks eligible skill-frontier work and repeatedly calls Fiat |
-| Receipt | Durable evidence | Records that a required transition occurred in order |
-| Gate | Check | Blocks only the dependent next action when it fails |
-| Frontier | Skill state | Names the next evidenced improvement, or “mature” when no concrete job remains |
+## Current source boundary
 
-The framework is not one madness box. It is a set of narrow tools held to one law, with one delivery system available when the job is large enough to need it. The mascot is merely the only member of staff who looks appropriately unimpressed by the paperwork.
+This guide describes the repository snapshot dated 31 August 2026. Counts,
+frontiers, and examples can change. The canonical current sources are:
 
-## Source boundary
-
-This report describes the local Wildcat Labs source snapshot inspected on 21 August 2026: Promise Machine contract `promise-machine/v1`, Hexaemeron package `1.5.3`, its Fiat controller and phase skills, and the 14-plugin marketplace checkout available in the task environment. It is explanatory material, not a security review or a claim about later releases. The detailed source inventory and image prompts are in `source-note.md` beside this report.
+- [`SHOGGOTH.md`](../SHOGGOTH.md) for collective identity and roster shape;
+- [`PROMISE_MACHINE.md`](../PROMISE_MACHINE.md) for evidence and transition
+  law;
+- each plugin's `AGENTS.md` for routing and runtime boundaries;
+- each canonical `SKILL.md` for the operation contract; and
+- each `EVOLUTION.md` for the accepted frontier and next evidenced job.
