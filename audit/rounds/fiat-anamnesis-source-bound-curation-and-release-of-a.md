@@ -48,3 +48,19 @@ Elenchus verdict: passed
 | S1-R3-01 | low | .agents/skills/promise-machine/runtime/MANIFEST.json | The generated portable runtime still carried the pre-fix copies of anamnesis.py and hypomnema.py, so a copy-mode install would have shipped code the source tree had already corrected and the manifest bound bytes that no longer existed upstream. Rounds 1 and 2 changed both scripts and neither resynced the mirror | fixed in this round |
 
 Leads not pursued: one flake is recorded rather than fixed, because it is pre-existing and not this step's. tests/test_python_contract.py walks ROOT.rglob("*.md") without excluding tmp/, which is where scripts/run_checks.py stages its disposable snapshot, so running the root suite while a check run is in flight reports the snapshot's own copy of docs/promise-machine/evidence/2026-08-20-self-demonstration.md as stale runtime prose. The finding is transient, names a path under the gitignored run home rather than a tracked file, and disappears when the snapshot does; the same test passes against this tree with no check run in flight. It belongs to whoever owns the check runner's scratch boundary, not to a step that adds a plugin.
+
+## Step 1, round 4 -- 2026-08-31T04:27:41Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; private-egress=reviewed; partial-release=reviewed; evidence-strengthening=not-applicable; duplicate-collapse=not-applicable; fix-state-collapse=not-applicable; many-to-many-loss=not-applicable; taxonomy-drift=not-applicable; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from rounds 1 to 3. This round re-ran the whole battery over the round 3 fix and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: one red check is recorded and is not this step's. The selected check plan run at this commit reports lazarus-suite failed; the same suite fails identically on the unmodified base checkout, and this run changes no file under plugins/lazarus. The cause is environmental rather than a regression: on macOS the TMPDIR the suite writes into resolves through /var to /private/var, and lazarus_lib/release.py refuses a statement path containing a symlink, so every release test raises PathError before it reaches its assertion. It belongs to Lazarus, is reproducible from a clean clone on this platform, and would fail whatever this step contained. The step's own battery is green: 71 Anamnesis tests, 776 root tests, phylax, ephoros and hypomnema each exit 0, promise_machine check reports 17 plugins and 17 copies clean, portable_promise_machine check reports no drift, git diff --check is clean, the pending resolver writes its report and design_evidence --transition step:2 exits zero.
