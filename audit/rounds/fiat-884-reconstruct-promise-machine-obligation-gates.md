@@ -410,3 +410,19 @@ Elenchus verdict: guarded
 | S4-R1-01 | high | scripts/promise_machine.py:118 | Five passing relations were not joined to their named native promise declarations. `lemma-chunk-validation` and `lazarus-fixture-verification` asserted an undeclared `recorded` producer class; the two Ariadne capture consumers added undeclared `attested`; and the Synkrisis cohort consumer added undeclared `recomputed`. Validation compared the fixture only with the same static catalogue, so all seven relations passed while these five unsupported classes crossed consequence-3 composition boundaries. | Fixed and guarded in this stacked commit. The corrected producers are `lemma-corpus-provenance` and `lazarus-fixture-capture`; `validate_composition_registrations` now requires unique native identities, producer-declared classes, preserved inherited classes and consumer-declared additions. The new guard was red before the fix and all 207 Promise Machine tests, 8 portable-package tests, 7 boundary tests, the 1,040-file portable check, and phylax=0, ephoros=0, hypomnema=0 are green after it. |
 
 Leads not pursued: none
+
+## Step 4, round 2 -- 2026-08-31T09:07:42Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: declaration-only-coverage=reviewed; result-binding-drift=reviewed; level3-authority-collapse=reviewed; history-blind-id-change=not-applicable; unknown-positive-transition=reviewed; exception-staleness=not-applicable; composition-promotion=reviewed; vendored-origin-spoof=not-applicable; checker-side-effect=reviewed; prompt-fixture-substitution=not-applicable; migration-partial-green=reviewed; refusal-shape-drift=reviewed; input-confinement-regression=reviewed; generated-copy-divergence=reviewed; evidence-semantic-presence=reviewed
+
+Not checked: X-Ray and Solidity Auditor, waived by the Step 4 non-Solidity security-suite receipt; external truth of producer records; unrelated broad Lazarus and Synkrisis baselines; GitHub publication
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: S4-R1-01 remains closed on exact signed head `ae6c367f83bf09bc90b3197ee112de5d5a8d7c47`. The fixed-tree review resolved every producer and consumer identity through the native promise inventory, then rechecked producer-declared evidence classes, inherited-class preservation, consumer-declared additions, blocked transitions, stable finding shapes, and portable closure. All 35 focused composition tests passed. The contract check resolved 18 obligations, 7 composition relations, 35 runtime bindings, and all 80 coverage rows with zero findings; the portable check closed at exactly 1,040 files; and the append-only synopsis matched its source. The exact Phylax, Ephoros, and scoped Hypomnema commands each exited 0. The complete fixed-tree Elenchus report remains `complete: true` after 870 of 870 passing tests with no failures, errors, skips, expected failures, or unexpected successes, at SHA-256 `4b105f5206ff1f4486e46d74feba8175c1fe8d873826e76963b7505a54604591`. No new defect survived, no fix was made in this round, and the Elenchus verdict is therefore null. The required `sapheneia:sapheneia` bounded record pass froze the heading, schema, fifteen risk dispositions, explicit non-claims, zero-finding row, signed head, counts, report digest, lint exits, security waiver, and publication boundary without changing an earlier record. Round 8 remains the immutable audit ceiling; the controller must never create round 9.
