@@ -714,7 +714,7 @@ class NoemaScaffoldTests(unittest.TestCase):
             require_measurement_families=True,
             verify_files=False,
         )
-        self.assertEqual(record["observed_on"], "2026-08-30")
+        self.assertEqual(record["observed_on"], "2026-08-31")
         self.assertEqual(
             [profile["family"] for profile in profiles],
             ["anthropic", "google", "open-weight", "openai"],
