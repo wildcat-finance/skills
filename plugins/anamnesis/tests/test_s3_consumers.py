@@ -381,6 +381,57 @@ class SingleRead(unittest.TestCase):
         self.assertNotIn("import resource", head)
         self.assertIn("import resource", source)
 
+class SchemaBinding(unittest.TestCase):
+    """S3-R2-01: the schema is the single statement of a projection's shape."""
+
+    SCHEMAS = PLUGIN_ROOT / "skills/anamnesis/schemas"
+
+    def declared(self, filename):
+        document = json.loads((self.SCHEMAS / filename).read_text(encoding="utf-8"))
+        return set(document["properties"]), set(document["required"])
+
+    def test_the_analogue_field_set_comes_from_its_schema(self):
+        properties, required = self.declared("elenchus-analogue-v1.json")
+        self.assertEqual(properties, required)
+        self.assertEqual(anamnesis.ANALOGUE_FIELDS, properties)
+
+    def test_the_observation_field_set_comes_from_its_schema(self):
+        properties, required = self.declared("synkrisis-observation-v1.json")
+        self.assertEqual(properties, required)
+        self.assertEqual(anamnesis.OBSERVATION_FIELDS, properties)
+
+    def test_a_schema_with_an_optional_field_is_refused(self):
+        """A projection's shape is closed; an optional field is a hole in it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "loose.json"
+            path.write_text(json.dumps({
+                "properties": {"a": {}, "b": {}},
+                "required": ["a"],
+            }), encoding="utf-8")
+            saved = anamnesis.SCHEMA_DIR
+            anamnesis.SCHEMA_DIR = tmp
+            try:
+                with self.assertRaises(anamnesis.Refusal) as caught:
+                    anamnesis.projection_fields("loose.json")
+            finally:
+                anamnesis.SCHEMA_DIR = saved
+            self.assertEqual(caught.exception.code, "A160")
+
+    def test_every_emitted_projection_matches_its_schema_field_set(self):
+        analogue = anamnesis.analogues(str(RELEASE), "severity", "high")
+        observation = anamnesis.observations(str(RELEASE), "a stated rule")
+        self.assertEqual(set(analogue), self.declared("elenchus-analogue-v1.json")[0])
+        self.assertEqual(
+            set(observation), self.declared("synkrisis-observation-v1.json")[0])
+
+    def test_the_analogue_schema_pins_the_verdict_to_null(self):
+        document = json.loads(
+            (self.SCHEMAS / "elenchus-analogue-v1.json").read_text(encoding="utf-8"))
+        self.assertEqual(document["properties"]["verdict"], {
+            "description": document["properties"]["verdict"]["description"],
+            "const": None,
+        })
+
 
 if __name__ == "__main__":
     unittest.main()

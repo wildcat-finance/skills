@@ -1338,11 +1338,32 @@ def check_projection(payload, schema, required):
     return payload
 
 
-ANALOGUE_FIELDS = {
-    "schema", "release_id", "query", "analogues", "verdict", "not_established"}
-OBSERVATION_FIELDS = {
-    "schema", "producer", "release_id", "cohort", "denominators", "policy",
-    "exclusions", "unknowns", "not_established"}
+SCHEMA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas")
+
+
+def projection_fields(filename):
+    """The field set a projection schema declares, read from the schema.
+
+    Holding this as a constant beside the schema let the two drift: an adapter
+    could gain a field the schema never declared, or lose one it requires, and
+    nothing compared them. The schema is the single statement of the shape.
+    """
+    path = os.path.normpath(os.path.join(SCHEMA_DIR, filename))
+    raw = read_bounded(path, MAX_POLICY_BYTES, f"schema {filename}")
+    document = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
+    declared = set(document["properties"])
+    required = set(document["required"])
+    if declared != required:
+        raise Refusal(
+            "A160",
+            f"schema {quote(filename)} declares optional fields {sorted(declared - required)}; "
+            "a projection's shape is closed and every field is required",
+        )
+    return declared
+
+
+ANALOGUE_FIELDS = projection_fields("elenchus-analogue-v1.json")
+OBSERVATION_FIELDS = projection_fields("synkrisis-observation-v1.json")
 
 
 def _rebuild_once(specimen, destination):

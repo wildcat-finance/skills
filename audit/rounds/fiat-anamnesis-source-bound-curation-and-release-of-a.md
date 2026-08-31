@@ -133,3 +133,19 @@ Elenchus verdict: guarded
 | S3-R1-02 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | resource was imported at module scope for the benefit of one command's memory baseline, so on a platform without it every operation including admission and release would fail at import. A baseline is the least important thing the module does and was the only thing that could stop it loading | fixed in this round |
 
 Leads not pursued: three observations carry forward and one is new. Carried unchanged: the unknowns map is digest-covered but not recomputable from the sources without re-curating them; the staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window; and a manifest naming a component path outside the release refuses under a path rule rather than a manifest rule. New: the projections are checked against their closed field sets by the adapter and not against the JSON Schema files that declare them, so a schema and its adapter could drift apart without a test noticing; the committed expected projections make that drift visible as a diff, which is weaker than validating and is what exists. Every fix carries its exact specimen in plugins/anamnesis/tests/test_s3_consumers.py; the three new guards were run against parent commit d4ebacc47301501df0afe7ac95d439b4270cd974, where two fail and one errors, and against the fixed tree, where all 170 tests pass.
+
+## Step 3, round 2 -- 2026-08-31T06:19:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: unchanged from round 1. Round 2 re-ran the battery over round 1's fixes and then took up the one lead round 1 recorded rather than carrying it a third time.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Each projection's field set was a constant beside the schema file that declares the same thing, so the adapter and its schema could drift apart with nothing comparing them. Nothing was wrong today: both constants matched their schema exactly, which is why this is a duplication rather than a defect. The field sets now derive from the schema files, and a schema declaring an optional field is refused, because a projection's shape is closed and an optional field is a hole in it | fixed in this round |
+
+Leads not pursued: the three carried observations stand unchanged and none admits a bad release. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window, and closing it needs the directory-descriptor promotion the root test runner uses. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct and reads oddly. One statement about this round's own evidence: four of the five new guards pass against parent commit f9b02dd9fc1778e48bb4e2a59401b6f97c73b726, because the constants they now derive were already correct there; only the new A160 refusal fails there. The fix removes a duplication and adds a refusal, and it reproduced no defect, which is why the verdict is passed rather than guarded.
