@@ -2166,6 +2166,34 @@
         "source": { "$ref": "#/$defs/measuredComponent" }
       }
     },
+    "adapterAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_code", "attempt", "context_nonce", "request_sha256", "status"
+      ],
+      "properties": {
+        "answer_code": { "type": "string", "pattern": "^NOE-(OK|E-[A-Z0-9_.-]+)$" },
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "context_nonce": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "request_sha256": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["recorded", "refused", "unknown"] }
+      }
+    },
+    "adapterRequestAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt", "context_nonce", "sha256"],
+      "properties": {
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "context_nonce": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "adapterAttemptLog": {
+      "type": "array", "minItems": 1, "maxItems": 387,
+      "items": { "$ref": "#/$defs/adapterAttempt" }
+    },
     "measurementTransport": {
       "type": "object",
       "additionalProperties": false,
@@ -2212,7 +2240,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "acquisition_sha256", "amortised", "cost_usd", "documents", "family", "gates",
+        "acquisition_sha256", "amortised", "attempts", "cost_usd", "documents", "family", "gates",
         "id", "model", "observations", "profile_sha256", "provider",
         "source_baseline_sequence", "status", "tokenizer", "tokenizer_identity",
         "totals", "transport", "unknowns", "vocabulary_sha256", "vocabulary_status"
@@ -2223,6 +2251,7 @@
           "type": "array", "minItems": 4, "maxItems": 4,
           "items": { "$ref": "#/$defs/measurementAmortised" }
         },
+        "attempts": { "$ref": "#/$defs/adapterAttemptLog" },
         "cost_usd": { "$ref": "#/$defs/decimalAmount" },
         "documents": {
           "type": "array", "minItems": 4, "maxItems": 4,
@@ -2256,12 +2285,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "acquisition_sha256", "family", "id", "model", "profile_sha256", "provider",
+        "acquisition_sha256", "attempts", "family", "id", "model", "profile_sha256", "provider",
         "refusal_code", "status", "tokenizer", "unknowns", "vocabulary_sha256",
         "vocabulary_status"
       ],
       "properties": {
         "acquisition_sha256": { "$ref": "#/$defs/sha256" },
+        "attempts": { "$ref": "#/$defs/adapterAttemptLog" },
         "family": { "$ref": "#/$defs/profileFamily" },
         "id": { "$ref": "#/$defs/identifier" },
         "model": { "type": "string", "minLength": 1, "maxLength": 256 },
@@ -2440,10 +2470,13 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["family_id", "sha256"],
+            "required": ["attempts", "family_id"],
             "properties": {
-              "family_id": { "$ref": "#/$defs/identifier" },
-              "sha256": { "$ref": "#/$defs/sha256" }
+              "attempts": {
+                "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true,
+                "items": { "$ref": "#/$defs/adapterRequestAttempt" }
+              },
+              "family_id": { "$ref": "#/$defs/identifier" }
             }
           }
         },
@@ -2536,10 +2569,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "cost_usd", "finish_reason", "generation_id", "input_tokens",
+        "attempts", "cost_usd", "finish_reason", "generation_id", "input_tokens",
         "output_tokens", "request_sha256"
       ],
       "properties": {
+        "attempts": {
+          "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/adapterAttempt" }
+        },
         "cost_usd": { "$ref": "#/$defs/decimalAmount" },
         "finish_reason": { "type": "string", "minLength": 1, "maxLength": 256 },
         "generation_id": { "type": "string", "minLength": 1, "maxLength": 256 },

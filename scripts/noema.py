@@ -180,6 +180,7 @@ MAX_ADAPTER_ENVIRONMENT = 16
 MAX_ANSWER_ID_BYTES = 128
 MAX_BUDGET_CALLS = 100_000
 MAX_PACKET_BYTES = 4_194_304
+MAX_ADAPTER_ATTEMPTS = 3
 EVALUATION_SEED = 0
 MAX_CHAT_TRANSPORT_TOKENS = 4_096
 DECIMAL_WORK_PRECISION = 256
@@ -187,6 +188,54 @@ OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_KEY_PATH_ENV = "NOEMA_OPENROUTER_KEY_FILE"
 EXTERNAL_PROFILE_FAMILIES = ("anthropic", "google", "open-weight", "openai")
 EXTERNAL_PROFILE_ROLES = frozenset({"evaluation", "measurement"})
+MEASUREMENT_COMPONENT_NAMES = (
+    "source",
+    "canonical",
+    "full_projection",
+    "operation_slice",
+    "literals",
+    "kernel",
+    "reachable_definitions",
+    "alias_dictionary",
+    "first_use",
+    "steady_state",
+)
+RETRYABLE_ADAPTER_CODES = frozenset(
+    {
+        "NOE-E-ADAPTER.HTTP_408",
+        "NOE-E-ADAPTER.HTTP_425",
+        "NOE-E-ADAPTER.HTTP_429",
+        "NOE-E-ADAPTER.HTTP_500",
+        "NOE-E-ADAPTER.HTTP_502",
+        "NOE-E-ADAPTER.HTTP_503",
+        "NOE-E-ADAPTER.HTTP_504",
+        "NOE-E-ADAPTER.JSON",
+        "NOE-E-ADAPTER.REMOTE",
+        "NOE-E-ADAPTER.RESPONSE",
+        "NOE-E-BUDGET.ACCOUNTING",
+    }
+)
+PROVIDER_RESPONSE_SHAPE_CODES = frozenset(
+    {
+        "NOE-E-BOUNDS.INTEGER",
+        "NOE-E-BOUNDS.STRING",
+        "NOE-E-SYNTAX.DUPLICATE_KEY",
+        "NOE-E-SYNTAX.CONTROL",
+        "NOE-E-SYNTAX.UNICODE",
+        "NOE-E-TOKENIZER.COUNT",
+        "NOE-E-TYPE.DECIMAL",
+        "NOE-E-TYPE.INTEGER",
+        "NOE-E-TYPE.KEYS",
+        "NOE-E-TYPE.OBJECT",
+        "NOE-E-TYPE.STRING",
+    }
+)
+POST_RECORDED_MEASUREMENT_REFUSALS = frozenset(
+    {
+        "NOE-E-MEASURE.BASELINE",
+        "NOE-E-TOKENIZER.COUNT",
+    }
+)
 EVALUATION_NODE_BY_CATEGORY = {
     "changed-exact-literal": "rule.exact",
     "consequence-3-bypass": "rule.default",
@@ -8499,6 +8548,109 @@ def invoke_adapter(
     return response
 
 
+def _adapter_attempt_context_nonce(context_nonce: str, attempt: int) -> str:
+    base = _safe_text(context_nonce, "adapter_attempt.context_nonce", 128)
+    number = _bounded_integer(
+        attempt,
+        "adapter_attempt.attempt",
+        MAX_ADAPTER_ATTEMPTS,
+        minimum=1,
+    )
+    if number == 1:
+        return base
+    return "retry." + _correlation("adapter-retry", base, str(number))[:48]
+
+
+def _adapter_request_attempt_bindings(
+    profile: dict[str, object],
+    prompt: bytes,
+    *,
+    mode: str,
+    context_nonce: str,
+) -> list[dict[str, object]]:
+    bindings: list[dict[str, object]] = []
+    for attempt in range(1, MAX_ADAPTER_ATTEMPTS + 1):
+        attempt_nonce = _adapter_attempt_context_nonce(context_nonce, attempt)
+        _request_raw, request_digest = _adapter_request_bytes(
+            profile,
+            prompt,
+            mode=mode,
+            context_nonce=attempt_nonce,
+        )
+        bindings.append(
+            {
+                "attempt": attempt,
+                "context_nonce": attempt_nonce,
+                "sha256": request_digest,
+            }
+        )
+    return bindings
+
+
+def _invoke_adapter_with_retries(
+    profile: dict[str, object],
+    prompt: bytes,
+    *,
+    mode: str,
+    context_nonce: str,
+    credential: Path | None,
+    budget: Decimal,
+    budget_ledger: Path,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    attempts: list[dict[str, object]] = []
+    bindings = _adapter_request_attempt_bindings(
+        profile,
+        prompt,
+        mode=mode,
+        context_nonce=context_nonce,
+    )
+    for binding in bindings:
+        try:
+            response = invoke_adapter(
+                profile,
+                prompt,
+                mode=mode,
+                context_nonce=str(binding["context_nonce"]),
+                credential=credential,
+                budget=budget,
+                budget_ledger=budget_ledger,
+            )
+            if response["request_sha256"] != binding["sha256"]:
+                refuse(
+                    "NOE-E-DIGEST.ADAPTER",
+                    "adapter_attempt.request_sha256",
+                    "adapter attempt differs from its preregistered request",
+                )
+        except Refusal as error:
+            attempts.append(
+                {
+                    "answer_code": error.code,
+                    "attempt": binding["attempt"],
+                    "context_nonce": binding["context_nonce"],
+                    "request_sha256": binding["sha256"],
+                    "status": "refused",
+                }
+            )
+            error.attempts = attempts
+            raise
+        attempt = {
+            "answer_code": response["answer_code"],
+            "attempt": binding["attempt"],
+            "context_nonce": binding["context_nonce"],
+            "request_sha256": response["request_sha256"],
+            "status": response["status"],
+        }
+        attempts.append(attempt)
+        if (
+            response["status"] == "recorded"
+            or response["answer_code"] not in RETRYABLE_ADAPTER_CODES
+            or int(binding["attempt"]) == MAX_ADAPTER_ATTEMPTS
+        ):
+            return response, attempts
+        time.sleep(int(binding["attempt"]))
+    raise AssertionError("bounded adapter attempt loop did not return")
+
+
 def _openrouter_error(request_digest: str, code: str) -> dict[str, object]:
     return {
         "answer_code": code,
@@ -8762,7 +8914,13 @@ def _openrouter_adapter() -> int:
             "status": "recorded",
         }
     except Refusal as error:
-        result = _openrouter_error(request_digest, error.code)
+        code = error.code
+        if (
+            error.field == "provider_response"
+            or error.field.startswith("provider_response.")
+        ) and code in PROVIDER_RESPONSE_SHAPE_CODES:
+            code = "NOE-E-ADAPTER.RESPONSE"
+        result = _openrouter_error(request_digest, code)
     sys.stdout.buffer.write(_canonical_json(result))
     return 0
 
@@ -9020,6 +9178,44 @@ def _shared_measurement_bootstrap(
     return shared[0], shared[1]
 
 
+def _measurement_invocation_plan(
+    profile: dict[str, object],
+    documents: list[dict[str, object]],
+) -> list[tuple[str, bytes]]:
+    shared_kernel, shared_alias_dictionary = _shared_measurement_bootstrap(documents)
+    plan = [(f"measure.{profile['id']}.transport", _measurement_prompt(b""))]
+    seen: set[str] = set()
+
+    def add(raw: bytes) -> None:
+        digest = sha256(raw).hexdigest()
+        if digest not in seen:
+            seen.add(digest)
+            plan.append(
+                (
+                    f"measure.{profile['id']}.{digest}",
+                    _measurement_prompt(raw),
+                )
+            )
+
+    for document in documents:
+        add(document["source"])
+    for document in documents:
+        for name in MEASUREMENT_COMPONENT_NAMES:
+            add(document[name])
+    for count_documents in range(1, len(documents) + 1):
+        selected = documents[:count_documents]
+        add(b"\n".join(item["source"] for item in selected))
+        add(
+            b"NOEMA-KERNEL\n"
+            + shared_kernel
+            + b"NOEMA-ALIAS-DICTIONARY\n"
+            + shared_alias_dictionary
+            + b"NOEMA-OPERATION-SLICES\n"
+            + b"\n".join(item["operation_slice"] for item in selected)
+        )
+    return plan
+
+
 def _measure_one_profile(
     profile: dict[str, object],
     documents: list[dict[str, object]],
@@ -9027,19 +9223,26 @@ def _measure_one_profile(
     credential: Path | None,
     budget: Decimal,
     budget_ledger: Path,
+    attempt_log: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
+    attempts = attempt_log if attempt_log is not None else []
     shared_kernel, shared_alias_dictionary = _shared_measurement_bootstrap(documents)
     profile_digest = _value_sha256(profile)
     transport_prompt = _measurement_prompt(b"")
-    overhead_response = invoke_adapter(
-        profile,
-        transport_prompt,
-        mode="measurement",
-        context_nonce=f"measure.{profile['id']}.transport",
-        credential=credential,
-        budget=budget,
-        budget_ledger=budget_ledger,
-    )
+    try:
+        overhead_response, overhead_attempts = _invoke_adapter_with_retries(
+            profile,
+            transport_prompt,
+            mode="measurement",
+            context_nonce=f"measure.{profile['id']}.transport",
+            credential=credential,
+            budget=budget,
+            budget_ledger=budget_ledger,
+        )
+    except Refusal as error:
+        attempts.extend(getattr(error, "attempts", []))
+        raise
+    attempts.extend(overhead_attempts)
     if overhead_response["status"] != "recorded":
         refuse(str(overhead_response["answer_code"]), "measurement.transport", "tokenizer transport was unavailable")
     overhead = int(overhead_response["input_tokens"])
@@ -9060,15 +9263,20 @@ def _measure_one_profile(
         digest = sha256(raw).hexdigest()
         if digest not in cache:
             prompt = _measurement_prompt(raw)
-            response = invoke_adapter(
-                profile,
-                prompt,
-                mode="measurement",
-                context_nonce=f"measure.{profile['id']}.{digest}",
-                credential=credential,
-                budget=budget,
-                budget_ledger=budget_ledger,
-            )
+            try:
+                response, invocation_attempts = _invoke_adapter_with_retries(
+                    profile,
+                    prompt,
+                    mode="measurement",
+                    context_nonce=f"measure.{profile['id']}.{digest}",
+                    credential=credential,
+                    budget=budget,
+                    budget_ledger=budget_ledger,
+                )
+            except Refusal as error:
+                attempts.extend(getattr(error, "attempts", []))
+                raise
+            attempts.extend(invocation_attempts)
             if response["status"] != "recorded":
                 refuse(str(response["answer_code"]), f"measurement.{label}", "tokenizer observation was unavailable")
             raw_count = int(response["input_tokens"])
@@ -9097,24 +9305,15 @@ def _measure_one_profile(
         )
     source_baseline_sequence = len(cache)
 
-    component_names = (
-        "source",
-        "canonical",
-        "full_projection",
-        "operation_slice",
-        "literals",
-        "kernel",
-        "reachable_definitions",
-        "alias_dictionary",
-        "first_use",
-        "steady_state",
-    )
     measured_documents: list[dict[str, object]] = []
-    totals = {name: {"bytes": 0, "tokens": 0} for name in component_names}
+    totals = {
+        name: {"bytes": 0, "tokens": 0}
+        for name in MEASUREMENT_COMPONENT_NAMES
+    }
     for document in documents:
         specimen = str(document["id"])
         components: dict[str, dict[str, object]] = {}
-        for name in component_names:
+        for name in MEASUREMENT_COMPONENT_NAMES:
             raw = document[name]
             assert isinstance(raw, bytes)
             if name == "source":
@@ -9202,6 +9401,7 @@ def _measure_one_profile(
     return {
         "acquisition_sha256": profile["acquisition_sha256"],
         "amortised": amortised,
+        "attempts": attempts,
         "cost_usd": _decimal_string(
             _decimal_total(
                 (
@@ -9281,6 +9481,7 @@ def measure_corpus(
     for profile in profiles:
         if "measurement" not in profile["roles"]:
             continue
+        attempts: list[dict[str, object]] = []
         try:
             results.append(
                 _measure_one_profile(
@@ -9289,12 +9490,14 @@ def measure_corpus(
                     credential=credential,
                     budget=budget,
                     budget_ledger=budget_ledger,
+                    attempt_log=attempts,
                 )
             )
         except Refusal as error:
             results.append(
                 {
                     "acquisition_sha256": profile["acquisition_sha256"],
+                    "attempts": attempts,
                     "family": profile["family"],
                     "id": profile["id"],
                     "model": profile["model"],
@@ -9369,13 +9572,16 @@ def _validate_measured_component(
     if digest not in observations or observations[digest]["observation_sha256"] != observation_digest:
         refuse("NOE-E-DIGEST.MEASUREMENT", field, "measured component has no exact invocation observation")
     observation = observations[digest]
-    _request_raw, expected_request_digest = _adapter_request_bytes(
-        profile,
-        _measurement_prompt(raw),
-        mode="measurement",
-        context_nonce=f"measure.{profile['id']}.{digest}",
-    )
-    if observation["request_sha256"] != expected_request_digest:
+    expected_request_digests = {
+        str(item["sha256"])
+        for item in _adapter_request_attempt_bindings(
+            profile,
+            _measurement_prompt(raw),
+            mode="measurement",
+            context_nonce=f"measure.{profile['id']}.{digest}",
+        )
+    }
+    if observation["request_sha256"] not in expected_request_digests:
         refuse("NOE-E-DIGEST.ADAPTER", field, "component observation binds another adapter request")
     if (
         component["prompt_tokens"] != observation["input_tokens"]
@@ -9383,6 +9589,163 @@ def _validate_measured_component(
     ):
         refuse("NOE-E-TOKENIZER.COUNT", field, "component count differs from its invocation observation")
     return component
+
+
+def _validate_adapter_attempt_records(
+    value: object,
+    bindings: list[dict[str, object]],
+    field: str,
+) -> list[dict[str, object]]:
+    if not isinstance(value, list) or not 1 <= len(value) <= MAX_ADAPTER_ATTEMPTS:
+        refuse("NOE-E-BOUNDS.ATTEMPTS", field, "adapter attempt set is outside its fixed bound")
+    records: list[dict[str, object]] = []
+    for index, item_value in enumerate(value):
+        item = _exact_keys(
+            item_value,
+            {
+                "answer_code",
+                "attempt",
+                "context_nonce",
+                "request_sha256",
+                "status",
+            },
+            f"{field}[{index}]",
+        )
+        expected = bindings[index]
+        attempt = _bounded_integer(
+            item["attempt"],
+            f"{field}[{index}].attempt",
+            MAX_ADAPTER_ATTEMPTS,
+            minimum=1,
+        )
+        context_nonce = _safe_text(
+            item["context_nonce"],
+            f"{field}[{index}].context_nonce",
+            128,
+        )
+        request_digest = _digest(
+            item["request_sha256"],
+            f"{field}[{index}].request_sha256",
+        )
+        if (
+            attempt != index + 1
+            or attempt != expected["attempt"]
+            or context_nonce != expected["context_nonce"]
+            or request_digest != expected["sha256"]
+        ):
+            refuse(
+                "NOE-E-DIGEST.ADAPTER",
+                f"{field}[{index}]",
+                "adapter attempt differs from its deterministic request binding",
+            )
+        status = item["status"]
+        if status not in {"recorded", "refused", "unknown"}:
+            refuse("NOE-E-ADAPTER.RESPONSE", f"{field}[{index}].status", "adapter attempt status is invalid")
+        answer_code = _safe_text(
+            item["answer_code"],
+            f"{field}[{index}].answer_code",
+            128,
+        )
+        if re.fullmatch(r"NOE-(?:OK|E-[A-Z0-9_.-]+)", answer_code) is None:
+            refuse("NOE-E-ADAPTER.RESPONSE", f"{field}[{index}].answer_code", "adapter attempt code is invalid")
+        if status != "recorded" and answer_code == "NOE-OK":
+            refuse(
+                "NOE-E-ADAPTER.RESPONSE",
+                f"{field}[{index}].answer_code",
+                "an unrecorded adapter attempt cannot claim success",
+            )
+        if index < len(value) - 1 and (
+            status != "unknown" or answer_code not in RETRYABLE_ADAPTER_CODES
+        ):
+            refuse(
+                "NOE-E-ADAPTER.RETRY",
+                f"{field}[{index}]",
+                "only a closed transient refusal can precede another attempt",
+            )
+        records.append(item)
+    final = records[-1]
+    if (
+        final["status"] == "unknown"
+        and final["answer_code"] in RETRYABLE_ADAPTER_CODES
+        and final["attempt"] != MAX_ADAPTER_ATTEMPTS
+    ):
+        refuse(
+            "NOE-E-ADAPTER.RETRY",
+            field,
+            "a transient refusal stopped before the fixed attempt limit",
+        )
+    return records
+
+
+def _validate_measurement_attempt_log(
+    value: object,
+    profile: dict[str, object],
+    documents: list[dict[str, object]],
+    field: str,
+    *,
+    recorded: bool,
+    refusal_code: str | None = None,
+) -> set[str]:
+    plan = _measurement_invocation_plan(profile, documents)
+    if (
+        not isinstance(value, list)
+        or not 1 <= len(value) <= len(plan) * MAX_ADAPTER_ATTEMPTS
+    ):
+        refuse("NOE-E-BOUNDS.ATTEMPTS", field, "measurement attempt log exceeds its fixed bound")
+    groups: list[list[object]] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, dict):
+            refuse("NOE-E-TYPE.OBJECT", f"{field}[{index}]", "adapter attempt must be an object")
+        if item.get("attempt") == 1:
+            groups.append([])
+        elif not groups:
+            refuse("NOE-E-SYNTAX.ORDER", field, "adapter attempt log does not start at attempt one")
+        groups[-1].append(item)
+    if len(groups) > len(plan) or (recorded and len(groups) != len(plan)):
+        refuse("NOE-E-MEASURE.CONTEXT", field, "measurement attempt log is not the exact invocation plan")
+    final_requests: set[str] = set()
+    for index, group in enumerate(groups):
+        context_nonce, prompt = plan[index]
+        bindings = _adapter_request_attempt_bindings(
+            profile,
+            prompt,
+            mode="measurement",
+            context_nonce=context_nonce,
+        )
+        records = _validate_adapter_attempt_records(group, bindings, f"{field}.invocation[{index}]")
+        final = records[-1]
+        if index < len(groups) - 1 and final["status"] != "recorded":
+            refuse("NOE-E-MEASURE.CONTEXT", field, "measurement continued after an unknown invocation")
+        if final["status"] == "recorded":
+            if final["answer_code"] != "NOE-OK":
+                refuse(
+                    "NOE-E-MEASURE.UNKNOWN",
+                    field,
+                    "recorded measurement invocation did not return a count",
+                )
+            final_requests.add(str(final["request_sha256"]))
+    terminal = groups[-1][-1]
+    if recorded:
+        if any(group[-1]["status"] != "recorded" for group in groups):
+            refuse("NOE-E-MEASURE.CONTEXT", field, "recorded measurement contains an unknown invocation")
+        if refusal_code is not None:
+            refuse("NOE-E-MEASURE.UNKNOWN", field, "recorded measurement carries a refusal code")
+    elif refusal_code is None:
+        refuse("NOE-E-MEASURE.UNKNOWN", field, "unknown measurement omits its refusal code")
+    elif terminal["status"] in {"refused", "unknown"}:
+        if terminal["answer_code"] != refusal_code:
+            refuse(
+                "NOE-E-MEASURE.UNKNOWN",
+                field,
+                "unknown measurement refusal differs from its terminal attempt",
+            )
+    elif refusal_code not in POST_RECORDED_MEASUREMENT_REFUSALS:
+        refuse(
+            "NOE-E-MEASURE.UNKNOWN",
+            field,
+            "unknown measurement lacks a valid post-response refusal",
+        )
+    return final_requests
 
 
 def _validate_measurement_report(
@@ -9443,18 +9806,7 @@ def _validate_measurement_report(
     expected_ids = [str(item["id"]) for item in measurement_profiles]
     if [item.get("id") for item in values if isinstance(item, dict)] != expected_ids:
         refuse("NOE-E-SYNTAX.ORDER", "measurement.profiles", "measurement profile results are not complete and ordered")
-    component_names = (
-        "source",
-        "canonical",
-        "full_projection",
-        "operation_slice",
-        "literals",
-        "kernel",
-        "reachable_definitions",
-        "alias_dictionary",
-        "first_use",
-        "steady_state",
-    )
+    component_names = MEASUREMENT_COMPONENT_NAMES
     recorded_count = 0
     failed_profiles = 0
     for index, (value_profile, profile) in enumerate(zip(values, measurement_profiles, strict=True)):
@@ -9477,7 +9829,7 @@ def _validate_measurement_report(
         if value_profile.get("status") == "unknown":
             unknown = _exact_keys(
                 value_profile,
-                set(identity) | {"refusal_code", "status", "unknowns"},
+                set(identity) | {"attempts", "refusal_code", "status", "unknowns"},
                 field,
             )
             if unknown["unknowns"] != ["counts"]:
@@ -9485,12 +9837,21 @@ def _validate_measurement_report(
             refusal_code = _safe_text(unknown["refusal_code"], f"{field}.refusal_code", 128)
             if re.fullmatch(r"NOE-E-[A-Z0-9_.-]+", refusal_code) is None:
                 refuse("NOE-E-MEASURE.UNKNOWN", f"{field}.refusal_code", "unknown profile has an invalid refusal code")
+            _validate_measurement_attempt_log(
+                unknown["attempts"],
+                profile,
+                documents,
+                f"{field}.attempts",
+                recorded=False,
+                refusal_code=refusal_code,
+            )
             continue
         measured = _exact_keys(
             value_profile,
             set(identity)
             | {
                 "amortised",
+                "attempts",
                 "cost_usd",
                 "documents",
                 "gates",
@@ -9506,6 +9867,13 @@ def _validate_measurement_report(
         )
         if measured["status"] != "recorded" or measured["tokenizer_identity"] != profile["tokenizer_identity"]:
             refuse("NOE-E-MEASURE.COHORT", field, "recorded measurement identity is invalid")
+        final_attempt_requests = _validate_measurement_attempt_log(
+            measured["attempts"],
+            profile,
+            documents,
+            f"{field}.attempts",
+            recorded=True,
+        )
         expected_unknowns = ["vocabulary_sha256"] if profile["vocabulary_status"] == "provider-private" else []
         if measured["unknowns"] != expected_unknowns:
             refuse("NOE-E-TOKENIZER.IDENTITY", f"{field}.unknowns", "tokenizer vocabulary uncertainty is hidden or invented")
@@ -9532,15 +9900,17 @@ def _validate_measurement_report(
                 "transport probe differs from the fixed inert wrapper",
             )
         transport_request = _digest(transport["request_sha256"], f"{field}.transport.request_sha256")
-        _transport_raw, expected_transport_request = _adapter_request_bytes(
-            profile,
-            transport_prompt,
-            mode="measurement",
-            context_nonce=f"measure.{profile['id']}.transport",
-        )
         if transport_generation == "unknown" or transport_request == "0" * 64:
             refuse("NOE-E-TOKENIZER.COUNT", f"{field}.transport", "recorded transport lacks invocation provenance")
-        if transport_request != expected_transport_request:
+        if transport_request not in {
+            str(item["sha256"])
+            for item in _adapter_request_attempt_bindings(
+                profile,
+                transport_prompt,
+                mode="measurement",
+                context_nonce=f"measure.{profile['id']}.transport",
+            )
+        }:
             refuse("NOE-E-DIGEST.ADAPTER", f"{field}.transport", "transport request digest differs from its exact profile invocation")
         observation_values = measured["observations"]
         if not isinstance(observation_values, list) or not 1 <= len(observation_values) <= 128:
@@ -9681,6 +10051,12 @@ def _validate_measurement_report(
                 "NOE-E-MEASURE.COMPONENT",
                 f"{field}.observations",
                 "measurement observations include unreferenced or omitted component calls",
+            )
+        if request_digests != final_attempt_requests:
+            refuse(
+                "NOE-E-MEASURE.CONTEXT",
+                f"{field}.attempts",
+                "measurement attempt outcomes differ from recorded invocation provenance",
             )
         expected_cost = _decimal_total(
             (
@@ -10352,13 +10728,13 @@ def _build_evaluation_packet(
                     "path": filename,
                     "requests": [
                         {
-                            "family_id": profile["id"],
-                            "sha256": _adapter_request_bytes(
+                            "attempts": _adapter_request_attempt_bindings(
                                 profile,
                                 prompt,
                                 mode="evaluation",
                                 context_nonce=nonce,
-                            )[1],
+                            ),
+                            "family_id": profile["id"],
                         }
                         for profile in evaluation_profiles
                     ],
@@ -10700,20 +11076,45 @@ def _load_packet(path: Path) -> tuple[dict[str, object], bytes]:
                 for request_index, request_value in enumerate(requests):
                     request = _exact_keys(
                         request_value,
-                        {"family_id", "sha256"},
+                        {"attempts", "family_id"},
                         f"evaluation_prompt.requests[{request_index}]",
                     )
                     family_id = _identifier(
                         request["family_id"],
                         f"evaluation_prompt.requests[{request_index}].family_id",
                     )
-                    request_digest = _digest(
-                        request["sha256"],
-                        f"evaluation_prompt.requests[{request_index}].sha256",
-                    )
-                    if request_digest == "0" * 64 or request_digest in seen_requests:
-                        refuse("NOE-E-EVALUATION.CONTEXT", "evaluation_prompt.requests", "packet reuses an adapter request identity")
-                    seen_requests.add(request_digest)
+                    attempts = request["attempts"]
+                    if not isinstance(attempts, list) or len(attempts) != MAX_ADAPTER_ATTEMPTS:
+                        refuse("NOE-E-BOUNDS.ATTEMPTS", "evaluation_prompt.requests", "packet request does not bind the fixed attempt set")
+                    for attempt_index, attempt_value in enumerate(attempts):
+                        attempt = _exact_keys(
+                            attempt_value,
+                            {"attempt", "context_nonce", "sha256"},
+                            f"evaluation_prompt.requests[{request_index}].attempts[{attempt_index}]",
+                        )
+                        number = _bounded_integer(
+                            attempt["attempt"],
+                            f"evaluation_prompt.requests[{request_index}].attempts[{attempt_index}].attempt",
+                            MAX_ADAPTER_ATTEMPTS,
+                            minimum=1,
+                        )
+                        attempt_nonce = _safe_text(
+                            attempt["context_nonce"],
+                            f"evaluation_prompt.requests[{request_index}].attempts[{attempt_index}].context_nonce",
+                            128,
+                        )
+                        request_digest = _digest(
+                            attempt["sha256"],
+                            f"evaluation_prompt.requests[{request_index}].attempts[{attempt_index}].sha256",
+                        )
+                        if (
+                            number != attempt_index + 1
+                            or attempt_nonce != _adapter_attempt_context_nonce(nonce, number)
+                            or request_digest == "0" * 64
+                            or request_digest in seen_requests
+                        ):
+                            refuse("NOE-E-EVALUATION.CONTEXT", "evaluation_prompt.requests", "packet attempt binding is reused or noncanonical")
+                        seen_requests.add(request_digest)
                     request_family_ids.append(family_id)
                 if request_family_ids != profile_ids:
                     refuse("NOE-E-EVALUATION.PROFILE", "evaluation_prompt.requests", "prompt request profiles are not complete and ordered")
@@ -10852,25 +11253,25 @@ def run_evaluation(
                     str(prompt_record["mode"]),
                     str(prompt_record["context_nonce"]),
                 )
-                _request_raw, expected_request_digest = _adapter_request_bytes(
+                expected_request_bindings = _adapter_request_attempt_bindings(
                     profile,
                     prompt,
                     mode="evaluation",
                     context_nonce=str(prompt_record["context_nonce"]),
                 )
-                declared_request_digest = next(
-                    str(item["sha256"])
+                declared_request_bindings = next(
+                    item["attempts"]
                     for item in prompt_record["requests"]
                     if item["family_id"] == profile["id"]
                 )
-                if expected_request_digest != declared_request_digest:
+                if expected_request_bindings != declared_request_bindings:
                     refuse(
                         "NOE-E-DIGEST.ADAPTER",
                         "evaluation_prompt.requests",
-                        "packet request digest differs from its exact live invocation",
+                        "packet attempt bindings differ from the exact live invocation",
                     )
                 try:
-                    response = invoke_adapter(
+                    response, invocation_attempts = _invoke_adapter_with_retries(
                         profile,
                         prompt,
                         mode="evaluation",
@@ -10893,7 +11294,9 @@ def run_evaluation(
                     ):
                         code = "NOE-E-EVALUATION.UNKNOWN_ANSWER"
                         answer_id = None
+                        invocation_attempts[-1]["answer_code"] = code
                     provenance = {
+                        "attempts": invocation_attempts,
                         "cost_usd": response["cost_usd"],
                         "finish_reason": response["finish_reason"],
                         "generation_id": response["generation_id"],
@@ -10905,13 +11308,26 @@ def run_evaluation(
                     status = "unknown"
                     code = error.code
                     answer_id = None
+                    invocation_attempts = getattr(error, "attempts", [])
+                    if not invocation_attempts:
+                        first = expected_request_bindings[0]
+                        invocation_attempts = [
+                            {
+                                "answer_code": error.code,
+                                "attempt": first["attempt"],
+                                "context_nonce": first["context_nonce"],
+                                "request_sha256": first["sha256"],
+                                "status": "refused",
+                            }
+                        ]
                     provenance = {
+                        "attempts": invocation_attempts,
                         "cost_usd": "0",
                         "finish_reason": "unknown",
                         "generation_id": "unknown",
                         "input_tokens": 0,
                         "output_tokens": 0,
-                        "request_sha256": expected_request_digest,
+                        "request_sha256": invocation_attempts[-1]["request_sha256"],
                     }
                 results.append(
                     {
@@ -10962,9 +11378,11 @@ def run_evaluation(
 def _validate_answer_provenance(value: object, field: str) -> dict[str, object]:
     provenance = _exact_keys(
         value,
-        {"cost_usd", "finish_reason", "generation_id", "input_tokens", "output_tokens", "request_sha256"},
+        {"attempts", "cost_usd", "finish_reason", "generation_id", "input_tokens", "output_tokens", "request_sha256"},
         field,
     )
+    if not isinstance(provenance["attempts"], list):
+        refuse("NOE-E-TYPE.ARRAY", f"{field}.attempts", "answer provenance attempts must be an array")
     _decimal_value(provenance["cost_usd"], f"{field}.cost_usd", maximum="1000")
     for name in ("finish_reason", "generation_id"):
         _safe_text(provenance[name], f"{field}.{name}", 256)
@@ -11074,12 +11492,26 @@ def _tally_evaluation_values(
         if answer["status"] == "unknown" and answer["answer_id"] is not None:
             refuse("NOE-E-EVALUATION.ANSWER", field, "unknown answer status cannot carry a candidate")
         provenance = _validate_answer_provenance(answer["provenance"], f"{field}.provenance")
-        expected_request_digest = next(
-            str(item["sha256"])
+        expected_request_bindings = next(
+            item["attempts"]
             for item in prompt["requests"]
             if item["family_id"] == family_id
         )
-        if provenance["request_sha256"] != expected_request_digest:
+        invocation_attempts = _validate_adapter_attempt_records(
+            provenance["attempts"],
+            expected_request_bindings,
+            f"{field}.provenance.attempts",
+        )
+        if (
+            provenance["request_sha256"] != invocation_attempts[-1]["request_sha256"]
+            or (
+                answer["status"] != invocation_attempts[-1]["status"]
+                and not (
+                    answer["status"] == "unknown"
+                    and invocation_attempts[-1]["status"] == "refused"
+                )
+            )
+        ):
             refuse("NOE-E-DIGEST.ADAPTER", f"{field}.provenance", "answer binds another adapter request")
         if answer["status"] == "recorded":
             if (answer["answer_code"] == "NOE-OK") != (answer["answer_id"] is not None):
@@ -11111,6 +11543,12 @@ def _tally_evaluation_values(
                 "NOE-E-EVALUATION.ANSWER",
                 field,
                 "unknown answer must retain the canonical absent provenance",
+            )
+        if answer_code != invocation_attempts[-1]["answer_code"]:
+            refuse(
+                "NOE-E-DIGEST.ADAPTER",
+                f"{field}.provenance",
+                "answer code differs from its terminal adapter attempt",
             )
         index[key] = answer
     expected_keys = {

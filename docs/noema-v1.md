@@ -420,6 +420,26 @@ charge above its reservation or total ceiling records the actual cost and a
 terminal breach; later calls refuse. Unknown or malformed responses keep their
 full reservation because their exact charge is unavailable.
 
+Each logical live invocation preregisters three request identities. Attempt
+one uses the packet or measurement context; attempts two and three use
+deterministically derived retry contexts while preserving the exact provider,
+model, prompt, seed, parameters and provider payload. Only the closed
+transient set -- HTTP 408, 425, 429, 500, 502, 503 and 504, remote transport,
+malformed provider JSON or envelope, and unavailable exact cost accounting --
+can advance after one- and two-second backoff. Every artifact records the
+attempt prefix and final request. A non-transient refusal stops immediately;
+three transient refusals record unknown. Each uncertain attempt keeps its own
+reservation, so retry cannot erase or reuse possibly spent authority.
+Independent repeats of one packet use fresh ledgers with separately allocated
+ceilings: an unresolved request identity correctly refuses reuse inside its
+original ledger. The operator must bound the sum of all measurement and cohort
+ledgers, including pending reservations, under one external spend authority.
+
+The four remote profiles measure cross-family portability, not minimum decoder
+size. A later integration must separately identify and hold the intended small
+local model against the same source/Noema pairs and runtime boundary; passing
+the remote cohort does not imply that local result.
+
 All input leaves must be regular files. Repository-bound reads open and recheck
 every ancestor relative to retained directory descriptors. Module resolution
 opens one real module directory, reads only digest-requested leaves relative to
