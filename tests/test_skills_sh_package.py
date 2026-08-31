@@ -28,11 +28,10 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
 DISTRIBUTION = ROOT / "distribution" / "skills-runtime" / "sync.yml"
 
-# The eight package guarantees below are asserted against a tree the generator
-# builds during this run, not against a copy committed here.  That keeps them
-# true of what is actually published once this repository stops carrying the
-# payload.  `test_generated_runtime_is_current` still checks the in-tree copy
-# while one exists.
+# The package guarantees below are asserted against a tree the generator builds
+# during this run, not against a copy committed here. That keeps them true of
+# what is actually published now that this repository no longer carries the
+# payload.
 _PACKAGE_TMP: tempfile.TemporaryDirectory | None = None
 GENERATED = None
 PACKAGE = None
