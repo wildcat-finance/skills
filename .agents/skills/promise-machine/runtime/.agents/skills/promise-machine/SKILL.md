@@ -9,13 +9,13 @@ description: Route a Wildcat Labs request to the one canonical first-party or ve
 
 # Promise Machine router
 
-This is the suite's only host-neutral discovery entry. It is a switchboard, not
-another domain agent: it has no behavioural version, performs no specialist
-work, and owns no domain promise.
+This is the host-neutral front door to Wildcat Labs Skills, the Shoggoth. It
+is a switchboard, not another member: it has no behavioural version, performs
+no specialist work, and owns no domain promise.
 
 Choose the runtime before routing. In a full source checkout,
 `../../../PROMISE_MACHINE.md` identifies `promise-machine/v1` and
-`../../../plugins/` holds all fifteen plugin contracts; read the [root runtime
+`../../../plugins/` holds all sixteen plugin contracts; read the [root runtime
 contract](../../../AGENTS.md) first. Otherwise this is an isolated Agent Skills
 install: read `PORTABLE.md`, verify its local runtime, and use the installed-path
 substitution it defines. A target repository's unrelated `AGENTS.md` never
@@ -23,11 +23,11 @@ counts as the suite contract. Do not select a canonical skill until one of
 these two runtime paths has loaded the same law and the selected plugin
 contract.
 
-The router sees the complete collective. Fourteen first-party specialists live
-in their own plugins; Synkrisis is one of them, although its command surface
-refuses every operation whose runbook step has not landed. Hexaemeron contains Fiat, Kronos, six phase
+The router sees the complete collective. Fifteen first-party specialists live
+in their own plugins. Hexaemeron contains Fiat, Kronos, six engineering phase
 disciplines, two prose masks, four Fiat worker briefs, and the untouched Pashov
-security suite. The worker briefs are packets Fiat may delegate; they are not
+security suite. Together the distribution exposes 25 governed first-party
+skills. The worker briefs are packets Fiat may delegate; they are not
 canonical skills a user selects through this router.
 
 ## Select one runtime contract
@@ -43,7 +43,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Verify a protocol agent against pinned corpora and chain reads | [Berean](../../../plugins/berean/AGENTS.md) | `berean` |
 | Constrain the volume and structure of engineering prose | [Brevitas](../../../plugins/brevitas/AGENTS.md) | `brevitas` |
 | Measure one Solidity gas-optimisation class | [Hermes](../../../plugins/hermes/AGENTS.md) | `hermes` |
-| Establish whether a contract computation and its off-chain mirror agree over declared vectors | [Homologia](../../../plugins/homologia/AGENTS.md) | `homologia` |
+| Inspect or work on the planned contract-to-mirror integer comparison boundary; substantive operations currently refuse | [Homologia](../../../plugins/homologia/AGENTS.md) | `homologia` |
 | Classify evidenced reading sinks | [Horos](../../../plugins/horos/AGENTS.md) | `horos` |
 | Check hook effects around a host action | [Janus](../../../plugins/janus/AGENTS.md) | `janus` |
 | Preserve finite historical Ethereum state and exact RPC traffic | [Lazarus](../../../plugins/lazarus/AGENTS.md) | `lazarus` |
@@ -76,11 +76,11 @@ implementation step, Warden for one audit round, or Scribe for one prose pass.
 They return evidence to Fiat; they never select themselves or receipt their own
 work.
 
-Synkrisis is outside Fiat's controller loop. Its delivered surface reads and
-compares declared observations and stops there: it cannot file an issue,
-mutate a repository, or dispatch a Fiat run, and any operation whose runbook
-step has not landed refuses by name. A comparison result still requires a
-person to choose any next owner and action.
+Synkrisis is outside Fiat's controller loop. Its four delivered operations
+build a checked cohort, infer bounded findings, render a fixed report, and
+verify the path from the original inputs. It cannot file an issue, mutate a
+repository, or dispatch a Fiat run. A comparison result still requires a
+person to choose the next owner and action.
 
 ## Preserve the selected promise
 

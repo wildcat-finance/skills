@@ -12,6 +12,17 @@ Ariadne writes and checks the evidence statement that joins a released artefact 
 **Next Fiat job.** None -- mature.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Ariadne when you are about to release an artefact and need a durable answer
+to “which evidence supports these exact bytes?” It writes an inspectable
+in-toto statement and can check or replay the relations its registered
+predicate declares.
+
+It works for Solidity, dataset, historical-state, and grounded-agent releases.
+It does not run the producer, authenticate the publisher, verify a signature,
+or turn a recorded result into a claim that the artefact is safe or correct.
+
 ## Place in the collective
 
 Ariadne receives artefacts and evidence produced elsewhere. Lazarus can supply

@@ -12,6 +12,17 @@ Sapheneia keeps actions, boundaries, state, evidence, unknowns, and next steps v
 **Next Fiat job.** Use /hexaemeron:fiat to build and publish a held cross-model corpus covering debugging, explanation, destructive-action and long-running task turns, then reconcile the ten rules against its results. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Sapheneia when an AuDHD reader needs the action, boundary, current state,
+evidence, unknowns, and next step kept visible throughout an agent session. A
+separate bounded operation can reshape one agent-authored audit record, issue,
+or issue comment without dropping protected evidence.
+
+It does not diagnose the reader, change another skill's facts, or turn on
+session shaping merely because one durable record was edited. The ten rules
+have not yet been tested against a published held cross-model task corpus.
+
 ## Place in the collective
 
 Sapheneia shapes the collective's interaction layer and, when called for that

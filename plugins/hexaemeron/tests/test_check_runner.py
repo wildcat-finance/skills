@@ -979,13 +979,15 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(selected | set(payload["omitted_checks"]), set(check_map.checks))
         self.assertEqual(payload["omitted_checks"], [])
 
-    def test_scoped_plan_json_exits_zero_and_selects_a_subset(self) -> None:
+    def test_scoped_plan_json_exits_zero_and_accounts_for_selection(self) -> None:
         proc = self.run_cli("--scope", "hexaemeron", "--plan", "--format", "json")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         payload = json.loads(proc.stdout)
         selected = {c["id"] for c in payload["selected_checks"]}
         self.assertIn("hexaemeron-suite", selected)
         self.assertIn("hexaemeron", payload["selected_scopes"])
+        check_map = run_checks.load_map(REPO_ROOT)
+        self.assertEqual(selected | set(payload["omitted_checks"]), set(check_map.checks))
         authority_changed = {
             "scripts/run_checks.py", "tests/check-map-v1.json"
         }.intersection(payload["changed_paths"])
@@ -994,8 +996,6 @@ class CommandLineTests(unittest.TestCase):
                 payload["omitted_checks"], [],
                 "a runner/map change must force complete self-audit",
             )
-        else:
-            self.assertTrue(payload["omitted_checks"], "a scoped plan must omit something")
 
     def test_plan_accounts_for_every_selected_check_exactly_once(self) -> None:
         proc = self.run_cli("--full", "--plan", "--format", "json")

@@ -12,6 +12,17 @@ Tabularium maps preserved venue-native records into reproducible, venue-qualifie
 **Next Fiat job.** Use /hexaemeron:fiat to ship Compound v3 Phase 1 from Alexandria raw evidence with a new canonical and coverage schema version, supply, withdraw, base-transfer and absorb mappings, a mined borrower-to-borrower transfer witness, hostile fixtures and a byte-identical offline Ethereum USDC specimen. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Tabularium when preserved lending records need a reproducible,
+venue-qualified event interpretation. Each output row keeps its source selector,
+native record, mapping rule, adapter version, and coverage gap so a common
+format does not erase what the venue meant.
+
+Goldfinch, Euler v1, and Euler v2 releases ship, along with one non-canonical
+Compound v3 Phase 0 execution witness. The canonical Compound adapter and
+Ethereum USDC interval specimen remain Phase 1 work.
+
 ## Place in the collective
 
 Alexandria is the upstream archive and narrow-view provider. Tabularium owns the

@@ -41,9 +41,10 @@ neighbouring specialist for the finite historical Ethereum state and exact RPC
 traffic one application test needs; it does not replace Alexandria's dataset
 boundary.
 
-Synkrisis is reserved for comparison across validated agent-run observations.
-Its current command scaffold refuses every operation, so it cannot reinterpret
-an Alexandria release, produce a finding about it, or authorise a new capture.
+Synkrisis compares validated agent-run observations through a checked cohort,
+bounded findings, a fixed report, and whole-path verification. It cannot
+reinterpret an Alexandria release, treat release rows as run observations, or
+authorise a new capture.
 
 `$SKILL_DIR` is the directory holding this file. The command lives at
 `$SKILL_DIR/../../scripts/alexandria.py`; resolve it from where you loaded this

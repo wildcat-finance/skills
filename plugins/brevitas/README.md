@@ -12,6 +12,17 @@ Brevitas enforces mechanical volume and structure limits on engineering prose wh
 **Next Fiat job.** Use /hexaemeron:fiat to Forward-test Brevitas across held x-ray, Solidity-auditor, gas, `invariant` and diff-review outputs, then add every confirmed structural bypass to the corpus without weakening evidence precedence. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Brevitas after the facts and wording of an engineering review are settled
+but the result is still too long or structurally hard to use. It enforces
+bounded finding, heading, table, and fence shapes while protecting identifiers,
+numbers, counterexamples, and reproduction steps.
+
+It does not decide what the text should say or prove that every meaning
+survived compression. Its linter has not yet been forward-tested on a held
+cross-model review corpus.
+
 ## Place in the collective
 
 Imprimatur catches banned wording and unsupported technical terms; Vulgate

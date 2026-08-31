@@ -37,10 +37,9 @@ discipline questions Protasis requires; Protasis cites their contracts rather
 than copying them. A decision made after the study belongs to Hypomnema's
 recording rules.
 
-Synkrisis is specified to suggest a next owner from repeated validated run
-observations, but its current scaffold produces no finding. A future suggestion
-will still need a scoped proposition before it can become a study, runbook, or
-framework change.
+Synkrisis may suggest a next owner from repeated validated run observations.
+That finding still needs a scoped proposition before it can become a study,
+runbook, or framework change.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).

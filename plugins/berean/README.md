@@ -12,6 +12,17 @@ Berean pins the corpus, chain reads, recorded answers and evaluation needed to c
 **Next Fiat job.** Use /hexaemeron:fiat to ship the first berean release grounded in captured Wildcat documentation and Wildcat market reads, replacing the demonstration corpus in the reference deployment. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Berean when a protocol assistant must be checked against exact documents
+and chain readings rather than judged from a plausible answer. It pins the
+corpus, verifies citation spans and block-bound reads, runs recorded evaluation
+cases, and records promotion or rollback without needing the original model.
+
+The machinery ships, but the reference release is still a demonstration using
+a frozen corpus and preserved Goldfinch reads. There is no live Wildcat
+reference release and no Ariadne statement binds a Berean release yet.
+
 ## Place in the collective
 
 Lemma can prepare source-linked chunks for a corpus, and Lazarus can preserve
@@ -21,8 +32,9 @@ answers against a held evaluation set, and records promotion or rollback.
 Ariadne can then bind the finished Berean release to its supporting evidence.
 
 Synkrisis compares validated observations from several runs, and it does not
-grade recorded answers or judge a model. Two of its four operations are
-delivered; the report and the whole-path verification refuse.
+grade recorded answers or judge a model. Its cohort, finding, report, and
+whole-path verification operations all ship, but remain outside Berean's
+release and evaluation boundary.
 
 A protocol agent can answer from documentation, contract state and its own
 synthesis in one paragraph. Unless those sources stay separate, the reader

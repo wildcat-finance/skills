@@ -39,9 +39,9 @@ Pandects states and tests the law; it does not generate a target-specific fuzz
 harness, audit the whole protocol, or turn one bounded campaign into security
 sign-off.
 
-Synkrisis is specified to compare validated run observations. It cannot promote
-repeated campaign outcomes into a law or security verdict, and its current
-scaffold produces no comparison at all.
+Synkrisis compares validated run observations. Its shipped comparison cannot
+promote repeated campaign outcomes into a law or security verdict, and a
+Pandects campaign result is not a run observation merely because it exists.
 
 A fuzzer searches a state space. It cannot decide which economic facts must
 survive that search. Generic token property libraries cover balances, approvals

@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Brevitas",
     "shortDescription": "Evidence-preserving budgets for engineering prose.",
-    "longDescription": "Checks audit findings, security reviews, gas analysis, invariant discussion, diff review and protocol commentary against mechanical structure limits while preserving source evidence.",
+    "longDescription": "Brevitas checks engineering reviews, findings, gas analysis, invariant discussion, and diff commentary against mechanical structure budgets while protecting identifiers, numbers, counterexamples, and reproduction steps. It changes structure rather than facts or voice. The linter has not yet been forward-tested on a held cross-model review corpus, and semantic preservation beyond protected tokens remains agent-checked.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

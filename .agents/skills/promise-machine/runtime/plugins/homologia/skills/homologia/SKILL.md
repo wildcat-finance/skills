@@ -1,14 +1,13 @@
 ---
 name: homologia
 description: >
-  Check whether an on-chain computation and its off-chain reimplementation
-  agree, integer for integer, over declared vectors. Use when a TypeScript SDK
-  or a Python job re-derives a balance, an accrued interest figure, a rate or a
-  withdrawal amount that a contract also computes, when a rounding direction,
-  ray or wad scale or token-decimal convention is applied by hand off-chain, or
-  when a displayed or signed number has to match the chain. Do not use it to
-  fuzz one implementation for defects, which is fizz, or to judge economic laws,
-  which is pandects. Never report agreement as correctness.
+  Inspect or build the scaffold for comparing one pinned on-chain computation
+  with one pinned off-chain mirror, integer for integer, over declared vectors.
+  The substantive comparison operations have not shipped: the current command
+  is help-only and every verb refuses, so never report agreement or divergence.
+  The planned boundary covers SDK or analytics calculations involving rounding,
+  fixed-point scales, or token decimals. Fizz owns vector generation and
+  single-implementation fuzzing; Pandects owns economic laws.
 metadata:
   version: "0.1.0"
 ---
@@ -25,10 +24,12 @@ frontier pass after that ledger becomes mature.
 <!-- marketplace-context:start -->
 ## Where this sits
 
-Homologia compares one pinned on-chain computation with one pinned off-chain mirror over declared vectors, and preserves every divergence as a specimen.
+Homologia defines the boundary for a future comparison between one pinned on-chain computation and one pinned off-chain mirror. Its current scaffold performs no comparison.
 
 **Current frontier.** Homologia ships its contracts, packaging and a help-only command. No manifest is checked, no mirror is executed and no verdict is produced, so nothing yet establishes that a pair agrees.
 <!-- marketplace-context:end -->
+
+Never report agreement as correctness.
 
 The name comes from *homologia*, agreement. Agreement between two
 implementations is the whole subject, and it is a narrower claim than either
