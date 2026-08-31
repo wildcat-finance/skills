@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16448723,
+    "bytes_blob": 16667483,
     "bytes_generated": 98
   },
   "entries": [
@@ -573,6 +573,27 @@
       "evidence": "no newline in the first 4096 bytes of 23378 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
+    },
+    {
+      "bytes": 101712,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 101712 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/byte-partition.json"
+    },
+    {
+      "bytes": 61005,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 61005 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
+    },
+    {
+      "bytes": 56043,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 56043 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }
   ],
   "schema": 2,
