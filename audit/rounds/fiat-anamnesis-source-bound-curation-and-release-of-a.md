@@ -149,3 +149,19 @@ Elenchus verdict: passed
 | S3-R2-01 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Each projection's field set was a constant beside the schema file that declares the same thing, so the adapter and its schema could drift apart with nothing comparing them. Nothing was wrong today: both constants matched their schema exactly, which is why this is a duplication rather than a defect. The field sets now derive from the schema files, and a schema declaring an optional field is refused, because a projection's shape is closed and an optional field is a hole in it | fixed in this round |
 
 Leads not pursued: the three carried observations stand unchanged and none admits a bad release. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window, and closing it needs the directory-descriptor promotion the root test runner uses. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct and reads oddly. One statement about this round's own evidence: four of the five new guards pass against parent commit f9b02dd9fc1778e48bb4e2a59401b6f97c73b726, because the constants they now derive were already correct there; only the new A160 refusal fails there. The fix removes a duplication and adds a refusal, and it reproduced no defect, which is why the verdict is passed rather than guarded.
+
+## Step 3, round 3 -- 2026-08-31T06:23:43Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: unchanged from rounds 1 and 2. This round re-ran the whole battery over round 2's change and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three carried observations stand and are the honest residue of the whole run. The unknowns map is digest-covered and recomputed against the manifest, so verification establishes that the released map is the map the manifest claims and not that the map is right; recomputing it needs the sources and a re-curation. The staged release and both conformance reports are promoted with os.rename after an existence check, so a destination created between the two would be replaced rather than refused; the check narrows the window and does not close it, and closing it needs the directory-descriptor promotion the root test runner already uses, which is a narrower guarantee recorded as narrower rather than claimed as equal. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule. None of the three admits a bad release or a projection carrying something it should not. The step's battery is green: 175 Anamnesis tests, 777 root tests, phylax, ephoros and hypomnema each exit 0, both Promise Machine checks clean, the demo runs the whole path, design_evidence --transition integration exits zero and the working tree is clean.
