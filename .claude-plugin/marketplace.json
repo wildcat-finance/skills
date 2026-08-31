@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.19",
+      "version": "1.6.20",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -350,6 +350,27 @@
         "comparison",
         "promise-machine",
         "agents"
+      ]
+    },
+    {
+      "name": "anamnesis",
+      "displayName": "Anamnesis",
+      "source": "./plugins/anamnesis",
+      "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+      "version": "0.3.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/anamnesis",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "audit",
+        "findings",
+        "remediation",
+        "corpus",
+        "provenance"
       ]
     }
   ]

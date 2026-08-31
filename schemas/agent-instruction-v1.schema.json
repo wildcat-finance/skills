@@ -1,0 +1,506 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/agent-instruction-v1.schema.json",
+  "title": "Wildcat agent instruction model version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "document",
+    "sources",
+    "sections",
+    "relations",
+    "bindings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wildcat-agent-instruction/v1"
+    },
+    "document": {
+      "$ref": "#/$defs/document"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/section"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "maxItems": 8192,
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8192,
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    }
+  },
+  "$defs": {
+    "nodeId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]*$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 65000
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*//)(?!.*\\/$)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[!-~]+$",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "literal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "identifier",
+            "path",
+            "sha256",
+            "command",
+            "number",
+            "date",
+            "link",
+            "quotation",
+            "text"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 65000
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "title": {
+          "$ref": "#/$defs/literal"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "directives"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "title": {
+          "$ref": "#/$defs/literal"
+        },
+        "directives": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/directive"
+          }
+        }
+      }
+    },
+    "directive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "statement",
+        "expressions",
+        "promise"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "kind": {
+          "enum": [
+            "require",
+            "forbid",
+            "permit",
+            "refuse",
+            "recover",
+            "unknown"
+          ]
+        },
+        "statement": {
+          "$ref": "#/$defs/literal"
+        },
+        "expressions": {
+          "type": "array",
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "promise": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/promise"
+            }
+          ]
+        }
+      }
+    },
+    "expression": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/predicateExpression"
+        },
+        {
+          "$ref": "#/$defs/scopeExpression"
+        },
+        {
+          "$ref": "#/$defs/exceptionExpression"
+        }
+      ]
+    },
+    "predicateExpression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "predicate",
+        "expressions"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "when",
+            "unless"
+          ]
+        },
+        "predicate": {
+          "$ref": "#/$defs/literal"
+        },
+        "expressions": {
+          "type": "array",
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      }
+    },
+    "scopeExpression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "scope",
+        "expressions"
+      ],
+      "properties": {
+        "kind": {
+          "const": "scope"
+        },
+        "scope": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "expressions": {
+          "type": "array",
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      }
+    },
+    "exceptionExpression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "target",
+        "predicate",
+        "expressions"
+      ],
+      "properties": {
+        "kind": {
+          "const": "exception"
+        },
+        "target": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "predicate": {
+          "$ref": "#/$defs/literal"
+        },
+        "expressions": {
+          "type": "array",
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "source",
+        "target"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "before",
+            "after",
+            "overrides"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "target": {
+          "$ref": "#/$defs/nodeId"
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "node",
+        "start",
+        "end",
+        "reviewer"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "node": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "start": {
+          "$ref": "#/$defs/decimal"
+        },
+        "end": {
+          "$ref": "#/$defs/decimal"
+        },
+        "reviewer": {
+          "$ref": "#/$defs/reviewer"
+        }
+      }
+    },
+    "evidenceClass": {
+      "enum": [
+        "checked",
+        "recomputed",
+        "proved",
+        "measured",
+        "recorded",
+        "attested",
+        "inferred",
+        "unknown"
+      ]
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "identifier"
+        },
+        "value": {
+          "$ref": "#/$defs/nodeId"
+        }
+      }
+    },
+    "promise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "claim",
+        "evidence",
+        "evidence_classes",
+        "boundary",
+        "authorises",
+        "consequence",
+        "refuses",
+        "recovery",
+        "exceptions"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "claim": {
+          "$ref": "#/$defs/literal"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/literal"
+          }
+        },
+        "evidence_classes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceClass"
+          }
+        },
+        "boundary": {
+          "$ref": "#/$defs/literal"
+        },
+        "authorises": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/literal"
+          }
+        },
+        "consequence": {
+          "enum": [
+            "0",
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "refuses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/literal"
+          }
+        },
+        "recovery": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/literal"
+          }
+        },
+        "exceptions": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/promiseException"
+          }
+        }
+      }
+    },
+    "promiseException": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "authority",
+        "gate",
+        "subject",
+        "scope",
+        "record",
+        "expiry",
+        "recovery"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "authority": {
+          "$ref": "#/$defs/literal"
+        },
+        "gate": {
+          "$ref": "#/$defs/literal"
+        },
+        "subject": {
+          "$ref": "#/$defs/literal"
+        },
+        "scope": {
+          "$ref": "#/$defs/literal"
+        },
+        "record": {
+          "$ref": "#/$defs/literal"
+        },
+        "expiry": {
+          "$ref": "#/$defs/literal"
+        },
+        "recovery": {
+          "$ref": "#/$defs/literal"
+        }
+      }
+    }
+  }
+}

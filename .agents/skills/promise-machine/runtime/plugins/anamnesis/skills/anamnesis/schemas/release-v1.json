@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/anamnesis/schemas/release-v1.json",
+  "title": "anamnesis-release/v1",
+  "description": "The closed manifest of one release. It names every component by digest, the policy that produced it, and what it excluded. A release that cannot say what it left out is not a release; coverage without exclusions reads as completeness nobody established.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "release_id", "policy", "sources", "components", "counts", "exclusions", "unknowns"],
+  "properties": {
+    "schema": {"const": "anamnesis-release/v1"},
+    "release_id": {"description": "Derived from the inputs and the policy, so the same inputs under the same policy name the same release.", "type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "policy": {"$ref": "policy-v1.json"},
+    "sources": {
+      "description": "Every admitted source by id and exact digest. A release is only about the bytes it names.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sha256", "bytes", "disclosure"],
+        "properties": {
+          "id": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "disclosure": {"enum": ["public", "restricted", "embargoed"]}
+        }
+      }
+    },
+    "components": {
+      "description": "Each written file and its digest. Verification recomputes these from the file bytes.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "counts": {
+      "description": "The denominators an aggregate needs. A count without its denominator is not a claim about anything.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engagements", "rounds", "rounds_with_no_findings", "submissions", "findings", "occurrences", "remediations", "verifications", "relations"],
+      "properties": {
+        "engagements": {"type": "integer", "minimum": 0},
+        "rounds": {"type": "integer", "minimum": 0},
+        "rounds_with_no_findings": {"type": "integer", "minimum": 0},
+        "submissions": {"type": "integer", "minimum": 0},
+        "findings": {"type": "integer", "minimum": 0},
+        "occurrences": {"type": "integer", "minimum": 0},
+        "remediations": {"type": "integer", "minimum": 0},
+        "verifications": {"type": "integer", "minimum": 0},
+        "relations": {"type": "integer", "minimum": 0}
+      }
+    },
+    "exclusions": {
+      "description": "What the build refused and why, by rule. An empty list means nothing was refused, not that nothing could be.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule", "subject", "reason"],
+        "properties": {
+          "rule": {"type": "string"},
+          "subject": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "unknowns": {
+      "description": "Fields the sources never established, counted by name. Distinct from none and from not-applicable.",
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    }
+  }
+}

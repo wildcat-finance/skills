@@ -40,6 +40,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | --- | --- | --- |
 | Preserve lending inputs or derive a reviewed credit view | [Alexandria](../../../plugins/alexandria/AGENTS.md) | `alexandria` |
 | Bind a release digest to its evidence record | [Ariadne](../../../plugins/ariadne/AGENTS.md) | `ariadne` |
+| Preserve audit findings and the changes that answered them | [Anamnesis](../../../plugins/anamnesis/AGENTS.md) | `anamnesis` |
 | Verify a protocol agent against pinned corpora and chain reads | [Berean](../../../plugins/berean/AGENTS.md) | `berean` |
 | Constrain the volume and structure of engineering prose | [Brevitas](../../../plugins/brevitas/AGENTS.md) | `brevitas` |
 | Measure one Solidity gas-optimisation class | [Hermes](../../../plugins/hermes/AGENTS.md) | `hermes` |

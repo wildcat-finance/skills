@@ -132,6 +132,13 @@ It does not certify the truth of a domain claim. The longer
 [plain-language guide](./docs/the-promise-machine-explained-properly.md) walks
 through an ordinary example before introducing the formal vocabulary.
 
+The bounded [agent instruction language prototype](./docs/agent-instruction-language-v1.md)
+adds one derived compact view over three reviewed source fragments. Its checked
+demonstration preserves 15 source bindings and 14 hostile mutations, saves 77
+bootstrap-inclusive tokens on the declared three-document cohort, and records
+18 of 18 source-versus-compact answer pairs across two local model families. It
+does not translate arbitrary English or establish Shoggoth readiness.
+
 [Hexaemeron](./plugins/hexaemeron) is the delivery plugin.
 [Fiat](./plugins/hexaemeron/skills/fiat) is its explicit-only controller for a
 full repository change: study, runbook, implementation, audit, prose, push,
@@ -160,6 +167,9 @@ operations, examples, evidence contract, and current frontier.
   evidence statements. It records coverage, not universal truth.
 - [Synkrisis](./plugins/synkrisis) compares declared observations from several
   runs under one operator-declared policy and bounded rule catalogue.
+- [Anamnesis](./plugins/anamnesis) keeps audit findings and the changes that
+  answered them, admitted against an explicit rights basis. It releases
+  read-only projections rather than lending its source material.
 
 ### Protocol behaviour and Solidity
 

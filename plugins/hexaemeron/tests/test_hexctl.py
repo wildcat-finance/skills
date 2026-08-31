@@ -447,13 +447,11 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             scribe, "scribe", ("files", "pr_base", "pr_draft_path", "plugin_root")
         )
-        self.assertEqual(
-            scribe["brief"]["files"],
-            [
-                "audit/rounds/fiat-test-topic.md",
-                "audit/rounds/fiat-test-topic.synopsis.md",
-            ],
-        )
+        # The harness commits the audit records on the run branch, so they
+        # reach this step's diff as deletions.  A removed path carries no prose
+        # to rewrite and the packet no longer names one; the positive case is
+        # test_hexctl_prose_packet_bounds.
+        self.assertEqual(scribe["brief"]["files"], [])
         self.run_ctl("done", "prose", "--files", "1", "--skills",
                      "hexaemeron:imprimatur,hexaemeron:vulgate")
         push = self.next_json()
@@ -652,7 +650,7 @@ class TestDelegationPackets(HexctlCase):
         proc = self.run_ctl("next", expect=2)
         self.assertIn("runbook artefact is not a regular file", proc.stderr)
 
-    def test_scribe_diff_is_sorted_and_capped_at_500_entries(self):
+    def test_scribe_diff_is_sorted_and_holds_only_the_retained_paths(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
@@ -663,22 +661,15 @@ class TestDelegationPackets(HexctlCase):
             self.write(name, name)
         self.git("add", "zeta.md", "alpha.md")
         self.git("commit", "-m", "step")
+        # The two audit records sit on the run branch rather than this one, so
+        # they arrive as deletions and the packet drops them.  The ceiling that
+        # remains is PROSE_PATHS_MAX, exercised over a mocked path list in
+        # test_hexctl_prose_packet_bounds rather than by writing four thousand
+        # files through this fixture.
         self.assertEqual(
             self.next_json()["brief"]["files"],
-            [
-                "alpha.md",
-                "audit/rounds/fiat-test-topic.md",
-                "audit/rounds/fiat-test-topic.synopsis.md",
-                "zeta.md",
-            ],
+            ["alpha.md", "zeta.md"],
         )
-
-        for number in range(499):
-            self.write(f"many/{number:03d}.md", "x")
-        self.git("add", "many")
-        self.git("commit", "-m", "too many")
-        proc = self.run_ctl("next", expect=2)
-        self.assertIn("more than 500 paths", proc.stderr)
 
     def test_git_output_and_returned_path_caps_refuse(self):
         module = hexctl_module()

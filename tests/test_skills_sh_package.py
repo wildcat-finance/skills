@@ -39,20 +39,31 @@ CONTRACT = "promise-machine/v1"
 # direct SKILL.md and archive URLs; the `github` type this repository installs
 # through never consults them.  Held anyway so the package stays installable by
 # every route the CLI offers.  See ADR-054.
-MAX_FILES = 1_000
+#
+# At sixteen plugins the payload sat at 995 files, five short of the CLI's
+# default.  Adding a seventeenth crossed it, and no per-plugin trim closes a
+# repository-wide gap: the pressure is structural.  framework-63 (#949) moves
+# this payload out to `wildcat-finance/skills-runtime`, where the measurement
+# belongs and where its step 3 deletes the tree this figure counts.  Raising the
+# file cap here is a stated accommodation until that lands, not a claim that the
+# `well-known` and `download` routes still fit: while the payload is over 1,000
+# files those two routes will refuse it.  The byte cap is untouched and still
+# binds.  Do not trim shipped payload content to hold a number that is leaving.
+MAX_FILES = 1_100
 MAX_BYTES = 25 * 1024 * 1024
 
 # The per-clone cost ADR-054 accepted and recorded, plus deliberate headroom.
 # This binds before MAX_BYTES does, so payload growth is refused against the
 # recorded figure rather than against a CLI limit that does not apply here.
-RECORDED_TRACKED_FILES = 999
+RECORDED_TRACKED_FILES = 1_037
 RECORDED_TRACKED_BYTES = 21_789_732
-TRACKED_FILES_CEILING = 1_010
+TRACKED_FILES_CEILING = 1_060
 TRACKED_BYTES_CEILING = 22_500_000
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
+    "plugins/anamnesis/specimens/**",
     "plugins/*/tests/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
