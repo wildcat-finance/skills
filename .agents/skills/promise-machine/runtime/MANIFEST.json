@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1015,
-  "total_bytes": 21832920,
+  "file_count": 1018,
+  "total_bytes": 21860308,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -63,7 +63,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "bab23cf29a6d99fe00f92e10b119af7fb874f534819852e93ef82287734f9913",
+      "sha256": "986d0d28efe5263e85419e06373b40ca0d7e3f5e2643dda0b3662dcee947f3f5",
       "source": null
     },
     {
@@ -493,9 +493,9 @@
       "source": "plugins/alexandria/skills/alexandria/agents/openai.yaml"
     },
     {
-      "bytes": 3184,
+      "bytes": 3035,
       "path": "plugins/anamnesis/AGENTS.md",
-      "sha256": "9829ef8a98e4b6a9938096aa22741970f1f133e931cf79e59aad29cd83c0a0ec",
+      "sha256": "5bd644e1fbb3e4d818faf6b06783ea3cd4f1bcf45c197412f7c7dd19810d3296",
       "source": "plugins/anamnesis/AGENTS.md"
     },
     {
@@ -511,9 +511,9 @@
       "source": "plugins/anamnesis/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4068,
+      "bytes": 3917,
       "path": "plugins/anamnesis/README.md",
-      "sha256": "b5144b34d7a6f27f63e39ad9f7381e37e0bd7ef128f3de85b9cc66d320860afe",
+      "sha256": "a1bf6317ee8f0980fcad39a840aedb99fb36d35f4f8fcde7fe361a4798176182",
       "source": "plugins/anamnesis/README.md"
     },
     {
@@ -541,6 +541,12 @@
       "source": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md"
     },
     {
+      "bytes": 2605,
+      "path": "plugins/anamnesis/docs/demo.md",
+      "sha256": "b523e14fc000502dfc4aafc8732a77091803ab25b7e9ab990ff234f9702673cb",
+      "source": "plugins/anamnesis/docs/demo.md"
+    },
+    {
       "bytes": 9848,
       "path": "plugins/anamnesis/docs/runbook.md",
       "sha256": "afdf10f0b957b40f44c2c66dee8f66c773d8c9904c927d682ef4dff71eeda3a1",
@@ -553,15 +559,15 @@
       "source": "plugins/anamnesis/docs/study.md"
     },
     {
-      "bytes": 2836,
+      "bytes": 3671,
       "path": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md",
-      "sha256": "870d187f61d785c08a161d29d6a3691b0e1fbdd7ad27e475f1261f9645ae68a1",
+      "sha256": "a3b60c4f65ed19227e4f8f0b1e9d58d1e603afba11ff243ca77a41a89e4a8ba4",
       "source": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md"
     },
     {
-      "bytes": 12571,
+      "bytes": 17295,
       "path": "plugins/anamnesis/skills/anamnesis/SKILL.md",
-      "sha256": "0fff4122892173f1ffc6e5674073e2195b554286e57e0febe72f13a0ab2cb236",
+      "sha256": "0fd04d7e07bb42f89d4479bf4812004dd5189a23855619f1c260b0cc1c41a453",
       "source": "plugins/anamnesis/skills/anamnesis/SKILL.md"
     },
     {
@@ -569,6 +575,12 @@
       "path": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json",
       "sha256": "c49b552b1747f95a1dff894fefd4cfad7d9a1fb3e2903da38130edbc29aba5ef",
       "source": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json"
+    },
+    {
+      "bytes": 2840,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/elenchus-analogue-v1.json",
+      "sha256": "831fd35e8ae28909e8a9886bd8e700687de7635c13348e352bd06eef2c42c78f",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/elenchus-analogue-v1.json"
     },
     {
       "bytes": 1825,
@@ -607,9 +619,15 @@
       "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
     },
     {
-      "bytes": 51940,
+      "bytes": 2359,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/synkrisis-observation-v1.json",
+      "sha256": "72f7184df1145d3b775e7412551dd7e48bf680ac1863b88b06960fccd3550e07",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/synkrisis-observation-v1.json"
+    },
+    {
+      "bytes": 66265,
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "8c163b89bd45fe2184f4e301761768fa792e413f4f5cfdd59543480ce54753b6",
+      "sha256": "71ed90a61d7fd7f1d8b308c1d9f614b0dec73d162393e08e405912f73dfcd9ef",
       "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
     },
     {

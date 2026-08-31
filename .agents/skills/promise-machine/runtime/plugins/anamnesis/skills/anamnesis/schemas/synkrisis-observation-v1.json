@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/anamnesis/schemas/synkrisis-observation-v1.json",
+  "title": "anamnesis-synkrisis-observation/v1",
+  "description": "The one shape a corpus cohort may leave Anamnesis in. Every aggregate carries its denominator, the policy that produced it, what was excluded and what was never established, so a count cannot be read as a claim about anything the corpus did not see. Anamnesis emits this; Synkrisis admitting it as a producer contract is Synkrisis's own decision and has not happened.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "producer", "release_id", "cohort", "denominators", "policy", "exclusions", "unknowns", "not_established"],
+  "properties": {
+    "schema": {"const": "anamnesis-synkrisis-observation/v1"},
+    "producer": {"description": "The producer identity a consumer checks before admitting the record.", "const": "anamnesis-synkrisis-observation/v1"},
+    "release_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "cohort": {
+      "description": "The exact records included, by id. An empty cohort is a real answer and is not an error.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "included", "members"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "included": {"type": "integer", "minimum": 0},
+        "members": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "denominators": {
+      "description": "Every count the cohort could be read against. Without these, a share has no meaning.",
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["curation_version", "taxonomy", "cohort_rule"],
+      "properties": {
+        "curation_version": {"type": "string"},
+        "taxonomy": {"type": "string"},
+        "cohort_rule": {"description": "The rule that decided membership, stated rather than implied.", "type": "string"}
+      }
+    },
+    "exclusions": {"type": "array", "items": {"type": "object"}},
+    "unknowns": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "not_established": {"type": "string", "minLength": 1}
+  }
+}
