@@ -77,6 +77,13 @@ step that earns it, so asking for a later transition refuses until that step
 has run. `docs/design/` holds the candidate inputs and the generator that
 reproduces the record and its reports.
 
+Each selection report records a `command` naming the generator at
+`.hexaemeron/design/build_design_evidence.py`, which is where it sat in the run
+that produced the record. That directory is the controller's own and is not
+committed, so run the copy at `docs/design/build_design_evidence.py` instead.
+The path cannot be corrected in place: it is inside the digest-bound record,
+which is immutable once the study receipt pins it.
+
 The committed runbook differs from the receipted original in one relative link,
 retargeted to the filename the copy is committed under. The committed study is
 byte-identical.
