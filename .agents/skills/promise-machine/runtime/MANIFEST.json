@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1032,
-  "total_bytes": 22134361,
+  "file_count": 1034,
+  "total_bytes": 22181083,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -63,7 +63,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "d007e903b12f375d50e9c89b8d6f3935d3f9447ace78a1e027755fddabd413fa",
+      "sha256": "aea310e00ead1d68b0a3133435f09518bc3f281b86c73e6096056c263d3b72a9",
       "source": null
     },
     {
@@ -4201,6 +4201,18 @@
       "source": "plugins/lazarus/docs/chain-anchors.md"
     },
     {
+      "bytes": 16164,
+      "path": "plugins/lazarus/docs/macos-path-repair-runbook.md",
+      "sha256": "01e35332c3ffff7ae8ea6973e945fe84f506a057205fe52c9e56073a530008b0",
+      "source": "plugins/lazarus/docs/macos-path-repair-runbook.md"
+    },
+    {
+      "bytes": 25583,
+      "path": "plugins/lazarus/docs/macos-path-repair-study.md",
+      "sha256": "82b41b3bd1db2ddb80017f661be335b7adf947b2792755432a1eb9db8d5d93c3",
+      "source": "plugins/lazarus/docs/macos-path-repair-study.md"
+    },
+    {
       "bytes": 7886,
       "path": "plugins/lazarus/docs/preservation-release.md",
       "sha256": "c784ebe12650d3e156c046364c551c8ae8a6450741f724e3659af5168b2e96a8",
@@ -4387,9 +4399,9 @@
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/anchors.jsonl"
     },
     {
-      "bytes": 36994,
+      "bytes": 37191,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
-      "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2",
+      "sha256": "ced9fd95aec57d2dd34f1ee74f552ab4ac9ca66f8c29babeecd64536d0bcfd26",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py"
     },
     {
@@ -4401,7 +4413,7 @@
     {
       "bytes": 1262,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/manifest.json",
-      "sha256": "28f083f48a8b63387f64666651aaf975ebda642e67d3278ed411837139f4b4e6",
+      "sha256": "b350b6070755a2944bafa8035b5c3f97502ee1abe86abd4c560c4492f6412ba6",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/manifest.json"
     },
     {
@@ -4431,13 +4443,13 @@
     {
       "bytes": 909,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/release.json",
-      "sha256": "62977ab2efea04b8192d63dd11ef1fcdadc8c5670220dcad78619b67f4741074",
+      "sha256": "a6da6016492ca9b6d2111eb2f53eec531b57fb6a02a009e8146b0c7ac957cf9e",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/release.json"
     },
     {
       "bytes": 8818,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/statement.json",
-      "sha256": "8c1571c67953e0b2df7808e506c1eee0b3f63bfdcc9290877c3d1c7eb67d0bc1",
+      "sha256": "5bb2ff36f909142bfe542f9da95e92fd014026a7b6527d2b5fbed365691b9014",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/statement.json"
     },
     {
@@ -4447,9 +4459,9 @@
       "source": "plugins/lazarus/examples/goldfinch-v1/anchors.jsonl"
     },
     {
-      "bytes": 36994,
+      "bytes": 37191,
       "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
-      "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2",
+      "sha256": "ced9fd95aec57d2dd34f1ee74f552ab4ac9ca66f8c29babeecd64536d0bcfd26",
       "source": "plugins/lazarus/examples/goldfinch-v1/demo.py"
     },
     {
@@ -4461,7 +4473,7 @@
     {
       "bytes": 1262,
       "path": "plugins/lazarus/examples/goldfinch-v1/manifest.json",
-      "sha256": "28f083f48a8b63387f64666651aaf975ebda642e67d3278ed411837139f4b4e6",
+      "sha256": "b350b6070755a2944bafa8035b5c3f97502ee1abe86abd4c560c4492f6412ba6",
       "source": "plugins/lazarus/examples/goldfinch-v1/manifest.json"
     },
     {
@@ -4669,15 +4681,15 @@
       "source": "plugins/lazarus/scripts/lazarus_lib/limits.py"
     },
     {
-      "bytes": 18651,
+      "bytes": 18649,
       "path": "plugins/lazarus/scripts/lazarus_lib/manifest.py",
-      "sha256": "ed69e13dc736fe34cb692d65542f2c8b6ffcfb4dfbdb421c3b9b5f03c4d74d5d",
+      "sha256": "05264ed279a9203b0380552a85dbf0589154df596c4ebd9f534ac70bc9d11d9f",
       "source": "plugins/lazarus/scripts/lazarus_lib/manifest.py"
     },
     {
-      "bytes": 8190,
+      "bytes": 12783,
       "path": "plugins/lazarus/scripts/lazarus_lib/paths.py",
-      "sha256": "deadf1f6b6628deb52cd609dcfe17ec890ee6b99c1f2eefd882a09e59faa4cb6",
+      "sha256": "f3bf005c2ab2711b0ea226631d9c259a969e48f491a3065e614c8dcc58f02634",
       "source": "plugins/lazarus/scripts/lazarus_lib/paths.py"
     },
     {
@@ -4753,9 +4765,9 @@
       "source": "plugins/lazarus/scripts/lazarus_lib/trieproof.py"
     },
     {
-      "bytes": 16693,
+      "bytes": 16683,
       "path": "plugins/lazarus/scripts/lazarus_lib/verifier.py",
-      "sha256": "1686ec7ceb0c94664f49686afa000ed451a4a2a81b542e1ec364ce52c87280a2",
+      "sha256": "8966088f6c94c2c47329a9ce45bbf4498699afc1a64a4abef35fe5bc4f9d3d81",
       "source": "plugins/lazarus/scripts/lazarus_lib/verifier.py"
     },
     {

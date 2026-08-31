@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
 from typing import Any
 
 from .canonical import MAX_JSON_BYTES, MAX_JSONL_BYTES, loads
@@ -11,7 +10,7 @@ from .errors import FormatError, IntegrityError
 from .header import verify_header
 from .hexvalue import hash32_bytes, hex_bytes, quantity
 from .manifest import validate_anchor_records, verify_manifest
-from .paths import read_confined_bytes
+from .paths import FixtureRoot, read_confined_bytes
 from .proofs import verify_proof_record
 from .records import (
     loads_anchor_records,
@@ -28,7 +27,7 @@ from .text import listed
 REQUIRED_COMPONENTS = {"plan.json", "header.json", "rpc.jsonl", "proofs.jsonl"}
 
 
-def verify_fixture(root: str | Path) -> dict[str, Any]:
+def verify_fixture(root: FixtureRoot) -> dict[str, Any]:
     """Verify a whole fixture offline and account for its evidence.
 
     The report carries the manifest its numbers were computed from. A caller that
@@ -164,7 +163,7 @@ def verify_fixture(root: str | Path) -> dict[str, Any]:
 
 
 def _read_bound(
-    root: str | Path,
+    root: FixtureRoot,
     relative: str,
     claims: dict[str, dict[str, Any]],
     max_bytes: int,

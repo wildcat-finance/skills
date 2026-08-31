@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import errno
+import os
 from pathlib import Path, PurePosixPath
 import secrets
 import stat
@@ -12,6 +12,38 @@ from .errors import PathError, ResourceLimitError
 from .text import visible
 
 MAX_FIXTURE_ENTRIES = 8192
+FixtureRoot = str | os.PathLike[str] | int
+
+
+def _require_secure_directory_capabilities() -> None:
+    """Refuse before using a partial descriptor-confinement surface.
+
+    Falling back to zero for either no-follow flag would turn the same source
+    into a symlink-following implementation on another host. Python exposes
+    the descriptor forms separately, so require the complete subset used by
+    reads, writes, and inventory before opening the fixture root.
+    """
+
+    missing = [
+        name for name in ("O_DIRECTORY", "O_NOFOLLOW") if not hasattr(os, name)
+    ]
+    supports_dir_fd = getattr(os, "supports_dir_fd", ())
+    for operation, name in (
+        (os.open, "open-dir-fd"),
+        (os.stat, "stat-dir-fd"),
+        # os.replace uses the same renameat support but is not itself listed in
+        # supports_dir_fd on every POSIX Python build.
+        (os.rename, "replace-dir-fd"),
+        (os.unlink, "unlink-dir-fd"),
+    ):
+        if operation not in supports_dir_fd:
+            missing.append(name)
+    if os.stat not in getattr(os, "supports_follow_symlinks", ()):
+        missing.append("stat-no-follow")
+    if os.scandir not in getattr(os, "supports_fd", ()):
+        missing.append("scandir-fd")
+    if missing:
+        raise PathError("platform lacks secure fixture directory operations")
 
 
 def validate_relative_path(value: str) -> str:
@@ -44,29 +76,91 @@ def validate_relative_path(value: str) -> str:
 
 
 def list_fixture_files(
-    root: str | Path, *, max_entries: int = MAX_FIXTURE_ENTRIES
+    root: FixtureRoot, *, max_entries: int = MAX_FIXTURE_ENTRIES
 ) -> set[str]:
-    root_path = Path(root)
-    if root_path.is_symlink():
-        raise PathError(f"fixture root is a symlink: {root_path}")
+    """Inventory one fixture beneath a path or caller-owned directory fd.
+
+    A descriptor is duplicated on entry and remains owned by its caller. Every
+    descendant is inspected and opened relative to that duplicate; no
+    descriptor is converted back into a pathname.
+    """
+
     files: set[str] = set()
-    for entry_number, path in enumerate(root_path.rglob("*"), 1):
-        if entry_number > max_entries:
-            raise ResourceLimitError(
-                f"fixture entry count exceeds {max_entries}"
-            )
-        relative = path.relative_to(root_path).as_posix()
+    entries = 0
+    root_fd = _open_root(root)
+
+    def visit(directory_fd: int, prefix: str) -> None:
+        nonlocal entries
         try:
-            details = path.lstat()
+            with os.scandir(directory_fd) as scanned:
+                names: list[str] = []
+                for entry in scanned:
+                    entries += 1
+                    if entries > max_entries:
+                        raise ResourceLimitError(
+                            f"fixture entry count exceeds {max_entries}"
+                        )
+                    names.append(entry.name)
         except OSError as exc:
-            raise PathError(f"fixture entry is unavailable: {relative}") from exc
-        if stat.S_ISLNK(details.st_mode):
-            raise PathError(f"symlink component is forbidden: {relative}")
-        if stat.S_ISREG(details.st_mode):
-            files.add(validate_relative_path(relative))
-        elif not stat.S_ISDIR(details.st_mode):
-            raise PathError(f"non-regular fixture entry is forbidden: {relative}")
-    return files
+            raise PathError("fixture directory cannot be inventoried") from exc
+
+        for name in sorted(names):
+            relative = validate_relative_path(f"{prefix}/{name}" if prefix else name)
+            try:
+                details = os.stat(
+                    name,
+                    dir_fd=directory_fd,
+                    follow_symlinks=False,
+                )
+            except OSError as exc:
+                raise PathError(
+                    f"fixture entry is unavailable: {relative}"
+                ) from exc
+            if stat.S_ISLNK(details.st_mode):
+                raise PathError(f"symlink component is forbidden: {relative}")
+            if stat.S_ISREG(details.st_mode):
+                files.add(relative)
+                continue
+            if not stat.S_ISDIR(details.st_mode):
+                raise PathError(
+                    f"non-regular fixture entry is forbidden: {relative}"
+                )
+
+            child: int | None = None
+            try:
+                child = os.open(name, _directory_flags(), dir_fd=directory_fd)
+                opened = os.fstat(child)
+                if (opened.st_dev, opened.st_ino) != (
+                    details.st_dev,
+                    details.st_ino,
+                ):
+                    raise PathError(f"fixture directory changed: {relative}")
+                visit(child, relative)
+                after = os.stat(
+                    name,
+                    dir_fd=directory_fd,
+                    follow_symlinks=False,
+                )
+                if (after.st_dev, after.st_ino) != (
+                    details.st_dev,
+                    details.st_ino,
+                ):
+                    raise PathError(f"fixture directory changed: {relative}")
+            except PathError:
+                raise
+            except OSError as exc:
+                raise PathError(
+                    f"fixture directory is unavailable: {relative}"
+                ) from exc
+            finally:
+                if child is not None:
+                    os.close(child)
+
+    try:
+        visit(root_fd, "")
+        return files
+    finally:
+        os.close(root_fd)
 
 
 def confined_directory(root: str | Path, relative: str) -> Path:
@@ -107,7 +201,7 @@ def confined_directory(root: str | Path, relative: str) -> Path:
 
 
 def read_confined_bytes(
-    root: str | Path,
+    root: FixtureRoot,
     relative: str,
     *,
     max_bytes: int,
@@ -150,7 +244,7 @@ def read_confined_bytes(
         os.close(parent)
 
 
-def atomic_write_confined(root: str | Path, relative: str, data: bytes) -> None:
+def atomic_write_confined(root: FixtureRoot, relative: str, data: bytes) -> None:
     """Replace one fixture file without following its previous inode."""
 
     parent, name = _open_parent(root, relative)
@@ -178,21 +272,53 @@ def atomic_write_confined(root: str | Path, relative: str, data: bytes) -> None:
         os.close(parent)
 
 
-def _open_parent(root: str | Path, relative: str) -> tuple[int, str]:
-    normalised = validate_relative_path(relative)
-    parts = PurePosixPath(normalised).parts
-    directory_flags = (
-        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+def _directory_flags() -> int:
+    return (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
     )
+
+
+def _open_root(root: FixtureRoot) -> int:
+    """Open an independent owned reference to a fixture root.
+
+    Integer roots are caller-owned. Opening ``.`` relative to one gives the
+    helper an independent directory description; ``dup`` would share the
+    caller's directory cursor and let an active scan hide inventory entries.
+    The helper closes only its independent descriptor downstream. No
+    descriptor is reconstructed as a pathname.
+    """
+
+    _require_secure_directory_capabilities()
     try:
-        current = os.open(Path(root), directory_flags)
-    except OSError as exc:
+        if isinstance(root, int) and not isinstance(root, bool):
+            current = os.open(".", _directory_flags(), dir_fd=root)
+        else:
+            current = os.open(root, _directory_flags())
+    except (OSError, TypeError, NotImplementedError) as exc:
+        if getattr(exc, "errno", None) == errno.ELOOP:
+            raise PathError(f"fixture root is a symlink: {root}") from exc
+        if getattr(exc, "errno", None) == errno.ENOTDIR:
+            raise PathError(f"fixture root is not a directory: {root}") from exc
         raise PathError(f"fixture root is unavailable: {root}") from exc
     try:
         if not stat.S_ISDIR(os.fstat(current).st_mode):
             raise PathError(f"fixture root is not a directory: {root}")
+        return current
+    except Exception:
+        os.close(current)
+        raise
+
+
+def _open_parent(root: FixtureRoot, relative: str) -> tuple[int, str]:
+    normalised = validate_relative_path(relative)
+    parts = PurePosixPath(normalised).parts
+    current = _open_root(root)
+    try:
         for part in parts[:-1]:
-            following = os.open(part, directory_flags, dir_fd=current)
+            following = os.open(part, _directory_flags(), dir_fd=current)
             os.close(current)
             current = following
         return current, parts[-1]

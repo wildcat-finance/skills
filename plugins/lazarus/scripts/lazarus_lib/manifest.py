@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
 from typing import Any, Iterable
 
 from .canonical import MAX_JSON_BYTES, MAX_JSONL_BYTES, dumps, loads
 from .errors import FormatError, IntegrityError, ResourceLimitError
 from .paths import (
+    FixtureRoot,
     atomic_write_confined,
     list_fixture_files,
     read_confined_bytes,
@@ -34,7 +34,7 @@ REQUIRED_COMPONENTS = {"plan.json", "header.json", "rpc.jsonl", "proofs.jsonl"}
 
 
 def component_claim(
-    root: str | Path,
+    root: FixtureRoot,
     relative: str,
     *,
     max_component_bytes: int = MAX_COMPONENT_BYTES,
@@ -66,7 +66,7 @@ def fixture_digest(manifest: dict[str, Any]) -> str:
 
 
 def build_manifest(
-    root: str | Path,
+    root: FixtureRoot,
     component_paths: Iterable[str],
     *,
     chain_id: str,
@@ -132,7 +132,7 @@ def build_manifest(
 
 
 def _preserve_exact_manifest_v1_writer(
-    root: str | Path, manifest: dict[str, Any]
+    root: FixtureRoot, manifest: dict[str, Any]
 ) -> dict[str, Any]:
     """Keep legacy provenance only when rebuilding those exact manifest bytes.
 
@@ -153,7 +153,7 @@ def _preserve_exact_manifest_v1_writer(
     return manifest
 
 
-def write_manifest(root: str | Path, manifest: dict[str, Any]) -> bytes:
+def write_manifest(root: FixtureRoot, manifest: dict[str, Any]) -> bytes:
     checked = validate_document("manifest", manifest)
     if checked["fixture_digest"] != fixture_digest(checked):
         raise IntegrityError("fixture digest mismatch")
@@ -163,7 +163,7 @@ def write_manifest(root: str | Path, manifest: dict[str, Any]) -> bytes:
 
 
 def verify_manifest(
-    root: str | Path,
+    root: FixtureRoot,
     *,
     max_component_bytes: int = MAX_COMPONENT_BYTES,
     max_fixture_bytes: int = MAX_FIXTURE_BYTES,
@@ -211,7 +211,7 @@ def _require_core_components(paths: list[str]) -> None:
 
 
 def _inspect_components(
-    root: str | Path,
+    root: FixtureRoot,
     paths: list[str],
     *,
     max_component_bytes: int,
