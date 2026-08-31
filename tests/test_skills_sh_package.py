@@ -25,12 +25,47 @@ os.environ["TMPDIR"] = tempfile.tempdir
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / ".agents" / "skills" / "promise-machine"
-RUNTIME = PACKAGE / "runtime"
-MANIFEST = RUNTIME / "MANIFEST.json"
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
 CONFIG = ROOT / "skills.sh.json"
 PAYLOAD_ROOT = ROOT / ".agents"
+
+# The eight package guarantees below are asserted against a tree the generator
+# builds during this run, not against a copy committed here.  That keeps them
+# true of what is actually published once this repository stops carrying the
+# payload.  `test_generated_runtime_is_current` still checks the in-tree copy
+# while one exists.
+_PACKAGE_TMP: tempfile.TemporaryDirectory | None = None
+GENERATED = None
+PACKAGE = None
+RUNTIME = None
+MANIFEST = None
+
+
+def build_package(destination):
+    """Generate a complete package into `destination` and return its root."""
+    result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+        [sys.executable, str(GENERATOR), "package", "--out", str(destination)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise AssertionError(result.stdout + result.stderr)
+    return Path(destination)
+
+
+def setUpModule():
+    global _PACKAGE_TMP, GENERATED, PACKAGE, RUNTIME, MANIFEST
+    _PACKAGE_TMP = tempfile.TemporaryDirectory(prefix="skills-sh-package.")
+    GENERATED = build_package(Path(_PACKAGE_TMP.name) / "package")
+    PACKAGE = GENERATED / ".agents" / "skills" / "promise-machine"
+    RUNTIME = PACKAGE / "runtime"
+    MANIFEST = RUNTIME / "MANIFEST.json"
+
+
+def tearDownModule():
+    if _PACKAGE_TMP is not None:
+        _PACKAGE_TMP.cleanup()
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
@@ -336,6 +371,96 @@ class SkillsShPackageTests(unittest.TestCase):
             f"{RECORDED_TRACKED_BYTES}. Update ADR-054 and this ceiling "
             f"together, or reduce what the generator copies.",
         )
+
+
+    def test_package_action_writes_a_complete_installable_tree(self):
+        """A generated package carries its own grouping, README and runtime."""
+        config = json.loads((GENERATED / "skills.sh.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            [skill for group in config["groupings"] for skill in group["skills"]],
+            ["promise-machine"],
+        )
+        readme = (GENERATED / "README.md").read_text(encoding="utf-8")
+        commit = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        self.assertIn(commit, readme)
+        self.assertIn("wildcat-finance/skills-runtime", readme)
+        for relative in (
+            ".agents/plugins/marketplace.json",
+            ".agents/skills/promise-machine/SKILL.md",
+            ".agents/skills/promise-machine/PORTABLE.md",
+            ".agents/skills/promise-machine/scripts/verify_runtime.py",
+        ):
+            self.assertTrue((GENERATED / relative).is_file(), relative)
+
+    def test_generated_package_verifies_itself_offline(self):
+        verifier = PACKAGE / "scripts" / "verify_runtime.py"
+        result = subprocess.run(  # phylax: allow subprocess: fixed local verifier argv
+            [sys.executable, str(verifier)],
+            cwd=GENERATED,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_package_refuses_an_unsafe_output_directory(self):
+        with tempfile.TemporaryDirectory() as raw:
+            base = Path(raw)
+            real = base / "real"
+            real.mkdir()
+            link = base / "link"
+            link.symlink_to(real)
+            plain = base / "plain"
+            plain.write_text("", encoding="utf-8")
+            cases = {
+                link: "symlink",
+                plain: "not a directory",
+                base / "absent" / "deep": "output parent is not a directory",
+            }
+            for destination, expected in cases.items():
+                with self.subTest(destination=destination.name):
+                    result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+                        [
+                            sys.executable,
+                            str(GENERATOR),
+                            "package",
+                            "--out",
+                            str(destination),
+                        ],
+                        cwd=ROOT,
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(expected, result.stdout + result.stderr)
+            self.assertEqual(sorted(path.name for path in real.iterdir()), [])
+
+
+    def test_package_refuses_to_clear_a_directory_it_did_not_write(self):
+        """--out replaces the whole directory, so an occupied one is refused."""
+        with tempfile.TemporaryDirectory() as raw:
+            occupied = Path(raw) / "occupied"
+            (occupied / "precious").mkdir(parents=True)
+            keep = occupied / "precious" / "data.txt"
+            keep.write_text("irreplaceable", encoding="utf-8")
+            result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+                [sys.executable, str(GENERATOR), "package", "--out", str(occupied)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not a generated package", result.stdout + result.stderr)
+            self.assertEqual(keep.read_text(encoding="utf-8"), "irreplaceable")
+
+            empty = Path(raw) / "empty"
+            empty.mkdir()
+            self.assertEqual(build_package(empty), empty)
+            self.assertEqual(build_package(empty), empty)
 
 
 if __name__ == "__main__":
