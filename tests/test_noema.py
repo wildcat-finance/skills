@@ -6735,6 +6735,17 @@ class ExternalAdapterTests(unittest.TestCase):
             {("-I", "scripts/noema.py", "_openrouter-adapter")},
         )
 
+    def test_live_evaluation_profiles_use_the_bounded_reasoning_ceiling(self):
+        profiles = read_json(MEASUREMENT_PROFILES)["profiles"]
+        evaluation = [
+            profile for profile in profiles if "evaluation" in profile["roles"]
+        ]
+        self.assertEqual(len(evaluation), 2)
+        self.assertEqual(
+            {profile["evaluation_output_tokens"] for profile in evaluation},
+            {2048},
+        )
+
     def test_clean_git_identity_rejects_untracked_bytes(self):
         repository = self.directory / "repository"
         repository.mkdir()
