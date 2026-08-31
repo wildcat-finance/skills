@@ -94,3 +94,19 @@ Elenchus verdict: guarded
 | S3-R1-01 | medium | plugins/anamnesis/tests/test_s6_ledger.py | The prose sweep named three live documents and skipped any that was absent, so renaming or deleting one would drop it out of the sweep with the test still passing. It is the same false-clean family as S1-R2-01: a guard reporting success over less than it claims to cover. The skip is now an assertion that names the missing path, and it fails when any of the three is absent | fixed in this round |
 
 Leads not pursued: three observations carry forward. The Horos boundary went stale twice in this step, once after the product edits and again after the round 1 fix, and each time two root tests failed until it was rescanned; nothing runs the scan automatically at the end of a step, so the last file change before a commit has to remember it. The new held job's acceptance condition names a corpus built under a different declared scope rebuilding to its own release id, and no such second specimen exists yet, so the condition is testable in principle and untested in fact. And the v2.1.0 history row still reads "that is the new held job" about the job this run just closed, which is correct as history and reads oddly beside a v3.1.0 row that closes it; the row is append-only and was left alone.
+
+## Step 3, round 2 -- 2026-08-31T21:39:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: ledger-arithmetic=reviewed; stale-prose=reviewed; frontier-drift=reviewed; projection-drift=reviewed; decision-overreach=reviewed; reader-unnamed=reviewed
+
+Not checked: unchanged from round 1. This round re-ran the three lints, all three suites, the demo path and the integration evidence check over round 1's fix, and found nothing new in the step's scope. The whole battery is green: 194 Anamnesis tests, 118 Synkrisis tests, 1,110 root tests, phylax, ephoros and hypomnema each exit 0, the demo builds the pilot twice to the same release id and reads both views, design_evidence --transition integration exits zero, git diff --check is clean and the worktree holds no uncommitted path.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three observations from round 1 stand and are the honest residue of this step. Nothing rescans the Horos boundary at the end of a step, so it went stale twice here and each time two root tests failed until it was rescanned by hand. The new held job's acceptance condition names a second corpus under a different declared scope, and no such specimen exists, so the condition is testable in principle and untested in fact. The v2.1.0 history row still calls the job this run closed "the new held job", which is correct as history and reads oddly beside the row that closes it; history is append-only and was left alone. None of the three affects what the ledger records or what the live prose now says.
