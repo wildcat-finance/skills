@@ -121,6 +121,13 @@ EVALUATION_PROMPT_CASE_ORDER = ("O", "P", "R", "M", "S")
 EVALUATION_SCENARIO_IDS = tuple(
     f"E{number:02d}" for number in range(1, len(EVALUATION_CASE_CODES) + 1)
 )
+EVALUATION_TEMPLATE_FIELDS = (
+    "{promise_id}",
+    "{skill_path}",
+    "{contract}",
+    "{request}",
+    "{scenarios}",
+)
 EVALUATION_DISPOSITIONS = frozenset({"accept", "refuse", "recover"})
 EVALUATION_MODEL_ID = re.compile(
     r"[a-z][a-z0-9._-]*/[^@\s]+@sha256:[0-9a-f]{64}", re.IGNORECASE
@@ -6803,12 +6810,25 @@ def check_evaluation(root: Path):
                 )
             )
             continue
-        if row.get("group") not in {"prompt", "vendored"}:
+        if (
+            not isinstance(row.get("group"), str)
+            or row["group"] not in {"prompt", "vendored"}
+        ):
             findings.append(
                 evaluation_finding(
                     "PM107",
                     row_path,
                     "labelled-case evaluation belongs to neither prompt nor vendored coverage",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if not closed_non_empty_scalar(row.get("skill_path")):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    f"{row_path}.skill_path",
+                    "labelled-case evaluation has no closed canonical skill path",
                     promise_id=promise_id,
                 )
             )
@@ -6902,6 +6922,28 @@ def check_evaluation(root: Path):
     findings.extend(template_findings)
     if template_payload is not None:
         source_payloads[EVALUATION_TEMPLATE_PATH.as_posix()] = template_payload
+        try:
+            template_text = template_payload.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    EVALUATION_TEMPLATE_PATH.as_posix(),
+                    f"evaluation prompt template is not UTF-8: {exc}",
+                )
+            )
+        else:
+            if any(
+                template_text.count(field) != 1
+                for field in EVALUATION_TEMPLATE_FIELDS
+            ):
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        EVALUATION_TEMPLATE_PATH.as_posix(),
+                        "evaluation prompt template does not carry each required field exactly once",
+                    )
+                )
     if set(source_payloads) != expected_source_paths:
         return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
 
@@ -6926,7 +6968,8 @@ def check_evaluation(root: Path):
         }
         cases = document.get("cases")
         if (
-            document.get("schema") != EVALUATION_CASE_SCHEMA
+            set(document) != {"schema", "cases"}
+            or document.get("schema") != EVALUATION_CASE_SCHEMA
             or not isinstance(cases, dict)
             or set(cases) != assigned
         ):
@@ -6963,7 +7006,8 @@ def check_evaluation(root: Path):
                 if (
                     not isinstance(case, dict)
                     or set(case) != {"disposition", "scenario", "boundary"}
-                    or case.get("disposition") not in EVALUATION_DISPOSITIONS
+                    or not isinstance(case.get("disposition"), str)
+                    or case["disposition"] not in EVALUATION_DISPOSITIONS
                     or not closed_non_empty_scalar(case.get("scenario"))
                     or not closed_non_empty_scalar(case.get("boundary"))
                 ):
@@ -7042,7 +7086,8 @@ def check_evaluation(root: Path):
                     or error is not None
                     or set(parsed or {}) != set(EVALUATION_SCENARIO_IDS)
                     or any(
-                        value not in EVALUATION_DISPOSITIONS
+                        not isinstance(value, str)
+                        or value not in EVALUATION_DISPOSITIONS
                         for value in (parsed or {}).values()
                     )
                 ):
@@ -7508,7 +7553,8 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             if (
                 not isinstance(evaluation, dict)
                 or set(evaluation) not in {frozenset(EVALUATION_KEYS), frozenset(EVALUATION_GATE_KEYS)}
-                or evaluation.get("status") not in {"recorded", "unknown"}
+                or not isinstance(evaluation.get("status"), str)
+                or evaluation["status"] not in {"recorded", "unknown"}
                 or any(
                     not isinstance(evaluation.get(key), str)
                     or not evaluation[key].strip()

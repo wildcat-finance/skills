@@ -32,13 +32,20 @@ MANIFEST_NAME = "manifest.json"
 PACKET_CONTRACT = "promise-machine-evaluation-packet/v1"
 ANSWERS_CONTRACT = "promise-machine-evaluation-answers/v1"
 RUN_CONTRACT = "promise-machine-evaluation-run/v1"
-LABELLED_CASE_SCHEMAS = {
-    "promise-machine-labelled-cases/v1",
-    "promise-machine-evaluation-cases/v1",
-}
+EVALUATION_CASE_SCHEMA = "promise-machine-evaluation-cases/v1"
 EVALUATION_GATE = "labelled-case-classification"
 DOMAIN_EVIDENCE_BOUNDARY = "required-separately"
 RUN_DOMAIN_EVIDENCE = "not-supplied"
+EVALUATION_KEYS = {
+    "status",
+    "model",
+    "prompt",
+    "corpus",
+    "disposition",
+    "gate",
+    "run",
+    "domain_evidence",
+}
 EXPECTED_CASES = 11
 CASE_CODES = ("P", "M", "S", "O", "R")
 # Do not preserve the semantic P/M/S/O/R ordering in a graded prompt. The
@@ -61,6 +68,8 @@ MAX_PROMPT_BYTES = 512 * 1024
 MAX_ANSWERS_BYTES = 1 << 20
 MAX_ANSWER_BYTES = 16 * 1024
 MAX_RUN_BYTES = 512 * 1024
+OPEN_SUPPORTS_DIR_FD = os.open in getattr(os, "supports_dir_fd", set())
+MKDIR_SUPPORTS_DIR_FD = os.mkdir in getattr(os, "supports_dir_fd", set())
 
 
 class DriverError(Exception):
@@ -108,24 +117,54 @@ def _path_has_escape(path: Path) -> bool:
     return ".." in path.parts
 
 
-def _inside(path: Path, root: Path) -> bool:
-    try:
-        path.relative_to(root)
-        return True
-    except ValueError:
-        return False
+def _directory_flags() -> int:
+    return (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
 
 
-def _reject_symlink_components(path: Path, root: Path) -> None:
+def _file_flags() -> int:
+    return (
+        os.O_RDONLY
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
+
+
+def _open_relative_file(root: Path, relative: Path) -> int:
+    if (
+        not hasattr(os, "O_NOFOLLOW")
+        or not hasattr(os, "O_NONBLOCK")
+        or not OPEN_SUPPORTS_DIR_FD
+    ):
+        raise OSError("platform lacks no-follow non-blocking descriptor reads")
+    parts = relative.parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise OSError("input path is not a safe relative file path")
+    current = os.open(root, _directory_flags())
+    descriptor = None
     try:
-        relative = path.relative_to(root)
-    except ValueError as error:
-        raise DriverError(f"{path} resolves outside {root}") from error
-    current = root
-    for part in relative.parts:
-        current = current / part
-        if current.is_symlink():
-            raise DriverError(f"{current} is a symlink")
+        if not stat.S_ISDIR(os.fstat(current).st_mode):
+            raise OSError("input root is not a directory")
+        for part in parts[:-1]:
+            following = os.open(part, _directory_flags(), dir_fd=current)
+            if not stat.S_ISDIR(os.fstat(following).st_mode):
+                os.close(following)
+                raise OSError(f"input path component is not a directory: {part}")
+            os.close(current)
+            current = following
+        descriptor = os.open(parts[-1], _file_flags(), dir_fd=current)
+        return descriptor
+    except BaseException:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise
+    finally:
+        os.close(current)
 
 
 def _read_regular(
@@ -137,6 +176,7 @@ def _read_regular(
 ) -> bytes:
     if _path_has_escape(path):
         raise DriverError(f"{what} contains a parent-directory escape")
+    relative = None
     if root is not None:
         supplied_root = Path(root)
         root = supplied_root.resolve(strict=True)
@@ -148,23 +188,17 @@ def _read_regular(
                     relative = path.relative_to(root)
                 except ValueError as error:
                     raise DriverError(f"{what} resolves outside {root}") from error
-            candidate = root / relative
         else:
-            candidate = root / path
-        _reject_symlink_components(candidate, root)
+            relative = path
+    else:
         try:
-            resolved = candidate.resolve(strict=True)
+            root = path.parent.resolve(strict=True)
         except OSError as error:
-            raise DriverError(f"{what} could not be resolved: {error}") from error
-        if not _inside(resolved, root):
-            raise DriverError(f"{what} resolves outside the repository")
-        path = candidate
-    elif path.is_symlink():
-        raise DriverError(f"{what} is a symlink")
+            raise DriverError(f"{what} parent could not be resolved: {error}") from error
+        relative = Path(path.name)
 
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(path, flags)
+        descriptor = _open_relative_file(root, relative)
     except OSError as error:
         raise DriverError(f"{what} could not be opened: {error}") from error
     try:
@@ -182,10 +216,22 @@ def _read_regular(
             if total > limit:
                 raise DriverError(f"{what} is larger than {limit} bytes")
         after = os.fstat(descriptor)
-        if (before.st_dev, before.st_ino, before.st_size) != (
+        if (
+            before.st_dev,
+            before.st_ino,
+            before.st_mode,
+            before.st_nlink,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        ) != (
             after.st_dev,
             after.st_ino,
+            after.st_mode,
+            after.st_nlink,
             after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
         ):
             raise DriverError(f"{what} changed while it was read")
         return b"".join(chunks)
@@ -221,7 +267,11 @@ def _target_rows(root: Path) -> list[dict]:
         evaluation = row.get("evaluation")
         if not isinstance(evaluation, dict):
             continue
-        if evaluation.get("gate") == EVALUATION_GATE or evaluation.get("model") == "not-run":
+        if evaluation.get("model") == "not-run":
+            raise DriverError(
+                f"coverage evaluation for {row.get('promise_id')!r} is explicitly not-run"
+            )
+        if evaluation.get("gate") == EVALUATION_GATE:
             selected.append(row)
     ids = [row.get("promise_id") for row in selected]
     if len(selected) != EXPECTED_CASES:
@@ -232,7 +282,46 @@ def _target_rows(root: Path) -> list[dict]:
         raise DriverError("a fixture-only evaluation has a missing or malformed promise id")
     if len(set(ids)) != len(ids):
         raise DriverError("fixture-only evaluation promise ids are repeated")
+    models = set()
+    runs = set()
+    for row in selected:
+        promise_id = row["promise_id"]
+        evaluation = row["evaluation"]
+        if set(evaluation) != EVALUATION_KEYS or any(
+            not isinstance(evaluation.get(key), str)
+            or not evaluation[key].strip()
+            or evaluation[key] != evaluation[key].strip()
+            for key in EVALUATION_KEYS
+        ):
+            raise DriverError(
+                f"coverage evaluation for {promise_id} is not a closed non-empty gate record"
+            )
+        if evaluation["status"] != "recorded":
+            raise DriverError(f"coverage evaluation for {promise_id} is not recorded")
+        if MODEL_ID.fullmatch(evaluation["model"]) is None:
+            raise DriverError(
+                f"coverage evaluation for {promise_id} has no full model identity"
+            )
+        if evaluation["domain_evidence"] != DOMAIN_EVIDENCE_BOUNDARY:
+            raise DriverError(
+                f"coverage evaluation for {promise_id} does not keep domain evidence separate"
+            )
+        if (
+            not isinstance(row.get("group"), str)
+            or row["group"] not in {"prompt", "vendored"}
+        ):
+            raise DriverError(f"coverage evaluation for {promise_id} has no supported group")
+        if not isinstance(row.get("skill_path"), str) or not row["skill_path"].strip():
+            raise DriverError(f"coverage evaluation for {promise_id} has no skill path")
+        models.add(evaluation["model"])
+        runs.add(evaluation["run"])
+    if len(models) != 1 or len(runs) != 1:
+        raise DriverError("fixture-only evaluations do not bind one model and run record")
     return sorted(selected, key=lambda row: row["promise_id"])
+
+
+def _declared_model(root: Path) -> str:
+    return next(iter({row["evaluation"]["model"] for row in _target_rows(root)}))
 
 
 def _contract_section(source: str, promise_id: str, path: str) -> str:
@@ -261,23 +350,29 @@ def _contract_section(source: str, promise_id: str, path: str) -> str:
 
 
 def _case_record(document: dict, promise_id: str, path: str) -> dict:
-    if document.get("schema") not in LABELLED_CASE_SCHEMAS:
-        raise DriverError(f"{path} declares an unsupported labelled-case schema")
+    if (
+        not isinstance(document, dict)
+        or set(document) != {"schema", "cases"}
+        or document.get("schema") != EVALUATION_CASE_SCHEMA
+    ):
+        raise DriverError(f"{path} declares an unsupported evaluation-case schema")
     cases = document.get("cases")
     if not isinstance(cases, dict) or promise_id not in cases:
         raise DriverError(f"{path} carries no case for {promise_id}")
     record = cases[promise_id]
     if not isinstance(record, dict):
         raise DriverError(f"{path}: {promise_id} is not an object")
-    allowed = (set(CASE_CODES) | {"evaluation"}, set(CASE_CODES) | {"request"})
-    if set(record) not in allowed:
+    if set(record) != set(CASE_CODES) | {"request"}:
         raise DriverError(f"{path}: {promise_id} has an open or incomplete case shape")
+    if not isinstance(record.get("request"), str) or not record["request"].strip():
+        raise DriverError(f"{path}: {promise_id} has no request")
     for code in CASE_CODES:
         value = record.get(code)
         if (
             not isinstance(value, dict)
             or set(value) != {"disposition", "scenario", "boundary"}
-            or value.get("disposition") not in DISPOSITIONS
+            or not isinstance(value.get("disposition"), str)
+            or value["disposition"] not in DISPOSITIONS
             or not isinstance(value.get("scenario"), str)
             or not value["scenario"].strip()
             or not isinstance(value.get("boundary"), str)
@@ -289,22 +384,41 @@ def _case_record(document: dict, promise_id: str, path: str) -> dict:
 
 def load_cases(root: Path = REPOSITORY_ROOT) -> list[dict]:
     root = Path(root).resolve(strict=True)
+    rows = _target_rows(root)
     corpus_cache: dict[str, dict] = {}
+    assigned: dict[str, set[str]] = {}
+    for row in rows:
+        corpus_raw = row["evaluation"]["corpus"]
+        assigned.setdefault(corpus_raw, set()).add(row["promise_id"])
+    for corpus_raw, promise_ids in assigned.items():
+        _, corpus_bytes = _repository_file(
+            root,
+            corpus_raw,
+            f"evaluation corpus for {sorted(promise_ids)}",
+            MAX_CORPUS_BYTES,
+        )
+        document = _decode_json(corpus_bytes, corpus_raw)
+        if (
+            not isinstance(document, dict)
+            or set(document) != {"schema", "cases"}
+            or document.get("schema") != EVALUATION_CASE_SCHEMA
+            or not isinstance(document.get("cases"), dict)
+            or set(document["cases"]) != promise_ids
+        ):
+            raise DriverError(
+                f"{corpus_raw} is not the closed corpus for its exact assigned promise set"
+            )
+        corpus_cache[corpus_raw] = document
     cases = []
-    for row in _target_rows(root):
+    for row in rows:
         promise_id = row["promise_id"]
         evaluation = row["evaluation"]
         corpus_raw = evaluation.get("corpus")
-        _, corpus_bytes = _repository_file(
-            root, corpus_raw, f"evaluation corpus for {promise_id}", MAX_CORPUS_BYTES
-        )
-        if corpus_raw not in corpus_cache:
-            corpus_cache[corpus_raw] = _decode_json(corpus_bytes, corpus_raw)
         record = _case_record(corpus_cache[corpus_raw], promise_id, corpus_raw)
         request = evaluation.get("prompt")
         if not isinstance(request, str) or not request.strip():
             raise DriverError(f"coverage evaluation for {promise_id} carries no request")
-        if "request" in record and record["request"] != request:
+        if record["request"] != request:
             raise DriverError(
                 f"{corpus_raw}: {promise_id} request disagrees with coverage"
             )
@@ -415,10 +529,13 @@ def render_prompt(case: dict, *, root: Path = REPOSITORY_ROOT) -> str:
         "{request}": case["request"],
         "{scenarios}": scenario_text,
     }
-    rendered = template
-    for placeholder, value in values.items():
-        rendered = rendered.replace(placeholder, value)
-    if any(placeholder in rendered for placeholder in values):
+    placeholders = re.compile(
+        "|".join(re.escape(placeholder) for placeholder in values)
+    )
+    rendered, substitutions = placeholders.subn(
+        lambda match: values[match.group(0)], template
+    )
+    if substitutions != len(values):
         raise DriverError("the prompt template retained an unsubstituted placeholder")
     return rendered
 
@@ -426,7 +543,13 @@ def render_prompt(case: dict, *, root: Path = REPOSITORY_ROOT) -> str:
 def _write_member(directory_fd: int, name: str, payload: bytes) -> None:
     if Path(name).name != name or not name:
         raise DriverError(f"unsafe packet member name: {name!r}")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
     descriptor = os.open(name, flags, 0o600, dir_fd=directory_fd)
     try:
         view = memoryview(payload)
@@ -445,23 +568,26 @@ def _new_output_directory(out: Path) -> int:
         raise DriverError(f"{out} contains a parent-directory escape")
     if out.exists() or out.is_symlink():
         raise DriverError(f"{out} already exists")
+    if not hasattr(os, "O_NOFOLLOW") or not MKDIR_SUPPORTS_DIR_FD:
+        raise DriverError("platform lacks no-follow descriptor-relative directory creation")
     parent = out.parent
-    if parent.is_symlink():
-        raise DriverError(f"{parent} is a symlink")
     try:
         resolved_parent = parent.resolve(strict=True)
     except OSError as error:
         raise DriverError(f"{parent} could not be resolved: {error}") from error
     if not resolved_parent.is_dir():
         raise DriverError(f"{parent} is not a directory")
+    parent_fd = None
     try:
-        out.mkdir(mode=0o700)
-        return os.open(
-            out,
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
-        )
+        parent_fd = os.open(resolved_parent, _directory_flags())
+        os.mkdir(out.name, mode=0o700, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+        return os.open(out.name, _directory_flags(), dir_fd=parent_fd)
     except OSError as error:
         raise DriverError(f"{out} could not be created safely: {error}") from error
+    finally:
+        if parent_fd is not None:
+            os.close(parent_fd)
 
 
 def emit(out: Path, *, root: Path = REPOSITORY_ROOT) -> dict:
@@ -570,7 +696,12 @@ def _validate_packet(packet: Path, manifest: dict, root: Path) -> list[dict]:
                 f"the packet {field} is {manifest[field]}, but current inputs are {current}"
             )
     expected_names = {MANIFEST_NAME} | {record["prompt"] for record in manifest["cases"]}
-    actual_names = {entry.name for entry in os.scandir(packet)}
+    actual_names = set()
+    with os.scandir(packet) as entries:
+        for entry in entries:
+            actual_names.add(entry.name)
+            if len(actual_names) > EXPECTED_CASES + 1:
+                raise DriverError("the packet has more members than the closed case set")
     if actual_names != expected_names:
         raise DriverError("the packet has missing or extra members")
     for record in manifest["cases"]:
@@ -619,7 +750,7 @@ def _load_answers(path: Path, expected_ids: list[str]) -> dict[str, str]:
         if not isinstance(parsed, dict) or set(parsed) != set(SCENARIO_IDS):
             raise DriverError(f"{path}: {case_id} is missing, partial, or has extra scenarios")
         for scenario_id, disposition in parsed.items():
-            if disposition not in DISPOSITIONS:
+            if not isinstance(disposition, str) or disposition not in DISPOSITIONS:
                 raise DriverError(
                     f"{path}: {case_id}.{scenario_id} uses the open disposition {disposition!r}"
                 )
@@ -703,15 +834,13 @@ def _exclusive_write_path(path: Path, payload: bytes) -> None:
     if path.exists() or path.is_symlink():
         raise DriverError(f"{path} already exists")
     parent = path.parent
-    if parent.is_symlink():
-        raise DriverError(f"{parent} is a symlink")
     try:
-        parent.resolve(strict=True)
+        resolved_parent = parent.resolve(strict=True)
     except OSError as error:
         raise DriverError(f"{parent} could not be resolved: {error}") from error
     directory_fd = os.open(
-        parent,
-        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+        resolved_parent,
+        _directory_flags(),
     )
     try:
         _write_member(directory_fd, path.name, payload)
@@ -737,6 +866,8 @@ def tally(
     out = Path(out)
     if out.exists() or out.is_symlink() or _path_has_escape(out):
         raise DriverError(f"{out} is not a new confined run-record path")
+    if model != _declared_model(root):
+        raise DriverError("the tally model does not match the identity bound in coverage")
     manifest = _load_manifest(packet)
     cases = _validate_packet(packet, manifest, root)
     raw_answers = _load_answers(answers, [case["id"] for case in cases])
@@ -765,6 +896,8 @@ def verify(
         raise DriverError(f"{run} is not an object")
     model = recorded.get("model")
     date = recorded.get("date")
+    if model != _declared_model(root):
+        raise DriverError("the run model does not match the identity bound in coverage")
     expected = _build_run(manifest, cases, raw_answers, model, date)
     if recorded != expected or raw_run != _canonical(expected):
         raise DriverError(f"{run} does not match the packet and raw answer identities")

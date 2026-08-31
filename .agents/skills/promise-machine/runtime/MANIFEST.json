@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1048,
-  "total_bytes": 22714416,
+  "total_bytes": 22721005,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -6120,9 +6120,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 328106,
+      "bytes": 329751,
       "path": "scripts/promise_machine.py",
-      "sha256": "cb198af9eacfb81020c5ec96742be2fdd8ac701e55d7732beac9427555b78108",
+      "sha256": "934bc0eb261106c7286291f9b73e5ef93901d9b63fef7404a7951ea9f06eedb1",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6330,9 +6330,9 @@
       "source": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json"
     },
     {
-      "bytes": 32447,
+      "bytes": 37391,
       "path": "tests/promise_evaluation_driver.py",
-      "sha256": "46082a7b90ffc917ac9489f229f7d795beca667211eeed58ebae6e8e76d79478",
+      "sha256": "385add206ab8ace2ed04857213670f7e427079498d8f6e2c404ddd3db3201fd6",
       "source": "tests/promise_evaluation_driver.py"
     },
     {

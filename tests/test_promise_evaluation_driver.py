@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,6 +31,10 @@ EXPECTED_PROMISES = {
     "sapheneia-durable-record-shape",
 }
 MODEL = (
+    "ollama/qwen3.8-uncensored:Q6_K@sha256:"
+    "79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce"
+)
+OTHER_MODEL = (
     "ollama/qwen3.8-uncensored:Q6_K@sha256:"
     "5d73434fd9f8fffa886252f291939eae0b38e5c135449db052ab2db04d117e68"
 )
@@ -64,6 +71,15 @@ class DriverCase(unittest.TestCase):
 
     def emit(self):
         return driver.emit(self.packet)
+
+    def copy_inputs(self, name="repository"):
+        scratch = self.temp / name
+        for source in driver.input_files():
+            relative = source.relative_to(ROOT)
+            destination = scratch / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        return scratch
 
     def tally(self, answers=None, name="run.json"):
         if not self.packet.exists():
@@ -103,6 +119,102 @@ class DiscoveryTests(DriverCase):
             sorted(case["id"] for case in self.cases),
         )
 
+    def test_not_run_or_retired_embedded_evaluation_shape_refuses(self):
+        for mode in ("not-run", "legacy-corpus"):
+            with self.subTest(mode=mode):
+                scratch = self.copy_inputs(mode)
+                coverage_path = scratch / driver.COVERAGE_PATH
+                coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+                selected = [
+                    row
+                    for row in coverage["rows"]
+                    if row.get("evaluation", {}).get("gate")
+                    == driver.EVALUATION_GATE
+                ]
+                if mode == "not-run":
+                    selected[0]["evaluation"]["model"] = "not-run"
+                    coverage_path.write_text(
+                        json.dumps(coverage, indent=2) + "\n", encoding="utf-8"
+                    )
+                else:
+                    corpus_path = scratch / selected[0]["evaluation"]["corpus"]
+                    corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+                    corpus["schema"] = "promise-machine-labelled-cases/v1"
+                    for record in corpus["cases"].values():
+                        request = record.pop("request")
+                        record["evaluation"] = {
+                            "model": "not-run",
+                            "prompt": request,
+                            "corpus": "this labelled fixture",
+                            "disposition": "not run",
+                        }
+                    corpus_path.write_text(
+                        json.dumps(corpus, indent=2) + "\n", encoding="utf-8"
+                    )
+                with self.assertRaises(driver.DriverError):
+                    driver.load_cases(root=scratch)
+
+    def test_non_object_corpus_refuses_cleanly(self):
+        scratch = self.copy_inputs("non-object")
+        coverage = json.loads(
+            (scratch / driver.COVERAGE_PATH).read_text(encoding="utf-8")
+        )
+        selected = next(
+            row
+            for row in coverage["rows"]
+            if row.get("evaluation", {}).get("gate") == driver.EVALUATION_GATE
+        )
+        (scratch / selected["evaluation"]["corpus"]).write_text(
+            "[]\n", encoding="utf-8"
+        )
+        with self.assertRaises(driver.DriverError):
+            driver.load_cases(root=scratch)
+
+    def test_open_or_extra_corpus_content_refuses(self):
+        for mode in ("top-level-extra", "unassigned-case"):
+            with self.subTest(mode=mode):
+                scratch = self.copy_inputs(mode)
+                coverage = json.loads(
+                    (scratch / driver.COVERAGE_PATH).read_text(encoding="utf-8")
+                )
+                selected = next(
+                    row
+                    for row in coverage["rows"]
+                    if row.get("evaluation", {}).get("gate")
+                    == driver.EVALUATION_GATE
+                )
+                corpus_path = scratch / selected["evaluation"]["corpus"]
+                corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+                if mode == "top-level-extra":
+                    corpus["model_answers"] = {"leaked": True}
+                else:
+                    first = next(iter(corpus["cases"].values()))
+                    corpus["cases"]["unassigned-promise"] = first
+                corpus_path.write_text(
+                    json.dumps(corpus, indent=2) + "\n", encoding="utf-8"
+                )
+                with self.assertRaises(driver.DriverError):
+                    driver.load_cases(root=scratch)
+
+    def test_non_scalar_corpus_disposition_refuses_cleanly(self):
+        scratch = self.copy_inputs("non-scalar-corpus")
+        coverage = json.loads(
+            (scratch / driver.COVERAGE_PATH).read_text(encoding="utf-8")
+        )
+        selected = next(
+            row
+            for row in coverage["rows"]
+            if row.get("evaluation", {}).get("gate") == driver.EVALUATION_GATE
+        )
+        corpus_path = scratch / selected["evaluation"]["corpus"]
+        corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+        corpus["cases"][selected["promise_id"]]["P"]["disposition"] = []
+        corpus_path.write_text(
+            json.dumps(corpus, indent=2) + "\n", encoding="utf-8"
+        )
+        with self.assertRaises(driver.DriverError):
+            driver.load_cases(root=scratch)
+
 
 class PacketEmissionTests(DriverCase):
     def test_one_prompt_per_case_and_manifest_written_last(self):
@@ -135,6 +247,35 @@ class PacketEmissionTests(DriverCase):
                 self.assertNotIn(scenario["boundary"], prompt)
             self.assertNotIn('"expected"', prompt)
             self.assertNotIn('"boundary"', prompt)
+
+    def test_placeholder_text_inside_a_request_remains_literal(self):
+        scratch = self.copy_inputs("literal-placeholder")
+        coverage_path = scratch / driver.COVERAGE_PATH
+        coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+        selected = next(
+            row
+            for row in coverage["rows"]
+            if row.get("evaluation", {}).get("gate") == driver.EVALUATION_GATE
+        )
+        request = "Classify the literal token {scenarios}; do not expand it."
+        selected["evaluation"]["prompt"] = request
+        coverage_path.write_text(
+            json.dumps(coverage, indent=2) + "\n", encoding="utf-8"
+        )
+        corpus_path = scratch / selected["evaluation"]["corpus"]
+        corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+        corpus["cases"][selected["promise_id"]]["request"] = request
+        corpus_path.write_text(
+            json.dumps(corpus, indent=2) + "\n", encoding="utf-8"
+        )
+        case = next(
+            item
+            for item in driver.load_cases(root=scratch)
+            if item["id"] == selected["promise_id"]
+        )
+        prompt = driver.render_prompt(case, root=scratch)
+        self.assertIn(request, prompt)
+        self.assertEqual(prompt.count("E01."), 1)
 
     def test_manifest_binds_template_corpus_tree_case_set_and_prompt_bytes(self):
         manifest = self.emit()
@@ -298,6 +439,22 @@ class TallyTests(DriverCase):
                     )
                 shutil.rmtree(self.packet)
 
+    def test_non_scalar_answer_disposition_refuses_cleanly(self):
+        self.emit()
+        document = answer_document(self.cases)
+        first = sorted(document["answers"])[0]
+        answer = json.loads(document["answers"][first])
+        answer["E01"] = []
+        document["answers"][first] = json.dumps(answer)
+        with self.assertRaises(driver.DriverError):
+            driver.tally(
+                self.packet,
+                self.write_answers(document, "non-scalar.json"),
+                self.temp / "non-scalar-run.json",
+                MODEL,
+                DATE,
+            )
+
     def test_deeply_nested_answer_refuses_without_crashing(self):
         self.emit()
         document = answer_document(self.cases)
@@ -356,6 +513,47 @@ class TallyTests(DriverCase):
                 with self.assertRaises(driver.DriverError):
                     driver.tally(self.packet, answers, self.temp / f"run-{date}.json", model, date)
 
+    def test_model_must_match_the_identity_bound_in_coverage(self):
+        self.emit()
+        with self.assertRaises(driver.DriverError):
+            driver.tally(
+                self.packet,
+                self.write_answers(),
+                self.temp / "wrong-model-run.json",
+                OTHER_MODEL,
+                DATE,
+            )
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires POSIX FIFO support")
+    def test_fifo_answer_refuses_without_blocking(self):
+        self.emit()
+        fifo = self.temp / "answers.fifo"
+        os.mkfifo(fifo)
+        command = [
+            sys.executable,
+            str(Path(driver.__file__).resolve()),
+            "tally",
+            "--packet",
+            str(self.packet),
+            "--answers",
+            str(fifo),
+            "--out",
+            str(self.temp / "fifo-run.json"),
+            "--model",
+            MODEL,
+            "--date",
+            DATE,
+        ]
+        completed = subprocess.run(  # phylax: allow subprocess: fixed local driver
+            command,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        self.assertEqual(completed.returncode, 2, completed.stdout + completed.stderr)
+        self.assertIn("not a regular file", completed.stderr)
+
     def test_existing_or_symlink_run_output_refuses(self):
         self.emit()
         answers = self.write_answers()
@@ -397,12 +595,7 @@ class VerificationTests(DriverCase):
             driver.verify(self.packet, answers, path)
 
     def test_tally_refuses_when_an_input_tree_file_changed_after_emit(self):
-        scratch = self.temp / "repository"
-        for source in driver.input_files():
-            relative = source.relative_to(ROOT)
-            destination = scratch / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
+        scratch = self.copy_inputs()
         packet = self.temp / "scratch-packet"
         cases = driver.load_cases(root=scratch)
         driver.emit(packet, root=scratch)
