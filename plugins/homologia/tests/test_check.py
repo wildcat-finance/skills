@@ -253,6 +253,47 @@ class CheckTests(unittest.TestCase):
         shutil.copyfile(FIXTURES / "malformed-vectors.jsonl", self.vectors_path)
         self.assert_refuses("HOM-CHECK-JSON")
 
+    def test_unicode_line_separators_inside_json_strings_are_data(self):
+        original = self.vectors()[0]
+        for separator in ("\u0085", "\u2028", "\u2029"):
+            with self.subTest(separator=ord(separator)):
+                vector = json.loads(json.dumps(original))
+                author = f"Wildcat{separator}Labs"
+                vector["expected"]["provenance"]["author"] = author
+                self.vectors_path.write_text(
+                    json.dumps(vector, sort_keys=True, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+                result = self.check()
+                checked_author = result.record["vector_sets"][0]["vectors"][0][
+                    "expected"
+                ]["provenance"]["author"]
+                self.assertEqual(checked_author, author)
+
+    def test_bare_carriage_return_is_not_a_jsonl_record_separator(self):
+        first = self.vectors()[0]
+        second = json.loads(json.dumps(first))
+        second["id"] = "second"
+        self.vectors_path.write_text(
+            json.dumps(first, sort_keys=True) + "\r" + json.dumps(second, sort_keys=True),
+            encoding="utf-8",
+        )
+        self.assert_refuses("HOM-CHECK-JSON")
+
+    def test_crlf_separates_jsonl_records(self):
+        first = self.vectors()[0]
+        second = json.loads(json.dumps(first))
+        second["id"] = "second"
+        self.vectors_path.write_text(
+            json.dumps(first, sort_keys=True)
+            + "\r\n"
+            + json.dumps(second, sort_keys=True)
+            + "\r\n",
+            encoding="utf-8",
+        )
+        result = self.check()
+        self.assertEqual(result.record["vector_sets"][0]["vector_count"], 2)
+
     def test_duplicate_json_key_refuses(self):
         shutil.copyfile(FIXTURES / "duplicate-key-vectors.jsonl", self.vectors_path)
         self.assert_refuses("HOM-CHECK-JSON")

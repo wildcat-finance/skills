@@ -455,7 +455,9 @@ def _parse_vectors(
         text = source.data.decode("utf-8", errors="strict")
     except UnicodeDecodeError:
         _refuse("HOM-CHECK-JSON", set_id, "supply strict UTF-8 JSON Lines")
-    lines = text.splitlines()
+    lines = text.split("\n")
+    if lines[-1:] == [""]:
+        lines.pop()
     if not lines:
         _refuse("HOM-CHECK-SHAPE", set_id, "supply at least one vector")
     if len(lines) > limit:

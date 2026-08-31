@@ -17,6 +17,9 @@ equality, filesystem containment, source identity and input caps.
 - Each JSONL record names one vector id, a non-empty object of canonical
   decimal-integer strings, one expected decimal-integer string, one provenance
   object, and optionally the declared set tolerance.
+- LF separates JSONL records. CRLF is accepted because CR is JSON whitespace;
+  bare CR does not separate records. NEL, line-separator and paragraph-separator
+  code points inside JSON strings remain data.
 
 Objects are closed. Unknown fields refuse; they are not ignored for forward
 compatibility. A future additive field therefore needs a new schema identity
