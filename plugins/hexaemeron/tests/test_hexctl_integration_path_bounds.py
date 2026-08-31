@@ -242,7 +242,7 @@ class IntegrationBoundTests(unittest.TestCase):
 
 
 class UnchangedBoundTests(unittest.TestCase):
-    """The three sites that keep 500, pinned so nobody widens them by accident."""
+    """The two sites that keep 500, pinned so nobody widens them by accident."""
 
     @classmethod
     def setUpClass(cls):
@@ -277,18 +277,6 @@ class UnchangedBoundTests(unittest.TestCase):
                 "step range",
             )
         self.assertIn(f"commit range exceeds {limit} commits", message)
-        self.assertNotIn("4096", message)
-
-    def test_the_prose_diff_reader_still_refuses_over_500_paths(self):
-        limit = self.module.GIT_PATHS_MAX
-        paths = [f"docs/file-{number:05d}.md" for number in range(limit + 1)]
-        raw = b"\0".join(path.encode("utf-8") for path in paths) + b"\0"
-
-        with mock.patch.object(self.module, "bounded_git", return_value=raw):
-            message = self.refusal(
-                self.module.scribe_files, str(ROOT), "base-branch", "head-branch"
-            )
-        self.assertIn(f"more than {limit} paths", message)
         self.assertNotIn("4096", message)
 
     def test_the_checkpoint_ref_set_still_refuses_over_500_refs(self):
