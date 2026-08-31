@@ -710,3 +710,68 @@ experiment and the user's stop-before-integration boundary.
 **Steps touched.** Step 5.
 
 **Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Files: For Step 5, change
+`scripts/noema.py`, `schemas/noema-v1.schema.json`, `docs/noema-v1.md`,
+`docs/noema/runbook.md`, `tests/test_noema.py`,
+`tests/fixtures/noema-v1/manifest.json`, profile and kernel records below
+`tests/fixtures/noema-v1/profiles/`, the canonical inputs, hostile mutations
+and derived records below `tests/fixtures/noema-v1/specimens/`, and evidence
+below `tests/fixtures/noema-v1/evidence/`; rename the unmerged
+`docs/decisions/ADR-059-evaluate-noema-as-a-sliced-instruction-ir.md` to
+`docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md` and
+change its heading and current references accordingly; permit deterministic
+Horos and configured audit record or synopsis updates. Add no dependency,
+credential, provider SDK, model bytes, raw response transcript, plugin,
+Promise Machine claim, README entry, CI workflow, #909 file or
+external-repository change.
+
+**Why.** The pre-publication fetch observed `origin/main` at
+`ae535e2a90499694ed0ddfd7a24991cf105cf309`, where
+`ADR-059-report-baseline-currency-without-failing-the-check.md` now collides
+with the unmerged Noema record and ADR numbers 060 through 065 are occupied.
+ADR-066 is the current next free number. Moving only this unmerged record and
+its current references restores the repository uniqueness gate without
+changing the design, paid evidence anchor, profiles, prompts, models, result,
+threshold, authority or stop-before-integration boundary. Earlier amendment
+text remains historical.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: Step 5 exits only when one signed,
+clean implementation anchor produces an accepted four-family measurement and
+at least two complete 16/16 source-versus-Noema evaluation cohorts from one
+answer-free packet. `measure` runs once; each logical provider invocation may
+use only its three preregistered attempts and closed transient retry class.
+Exhaustion records unknown and ends the evidence run. Evaluation uses one
+packet from `emit-evaluation`; `run-evaluation` runs two cohorts regardless of
+the first result and permits one tie-break only after a split;
+`tally-evaluation` settles each answer file. Each independent cohort uses a
+fresh preallocated ledger; all ledger ceilings, settled charges and pending
+reservations remain within the operator's one external spend authority. Every
+attempted artifact and ledger digest is retained. Checked-in evidence binds
+the exact commit, tree, corpus, profiles, packet, measurement, answers and
+tally, and deterministic replay, hostile mutations, the full repository
+suite, the discipline checks and diff hygiene all pass. ADR-066 records every
+result and chooses accepted for continued shadowing, narrowed or rejected
+without moving a profile, prompt, seed, model, threshold or failed case.
+Markdown remains authoritative. The remote cohort establishes only
+cross-family capability; a named small local decoder must pass the same paired
+semantic boundary in a separate pre-integration gate. This run proposes no
+plugin, runtime, repository or authorship integration and stops after
+publishing the stacked Step 5 work.
+
+**Why.** The immediately preceding Files replacement moves the unmerged Noema
+record to ADR-066, but the effective Step 5 Exit still named ADR-059. Replacing
+the Exit changes that one decision-record identifier and preserves every
+evidence, threshold, authority and stop-before-integration condition.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
