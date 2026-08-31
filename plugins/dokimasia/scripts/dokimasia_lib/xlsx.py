@@ -28,7 +28,9 @@ class XlsxRefusal(Exception):
     """One named refusal at the archive or document boundary."""
 
 
-def _checked_members(archive: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
+def _checked_members(
+    archive: zipfile.ZipFile, max_member_bytes: int = MAX_MEMBER_BYTES
+) -> list[zipfile.ZipInfo]:
     """Every member, once every declared archive cap has held."""
     members = archive.infolist()
     if len(members) > MAX_MEMBERS:
@@ -42,10 +44,10 @@ def _checked_members(archive: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
             raise XlsxRefusal(f"member {name!r} is an absolute path")
         if ".." in Path(name).parts:
             raise XlsxRefusal(f"member {name!r} contains a parent-directory segment")
-        if member.file_size > MAX_MEMBER_BYTES:
+        if member.file_size > max_member_bytes:
             raise XlsxRefusal(
                 f"member {name!r} expands to {member.file_size} bytes, "
-                f"over the {MAX_MEMBER_BYTES} cap"
+                f"over the {max_member_bytes} cap"
             )
         if member.compress_size > 0:
             ratio = member.file_size / member.compress_size
@@ -62,25 +64,69 @@ def _checked_members(archive: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
     return members
 
 
-def _read_member(archive: zipfile.ZipFile, name: str) -> bytes:
+def _read_member(
+    archive: zipfile.ZipFile, name: str, max_member_bytes: int = MAX_MEMBER_BYTES
+) -> bytes:
+    """Read one member, bounded by bytes actually delivered.
+
+    The declared `file_size` in the container is written by whoever built the
+    archive, so a cap checked only against it is a cap an archive can talk its
+    way past. This reads one byte more than the cap allows and refuses when it
+    arrives, which bounds the read whatever the header claims.
+    """
     try:
-        return archive.read(name)
+        with archive.open(name) as member:
+            payload = member.read(max_member_bytes + 1)
     except KeyError as error:
         raise XlsxRefusal(f"the workbook has no {name}") from error
+    except zipfile.BadZipFile as error:
+        raise XlsxRefusal(f"member {name!r} is not readable: {error}") from error
+    if len(payload) > max_member_bytes:
+        raise XlsxRefusal(
+            f"member {name!r} delivered more than the {max_member_bytes}-byte cap, "
+            "whatever its declared size"
+        )
+    _refuse_document_type(name, payload)
+    return payload
 
 
-def _shared_strings(archive: zipfile.ZipFile, names: set[str]) -> list[str]:
+def _refuse_document_type(name: str, payload: bytes) -> None:
+    """Refuse a document type declaration before anything parses it.
+
+    `xml.etree.ElementTree` expands internal entity definitions, so a few
+    hundred bytes of nested entities can cost gigabytes of memory during a
+    parse. The archive caps do not bound that, because the expansion happens
+    after the bytes are read. A spreadsheet part never carries a document type
+    declaration, so refusing one costs nothing and closes the whole class.
+    """
+    head = payload[:4096].lstrip()
+    if b"<!DOCTYPE" in head or b"<!ENTITY" in payload[:65536]:
+        raise XlsxRefusal(
+            f"member {name!r} carries a document type or entity declaration, "
+            "which a spreadsheet part never needs and a parser would expand"
+        )
+
+
+def _shared_strings(
+    archive: zipfile.ZipFile, names: set[str], max_member_bytes: int = MAX_MEMBER_BYTES
+) -> list[str]:
     if "xl/sharedStrings.xml" not in names:
         return []
-    root = ElementTree.fromstring(_read_member(archive, "xl/sharedStrings.xml"))
+    root = ElementTree.fromstring(
+        _read_member(archive, "xl/sharedStrings.xml", max_member_bytes)
+    )
     return ["".join(node.itertext()) for node in root.findall(f"{NAMESPACE}si")]
 
 
-def _sheet_targets(archive: zipfile.ZipFile) -> list[tuple[str, str]]:
+def _sheet_targets(
+    archive: zipfile.ZipFile, max_member_bytes: int = MAX_MEMBER_BYTES
+) -> list[tuple[str, str]]:
     """Sheet names paired with their part, in the workbook's own order."""
-    workbook = ElementTree.fromstring(_read_member(archive, "xl/workbook.xml"))
+    workbook = ElementTree.fromstring(
+        _read_member(archive, "xl/workbook.xml", max_member_bytes)
+    )
     relations = ElementTree.fromstring(
-        _read_member(archive, "xl/_rels/workbook.xml.rels")
+        _read_member(archive, "xl/_rels/workbook.xml.rels", max_member_bytes)
     )
     targets = {
         node.get("Id"): node.get("Target")
@@ -141,18 +187,23 @@ def _cell_value(cell: ElementTree.Element, shared: list[str]) -> str:
     return text
 
 
-def read_sheets(path: Path) -> dict[str, list[list[str]]]:
+def read_sheets(
+    path: Path, max_member_bytes: int = MAX_MEMBER_BYTES
+) -> dict[str, list[list[str]]]:
     """Every sheet as a rectangular grid of strings, in workbook order."""
     if not zipfile.is_zipfile(path):
         raise XlsxRefusal(f"{path.name} is not a spreadsheet archive")
     sheets: dict[str, list[list[str]]] = {}
     with zipfile.ZipFile(path) as archive:
-        names = {member.filename for member in _checked_members(archive)}
-        shared = _shared_strings(archive, names)
-        for sheet_name, part in _sheet_targets(archive):
+        names = {
+            member.filename
+            for member in _checked_members(archive, max_member_bytes)
+        }
+        shared = _shared_strings(archive, names, max_member_bytes)
+        for sheet_name, part in _sheet_targets(archive, max_member_bytes):
             if part not in names:
                 raise XlsxRefusal(f"sheet {sheet_name!r} names a missing part {part!r}")
-            root = ElementTree.fromstring(_read_member(archive, part))
+            root = ElementTree.fromstring(_read_member(archive, part, max_member_bytes))
             rows: list[list[str]] = []
             for row in root.iter(f"{NAMESPACE}row"):
                 cells: dict[int, str] = {}

@@ -78,13 +78,48 @@ class RefusalTests(FixtureCase):
             xlsx.read_sheets(self.made["not-a-spreadsheet.xlsx"])
         self.assertIn("not a spreadsheet archive", str(caught.exception))
 
-    def test_an_over_size_member_refuses_before_it_is_read(self):
-        original = xlsx.MAX_MEMBER_BYTES
-        xlsx.MAX_MEMBER_BYTES = 16
-        self.addCleanup(setattr, xlsx, "MAX_MEMBER_BYTES", original)
+    def test_an_over_size_member_refuses_by_name(self):
+        # The cap is a parameter, so lowering it for one call cannot leak into
+        # any other test the way a mutated module global would.
         with self.assertRaises(xlsx.XlsxRefusal) as caught:
-            xlsx.read_sheets(self.made["benign.xlsx"])
+            xlsx.read_sheets(self.made["benign.xlsx"], max_member_bytes=16)
         self.assertIn("over the", str(caught.exception))
+
+    def test_the_size_cap_holds_when_the_declared_size_understates_the_member(self):
+        """The cap must bind to bytes delivered, not to a number the archive wrote.
+
+        `file_size` comes from the container, so an archive that understates it
+        walks past a check made only against the declaration. Reading one byte
+        past the cap catches it whatever the header says.
+        """
+        import zipfile
+        target = Path(self.tmp.name) / "understated.xlsx"
+        with zipfile.ZipFile(self.made["benign.xlsx"]) as source:
+            members = {m.filename: source.read(m.filename) for m in source.infolist()}
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
+            for name, payload in members.items():
+                info = zipfile.ZipInfo(name)
+                out.writestr(info, payload)
+        # Rewrite every declared size to zero, leaving the payloads intact.
+        raw = bytearray(target.read_bytes())
+        with zipfile.ZipFile(target) as check:
+            sizes = {m.file_size for m in check.infolist() if m.file_size}
+        import struct
+        for size in sizes:
+            raw = raw.replace(struct.pack("<I", size), struct.pack("<I", 0))
+        target.write_bytes(bytes(raw))
+        with self.assertRaises(xlsx.XlsxRefusal) as caught:
+            xlsx.read_sheets(target, max_member_bytes=8)
+        message = str(caught.exception)
+        self.assertTrue(
+            "delivered more than" in message or "not readable" in message,
+            f"a lying archive must refuse, not import: {message}",
+        )
+
+    def test_an_entity_declaration_refuses_before_the_parser_expands_it(self):
+        with self.assertRaises(xlsx.XlsxRefusal) as caught:
+            xlsx.read_sheets(self.made["entity-declaration.xlsx"])
+        self.assertIn("entity declaration", str(caught.exception))
 
     def test_a_shared_string_index_that_is_absent_refuses(self):
         import zipfile

@@ -173,6 +173,26 @@ def too_many_members(target: Path) -> Path:
     return target
 
 
+def entity_declaration(target: Path) -> Path:
+    """A well-formed archive whose sheet part declares expanding entities."""
+    bomb = (
+        '<?xml version="1.0"?>\n'
+        "<!DOCTYPE worksheet [\n"
+        '  <!ENTITY a "AAAAAAAAAA">\n'
+        '  <!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">\n'
+        '  <!ENTITY c "&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;">\n'
+        "]>\n"
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        "<sheetData><row r=\"1\"><c r=\"A1\" t=\"inlineStr\"><is><t>&c;</t></is></c>"
+        "</row></sheetData></worksheet>"
+    )
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("xl/workbook.xml", _workbook_xml(["Cases"]))
+        archive.writestr("xl/_rels/workbook.xml.rels", _rels_xml(1))
+        archive.writestr("xl/worksheets/sheet1.xml", bomb)
+    return target
+
+
 def not_a_spreadsheet(target: Path) -> Path:
     """A file that is not a zip archive at all."""
     target.write_bytes(b"this is not a spreadsheet")
@@ -186,6 +206,7 @@ BUILDERS = {
     "zip-bomb.xlsx": zip_bomb,
     "traversal-member.xlsx": traversal_member,
     "too-many-members.xlsx": too_many_members,
+    "entity-declaration.xlsx": entity_declaration,
     "not-a-spreadsheet.xlsx": not_a_spreadsheet,
 }
 

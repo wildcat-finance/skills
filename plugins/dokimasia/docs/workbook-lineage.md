@@ -50,6 +50,19 @@ is bounded so an archive cannot spend the reader's memory. A member name that
 is absolute or holds a parent-directory segment refuses. A file that is not a
 zip archive refuses.
 
+The size cap binds to bytes delivered, not to the size the archive declares for
+itself. A declared size is written by whoever built the container, so a check
+made only against it is a check the container can understate its way past. The
+reader asks for one byte more than the cap allows and refuses when that byte
+arrives, which holds whatever the header claims.
+
+A part carrying a document type or entity declaration refuses before anything
+parses it. The XML parser in the standard library expands internal entities, so
+a few hundred bytes of nested definitions can cost gigabytes during a parse —
+a cost the archive caps do not bound, because the expansion happens after the
+bytes are read. A spreadsheet part never needs such a declaration, so refusing
+one closes the class outright rather than trying to bound its cost.
+
 No formula is evaluated. Where a cell holds one, the value read is the one the
 producing application cached, and the formula text is never consulted. A fixture
 carries a formula whose cached value differs from what evaluating it would give,

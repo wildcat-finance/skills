@@ -185,6 +185,7 @@ def check() -> list[str]:
         "zip-bomb.xlsx": "ratio cap",
         "traversal-member.xlsx": "parent-directory segment",
         "too-many-members.xlsx": "member",
+        "entity-declaration.xlsx": "entity declaration",
         "not-a-spreadsheet.xlsx": "not a spreadsheet archive",
     }
     with tempfile.TemporaryDirectory() as raw:
