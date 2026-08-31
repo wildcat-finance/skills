@@ -24,6 +24,13 @@
       "kind": "suite",
       "script": "plugins/alexandria/tests"
     },
+    "anamnesis-suite": {
+      "title": "Anamnesis suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/anamnesis/tests", "-t", "plugins/anamnesis"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/anamnesis/tests"
+    },
     "ariadne-suite": {
       "title": "Ariadne suite",
       "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/ariadne/tests", "-t", "plugins/ariadne"],
@@ -224,6 +231,7 @@
       "checks": []
     },
     "alexandria": {"title": "Alexandria plugin", "checks": ["alexandria-suite"]},
+    "anamnesis": {"title": "Anamnesis plugin", "checks": ["anamnesis-suite"]},
     "ariadne": {"title": "Ariadne plugin", "checks": ["ariadne-suite"]},
     "berean": {"title": "Berean plugin", "checks": ["berean-suite"]},
     "brevitas": {"title": "Brevitas plugin", "checks": ["brevitas-suite"]},
@@ -249,6 +257,7 @@
     "marketplace": ["root", "repo-lints"],
     "ci": ["root"],
     "alexandria": ["repo-lints"],
+    "anamnesis": ["repo-lints"],
     "ariadne": ["repo-lints"],
     "berean": ["repo-lints"],
     "brevitas": ["repo-lints", "root"],
@@ -306,6 +315,7 @@
     {"path": "tests/check-map-v1.json", "scope": "root"},
     {"path": "tests/promise_machine_coverage.json", "scope": "promise-machine"},
     {"path": "plugins/alexandria", "scope": "alexandria"},
+    {"path": "plugins/anamnesis", "scope": "anamnesis"},
     {"path": "plugins/ariadne", "scope": "ariadne"},
     {"path": "plugins/berean", "scope": "berean"},
     {"path": "plugins/brevitas", "scope": "brevitas"},

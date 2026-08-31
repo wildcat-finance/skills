@@ -1,0 +1,32 @@
+{
+  "name": "anamnesis",
+  "version": "0.1.0",
+  "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/anamnesis",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "keywords": [
+    "audit",
+    "findings",
+    "remediation",
+    "corpus",
+    "provenance",
+    "rights",
+    "release",
+    "wildcat"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Anamnesis",
+    "shortDescription": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+    "longDescription": "An audit finding and the change that answered it are usually recorded once, in one report, and then left where they fell. Anamnesis keeps them: it admits a source only with an explicit rights basis, preserves the producer's own bytes and identifiers unchanged, and curates a graph in which submissions, adjudicated findings, occurrences, remediation attempts and verifications stay separate records joined by many-to-many edges. Proposed, applied, released, deployed, reverted and verified never imply one another, unknown is never collapsed into none, and every release rebuilds to the same digest or refuses. Elenchus may read a historical analogue without inheriting its verdict, and Synkrisis may read a checked cohort projection without taking custody of the source.",
+    "developerName": "Wildcat Labs",
+    "category": "Developer Tools",
+    "capabilities": [],
+    "defaultPrompt": "Use $anamnesis to admit an audit source with its rights basis and curate its findings and remedies into a released corpus."
+  },
+  "license": "Apache-2.0"
+}

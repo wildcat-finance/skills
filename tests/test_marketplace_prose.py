@@ -54,6 +54,7 @@ MARKETPLACE_CONTEXT_START = "<!-- marketplace-context:start -->"
 MARKETPLACE_CONTEXT_END = "<!-- marketplace-context:end -->"
 IMMUTABLE_CONTEXT_PREFIXES = (
     ("audit",),
+    ("specimens",),
     ("skills", "fizz"),
     ("skills", "solidity-auditor"),
     ("skills", "x-ray"),
@@ -105,10 +106,13 @@ def marketplace_frontiers(path):
 def mutable_marketplace_surface(plugin_root, path):
     """Whether a context block is first-party prose that may track now.
 
-    Audit logs are historical evidence. The three Pashov roots are
-    upstream-owned distribution copies. Their recorded marketplace context is
-    allowed to describe the installation moment rather than being rewritten
-    when the first-party landing page advances.
+    Audit logs are historical evidence, and so are preserved specimens: a
+    specimen that quotes a marketplace-context marker is recording that the
+    marker was there, and rewriting it to track the current landing page would
+    destroy the thing it preserves. The three Pashov roots are upstream-owned
+    distribution copies. Their recorded marketplace context is allowed to
+    describe the installation moment rather than being rewritten when the
+    first-party landing page advances.
     """
     relative = path.relative_to(plugin_root)
     return not any(
@@ -275,7 +279,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 25)
+        self.assertEqual(len(governed), 26)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
