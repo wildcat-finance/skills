@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1032,
-  "total_bytes": 22134361,
+  "file_count": 1033,
+  "total_bytes": 22170648,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -63,7 +63,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "d007e903b12f375d50e9c89b8d6f3935d3f9447ace78a1e027755fddabd413fa",
+      "sha256": "60285e7888ced496f5417f307d10700758e609c2f26eaa6b92340223e80f3954",
       "source": null
     },
     {
@@ -73,9 +73,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 14500,
+      "bytes": 16716,
       "path": "AGENTS.md",
-      "sha256": "2cecf00a2b88474ab0ad9c3eab2fe713d637772a592d501760bfe52107781ad0",
+      "sha256": "0536ba49e6d7b6f743a0d36efd19096517f5b6be1a0afe6a316144b1ca5fdf38",
       "source": "AGENTS.md"
     },
     {
@@ -125,6 +125,12 @@
       "path": "docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md",
       "sha256": "ced2f1d349a2adb63bd5dfed98343233b1220d827ee6ab4a2573506b484ecb54",
       "source": "docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"
+    },
+    {
+      "bytes": 6623,
+      "path": "docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md",
+      "sha256": "b712d5155af7b81619b864e4b811a6b8fbf497b5779514e8063e21b4a1a67753",
+      "source": "docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md"
     },
     {
       "bytes": 3247,
@@ -2137,15 +2143,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 58009,
+      "bytes": 59332,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "e369592112f344117dfc227d93b1910fd54c0d95b21de4bbc21b70d726befb40",
+      "sha256": "8e7265aa504df9792c88ef15af0109f4e2489e16bed33d808d0e933005c31397",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 68730,
+      "bytes": 71167,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "3416024dbbb3f8c120f7e9117a3f1f9f2949fbc6ababe1f642f880f74a906e62",
+      "sha256": "3bf9cf49cdeb86527621b247cbb8a21962c4aef4cbd515f5143ca8ff564ab912",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -2173,15 +2179,15 @@
       "source": "plugins/hexaemeron/skills/fiat/references/plugin-currency.md"
     },
     {
-      "bytes": 3879,
+      "bytes": 4221,
       "path": "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
-      "sha256": "10700f87b0e18c4109269de8df807d456cc04d08df17d0d10e4973cbd67c885a",
+      "sha256": "9b77d62a8a6da92446bffac2b1f20c1ee4ae793e8190e699ae53939787b015e7",
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 35065,
+      "bytes": 36609,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "41250a37c499c1b96402dbfcebabce765ed9436fb1fca34e99eba14e1ee376f2",
+      "sha256": "126f68350cecde9997d0e0c7d8ea11a7f14660244be7647e5661d66963bc977a",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
@@ -2209,9 +2215,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 556505,
+      "bytes": 578307,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "823c72a11907b6610171188f561cb7d06bfe96770f102cd550d861fdf3e6efce",
+      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {

@@ -548,6 +548,18 @@ import time
 
 args = sys.argv[1:]
 mode = os.environ.get("FAKE_GH_MODE", "valid")
+# The filing contract every fixture issue satisfies unless a case replaces it.
+# Written here rather than in each test so a case that is not about the contract
+# does not have to restate it.
+DEFAULT_ISSUE_BODY = (
+    "A fixture issue.\\n"
+    "\\n"
+    "Fiat-Required: 1\\n"
+    "\\n"
+    "```carryover\\n"
+    "none | none | this fixture carries nothing forward\\n"
+    "```\\n"
+)
 if os.environ.get("FAKE_GH_LOG"):
     with open(os.environ["FAKE_GH_LOG"], "a", encoding="utf-8") as log:
         log.write(json.dumps(args) + "\\n")
@@ -566,6 +578,20 @@ path = args[-1]
 if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
     print(json.dumps({"full_name": repository}))
+    raise SystemExit(0)
+issue = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/issues/(?P<number>[0-9]+)", path)
+if issue:
+    url = "https://github.com/%s/issues/%s" % (issue.group("repo"), issue.group("number"))
+    bodies = json.loads(os.environ.get("FAKE_GH_ISSUES", "{}"))
+    if mode == "issue-missing":
+        raise SystemExit(4)
+    if url in bodies:
+        body = bodies[url]
+    else:
+        body = os.environ.get("FAKE_GH_ISSUE_BODY", DEFAULT_ISSUE_BODY)
+    if mode == "issue-body-not-text":
+        body = 17
+    print(json.dumps({"number": int(issue.group("number")), "body": body}))
     raise SystemExit(0)
 pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
 if pull:
@@ -684,11 +710,22 @@ print(json.dumps(payload))
             fh.write(content)
         return name
 
-    def write_run_pr(self, carried="- nothing outstanding\n"):
-        """The run-level pull request body the integrate receipt reads."""
+    CARRYOVER_NONE_ROW = "none | none | this run leaves nothing unfinished\n"
+
+    def carryover_block(self, rows=None):
+        """One triage block in the shape `done integrate` requires."""
+        return "```carryover\n" + (rows or self.CARRYOVER_NONE_ROW) + "```\n"
+
+    def write_run_pr(self, carried=None, rows=None):
+        """The run-level pull request body the integrate receipt reads.
+
+        `rows` gives the triage rows; `carried` replaces the whole section body,
+        which is how a case exercises a section that answers nothing.
+        """
         body = "Run body.\n"
-        if carried is not None:
-            body += "\n## Carried forward\n\n" + carried
+        section = self.carryover_block(rows) if carried is None else carried
+        if section is not None:
+            body += "\n## Carried forward\n\n" + section
         return self.write(os.path.join(".hexaemeron", "run-pr.md"), body)
 
     def init(self, topic="test topic", task_issue=None, base=None):

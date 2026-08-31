@@ -307,6 +307,16 @@ links allocate a job and prepare a hand-off; they do not prove that a browser
 chat can edit, sign, or publish a local repository change. Keep the chosen
 local harness open for the whole Fiat run.
 
+Not every issue earns a run. An issue body declares `Fiat-Required: 1` when the
+work needs one and `Fiat-Required: 0` when one independent pull request will do,
+and it disposes of every item it leaves for somebody else in a `carryover`
+block. `hexctl init` reads both from a GitHub task issue and refuses a `0`
+before it creates any branch, so an allocated job that turns out to be a
+one-line fix becomes a pull request rather than a runbook.
+[AGENTS.md](./AGENTS.md) states the shape and
+[ADR-067](./docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md) states
+why.
+
 You are the external contributor, not Shoggoth. Keep your own Git author,
 signing identity, and GitHub account. Shoggoth provenance supplements that
 authorship; it never authorises use of a private Shoggoth identity. Fiat stores
