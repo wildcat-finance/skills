@@ -20,6 +20,10 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from dokimasia_lib import inventory as inventory_lib  # noqa: E402
+from dokimasia_lib import paths as paths_lib  # noqa: E402
+
 PLUGIN = Path(__file__).resolve().parents[1]
 REPOSITORY = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
@@ -37,7 +41,6 @@ REPORT_COMMAND = (
 
 # Every verb the completed design owes, and the runbook step that owes it.
 UNBUILT_VERBS = {
-    "inventory": (2, "Compile the route, action and guard inventory."),
     "workbook": (3, "Import a reviewed spreadsheet into a closed record."),
     "reconcile": (4, "Assign exactly one disposition to every scoped item."),
     "demonstrate": (5, "Run one complete scrutiny and emit its record."),
@@ -120,12 +123,22 @@ def safe_report_path(supplied: str) -> Path:
     return resolved
 
 
-def write_report(path: Path) -> None:
+def write_report_bytes(path: Path, body: str) -> None:
+    """Write any body to a checked path through a staging file."""
+    if len(body.encode("utf-8")) > REPORT_BYTES_MAX * 64:
+        raise SelfTestError("the record exceeds its declared byte cap")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    staging = path.parent / f".{path.name}.{os.getpid()}.tmp"
+    staging.write_text(body, encoding="utf-8")
+    os.replace(staging, path)
+
+
+def write_report(path: Path, criterion: str = None, command: str = None) -> None:
     body = json.dumps(
         {
             "candidate": CANDIDATE,
-            "command": REPORT_COMMAND.format(report=path),
-            "criterion": CRITERION,
+            "command": command or REPORT_COMMAND.format(report=path),
+            "criterion": criterion or CRITERION,
             "exit": 0,
             "schema": REPORT_SCHEMA,
             "unit": "boolean",
@@ -169,6 +182,50 @@ def refuse(verb: str) -> int:
     return NOT_BUILT
 
 
+INVENTORY_CANDIDATE = "inventory-first"
+INVENTORY_CRITERION = "inventory-determinism"
+FIXTURE_ROOT = PLUGIN / "tests" / "fixtures" / "app"
+
+
+def inventory_command(root: str | None, report: str | None, check: bool) -> int:
+    """Compile an inventory, or prove the compiler holds its own contract."""
+    try:
+        if check:
+            failures = inventory_lib.check(paths_lib.declared_root(FIXTURE_ROOT))
+            if failures:
+                sys.stderr.write(
+                    "dokimasia inventory --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in failures)
+                )
+                return REFUSED
+            if report is not None:
+                write_report(
+                    safe_report_path(report),
+                    INVENTORY_CRITERION,
+                    "python3 plugins/dokimasia/scripts/dokimasia.py inventory --check",
+                )
+            sys.stdout.write(
+                "dokimasia inventory: check clean; two compiles agree and "
+                f"{len(inventory_lib.refusal_proofs())} declared refusals fired\n"
+            )
+            return 0
+        if root is None:
+            raise SelfTestError("inventory needs --root <checkout> or --check")
+        resolved = paths_lib.declared_root(root)
+        items = inventory_lib.compile_inventory(resolved)
+        record_body = inventory_lib.record(items, {"label": str(root)})
+        body = json.dumps(record_body, indent=2, sort_keys=True) + "\n"
+        if report is not None:
+            write_report_bytes(safe_report_path(report), body)
+        else:
+            sys.stdout.write(body)
+        return 0
+    except (SelfTestError, paths_lib.PathRefusal, inventory_lib.InventoryError,
+            OSError, ValueError) as error:
+        sys.stderr.write(f"dokimasia inventory refused: {error}\n")
+        return REFUSED
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dokimasia",
@@ -187,6 +244,13 @@ def build_parser() -> argparse.ArgumentParser:
         "selftest", help="Prove the packaging, the contract and the ledger agree."
     )
     selftest_parser.add_argument("--report", default=None)
+    inventory_parser = subparsers.add_parser(
+        "inventory",
+        help="Compile a pinned checkout into a closed, digest-bound inventory.",
+    )
+    inventory_parser.add_argument("--root", default=None)
+    inventory_parser.add_argument("--report", default=None)
+    inventory_parser.add_argument("--check", action="store_true")
     for verb, (step, description) in UNBUILT_VERBS.items():
         subparsers.add_parser(verb, help=f"{description} Not built; step {step} owes it.")
     return parser
@@ -200,6 +264,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.verb == "selftest":
         return selftest(args.report)
+    if args.verb == "inventory":
+        return inventory_command(args.root, args.report, args.check)
     return refuse(args.verb)
 
 

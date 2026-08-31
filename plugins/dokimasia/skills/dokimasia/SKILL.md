@@ -72,7 +72,8 @@ space, which is unbounded and which no static compile enumerates.
 | demonstrate | runs one complete scrutiny and emits its digest-bound record |
 | selftest | proves the packaging and the contract agree, and emits its report |
 
-Only `selftest` is built. Every other verb refuses with the step that owes it.
+`selftest` and `inventory` are built. Every other verb refuses with the step
+that owes it.
 
 ## Boundaries
 
@@ -88,22 +89,20 @@ symlink.
 A person owns every disposition. The skill may propose one and may never mark
 an item covered on its own.
 
-## Promises, and why three of them are not here
+## Promises, and why two of them are not here
 
-`dokimasia-scaffold-identity` below is the only promise this version can keep,
-so it is the only one declared. A promise with no case that could support it is
-the overclaim the root law refuses.
+`dokimasia-scaffold-identity` and `dokimasia-source-inventory` below are the
+promises this version keeps. A promise with no case that could support it is the
+overclaim the root law refuses, so nothing else is declared.
 
-Three more are named here so the runbook has a real interface to build against,
+Two more are named here so the runbook has a real interface to build against,
 and so a reader can tell an unbuilt transition from one nobody thought of.
-`dokimasia-source-inventory` will establish that one pinned checkout compiled to
-one closed, digest-bound inventory under declared caps; step 2 owes it.
 `dokimasia-workbook-lineage` will establish that a reviewed spreadsheet imported
 without losing a row's id, status, comment, evidence or source label; step 3
 owes it. `dokimasia-disposition-closure` will establish that every scoped item
 carried exactly one disposition against an exact inventory and workbook digest
-pair; step 4 owes it. None of the three is declared as a contract section,
-because this version establishes none of them.
+pair; step 4 owes it. Neither is declared as a contract section, because this
+version establishes neither.
 
 ## Promise Machine contract
 
@@ -117,4 +116,16 @@ because this version establishes none of them.
 - Consequence: 1
 - Refuses: A version that differs between any two declarations, a drifted installed law copy, an undeclared verb, a verb that answers instead of refusing, an unsafe or oversized report path, and a report the design checker cannot consume.
 - Recovery: Read the named disagreement, restore the exact bytes or the declared version, and rerun `dokimasia selftest`.
+- Exceptions: none
+
+### dokimasia-source-inventory
+
+- Promise: A successful `dokimasia inventory` establishes that one declared root compiled to one closed, digest-bound inventory of page routes, API handlers, server actions and named guards under the stated rules and caps, and that two compiles of the same tree produce the same digest.
+- Evidence: The resolved declared root, bounded non-symlink reads of every source file under it, the scanner's token stream with comments and string bodies excluded from recognition, the sorted item set, the declared caps, the canonical digest over schema, rules, caps and items, and the six exercised refusals.
+- Evidence classes: checked, recorded
+- Boundary: The record establishes what the declared rules recognised in the tree that was read. It does not establish that the rules are complete for a framework, that an item is reachable at runtime, that a route renders, or that anything was tested. Client-side gates are found by name, so a gate the declared list does not name is absent from the inventory rather than proved absent from the application.
+- Authorises: Using the inventory as the coverage denominator, and opening the runbook step that imports a reviewed workbook against it.
+- Consequence: 2
+- Refuses: A symlink root, a root that is not a directory, an absolute or parent-directory path, a path escaping the declared root, a file over the byte cap, a tree over the depth cap, a tree over the file-count cap, and a compile whose two runs disagree.
+- Recovery: Read the refusal, which names the rule or cap and the path that breached it, correct the input or the declared root, and rerun `dokimasia inventory`.
 - Exceptions: none
