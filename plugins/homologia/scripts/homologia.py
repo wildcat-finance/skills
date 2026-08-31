@@ -264,18 +264,40 @@ def _reject_constant(value: str) -> None:
     _refuse("HOM-CHECK-JSON", value, "replace non-finite JSON numbers with declared strings")
 
 
+def _reject_unpaired_surrogates(value: object, subject: str) -> None:
+    pending = [value]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, str):
+            try:
+                item.encode("utf-8", errors="strict")
+            except UnicodeEncodeError:
+                _refuse(
+                    "HOM-CHECK-JSON",
+                    subject,
+                    "replace unpaired Unicode surrogates with valid Unicode scalar values",
+                )
+        elif isinstance(item, dict):
+            pending.extend(item.keys())
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+
+
 def _parse_json(data: bytes, subject: str) -> object:
     try:
         text = data.decode("utf-8", errors="strict")
-        return json.loads(
+        value = json.loads(
             text,
             object_pairs_hook=_pairs_no_duplicates,
             parse_constant=_reject_constant,
         )
     except Refusal:
         raise
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except (UnicodeDecodeError, ValueError, RecursionError):
         _refuse("HOM-CHECK-JSON", subject, "supply strict UTF-8 JSON with no duplicate keys")
+    _reject_unpaired_surrogates(value, subject)
+    return value
 
 
 def _scale(value: object, subject: str) -> dict[str, Any]:
@@ -438,6 +460,18 @@ def _canonical_json(value: object) -> bytes:
     ).encode("utf-8")
 
 
+def _refuse_output_input_alias(path: Path, sources: list[FileRead]) -> None:
+    try:
+        named = path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError:
+        _refuse("HOM-CHECK-PATH", "output", "make the output path readable and retry")
+    for source in sources:
+        if named.st_dev == source.device and named.st_ino == source.inode:
+            _refuse("HOM-CHECK-PATH", "output", "choose a destination distinct from every input")
+
+
 def _atomic_write(path: Path, data: bytes, *, root: Path, subject: str) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -585,6 +619,7 @@ def check_manifest(
 
     for source in sources:
         _assert_named_identity(source, source.path.relative_to(repository_root).as_posix())
+    _refuse_output_input_alias(output_path, sources)
     record = {
         "manifest": {
             "path": manifest_path.relative_to(repository_root).as_posix(),

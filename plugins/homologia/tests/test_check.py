@@ -210,6 +210,56 @@ class CheckTests(unittest.TestCase):
         )
         self.assert_refuses("HOM-CHECK-JSON")
 
+    def test_unpaired_unicode_escape_refuses_stably_and_preserves_output(self):
+        manifest = self.manifest()
+        manifest["pair"]["chain"]["function"] = "\ud800"
+        self.write_manifest(manifest)
+        self.output_path.parent.mkdir(parents=True)
+        self.output_path.write_bytes(b"sentinel\n")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "check",
+                "--manifest",
+                "case/manifest.json",
+                "--out",
+                "build/checked.json",
+            ],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, HOMOLOGIA.INPUT_REFUSED)
+        self.assertEqual(json.loads(result.stderr)["code"], "HOM-CHECK-JSON")
+        self.assertEqual(self.output_path.read_bytes(), b"sentinel\n")
+
+    def test_oversized_json_integer_refuses_stably_and_preserves_output(self):
+        manifest = self.manifest_path.read_text(encoding="utf-8")
+        manifest = manifest.replace('"decimals": 18', '"decimals": ' + "1" * 5000)
+        self.manifest_path.write_text(manifest, encoding="utf-8")
+        self.output_path.parent.mkdir(parents=True)
+        self.output_path.write_bytes(b"sentinel\n")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "check",
+                "--manifest",
+                "case/manifest.json",
+                "--out",
+                "build/checked.json",
+            ],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, HOMOLOGIA.INPUT_REFUSED)
+        self.assertEqual(json.loads(result.stderr)["code"], "HOM-CHECK-JSON")
+        self.assertEqual(self.output_path.read_bytes(), b"sentinel\n")
+
     def test_non_canonical_input_integer_refuses(self):
         vector = self.vectors()[0]
         vector["inputs"]["principal"] = "01"
@@ -317,6 +367,18 @@ class CheckTests(unittest.TestCase):
         with self.assertRaises(HOMOLOGIA.Refusal) as raised:
             HOMOLOGIA.check_manifest(
                 "case/manifest.json", "case/manifest.json", root=self.root
+            )
+        self.assertEqual(raised.exception.code, "HOM-CHECK-PATH")
+        self.assertEqual(self.manifest_path.read_bytes(), original)
+
+    def test_output_case_alias_cannot_replace_the_manifest_input(self):
+        alias = self.root / "case" / "MANIFEST.JSON"
+        if not alias.exists():
+            self.skipTest("filesystem is case-sensitive")
+        original = self.manifest_path.read_bytes()
+        with self.assertRaises(HOMOLOGIA.Refusal) as raised:
+            HOMOLOGIA.check_manifest(
+                "case/manifest.json", "case/MANIFEST.JSON", root=self.root
             )
         self.assertEqual(raised.exception.code, "HOM-CHECK-PATH")
         self.assertEqual(self.manifest_path.read_bytes(), original)

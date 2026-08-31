@@ -1,0 +1,17 @@
+## Step 1, round 1 -- 2026-08-31T11:57:45Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | high | plugins/homologia/scripts/homologia.py:622 | On a case-insensitive filesystem, an output spelling that aliases a manifest or vector input bypassed lexical path equality and atomically replaced that input. | fixed in this commit |
+| S1-R1-02 | medium | plugins/homologia/scripts/homologia.py:287 | JSON-escaped unpaired surrogates and oversized integer tokens escaped the stable refusal boundary as uncaught `UnicodeEncodeError` or `ValueError`; both failures preserved an existing output. | fixed in this commit |
+| S1-R1-03 | low | .agents/skills/promise-machine/runtime/plugins/homologia/skills/homologia/EVOLUTION.md:16 | The installed-runtime ledger linked to an absent `../../tests/test_check.py`, so the first Hypomnema pass exited 1. | fixed in this commit |
+
+Leads not pursued: Concurrent parent-directory symlink substitution between lexical inspection and descriptor open or output replacement was not reproduced; the declared step covers existing symlinks and named-file replacement, not an adversarial directory owner. The aggregate check may read at most one extra per-file-capped input before refusal, but it refuses before JSON decoding and output as declared. Elenchus remained inconclusive because the source-bound runbook supplies the unittest command but no report format or report file; no substitute runner was used.

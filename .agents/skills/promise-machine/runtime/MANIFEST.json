@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1042,
-  "total_bytes": 22199098,
+  "total_bytes": 22200383,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3361,15 +3361,15 @@
       "source": "plugins/homologia/references/vectors-v1.schema.json"
     },
     {
-      "bytes": 25330,
+      "bytes": 26601,
       "path": "plugins/homologia/scripts/homologia.py",
-      "sha256": "0dfd1d1b4b1bf420d3925e490ba13985eefda5fe3b1ce919e60cbe20b97523ec",
+      "sha256": "54cd500ab89d641942e24c64db171dfbbed4b7459a622f195f23ae5eff5ce98e",
       "source": "plugins/homologia/scripts/homologia.py"
     },
     {
-      "bytes": 2696,
+      "bytes": 2710,
       "path": "plugins/homologia/skills/homologia/EVOLUTION.md",
-      "sha256": "fc0bd929ca8821c76ae1d3d292eec3bff54d27eabd39998c9c3a32322edf7453",
+      "sha256": "9c25daa7da30ca2d235ebd52d8dec72731f0d6cc34a8bbdd661971b3bf25c679",
       "source": "plugins/homologia/skills/homologia/EVOLUTION.md"
     },
     {
