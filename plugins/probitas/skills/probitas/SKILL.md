@@ -256,3 +256,15 @@ dossier pass.
 - Refuses: Shipping a dossier after any gate fails, hiding a gap, allowing inferred-address evidence into a conclusion or presenting the document as Wildcat approval.
 - Recovery: Fix the evidence or dossier named by the failed gate, preserve unresolved gaps and rerun all five gates before release.
 - Exceptions: none
+
+### probitas-statement-emission
+
+- Promise: A successful `verify --statement-out` emits a canonical unsigned in-toto Statement v1 only when all five gates passed, with one statement-level subject array binding the exact checked dossier and evidence bytes by SHA-256; absence of that statement authorises nothing.
+- Evidence: The exact dossier and evidence bytes read once, their SHA-256 digests and byte counts, the five named passed gate results, canonical statement bytes and successful atomic output.
+- Evidence classes: recorded, checked, recomputed
+- Boundary: The statement records the pair binding and gate results. It does not sign, verify a signature or upgrade `verify` into release authority; `probitas-dossier-verification` keeps that authority, and Ariadne gates 2 and 5 remain unchecked for this unregistered predicate type.
+- Authorises: Hand-off of the unsigned statement bytes for Ariadne core-gate inspection or downstream cosign signing without strengthening the dossier's evidence claims.
+- Consequence: 1
+- Refuses: Emitting after any gate fails, naming stdout or either input as the output, exceeding Ariadne's bounded-input limit, or treating a missing statement or unchecked signature as authority.
+- Recovery: Repair the failed dossier or evidence, choose a distinct file output, rerun all five gates and retain only the successful replacement.
+- Exceptions: none
