@@ -386,6 +386,18 @@ runtime manifest or the source-bound specimen corpus by its schema identity.
 hostile and critical-vector outcomes. `self-test` performs the checked-in
 complete-fixture round trip without writing a file.
 
+`measure --manifest --profiles --output` records the fixed corpus under four
+unlike external profiles before evidence is anchored. A live record also needs
+an explicit `--budget-usd` and either `--credential-file` or the
+`NOEMA_OPENROUTER_KEY_FILE` path variable. Once the corpus carries checked
+evidence, the same command verifies the complete anchor and replays its exact
+measurement bytes without an external call or spend. `emit-evaluation
+--manifest --profiles --output` publishes the deterministic 16-prompt packet.
+`run-evaluation --packet --manifest --profiles --output` is the separately
+authorised live 32-call boundary; it likewise requires an explicit budget.
+`tally-evaluation --packet --answers --output` performs no external call and
+rederives the fixed 16 source/Noema family pairs.
+
 All input leaves must be regular files. Repository-bound reads open and recheck
 every ancestor relative to retained directory descriptors. Module resolution
 opens one real module directory, reads only digest-requested leaves relative to
@@ -514,6 +526,10 @@ Version 1 applies every limit before returning a partial graph or result:
 | one specimen artifact inventory | 16,384 files |
 | one specimen artifact inventory | 1,048,576 bytes |
 | one derived output | 1,048,576 bytes |
+| external profiles | 8 |
+| one adapter input / stdout / stderr | 1,048,576 / 65,536 / 8,192 bytes |
+| one adapter timeout | 600 seconds |
+| evaluation packet | 4,194,304 bytes, 8 cases and 16 prompts |
 
 The graph-node count includes source records, term nodes, each embedded module
 and every module import, subtype, signature and definition declaration.
@@ -579,6 +595,10 @@ Stable refusal families are:
 | `NOE-E-MUTATION` | a declared hostile input leaves its graph or checked observation unchanged | repair the counterexample so it exercises the named semantic boundary |
 | `NOE-E-SELF_TEST` | checked-in demonstration no longer satisfies its fixed outcome | repair or regenerate the fixture before relying on the prototype |
 | `NOE-E-EVALUATION` | packet, profile, family, case or answer mismatch | restore the exact isolated cohort and retally |
+| `NOE-E-ADAPTER` | executable, environment, endpoint, response, timeout or identity boundary | restore the digest-bound closed invocation or record the profile unknown |
+| `NOE-E-BUDGET` | absent spend authority, exhausted ceiling or uncertain accounting | inspect the append-only reservation ledger before authorising a fresh run |
+| `NOE-E-MEASURE` | baseline, component, cohort, gate or observation mismatch | restore the same-profile source-first measurement and revalidate it |
+| `NOE-E-TOKENIZER` | unavailable identity or impossible provider token count | retain the profile as unknown or repeat its exact acquired endpoint |
 | `NOE-E-UNIMPLEMENTED` | operation reserved for a later prototype step | finish and verify its declared step |
 
 A refusal returns no partial graph, tape, slice, decision or evidence file.
@@ -587,30 +607,69 @@ and safe exit available when their own inputs validate.
 
 ## Measurement and family evaluation
 
-Measurement records bytes and real tokenizer counts separately for Markdown
-source, canonical `.noe`, full projection, operation slice, literals, kernel,
-reachable definitions, first use, steady state and corpus amortisation. Source
-and projections use the same exact profile. Missing exact OpenAI, Anthropic,
-Google or open-weight profiles remain `unknown`; heuristic counts do not
-replace them.
+Measurement records bytes and endpoint-reported token deltas separately for
+Markdown source, canonical `.noe`, full projection, operation slice, literals,
+kernel, reachable definitions, alias dictionary, first use, steady state and
+corpus amortisation. Sequence zero measures the empty-message transport; all
+four Markdown observations follow before any derived representation. Each
+content count subtracts that exact endpoint's transport value. Source and
+projections therefore use one request shape and one exact profile, while the
+private vocabulary digest remains an explicit unknown. These are real provider
+accounting values, not heuristic local estimates or a claim that a private
+token vocabulary was recovered.
 
 The fixed gates are first use at most 70% of relevant Markdown, steady state at
 most 40%, complete canonical Noema at most 55% of the declared source corpus,
 and 100% for critical permission/prohibition, authority, negation,
-unknown-guard, ordering, exact-literal and consequence-3 vectors.
+unknown-guard, ordering, exact-literal and consequence-3 vectors. The three
+token thresholds apply to each profile's complete declared corpus. Per-document
+and one-through-four-document amortised ratios remain evidence, but a single
+document ratio is not a substitute acceptance gate.
 
-Evaluation emits one answer-free source prompt and one Noema prompt per case,
-one isolated context each. The packet is complete only after its manifest is
-written. Tally requires exact case-set equality, no duplicate id, exact tree,
-source, graph, kernel, projection, profile and model identity, and two genuinely
-different family identities for a cross-family result. A committed run records
-that run; it does not predict a rerun or establish model quality.
+Evaluation emits one answer-free complete-source prompt and one Noema
+kernel/dictionary/slice prompt per case, one fresh process and nonce each. The
+Noema prompt contains no Markdown source excerpt. Candidate ids are opaque and
+their order carries no oracle. The packet is complete only after its manifest
+is written, its closed directory inventory is checked, and every prompt is
+reread against the deterministic corpus immediately before use. Tally requires
+exact case-set equality, no duplicate id, exact tree, source, graph, kernel,
+projection, profile and model identity, and two genuinely different family
+identities for a cross-family result. Only the selected candidate id and
+bounded request, generation, token and cost provenance are retained; raw model
+transcripts are not evidence. A committed run records that run; it does not
+predict a rerun or establish model quality.
+
+`noema-external-profiles/v1` binds the catalogue URL and observation date,
+requested and endpoint model ids, provider name and exact route tag, context
+and completion caps, quantisation, supported request parameters, uncached
+prompt/completion prices and threshold overrides. Its acquisition digest is
+separate from the complete profile digest. A provider-private vocabulary is
+`null`, never an invented checksum.
 
 External tokenizer or model programs are explicit digest-bound argv lists with
-a minimal environment allowlist, timeout and output cap. New dependencies,
-downloads, credentials, network calls, source disclosure and paid use require
-separate operator authority. Model output is untrusted data and never becomes a
-command, query, path, fact or authority edge.
+a cleared environment, minimal allowlist, timeout and output cap. The bundled
+OpenRouter adapter is fixed to `/usr/bin/python3 -I`, the current
+`scripts/noema.py` digest and one HTTPS origin with redirects disabled. Isolated
+mode prevents repository and user-site modules from shadowing its transport.
+Requests bind one provider route, disable fallbacks, require declared
+parameters, deny data collection,
+require zero-data-retention routing and cap prompt/completion price at the
+acquired base rate. The credential crosses only as a private regular-file path
+and is never an argument, prompt, result or fixture value.
+
+A live call rehashes both executable and repository invocation bytes before
+and after use. Portable evidence verification rehashes the repository adapter
+but treats the recorded host executable digest as historical provenance; it
+does not require another machine to install or execute that binary.
+
+Every paid request reserves a conservative upper bound in one locked canonical
+ledger before the child starts. A recorded provider cost settles that exact
+request; an unavailable or unaccounted response retains its reservation. The
+ledger ceiling cannot change in place, so uncertain spend consumes authority
+rather than being silently retried. New dependencies, downloads, credentials,
+network calls, source disclosure and paid use require separate operator
+authority. Model output is untrusted data and never becomes a command, query,
+path, fact or authority edge.
 
 ## Versioning and recovery
 
