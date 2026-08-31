@@ -55,5 +55,5 @@ Each adapter is a written statement of what that consumer may see, so widening
 one is a visible change with an owner, not a query someone wrote differently.
 
 An aggregate that leaves the Synkrisis adapter carries its denominator and its
-exclusions, so a corpus figure cannot be read as a claim about the wider
-ecosystem.
+exclusions, so a corpus figure cannot be read as a claim about the engagements
+the corpus never counted.

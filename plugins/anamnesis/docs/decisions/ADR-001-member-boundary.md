@@ -47,7 +47,7 @@ custody reverses that refusal, and its bounded inference boundary would then sit
 downstream of its own ingestion.
 
 Both alternatives broaden exactly one existing promise. The separate member
-broadens none, at the cost of more visible scaffolding.
+broadens none, at the cost of a plugin's worth of manifests, ledger and tests.
 
 ## Consequences
 

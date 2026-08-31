@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1014,
-  "total_bytes": 21858543,
+  "total_bytes": 21858587,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -513,9 +513,9 @@
       "source": "plugins/anamnesis/README.md"
     },
     {
-      "bytes": 2814,
+      "bytes": 2837,
       "path": "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md",
-      "sha256": "7202129cf8632f988526401b7f90044a7ef228c9263fc326b87ec6dbe44e60e8",
+      "sha256": "7077ffc1726997e36c9aa9cb7545fada9f0fa25583b81a074c3c92a986ad1e22",
       "source": "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md"
     },
     {
@@ -531,9 +531,9 @@
       "source": "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md"
     },
     {
-      "bytes": 2387,
+      "bytes": 2408,
       "path": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md",
-      "sha256": "2fdfb80eb0a29b03175e5d031cf8d38244d727f45f74c62a4935a74f45c352e6",
+      "sha256": "af26682ca33639ddb217b17ca31c49c52b5562296e82ae1cb2d83cfc5e80f6bb",
       "source": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md"
     },
     {
