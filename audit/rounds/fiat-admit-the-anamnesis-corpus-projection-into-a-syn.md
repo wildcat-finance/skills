@@ -62,3 +62,19 @@ Elenchus verdict: guarded
 | S2-R1-02 | low | plugins/anamnesis/docs/decisions/ADR-005-corpus-projections-outside-the-cohort-boundary.md | ADR-005 cited "ADR-004" three times meaning the Synkrisis record about reachability evidence, while sitting in a directory whose own ADR-004 is a different document about consumer projections. A reader resolving the reference locally reaches the wrong file. All three now name Synkrisis explicitly and the first carries the full repository path | fixed in this round |
 
 Leads not pursued: two observations carry forward. The register item reader-unnamed is reviewed rather than closed: ADR-005 names the reader as the projection read directly under its own schema, with the emitting command, the shape gate and the self-sufficiency guard behind it, and that is a named surface rather than a named consumer. No other member reads it today and the record says so plainly, so the honest statement is that the projection is legible on its own terms, not that something consumes it. Separately, the ADR-004 correction establishes that the earlier record now carries the right status, and it does not establish that every other first-party document is consistent; the cold read that answers that is step 3's, and the guard added here checks one document rather than the set.
+
+## Step 2, round 2 -- 2026-08-31T21:19:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: decision-overreach=reviewed; reader-unnamed=reviewed; frontier-drift=reviewed; projection-drift=reviewed; stale-prose=reviewed; ledger-arithmetic=not-applicable
+
+Not checked: unchanged from round 1. Round 2 re-ran the three lints and both suites over round 1's fixes, swept every first-party Markdown file for the claim round 1 corrected, and then tested the premise ADR-005 rests on rather than asserting it again. Loading a manifest that declares anamnesis-synkrisis-observation/v1 refuses SK008, "manifest names an unsupported producer contract"; the same manifest declaring promise-machine-run-observation/v1 passes that gate and refuses later at SK004 for a missing binding field. The producer identity is what stops the Anamnesis record, which is what the decision record says. That probe was run and discarded, not committed, for the reason in the leads below. The sweep found the remaining stale claims only in plugins/anamnesis/skills/anamnesis/SKILL.md at lines 156 and 252, which step 3 owns.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: three observations carry forward. The differential probe that proves SK008 is the gate is recorded here as evidence and not committed as a test, because an Anamnesis test importing Synkrisis's module would create a plugin dependency that ADR-001's member boundary does not otherwise have; the cost of a cross-plugin import outweighs holding one sentence of an ADR by machine, and the evidence is reproducible from this record. The reader-unnamed register item stays reviewed rather than closed for the reason round 1 gave: the record names a surface, not a consumer. And ADR-004 keeps its original clause in the Decision body with the correction in its Status, which is the ADR convention this repository had no prior instance of; a reader who reads only the body still reads the wrong claim.
