@@ -1,0 +1,143 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "fiat_local_retirement": {
+          "binding": {
+            "promise_id": "fiat-local-retirement",
+            "scope": "structural binding for fiat-local-retirement",
+            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind fiat-local-retirement without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-local-retirement",
+        "scope": "structural binding for fiat-local-retirement",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "transition": {
+          "action": "structurally bind fiat-local-retirement without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "fiat_local_retirement": {
+          "binding": {
+            "promise_id": "fiat-local-retirement",
+            "scope": "structural binding for fiat-local-retirement",
+            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            }
+          ],
+          "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+          "transition": {
+            "action": "structurally bind fiat-local-retirement without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-local-retirement",
+        "scope": "structural binding for fiat-local-retirement",
+        "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "transition": {
+          "action": "structurally bind fiat-local-retirement without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

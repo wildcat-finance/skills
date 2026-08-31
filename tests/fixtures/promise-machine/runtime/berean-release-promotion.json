@@ -1,0 +1,199 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "berean_release_promotion": {
+          "authorised_transition": {
+            "action": "structurally bind berean-release-promotion without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:berean-release-promotion",
+            "reference": {
+              "path": "plugins/berean/skills/berean/EVOLUTION.md",
+              "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/berean/schemas/promotion-record-v1.json",
+                "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/berean/schemas/promotion-record-v1.json",
+            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "berean-release-promotion",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for berean-release-promotion",
+            "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:berean-release-promotion",
+          "reference": {
+            "path": "plugins/berean/skills/berean/EVOLUTION.md",
+            "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/berean/schemas/promotion-record-v1.json",
+            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/berean/schemas/promotion-record-v1.json",
+          "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+        },
+        "promise_id": "berean-release-promotion",
+        "scope": "structural binding for berean-release-promotion",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json",
+        "transition": {
+          "action": "structurally bind berean-release-promotion without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "berean_release_promotion": {
+          "authorised_transition": {
+            "action": "structurally bind berean-release-promotion without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:berean-release-promotion",
+            "reference": {
+              "path": "plugins/berean/skills/berean/EVOLUTION.md",
+              "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/berean/schemas/promotion-record-v1.json",
+                "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/berean/schemas/promotion-record-v1.json",
+            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "berean-release-promotion",
+          "source": {
+            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          },
+          "target": {
+            "scope": "structural binding for berean-release-promotion",
+            "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:berean-release-promotion",
+          "reference": {
+            "path": "plugins/berean/skills/berean/EVOLUTION.md",
+            "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/berean/schemas/promotion-record-v1.json",
+            "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/berean/schemas/promotion-record-v1.json",
+          "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7"
+        },
+        "promise_id": "berean-release-promotion",
+        "scope": "structural binding for berean-release-promotion",
+        "source_digest": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7",
+        "subject": "runtime source plugins/berean/schemas/promotion-record-v1.json",
+        "transition": {
+          "action": "structurally bind berean-release-promotion without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

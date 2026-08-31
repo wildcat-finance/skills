@@ -136,6 +136,11 @@ whole:
 > Obligation: Consequence levels zero through three take distinct enforcement
 > paths, and level three never accepts level-two-only evidence.
 
+<!-- promise-machine-obligation: id=law-runtime-result-binding -->
+> Obligation: Every level-two or level-three runtime promise resolves its
+> native binding fields through a bounded source-bound reader; level three
+> also resolves authority and independently inspectable evidence.
+
 A skill with operations at different levels declares separate promises. A
 level-3 transition cannot rest only on model judgement, unrecorded operator
 memory, an unchecked receipt or evidence whose subject does not match.

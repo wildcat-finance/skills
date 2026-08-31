@@ -1,0 +1,143 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "hermes_baseline_promotion": {
+          "binding": {
+            "promise_id": "hermes-baseline-promotion",
+            "scope": "structural binding for hermes-baseline-promotion",
+            "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+              "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind hermes-baseline-promotion without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+            "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hermes-baseline-promotion",
+        "scope": "structural binding for hermes-baseline-promotion",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py",
+        "transition": {
+          "action": "structurally bind hermes-baseline-promotion without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "hermes_baseline_promotion": {
+          "binding": {
+            "promise_id": "hermes-baseline-promotion",
+            "scope": "structural binding for hermes-baseline-promotion",
+            "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+              "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+            }
+          ],
+          "source_digest": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
+          "transition": {
+            "action": "structurally bind hermes-baseline-promotion without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+            "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hermes-baseline-promotion",
+        "scope": "structural binding for hermes-baseline-promotion",
+        "source_digest": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
+        "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py",
+        "transition": {
+          "action": "structurally bind hermes-baseline-promotion without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

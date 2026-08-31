@@ -1,0 +1,191 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "hexaemeron_fizz_harness_campaign": {
+          "authority": {
+            "id": "promise-owner:hexaemeron-fizz-harness-campaign",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/fizz/NOTICE.md",
+              "sha256": "8249b9773fa460746927e3a7e4c6cf4514fab9388becf9ca5e557cc5a4169b76"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+                "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "inspectable_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+            "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+          },
+          "promise": "hexaemeron-fizz-harness-campaign",
+          "scope": "structural binding for hexaemeron-fizz-harness-campaign",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/skills/fizz/SKILL.md",
+          "transition": {
+            "action": "structurally bind hexaemeron-fizz-harness-campaign without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:hexaemeron-fizz-harness-campaign",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/fizz/NOTICE.md",
+            "sha256": "8249b9773fa460746927e3a7e4c6cf4514fab9388becf9ca5e557cc5a4169b76"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+            "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+          "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+        },
+        "promise_id": "hexaemeron-fizz-harness-campaign",
+        "scope": "structural binding for hexaemeron-fizz-harness-campaign",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/fizz/SKILL.md",
+        "transition": {
+          "action": "structurally bind hexaemeron-fizz-harness-campaign without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "hexaemeron_fizz_harness_campaign": {
+          "authority": {
+            "id": "promise-owner:hexaemeron-fizz-harness-campaign",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/fizz/NOTICE.md",
+              "sha256": "8249b9773fa460746927e3a7e4c6cf4514fab9388becf9ca5e557cc5a4169b76"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+                "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "inspectable_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+            "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+          },
+          "promise": "hexaemeron-fizz-harness-campaign",
+          "scope": "structural binding for hexaemeron-fizz-harness-campaign",
+          "source_digest": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
+          "subject": "runtime source plugins/hexaemeron/skills/fizz/SKILL.md",
+          "transition": {
+            "action": "structurally bind hexaemeron-fizz-harness-campaign without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:hexaemeron-fizz-harness-campaign",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/fizz/NOTICE.md",
+            "sha256": "8249b9773fa460746927e3a7e4c6cf4514fab9388becf9ca5e557cc5a4169b76"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+            "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+          "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd"
+        },
+        "promise_id": "hexaemeron-fizz-harness-campaign",
+        "scope": "structural binding for hexaemeron-fizz-harness-campaign",
+        "source_digest": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
+        "subject": "runtime source plugins/hexaemeron/skills/fizz/SKILL.md",
+        "transition": {
+          "action": "structurally bind hexaemeron-fizz-harness-campaign without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}

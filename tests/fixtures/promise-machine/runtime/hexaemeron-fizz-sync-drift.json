@@ -1,0 +1,143 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "hexaemeron_fizz_sync_drift": {
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+                "sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "hexaemeron-fizz-sync-drift",
+          "scope": "structural binding for hexaemeron-fizz-sync-drift",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+          "transition": {
+            "action": "structurally bind hexaemeron-fizz-sync-drift without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+            "sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hexaemeron-fizz-sync-drift",
+        "scope": "structural binding for hexaemeron-fizz-sync-drift",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+        "transition": {
+          "action": "structurally bind hexaemeron-fizz-sync-drift without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "hexaemeron_fizz_sync_drift": {
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+                "sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "hexaemeron-fizz-sync-drift",
+          "scope": "structural binding for hexaemeron-fizz-sync-drift",
+          "source_digest": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
+          "subject": "runtime source plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+          "transition": {
+            "action": "structurally bind hexaemeron-fizz-sync-drift without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+            "sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hexaemeron-fizz-sync-drift",
+        "scope": "structural binding for hexaemeron-fizz-sync-drift",
+        "source_digest": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
+        "subject": "runtime source plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+        "transition": {
+          "action": "structurally bind hexaemeron-fizz-sync-drift without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}

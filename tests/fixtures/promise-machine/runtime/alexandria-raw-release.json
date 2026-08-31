@@ -1,0 +1,155 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "alexandria_raw_release": {
+          "authorised_transition": {
+            "action": "structurally bind alexandria-raw-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+                "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "alexandria-raw-release",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for alexandria-raw-release",
+            "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+            "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "alexandria-raw-release",
+        "scope": "structural binding for alexandria-raw-release",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+        "transition": {
+          "action": "structurally bind alexandria-raw-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "alexandria_raw_release": {
+          "authorised_transition": {
+            "action": "structurally bind alexandria-raw-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+                "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "alexandria-raw-release",
+          "source": {
+            "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+          },
+          "target": {
+            "scope": "structural binding for alexandria-raw-release",
+            "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+            "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "alexandria-raw-release",
+        "scope": "structural binding for alexandria-raw-release",
+        "source_digest": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
+        "subject": "runtime source plugins/alexandria/schemas/archive-manifest-v1.schema.json",
+        "transition": {
+          "action": "structurally bind alexandria-raw-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

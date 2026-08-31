@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "hexaemeron_solidity_audit_report": {
+          "authority": {
+            "id": "promise-owner:hexaemeron-solidity-audit-report",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/solidity-auditor/NOTICE.md",
+              "sha256": "4a2ce477183745ee84d3b5f0106b457df580de11515b82596873c20200b83dd9"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "inferred",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+                "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "inspectable_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+          },
+          "promise": "hexaemeron-solidity-audit-report",
+          "scope": "structural binding for hexaemeron-solidity-audit-report",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+          "transition": {
+            "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:hexaemeron-solidity-audit-report",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/solidity-auditor/NOTICE.md",
+            "sha256": "4a2ce477183745ee84d3b5f0106b457df580de11515b82596873c20200b83dd9"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "inferred",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+          "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+        },
+        "promise_id": "hexaemeron-solidity-audit-report",
+        "scope": "structural binding for hexaemeron-solidity-audit-report",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+        "transition": {
+          "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "hexaemeron_solidity_audit_report": {
+          "authority": {
+            "id": "promise-owner:hexaemeron-solidity-audit-report",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/solidity-auditor/NOTICE.md",
+              "sha256": "4a2ce477183745ee84d3b5f0106b457df580de11515b82596873c20200b83dd9"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "inferred",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+                "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "inspectable_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+          },
+          "promise": "hexaemeron-solidity-audit-report",
+          "scope": "structural binding for hexaemeron-solidity-audit-report",
+          "source_digest": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
+          "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+          "transition": {
+            "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:hexaemeron-solidity-audit-report",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/solidity-auditor/NOTICE.md",
+            "sha256": "4a2ce477183745ee84d3b5f0106b457df580de11515b82596873c20200b83dd9"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "inferred",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+            "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+          "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f"
+        },
+        "promise_id": "hexaemeron-solidity-audit-report",
+        "scope": "structural binding for hexaemeron-solidity-audit-report",
+        "source_digest": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
+        "subject": "runtime source plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+        "transition": {
+          "action": "structurally bind hexaemeron-solidity-audit-report without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}

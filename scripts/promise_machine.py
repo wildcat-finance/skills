@@ -88,6 +88,7 @@ SEMANTIC_FIXTURE_DIRECTORIES = {
     "exceptions",
     "findings",
     "imports",
+    "runtime",
 }
 TRANSITION_SCHEMA = "promise-machine-transition/v1"
 TRANSITION_DECLARATION_SCHEMA = "promise-machine-transition-declaration/v1"
@@ -96,6 +97,9 @@ EXCEPTION_SCHEMA = "promise-machine-exception/v1"
 EXCEPTION_SPECIMEN_SCHEMA = "promise-machine-exception-specimen/v1"
 FINDING_SPECIMEN_SCHEMA = "promise-machine-finding-specimen/v1"
 IMPORT_SPECIMEN_SCHEMA = "promise-machine-import-specimen/v1"
+RUNTIME_SPECIMEN_SCHEMA = "promise-machine-runtime-specimens/v1"
+RUNTIME_OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-runtime-obligation-specimen/v1"
+RUNTIME_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/runtime")
 CONSEQUENCE_FIXTURES = tuple(
     Path(f"tests/fixtures/promise-machine/consequences/level-{level}.json")
     for level in range(4)
@@ -218,6 +222,11 @@ OBLIGATION_GATES = {
         "PM092",
         "e3383a98a024c4eecc2902f9cb0edae50cd3ff12f5c248ee47fd7cb1f86d17a1",
     ),
+    "law-runtime-result-binding": (
+        "runtime.binding",
+        "PM095",
+        "5ab3a7b96df72ab8e457533b60d82f2b8986a9c9701697889ed7f4267c0e3e00",
+    ),
     "law-required-sections": (
         "law.required-sections",
         "PM006",
@@ -259,6 +268,12 @@ SEMANTIC_OBLIGATIONS = {
         "consequence": 3,
         "blocked_transition": "run a core checker capable of network, credential, shell, subprocess, dynamic-code or evidence-command access",
         "recovery": "remove the forbidden import or call and rerun the offline core-checker guard",
+    },
+    "law-runtime-result-binding": {
+        "code": "PM095",
+        "consequence": 3,
+        "blocked_transition": "accept a level-two or level-three result without its source-bound native fields",
+        "recovery": "restore the bounded reader, native fields, source digest, and level-three authority evidence, then rerun the runtime check",
     },
 }
 CHECKER_REFUSAL_CONTEXT = {
@@ -500,6 +515,72 @@ RUNTIME_BINDING_KEYS = {
     "unknowns",
     "transition",
     "exception",
+    "source_digest",
+}
+RUNTIME_LEVEL_THREE_KEYS = {"authority", "inspectable_evidence"}
+RUNTIME_CATALOGUE_KEYS = {
+    "source",
+    "sha256",
+    "reader",
+    "bindings",
+    "positive",
+    "negative",
+}
+RUNTIME_READER_SCHEMAS = {
+    "native-json-v1": "promise-machine-native-json-binding/v1",
+    "python-result-adapter-v1": "promise-machine-python-result-adapter/v1",
+    "markdown-result-adapter-v1": "promise-machine-markdown-result-adapter/v1",
+}
+RUNTIME_READER_EXTENSIONS = {
+    "native-json-v1": ".json",
+    "python-result-adapter-v1": ".py",
+    "markdown-result-adapter-v1": ".md",
+}
+RUNTIME_READER_CONTAINERS = {
+    "native-json-v1": "native_document",
+    "python-result-adapter-v1": "adapter_output",
+    "markdown-result-adapter-v1": "frontmatter",
+}
+RUNTIME_READER_BINDINGS = {
+    "native-json-v1": {
+        "promise_id": "native_document.promise",
+        "subject": "native_document.target.subject",
+        "scope": "native_document.target.scope",
+        "evidence_references": "native_document.evidence.references",
+        "evidence_classes": "native_document.evidence.classes",
+        "unknowns": "native_document.open_unknowns",
+        "transition": "native_document.authorised_transition",
+        "exception": "native_document.exception_state",
+        "source_digest": "native_document.source.sha256",
+        "authority": "native_document.authority",
+        "inspectable_evidence": "native_document.independent_evidence",
+    },
+    "python-result-adapter-v1": {
+        "promise_id": "adapter_output.binding.promise_id",
+        "subject": "adapter_output.binding.subject",
+        "scope": "adapter_output.binding.scope",
+        "evidence_references": "adapter_output.references",
+        "evidence_classes": "adapter_output.classes",
+        "unknowns": "adapter_output.unresolved",
+        "transition": "adapter_output.transition",
+        "exception": "adapter_output.exception",
+        "source_digest": "adapter_output.source_digest",
+        "authority": "adapter_output.authorised_by",
+        "inspectable_evidence": "adapter_output.inspectable",
+    },
+    "markdown-result-adapter-v1": {
+        "promise_id": "frontmatter.promise",
+        "subject": "frontmatter.subject",
+        "scope": "frontmatter.scope",
+        "evidence_references": "frontmatter.evidence.references",
+        "evidence_classes": "frontmatter.evidence.classes",
+        "unknowns": "frontmatter.unknowns",
+        "transition": "frontmatter.transition",
+        "exception": "frontmatter.exception",
+        "source_digest": "frontmatter.source_digest",
+        "authority": "frontmatter.authority",
+        "inspectable_evidence": "frontmatter.inspectable_evidence",
+    },
 }
 PROMPT_SKILLS = {
     "brevitas",
@@ -2610,6 +2691,73 @@ def validate_semantic_specimen(root: Path, relative_specimen: Path, document, ro
                 )
             ]
         return check_core_source_text(document["source"], relative_specimen.as_posix())
+    if schema == RUNTIME_OBLIGATION_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "record", "binding", "result"}:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "runtime specimen does not have the exact record, binding, and result fields",
+                    "restore the closed runtime obligation specimen",
+                    row,
+                )
+            ]
+        record_document = document.get("record")
+        if (
+            not isinstance(record_document, dict)
+            or set(record_document)
+            != {"promise_id", "skill_path", "evidence_classes", "consequence"}
+            or not isinstance(record_document.get("promise_id"), str)
+            or PROMISE_ID.fullmatch(record_document["promise_id"]) is None
+            or not closed_non_empty_scalar(record_document.get("skill_path"))
+            or not isinstance(record_document.get("evidence_classes"), list)
+            or not record_document["evidence_classes"]
+            or any(
+                item not in SUPPORTED_EVIDENCE_CLASSES
+                for item in record_document["evidence_classes"]
+            )
+            or type(record_document.get("consequence")) is not int
+            or record_document["consequence"] not in {2, 3}
+        ):
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "runtime specimen promise record is invalid",
+                    "restore its stable promise, skill path, evidence classes, and consequence",
+                    row,
+                )
+            ]
+        binding = document.get("binding")
+        if not isinstance(binding, dict) or set(binding) != {
+            "source",
+            "sha256",
+            "reader",
+            "bindings",
+        }:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "runtime specimen binding is not the closed production-reader shape",
+                    "restore source, digest, reader, and native field map",
+                    row,
+                )
+            ]
+        record = PromiseRecord(
+            record_document["promise_id"],
+            record_document["skill_path"],
+            "executable",
+            frozenset(record_document["evidence_classes"]),
+            record_document["consequence"],
+        )
+        return validate_runtime_result(
+            root,
+            record,
+            binding,
+            document.get("result"),
+            relative_specimen.as_posix(),
+        )
     return None
 
 
@@ -3906,6 +4054,751 @@ def selector_resolves(path: Path, text: str, selector: str):
     return re.search(pattern, text, re.MULTILINE) is not None
 
 
+def runtime_expected_fields(record: PromiseRecord):
+    fields = set(RUNTIME_BINDING_KEYS)
+    if record.consequence == 3:
+        fields.update(RUNTIME_LEVEL_THREE_KEYS)
+    return fields
+
+
+def runtime_finding(
+    record: PromiseRecord,
+    binding,
+    path: str,
+    field: str,
+    message: str,
+    *,
+    code: str = "PM095",
+):
+    source = binding.get("source") if isinstance(binding, dict) else None
+    classes = sorted(record.evidence_classes)
+    return Finding(
+        code,
+        "runtime-binding",
+        path,
+        (
+            f"runtime row {record.promise_id!r} source {source!r} field {field!r} "
+            f"with declared evidence classes {classes!r}: {message}"
+        ),
+        f"restore the source-bound {field} value and rerun the runtime binding check",
+        promise_id=record.promise_id,
+        obligation_id="law-runtime-result-binding",
+        consequence=record.consequence,
+        blocked_transition=(
+            f"accept the structurally bound runtime result for {record.promise_id}"
+        ),
+        recovery=(
+            f"restore {field} for {record.promise_id} from its bounded native reader "
+            "and rerun the runtime binding check"
+        ),
+    )
+
+
+def runtime_path_digest(root: Path, raw: str, limit: int):
+    if not isinstance(raw, str) or not raw or raw != raw.strip():
+        return None, "path is absent or padded"
+    candidate = Path(raw)
+    if candidate.is_absolute() or ".." in candidate.parts or candidate.as_posix() != raw:
+        return None, "path is not a canonical repository-relative path"
+    target = root / candidate
+    if target.is_symlink() or not confined(target, root) or not target.is_file():
+        return None, "path is escaping, a symlink, absent, or not a regular file"
+    try:
+        payload = bounded_read_bytes(target, root, limit)
+    except OSError as exc:
+        return None, f"path could not be read without following links: {exc}"
+    if len(payload) > limit:
+        return None, f"path exceeds the {limit}-byte limit"
+    return hashlib.sha256(payload).hexdigest(), None
+
+
+def runtime_reference_error(root: Path, reference, allowed_classes=None):
+    keys = {"path", "sha256"}
+    if allowed_classes is not None:
+        keys.add("evidence_class")
+    if not isinstance(reference, dict) or set(reference) != keys:
+        return f"reference fields are not exactly {sorted(keys)!r}"
+    digest = reference.get("sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        return "reference digest is not a lowercase SHA-256 value"
+    actual, error = runtime_path_digest(
+        root, reference.get("path"), MAX_RUNTIME_SOURCE_BYTES
+    )
+    if error is not None:
+        return error
+    if actual != digest:
+        return f"reference digest is {actual}; record declares {digest}"
+    if allowed_classes is not None:
+        evidence_class = reference.get("evidence_class")
+        if evidence_class not in allowed_classes:
+            return (
+                f"reference evidence class {evidence_class!r} is not one of "
+                f"{sorted(allowed_classes)!r}"
+            )
+    return None
+
+
+def runtime_authority_path(root: Path, record: PromiseRecord):
+    skill = root / record.skill_path
+    evolution = skill.parent / "EVOLUTION.md"
+    if evolution.is_file() and not evolution.is_symlink() and confined(evolution, root):
+        return relative(evolution, root)
+    parts = Path(record.skill_path).parts
+    if len(parts) < 3 or parts[0] != "plugins":
+        return record.skill_path
+    plugin_root = root / "plugins" / parts[1]
+    current = skill.parent
+    while confined(current, plugin_root) and current != plugin_root:
+        notice = current / "NOTICE.md"
+        if notice.is_file() and not notice.is_symlink() and confined(notice, root):
+            return relative(notice, root)
+        current = current.parent
+    return record.skill_path
+
+
+def dotted_runtime_value(document, dotted: str):
+    value = document
+    for part in dotted.split("."):
+        if not isinstance(value, dict) or part not in value:
+            return None, False
+        value = value[part]
+    return value, True
+
+
+def runtime_binding_map_error(reader: str, mappings, expected_fields: set[str]):
+    if not isinstance(mappings, dict) or set(mappings) != expected_fields:
+        return "native field map does not contain the consequence's exact fields"
+    container = RUNTIME_READER_CONTAINERS[reader]
+    values = list(mappings.values())
+    if any(
+        not isinstance(value, str)
+        or re.fullmatch(r"[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)+", value)
+        is None
+        or not value.startswith(f"{container}.")
+        for value in values
+    ):
+        return f"native paths must be closed dotted names below {container!r}"
+    if len(set(values)) != len(values):
+        return "two canonical fields resolve through the same native path"
+    for left in values:
+        for right in values:
+            if left != right and right.startswith(f"{left}."):
+                return "one native field path contains another field path"
+    return None
+
+
+def validate_runtime_catalogue_entry(
+    root: Path, record: PromiseRecord, binding, binding_path: str
+):
+    findings: list[Finding] = []
+    if not isinstance(binding, dict) or set(binding) != RUNTIME_CATALOGUE_KEYS:
+        return [
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                "runtime binding must contain source, sha256, reader, bindings, positive and negative",
+                "name one bounded native reader and its source-bound positive and negative specimens",
+                promise_id=record.promise_id,
+            )
+        ]
+
+    source = binding["source"]
+    digest = binding["sha256"]
+    actual, source_error = runtime_path_digest(root, source, MAX_RUNTIME_SOURCE_BYTES)
+    if source_error is not None:
+        findings.append(
+            Finding(
+                "PM070",
+                "identity",
+                binding_path,
+                f"runtime binding source {source_error}: {source!r}",
+                "name a bounded regular result surface inside the repository",
+                promise_id=record.promise_id,
+            )
+        )
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                "runtime binding source digest is absent or malformed",
+                "record the full lowercase SHA-256 of the reviewed source bytes",
+                promise_id=record.promise_id,
+            )
+        )
+    elif actual is not None and actual != digest:
+        findings.append(
+            Finding(
+                "PM071",
+                "drift",
+                binding_path,
+                f"runtime binding source digest is {actual}; inventory records {digest}",
+                "review the changed result surface and update its reader and digest together",
+                promise_id=record.promise_id,
+            )
+        )
+
+    reader = binding["reader"]
+    if reader not in RUNTIME_READER_BINDINGS:
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                f"runtime reader is unsupported: {reader!r}",
+                "use the native JSON, Python-result, or Markdown-result reader",
+                promise_id=record.promise_id,
+            )
+        )
+    elif isinstance(source, str) and Path(source).suffix != RUNTIME_READER_EXTENSIONS[reader]:
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                f"runtime reader {reader!r} does not match source suffix {Path(source).suffix!r}",
+                "select the bounded reader for the source's domain-native format",
+                promise_id=record.promise_id,
+            )
+        )
+    else:
+        expected_fields = runtime_expected_fields(record)
+        mapping_error = runtime_binding_map_error(
+            reader, binding["bindings"], expected_fields
+        )
+        if mapping_error is not None:
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    f"runtime field map is invalid: {mapping_error}",
+                    "restore distinct row-native paths under the selected reader container",
+                    promise_id=record.promise_id,
+                )
+            )
+
+    descriptor_shapes = {
+        "positive": {"path", "selector", "sha256"},
+        "negative": {"path", "selector", "sha256", "finding"},
+    }
+    for kind, keys in descriptor_shapes.items():
+        descriptor = binding[kind]
+        if not isinstance(descriptor, dict) or set(descriptor) != keys:
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    f"runtime {kind} specimen descriptor is not the closed source-bound shape",
+                    f"restore the exact {sorted(keys)!r} fields",
+                    promise_id=record.promise_id,
+                )
+            )
+            continue
+        if kind == "negative" and descriptor["finding"] != "PM095":
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    "runtime negative specimen does not name stable finding PM095",
+                    "bind the hostile specimen to PM095",
+                    promise_id=record.promise_id,
+                )
+            )
+        raw = descriptor["path"]
+        candidate = Path(raw) if isinstance(raw, str) else Path(".")
+        try:
+            candidate.relative_to(RUNTIME_FIXTURE_ROOT)
+            inside_runtime = True
+        except ValueError:
+            inside_runtime = False
+        if (
+            not isinstance(raw, str)
+            or candidate.is_absolute()
+            or ".." in candidate.parts
+            or candidate.as_posix() != raw
+            or not inside_runtime
+            or candidate.suffix != ".json"
+            or not closed_non_empty_scalar(descriptor.get("selector"))
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "identity",
+                    binding_path,
+                    f"runtime {kind} specimen path or selector is unsafe",
+                    "name a confined JSON selector under the runtime fixture directory",
+                    promise_id=record.promise_id,
+                )
+            )
+            continue
+        specimen_digest = descriptor.get("sha256")
+        actual_specimen, specimen_error = runtime_path_digest(
+            root, raw, MAX_JSON_BYTES
+        )
+        if specimen_error is not None:
+            findings.append(
+                Finding(
+                    "PM070",
+                    "identity",
+                    binding_path,
+                    f"runtime {kind} specimen {specimen_error}",
+                    "restore the bounded regular runtime specimen",
+                    promise_id=record.promise_id,
+                )
+            )
+        elif (
+            not isinstance(specimen_digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", specimen_digest) is None
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    f"runtime {kind} specimen digest is malformed",
+                    "record its lowercase SHA-256 digest",
+                    promise_id=record.promise_id,
+                )
+            )
+        elif actual_specimen != specimen_digest:
+            findings.append(
+                Finding(
+                    "PM071",
+                    "drift",
+                    binding_path,
+                    f"runtime {kind} specimen digest is {actual_specimen}; inventory records {specimen_digest}",
+                    "review and refresh the specimen and its digest together",
+                    promise_id=record.promise_id,
+                )
+            )
+    if (
+        isinstance(binding.get("positive"), dict)
+        and isinstance(binding.get("negative"), dict)
+        and binding["positive"].get("selector") == binding["negative"].get("selector")
+    ):
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                "runtime positive and negative selectors are identical",
+                "name distinct source-bound positive and negative specimens",
+                promise_id=record.promise_id,
+            )
+        )
+    return findings
+
+
+def read_runtime_specimen(
+    root: Path, descriptor, record: PromiseRecord, kind: str
+):
+    binding = {"source": record.skill_path}
+    path = descriptor.get("path") if isinstance(descriptor, dict) else "<runtime>"
+    keys = {"path", "selector", "sha256"}
+    if kind == "negative":
+        keys.add("finding")
+    if not isinstance(descriptor, dict) or set(descriptor) != keys:
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                str(path),
+                "specimen",
+                f"{kind} descriptor is not the exact {sorted(keys)!r} shape",
+            )
+        ]
+    raw = descriptor["path"]
+    candidate = Path(raw) if isinstance(raw, str) else Path(".")
+    try:
+        candidate.relative_to(RUNTIME_FIXTURE_ROOT)
+        inside_runtime = True
+    except ValueError:
+        inside_runtime = False
+    if (
+        not isinstance(raw, str)
+        or candidate.is_absolute()
+        or ".." in candidate.parts
+        or candidate.as_posix() != raw
+        or not inside_runtime
+        or candidate.suffix != ".json"
+    ):
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                str(raw),
+                "specimen",
+                "specimen path is not a confined JSON path below the runtime fixture root",
+            )
+        ]
+    actual, error = runtime_path_digest(root, raw, MAX_JSON_BYTES)
+    if error is not None:
+        return None, [
+            runtime_finding(record, binding, raw, "specimen", error)
+        ]
+    digest = descriptor.get("sha256")
+    if (
+        not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or digest != actual
+    ):
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                raw,
+                "specimen",
+                f"specimen digest is {actual}; descriptor records {digest!r}",
+            )
+        ]
+    document, read_findings = read_json(
+        root / candidate,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM095",
+        unsafe_code="PM095",
+        malformed_code="PM095",
+        noun="runtime binding specimen",
+    )
+    if document is None:
+        item = read_findings[0]
+        return None, [
+            runtime_finding(record, binding, raw, "specimen", item.message)
+        ]
+    if set(document) != {"schema", "specimens"} or document.get("schema") != RUNTIME_SPECIMEN_SCHEMA:
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                raw,
+                "specimen",
+                "specimen file does not have the supported schema and specimens fields",
+            )
+        ]
+    specimens = document.get("specimens")
+    selector = descriptor.get("selector")
+    if (
+        not isinstance(specimens, dict)
+        or not closed_non_empty_scalar(selector)
+        or selector not in specimens
+        or not isinstance(specimens[selector], dict)
+    ):
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                raw,
+                "specimen",
+                f"selector {selector!r} does not resolve to one result object",
+            )
+        ]
+    return specimens[selector], []
+
+
+def validate_runtime_result(
+    root: Path,
+    record: PromiseRecord,
+    binding,
+    result,
+    shown: str,
+):
+    def refuse(field, message):
+        return [runtime_finding(record, binding, shown, field, message)]
+
+    if not isinstance(binding, dict):
+        return refuse("catalogue", "binding catalogue entry is not an object")
+    reader = binding.get("reader")
+    if reader not in RUNTIME_READER_BINDINGS:
+        return refuse("reader", f"reader is unsupported: {reader!r}")
+    expected_fields = runtime_expected_fields(record)
+    mappings = binding.get("bindings")
+    if not isinstance(mappings, dict):
+        return refuse("bindings", "native field map is not an object")
+    missing_mappings = expected_fields - set(mappings)
+    if missing_mappings:
+        field = "authority" if "authority" in missing_mappings else sorted(missing_mappings)[0]
+        return refuse(field, f"required native field map is absent: {sorted(missing_mappings)!r}")
+    if set(mappings) != expected_fields:
+        return refuse(
+            "bindings",
+            f"native field map has unknown fields: {sorted(set(mappings) - expected_fields)!r}",
+        )
+    mapping_error = runtime_binding_map_error(reader, mappings, expected_fields)
+    if mapping_error is not None:
+        return refuse("bindings", mapping_error)
+
+    container = RUNTIME_READER_CONTAINERS[reader]
+    if (
+        not isinstance(result, dict)
+        or set(result) != {"schema", container, "promise_machine"}
+        or result.get("schema") != RUNTIME_READER_SCHEMAS[reader]
+        or not isinstance(result.get(container), dict)
+    ):
+        return refuse("result", "native result does not have the selected reader's closed shape")
+    header = result.get("promise_machine")
+    if not isinstance(header, dict):
+        return refuse("promise_machine", "compact binding header is not an object")
+    missing_header = expected_fields - set(header)
+    if missing_header:
+        field = "authority" if "authority" in missing_header else sorted(missing_header)[0]
+        return refuse(field, f"required binding header field is absent: {sorted(missing_header)!r}")
+    if set(header) != expected_fields:
+        return refuse(
+            "promise_machine",
+            f"binding header has unknown fields: {sorted(set(header) - expected_fields)!r}",
+        )
+
+    native = {}
+    for field in sorted(expected_fields):
+        value, present = dotted_runtime_value(result, mappings[field])
+        if not present:
+            return refuse(field, f"reader path {mappings[field]!r} does not resolve")
+        native[field] = value
+        if value != header[field]:
+            return refuse(field, "native value and compact binding header disagree")
+
+    source = binding.get("source")
+    source_digest = binding.get("sha256")
+    actual_source, source_error = runtime_path_digest(
+        root, source, MAX_RUNTIME_SOURCE_BYTES
+    )
+    if source_error is not None:
+        return refuse("source_digest", source_error)
+    if (
+        not isinstance(source_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", source_digest) is None
+        or actual_source != source_digest
+        or native["source_digest"] != source_digest
+    ):
+        return refuse(
+            "source_digest",
+            f"result, catalogue, and bounded source digest do not agree ({native['source_digest']!r}, {source_digest!r}, {actual_source!r})",
+        )
+
+    expected_subject = f"runtime source {source}"
+    expected_scope = f"structural binding for {record.promise_id}"
+    if native["promise_id"] != record.promise_id:
+        return refuse("promise_id", "result promise identity does not match its runtime row")
+    if native["subject"] != expected_subject:
+        return refuse("subject", f"subject does not match {expected_subject!r}")
+    if native["scope"] != expected_scope:
+        return refuse("scope", f"scope does not match {expected_scope!r}")
+
+    evidence_classes = native["evidence_classes"]
+    if (
+        not isinstance(evidence_classes, list)
+        or not evidence_classes
+        or any(not closed_non_empty_scalar(item) for item in evidence_classes)
+        or len(set(evidence_classes)) != len(evidence_classes)
+        or not set(evidence_classes).issubset(record.evidence_classes)
+        or not set(evidence_classes).issubset(POSITIVE_EVIDENCE_STATES)
+    ):
+        return refuse(
+            "evidence_classes",
+            "satisfying evidence classes are empty, repeated, unsupported, unknown, or undeclared",
+        )
+    references = native["evidence_references"]
+    if not isinstance(references, list) or not references:
+        return refuse("evidence_references", "no digest-bound evidence reference is present")
+    for reference in references:
+        error = runtime_reference_error(root, reference, set(evidence_classes))
+        if error is not None:
+            return refuse("evidence_references", error)
+    if not any(
+        reference["path"] == source and reference["sha256"] == source_digest
+        for reference in references
+    ):
+        return refuse("evidence_references", "no evidence reference binds the declared source bytes")
+
+    unknowns = native["unknowns"]
+    if (
+        not isinstance(unknowns, list)
+        or not unknowns
+        or any(
+            not isinstance(item, dict)
+            or set(item) != {"code", "detail"}
+            or not closed_non_empty_scalar(item.get("code"))
+            or not closed_non_empty_scalar(item.get("detail"))
+            for item in unknowns
+        )
+        or "domain-operation-not-run" not in {item["code"] for item in unknowns if isinstance(item, dict) and "code" in item}
+    ):
+        return refuse(
+            "unknowns",
+            "the explicit domain-operation-not-run unknown is absent or malformed",
+        )
+    transition = native["transition"]
+    expected_action = (
+        f"structurally bind {record.promise_id} without running its domain operation"
+    )
+    if (
+        not isinstance(transition, dict)
+        or set(transition) != {"status", "action", "operation_ran"}
+        or transition.get("status") != "structurally-bound"
+        or transition.get("action") != expected_action
+        or transition.get("operation_ran") is not False
+    ):
+        return refuse(
+            "transition",
+            "transition must stay structurally-bound and state that the domain operation did not run",
+        )
+    if native["exception"] != {"status": "none"}:
+        return refuse("exception", "exception state is not the closed none record")
+
+    if record.consequence == 3:
+        authority = native["authority"]
+        if (
+            not isinstance(authority, dict)
+            or set(authority) != {"id", "reference"}
+            or authority.get("id") != f"promise-owner:{record.promise_id}"
+        ):
+            return refuse("authority", "level-three authority identity or reference is absent")
+        authority_error = runtime_reference_error(root, authority.get("reference"))
+        if authority_error is not None:
+            return refuse("authority", authority_error)
+        if authority["reference"]["path"] != runtime_authority_path(root, record):
+            return refuse("authority", "authority does not resolve the promise's owning contract")
+        inspectable = native["inspectable_evidence"]
+        inspectable_error = runtime_reference_error(
+            root, inspectable, set(evidence_classes)
+        )
+        if inspectable_error is not None:
+            return refuse("inspectable_evidence", inspectable_error)
+        if inspectable["path"] != source or inspectable["sha256"] != source_digest:
+            return refuse(
+                "inspectable_evidence",
+                "level-three inspectable evidence does not resolve the bound source",
+            )
+        if inspectable["path"] == authority["reference"]["path"]:
+            return refuse(
+                "inspectable_evidence",
+                "level-three authority and inspectable evidence are not independent references",
+            )
+    return []
+
+
+def check_runtime(root: Path, inventory: Inventory):
+    findings: list[Finding] = []
+    records = {
+        record.promise_id: record
+        for record in promise_records(root, inventory)
+        if record.consequence >= 2
+    }
+    document, read_findings = read_json(
+        root / COVERAGE_PATH,
+        root,
+        max_bytes=MAX_COVERAGE_BYTES,
+        missing_code="PM095",
+        unsafe_code="PM095",
+        malformed_code="PM095",
+        noun="runtime coverage catalogue",
+    )
+    findings.extend(read_findings)
+    if document is None:
+        return 0, findings
+    catalogue = document.get("runtime")
+    if not isinstance(catalogue, dict):
+        return 0, [
+            Finding(
+                "PM095",
+                "runtime-binding",
+                COVERAGE_PATH.as_posix(),
+                "runtime catalogue is not an object",
+                "restore one source-bound row for every required runtime promise",
+                obligation_id="law-runtime-result-binding",
+                consequence=3,
+            )
+        ]
+    for promise_id in sorted(set(records) - set(catalogue)):
+        record = records[promise_id]
+        findings.append(
+            runtime_finding(
+                record,
+                {},
+                COVERAGE_PATH.as_posix(),
+                "catalogue",
+                "required runtime row is absent",
+            )
+        )
+    for promise_id in sorted(set(catalogue) - set(records)):
+        findings.append(
+            Finding(
+                "PM095",
+                "runtime-binding",
+                f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}",
+                f"runtime catalogue row {promise_id!r} does not belong to a required level-two or level-three promise",
+                "remove the stale row or restore its authored high-consequence declaration",
+                promise_id=promise_id if PROMISE_ID.fullmatch(promise_id) else None,
+                obligation_id="law-runtime-result-binding",
+                consequence=2,
+            )
+        )
+    for promise_id in sorted(set(records) & set(catalogue)):
+        record = records[promise_id]
+        binding = catalogue[promise_id]
+        binding_path = f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}"
+        catalogue_findings = validate_runtime_catalogue_entry(
+            root, record, binding, binding_path
+        )
+        if catalogue_findings:
+            findings.append(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding_path,
+                    "catalogue",
+                    catalogue_findings[0].message,
+                )
+            )
+            continue
+        positive, positive_findings = read_runtime_specimen(
+            root, binding["positive"], record, "positive"
+        )
+        findings.extend(positive_findings)
+        if positive is not None:
+            findings.extend(
+                validate_runtime_result(
+                    root, record, binding, positive, binding["positive"]["path"]
+                )
+            )
+        negative, negative_findings = read_runtime_specimen(
+            root, binding["negative"], record, "negative"
+        )
+        if negative_findings:
+            findings.append(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding["negative"]["path"],
+                    "negative",
+                    f"negative specimen could not reach the production reader: {negative_findings[0].message}",
+                    code="PM096",
+                )
+            )
+        elif negative is not None:
+            produced = validate_runtime_result(
+                root, record, binding, negative, binding["negative"]["path"]
+            )
+            expected = binding["negative"]["finding"]
+            if len(produced) != 1 or produced[0].code != expected:
+                findings.append(
+                    runtime_finding(
+                        record,
+                        binding,
+                        binding["negative"]["path"],
+                        "negative",
+                        f"negative specimen produced {[item.code for item in produced]!r}; expected only {expected}",
+                        code="PM096",
+                    )
+                )
+    return len(records), findings
+
+
 def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
     findings: list[Finding] = []
     expected_records = promise_records(root, inventory)
@@ -4109,114 +5002,14 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             )
         )
     for promise_id in sorted(required_runtime & actual_runtime):
-        binding = runtime_catalog[promise_id]
-        binding_path = f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}"
-        if not isinstance(binding, dict) or set(binding) != {
-            "source",
-            "sha256",
-            "bindings",
-        }:
-            findings.append(
-                Finding(
-                    "PM070",
-                    "structural",
-                    binding_path,
-                    "runtime binding must contain exactly source, sha256 and bindings",
-                    "name one digest-bound result schema, writer or contract and its field map",
-                    promise_id=promise_id,
-                )
+        findings.extend(
+            validate_runtime_catalogue_entry(
+                root,
+                expected[promise_id],
+                runtime_catalog[promise_id],
+                f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}",
             )
-            continue
-        source = binding.get("source")
-        if not isinstance(source, str) or not source.strip():
-            findings.append(
-                Finding(
-                    "PM070",
-                    "structural",
-                    binding_path,
-                    "runtime binding source is absent",
-                    "name the existing result schema, writer or contract",
-                    promise_id=promise_id,
-                )
-            )
-        else:
-            source_path = Path(source)
-            source_target = root / source_path
-            if (
-                source_path.is_absolute()
-                or ".." in source_path.parts
-                or source_target.is_symlink()
-                or not confined(source_target, root)
-                or not source_target.is_file()
-            ):
-                findings.append(
-                    Finding(
-                        "PM070",
-                        "identity",
-                        binding_path,
-                        f"runtime binding source does not resolve inside the repository: {source!r}",
-                        "name a confined existing result schema, writer or contract",
-                        promise_id=promise_id,
-                    )
-                )
-            else:
-                digest = binding.get("sha256")
-                if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
-                    findings.append(
-                        Finding(
-                            "PM070",
-                            "structural",
-                            binding_path,
-                            "runtime binding source digest is absent or malformed",
-                            "record the full lowercase SHA-256 of the reviewed source bytes",
-                            promise_id=promise_id,
-                        )
-                    )
-                else:
-                    actual, digest_error = bounded_sha256(
-                        source_target, MAX_RUNTIME_SOURCE_BYTES
-                    )
-                    if digest_error is not None:
-                        findings.append(
-                            Finding(
-                                "PM070",
-                                "structural",
-                                binding_path,
-                                f"runtime binding {digest_error}",
-                                "name a bounded readable result surface inside the repository",
-                                promise_id=promise_id,
-                            )
-                        )
-                    elif actual != digest:
-                        findings.append(
-                            Finding(
-                                "PM071",
-                                "drift",
-                                binding_path,
-                                f"runtime binding source digest is {actual}; inventory records {digest}",
-                                "review the changed result surface and update its field map and digest together",
-                                promise_id=promise_id,
-                            )
-                        )
-        fields = binding.get("bindings")
-        if (
-            not isinstance(fields, dict)
-            or set(fields) != RUNTIME_BINDING_KEYS
-            or any(
-                not isinstance(fields.get(key), str) or not fields[key].strip()
-                for key in RUNTIME_BINDING_KEYS
-            )
-        ):
-            findings.append(
-                Finding(
-                    "PM070",
-                    "structural",
-                    binding_path,
-                    "runtime field map is absent, incomplete or contains unknown fields",
-                    "bind promise id, subject, scope, evidence references and classes, unknowns, transition and exception",
-                    promise_id=promise_id,
-                )
-            )
+        )
 
     seen: dict[str, int] = {}
     selected = 0
@@ -5233,6 +6026,7 @@ def report(
         "package_versions": 0,
         "skill_versions": 0,
         "licensed_plugins": 0,
+        "runtime_bindings": 0,
     }
     if stats:
         counts.update(stats)
@@ -5323,6 +6117,7 @@ def parse_only(raw: str):
         "obligations",
         "exceptions",
         "imports",
+        "runtime",
     }
     unknown = sorted(set(requested) - allowed)
     if unknown or not requested:
@@ -5344,7 +6139,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences,obligations,exceptions,imports"
+            "versions,hosts,coverage,licences,obligations,exceptions,imports,runtime"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -5402,9 +6197,11 @@ def main(argv=None):
         coverage_rows, coverage_selected, coverage_findings = check_coverage(
             root, inventory, selected_groups
         )
+        runtime_bindings, runtime_findings = check_runtime(root, inventory)
         findings.extend(structure_findings)
         findings.extend(overlay_findings)
         findings.extend(coverage_findings)
+        findings.extend(runtime_findings)
         return report(
             "coverage",
             root,
@@ -5416,6 +6213,7 @@ def main(argv=None):
             stats={
                 "coverage_rows": coverage_rows,
                 "coverage_selected": coverage_selected,
+                "runtime_bindings": runtime_bindings,
             },
         )
 
@@ -5448,6 +6246,7 @@ def main(argv=None):
             "hosts",
             "coverage",
             "licences",
+            "runtime",
         }
         if only & inventory_components:
             inventory, inventory_findings = discover_inventory(root)
@@ -5492,6 +6291,10 @@ def main(argv=None):
             stats["coverage_rows"] = coverage_rows
             stats["coverage_selected"] = coverage_selected
             findings.extend(coverage_findings)
+        if "runtime" in only and inventory is not None:
+            runtime_bindings, runtime_findings = check_runtime(root, inventory)
+            stats["runtime_bindings"] = runtime_bindings
+            findings.extend(runtime_findings)
         obligations = 0
         if "obligations" in only:
             obligations, obligation_findings = check_obligations(root, law)

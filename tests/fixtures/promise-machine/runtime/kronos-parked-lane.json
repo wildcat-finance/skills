@@ -1,0 +1,143 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "kronos_parked_lane": {
+          "binding": {
+            "promise_id": "kronos-parked-lane",
+            "scope": "structural binding for kronos-parked-lane",
+            "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+              "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind kronos-parked-lane without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "kronos-parked-lane",
+        "scope": "structural binding for kronos-parked-lane",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+        "transition": {
+          "action": "structurally bind kronos-parked-lane without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "kronos_parked_lane": {
+          "binding": {
+            "promise_id": "kronos-parked-lane",
+            "scope": "structural binding for kronos-parked-lane",
+            "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+              "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            }
+          ],
+          "source_digest": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
+          "transition": {
+            "action": "structurally bind kronos-parked-lane without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "kronos-parked-lane",
+        "scope": "structural binding for kronos-parked-lane",
+        "source_digest": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
+        "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+        "transition": {
+          "action": "structurally bind kronos-parked-lane without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "fiat_final_integration": {
+          "authorised_by": {
+            "id": "promise-owner:fiat-final-integration",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+              "sha256": "bf2f36c912c3e8a969bcc7bed3cbf0bc2588b34fb59be13c87189fe719d51cab"
+            }
+          },
+          "binding": {
+            "promise_id": "fiat-final-integration",
+            "scope": "structural binding for fiat-final-integration",
+            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind fiat-final-integration without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:fiat-final-integration",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+            "sha256": "bf2f36c912c3e8a969bcc7bed3cbf0bc2588b34fb59be13c87189fe719d51cab"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+          "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+        },
+        "promise_id": "fiat-final-integration",
+        "scope": "structural binding for fiat-final-integration",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "transition": {
+          "action": "structurally bind fiat-final-integration without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "fiat_final_integration": {
+          "authorised_by": {
+            "id": "promise-owner:fiat-final-integration",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+              "sha256": "bf2f36c912c3e8a969bcc7bed3cbf0bc2588b34fb59be13c87189fe719d51cab"
+            }
+          },
+          "binding": {
+            "promise_id": "fiat-final-integration",
+            "scope": "structural binding for fiat-final-integration",
+            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+          },
+          "classes": [
+            "checked",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            }
+          ],
+          "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+          "transition": {
+            "action": "structurally bind fiat-final-integration without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:fiat-final-integration",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+            "sha256": "bf2f36c912c3e8a969bcc7bed3cbf0bc2588b34fb59be13c87189fe719d51cab"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+          "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+        },
+        "promise_id": "fiat-final-integration",
+        "scope": "structural binding for fiat-final-integration",
+        "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "transition": {
+          "action": "structurally bind fiat-final-integration without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

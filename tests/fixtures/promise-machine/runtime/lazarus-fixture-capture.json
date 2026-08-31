@@ -1,0 +1,159 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "lazarus_fixture_capture": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-fixture-capture without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "proved",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/schemas/manifest-v1.json",
+                "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-fixture-capture",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-fixture-capture",
+            "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "proved",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/schemas/manifest-v1.json",
+            "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "lazarus-fixture-capture",
+        "scope": "structural binding for lazarus-fixture-capture",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json",
+        "transition": {
+          "action": "structurally bind lazarus-fixture-capture without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "lazarus_fixture_capture": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-fixture-capture without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "proved",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/schemas/manifest-v1.json",
+                "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-fixture-capture",
+          "source": {
+            "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-fixture-capture",
+            "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "proved",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/schemas/manifest-v1.json",
+            "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "lazarus-fixture-capture",
+        "scope": "structural binding for lazarus-fixture-capture",
+        "source_digest": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14",
+        "subject": "runtime source plugins/lazarus/schemas/manifest-v1.json",
+        "transition": {
+          "action": "structurally bind lazarus-fixture-capture without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

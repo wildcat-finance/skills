@@ -1,0 +1,203 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "lazarus_preservation_release": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-preservation-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:lazarus-preservation-release",
+            "reference": {
+              "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+              "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/schemas/release-v1.json",
+                "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/schemas/release-v1.json",
+            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-preservation-release",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-preservation-release",
+            "subject": "runtime source plugins/lazarus/schemas/release-v1.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:lazarus-preservation-release",
+          "reference": {
+            "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+            "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/schemas/release-v1.json",
+            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/lazarus/schemas/release-v1.json",
+          "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+        },
+        "promise_id": "lazarus-preservation-release",
+        "scope": "structural binding for lazarus-preservation-release",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/lazarus/schemas/release-v1.json",
+        "transition": {
+          "action": "structurally bind lazarus-preservation-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "lazarus_preservation_release": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-preservation-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:lazarus-preservation-release",
+            "reference": {
+              "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+              "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/schemas/release-v1.json",
+                "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/schemas/release-v1.json",
+            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-preservation-release",
+          "source": {
+            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-preservation-release",
+            "subject": "runtime source plugins/lazarus/schemas/release-v1.json"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:lazarus-preservation-release",
+          "reference": {
+            "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+            "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/schemas/release-v1.json",
+            "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/lazarus/schemas/release-v1.json",
+          "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d"
+        },
+        "promise_id": "lazarus-preservation-release",
+        "scope": "structural binding for lazarus-preservation-release",
+        "source_digest": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d",
+        "subject": "runtime source plugins/lazarus/schemas/release-v1.json",
+        "transition": {
+          "action": "structurally bind lazarus-preservation-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

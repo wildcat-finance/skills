@@ -1,0 +1,147 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "tabularium_release_build": {
+          "binding": {
+            "promise_id": "tabularium-release-build",
+            "scope": "structural binding for tabularium-release-build",
+            "subject": "runtime source plugins/tabularium/scripts/tabularium.py"
+          },
+          "classes": [
+            "checked",
+            "recomputed",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/tabularium/scripts/tabularium.py",
+              "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind tabularium-release-build without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/tabularium/scripts/tabularium.py",
+            "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "tabularium-release-build",
+        "scope": "structural binding for tabularium-release-build",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/tabularium/scripts/tabularium.py",
+        "transition": {
+          "action": "structurally bind tabularium-release-build without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "tabularium_release_build": {
+          "binding": {
+            "promise_id": "tabularium-release-build",
+            "scope": "structural binding for tabularium-release-build",
+            "subject": "runtime source plugins/tabularium/scripts/tabularium.py"
+          },
+          "classes": [
+            "checked",
+            "recomputed",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/tabularium/scripts/tabularium.py",
+              "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+            }
+          ],
+          "source_digest": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+          "transition": {
+            "action": "structurally bind tabularium-release-build without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/tabularium/scripts/tabularium.py",
+            "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "tabularium-release-build",
+        "scope": "structural binding for tabularium-release-build",
+        "source_digest": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+        "subject": "runtime source plugins/tabularium/scripts/tabularium.py",
+        "transition": {
+          "action": "structurally bind tabularium-release-build without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

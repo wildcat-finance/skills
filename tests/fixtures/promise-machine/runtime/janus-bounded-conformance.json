@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "janus_bounded_conformance": {
+          "authorised_by": {
+            "id": "promise-owner:janus-bounded-conformance",
+            "reference": {
+              "path": "plugins/janus/skills/janus/EVOLUTION.md",
+              "sha256": "a31deec912521dfa876ecefd3180f8027007c0dbd4f48d952038573c7d28f7b0"
+            }
+          },
+          "binding": {
+            "promise_id": "janus-bounded-conformance",
+            "scope": "structural binding for janus-bounded-conformance",
+            "subject": "runtime source plugins/janus/scripts/janus.py"
+          },
+          "classes": [
+            "checked",
+            "measured",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/janus/scripts/janus.py",
+            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/janus/scripts/janus.py",
+              "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind janus-bounded-conformance without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:janus-bounded-conformance",
+          "reference": {
+            "path": "plugins/janus/skills/janus/EVOLUTION.md",
+            "sha256": "a31deec912521dfa876ecefd3180f8027007c0dbd4f48d952038573c7d28f7b0"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "measured",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/janus/scripts/janus.py",
+            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/janus/scripts/janus.py",
+          "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+        },
+        "promise_id": "janus-bounded-conformance",
+        "scope": "structural binding for janus-bounded-conformance",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/janus/scripts/janus.py",
+        "transition": {
+          "action": "structurally bind janus-bounded-conformance without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "janus_bounded_conformance": {
+          "authorised_by": {
+            "id": "promise-owner:janus-bounded-conformance",
+            "reference": {
+              "path": "plugins/janus/skills/janus/EVOLUTION.md",
+              "sha256": "a31deec912521dfa876ecefd3180f8027007c0dbd4f48d952038573c7d28f7b0"
+            }
+          },
+          "binding": {
+            "promise_id": "janus-bounded-conformance",
+            "scope": "structural binding for janus-bounded-conformance",
+            "subject": "runtime source plugins/janus/scripts/janus.py"
+          },
+          "classes": [
+            "checked",
+            "measured",
+            "recorded"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/janus/scripts/janus.py",
+            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/janus/scripts/janus.py",
+              "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+            }
+          ],
+          "source_digest": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
+          "transition": {
+            "action": "structurally bind janus-bounded-conformance without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:janus-bounded-conformance",
+          "reference": {
+            "path": "plugins/janus/skills/janus/EVOLUTION.md",
+            "sha256": "a31deec912521dfa876ecefd3180f8027007c0dbd4f48d952038573c7d28f7b0"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "measured",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/janus/scripts/janus.py",
+            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/janus/scripts/janus.py",
+          "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+        },
+        "promise_id": "janus-bounded-conformance",
+        "scope": "structural binding for janus-bounded-conformance",
+        "source_digest": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
+        "subject": "runtime source plugins/janus/scripts/janus.py",
+        "transition": {
+          "action": "structurally bind janus-bounded-conformance without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

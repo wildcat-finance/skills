@@ -1,0 +1,143 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "elenchus_fixed_and_guarded": {
+          "binding": {
+            "promise_id": "elenchus-fixed-and-guarded",
+            "scope": "structural binding for elenchus-fixed-and-guarded",
+            "subject": "runtime source plugins/hexaemeron/skills/elenchus/scripts/elenchus.py"
+          },
+          "classes": [
+            "checked",
+            "inferred"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+              "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind elenchus-fixed-and-guarded without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "inferred"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+            "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "elenchus-fixed-and-guarded",
+        "scope": "structural binding for elenchus-fixed-and-guarded",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+        "transition": {
+          "action": "structurally bind elenchus-fixed-and-guarded without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "elenchus_fixed_and_guarded": {
+          "binding": {
+            "promise_id": "elenchus-fixed-and-guarded",
+            "scope": "structural binding for elenchus-fixed-and-guarded",
+            "subject": "runtime source plugins/hexaemeron/skills/elenchus/scripts/elenchus.py"
+          },
+          "classes": [
+            "checked",
+            "inferred"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+              "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5"
+            }
+          ],
+          "source_digest": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5",
+          "transition": {
+            "action": "structurally bind elenchus-fixed-and-guarded without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "inferred"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+            "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "elenchus-fixed-and-guarded",
+        "scope": "structural binding for elenchus-fixed-and-guarded",
+        "source_digest": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5",
+        "subject": "runtime source plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+        "transition": {
+          "action": "structurally bind elenchus-fixed-and-guarded without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

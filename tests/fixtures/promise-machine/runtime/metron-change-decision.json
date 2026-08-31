@@ -1,0 +1,147 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "metron_change_decision": {
+          "evidence": {
+            "classes": [
+              "checked",
+              "measured",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/metron/SKILL.md",
+                "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "metron-change-decision",
+          "scope": "structural binding for metron-change-decision",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/skills/metron/SKILL.md",
+          "transition": {
+            "action": "structurally bind metron-change-decision without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "measured",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/metron/SKILL.md",
+            "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "metron-change-decision",
+        "scope": "structural binding for metron-change-decision",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/metron/SKILL.md",
+        "transition": {
+          "action": "structurally bind metron-change-decision without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "metron_change_decision": {
+          "evidence": {
+            "classes": [
+              "checked",
+              "measured",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/metron/SKILL.md",
+                "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "metron-change-decision",
+          "scope": "structural binding for metron-change-decision",
+          "source_digest": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
+          "subject": "runtime source plugins/hexaemeron/skills/metron/SKILL.md",
+          "transition": {
+            "action": "structurally bind metron-change-decision without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "measured",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/metron/SKILL.md",
+            "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "metron-change-decision",
+        "scope": "structural binding for metron-change-decision",
+        "source_digest": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
+        "subject": "runtime source plugins/hexaemeron/skills/metron/SKILL.md",
+        "transition": {
+          "action": "structurally bind metron-change-decision without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}

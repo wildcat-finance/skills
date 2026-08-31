@@ -392,3 +392,10 @@ references needed to reproduce the framework claim.
 **Why.** The Step-owned ownership-map edit makes the aggregate select every current scope, revealing Synkrisis and Lazarus defects that the narrower pinned-parent plan did not execute. Both reproduce without the Step 1 product: Synkrisis fails on Python 3.14.6 because macOS reports peak RSS in bytes, and Lazarus reports the same twelve failures from the clean parent with a real-path temporary root. The replacement removes avoidable `/var` symlink noise, retains exact negative evidence for the remaining base defects, and does not authorise repairs outside the obligation scaffold.
 **Steps touched.** Step 1.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Disciplines: phylax: readers cross heterogeneous local-file boundaries and must parse bounded data without invoking the owning skill or following paths outside the checkout. ephoros: row id, source, missing field, evidence class, consequence, blocked transition, and recovery survive in each refusal. metron: none, no performance claim is made. elenchus: every field mutation is first observed red and remains a row-specific guard. hypomnema: ADR-062 records why native readers and small adapters are used instead of a universal envelope.
+**Why.** The pinned base had ADR-054 free, but the current default branch now uses ADR-054 for an unrelated decision and uses ADR-055 through ADR-061. The Step 3 study amendment receipts ADR-062 as the next collision-free identifier without changing the reader design or exit.
+**Steps touched.** Step 3.
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.

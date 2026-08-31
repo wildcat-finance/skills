@@ -1,0 +1,147 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "hypomnema_record_placement": {
+          "evidence": {
+            "classes": [
+              "checked",
+              "inferred",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+                "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "hypomnema-record-placement",
+          "scope": "structural binding for hypomnema-record-placement",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+          "transition": {
+            "action": "structurally bind hypomnema-record-placement without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "inferred",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+            "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hypomnema-record-placement",
+        "scope": "structural binding for hypomnema-record-placement",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+        "transition": {
+          "action": "structurally bind hypomnema-record-placement without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "hypomnema_record_placement": {
+          "evidence": {
+            "classes": [
+              "checked",
+              "inferred",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+                "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "hypomnema-record-placement",
+          "scope": "structural binding for hypomnema-record-placement",
+          "source_digest": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
+          "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+          "transition": {
+            "action": "structurally bind hypomnema-record-placement without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "inferred",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+            "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hypomnema-record-placement",
+        "scope": "structural binding for hypomnema-record-placement",
+        "source_digest": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
+        "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+        "transition": {
+          "action": "structurally bind hypomnema-record-placement without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}

@@ -101,6 +101,16 @@
       "consequence": 3,
       "blocked_transition": "authorise a transition without its consequence-specific evidence path",
       "recovery": "supply the exact evidence required by the declared consequence and rerun the transition check"
+    },
+    {
+      "id": "law-runtime-result-binding",
+      "clause_sha256": "5ab3a7b96df72ab8e457533b60d82f2b8986a9c9701697889ed7f4267c0e3e00",
+      "gate": "runtime.binding",
+      "specimen": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
+      "finding": "PM095",
+      "consequence": 3,
+      "blocked_transition": "accept a level-two or level-three result without its source-bound native fields",
+      "recovery": "restore the bounded reader, native fields, source digest, and level-three authority evidence, then rerun the runtime check"
     }
   ]
 }
