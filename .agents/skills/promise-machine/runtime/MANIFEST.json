@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1001,
-  "total_bytes": 21765002,
+  "total_bytes": 21766947,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -435,9 +435,9 @@
       "source": "plugins/alexandria/scripts/alexandria_lib/index.py"
     },
     {
-      "bytes": 30775,
+      "bytes": 32720,
       "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
-      "sha256": "efeae161d802be6e02d343e01b6e0ca07e5d43d79d3f9d2ecb82763a33305734",
+      "sha256": "02fed4f03e97b12d9945922f7c1aa8e2ea297dd8033160f271e87fb6fa8272ca",
       "source": "plugins/alexandria/scripts/alexandria_lib/interval.py"
     },
     {

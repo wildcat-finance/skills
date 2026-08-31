@@ -429,13 +429,14 @@ def discover_epochs(
 
     boundaries = [start]
     openings = {start: None}
+    declared = {}
     previous = None
     if not isinstance(upgrade_logs, (list, tuple)):
         raise AlexandriaError("upgrade logs are not a list")
     if len(upgrade_logs) > MAX_EPOCHS:
         raise AlexandriaError(f"more than {MAX_EPOCHS} upgrade logs were supplied")
     for position, log in enumerate(upgrade_logs):
-        block, opening = _upgrade_log(log, proxy, position)
+        block, opening, announced, announced_hash = _upgrade_log(log, proxy, position)
         if previous is not None and block <= previous:
             raise AlexandriaError("upgrade logs are not in ascending block order")
         previous = block
@@ -443,17 +444,32 @@ def discover_epochs(
             raise AlexandriaError(
                 f"upgrade log at block {block} falls outside the declared interval"
             )
+        declared[block] = (announced, announced_hash)
         if block == start:
             openings[start] = opening
             continue
         boundaries.append(block)
         openings[block] = opening
 
+    code_by_address = _normalised_code_reads(code_reads)
     epochs = []
     for position, boundary in enumerate(boundaries):
         closing = boundaries[position + 1] - 1 if position + 1 < len(boundaries) else end
         implementation = _implementation(slot_reads, boundary)
-        code = _runtime_code(code_reads, implementation)
+        opening_hash = _block_hash(block_hashes, boundary)
+        if boundary in declared:
+            announced, announced_hash = declared[boundary]
+            if announced != implementation:
+                raise AlexandriaError(
+                    f"upgrade log at block {boundary} announces {announced} while the "
+                    f"implementation slot read there holds {implementation}"
+                )
+            if announced_hash != opening_hash:
+                raise AlexandriaError(
+                    f"upgrade log at block {boundary} names a different block hash "
+                    "than the preserved block"
+                )
+        code = _runtime_code(code_by_address, implementation)
         epochs.append({
             "chain": chain,
             "deployment": deployment,
@@ -463,7 +479,7 @@ def discover_epochs(
             "implementation_code_sha256": hashlib.sha256(code).hexdigest(),
             "proxy": proxy,
             "start_block": str(boundary),
-            "start_hash": _block_hash(block_hashes, boundary),
+            "start_hash": opening_hash,
             "upgrade": openings[boundary],
         })
 
@@ -521,7 +537,7 @@ def validate_epochs(epochs, start: int, end: int) -> None:
 def _upgrade_log(log, proxy: str, position: int):
     if not isinstance(log, dict):
         raise AlexandriaError(f"upgrade log {position} is not an object")
-    for field in ("address", "blockNumber", "logIndex", "topics", "transactionHash"):
+    for field in ("address", "blockHash", "blockNumber", "logIndex", "topics", "transactionHash"):
         if field not in log:
             raise AlexandriaError(f"upgrade log {position} has no {field}")
     # ephoros: allow no telemetry here: `log` is a JSON-RPC event log a provider returned, and `address` is its emitting-contract field
@@ -532,12 +548,14 @@ def _upgrade_log(log, proxy: str, position: int):
         raise AlexandriaError(f"upgrade log {position} does not carry two topics")
     if not isinstance(topics[0], str) or topics[0].lower() != UPGRADED_TOPIC:
         raise AlexandriaError(f"upgrade log {position} is not an Upgraded(address) log")
+    announced = _topic_address(topics[1], f"upgrade log {position} implementation topic")
     block = _quantity(log["blockNumber"], f"upgrade log {position} block number")
-    return block, {
+    opening = {
         "block_number": str(block),
         "log_index": _quantity(log["logIndex"], f"upgrade log {position} log index"),
         "transaction_hash": _hash(log["transactionHash"], f"upgrade log {position} transaction"),
     }
+    return block, opening, announced, _hash(log["blockHash"], f"upgrade log {position} block hash")
 
 
 def _implementation(slot_reads, block: int) -> str:
@@ -558,6 +576,29 @@ def _implementation(slot_reads, block: int) -> str:
     if implementation == ZERO_ADDRESS:
         raise AlexandriaError(f"implementation slot read at block {block} is the zero address")
     return implementation
+
+
+def _normalised_code_reads(code_reads) -> dict:
+    """Key runtime code by lowercase address, so a checksummed key still resolves."""
+    if not isinstance(code_reads, dict):
+        raise AlexandriaError("runtime code reads are not a mapping")
+    normalised = {}
+    for key, value in code_reads.items():
+        address = _address(key, "runtime code read key")
+        if address in normalised and normalised[address] != value:
+            raise AlexandriaError(
+                f"runtime code reads hold two different bodies for {address}"
+            )
+        normalised[address] = value
+    return normalised
+
+
+def _topic_address(value, label: str) -> str:
+    if not isinstance(value, str) or WORD_RE.fullmatch(value.lower()) is None:
+        raise AlexandriaError(f"{label} is not a 32-byte word")
+    if value[2:26].strip("0") != "":
+        raise AlexandriaError(f"{label} is not a left-padded address")
+    return "0x" + value[-40:].lower()
 
 
 def _runtime_code(code_reads, implementation: str) -> bytes:

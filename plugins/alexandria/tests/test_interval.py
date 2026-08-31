@@ -610,6 +610,46 @@ class EpochDiscoveryTests(unittest.TestCase):
         upgrade = definition["properties"]["upgrade"]["oneOf"][1]
         self.assertEqual(set(epochs[1]["upgrade"]), set(upgrade["required"]))
 
+    def test_a_log_announcing_another_implementation_refuses(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"][0]["topics"][1] = "0x" + "0" * 24 + "de" * 20
+        with self.assertRaisesRegex(AlexandriaError, "announces .* while the"):
+            discover_epochs(**evidence)
+
+    def test_a_log_naming_another_block_hash_refuses(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"][0]["blockHash"] = "0x" + "ff" * 32
+        with self.assertRaisesRegex(AlexandriaError, "different block hash"):
+            discover_epochs(**evidence)
+
+    def test_a_log_with_no_block_hash_refuses(self):
+        evidence = epoch_evidence()
+        del evidence["upgrade_logs"][0]["blockHash"]
+        with self.assertRaisesRegex(AlexandriaError, "has no blockHash"):
+            discover_epochs(**evidence)
+
+    def test_an_implementation_topic_that_is_not_an_address_refuses(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"][0]["topics"][1] = "0x" + "1" * 64
+        with self.assertRaisesRegex(AlexandriaError, "left-padded address"):
+            discover_epochs(**evidence)
+
+    def test_a_checksummed_runtime_code_key_still_resolves(self):
+        evidence = epoch_evidence()
+        first = "0x1b0e765f6224c21223aea2af16c1c46e38885a40"
+        evidence["code_reads"]["0x1B0E765F6224C21223AEA2AF16C1C46E38885A40"] = (
+            evidence["code_reads"].pop(first)
+        )
+        epochs = discover_epochs(**evidence)
+        self.assertEqual(epochs[0]["implementation"], first)
+
+    def test_two_different_bodies_for_one_implementation_refuse(self):
+        evidence = epoch_evidence()
+        first = "0x1b0e765f6224c21223aea2af16c1c46e38885a40"
+        evidence["code_reads"]["0x1B0E765F6224C21223AEA2AF16C1C46E38885A40"] = "0xdeadbeef"
+        with self.assertRaisesRegex(AlexandriaError, "two different bodies"):
+            discover_epochs(**evidence)
+
     def test_discovery_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             discover_epochs(**epoch_evidence())
