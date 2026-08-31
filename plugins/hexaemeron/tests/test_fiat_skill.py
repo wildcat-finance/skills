@@ -158,12 +158,12 @@ class FiatSkillContractTests(unittest.TestCase):
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
-            "surveyor": "`topic`, `target_dir`, `base_ref`, and `output_path`",
-            "mason": "`runbook_step`, `branch`, and `branch_from`",
+            "surveyor": "`topic`, `target_dir`, `base_ref`, `output_path`, and `design_output_path`",
+            "mason": "`runbook_step`, `design_evidence`, `branch`, and `branch_from`",
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
-                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, and "
-                "`runbook_step`"
+                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, "
+                "`runbook_step`, and `design_evidence`"
             ),
             "scribe": "`files`, `pr_base`, `pr_draft_path`, and `plugin_root`",
         }
@@ -1090,6 +1090,7 @@ class TestRunbookAmendments(HexctlCase):
         runbook = self.write("runbook.md", original)
         steps = self.write("steps.json", '["Core", "Finish"]')
         self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        original = Path(os.path.join(self.target, runbook)).read_text(encoding="utf-8")
         valid = self.write("candidate.md", original + self.runbook_amendment())
         self.run_ctl("amend", "runbook", "--artifact", valid)
 

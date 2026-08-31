@@ -50,6 +50,15 @@ def relation_block(*rows):
     return "```version-relations\n" + "\n".join(rows) + "\n```\n\n"
 
 
+DESIGN_LOCK_BLOCK = """```design-lock
+schema | protasis-design-evidence/v1
+sha256 | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+candidate | streaming
+```
+
+"""
+
+
 def findings(source):
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "runbook.md"
@@ -325,6 +334,44 @@ class VersionRelations(unittest.TestCase):
         ):
             with self.subTest(value=value):
                 self.assertNotIn(value, messages)
+
+
+class DesignLocks(unittest.TestCase):
+    def test_one_valid_block_and_an_absent_legacy_block_are_clean(self):
+        self.assertEqual(codes(DESIGN_LOCK_BLOCK + COMPLETE_STEP), [])
+        self.assertEqual(codes(COMPLETE_STEP), [])
+
+    def test_duplicate_late_unclosed_and_near_info_blocks_refuse(self):
+        cases = (
+            DESIGN_LOCK_BLOCK * 2 + COMPLETE_STEP,
+            COMPLETE_STEP + DESIGN_LOCK_BLOCK,
+            DESIGN_LOCK_BLOCK.replace("\n```\n", "\n", 1) + COMPLETE_STEP,
+            DESIGN_LOCK_BLOCK.replace("```design-lock", "```design-lock extra", 1)
+            + COMPLETE_STEP,
+        )
+        for source in cases:
+            with self.subTest(source=source[:40]):
+                self.assertIn("P007", codes(source))
+
+    def test_rows_are_closed_ordered_and_typed(self):
+        cases = (
+            DESIGN_LOCK_BLOCK.replace("schema |", "private |", 1),
+            DESIGN_LOCK_BLOCK.replace("sha256 | " + "a" * 64, "sha256 | short", 1),
+            DESIGN_LOCK_BLOCK.replace("candidate | streaming", "candidate | Bad_Id", 1),
+            DESIGN_LOCK_BLOCK.replace("candidate | streaming\n", "", 1),
+            DESIGN_LOCK_BLOCK.replace(
+                "schema | protasis-design-evidence/v1\nsha256 | " + "a" * 64,
+                "sha256 | " + "a" * 64 + "\nschema | protasis-design-evidence/v1",
+                1,
+            ),
+        )
+        for source in cases:
+            with self.subTest(source=source[:80]):
+                self.assertIn("P007", codes(source + COMPLETE_STEP))
+
+    def test_a_design_lock_quoted_in_an_outer_fence_is_inert(self):
+        quoted = "````markdown\n" + DESIGN_LOCK_BLOCK + "````\n\n"
+        self.assertEqual(codes(quoted + COMPLETE_STEP), [])
 
 
 class ExitCommands(unittest.TestCase):

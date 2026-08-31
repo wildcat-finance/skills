@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.44.1"
+  version: "5.45.1"
 ---
 
 <p align="center">
@@ -336,9 +336,9 @@ Act on the single directive it prints, then receipt it. The directory:
 
 | `do` | Action | Reference | Receipt |
 | --- | --- | --- | --- |
-| `study` | Research the topic; write the study | [protasis](../protasis/SKILL.md) | `done study --artifact <path> --skills <csv>` |
+| `study` | Research the topic; write the study and checked design record | [protasis](../protasis/SKILL.md) | `done study --artifact <path> --skills <csv>` |
 | `runbook` | Derive discrete steps from the study | [protasis](../protasis/SKILL.md) | `done runbook --artifact <path> --steps-file <path>` |
-| `implement` | Build the step, simplest construction that satisfies the runbook | [protasis](../protasis/SKILL.md) | `done implement --branch <name> --commit <sha> [--tests <summary>]` |
+| `implement` | Build the selected design for this source-bound step | [protasis](../protasis/SKILL.md) | `done implement --branch <name> --commit <sha> [--tests <summary>]` |
 | `audit-round` | One security round: run the suite, shape and log its record, fix on the stacked branch | [audit-loop.md](references/audit-loop.md) | `audit-round --findings <n> --audit-filter sapheneia:sapheneia [--log <path>] [--fixes-commit <sha> --elenchus-verdict <value>]`, plus `--phylax-exit`, `--ephoros-exit` and `--hypomnema-exit` on a non-Solidity round |
 | `close-audit` | Last round was clean; close the phase | [audit-loop.md](references/audit-loop.md) | `done audit [--fixes-ref <ref>]` |
 | `resolve-security-suite` | Suite receipt missing; resolve or waive | preflight step 4 | `record security_suite ...` |
@@ -374,6 +374,31 @@ list with one entry per step in order, as strings or `{"title": ...}` objects.
 Run the `imprimatur` lint on each artefact before receipting it, and pass the
 skills that ran to the receipt. Repo copies are committed later, in step 1 of
 the runbook, after the prose pass.
+
+Every newly initialised run records `contracts.design_evidence` and owes
+`.hexaemeron/design-evidence.json`. Surveyor writes that closed Protasis record
+beside its report files. `done study` invokes Protasis at `design-lock`, refuses
+unresolved selection evidence, failed hard gates, a dominated selection or an
+unsupported tie-break, and receipts the record digest, selected candidate and
+the exact report digests consumed. The runbook carries one matching
+`design-lock` block before Step 1. `done runbook` refuses a missing or mismatched
+block and checks evidence due at `step:1` before opening it.
+
+Before `done push` opens the next step, Fiat runs the same checker at that
+`step:N`. The final `done merge-step` checks `integration` after assembling the
+stack on the run branch and before `next` can authorise the base integration.
+A conformance result may therefore remain pending only with its exact resolver,
+future report path and named stop point; it cannot be guessed early or pass its
+boundary late. Mason and Warden receive the fixed record path, digest and
+selected candidate. `verify` replays every transition and compares every
+consumed report digest. Record drift, report drift, failed due evidence and a
+changed selection refuse. A run whose initial state lacks the contract marker
+keeps the old receipt and packet shapes. No legacy evidence is inferred.
+
+The design record is immutable after `done study`. An ordinary study or
+runbook amendment cannot change its candidate, criteria or selection. A change
+to any of those requires an explicit future design-amendment transition; until
+one exists, halt and start a new run rather than editing the receipted record.
 
 A runbook may carry Protasis's optional closed `version-relations` block.
 `init` records the exact commit created in the run worktree in its hash-chained
@@ -491,14 +516,15 @@ later study amendment changes that digest, so an older repair no longer
 applies. Recovery remains another checked amendment or an explicit halt; state
 and ledger history are not edited to manufacture a holding result.
 
-**Implementation.** Pick the construction that takes the least effort to
-comprehend, then stop. The step runs under the phase skills: `phylax` names
+**Implementation.** Build the candidate named by the checked design receipt;
+the design choice is not reopened inside a step. The step runs under the phase skills: `phylax` names
 the boundaries the step introduces and the control each needs, `ephoros` names
 what it must emit once it runs unattended, `metron` refuses any change made in
 the name of speed without a recorded before and after, and a failure worked
 mid-step follows `elenchus` rather than a guess. Their lints run in every
-audit round, so meeting them here is cheaper than meeting them there. The runbook step is the yardstick: reread it before
-declaring the step complete, and do not add anything it does not ask for.
+audit round, so meeting them here is cheaper than meeting them there. The
+runbook step and selected design are the yardsticks: reread both before
+declaring the step complete, and do not add anything they do not ask for.
 The `implement` directive carries `branch` and `branch_from`: cut that exact
 branch from that exact ref. Step 1 branches from the run branch, every later
 step from the step below it, so each step builds on the reviewed tree of the
@@ -648,8 +674,9 @@ Every `next` envelope carries `state_sha256`, an explicit `agent`, and a
 source-bound `brief`. Delegate the exact packet to `surveyor`, `mason`,
 `warden`, or `scribe` when the runtime supports isolated agents. An inline
 directive carries explicit null packet fields. Refuse an artefact whose digest
-has drifted; do not reconstruct its study block, runbook step, risk register,
-or sorted prose diff from chat. If delegation is unavailable, execute the same
+has drifted; do not reconstruct its design selection, study block, runbook
+step, risk register, or sorted prose diff from chat. If delegation is
+unavailable, execute the same
 packet in the main session. After compaction, rerun `next`: the receipted
 artefacts and state digest deterministically reconstruct the packet.
 
@@ -726,6 +753,18 @@ and say if a dirty worktree was retained. The next run should not have to
 retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ## Promise Machine contract
+
+### fiat-design-evidence
+
+- Promise: For a run initialised under `protasis-design-evidence/v1`, successful study and runbook receipts establish one immutable selected candidate from a complete checked matrix, a matching runbook design lock, and append-only transition receipts for each step entry and integration boundary reached so far.
+- Evidence: The fixed record path and SHA-256, closed Protasis checker output, selected candidate, design-lock block, report paths and digests consumed at `design-lock`, `step:N` and `integration`, state transition spine, matching ledger events, delegated compact source binding, replay result and hostile missing, pending, mismatched, symlink, drift and legacy fixtures.
+- Evidence classes: checked, recorded
+- Boundary: The receipts establish record shape, report-byte identity, report-derived comparisons, mechanical frontier membership and named progressive stop points. They do not establish that a criterion set is sufficient, a command measures the intended property, pending evidence will pass, or the selected design is correct in every environment.
+- Authorises: Deriving a runbook from the locked candidate, opening only a step whose due conformance evidence passes, delegating the exact selected design to Mason and Warden, and entering integration only after its due evidence passes.
+- Consequence: 2
+- Refuses: A missing or changed record, incomplete matrix, missing required concern, unsafe report, non-zero report exit, state/report disagreement, selection evidence still pending, failed selection gate, selected dominated candidate, unsupported tie-break, missing or mismatched runbook lock, evidence absent or failed at its named transition, receipt/event mismatch, or replay drift.
+- Recovery: Before design lock, run the named resolver and rewrite the draft record. After design lock, restore the exact receipted record and reports or produce the pending report at its named path; halt and start a new run if the candidate, criterion set or selection must change.
+- Exceptions: none
 
 ### fiat-study-amendment
 

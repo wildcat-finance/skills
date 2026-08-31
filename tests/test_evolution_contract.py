@@ -114,7 +114,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.44.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.45.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,17 +122,22 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.44.1")
+        self.assertEqual(latest["version"], "fiat-v5.45.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("retiring the Google Drive", latest["evidence"])
-        self.assertIn("fixed local store", latest["change"])
-        self.assertIn("former waiver", latest["change"])
-        self.assertIn("directly to one another", latest["change"])
+        self.assertIn("skills#1000", latest["evidence"])
+        self.assertIn("ADR-061", latest["evidence"])
+        self.assertIn("contracts.design_evidence", latest["change"])
+        self.assertIn("States without the marker", latest["change"])
+        checkpoint = by_version["fiat-v5.44.1"]
+        self.assertIn("retiring the Google Drive", checkpoint["evidence"])
+        self.assertIn("fixed local store", checkpoint["change"])
+        self.assertIn("former waiver", checkpoint["change"])
+        self.assertIn("directly to one another", checkpoint["change"])
         compatibility = by_version["fiat-v5.43.1"]
         self.assertIn("skills#909", compatibility["evidence"])
         self.assertIn("portable relative paths", compatibility["change"])
@@ -222,27 +227,27 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.9.0")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v5.10.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "protasis-v5.9.0")
-        self.assertEqual(latest["axis"], "evolution")
+        self.assertEqual(latest["version"], "protasis-v5.10.0")
+        self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "amendment-block-check")
         self.assertEqual(
             latest["digest"],
             "ca34e050ea7b11b33b1fa1f9575e398f481e20a6e33c7f4edc85cad0d19d5299",
         )
-        self.assertIn("skills#497", latest["evidence"])
-        self.assertIn("S008", latest["change"])
+        self.assertIn("skills#1000", latest["evidence"])
+        self.assertIn("ADR-061", latest["evidence"])
+        self.assertIn("protasis-design-evidence/v1", latest["change"])
         prior = history_rows(ledger)[-2]
-        self.assertEqual(prior["version"], "protasis-v4.9.0")
-        self.assertEqual(prior["axis"], "generation")
-        self.assertIn("skills#556", prior["evidence"])
-        self.assertIn("ADR-006", prior["evidence"])
-        self.assertIn("fiat-version-relations", prior["evidence"])
+        self.assertEqual(prior["version"], "protasis-v5.9.0")
+        self.assertEqual(prior["axis"], "evolution")
+        self.assertIn("skills#497", prior["evidence"])
+        self.assertIn("S008", prior["change"])
 
     def test_history_rows_accept_compact_list(self):
         digest = "a" * 64
