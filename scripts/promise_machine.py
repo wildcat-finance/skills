@@ -4231,6 +4231,54 @@ def dotted_runtime_value(document, dotted: str):
     return value, True
 
 
+def set_dotted_runtime_value(document, dotted: str, value):
+    target = document
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        if not isinstance(target, dict) or part not in target:
+            return False
+        target = target[part]
+    if not isinstance(target, dict) or parts[-1] not in target:
+        return False
+    target[parts[-1]] = value
+    return True
+
+
+def runtime_negative_mutation_error(binding, positive, negative):
+    mappings = binding.get("bindings") if isinstance(binding, dict) else None
+    descriptor = binding.get("negative") if isinstance(binding, dict) else None
+    field = descriptor.get("field") if isinstance(descriptor, dict) else None
+    if (
+        not isinstance(mappings, dict)
+        or not closed_non_empty_scalar(field)
+        or field not in mappings
+    ):
+        return "negative specimen does not name one declared runtime field"
+
+    values = []
+    for label, specimen in (("positive", positive), ("negative", negative)):
+        header = specimen.get("promise_machine") if isinstance(specimen, dict) else None
+        native, present = dotted_runtime_value(specimen, mappings[field])
+        if not isinstance(header, dict) or field not in header or not present:
+            return f"{label} specimen does not resolve declared field {field!r} twice"
+        if native != header[field]:
+            return f"{label} specimen does not mirror declared field {field!r}"
+        values.append(header[field])
+    if values[0] == values[1]:
+        return f"negative specimen does not mutate declared field {field!r}"
+
+    normalized = []
+    for specimen in (positive, negative):
+        item = json.loads(json.dumps(specimen))
+        if not set_dotted_runtime_value(item, mappings[field], None):
+            return f"specimen does not resolve declared field {field!r}"
+        item["promise_machine"][field] = None
+        normalized.append(item)
+    if normalized[0] != normalized[1]:
+        return f"negative specimen changes data outside declared field {field!r}"
+    return None
+
+
 def runtime_binding_map_error(reader: str, mappings, expected_fields: set[str]):
     if not isinstance(mappings, dict) or set(mappings) != expected_fields:
         return "native field map does not contain the consequence's exact fields"
@@ -4380,6 +4428,7 @@ def validate_runtime_catalogue_entry(
         )
 
     reader = binding["reader"]
+    expected_fields = runtime_expected_fields(record)
     if reader not in RUNTIME_READER_BINDINGS:
         findings.append(
             Finding(
@@ -4392,7 +4441,6 @@ def validate_runtime_catalogue_entry(
             )
         )
     else:
-        expected_fields = runtime_expected_fields(record)
         mapping_error = runtime_binding_map_error(
             reader, binding["bindings"], expected_fields
         )
@@ -4410,7 +4458,7 @@ def validate_runtime_catalogue_entry(
 
     descriptor_shapes = {
         "positive": {"path", "selector", "sha256"},
-        "negative": {"path", "selector", "sha256", "finding"},
+        "negative": {"path", "selector", "sha256", "finding", "field"},
     }
     for kind, keys in descriptor_shapes.items():
         descriptor = binding[kind]
@@ -4434,6 +4482,20 @@ def validate_runtime_catalogue_entry(
                     binding_path,
                     "runtime negative specimen does not name stable finding PM095",
                     "bind the hostile specimen to PM095",
+                    promise_id=record.promise_id,
+                )
+            )
+        if kind == "negative" and (
+            not closed_non_empty_scalar(descriptor["field"])
+            or descriptor["field"] not in expected_fields
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    "runtime negative specimen does not name one declared field",
+                    "name the one runtime field isolated by the negative specimen",
                     promise_id=record.promise_id,
                 )
             )
@@ -4529,7 +4591,7 @@ def read_runtime_specimen(
     path = descriptor.get("path") if isinstance(descriptor, dict) else "<runtime>"
     keys = {"path", "selector", "sha256"}
     if kind == "negative":
-        keys.add("finding")
+        keys.update({"finding", "field"})
     if not isinstance(descriptor, dict) or set(descriptor) != keys:
         return None, [
             runtime_finding(
@@ -4910,12 +4972,12 @@ def check_runtime(root: Path, inventory: Inventory):
             root, binding["positive"], record, "positive"
         )
         findings.extend(positive_findings)
+        positive_produced = []
         if positive is not None:
-            findings.extend(
-                validate_runtime_result(
-                    root, record, binding, positive, binding["positive"]["path"]
-                )
+            positive_produced = validate_runtime_result(
+                root, record, binding, positive, binding["positive"]["path"]
             )
+            findings.extend(positive_produced)
         negative, negative_findings = read_runtime_specimen(
             root, binding["negative"], record, "negative"
         )
@@ -4931,6 +4993,23 @@ def check_runtime(root: Path, inventory: Inventory):
                 )
             )
         elif negative is not None:
+            mutation_error = None
+            if positive is not None and not positive_produced:
+                mutation_error = runtime_negative_mutation_error(
+                    binding, positive, negative
+                )
+            if mutation_error is not None:
+                findings.append(
+                    runtime_finding(
+                        record,
+                        binding,
+                        binding["negative"]["path"],
+                        "negative",
+                        mutation_error,
+                        code="PM096",
+                    )
+                )
+                continue
             produced = validate_runtime_result(
                 root, record, binding, negative, binding["negative"]["path"]
             )

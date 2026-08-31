@@ -206,6 +206,7 @@ def fixture_runtime_binding(source, digest):
     negative = dict(specimen)
     negative["selector"] = "negative"
     negative["finding"] = "PM095"
+    negative["field"] = "source_digest"
     return {
         "source": source,
         "selector": "test_positive",
@@ -3262,9 +3263,10 @@ class PromiseCoverageTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     set(binding["negative"]),
-                    {"path", "selector", "sha256", "finding"},
+                    {"path", "selector", "sha256", "finding", "field"},
                 )
                 self.assertEqual(binding["negative"]["finding"], "PM095")
+                self.assertIn(binding["negative"]["field"], binding["bindings"])
                 self.assertNotEqual(
                     binding["positive"]["selector"], binding["negative"]["selector"]
                 )
@@ -3467,6 +3469,53 @@ class PromiseCoverageTests(unittest.TestCase):
         self.assertEqual(semantic_codes(findings), ["PM095"])
         self.assertIn("evidence_references", findings[0].message)
         self.assertIn("recorded", findings[0].message)
+
+    def test_runtime_negative_specimens_name_and_isolate_their_field(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        declared_fields = {
+            binding["negative"].get("field")
+            for binding in coverage["runtime"].values()
+        }
+        self.assertNotIn(None, declared_fields)
+        for promise_id, binding in coverage["runtime"].items():
+            with self.subTest(promise_id=promise_id):
+                field = binding["negative"].get("field")
+                self.assertIn(field, binding["bindings"])
+                positive = load_runtime_selector(binding["positive"])
+                negative = load_runtime_selector(binding["negative"])
+                self.assertIsNone(
+                    promise_machine_module.runtime_negative_mutation_error(
+                        binding, positive, negative
+                    )
+                )
+
+        binding = coverage["runtime"]["alexandria-derived-view"]
+        positive = load_runtime_selector(binding["positive"])
+        wrong_field = mutate_runtime_field(
+            positive, binding, "promise_id", "wrong-promise"
+        )
+        error = promise_machine_module.runtime_negative_mutation_error(
+            binding, positive, wrong_field
+        )
+        self.assertIn("does not mutate declared field", error)
+        negative = load_runtime_selector(binding["negative"])
+        extra_field = mutate_runtime_field(
+            negative, binding, "promise_id", "wrong-promise"
+        )
+        error = promise_machine_module.runtime_negative_mutation_error(
+            binding, positive, extra_field
+        )
+        self.assertIn("outside declared field", error)
+        wrong_kind = copy.deepcopy(binding)
+        wrong_kind["negative"]["field"] = []
+        error = promise_machine_module.runtime_negative_mutation_error(
+            wrong_kind, positive, negative
+        )
+        self.assertIn("does not name one declared runtime field", error)
 
     def test_runtime_specimen_reads_refuse_hostile_paths_and_bytes(self):
         record = promise_machine_module.PromiseRecord(

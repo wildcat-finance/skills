@@ -3149,6 +3149,7 @@
         "unknowns": "native_document.alexandria_derived_view.open_unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
         "selector": "negative",
@@ -3177,6 +3178,7 @@
         "unknowns": "native_document.alexandria_raw_release.open_unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
         "selector": "negative",
@@ -3205,6 +3207,7 @@
         "unknowns": "adapter_output.ariadne_replay_command.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
         "selector": "negative",
@@ -3235,6 +3238,7 @@
         "unknowns": "adapter_output.ariadne_verify_statement.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
@@ -3265,6 +3269,7 @@
         "unknowns": "native_document.berean_release_promotion.open_unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
         "selector": "negative",
@@ -3293,6 +3298,7 @@
         "unknowns": "adapter_output.elenchus_fixed_and_guarded.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "negative",
@@ -3321,6 +3327,7 @@
         "unknowns": "frontmatter.ephoros_observability_review.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
         "selector": "negative",
@@ -3349,6 +3356,7 @@
         "unknowns": "adapter_output.fiat_controller_checkpoint.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "negative",
@@ -3379,6 +3387,7 @@
         "unknowns": "adapter_output.fiat_final_integration.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
@@ -3407,6 +3416,7 @@
         "unknowns": "adapter_output.fiat_local_retirement.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
         "selector": "negative",
@@ -3435,6 +3445,7 @@
         "unknowns": "adapter_output.fiat_receipted_delivery.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "negative",
@@ -3463,6 +3474,7 @@
         "unknowns": "adapter_output.fiat_run_observation_binding.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
         "selector": "negative",
@@ -3491,6 +3503,7 @@
         "unknowns": "adapter_output.fiat_runbook_amendment.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
@@ -3519,6 +3532,7 @@
         "unknowns": "adapter_output.fiat_study_amendment.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "negative",
@@ -3547,6 +3561,7 @@
         "unknowns": "adapter_output.fiat_version_resolution.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "negative",
@@ -3575,6 +3590,7 @@
         "unknowns": "adapter_output.hermes_baseline_promotion.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
         "selector": "negative",
@@ -3603,6 +3619,7 @@
         "unknowns": "adapter_output.hermes_candidate_acceptance.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
         "selector": "negative",
@@ -3631,6 +3648,7 @@
         "unknowns": "frontmatter.hexaemeron_fizz_convert_properties.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
         "selector": "negative",
@@ -3661,6 +3679,7 @@
         "unknowns": "frontmatter.hexaemeron_fizz_harness_campaign.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
         "selector": "negative",
@@ -3689,6 +3708,7 @@
         "unknowns": "frontmatter.hexaemeron_fizz_sync_drift.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
         "selector": "negative",
@@ -3719,6 +3739,7 @@
         "unknowns": "frontmatter.hexaemeron_solidity_audit_report.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
         "selector": "negative",
@@ -3747,6 +3768,7 @@
         "unknowns": "adapter_output.horos_boundary_scan.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
         "selector": "negative",
@@ -3775,6 +3797,7 @@
         "unknowns": "frontmatter.hypomnema_record_placement.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
         "selector": "negative",
@@ -3805,6 +3828,7 @@
         "unknowns": "adapter_output.janus_bounded_conformance.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "negative",
@@ -3835,6 +3859,7 @@
         "unknowns": "adapter_output.kronos_fiat_dispatch.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "negative",
@@ -3863,6 +3888,7 @@
         "unknowns": "adapter_output.kronos_parked_lane.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
         "selector": "negative",
@@ -3891,6 +3917,7 @@
         "unknowns": "adapter_output.lazarus_exact_replay.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
         "selector": "negative",
@@ -3919,6 +3946,7 @@
         "unknowns": "native_document.lazarus_fixture_capture.open_unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
         "selector": "negative",
@@ -3949,6 +3977,7 @@
         "unknowns": "native_document.lazarus_preservation_release.open_unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "negative",
@@ -3977,6 +4006,7 @@
         "unknowns": "frontmatter.metron_change_decision.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "negative",
@@ -4007,6 +4037,7 @@
         "unknowns": "adapter_output.pandects_search_record.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
         "selector": "negative",
@@ -4035,6 +4066,7 @@
         "unknowns": "frontmatter.phylax_boundary_review.unknowns"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
         "selector": "negative",
@@ -4065,6 +4097,7 @@
         "unknowns": "adapter_output.probitas_dossier_verification.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "negative",
@@ -4093,6 +4126,7 @@
         "unknowns": "adapter_output.tabularium_release_build.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "negative",
@@ -4123,6 +4157,7 @@
         "unknowns": "adapter_output.tabularium_release_verification.unresolved"
       },
       "negative": {
+        "field": "source_digest",
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "negative",
