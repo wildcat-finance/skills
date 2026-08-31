@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1032,
-  "total_bytes": 22134361,
+  "file_count": 1042,
+  "total_bytes": 22204299,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -54,16 +54,16 @@
   ],
   "files": [
     {
-      "bytes": 7030,
+      "bytes": 7078,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "48cfb58aa59881ea915ce536d97f3a5094a7e0938f7a345927f6c3cdb0dc3be9",
+      "sha256": "096e2a667892e5628ef985e61d242edbdcb4f52cefd67d7fcc43565f903e8094",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "d007e903b12f375d50e9c89b8d6f3935d3f9447ace78a1e027755fddabd413fa",
+      "sha256": "082a768ab7b17efa2cfd6b56073668ce47766fe3526955e7ea7564dea4ba956d",
       "source": null
     },
     {
@@ -3259,9 +3259,9 @@
       "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     },
     {
-      "bytes": 2486,
+      "bytes": 2506,
       "path": "plugins/homologia/AGENTS.md",
-      "sha256": "969bb8b0e05c50f35e001f4e5785a8bfd754e00d7f041cf42d905041ce62d7cb",
+      "sha256": "40d797c3ecfe2bcf6c7da2c733858be4534937a93fdc40dd8c9733f783ea6f1d",
       "source": "plugins/homologia/AGENTS.md"
     },
     {
@@ -3277,16 +3277,34 @@
       "source": "plugins/homologia/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3251,
+      "bytes": 4350,
       "path": "plugins/homologia/README.md",
-      "sha256": "e65f8257ca9a4596a44b7b84674ef8b76f6ea86fcdac692b4d2a3c94405e4e8e",
+      "sha256": "4322ad4391a76991b3a211a565415a791ebf4ddc88c578b6d6de387af5d7dd36",
       "source": "plugins/homologia/README.md"
+    },
+    {
+      "bytes": 5636,
+      "path": "plugins/homologia/docs/checked-inputs/runbook.md",
+      "sha256": "19839f77540d33181bf7e6966aae3d4da53a9ca8e6d9577ccd8e4d323841597d",
+      "source": "plugins/homologia/docs/checked-inputs/runbook.md"
+    },
+    {
+      "bytes": 14468,
+      "path": "plugins/homologia/docs/checked-inputs/study.md",
+      "sha256": "05306d618e9c940dcf639359100d2039cb931c2ca124707e18a5573c6e2e95ba",
+      "source": "plugins/homologia/docs/checked-inputs/study.md"
     },
     {
       "bytes": 3285,
       "path": "plugins/homologia/docs/decisions/ADR-001-one-charter-for-numeric-agreement.md",
       "sha256": "7e7fa2bf5faeeb025c4e39181926805a2d7a281954925a27c5f02670ff8d6efd",
       "source": "plugins/homologia/docs/decisions/ADR-001-one-charter-for-numeric-agreement.md"
+    },
+    {
+      "bytes": 2789,
+      "path": "plugins/homologia/docs/decisions/ADR-002-chain-answers-are-evidence.md",
+      "sha256": "b540c4ce91e75b0b5af7a3521f412b647ea6a0f2da0b18b1dab53a1561db221a",
+      "source": "plugins/homologia/docs/decisions/ADR-002-chain-answers-are-evidence.md"
     },
     {
       "bytes": 12379,
@@ -3301,21 +3319,63 @@
       "source": "plugins/homologia/docs/homologia-study.md"
     },
     {
-      "bytes": 2203,
+      "bytes": 6177,
+      "path": "plugins/homologia/docs/schema-compatibility.md",
+      "sha256": "a8923cba57e9a497c3f362c5e73945486e884a4a29a7f95fe644f01d29e210fd",
+      "source": "plugins/homologia/docs/schema-compatibility.md"
+    },
+    {
+      "bytes": 1979,
+      "path": "plugins/homologia/examples/wad-interest-v0/checked-inputs.json",
+      "sha256": "90e3d379e71968cee8c24b16a722ea3671b6ef5e82d05fc2f37e93c3ade71ebd",
+      "source": "plugins/homologia/examples/wad-interest-v0/checked-inputs.json"
+    },
+    {
+      "bytes": 849,
+      "path": "plugins/homologia/examples/wad-interest-v0/manifest.json",
+      "sha256": "c120ce6626e533f82372be253696cce9ac209455d66f954e581215898ff69d1c",
+      "source": "plugins/homologia/examples/wad-interest-v0/manifest.json"
+    },
+    {
+      "bytes": 246,
+      "path": "plugins/homologia/examples/wad-interest-v0/vectors-asserted.jsonl",
+      "sha256": "330c3141311c45274446b4422413920d90897e29e72f70f9d469c4ffea6bfbc7",
+      "source": "plugins/homologia/examples/wad-interest-v0/vectors-asserted.jsonl"
+    },
+    {
+      "bytes": 624,
+      "path": "plugins/homologia/examples/wad-interest-v0/vectors-recorded.jsonl",
+      "sha256": "4ea1747e2bd7aa6b100056cbb90b5a57dffab45a891090015da268a66ee33029",
+      "source": "plugins/homologia/examples/wad-interest-v0/vectors-recorded.jsonl"
+    },
+    {
+      "bytes": 3554,
+      "path": "plugins/homologia/references/manifest-v1.schema.json",
+      "sha256": "b60b46a65def47e11347fe408709c137b17accdd6fe2b39872c102c7c7db7413",
+      "source": "plugins/homologia/references/manifest-v1.schema.json"
+    },
+    {
+      "bytes": 3494,
+      "path": "plugins/homologia/references/vectors-v1.schema.json",
+      "sha256": "1031838d2405c949a2ad7fcb9c693119499f1f8183286fe2019e02fa6680b056",
+      "source": "plugins/homologia/references/vectors-v1.schema.json"
+    },
+    {
+      "bytes": 28657,
       "path": "plugins/homologia/scripts/homologia.py",
-      "sha256": "756e4fa43dad085b4dd3b2f783f934dd1071199a0b05b7eb8bd94d9ee9d00f72",
+      "sha256": "db963e186674ddac8f9f18b7e6b36f3ea484a8c5556117fb7c0819564d5dcd22",
       "source": "plugins/homologia/scripts/homologia.py"
     },
     {
-      "bytes": 1741,
+      "bytes": 2710,
       "path": "plugins/homologia/skills/homologia/EVOLUTION.md",
-      "sha256": "8d764a1e9c24dd9cfcc90ec09c668a813c9a64a67afa2d1a4adbf8a7187c4e2d",
+      "sha256": "9c25daa7da30ca2d235ebd52d8dec72731f0d6cc34a8bbdd661971b3bf25c679",
       "source": "plugins/homologia/skills/homologia/EVOLUTION.md"
     },
     {
-      "bytes": 6406,
+      "bytes": 7938,
       "path": "plugins/homologia/skills/homologia/SKILL.md",
-      "sha256": "49e098497d8a2b1173bfe6ee7dd95fd1ce4fd9ccb00be69ebe85d6f22b2b9c3a",
+      "sha256": "ca47a9a1470d7d4fba78036f476893757d4b6ecac881109847b3826ec775a291",
       "source": "plugins/homologia/skills/homologia/SKILL.md"
     },
     {

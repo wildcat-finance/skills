@@ -91,9 +91,9 @@ person behind an address, or make an underwriting decision.
 Some members are mature within a narrow promise. Others are useful but have an
 obvious missing surface. A few are scaffolds for work that has not landed.
 
-- [Homologia](./plugins/homologia) is selectable, but its substantive commands
-  refuse: manifest validation, mirror execution, integer comparison, and a
-  parity verdict still need to be built.
+- [Homologia](./plugins/homologia) admits a closed manifest and evidence-classed
+  expected integers into checked inputs. Mirror execution, integer comparison
+  and a parity verdict still need to be built.
 - Alexandria and Tabularium each have one Compound v3 Phase 0 witness, not a
   complete resumable Ethereum USDC collection and canonical adapter.
 - Berean has no live Wildcat reference release. Synkrisis has no captured
@@ -179,9 +179,9 @@ operations, examples, evidence contract, and current frontier.
   broken specimen it is proved to catch.
 - [Hermes](./plugins/hermes) measures one named Solidity gas-optimisation class
   at a time and rejects unsafe or unproved savings.
-- [Homologia](./plugins/homologia) is the future home for integer-for-integer
-  comparison between one on-chain computation and one off-chain mirror. Its
-  operational comparison path has not shipped.
+- [Homologia](./plugins/homologia) admits one pinned pair and its declared
+  vectors into deterministic checked inputs. Its mirror-execution and
+  comparison path has not shipped.
 
 The unchanged upstream Pashov suite sits alongside these specialists:
 **X-Ray** maps a Solidity repository before review, **Solidity Auditor** reviews

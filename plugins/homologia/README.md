@@ -3,11 +3,11 @@
 <!-- marketplace-context:start -->
 ## In one line
 
-Homologia defines the future contract-to-mirror integer comparison boundary; its current scaffold packages that contract and refuses every substantive operation.
+Homologia admits one pinned pair and its evidence-classed expected integers into deterministic checked inputs; it does not yet run the mirror or compare answers.
 
-**Current frontier.** Homologia ships its contracts, packaging and a help-only command. No manifest is checked, no mirror is executed and no verdict is produced, so nothing yet establishes that a pair agrees.
+**Current frontier.** `check` admits one closed, cap-bounded manifest and its declared vectors into a deterministic checked-inputs record. It executes no mirror and produces no verdict, so nothing yet establishes that a pair agrees.
 
-**Next Fiat job.** Use /hexaemeron:fiat to validate a declared manifest, its vector sets and their expected-answer provenance into checked, cap-bounded inputs, refusing a `proved` class with no backing reference and any cap breach before state is written. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to execute one pinned mirror over checked vectors through the adapter protocol, without judging its answers. The child boundary must use fixed argv with no shell, a minimal environment, bounded JSONL input and integer-only output, a timeout, atomic refusal and a recorded runtime identity and answer digest. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## Start here
@@ -17,10 +17,26 @@ calculation and one pinned off-chain mirror return the same integers over a
 declared vector set. The contract correctly distinguishes agreement from
 correctness: two implementations of the same mistake can agree perfectly.
 
-That comparison does **not** run today. The plugin ships its contract,
-packaging, and a help-only command. Manifest checks, execution, comparison,
-divergence specimens, and verdicts remain to be implemented; substantive
-requests refuse rather than inventing a result.
+That comparison does **not** run today. The plugin checks one closed manifest,
+its pair identity, scales, declared vector files, canonical integers,
+tolerances, paths, caps and expected-answer provenance. It writes one canonical
+checked-inputs record with source digests. Mirror execution, comparison,
+divergence specimens and verdicts still refuse rather than inventing a result.
+
+## Check inputs
+
+From the repository root:
+
+```bash
+python3 plugins/homologia/scripts/homologia.py check \
+  --manifest plugins/homologia/examples/wad-interest-v0/manifest.json \
+  --out build/homologia/checked-inputs.json
+```
+
+Success writes no standard output. A one-line JSON summary on standard error
+names the manifest and output digests plus the vector-set and vector counts.
+The checked record is not a verdict and says nothing about correctness or
+agreement.
 
 ## Intended boundary
 
@@ -50,6 +66,9 @@ It would never say either side was correct.
 - [skills/homologia/EVOLUTION.md](skills/homologia/EVOLUTION.md), the version and frontier ledger.
 - [docs/homologia-study.md](docs/homologia-study.md) and [docs/homologia-runbook.md](docs/homologia-runbook.md), the specification this was built from.
 - [docs/decisions/ADR-001-one-charter-for-numeric-agreement.md](docs/decisions/ADR-001-one-charter-for-numeric-agreement.md), why this is one member rather than three.
+- [docs/decisions/ADR-002-chain-answers-are-evidence.md](docs/decisions/ADR-002-chain-answers-are-evidence.md), why the chain side arrives as evidence.
+- [docs/schema-compatibility.md](docs/schema-compatibility.md), the closed version-1 shapes, caps and refusal codes.
+- [examples/wad-interest-v0/checked-inputs.json](examples/wad-interest-v0/checked-inputs.json), the deterministic committed example.
 
 ## Licence
 
