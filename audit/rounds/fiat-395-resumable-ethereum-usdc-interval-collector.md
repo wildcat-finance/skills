@@ -54,3 +54,19 @@ Elenchus verdict: inconclusive
 | S2-R1-04 | info | plugins/alexandria/docs/usdc-interval-runbook.md | Step 2's Entry names branch `fiat/395-resumable-ethereum-usdc-interval-collector-step-1-scaffold-the-collector-s-contracts`. The branch the controller derived and the run actually used ends `-contrac`, because the derived name is truncated. A reader following the document to that ref finds nothing. The runbook is receipted, so the name is recorded here rather than edited. | open |
 
 Leads not pursued: the fixes commit changed tests as well as code. Against `eca364aa1d25ab59447bc4f671c98965cf487998` five of the six new guards fail by assertion and one errors, because `test_a_checksummed_runtime_code_key_still_resolves` asserts a success path the parent cannot reach and raises there instead. The Elenchus contract classifies a mixed assertion and error report as `inconclusive`, so that is what is recorded rather than `guarded`; the fixed tree reports 377 of 377 with zero skips. Two bounded things are recorded rather than fixed. Two upgrade logs in the same block refuse as unordered, which is fail-closed and right for a first collector but would need a rule if a real market ever upgrades twice in one block. And `MAX_EPOCHS` is checked once on the supplied log count and again on the built table, so a 256-log input builds 257 epochs before the second check refuses; the work is bounded and the refusal is correct, but the first check is one short of covering it. S1-R1-07 stays open and accepted.
+
+## Step 2, round 2 -- 2026-08-31T04:50:35Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: epoch-gap=reviewed; coverage-inflation=reviewed; torn-shard=not-applicable; staging-path-escape=not-applicable; skip-as-pass=reviewed; whole-battery-regression=reviewed; silent-truncation=not-applicable; reorg-rewind=not-applicable; reconciliation-bias=not-applicable; endpoint-leak=not-applicable; unbounded-response=not-applicable
+
+Not checked: nothing new. The same concerns remain with steps 3 and 4, and the Pashov pair remains waived. The round re-read the repaired builder for faults the repair could have introduced: the code-read mapping is normalised once before the epoch loop rather than per boundary, the block hash for a boundary is resolved before the announcement comparison so a missing hash refuses first, and an upgrade log at the interval's first block still opens the first epoch rather than adding a boundary beside it.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 377 of 377 with zero skips through the runner step 2's contract names, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:3` against the unchanged record. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `_topic_address` and `_implementation` each carry the same three-line left-padded-address check, one for a log topic and one for a slot read. Folding them into one helper would be tidier, but the two read different evidence and no defect was found in either, so a refactor with no failing case behind it is churn rather than a fix. The two bounded items from round 1 still stand, as does S1-R1-07 and the stale branch name S2-R1-04 records.
