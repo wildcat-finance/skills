@@ -192,3 +192,19 @@ Elenchus verdict: guarded
 | S6-R1-03 | medium | .agents/skills/promise-machine/runtime/MANIFEST.json | A second payload assertion now fails beside S1-R1-07. `test_payload_footprint_stays_within_the_recorded_ceiling` reports the payload holding 1,014 files against `TRACKED_FILES_CEILING` 1,010, and the manifest counts 1,009 against `MAX_FILES` 1,000. Unlike `MAX_FILES`, that footprint ceiling is a recorded cost the test invites a run to update alongside ADR-054. It is left as it stands: raising it would not make the suite pass while `MAX_FILES` fails, and framework-63 removes the payload from this tree entirely. | open |
 
 Leads not pursued: the fixes commit changed tests as well as code, and one guard fails against `5305ff46f7a1018921f755e6767e7b2e0be2bc26` by assertion with no infrastructure error, so the verdict is `guarded` and the fixed tree reports 471 of 471 with zero skips. One probe was written and discarded rather than promoted to a finding: swapping the release directory of one demonstration build under the summary of another was accepted by `verify`, which turns out to be correct, because two builds interrupted at different shards produce byte-identical journals and therefore the same release identifier, and the summary's own resume point is separately pinned. Three bounded things are recorded rather than fixed. The demonstration's providers both report an empty transaction list, so the demonstration never exercises the transaction-order comparison; the tests do. Both index documents, `examples/README.md` and `schemas/README.md`, report Brevitas `B010` for carrying no section heading, which they did before this run touched them. And `build` catches `BaseException` to remove a partial output, so an interrupt during the demonstration cleans up before re-raising. S1-R1-07, S2-R1-04, S5-R1-04 and S5-R1-05 stay open and accepted.
+
+## Step 6, round 2 -- 2026-08-31T06:48:39Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: epoch-gap=reviewed; coverage-inflation=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; staging-path-escape=reviewed; endpoint-leak=reviewed; reconciliation-bias=reviewed; torn-shard=reviewed; reorg-rewind=not-applicable; silent-truncation=not-applicable; unbounded-response=not-applicable
+
+Not checked: nothing new. This step reaches no network and the Pashov pair remains waived. The round re-read the repaired check for faults the repair could have introduced: the shard-hash lookup is keyed by end block, so an epoch whose end falls inside a shard rather than on its boundary is compared against nothing rather than against the wrong block, and the honest epoch table still passes.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | -- | none |
+
+Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 471 of 471 with zero skips, the demonstration built and verified, and `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .`, `promise_machine.py check` and `git diff --check` each exited 0 with a clean working tree. The design checker exited 0 at `integration` with the demonstration conformance report passing on eleven cases. The root suite reports 776 tests with two failures, S1-R1-07 and S6-R1-03, both the payload ceilings framework-63 removes, and nothing else. The three bounded items from round 1 still stand, along with S1-R1-07, S2-R1-04, S5-R1-04, S5-R1-05 and S6-R1-03.
