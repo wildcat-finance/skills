@@ -66,6 +66,15 @@ def scratch_directory(prefix="noema-"):
     return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
 
 
+def adapter_backoff_calls(sleep):
+    """Exclude polling observed through the process-global time module."""
+    return [
+        item
+        for item in sleep.call_args_list
+        if item in (mock.call(1), mock.call(2))
+    ]
+
+
 def source_binding(start: int = 0, end: int = 1):
     return [
         "src",
@@ -6996,9 +7005,7 @@ class ExternalAdapterTests(unittest.TestCase):
             [(1, "unknown"), (2, "recorded")],
         )
         self.assertEqual(len({item["request_sha256"] for item in attempts}), 2)
-        # Patching the shared time module can also observe subprocess wait
-        # polling; count only the adapter's preregistered backoff.
-        self.assertEqual(sleep.call_args_list.count(mock.call(1)), 1)
+        self.assertEqual(adapter_backoff_calls(sleep), [mock.call(1)])
         ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
         self.assertEqual((ledger["calls"], len(ledger["reservations"])), (1, 1))
         self.assertEqual(
@@ -7025,7 +7032,7 @@ class ExternalAdapterTests(unittest.TestCase):
             )
         self.assertEqual(response["status"], "unknown")
         self.assertEqual([item["attempt"] for item in attempts], [1, 2, 3])
-        self.assertEqual(sleep.call_args_list, [mock.call(1), mock.call(2)])
+        self.assertEqual(adapter_backoff_calls(sleep), [mock.call(1), mock.call(2)])
         ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
         self.assertEqual((ledger["calls"], len(ledger["reservations"])), (0, 3))
 
@@ -7078,7 +7085,7 @@ class ExternalAdapterTests(unittest.TestCase):
             )
         self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.PROVIDER_POLICY")
         self.assertEqual(len(attempts), 1)
-        sleep.assert_not_called()
+        self.assertEqual(adapter_backoff_calls(sleep), [])
 
     def test_local_attempt_refusal_retains_the_exact_request_binding(self):
         with self.assertRaises(noema.Refusal) as raised:
@@ -7554,7 +7561,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
             [(item["attempt"], item["status"]) for item in attempts[:3]],
             [(1, "unknown"), (2, "recorded"), (1, "recorded")],
         )
-        sleep.assert_called_once_with(1)
+        self.assertEqual(adapter_backoff_calls(sleep), [mock.call(1)])
         budget = noema._budget_record(ledger, Decimal("5"))
         self.assertEqual((budget["calls"], len(budget["reservations"])), (len(plan), 1))
 
