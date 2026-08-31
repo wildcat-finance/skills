@@ -349,6 +349,7 @@ FORBIDDEN_CALLS = {
     "__builtins__.compile",
     "__builtins__.eval",
     "__builtins__.exec",
+    "__builtins__.open",
     "importlib.import_module",
     "os._exit",
     "os.__dict__",
@@ -363,6 +364,7 @@ FORBIDDEN_CALLS = {
     "os.fchown",
     "os.ftruncate",
     "os.getenv",
+    "os.getenvb",
     "os.lchmod",
     "os.lchown",
     "os.link",
@@ -433,13 +435,14 @@ FORBIDDEN_FILE_METHODS = {
     "write_bytes",
     "write_text",
 }
-FORBIDDEN_DYNAMIC_NAMES = {"__import__", "compile", "eval", "exec"}
+SAFE_OS_DYNAMIC_LOOKUPS = {"O_CLOEXEC", "O_NONBLOCK"}
 FORBIDDEN_OS_IMPORTS = {
     "_exit",
     "abort",
     "chdir",
     "chroot",
     "environ",
+    "environb",
     "execl",
     "execle",
     "execlp",
@@ -452,6 +455,7 @@ FORBIDDEN_OS_IMPORTS = {
     "fork",
     "forkpty",
     "getenv",
+    "getenvb",
     "kill",
     "killpg",
     "nice",
@@ -2215,6 +2219,15 @@ def check_core_source_text(source: str, shown: str):
             or name.startswith("http.client.")
         )
 
+    def sensitive_dynamic_receiver(node):
+        receiver = resolve_alias(qualified_call_name(node))
+        return receiver, (
+            receiver
+            in {"builtins", "__builtins__", "os", "pathlib.Path", "tempfile"}
+            or receiver.startswith("os.")
+            or path_expression(node)
+        )
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             name = resolve_alias(qualified_call_name(node.func))
@@ -2262,32 +2275,48 @@ def check_core_source_text(source: str, shown: str):
                     )
                     if mode is None or any(marker in mode for marker in "wax+"):
                         violations.append("forbidden write-capable path open")
-            if (
-                name == "getattr"
-                and len(node.args) >= 2
-                and isinstance(node.args[1], ast.Constant)
-                and node.args[1].value
-                in (FORBIDDEN_OS_IMPORTS | FORBIDDEN_DYNAMIC_NAMES)
-            ):
-                violations.append(
-                    f"forbidden dynamic process or credential lookup {node.args[1].value}"
+            if name in {"getattr", "vars"} and node.args:
+                receiver, sensitive_receiver = sensitive_dynamic_receiver(
+                    node.args[0]
                 )
+                attribute = (
+                    node.args[1].value
+                    if name == "getattr"
+                    and len(node.args) >= 2
+                    and isinstance(node.args[1], ast.Constant)
+                    and isinstance(node.args[1].value, str)
+                    else None
+                )
+                safe_os_lookup = (
+                    name == "getattr"
+                    and receiver == "os"
+                    and attribute in SAFE_OS_DYNAMIC_LOOKUPS
+                )
+                if sensitive_receiver and not safe_os_lookup:
+                    violations.append(
+                        "forbidden dynamic access through "
+                        f"{receiver or '<path expression>'}.{attribute or '<computed>'}"
+                    )
         elif isinstance(node, ast.Attribute):
             name = resolve_alias(qualified_call_name(node))
-            if name == "os.environ" or name.startswith("os.environ."):
-                violations.append("forbidden credential or environment read os.environ")
+            receiver, sensitive_receiver = sensitive_dynamic_receiver(node.value)
+            if name in {"os.environ", "os.environb"} or name.startswith(
+                ("os.environ.", "os.environb.")
+            ):
+                environment_name = ".".join(name.split(".", 2)[:2])
+                violations.append(
+                    f"forbidden credential or environment read {environment_name}"
+                )
+            elif name.startswith("__builtins__."):
+                violations.append(f"forbidden builtins namespace access {name}")
+            elif node.attr == "__dict__" and sensitive_receiver:
+                violations.append(
+                    f"forbidden dynamic namespace access {receiver}.__dict__"
+                )
             elif forbidden_operation(name):
                 violations.append(f"forbidden process or dynamic-code reference {name}")
-        elif (
-            isinstance(node, ast.Subscript)
-            and isinstance(node.value, ast.Name)
-            and node.value.id == "__builtins__"
-            and isinstance(node.slice, ast.Constant)
-            and node.slice.value in FORBIDDEN_DYNAMIC_NAMES
-        ):
-            violations.append(
-                f"forbidden dynamic-code reference __builtins__[{node.slice.value!r}]"
-            )
+        elif isinstance(node, ast.Name) and node.id == "__builtins__":
+            violations.append("forbidden builtins namespace access __builtins__")
     if violations:
         return [
             semantic_finding(

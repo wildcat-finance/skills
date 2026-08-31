@@ -1780,6 +1780,20 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "import builtins\ngetattr(builtins, 'eval')('1 + 1')\n",
             "import builtins\nbuiltins.__dict__['eval']('1 + 1')\n",
             "import os\nos.__dict__['system']('fixture')\n",
+            "import os\nos.getenvb(b'SECRET')\n",
+            "import os\nos.environb[b'SECRET']\n",
+            "getattr(__builtins__, 'open')('/etc/passwd')\n",
+            "__builtins__.open('/etc/passwd')\n",
+            "__builtins__['open']('/etc/passwd')\n",
+            "import os\ngetattr(os, 'open')('/etc/passwd', os.O_RDONLY)\n",
+            "from pathlib import Path\ngetattr(Path, 'home')().joinpath('.config').read_text()\n",
+            "import os\ngetattr(os, 'rename')('fixture', 'target')\n",
+            "from pathlib import Path\ngetattr(Path, 'write_text')(Path('fixture'), 'x')\n",
+            "import tempfile\ngetattr(tempfile, 'mkstemp')()\n",
+            "__builtins__.get('open')('/etc/passwd')\n",
+            "import os\nvars(os)['open']('/etc/passwd', os.O_RDONLY)\n",
+            "from pathlib import Path\nvars(Path)['home']().joinpath('.config').read_text()\n",
+            "import tempfile\ntempfile.__dict__['mkstemp']()\n",
         )
         for source in sources:
             with self.subTest(source=source.splitlines()[-1]):
@@ -1840,6 +1854,11 @@ class PromiseSemanticGateTests(unittest.TestCase):
             mock.patch.object(os, "fdopen", side_effect=guarded_os_fdopen),
             mock.patch.object(os, "open", side_effect=guarded_os_open),
             mock.patch.object(Path, "open", new=guarded_path_open),
+        )
+        patches += tuple(
+            mock.patch.object(os, name, denied)
+            for name in ("getenv", "getenvb")
+            if hasattr(os, name)
         )
         denied_attributes = (
             (
