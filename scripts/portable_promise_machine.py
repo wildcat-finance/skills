@@ -550,22 +550,37 @@ Changes belong upstream. Open issues and pull requests against
     return text.encode("utf-8")
 
 
-def _package_bytes(root: Path, commit: str) -> dict[str, bytes]:
-    """Return every path the published package carries, keyed relative to it."""
+def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str, int]]:
+    """Return every path the published package carries, keyed relative to it.
+
+    The second mapping carries the permission bits of the entries that come
+    from a file in `root`, keyed the same way.  A package key is not a source
+    path -- the payload is republished under a prefix -- so a caller holding
+    only the key cannot find the origin to read its mode from.  Both paths are
+    in hand here, which is the only place the pairing can be recorded.
+    """
     payload, manifest = expected_files(root)
     files: dict[str, bytes] = {}
+    modes: dict[str, int] = {}
     for relative in PACKAGE_AUTHORED:
         source = root / relative
         if source.is_symlink() or not source.is_file():
             raise PackageError(f"authored package file is absent: {relative}")
         files[relative.as_posix()] = source.read_bytes()
+        modes[relative.as_posix()] = source.stat().st_mode & 0o777
     runtime = PACKAGE_ROOT / "runtime"
     for relative, data in payload.items():
-        files[(runtime / relative).as_posix()] = data
+        key = (runtime / relative).as_posix()
+        files[key] = data
+        # A payload key is a path in `root`, except for the boundary this
+        # generator renders itself; that one keeps the default mode.
+        origin = root / relative
+        if origin.is_file() and not origin.is_symlink():
+            modes[key] = origin.stat().st_mode & 0o777
     files[(runtime / "MANIFEST.json").as_posix()] = manifest
     files[SKILLS_CONFIG.as_posix()] = _package_config()
     files["README.md"] = _package_readme(commit)
-    return files
+    return files, modes
 
 
 # A directory this generator wrote carries its manifest at this path. Anything
@@ -600,7 +615,7 @@ def _checked_output(raw: str) -> Path:
 def package(root: Path, raw_out: str, commit: str | None) -> Path:
     """Write a complete installable package into a named directory."""
     out = _checked_output(raw_out)
-    files = _package_bytes(root, commit or source_commit(root))
+    files, modes = _package_bytes(root, commit or source_commit(root))
     for relative in files:
         pure = PurePosixPath(relative)
         if pure.is_absolute() or ".." in pure.parts:
@@ -612,9 +627,9 @@ def package(root: Path, raw_out: str, commit: str | None) -> Path:
             destination = candidate / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(data)
-            origin = root / relative
-            if origin.is_file() and not origin.is_symlink():
-                destination.chmod(origin.stat().st_mode & 0o777)
+            mode = modes.get(relative)
+            if mode is not None:
+                destination.chmod(mode)
         if out.exists():
             shutil.rmtree(out)
         candidate.replace(out)

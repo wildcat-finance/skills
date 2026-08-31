@@ -335,6 +335,41 @@ class SkillsShPackageTests(unittest.TestCase):
         ):
             self.assertTrue((GENERATED / relative).is_file(), relative)
 
+    def test_package_preserves_the_executable_bit(self):
+        """A script executable in the source is still executable once published.
+
+        The package republishes the payload under a prefix, so a package key is
+        not a source path.  Reading the origin mode back through the package key
+        found nothing at all and left the whole tree at 0644, which breaks the
+        entries that are run as ./name rather than through an interpreter.
+        """
+        listing = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            ["git", "-C", str(ROOT), "ls-tree", "-r", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        executable = [
+            line.partition("\t")[2]
+            for line in listing.splitlines()
+            if line.split(maxsplit=1)[0] == "100755"
+        ]
+        self.assertTrue(executable, "the source tracks no executable file")
+        # The payload omits most tests and every repository script, so an
+        # executable source file need not appear here; one that does must keep
+        # the bit.
+        checked = 0
+        for relative in executable:
+            published = RUNTIME / relative
+            if not published.is_file():
+                continue
+            self.assertTrue(
+                os.access(published, os.X_OK),
+                f"{relative} is executable in the source but not in the package",
+            )
+            checked += 1
+        self.assertGreater(checked, 0, "no executable source file reached the package")
+
     def test_generated_package_verifies_itself_offline(self):
         verifier = PACKAGE / "scripts" / "verify_runtime.py"
         result = subprocess.run(  # phylax: allow subprocess: fixed local verifier argv
