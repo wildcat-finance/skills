@@ -119,13 +119,14 @@ token counts are endpoint accounting, not recovered tokenizer vocabularies.
 
 The corpus anchor publishes the second accepted cohort as its canonical answer
 and tally pair. The first accepted cohort and all three final ledger snapshots
-remain beside it. Each cohort recovered two transient OpenAI provider-envelope
-refusals under the preregistered second request identity; the four uncertain
-first attempts remain reserved. This is two clean capability results under one
-fixed packet, not deterministic recurrence or a frequency estimate. It also
-says nothing about minimum decoder size: a named small local model must pass the
-same paired boundary before any integration issue can treat that deployment as
-viable.
+remain beside it. Both cohorts recorded all 32 calls on their first attempts
+and retain no reservation. The final measurement recovered one Google
+invocation after two HTTP 502 attempts; both uncertain attempts remain as
+$0.01521135 in conservative reservations. This is two clean capability results
+under one fixed packet, not deterministic recurrence or a frequency estimate.
+It also says nothing about minimum decoder size: a named small local model must
+pass the same paired boundary before any integration issue can treat that
+deployment as viable.
 
 The complete corpus component counts are below. Bytes are representation bytes
 and therefore common to every profile; the remaining columns are
