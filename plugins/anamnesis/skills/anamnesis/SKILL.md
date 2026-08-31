@@ -2,7 +2,7 @@
 name: anamnesis
 description: Preserve audit findings and the changes that answered them as a source-bound corpus. Admit a source only against an explicit rights basis, keep the producer's bytes and identifiers unchanged, curate submissions, adjudicated findings, occurrences, remediation attempts and verifications as separate records, and release checked read-only projections for Elenchus and Synkrisis. Use when someone asks to preserve, curate, release or query a corpus of audit findings and their remedies. Do not use it to judge whether a finding is real, to prove a fix correct, or to compare runs.
 metadata:
-  version: "2.1.0"
+  version: "3.1.0"
 ---
 
 <p align="center">
@@ -150,11 +150,16 @@ Restricted material crosses neither. A source whose disclosure class is not
 `public` reaches no analogue and no cohort member, and the withholding is
 counted rather than left silent.
 
-**Synkrisis does not yet admit this producer.** Its manifest gate requires the
-producer contract `promise-machine-run-observation/v1`, and
-`anamnesis-synkrisis-observation/v1` is not that. Anamnesis emits the
-projection; whether Synkrisis admits it is Synkrisis's own decision and has not
-been made. Until it is, the view is produced and not consumed.
+**Synkrisis does not admit this producer, and that is a decision rather than a
+gap.** Its manifest gate requires `promise-machine-run-observation/v1`, and a
+manifest declaring `anamnesis-synkrisis-observation/v1` refuses `SK008`.
+[ADR-005](../../docs/decisions/ADR-005-corpus-projections-outside-the-cohort-boundary.md)
+records why the projection stays outside that boundary: a cohort member is a run,
+six of its nine required fields have no source in a finding, and a cohort
+partitions one population where this view carries ten denominators over ten. What
+reads the projection instead is the projection, read directly under its own
+schema. Synkrisis may still take the seam its own ADR-004 named; nothing here
+obliges it.
 
 ### `demo` and `verify-rebuild` -- the whole path
 

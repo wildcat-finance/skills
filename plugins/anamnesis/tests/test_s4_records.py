@@ -7,7 +7,6 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -23,6 +22,17 @@ REPORTS = ADMISSION / "reports"
 CONCERNS = {"correctness", "time", "space", "compatibility", "recovery"}
 RUNNER = PLUGIN_ROOT / "tests/elenchus.py"
 WORKTREE = PLUGIN_ROOT.parents[1]
+
+
+def scratch_directory(prefix: str = "anamnesis-step-runner-"):
+    """Transient space the runner can reach and `git status` never sees.
+
+    The runner binds its report path to this checkout, so scratch has to stay
+    inside it; the ignored top-level tmp/ is confined and invisible to status.
+    """
+    scratch = WORKTREE / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
 
 
 class CommittedDesignRecord(unittest.TestCase):
@@ -70,8 +80,9 @@ class StepRunnerRefusesAnEmptySuite(unittest.TestCase):
     builds its later steps."""
 
     def setUp(self) -> None:
-        self.scratch = Path(tempfile.mkdtemp(dir=WORKTREE))
-        self.addCleanup(shutil.rmtree, self.scratch, ignore_errors=True)
+        holder = scratch_directory()
+        self.addCleanup(holder.cleanup)
+        self.scratch = Path(holder.name)
         spec = importlib.util.spec_from_file_location("anamnesis_runner", RUNNER)
         self.runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.runner)
