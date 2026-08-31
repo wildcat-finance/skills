@@ -12,7 +12,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "5.9.0"
+  version: "5.10.0"
 ---
 
 <p align="center">
@@ -37,19 +37,18 @@ discipline questions Protasis requires; Protasis cites their contracts rather
 than copying them. A decision made after the study belongs to Hypomnema's
 recording rules.
 
-Synkrisis is specified to suggest a next owner from repeated validated run
-observations, but its current scaffold produces no finding. A future suggestion
-will still need a scoped proposition before it can become a study, runbook, or
-framework change.
+Synkrisis may suggest a next owner from repeated validated run observations.
+That finding still needs a scoped proposition before it can become a study,
+runbook, or framework change.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** Protasis checks the fixed mechanical shape of study items,
-risk registers, study amendments, runbook steps, runbook amendments, and
-optional version relations through one bounded scanner.
+**Current state.** Protasis checks the fixed mechanical shape of study and
+runbook prose, and separately checks one closed candidate-by-criterion design
+record at the transition where each item of evidence becomes due.
 
-## Refuse these four
+## Refuse these five
 
 1. No study, no runbook. A runbook derived from conversation instead of a
    written study is not a runbook.
@@ -59,6 +58,8 @@ optional version relations through one bounded scanner.
    by a command or a named demo path is unfinished.
 4. No stated assumption, no spec. Assumptions go on the page before the
    content they support.
+5. No checked design record, no design lock. A preferred construction in prose
+   does not authorise implementation.
 
 Report a refusal in three parts: what is missing, where you looked, and the one
 action that clears it. Say plainly that the phase is blocked rather than
@@ -149,8 +150,8 @@ are happy.
 3. **Constraints and non-goals.** The starting ref, toolchain and version pins,
    what the user ruled out, what is deferred past the prototype.
 4. **Design options.** Two to four candidate constructions, each with the trade
-   it makes. Pick one, say why. The pick is the option cheapest to comprehend
-   that still meets the problem statement.
+   it makes. The prose explains the candidates; the design-evidence record
+   below selects one from checked gates and comparative measurements.
 5. **Risk register seed.** What the audit loop should look hardest at. In
    Solidity: trust boundaries, external calls, arithmetic, upgrade paths, key
    custody. In Python: untrusted input, subprocess and filesystem handling,
@@ -203,6 +204,91 @@ be told apart from not having looked.
 
 Cite those five contracts, never restate them. Each owns its own rules and each
 evolves on its own ledger, so a copy here is stale the moment it is written.
+
+### Design evidence and progressive gates
+
+The study writes one closed record to `.hexaemeron/design-evidence.json` under
+schema `protasis-design-evidence/v1`. The record is the selection interface;
+prose is not. It contains two to four candidate ids, one to 32 criteria, the
+exact candidate-by-criterion result matrix, and one selection.
+
+Every criterion names one of five concerns: `correctness`, `time`, `space`,
+`compatibility`, or `recovery`. The complete set must be covered. A criterion
+also names its owner and one of two forms:
+
+- A hard gate has stage `selection` or `conformance`, compares a typed value by
+  `equals`, `at-most`, or `at-least`, and blocks `design-lock`, `step:N`, or
+  `integration`.
+- A comparative metric has stage `selection`, minimises or maximises `bytes`,
+  `count`, `milliseconds`, or `ratio`, and blocks `design-lock`.
+
+The record uses these exact object forms; this excerpt is not a complete
+matrix:
+
+```json
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [{"id": "streaming", "summary": "Process one bounded window."}],
+  "criteria": [{
+    "id": "peak-space", "concern": "space", "kind": "metric",
+    "stage": "selection", "owner": "metron", "unit": "bytes",
+    "comparator": "minimise", "threshold": null, "blocks": "design-lock"
+  }],
+  "results": [{
+    "candidate": "streaming", "criterion": "peak-space", "state": "pass",
+    "report": {"path": "reports/streaming-peak-space.json", "sha256": "<64 lowercase hex>"}
+  }, {
+    "candidate": "streaming", "criterion": "restart-safe", "state": "pending",
+    "resolver": "python3 tests/prove_restart.py",
+    "report": "reports/streaming-restart-safe.json", "blocks": "step:2"
+  }],
+  "selection": {"candidate": "streaming", "rule": "unique-frontier", "policy_ref": null}
+}
+```
+
+The abbreviated example shows both result forms; an accepted record still has
+two to four candidates, all five concerns, and every matrix cell.
+
+A resolved matrix cell is `pass` or `fail` and names a report path plus its
+SHA-256. The report is one closed `protasis-design-report/v1` object containing
+`candidate`, `criterion`, typed `value`, `unit`, `command`, and integer `exit`;
+exit must be zero. Paths are relative to the record directory and may not cross
+a symlink. A pending cell instead names the exact resolver command, future
+report path, and stop point it blocks. Selection evidence may be pending while
+the record is drafted, but not when the design locks. Conformance evidence may
+remain pending until its named step or integration transition. An unknown is
+therefore a scheduled refusal, not a guessed score.
+
+Selection is closed and mechanical. A failed selection gate removes a
+candidate. The checker computes the non-dominated frontier from the selection
+metrics. `unique-frontier` requires one survivor. `exact-tie-simplicity`
+applies only when every checked comparative value is exactly equal across at
+least two survivors. `user-policy` requires at least two survivors and a
+bounded `policy_ref`. Simplicity has no other tie-breaking authority.
+
+Run both checks before the study is receipted:
+
+```bash
+python3 "$PLUGIN_ROOT/skills/protasis/scripts/protasis.py" --study .hexaemeron/study.md
+python3 "$PLUGIN_ROOT/skills/protasis/scripts/design_evidence.py" \
+  .hexaemeron/design-evidence.json --transition design-lock
+```
+
+The runbook binds the accepted bytes before Step 1:
+
+```design-lock
+schema | protasis-design-evidence/v1
+sha256 | <sha256 of .hexaemeron/design-evidence.json>
+candidate | <selected candidate id>
+```
+
+P007 checks the block's closed shape and position. Fiat checks that its values
+match the study receipt, then runs the design checker at `step:N` immediately
+before opening that step and at `integration` before admitting the completed
+stack. Each transition records the reports consumed there. Verification
+replays every recorded transition against the unchanged record and report
+bytes. A run created before the contract has no `contracts.design_evidence`
+marker and remains on the legacy path; no evidence is fabricated for it.
 
 A section reading "TBD" is a section to fill or cut. Where the request is
 ambiguous, record the reading you chose and the reason for it. Never resolve an
@@ -322,6 +408,7 @@ check over each artefact and require exit 0:
 ```bash
 python3 "$PLUGIN_ROOT/skills/protasis/scripts/protasis.py" --study <study>
 python3 "$PLUGIN_ROOT/skills/protasis/scripts/protasis.py" <runbook>
+python3 "$PLUGIN_ROOT/skills/protasis/scripts/design_evidence.py" <record> --transition <design-lock|step:N|integration>
 ```
 
 The study mode reads items as `## N. Title` headings, 1 to 12, refuses
@@ -338,7 +425,8 @@ reports P005 when a runbook amendment does not carry the dated four-field
 shape and complete replacement clauses below. It reports P006 when a present
 version-relations block is open, misplaced, duplicated, oversized or malformed,
 or when a declared target is also pinned to a concrete token outside that
-block. Codes P000 to P006 and S000 to
+block. P007 checks a present design-lock block's position, closed rows, schema,
+digest and selected-candidate shape. Codes P000 to P007 and S000 to
 S008 are stable interfaces other
 tools cite. Deliberate exceptions state a reason:
 `<!-- protasis: allow <why> -->` on the heading line or the line above it.
@@ -458,7 +546,14 @@ count is not a report.
 - [ ] No discipline core is restated where a citation belongs.
 - [ ] Assumptions are on the page and were confirmed or corrected.
 - [ ] Every success criterion names a command, a test or a demo path.
-- [ ] The chosen design says what it traded away.
+- [ ] The design record covers correctness, time, space, compatibility and
+      recovery with one exact result per candidate and criterion.
+- [ ] Every resolved result binds a zero-exit report; every pending result names
+      its resolver, future report and exact blocking transition.
+- [ ] The design-lock check exits zero, and the chosen candidate is on the
+      mechanically computed frontier under its declared rule.
+- [ ] The runbook's design-lock block matches the record digest and selected
+      candidate before Step 1.
 - [ ] Always, ask-first and never each carry concrete entries.
 - [ ] Each step carries goal, entry, exit, files, tests and disciplines.
 - [ ] Every discipline a step names carries the reason it applies.
@@ -485,24 +580,24 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 
 ### protasis-study-readiness
 
-- Promise: A study accepted by Protasis states the problem, assumptions, current state, chosen design and rejected trade, boundaries, failure and recovery model, affected versions and evidence-bearing success criteria needed to derive a runbook.
-- Evidence: The exact study, source inventory, explicit unknowns and exclusions, answered discipline questions, design comparison and completed study checklist.
+- Promise: A study accepted by Protasis states the problem, assumptions, current state, boundaries, failure and recovery model, affected versions and success criteria, and locks one candidate through a complete checked `protasis-design-evidence/v1` matrix without predicting evidence that is not yet available.
+- Evidence: The exact study, source inventory, explicit unknowns and exclusions, answered discipline questions, design record and report digests, mechanical frontier result, named future resolvers and completed study checklist.
 - Evidence classes: checked, inferred, recorded
-- Boundary: Readiness means the study contains material required to plan; it does not establish that the design is correct, implementation exists, tests pass or later receipts are true.
+- Boundary: Readiness establishes the closed record, the reports checked at design lock and the declared stop points for later evidence. It does not establish that the selected design is correct, that pending conformance will pass, that implementation exists, or that later receipts are true.
 - Authorises: Derivation of a discrete runbook from the accepted study without silently adding a new design decision.
 - Consequence: 1
-- Refuses: Hidden assumptions, an unstated boundary, solution-first prose, missing trade, untestable success language or a topic still containing several independent deliveries.
+- Refuses: Hidden assumptions, an unstated boundary, solution-first prose, an incomplete candidate matrix, missing required concern, unresolved selection evidence, a selected dominated candidate, unsupported tie-break, untestable success language or a topic still containing several independent deliveries.
 - Recovery: Name the missing question or decision, gather the required evidence, amend the study and repeat the complete Protasis review.
 - Exceptions: none
 
 ### protasis-runbook-readiness
 
-- Promise: A runbook accepted by Protasis decomposes the study into ordered steps whose entry, modules, exit commands, files, tests and discipline effects are discrete and provable, and any optional governed-skill version relation has one closed source without a competing concrete target token.
-- Evidence: The accepted study, exact runbook, `protasis.py` structural result, per-step commands and files, dependency order, optional version-relations block, version boundary and completed pre-receipt checklist.
+- Promise: A runbook accepted by Protasis binds the exact selected design and decomposes the study into ordered steps whose entry, modules, exit commands, files, tests and discipline effects are discrete and provable, and any optional governed-skill version relation has one closed source without a competing concrete target token.
+- Evidence: The accepted study, design-evidence digest and selected candidate, exact runbook and matching design-lock block, `protasis.py` structural result, per-step commands and files, dependency order, optional version-relations block, version boundary and completed pre-receipt checklist.
 - Evidence classes: checked, inferred, recorded
-- Boundary: Runbook readiness establishes buildable specification content and the lexical shape of a declared version relation. It does not establish correct implementation, command success, relation suitability, a selected version or integration base, audit closure or delivery completion.
+- Boundary: Runbook readiness establishes buildable specification content, the design lock, and the lexical shape of a declared version relation. It does not establish correct implementation, later conformance evidence, command success, relation suitability, a selected version or integration base, audit closure or delivery completion.
 - Authorises: Starting implementation at the first step while using the study and runbook as the change-control boundary.
 - Consequence: 1
-- Refuses: A step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design, receipt language with no evidence command, or a malformed, ambiguous or concretely contradicted version relation.
+- Refuses: A missing or mismatched design lock, a step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design, receipt language with no evidence command, or a malformed, ambiguous or concretely contradicted version relation.
 - Recovery: Split or reorder the failing step, supply its exact evidence and rerun both the mechanical check and the full content review.
 - Exceptions: none

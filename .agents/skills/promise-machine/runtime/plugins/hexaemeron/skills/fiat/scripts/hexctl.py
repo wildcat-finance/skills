@@ -326,6 +326,22 @@ CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
 CHECKPOINT_JSON_DEPTH_MAX = 128
 CHECKPOINT_IO_CHUNK = 64 * 1024
+CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
+    {
+        "fiat-v5.35.1",
+        "fiat-v5.36.1",
+        "fiat-v5.37.1",
+        "fiat-v5.38.1",
+        "fiat-v5.39.1",
+        "fiat-v5.40.1",
+        "fiat-v5.41.1",
+        "fiat-v5.42.1",
+        "fiat-v5.43.1",
+        "fiat-v5.44.1",
+        "fiat-v5.45.1",
+        "fiat-v5.46.1",
+    }
+)
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
 VERSION_RELATIONS_INFO = "version-relations"
 VERSION_RELATION = "next-generation-after-integration-base"
@@ -359,6 +375,13 @@ VERSION_RELATION_TARGET_KEYS = frozenset(
 VERSION_RELATION_KEYS = frozenset(
     {"schema", "source_sha256", "anchor_commit", "targets"}
 )
+DESIGN_EVIDENCE_SCHEMA = "protasis-design-evidence/v1"
+DESIGN_EVIDENCE_FILE = os.path.join(STATE_DIR_NAME, "design-evidence.json")
+DESIGN_LOCK_INFO = "design-lock"
+DESIGN_LOCK_KEYS = frozenset({"schema", "sha256", "candidate"})
+DESIGN_CONTRACT_KEYS = frozenset({"design_evidence"})
+DESIGN_TRANSITIONS_MAX = 502
+DESIGN_CONSUMED_MAX = 128
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
 VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
 VERSION_RESOLUTIONS_MAX = 8
@@ -1412,6 +1435,103 @@ def validate_version_resolution_history(value, path: str) -> list[dict]:
     return value
 
 
+def _design_state_fault(path: str, reason: str) -> None:
+    die(f"state design evidence key '{path}' {reason}", 1)
+
+
+def validate_design_evidence_receipt_shape(value, path: str) -> dict:
+    """Validate the additive receipt spine without redoing Protasis's verdict."""
+    keys = {"schema", "artifact", "sha256", "selected", "transitions"}
+    if not isinstance(value, dict) or set(value) != keys:
+        _design_state_fault(path, "has an unsupported field set")
+    if value.get("schema") != DESIGN_EVIDENCE_SCHEMA:
+        _design_state_fault(f"{path}.schema", "is not supported")
+    artifact = value.get("artifact")
+    if not isinstance(artifact, str) or artifact != DESIGN_EVIDENCE_FILE:
+        _design_state_fault(f"{path}.artifact", "is not the fixed record path")
+    digest = value.get("sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        _design_state_fault(f"{path}.sha256", "is malformed")
+    selected = value.get("selected")
+    if (
+        not isinstance(selected, str)
+        or VERSION_RELATION_SKILL_RE.fullmatch(selected) is None
+    ):
+        _design_state_fault(f"{path}.selected", "is malformed")
+    transitions = value.get("transitions")
+    if (
+        not isinstance(transitions, list)
+        or not transitions
+        or len(transitions) > DESIGN_TRANSITIONS_MAX
+    ):
+        _design_state_fault(f"{path}.transitions", "is not a bounded array")
+    seen = set()
+    for index, transition in enumerate(transitions):
+        transition_path = f"{path}.transitions[{index}]"
+        if not isinstance(transition, dict) or set(transition) != {
+            "transition", "reports"
+        }:
+            _design_state_fault(transition_path, "has an unsupported field set")
+        name = transition.get("transition")
+        if not isinstance(name, str) or not (
+            name in {"design-lock", "integration"}
+            or re.fullmatch(r"step:[1-9][0-9]{0,3}", name)
+        ):
+            _design_state_fault(f"{transition_path}.transition", "is malformed")
+        if name in seen:
+            _design_state_fault(f"{path}.transitions", "repeats a transition")
+        seen.add(name)
+        reports = transition.get("reports")
+        if not isinstance(reports, list) or len(reports) > DESIGN_CONSUMED_MAX:
+            _design_state_fault(f"{transition_path}.reports", "is not a bounded array")
+        prior = None
+        for report_index, report in enumerate(reports):
+            report_path = f"{transition_path}.reports[{report_index}]"
+            if not isinstance(report, dict) or set(report) != {
+                "candidate", "criterion", "path", "sha256"
+            }:
+                _design_state_fault(report_path, "has an unsupported field set")
+            identity = (report.get("candidate"), report.get("criterion"))
+            if any(
+                not isinstance(part, str)
+                or VERSION_RELATION_SKILL_RE.fullmatch(part) is None
+                for part in identity
+            ):
+                _design_state_fault(report_path, "has a malformed identity")
+            if prior is not None and identity <= prior:
+                _design_state_fault(
+                    f"{transition_path}.reports", "is not uniquely identity-sorted"
+                )
+            prior = identity
+            supplied = report.get("path")
+            if (
+                not isinstance(supplied, str)
+                or not supplied
+                or os.path.isabs(supplied)
+                or "\\" in supplied
+                or any(part in ("", ".", "..") for part in supplied.split("/"))
+            ):
+                _design_state_fault(f"{report_path}.path", "is malformed")
+            report_digest = report.get("sha256")
+            if (
+                not isinstance(report_digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", report_digest) is None
+            ):
+                _design_state_fault(f"{report_path}.sha256", "is malformed")
+    names = [transition["transition"] for transition in transitions]
+    if names[0] != "design-lock":
+        _design_state_fault(f"{path}.transitions", "does not start at design-lock")
+    step_names = [name for name in names[1:] if name != "integration"]
+    expected_steps = [
+        f"step:{number}" for number in range(1, len(step_names) + 1)
+    ]
+    if step_names != expected_steps:
+        _design_state_fault(f"{path}.transitions", "does not carry contiguous steps")
+    if "integration" in names and names[-1] != "integration":
+        _design_state_fault(f"{path}.transitions", "does not end at integration")
+    return value
+
+
 def validate_state_shape(state) -> dict:
     """Validate the version-1 container spine in one deterministic order.
 
@@ -1419,12 +1539,29 @@ def validate_state_shape(state) -> dict:
     checks. This boundary establishes only the containers every reader traverses.
     """
     root = require_state_container(state, "$", dict)
+    contracts = root.get("contracts")
+    if contracts is not None:
+        contracts = require_state_container(contracts, "contracts", dict)
+        if set(contracts) != DESIGN_CONTRACT_KEYS:
+            die("state key 'contracts' has an unsupported field set", 1)
+        if contracts.get("design_evidence") != DESIGN_EVIDENCE_SCHEMA:
+            die("state key 'contracts.design_evidence' is not supported", 1)
     config = require_state_container(root.get("config"), "config", dict)
     for section in ("skills", "audit", "git"):
         require_state_container(
             config.get(section), f"config.{section}", dict
         )
     receipts = require_state_container(root.get("receipts"), "receipts", dict)
+    study = receipts.get("study")
+    if isinstance(study, dict) and "design_evidence" in study:
+        if contracts is None:
+            die(
+                "state receipt 'study.design_evidence' has no run contract",
+                1,
+            )
+        validate_design_evidence_receipt_shape(
+            study["design_evidence"], "receipts.study.design_evidence"
+        )
     runbook = receipts.get("runbook")
     if isinstance(runbook, dict) and "version_relations" in runbook:
         validate_version_relations_shape(
@@ -1459,6 +1596,19 @@ def validate_state_shape(state) -> dict:
                 dict,
             )
     return root
+
+
+def design_evidence_required(state: dict) -> bool:
+    """Whether this run was initialised under the design-lock contract.
+
+    Absence is the compatibility boundary: states whose study was receipted by
+    an older controller continue without invented evidence.
+    """
+    contracts = state.get("contracts")
+    return (
+        isinstance(contracts, dict)
+        and contracts.get("design_evidence") == DESIGN_EVIDENCE_SCHEMA
+    )
 
 
 def amendment_pending_path(base_dir: str, subject: str) -> str:
@@ -2343,6 +2493,7 @@ def cmd_init(args) -> None:
     state = {
         "version": 1,
         "controller": "hexctl",
+        "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA},
         "topic": args.topic,
         "base": args.base,
         "run_branch": run_branch,
@@ -2362,6 +2513,7 @@ def cmd_init(args) -> None:
         "topic": args.topic,
         "base": args.base,
         "run_branch": run_branch,
+        "contracts": state["contracts"],
         "controller_currency": provenance,
         "starting_commit": starting_commit,
     }
@@ -2550,6 +2702,72 @@ def _first_unfenced_step(lines: list[str]) -> int | None:
         if open_mark is None and STEP_HEADING_RE.fullmatch(line):
             return index
     return None
+
+
+def parse_design_lock_source(text: str) -> dict | None:
+    """Extract one closed Protasis design-lock block from a runbook."""
+    lines = text.splitlines(keepends=True)
+    blocks = []
+    open_mark = None
+    open_length = None
+    design_open = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = info.split()
+            design_open = (
+                (index, info == DESIGN_LOCK_INFO)
+                if words and words[0] == DESIGN_LOCK_INFO
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not info:
+            if design_open is not None:
+                opening, exact_info = design_open
+                blocks.append((opening, index, exact_info, True))
+            open_mark, open_length, design_open = None, None, None
+    if design_open is not None:
+        opening, exact_info = design_open
+        blocks.append((opening, len(lines) - 1, exact_info, False))
+    if not blocks:
+        return None
+    if len(blocks) != 1:
+        die("runbook carries more than one design-lock block")
+    opening, closing, exact_info, closed = blocks[0]
+    if not exact_info:
+        die("design-lock fence must carry only that exact info string")
+    if not closed:
+        die("design-lock block is not closed")
+    first_step = _first_unfenced_step(lines)
+    if first_step is not None and opening >= first_step:
+        die("design-lock block must occur before Step 1")
+    rows = [line.rstrip("\r\n") for line in lines[opening + 1 : closing]]
+    if len(rows) != 3:
+        die("design-lock block must carry schema, sha256 and candidate rows once in order")
+    parsed = {}
+    for expected, row in zip(("schema", "sha256", "candidate"), rows):
+        if _contains_nonprinting_character(row):
+            die("design-lock row contains a control character")
+        fields = [field.strip() for field in row.split("|")]
+        if len(fields) != 2 or any(not field for field in fields) or fields[0] != expected:
+            die("design-lock rows must be schema, sha256 and candidate once in order")
+        parsed[fields[0]] = fields[1]
+    if set(parsed) != DESIGN_LOCK_KEYS:
+        die("design-lock block has an unsupported field set")
+    if parsed["schema"] != DESIGN_EVIDENCE_SCHEMA:
+        die("design-lock schema is unsupported")
+    if re.fullmatch(r"[0-9a-f]{64}", parsed["sha256"]) is None:
+        die("design-lock sha256 is malformed")
+    if VERSION_RELATION_SKILL_RE.fullmatch(parsed["candidate"]) is None:
+        die("design-lock candidate is not kebab-case")
+    return parsed
 
 
 def parse_version_relation_source(text: str) -> dict | None:
@@ -5068,23 +5286,255 @@ def _require_file(path: str, label: str) -> str:
     return path
 
 
+def _portable_receipt_artifact(base_dir: str, path: str) -> str:
+    """Store a verified source as one portable target-relative path."""
+    try:
+        relative = os.path.relpath(path, os.path.realpath(base_dir))
+    except (OSError, TypeError, ValueError):
+        die("source artefact path is not portable")
+    portable = relative.replace(os.sep, "/")
+    return _checkpoint_safe_relative(tuple(portable.split("/")))
+
+
+def _design_checker_receipt(
+    base_dir: str, artifact: str, transition: str
+) -> dict:
+    """Run the canonical checker and admit only its closed receipt output."""
+    checker = os.path.join(
+        plugin_root(), "skills", "protasis", "scripts", "design_evidence.py"
+    )
+    returncode, output = bounded_run(
+        base_dir,
+        sys.executable,
+        [checker, artifact, "--transition", transition, "--format", "receipt"],
+    )
+    try:
+        payload = json.loads(
+            output.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError):
+        die("Protasis design-evidence checker returned malformed output", 1)
+    if not isinstance(payload, dict) or set(payload) != {
+        "schema", "transition", "selected", "consumed", "findings"
+    }:
+        die("Protasis design-evidence checker returned an unsupported receipt", 1)
+    findings = payload.get("findings")
+    if not isinstance(findings, list):
+        die("Protasis design-evidence checker returned malformed findings", 1)
+    if returncode != 0 or findings:
+        first = findings[0] if findings else {}
+        code = first.get("code") if isinstance(first, dict) else None
+        message = first.get("message") if isinstance(first, dict) else None
+        if (
+            isinstance(code, str)
+            and re.fullmatch(r"D[0-9]{3}", code)
+            and isinstance(message, str)
+            and message
+            and len(message.encode("utf-8", errors="ignore")) <= 4096
+            and not _contains_nonprinting_character(message)
+        ):
+            die(f"Protasis design evidence refused {transition}: {code} {message}")
+        die(f"Protasis design evidence refused {transition}")
+    if payload.get("schema") != DESIGN_EVIDENCE_SCHEMA:
+        die("Protasis design-evidence checker returned the wrong schema", 1)
+    if payload.get("transition") != transition:
+        die("Protasis design-evidence checker returned the wrong transition", 1)
+    selected = payload.get("selected")
+    if (
+        not isinstance(selected, str)
+        or VERSION_RELATION_SKILL_RE.fullmatch(selected) is None
+    ):
+        die("Protasis design-evidence checker returned no selected candidate", 1)
+    consumed = payload.get("consumed")
+    if not isinstance(consumed, list) or len(consumed) > DESIGN_CONSUMED_MAX:
+        die("Protasis design-evidence checker returned too many reports", 1)
+    prior = None
+    for report in consumed:
+        if not isinstance(report, dict) or set(report) != {
+            "candidate", "criterion", "path", "sha256"
+        }:
+            die("Protasis design-evidence checker returned a malformed report", 1)
+        identity = (report.get("candidate"), report.get("criterion"))
+        if any(
+            not isinstance(part, str)
+            or VERSION_RELATION_SKILL_RE.fullmatch(part) is None
+            for part in identity
+        ):
+            die("Protasis design-evidence checker returned a malformed identity", 1)
+        if prior is not None and identity <= prior:
+            die("Protasis design-evidence checker returned unordered reports", 1)
+        prior = identity
+        supplied = report.get("path")
+        if (
+            not isinstance(supplied, str)
+            or not supplied
+            or os.path.isabs(supplied)
+            or "\\" in supplied
+            or any(part in ("", ".", "..") for part in supplied.split("/"))
+        ):
+            die("Protasis design-evidence checker returned an unsafe report path", 1)
+        digest = report.get("sha256")
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            die("Protasis design-evidence checker returned a malformed report digest", 1)
+    return {"selected": selected, "reports": consumed}
+
+
+def _checked_design_transition(
+    base_dir: str,
+    transition: str,
+    *,
+    expected_sha256: str | None = None,
+    expected_selected: str | None = None,
+) -> dict:
+    """Check captured record bytes, then prove the named source stayed fixed."""
+    lexical_artifact = os.path.join(
+        os.path.realpath(base_dir), DESIGN_EVIDENCE_FILE
+    )
+    try:
+        artifact_stat = os.lstat(lexical_artifact)
+    except OSError:
+        die("design-evidence artefact is unavailable")
+    if stat.S_ISLNK(artifact_stat.st_mode) or not stat.S_ISREG(artifact_stat.st_mode):
+        die("design-evidence artefact must be a non-symlink regular file")
+    artifact_path, first = read_bounded_source(
+        base_dir, DESIGN_EVIDENCE_FILE, "design-evidence artefact"
+    )
+    digest = hashlib.sha256(first).hexdigest()
+    if expected_sha256 is not None and digest != expected_sha256:
+        die(
+            "design-evidence artefact digest changed: expected "
+            f"{expected_sha256}, got {digest}; restore the receipted bytes or halt the run"
+        )
+    descriptor, temporary = tempfile.mkstemp(
+        prefix="checked-design-evidence-", suffix=".json", dir=state_root(base_dir)
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(first)
+            handle.flush()
+            os.fsync(handle.fileno())
+        checked = _design_checker_receipt(base_dir, temporary, transition)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
+    _, second = read_bounded_source(
+        base_dir, DESIGN_EVIDENCE_FILE, "design-evidence artefact"
+    )
+    if second != first:
+        die("design-evidence artefact changed while it was being checked")
+    if expected_selected is not None and checked["selected"] != expected_selected:
+        die("design-evidence selected candidate changed after design-lock")
+    return {
+        "artifact": _portable_receipt_artifact(base_dir, artifact_path),
+        "sha256": digest,
+        "selected": checked["selected"],
+        "transition": {
+            "transition": transition,
+            "reports": checked["reports"],
+        },
+    }
+
+
+def _design_receipt(state: dict) -> dict:
+    receipt = as_dict(as_dict(state.get("receipts")).get("study"))
+    design = receipt.get("design_evidence")
+    if not isinstance(design, dict):
+        die("run requires a receipted Protasis design-evidence record")
+    validate_design_evidence_receipt_shape(
+        design, "receipts.study.design_evidence"
+    )
+    return design
+
+
+def receipted_design_evidence(base_dir: str, state: dict) -> dict | None:
+    """Return the compact, source-bound design input delegated to later roles."""
+    if not design_evidence_required(state):
+        return None
+    design = _design_receipt(state)
+    path, data = read_bounded_source(
+        base_dir, design["artifact"], "design-evidence artefact"
+    )
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != design["sha256"]:
+        die(
+            "design-evidence artefact digest changed: expected "
+            f"{design['sha256']}, got {digest}; restore the receipted bytes or halt the run"
+        )
+    return {
+        "schema": design["schema"],
+        "path": path,
+        "sha256": design["sha256"],
+        "selected": design["selected"],
+    }
+
+
+def _prepare_design_transition(base_dir: str, state: dict, transition: str) -> dict | None:
+    if not design_evidence_required(state):
+        return None
+    design = _design_receipt(state)
+    if any(
+        item.get("transition") == transition
+        for item in design.get("transitions", [])
+        if isinstance(item, dict)
+    ):
+        die(f"design-evidence transition {transition} is already receipted", 1)
+    checked = _checked_design_transition(
+        base_dir,
+        transition,
+        expected_sha256=design["sha256"],
+        expected_selected=design["selected"],
+    )
+    return checked["transition"]
+
+
+def _append_design_transition(state: dict, transition: dict | None) -> None:
+    if transition is None:
+        return
+    design = _design_receipt(state)
+    design["transitions"].append(transition)
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "study artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "study artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
+    design = None
+    if design_evidence_required(state):
+        checked_design = _checked_design_transition(args.dir, "design-lock")
+        if checked_design["artifact"] != DESIGN_EVIDENCE_FILE:
+            die("design-evidence checker did not bind the fixed artefact path", 1)
+        design = {
+            "schema": DESIGN_EVIDENCE_SCHEMA,
+            "artifact": checked_design["artifact"],
+            "sha256": checked_design["sha256"],
+            "selected": checked_design["selected"],
+            "transitions": [checked_design["transition"]],
+        }
     state["receipts"]["study"] = {
         "artifact": artifact,
         "sha256": digest,
         "skills": skills,
     }
+    if design is not None:
+        state["receipts"]["study"]["design_evidence"] = design
     state["phase"] = "runbook"
+    event = {"artifact": artifact, "sha256": digest, "skills": skills}
+    if design is not None:
+        event["design_evidence"] = design
     commit(
         args.dir,
         state,
         "done:study",
-        {"artifact": artifact, "sha256": digest, "skills": skills},
+        event,
     )
     print("study receipted; phase -> runbook")
 
@@ -5092,8 +5542,25 @@ def done_study(args, state: dict) -> None:
 def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "runbook artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "runbook artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     artifact_text = decoded_source(artifact_bytes, "runbook artefact")
+    design_lock = parse_design_lock_source(artifact_text)
+    design_transition = None
+    if design_evidence_required(state):
+        design = _design_receipt(state)
+        if design_lock is None:
+            die("runbook requires a design-lock block before Step 1")
+        if design_lock != {
+            "schema": design["schema"],
+            "sha256": design["sha256"],
+            "candidate": design["selected"],
+        }:
+            die("runbook design-lock does not match the receipted design evidence")
+    elif design_lock is not None:
+        die("runbook declares a design-lock without a receipted design record")
     relation_source = parse_version_relation_source(artifact_text)
     version_relations = None
     if relation_source is not None:
@@ -5123,6 +5590,8 @@ def done_runbook(args, state: dict) -> None:
             die("each step must be a string or an object with a 'title'")
     if any(not title.strip() for title in titles):
         die("step titles must be non-empty")
+    if design_evidence_required(state):
+        design_transition = _prepare_design_transition(args.dir, state, "step:1")
     state["steps"] = [
         {
             "n": i + 1,
@@ -5145,6 +5614,12 @@ def done_runbook(args, state: dict) -> None:
         "sha256": digest,
         "step_count": len(titles),
     }
+    if design_lock is not None:
+        state["receipts"]["runbook"]["design_lock"] = design_lock
+        receipt["design_lock"] = design_lock
+    _append_design_transition(state, design_transition)
+    if design_transition is not None:
+        receipt["design_transition"] = design_transition
     if version_relations is not None:
         state["receipts"]["runbook"]["version_relations"] = version_relations
         receipt["version_relations"] = version_relations
@@ -5803,6 +6278,19 @@ def done_push(args, state: dict) -> None:
                 "--closed-issue-url does not match the recorded task_issue "
                 f"({expected_issue})"
             )
+    remaining = [item for item in state["steps"] if item["status"] == "pending"]
+    next_transition = None
+    if remaining:
+        next_transition = f"step:{remaining[0]['n']}"
+    elif not stacked:
+        # New runs are stacked. Keep the old unstacked compatibility path
+        # terminal by checking its only available integration boundary here.
+        next_transition = "integration"
+    design_transition = (
+        _prepare_design_transition(args.dir, state, next_transition)
+        if next_transition is not None
+        else None
+    )
     range_base = args.pr_base if stacked else state["base"]
     branch = (
         step_branch_name(state, step)
@@ -5856,7 +6344,6 @@ def done_push(args, state: dict) -> None:
     }
     step["status"] = "done"
     step["phase"] = "done"
-    remaining = [s for s in state["steps"] if s["status"] == "pending"]
     if remaining:
         nxt = remaining[0]
         nxt["status"] = "open"
@@ -5872,11 +6359,15 @@ def done_push(args, state: dict) -> None:
         else:
             state["phase"] = "done"
             tail = "all steps done"
+    _append_design_transition(state, design_transition)
+    event = {"step": step["n"], **step["receipts"]["push"]}
+    if design_transition is not None:
+        event["design_transition"] = design_transition
     commit(
         args.dir,
         state,
         "done:push",
-        {"step": step["n"], **step["receipts"]["push"]},
+        event,
     )
     if stacked:
         print(
@@ -7358,6 +7849,11 @@ def done_merge_step(args, state: dict) -> None:
             "attribution": {"commits": repaired_attribution},
         }
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
+    design_transition = None
+    if args.step == len(state["steps"]):
+        design_transition = _prepare_design_transition(
+            args.dir, state, "integration"
+        )
     integrate = state.setdefault("integrate", {"merged": [], "merges": {}})
     integrate.setdefault("merged", []).append(args.step)
     integrate.setdefault("merges", {})[str(args.step)] = {
@@ -7368,19 +7864,23 @@ def done_merge_step(args, state: dict) -> None:
         "pull_request": pr_record,
         "effective_push": effective_push,
     }
+    _append_design_transition(state, design_transition)
+    event = {
+        "step": args.step,
+        "branch": pending["branch"],
+        "into": pending["into"],
+        "merge_commit": args.merge_commit,
+        "github_verified": github_verified,
+        "pull_request": pr_record,
+        "effective_push": effective_push,
+    }
+    if design_transition is not None:
+        event["design_transition"] = design_transition
     commit(
         args.dir,
         state,
         "done:merge-step",
-        {
-            "step": args.step,
-            "branch": pending["branch"],
-            "into": pending["into"],
-            "merge_commit": args.merge_commit,
-            "github_verified": github_verified,
-            "pull_request": pr_record,
-            "effective_push": effective_push,
-        },
+        event,
     )
     remaining = len(state["steps"]) - len(integrate["merged"])
     tail = f"{remaining} step(s) left in the stack" if remaining else "stack merged"
@@ -10674,6 +11174,9 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "output_path": scoped_path(
                 root, os.path.join(STATE_DIR_NAME, "study.md"), "study output"
             ),
+            "design_output_path": scoped_path(
+                root, DESIGN_EVIDENCE_FILE, "design-evidence output"
+            ),
         }
         return packet
 
@@ -10690,6 +11193,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         # the four new briefs, so it retains an explicit inline directive.
         return packet
     version_relations = receipted_version_relations(root, runbook, state=state)
+    design_evidence = receipted_design_evidence(root, state)
 
     step = current_step(state)
     plan = branch_plan(state, step)
@@ -10705,6 +11209,8 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
         }
+        if design_evidence is not None:
+            packet["brief"]["design_evidence"] = design_evidence
         return packet
 
     root_plugin = plugin_root()
@@ -10737,6 +11243,8 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
                 version_relations=version_relations,
             ),
         }
+        if design_evidence is not None:
+            packet["brief"]["design_evidence"] = design_evidence
         return packet
 
     pr_base = plan["pr_base"]
@@ -11601,8 +12109,43 @@ def _checkpoint_restore_source_receipt(
     if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
         die(f"checkpoint {name} receipt has an invalid sha256")
     artifact = receipt.get("artifact")
-    if not isinstance(artifact, str) or not artifact or os.path.isabs(artifact):
+    if not isinstance(artifact, str) or not artifact:
         die(f"checkpoint {name} artefact path is not relocatable")
+    if os.path.isabs(artifact):
+        old_origin = configured_git_path(state, "origin")
+        old_worktree = configured_git_path(state, "worktree")
+        run_branch = run_branch_of(state)
+        paths = (old_origin, old_worktree, artifact)
+        for path in paths:
+            try:
+                encoded = path.encode("utf-8") if isinstance(path, str) else b""
+            except UnicodeEncodeError:
+                encoded = b""
+            if (
+                not encoded
+                or not os.path.isabs(path)
+                or path.replace("\\", "/") != path
+                or os.path.normpath(path) != path
+                or any(
+                    ord(character) < 32 or ord(character) == 127
+                    for character in path
+                )
+            ):
+                die(f"checkpoint {name} artefact path is not relocatable")
+        if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        expected_worktree = os.path.join(
+            old_origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if old_worktree != expected_worktree:
+            die(f"checkpoint {name} artefact path is not relocatable")
+        try:
+            relative = os.path.relpath(artifact, old_worktree).replace(os.sep, "/")
+        except (OSError, TypeError, ValueError):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        artifact = _checkpoint_safe_relative(tuple(relative.split("/")))
+        if os.path.join(old_worktree, *artifact.split("/")) != receipt["artifact"]:
+            die(f"checkpoint {name} artefact path is not relocatable")
     if artifact.replace("\\", "/") != artifact:
         die(f"checkpoint {name} artefact path is unsafe")
     if _checkpoint_safe_relative(tuple(artifact.split("/"))) != artifact:
@@ -11778,12 +12321,19 @@ def _checkpoint_restore_capsule(
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
     )
-    if canonical(controller) != canonical(
-        {
-            "name": state.get("controller"),
-            "state_version": state.get("version"),
-            "version": current_version,
-        }
+    controller_identity = {
+        "name": controller["name"],
+        "state_version": controller["state_version"],
+    }
+    state_identity = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+    }
+    if (
+        canonical(controller_identity) != canonical(state_identity)
+        or not isinstance(controller["version"], str)
+        or controller["version"] not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        or current_version not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
     ):
         die("checkpoint controller identity does not match this controller")
     last_entry = None
@@ -12212,10 +12762,17 @@ def _checkpoint_restore_state(
     manifest: dict,
     manifest_digest: str,
 ) -> tuple[dict, dict]:
-    """Relocate only the controller's two path fields and shape its receipt."""
+    """Relocate controller paths and shape the same-ledger receipt."""
     state = json.loads(json.dumps(imported))
     old_origin = configured_git_path(state, "origin")
     old_worktree = configured_git_path(state, "worktree")
+    for name in ("study", "runbook"):
+        source_receipt = _checkpoint_restore_source_receipt(state, name)
+        if source_receipt is None:
+            continue
+        artifact, _ = source_receipt
+        receipt = as_dict(as_dict(state.get("receipts")).get(name))
+        receipt["artifact"] = artifact
     state.pop("origin", None)
     state.pop("worktree", None)
     state["config"]["git"]["origin"] = origin
@@ -13023,6 +13580,91 @@ def cmd_resume(args) -> None:
     print("resumed")
 
 
+def verify_design_evidence(
+    base_dir: str,
+    state: dict,
+    *,
+    study_event: dict | None,
+    transition_events: list[dict],
+) -> None:
+    """Replay every admitted Protasis transition against its exact reports."""
+    if not design_evidence_required(state):
+        return
+    study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
+    if study_receipt.get("sha256") is None:
+        if state.get("phase") != "study":
+            die("design-evidence run has no study receipt", 1)
+        if transition_events:
+            die("design-evidence transitions exist before study receipt", 1)
+        return
+
+    design = _design_receipt(state)
+    transitions = design["transitions"]
+    expected_names = ["design-lock"]
+    runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    if runbook_receipt.get("sha256") is not None:
+        if state.get("phase") == "steps":
+            current = state.get("current_step")
+            if not isinstance(current, int) or isinstance(current, bool):
+                die("design-evidence run has no current step", 1)
+            expected_names.extend(f"step:{number}" for number in range(1, current + 1))
+        elif state.get("phase") in ("integrate", "done"):
+            expected_names.extend(
+                f"step:{number}" for number in range(1, len(state.get("steps", [])) + 1)
+            )
+            merged = as_dict(state.get("integrate")).get("merged") or []
+            if state.get("phase") == "done" or len(merged) == len(state.get("steps", [])):
+                expected_names.append("integration")
+        elif state.get("phase") != "runbook":
+            die("design-evidence run has an unsupported phase", 1)
+
+    observed_names = [item.get("transition") for item in transitions]
+    if observed_names != expected_names:
+        die(
+            "design-evidence transition spine does not match controller progress: "
+            f"expected {expected_names}, got {observed_names}",
+            1,
+        )
+
+    event_design = as_dict(study_event).get("design_evidence")
+    expected_study_design = {
+        "schema": design["schema"],
+        "artifact": design["artifact"],
+        "sha256": design["sha256"],
+        "selected": design["selected"],
+        "transitions": [transitions[0]],
+    }
+    if event_design != expected_study_design:
+        die("done:study ledger event does not match the design lock", 1)
+    if transition_events != transitions[1:]:
+        die("controller ledger events do not match design transitions", 1)
+
+    for transition in transitions:
+        checked = _checked_design_transition(
+            base_dir,
+            transition["transition"],
+            expected_sha256=design["sha256"],
+            expected_selected=design["selected"],
+        )
+        if checked["transition"] != transition:
+            die(
+                "design-evidence report receipt changed at transition "
+                f"{transition['transition']}",
+                1,
+            )
+
+    if runbook_receipt.get("sha256") is not None:
+        runbook = receipted_source(base_dir, state, "runbook")
+        observed_lock = parse_design_lock_source(runbook["text"])
+        expected_lock = {
+            "schema": design["schema"],
+            "sha256": design["sha256"],
+            "candidate": design["selected"],
+        }
+        if observed_lock != expected_lock or runbook_receipt.get("design_lock") != expected_lock:
+            die("receipted runbook does not bind the active design lock", 1)
+
+
 def verify_run(
     base_dir: str,
     *,
@@ -13040,7 +13682,9 @@ def verify_run(
     prev = "genesis"
     count = 0
     last_state = None
+    study_event = None
     runbook_event = None
+    design_transition_events = []
     resolution_events = []
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
@@ -13066,6 +13710,11 @@ def verify_run(
                 die(f"ledger chain broken at line {i}", 1)
             if entry.get("event") == "done:runbook":
                 runbook_event = entry.get("data")
+            if entry.get("event") == "done:study":
+                study_event = entry.get("data")
+            event_data = entry.get("data")
+            if isinstance(event_data, dict) and "design_transition" in event_data:
+                design_transition_events.append(event_data.get("design_transition"))
             if entry.get("event") == "done:version-resolution":
                 resolution_events.append(entry.get("data"))
             prev = entry["hash"]
@@ -13079,6 +13728,12 @@ def verify_run(
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
+    verify_design_evidence(
+        base_dir,
+        state,
+        study_event=study_event,
+        transition_events=design_transition_events,
+    )
     runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     version_relations = None
     if runbook_receipt.get("sha256") is not None:
@@ -13191,7 +13846,7 @@ def cmd_reset(args) -> None:
         suffix += 1
     os.makedirs(destination)
 
-    preserved = {".gitignore", "archive", "lock"}
+    preserved = {".gitignore", "archive", "checkpoints", "lock"}
     for entry in os.listdir(root):
         if entry in preserved:
             continue

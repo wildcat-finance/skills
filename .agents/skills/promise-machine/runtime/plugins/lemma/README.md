@@ -12,6 +12,17 @@ Lemma turns Solidity compiler input or Markdown trees into validated, source-lin
 **Next Fiat job.** Use /hexaemeron:fiat to make callable-surface ABI validation cover return types and state mutability as well as names and input types, with any divergence rejecting the output. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Lemma to prepare Solidity compiler input or a Markdown tree for a
+downstream search, retrieval, or evaluation system. Each JSONL chunk retains
+its source location and separates exact quotation from model and embedding
+text.
+
+Lemma stops after source preparation. It does not embed, index, retrieve,
+answer, or grade. Its Solidity callable-surface validation does not yet
+independently check ABI return types or state mutability.
+
 ## Place in the collective
 
 Lemma is a preparation step, not a retrieval system. Berean can use a pinned
@@ -20,8 +31,9 @@ index, retrieve, answer, grade, or promote an agent. Ariadne may later bind a
 release to its evidence; that does not widen what the chunks themselves prove.
 
 Synkrisis does not treat Lemma chunks as run observations or compare corpora.
-Its current release builds a checked cohort of declared run observations and
-infers bounded findings over one; its remaining operations refuse.
+Its shipped operations build a checked cohort of declared run observations,
+infer bounded findings, render a fixed report, and verify that the path
+recomputes. None of those operations turns source chunks into observations.
 
 Lemma turns Solidity compiler inputs and Markdown documents into JSONL chunks.
 Each chunk uses the same schema and records enough source information for a

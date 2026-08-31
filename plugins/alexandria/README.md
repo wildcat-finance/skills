@@ -12,6 +12,18 @@ Alexandria preserves heterogeneous lending captures byte for byte, then exposes 
 **Next Fiat job.** Use /hexaemeron:fiat to build the first resumable Ethereum USDC interval collector with implementation-epoch discovery, bounded shards, a second-provider reconciliation path, explicit finality and offline raw-release verification. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Alexandria when lending data may disappear, change shape, or need to be
+checked later. It keeps the original source bytes, records exactly what was and
+was not captured, and can derive only the reviewed rows its mappings support.
+
+Today it can ingest and verify releases, produce unsigned evidence statements,
+derive Goldfinch and Clearpool views, build a disposable address index, and
+verify one Compound v3 Phase 0 execution witness. It does not yet collect a
+complete resumable Ethereum USDC interval, reconcile two providers, or make a
+credit decision.
+
 ## Place in the collective
 
 Alexandria is the preservation end of the credit-data path. Tabularium consumes

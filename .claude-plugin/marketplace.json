@@ -4,7 +4,7 @@
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
   },
-  "description": "Wildcat Labs Skills, governed by the Promise Machine evidence and transition contract.",
+  "description": "Wildcat Labs Skills is the installable Shoggoth collective: specialised crypto R&D agents governed by the Promise Machine evidence and transition contract.",
   "plugins": [
     {
       "name": "hermes",
@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.17",
+      "version": "1.6.20",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -53,7 +53,7 @@
       "name": "homologia",
       "displayName": "Homologia",
       "source": "./plugins/homologia",
-      "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+      "description": "Scaffold for a future integer comparison between one on-chain computation and one off-chain mirror; substantive operations currently refuse.",
       "version": "0.1.0",
       "author": {
         "name": "Wildcat Labs",
@@ -292,7 +292,7 @@
       "displayName": "Brevitas",
       "source": "./plugins/brevitas",
       "description": "Evidence-preserving budgets for engineering prose.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -350,6 +350,27 @@
         "comparison",
         "promise-machine",
         "agents"
+      ]
+    },
+    {
+      "name": "anamnesis",
+      "displayName": "Anamnesis",
+      "source": "./plugins/anamnesis",
+      "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+      "version": "0.3.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/anamnesis",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "audit",
+        "findings",
+        "remediation",
+        "corpus",
+        "provenance"
       ]
     }
   ]

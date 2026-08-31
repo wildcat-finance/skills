@@ -97,6 +97,14 @@ OMISSIONS = (
         ),
     },
     {
+        "pattern": "plugins/anamnesis/specimens/**",
+        "reason": (
+            "the preserved audit sources and the corpus release built from them are "
+            "data the router never reads; they remain in the full source checkout, "
+            "where the tests that rebuild and compare them run"
+        ),
+    },
+    {
         "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
         "reason": "the large offline trace inputs remain in the full source checkout",
     },
@@ -150,6 +158,8 @@ def _omitted(relative: Path) -> bool:
     if len(parts) < 3 or parts[0] != "plugins":
         return False
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
+        return True
+    if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True
     example = parts[:4] == (
         "plugins",

@@ -192,7 +192,18 @@ def is_current_runtime_prose(path):
     name = relative.name.lower()
     if parts[:4] == (".agents", "skills", "promise-machine", "runtime"):
         return False
+    # Controller state and scratch, both gitignored. A Fiat run's receipts and
+    # pull-request drafts quote the records they describe, including their
+    # runtime versions, and `tmp/` is the documented run-worktree home where
+    # scripts/run_checks.py stages its disposable snapshot. Scanning either made
+    # this case fail for anybody with a delivery or a check run in flight.
+    if parts[0] in {".hexaemeron", "tmp"}:
+        return False
     if "audit" in parts or "baseline" in parts:
+        return False
+    # A specimen is preserved input. Editing one to satisfy a later pin changes
+    # what the specimen is, and breaks the digest the preserving policy declares.
+    if "specimens" in parts:
         return False
     if "tests" in parts and "fixtures" in parts:
         return False
@@ -313,7 +324,7 @@ class PythonRuntimeContractTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         workflow_event_paths(text, event)
 
-    def test_complete_plugin_gate_runs_the_one_full_graph(self):
+    def test_complete_plugin_gate_shards_the_one_declared_graph(self):
         workflow = WORKFLOWS / "plugins.yml"
         self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
         text = workflow.read_text(encoding="utf-8")
@@ -348,18 +359,39 @@ class PythonRuntimeContractTests(unittest.TestCase):
             "gpg --batch --import \"$key_path\"",
             text,
         )
+        # One shard per declared scope, each running the committed graph for
+        # that scope alone. The graph stays the only definition of a check, and
+        # no command is copied into the workflow.
         self.assertEqual(
             text.count(
-                "run: python3 scripts/run_checks.py --full "
-                "--report tmp/checks/plugins.json"
+                "python3 scripts/run_checks.py\n"
+                "          --scope ${{ matrix.scope }}\n"
+                "          --report tmp/checks/${{ matrix.scope }}.json"
             ),
             1,
         )
+        declared = set(
+            json.loads((ROOT / "tests" / "check-map-v1.json").read_text())["scopes"]
+        )
+        block = text[text.index("        scope:\n") : text.index("    runs-on:")]
+        sharded = set(re.findall(r"^\s+- ([a-z][a-z-]*)$", block, re.MULTILINE))
+        self.assertEqual(
+            sharded,
+            declared,
+            "every declared scope needs exactly one shard, and no shard may "
+            "name a scope the graph does not declare",
+        )
+        # The aggregate job is the required context and is green only when
+        # every shard reached terminal success.
+        self.assertIn("    needs: scope\n", text)
+        self.assertIn('test "$SHARDS" = success', text)
+        self.assertIn("fail-fast: false", text)
         self.assertIn("if: always()", text)
         self.assertIn("uses: actions/upload-artifact@v4", text)
-        self.assertIn("path: tmp/checks/plugins.json", text)
+        self.assertIn("path: tmp/checks/${{ matrix.scope }}.json", text)
         self.assertNotIn("continue-on-error", text)
         self.assertNotIn("github.event.pull_request", text)
+        self.assertNotIn("--full", text)
 
     def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
         graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
@@ -390,6 +422,23 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
         self.assertIn("[ADR-042]", text)
+
+    def test_gitignored_run_state_is_outside_the_prose_scan(self):
+        """A run in flight must not fail this case.
+
+        `tmp/` is Fiat's documented worktree home and where run_checks.py stages
+        its disposable snapshot; `.hexaemeron/` is controller state. Both are
+        gitignored, and both hold copies of prose that quote whatever runtime
+        version the records they describe named.
+        """
+        for relative in (
+            "tmp/check-runner/abc/snapshot/docs/promise-machine/evidence/x.md",
+            "tmp/fiat/run/.hexaemeron/steps/1/pr.md",
+            ".hexaemeron/steps/1/pr.md",
+        ):
+            with self.subTest(path=relative):
+                self.assertFalse(is_current_runtime_prose(ROOT / relative))
+        self.assertTrue(is_current_runtime_prose(ROOT / "README.md"))
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.43.1"
+  version: "5.46.1"
 ---
 
 <p align="center">
@@ -144,13 +144,15 @@ the second.
 1. If the user passed `status`, run `hexctl status` and report. Stop.
 2. Apply the frontier maturity gate below. This happens before `init` and
    before resuming an existing frontier run.
-3. If a run arrives as a checkpoint zip, verify the outer transport and Git
-   boundary first, restore its refs into a fresh clean top-level checkout, then
-   restore the checked controller capsule with `hexctl checkpoint restore`, per
-   the `Step checkpoint` section of
+3. If another agent hands over a local checkpoint path, verify the archive and
+   Git boundary first, restore its refs into a fresh clean top-level checkout,
+   then restore the checked controller capsule with `hexctl checkpoint
+   restore`, per the `Step checkpoint` section of
    [push-discipline.md](references/push-discipline.md). Run `hexctl verify` and
    `hexctl status --json` against the restored worktree, then enter the loop.
-   Never call `init` or start a fresh ledger for a restored run.
+   Never call `init` or start a fresh ledger for a restored run. Checkpoint
+   transfer is local agent-to-agent work; do not ask the user to choose a
+   destination, approve the transfer, or decide whether the checkpoint is kept.
 4. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
    `hexctl status --json`. If its phase is `done`, run `hexctl reset` to
    archive the completed run, then continue immediately as a new run at step
@@ -334,9 +336,9 @@ Act on the single directive it prints, then receipt it. The directory:
 
 | `do` | Action | Reference | Receipt |
 | --- | --- | --- | --- |
-| `study` | Research the topic; write the study | [protasis](../protasis/SKILL.md) | `done study --artifact <path> --skills <csv>` |
+| `study` | Research the topic; write the study and checked design record | [protasis](../protasis/SKILL.md) | `done study --artifact <path> --skills <csv>` |
 | `runbook` | Derive discrete steps from the study | [protasis](../protasis/SKILL.md) | `done runbook --artifact <path> --steps-file <path>` |
-| `implement` | Build the step, simplest construction that satisfies the runbook | [protasis](../protasis/SKILL.md) | `done implement --branch <name> --commit <sha> [--tests <summary>]` |
+| `implement` | Build the selected design for this source-bound step | [protasis](../protasis/SKILL.md) | `done implement --branch <name> --commit <sha> [--tests <summary>]` |
 | `audit-round` | One security round: run the suite, shape and log its record, fix on the stacked branch | [audit-loop.md](references/audit-loop.md) | `audit-round --findings <n> --audit-filter sapheneia:sapheneia [--log <path>] [--fixes-commit <sha> --elenchus-verdict <value>]`, plus `--phylax-exit`, `--ephoros-exit` and `--hypomnema-exit` on a non-Solidity round |
 | `close-audit` | Last round was clean; close the phase | [audit-loop.md](references/audit-loop.md) | `done audit [--fixes-ref <ref>]` |
 | `resolve-security-suite` | Suite receipt missing; resolve or waive | preflight step 4 | `record security_suite ...` |
@@ -372,6 +374,31 @@ list with one entry per step in order, as strings or `{"title": ...}` objects.
 Run the `imprimatur` lint on each artefact before receipting it, and pass the
 skills that ran to the receipt. Repo copies are committed later, in step 1 of
 the runbook, after the prose pass.
+
+Every newly initialised run records `contracts.design_evidence` and owes
+`.hexaemeron/design-evidence.json`. Surveyor writes that closed Protasis record
+beside its report files. `done study` invokes Protasis at `design-lock`, refuses
+unresolved selection evidence, failed hard gates, a dominated selection or an
+unsupported tie-break, and receipts the record digest, selected candidate and
+the exact report digests consumed. The runbook carries one matching
+`design-lock` block before Step 1. `done runbook` refuses a missing or mismatched
+block and checks evidence due at `step:1` before opening it.
+
+Before `done push` opens the next step, Fiat runs the same checker at that
+`step:N`. The final `done merge-step` checks `integration` after assembling the
+stack on the run branch and before `next` can authorise the base integration.
+A conformance result may therefore remain pending only with its exact resolver,
+future report path and named stop point; it cannot be guessed early or pass its
+boundary late. Mason and Warden receive the fixed record path, digest and
+selected candidate. `verify` replays every transition and compares every
+consumed report digest. Record drift, report drift, failed due evidence and a
+changed selection refuse. A run whose initial state lacks the contract marker
+keeps the old receipt and packet shapes. No legacy evidence is inferred.
+
+The design record is immutable after `done study`. An ordinary study or
+runbook amendment cannot change its candidate, criteria or selection. A change
+to any of those requires an explicit future design-amendment transition; until
+one exists, halt and start a new run rather than editing the receipted record.
 
 A runbook may carry Protasis's optional closed `version-relations` block.
 `init` records the exact commit created in the run worktree in its hash-chained
@@ -489,14 +516,15 @@ later study amendment changes that digest, so an older repair no longer
 applies. Recovery remains another checked amendment or an explicit halt; state
 and ledger history are not edited to manufacture a holding result.
 
-**Implementation.** Pick the construction that takes the least effort to
-comprehend, then stop. The step runs under the phase skills: `phylax` names
+**Implementation.** Build the candidate named by the checked design receipt;
+the design choice is not reopened inside a step. The step runs under the phase skills: `phylax` names
 the boundaries the step introduces and the control each needs, `ephoros` names
 what it must emit once it runs unattended, `metron` refuses any change made in
 the name of speed without a recorded before and after, and a failure worked
 mid-step follows `elenchus` rather than a guess. Their lints run in every
-audit round, so meeting them here is cheaper than meeting them there. The runbook step is the yardstick: reread it before
-declaring the step complete, and do not add anything it does not ask for.
+audit round, so meeting them here is cheaper than meeting them there. The
+runbook step and selected design are the yardsticks: reread both before
+declaring the step complete, and do not add anything they do not ask for.
 The `implement` directive carries `branch` and `branch_from`: cut that exact
 branch from that exact ref. Step 1 branches from the run branch, every later
 step from the step below it, so each step builds on the reviewed tree of the
@@ -559,11 +587,13 @@ append its attribution line or session link after creation. Wait for its gates
 but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
-the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base. Then, before packaging or acting on the next
-directive, export the controller capsule with `hexctl checkpoint export` and
-upload the step checkpoint the `Step checkpoint` section of
-[push-discipline.md](references/push-discipline.md) requires. Preserve the
-export command's manifest SHA-256 outside the capsule for checked restore.
+the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base.
+Then, before packaging or acting on the next directive, save the complete step
+checkpoint in the fixed local checkpoint store exactly as the `Step checkpoint`
+section of [push-discipline.md](references/push-discipline.md) requires. This is
+mandatory controller work: do not ask the user whether to save it, where to put
+it, or whether it may be skipped. Preserve the export command's manifest
+SHA-256 outside the capsule for checked restore.
 
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before each merge, an unchanged waiting head passes without a relation process.
@@ -644,8 +674,9 @@ Every `next` envelope carries `state_sha256`, an explicit `agent`, and a
 source-bound `brief`. Delegate the exact packet to `surveyor`, `mason`,
 `warden`, or `scribe` when the runtime supports isolated agents. An inline
 directive carries explicit null packet fields. Refuse an artefact whose digest
-has drifted; do not reconstruct its study block, runbook step, risk register,
-or sorted prose diff from chat. If delegation is unavailable, execute the same
+has drifted; do not reconstruct its design selection, study block, runbook
+step, risk register, or sorted prose diff from chat. If delegation is
+unavailable, execute the same
 packet in the main session. After compaction, rerun `next`: the receipted
 artefacts and state digest deterministically reconstruct the packet.
 
@@ -723,6 +754,18 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ## Promise Machine contract
 
+### fiat-design-evidence
+
+- Promise: For a run initialised under `protasis-design-evidence/v1`, successful study and runbook receipts establish one immutable selected candidate from a complete checked matrix, a matching runbook design lock, and append-only transition receipts for each step entry and integration boundary reached so far.
+- Evidence: The fixed record path and SHA-256, closed Protasis checker output, selected candidate, design-lock block, report paths and digests consumed at `design-lock`, `step:N` and `integration`, state transition spine, matching ledger events, delegated compact source binding, replay result and hostile missing, pending, mismatched, symlink, drift and legacy fixtures.
+- Evidence classes: checked, recorded
+- Boundary: The receipts establish record shape, report-byte identity, report-derived comparisons, mechanical frontier membership and named progressive stop points. They do not establish that a criterion set is sufficient, a command measures the intended property, pending evidence will pass, or the selected design is correct in every environment.
+- Authorises: Deriving a runbook from the locked candidate, opening only a step whose due conformance evidence passes, delegating the exact selected design to Mason and Warden, and entering integration only after its due evidence passes.
+- Consequence: 2
+- Refuses: A missing or changed record, incomplete matrix, missing required concern, unsafe report, non-zero report exit, state/report disagreement, selection evidence still pending, failed selection gate, selected dominated candidate, unsupported tie-break, missing or mismatched runbook lock, evidence absent or failed at its named transition, receipt/event mismatch, or replay drift.
+- Recovery: Before design lock, run the named resolver and rewrite the draft record. After design lock, restore the exact receipted record and reports or produce the pending report at its named path; halt and start a new run if the candidate, criterion set or selection must change.
+- Exceptions: none
+
 ### fiat-study-amendment
 
 - Promise: A successful `hexctl amend study` establishes that the captured candidate preserved the currently receipted study bytes as its exact prefix, carried one structurally accepted final amendment, passed the bundled Protasis check, and recorded bounded digest and unbuilt-step verdict evidence.
@@ -762,12 +805,12 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-controller-checkpoint
 
 - Promise: A successful `hexctl checkpoint export` followed by `hexctl checkpoint restore` establishes that one bounded, deterministic `fiat-controller-checkpoint/v1` capsule was exported at an accepted controller boundary, verified against its out-of-band manifest SHA-256 and exact Git refs, and relocated into a fresh clean checkout while continuing the same append-only Fiat ledger.
-- Evidence: Ordinary controller verification before capture, the accepted ledger-tail boundary, stable no-follow regular-file reads, closed sorted inventory and resource totals, exact state and ledger byte identities, semantic state fingerprint and next directive, resolved Git refs, canonical manifest digest reported outside the capsule, hostile-input guards, the restore transaction marker, one `checkpoint:restore` ledger entry, final controller verification and the clone-loss test.
+- Evidence: Ordinary controller verification before capture, the accepted ledger-tail boundary, stable no-follow regular-file reads, closed sorted inventory and resource totals, exact state and ledger byte identities, semantic state fingerprint and next directive, resolved Git refs, canonical manifest digest reported outside the capsule, the explicit compatible-controller set, portable source receipts and legacy-path guards, the restore transaction marker, one `checkpoint:restore` ledger entry, final controller verification and the clone-loss tests.
 - Evidence classes: checked, recorded
-- Boundary: The capsule proves the exact controller bytes, declared resources, semantic directive and Git boundary checked by these commands. It does not create or verify the Git bundle or outer archive, handle signing keys, publish to GitHub or Drive, make the manifest digest a semantic checkpoint identity, prove the recorded delivery claims true, or authorise the emitted next directive to run.
-- Authorises: Packaging the exported controller directory through the standing outer checkpoint procedure and, after that transport and its Git boundary have been verified, restoring the same ledger once into the fresh checkout and reporting the recomputed directive without executing it.
+- Boundary: The capsule proves the exact controller bytes, declared resources, semantic directive and Git boundary checked by these commands. It does not create or verify the Git bundle or outer archive, handle signing keys, publish anything remotely, make the manifest digest a semantic checkpoint identity, prove the recorded delivery claims true, or authorise the emitted next directive to run.
+- Authorises: Packaging the exported controller directory in the fixed local checkpoint store, handing its absolute path and digests directly to another local agent, and, after the archive and Git boundary have been verified, restoring the same ledger once into the fresh checkout and reporting the recomputed directive without executing it.
 - Consequence: 2
-- Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, wrong controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
+- Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, unsupported controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
 - Exceptions: none
 
@@ -785,11 +828,11 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ### fiat-local-retirement
 
-- Promise: A successful `hexctl reset` establishes that the active run was complete, its state and append-only ledger verified, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
-- Evidence: Zero-exit `verify_run`, terminal `phase: done`, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
+- Promise: A successful `hexctl reset` establishes that the active run was complete, its state and append-only ledger verified, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, its fixed `.hexaemeron/checkpoints/` store remained outside that archive, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
+- Evidence: Zero-exit `verify_run`, terminal `phase: done`, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive, checkpoints and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
 - Evidence classes: checked, recorded
-- Boundary: Retirement preserves and clears local controller evidence; it does not strengthen any delivery receipt, publish the archive, prove that no external process copied it, or prevent an explicit forced Git add from overriding the self-ignore.
-- Authorises: Archiving a final verified run locally after its handoff data has been captured, clearing its active controller state, and retiring only a clean run worktree before the final report.
+- Boundary: Retirement preserves and clears local controller evidence without opening or validating checkpoint archives; it does not strengthen any delivery receipt, publish an archive, prove that no external process copied it, or prevent an explicit forced Git add from overriding the self-ignore.
+- Authorises: Archiving a final verified run locally after its handoff data has been captured, leaving the fixed checkpoint store in place, clearing its active controller state, and retiring only a clean run worktree before the final report.
 - Consequence: 2
 - Refuses: An incomplete run, failed controller verification, an archive destination outside the local state root, or forced removal of a worktree whose Git status is not clean.
 - Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.

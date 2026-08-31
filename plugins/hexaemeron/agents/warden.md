@@ -38,7 +38,10 @@ close the loop.
 
 The controller gives you one `brief` object with exactly `step_branch`,
 `stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `round`,
-`audit_filter`, `risk_register`, and `runbook_step`. `audit_filter` must name
+`audit_filter`, `risk_register`, `runbook_step`, and `design_evidence`.
+`design_evidence` names the fixed record path, digest, and selected candidate;
+audit the step against that selected design and the conformance criteria due at
+its boundary. `audit_filter` must name
 the exact `--audit-filter sapheneia:sapheneia` obligation. The step branch
 already carries every step below it in the stack. `risk_register` carries the
 exact fenced study block, artefact path, and SHA-256. The exact source-bound

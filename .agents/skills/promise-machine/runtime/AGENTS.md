@@ -1,14 +1,24 @@
 # Instructions for local agents
 
-This repository distributes agent skills. Do not treat a skill as active merely
-because its files are present in context. Match the user's request through the
-single portable router at `.agents/skills/promise-machine/SKILL.md`, then read
-the selected plugin runtime contract and the one canonical `SKILL.md` it names.
+This repository is the source distribution for Wildcat Labs Skills, the
+Shoggoth. A person can begin with `README.md`; an agent begins here.
+
+The safe loading path is short:
+
+1. read the collective identity and shared Promise Machine contract;
+2. route the request through `.agents/skills/promise-machine/SKILL.md`;
+3. read the selected plugin's `AGENTS.md`; and
+4. read the one canonical `SKILL.md` that contract selects.
+
+Files present in context are not automatically active skills. A router,
+manifest, worker brief, or generated installation copy also does not create a
+general capability or permission.
 
 ## Collective identity
 
 Before interpreting any reference to Shoggoth, including a shortened, altered,
-or affectionate form of the name, read the shared
+or affectionate form of the name, or resolving a user's collective form of
+address from available GitHub credentials, read the shared
 [Shoggoth collective identity](SHOGGOTH.md). That language affects how people
 address the agents and skills. It does not activate a skill, grant authority,
 or weaken the Promise Machine and target-repository instructions.
@@ -27,7 +37,7 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The fifteen plugins form one marketplace, not fifteen competing descriptions
+The seventeen plugins form one marketplace, not seventeen competing descriptions
 of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
@@ -48,9 +58,16 @@ Pandects supplies the economic laws such a transition must preserve. Synkrisis
 owns the cross-run comparison boundary: it builds one checked cohort from
 declared run observations and infers only bounded relations between named
 events, and any operation whose runbook step has not landed refuses by name
-rather than guessing. Its findings stay bounded inferences: capture,
+rather than guessing. All four current operations ship: cohort, diagnosis,
+rendering, and whole-path verification. Its findings stay bounded inferences: capture,
 redaction, receipt binding, causal triage, and every decision to act stay
-with their owners. Sapheneia
+with their owners. Anamnesis keeps custody of audit findings and the
+changes that answered them: it admits a source only against an explicit rights
+basis, preserves the producer's bytes unchanged, and hands Elenchus a
+historical analogue and Synkrisis a checked cohort projection. The analogue is
+a hypothesis, so Elenchus still reproduces the present failure and still earns
+its own guard, and Synkrisis takes no custody of the source. Warden still
+produces a round's record; Anamnesis does not produce one. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose
@@ -109,6 +126,9 @@ these instructions.
 
 - Alexandria is under `plugins/alexandria/`. Read
   `plugins/alexandria/AGENTS.md` before running its skill or changing that
+  plugin.
+- Anamnesis is under `plugins/anamnesis/`. Read
+  `plugins/anamnesis/AGENTS.md` before running its skill or changing that
   plugin.
 - Ariadne is under `plugins/ariadne/`. Read `plugins/ariadne/AGENTS.md` before
   running its skill or changing that plugin.

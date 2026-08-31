@@ -17,6 +17,8 @@ Runbook mode (the default):
         carrying at least one complete replacement field
   P006  an optional version-relations declaration is malformed, ambiguous, or
         contradicted by a concrete version token elsewhere in the runbook
+  P007  an optional design-lock declaration is malformed, duplicated or placed
+        after Step 1
 
 Study mode (`--study`):
 
@@ -143,6 +145,10 @@ MAX_STEPS = 500
 MAX_VERSION_RELATIONS = 32
 VERSION_RELATIONS_INFO = "version-relations"
 VERSION_RELATION = "next-generation-after-integration-base"
+DESIGN_LOCK_INFO = "design-lock"
+DESIGN_LOCK_SCHEMA = "protasis-design-evidence/v1"
+DESIGN_LOCK_FIELDS = ("schema", "sha256", "candidate")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 class Finding:
@@ -518,6 +524,93 @@ def _version_relation_findings(path: Path, lines: list[str]) -> list[Finding]:
     return findings
 
 
+def _design_lock_findings(path: Path, lines: list[str]) -> list[Finding]:
+    """Check the optional runbook binding to one receipted design record."""
+    blocks: list[tuple[int, int, int, bool, bool]] = []
+    open_mark: str | None = None
+    open_length: int | None = None
+    design_open: tuple[int, bool] | None = None
+    for number, line in enumerate(lines, start=1):
+        match = FENCE.match(line)
+        if match is None:
+            continue
+        sequence = match.group("mark")
+        mark = sequence[0]
+        tail = line[match.end():].strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = tail.split()
+            design_open = (
+                (number, tail == DESIGN_LOCK_INFO)
+                if words and words[0] == DESIGN_LOCK_INFO
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not tail:
+            if design_open is not None and len(blocks) < 2:
+                opening, exact_info = design_open
+                blocks.append((opening, opening + 1, number - 1, exact_info, True))
+            open_mark, open_length, design_open = None, None, None
+    if design_open is not None and len(blocks) < 2:
+        opening, exact_info = design_open
+        blocks.append((opening, opening + 1, len(lines), exact_info, False))
+    if not blocks:
+        return []
+
+    findings: list[Finding] = []
+    if len(blocks) > 1:
+        findings.append(Finding(
+            path, blocks[1][0], "P007", "runbook carries more than one design-lock block",
+        ))
+    opening, body_start, body_end, exact_info, closed = blocks[0]
+    if not exact_info:
+        findings.append(Finding(
+            path, opening, "P007", "design-lock fence must carry only that exact info string",
+        ))
+    if not closed:
+        findings.append(Finding(path, opening, "P007", "design-lock block is not closed"))
+        return findings
+    first_step = next((
+        number for number, line, in_fence in _scan(lines)
+        if not in_fence and STEP.match(line)
+    ), None)
+    if first_step is not None and opening >= first_step:
+        findings.append(Finding(
+            path, opening, "P007", "design-lock block must occur before Step 1",
+        ))
+    rows = lines[body_start - 1:body_end]
+    if len(rows) != len(DESIGN_LOCK_FIELDS):
+        findings.append(Finding(
+            path, opening, "P007",
+            "design-lock block must carry schema, sha256 and candidate rows once in order",
+        ))
+        return findings
+    parsed = {}
+    for offset, (expected, row) in enumerate(
+        zip(DESIGN_LOCK_FIELDS, rows), start=body_start
+    ):
+        fields = [field.strip() for field in row.split("|")]
+        if (
+            len(fields) != 2
+            or not all(fields)
+            or fields[0] != expected
+            or _contains_nonprinting_character(row)
+        ):
+            findings.append(Finding(
+                path, offset, "P007",
+                "design-lock rows must be schema, sha256 and candidate once in order",
+            ))
+            continue
+        parsed[fields[0]] = fields[1]
+    if parsed.get("schema") not in (None, DESIGN_LOCK_SCHEMA):
+        findings.append(Finding(path, body_start, "P007", "design-lock schema is unsupported"))
+    if parsed.get("sha256") is not None and SHA256.fullmatch(parsed["sha256"]) is None:
+        findings.append(Finding(path, body_start + 1, "P007", "design-lock sha256 is malformed"))
+    if parsed.get("candidate") is not None and KEBAB.fullmatch(parsed["candidate"]) is None:
+        findings.append(Finding(path, body_start + 2, "P007", "design-lock candidate is not kebab-case"))
+    return findings
+
+
 def _amendment_findings(
     path: Path,
     lines: list[str],
@@ -602,6 +695,7 @@ def check(path: Path) -> list[Finding]:
         return [Finding(path, 1, "P000", "cannot be read as a runbook")]
 
     findings: list[Finding] = _version_relation_findings(path, lines)
+    findings.extend(_design_lock_findings(path, lines))
     findings.extend(_amendment_findings(
         path,
         lines,

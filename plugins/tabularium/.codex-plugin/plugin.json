@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Tabularium",
     "shortDescription": "Venue-qualified credit-event releases rebuilt from preserved source records.",
-    "longDescription": "Tabularium turns preserved Goldfinch, Euler v1 and Euler V2 credit records into deterministic canonical JSONL without discarding source meaning or native records. It also rebuilds a non-canonical Compound v3 Phase 0 execution witness from a verified Alexandria release. Offline verification confines paths and rebuilds the expected event or witness bytes rather than trusting row claims.",
+    "longDescription": "Tabularium turns preserved Goldfinch, Euler v1, and Euler v2 records into deterministic, venue-qualified credit events without discarding the native source or mapping provenance. It also rebuilds one non-canonical Compound v3 Phase 0 execution witness from a verified Alexandria release. Offline verification reconstructs the expected bytes instead of trusting row claims. The canonical Compound Phase 1 adapter and Ethereum USDC interval specimen have not shipped.",
     "developerName": "Wildcat Labs",
     "category": "Research",
     "capabilities": [],

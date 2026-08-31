@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.17",
+      "version": "1.6.20",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -192,6 +192,18 @@
       "source": {
         "source": "local",
         "path": "./plugins/synkrisis"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "anamnesis",
+      "source": {
+        "source": "local",
+        "path": "./plugins/anamnesis"
       },
       "policy": {
         "installation": "AVAILABLE",

@@ -2,7 +2,7 @@
 name: brevitas
 description: Enforce evidence-preserving structural output budgets on engineering prose. Apply automatically to chat answers and written drafts containing audit findings, security or diff review, gas analysis, `invariant` discussion, protocol analysis, or specification commentary, and on explicit $brevitas invocation. Govern volume, structure, and connective prose only. Do not apply to code comments, commit messages, or completeness-oriented specification documents.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 <p align="center">
@@ -41,7 +41,8 @@ introduce a claim the findings do not hold.
 
 Preserve evidence before satisfying any budget. Never delete or weaken:
 
-- addresses or transaction hashes;
+- addresses, transaction hashes, 4-byte selectors, bare SHA-256-shaped digests,
+  or Git object ids;
 - `file:line` references or numeric claims;
 - concrete counterexamples or reproduction steps; or
 - an explicit statement that a fact, property, or conclusion could not be established.
@@ -105,8 +106,10 @@ make -C /path/to/brevitas lint FILE=/path/to/report.md
 
 Use `--mode answer` for direct answers and `--mode report` for reports. `auto`
 infers a report from findings or at least 3 sections. For existing material, always
-pass `--source`; the checker fails if an address, transaction hash, `file:line`
-reference or numeric token disappears. Fix every diagnostic and rerun for exit 0.
+pass `--source`; the checker fails if an address, transaction hash, selector,
+bare digest, Git object id, `file:line` reference or numeric token disappears.
+Abbreviated Git ids require Markdown code quoting, an explicit Git label, or an
+`owner/repository@oid` form. Fix every diagnostic and rerun for exit 0.
 
 Host-required status commentary is outside the draft lint boundary. Do not suppress
 status messages required by the execution environment.
@@ -139,10 +142,10 @@ completeness is the point. Do not change lexicon, tone, register or accessibilit
 
 ### brevitas-evidence-preservation
 
-- Promise: A successful lint with `--source` establishes that protected addresses, transaction hashes, file-line references and numeric tokens from the named source survive in the compressed draft.
+- Promise: A successful lint with `--source` establishes that protected transaction hashes, addresses, 4-byte selectors, bare SHA-256-shaped digests, Git object ids, file-line references and numeric tokens from the named source survive literally in the compressed draft.
 - Evidence: The exact source and draft bytes, source-token comparison, any explicit evidence exception and a zero-exit lint result.
 - Evidence classes: checked, recomputed
-- Boundary: Token survival does not establish semantic equivalence, complete reasoning, correct conclusions or preservation of evidence classes that the token checker cannot represent.
+- Boundary: Token survival does not establish semantic equivalence, complete reasoning, correct conclusions, that a protected digest, selector or Git object exists or is valid, or preservation of evidence classes that the token checker cannot represent; unlabelled abbreviated hexadecimal text is outside the Git-object promise.
 - Authorises: Saving or handing off the compressed draft as a derived artefact whose mechanically protected tokens remain present.
 - Consequence: 1
 - Refuses: Deleting or weakening protected evidence to meet a volume budget, or claiming preservation without supplying the source comparison.

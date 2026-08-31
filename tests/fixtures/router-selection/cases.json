@@ -783,25 +783,37 @@
         "text": "Homologia compares one pinned contract computation with one pinned off-chain"
       },
       "not_established": "Selecting Homologia does not establish that either implementation is correct; two implementations of the same misunderstanding agree."
+    },
+    {
+      "id": "RS-39",
+      "family": "plugin-row",
+      "request": "I want the findings from our past audit rounds and the changes that answered them kept somewhere I can query later.",
+      "expect": {
+        "outcome": "select",
+        "canonical": "anamnesis"
+      },
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Anamnesis keeps custody of audit findings and the"
+      },
+      "not_established": "Selecting Anamnesis does not establish that a preserved finding was real, that its remedy worked, or that a corpus figure describes anything beyond the records it counted."
     }
   ],
   "runs": [
     {
       "model": "claude-opus-5",
-      "date": "2026-08-30",
+      "date": "2026-08-31",
       "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
-      "corpus_sha256": "e0c9dddc9d74ca3ba8097b25f480ceca50fc646b6ee6f0ba965172af667f13a5",
-      "cases": 38,
-      "passed": 36,
-      "failed": 2,
+      "corpus_sha256": "b80f5a0632cb7967dfcbc57c98819012e4ec1b9fdb8907bf13610cfb5cd786b0",
+      "cases": 39,
+      "passed": 38,
+      "failed": 1,
       "failures": [
         {
           "case": "RS-33",
           "selected": "elenchus"
-        },
-        {
-          "case": "RS-34",
-          "selected": "refuse:uncovered"
         }
       ]
     }

@@ -177,6 +177,24 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             except (OSError, ValueError):
                 state = None
         if (
+            args[:2] == ("done", "runbook")
+            and state is not None
+            and getattr(self, "auto_design_lock", True)
+        ):
+            design = (
+                state.get("receipts", {})
+                .get("study", {})
+                .get("design_evidence")
+            )
+            if isinstance(design, dict):
+                artifact = args[args.index("--artifact") + 1]
+                path = artifact if os.path.isabs(artifact) else os.path.join(self.target, artifact)
+                with open(path, encoding="utf-8") as handle:
+                    source = handle.read()
+                if "```design-lock" not in source:
+                    with open(path, "w", encoding="utf-8") as handle:
+                        handle.write(self.design_lock_block(state) + "\n" + source)
+        if (
             args[:1] == ("audit-round",)
             and expect == 0
             and getattr(self, "auto_audit_records", True)
@@ -680,6 +698,95 @@ print(json.dumps(payload))
         if base is not None:
             args += ["--base", base]
         self.run_ctl(*args)
+        self.write_design_evidence()
+
+    def write_design_evidence(self, target=None):
+        """Write the smallest fully resolved evidence matrix used by fixtures."""
+        target = target or self.target
+        report_dir = os.path.join(target, ".hexaemeron", "design-reports")
+        os.makedirs(report_dir, exist_ok=True)
+        candidates = (
+            ("bounded", "Process one bounded unit at a time."),
+            ("buffered", "Hold the complete input before processing."),
+        )
+        criteria = (
+            ("works", "correctness", "gate", "boolean", "equals", True),
+            ("warm-time", "time", "metric", "milliseconds", "minimise", None),
+            ("peak-space", "space", "metric", "bytes", "minimise", None),
+            ("plugin-safe", "compatibility", "gate", "boolean", "equals", True),
+            ("restart-safe", "recovery", "gate", "boolean", "equals", True),
+        )
+        criterion_records = []
+        for identifier, concern, kind, unit, comparator, threshold in criteria:
+            criterion_records.append({
+                "id": identifier,
+                "concern": concern,
+                "kind": kind,
+                "stage": "selection",
+                "owner": "fixture",
+                "unit": unit,
+                "comparator": comparator,
+                "threshold": threshold,
+                "blocks": "design-lock",
+            })
+        results = []
+        for candidate, _ in candidates:
+            for identifier, _, kind, unit, _, _ in criteria:
+                value = True
+                if kind == "metric":
+                    value = 10 if candidate == "bounded" else 20
+                payload = {
+                    "schema": "protasis-design-report/v1",
+                    "candidate": candidate,
+                    "criterion": identifier,
+                    "value": value,
+                    "unit": unit,
+                    "command": f"fixture measure {candidate} {identifier}",
+                    "exit": 0,
+                }
+                data = (json.dumps(payload, sort_keys=True) + "\n").encode()
+                name = f"{candidate}-{identifier}.json"
+                with open(os.path.join(report_dir, name), "wb") as handle:
+                    handle.write(data)
+                results.append({
+                    "candidate": candidate,
+                    "criterion": identifier,
+                    "state": "pass",
+                    "report": {
+                        "path": f"design-reports/{name}",
+                        "sha256": hashlib.sha256(data).hexdigest(),
+                    },
+                })
+        record = {
+            "schema": "protasis-design-evidence/v1",
+            "candidates": [
+                {"id": identifier, "summary": summary}
+                for identifier, summary in candidates
+            ],
+            "criteria": criterion_records,
+            "results": results,
+            "selection": {
+                "candidate": "bounded",
+                "rule": "unique-frontier",
+                "policy_ref": None,
+            },
+        }
+        path = os.path.join(target, ".hexaemeron", "design-evidence.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(record, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        return path
+
+    def design_lock_block(self, state=None):
+        state = state or self.state()
+        design = state["receipts"]["study"]["design_evidence"]
+        return (
+            "```design-lock\n"
+            f"schema | {design['schema']}\n"
+            f"sha256 | {design['sha256']}\n"
+            f"candidate | {design['selected']}\n"
+            "```\n"
+        )
 
     @staticmethod
     def integration_base(state):
@@ -881,7 +988,8 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         self.run_ctl(
             "done", "runbook", "--artifact", runbook, "--steps-file", steps
         )
-        return study_text, runbook_text
+        with open(os.path.join(self.target, runbook), encoding="utf-8") as handle:
+            return study_text, handle.read()
 
     @staticmethod
     def amendment(

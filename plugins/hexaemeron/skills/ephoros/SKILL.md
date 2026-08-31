@@ -34,8 +34,7 @@ temporary instrumentation while chasing one failure; Ephoros decides what
 remains afterwards. Metron measures performance, and Phylax guards the data and
 secrets the telemetry boundary crosses.
 
-The Synkrisis specification allows a future finding to suggest that a signal
-is missing or late. Its current scaffold emits no finding, and even a future
+A Synkrisis finding may suggest that a signal is missing or late. That
 suggestion cannot decide what telemetry a step keeps.
 
 Its version, held frontier, next job, and maturity state live in
