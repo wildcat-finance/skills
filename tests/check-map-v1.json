@@ -291,7 +291,7 @@
     {"path": "docs", "scope": "docs"},
     {"path": "docs/dead-code", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
-    {"path": "docs/decisions/ADR-062-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
+    {"path": "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
     {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
     {"path": "repo_contract.py", "scope": "root"},
     {"path": "schemas", "scope": "schemas"},

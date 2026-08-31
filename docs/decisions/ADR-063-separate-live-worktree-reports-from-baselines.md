@@ -1,4 +1,4 @@
-# ADR-062: Separate live worktree reports from baselines
+# ADR-063: Separate live worktree reports from baselines
 
 ## Status
 

@@ -39,7 +39,7 @@ LIVE_ADR_PATH = (
     ROOT
     / "docs"
     / "decisions"
-    / "ADR-062-separate-live-worktree-reports-from-baselines.md"
+    / "ADR-063-separate-live-worktree-reports-from-baselines.md"
 )
 EXPECTED_STUDY_SHA256 = "da8ceed7ee91168e4ab60b1d3ba27c4e59df40be3a9dadd87d0dba17af8059e6"
 EXPECTED_RUNBOOK_SHA256 = "e5ea55c688615d9d1d0322e8c82bba335acfd6745cac99f49b471a564f860857"
@@ -3208,7 +3208,7 @@ class ShippedSurfaceTests(unittest.TestCase):
             ".github/workflows/dead-code.yml",
             "docs/dead-code",
             "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md",
-            "docs/decisions/ADR-062-separate-live-worktree-reports-from-baselines.md",
+            "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md",
             "docs/promise-machine/dead-code-v1.md",
             "schemas/dead-code-report-v1.schema.json",
             "schemas/dead-code-report-v2.schema.json",
