@@ -1,5 +1,6 @@
 """The checked-in Goldfinch fixture runs and remains offline reproducible."""
 
+import ast
 import ipaddress
 from io import StringIO
 import os
@@ -27,6 +28,10 @@ ANCHOR_FIXTURE = support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0"
 DEMO_PATH = FIXTURE / "demo.py"
 RECEIPT_DEMO_PATH = RECEIPT_FIXTURE / "demo.py"
 RECEIPTS_ROOT = "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e"
+# The complete demo contains five RPC calls with 5-second socket timeouts and a
+# 2-second thread join, followed by CPU-bound fixture checks. Keep its outer
+# compatibility ceiling explicit; only a hosted run establishes wall-clock fit.
+LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS = 60
 
 
 def load_demo():
@@ -83,7 +88,7 @@ class GoldfinchDemoTests(unittest.TestCase):
             text=True,
             capture_output=True,
             check=False,
-            timeout=20,
+            timeout=LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("replayed code bytes: 45", result.stdout)
@@ -91,6 +96,66 @@ class GoldfinchDemoTests(unittest.TestCase):
         self.assertIn("slot 0x1 miss: -32070", result.stdout)
         self.assertIn("one-nibble proof mutation: rejected", result.stdout)
         self.assertIn("manifest rebuild: identical", result.stdout)
+
+    def test_complete_demo_timeout_exceeds_its_inner_fail_closed_bounds(self):
+        tree = ast.parse(DEMO_PATH.read_text(encoding="utf-8"))
+        rpc_calls = sum(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "rpc_call"
+            for node in ast.walk(tree)
+        )
+        connection_timeouts = [
+            keyword.value.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "HTTPConnection"
+            for keyword in node.keywords
+            if keyword.arg == "timeout" and isinstance(keyword.value, ast.Constant)
+        ]
+        join_timeouts = [
+            keyword.value.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "join"
+            for keyword in node.keywords
+            if keyword.arg == "timeout" and isinstance(keyword.value, ast.Constant)
+        ]
+        self.assertEqual(rpc_calls, 5)
+        self.assertEqual(connection_timeouts, [5])
+        self.assertEqual(join_timeouts, [2])
+        self.assertGreater(
+            LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
+            rpc_calls * connection_timeouts[0] + join_timeouts[0],
+        )
+
+    def test_complete_demo_invocation_uses_the_named_outer_bound(self):
+        self.assertEqual(LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS, 60)
+        command = [sys.executable, str(DEMO_PATH)]
+        completed = subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=(
+                "replayed code bytes: 45\n"
+                "replayed logs: 5\n"
+                "slot 0x1 miss: -32070\n"
+                "one-nibble proof mutation: rejected\n"
+                "manifest rebuild: identical\n"
+            ),
+            stderr="",
+        )
+        with mock.patch.object(subprocess, "run", return_value=completed) as runner:
+            self.test_demo_command_runs_the_complete_application_check()
+        runner.assert_called_once_with(
+            command,
+            cwd=support.REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
+        )
 
     def test_manifest_rebuild_is_byte_identical(self):
         demo = load_demo()
