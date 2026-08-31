@@ -511,6 +511,23 @@ def require_clean_tree(root: Path, *, root_fd: int | None = None) -> None:
         )
 
 
+def require_repository_identity(root: Path, root_fd: int) -> None:
+    """Refuse when the path used to select the repository was substituted."""
+    try:
+        selected = os.stat(root, follow_symlinks=False)
+        opened = os.fstat(root_fd)
+    except OSError as error:
+        raise Refusal(f"the repository path cannot be revalidated: {error}") from error
+    if not stat.S_ISDIR(selected.st_mode) or (
+        selected.st_dev,
+        selected.st_ino,
+    ) != (
+        opened.st_dev,
+        opened.st_ino,
+    ):
+        raise Refusal("the repository path was substituted during validation")
+
+
 def validate_repository_path(value: str, label: str) -> str:
     if not value:
         raise Refusal(f"{label} is empty")
@@ -4196,6 +4213,61 @@ def command_baseline(arguments: argparse.Namespace) -> int:
         os.close(root_fd)
 
 
+def _suppression_analyser_states(report: Report) -> str:
+    expected = tuple(sorted(BASELINE_ANALYSERS))
+    actual = tuple(status.analyser_id for status in report.statuses)
+    if actual != expected:
+        raise Refusal(
+            "suppression analyser set is incomplete: expected "
+            + ",".join(expected)
+            + "; got "
+            + (",".join(actual) if actual else "none")
+        )
+    unusable = tuple(
+        f"{status.analyser_id}={status.state}"
+        for status in report.statuses
+        if status.state not in BASELINE_ANALYSER_STATES
+    )
+    if unusable:
+        raise Refusal(
+            "suppression analyser state is not admissible: " + ", ".join(unusable)
+        )
+    return ",".join(
+        f"{status.analyser_id}={status.state}" for status in report.statuses
+    )
+
+
+def command_suppressions(arguments: argparse.Namespace) -> int:
+    root = repository_root(Path(arguments.directory).resolve())
+    root_fd = open_repository_directory(root)
+    try:
+        require_clean_tree(root, root_fd=root_fd)
+        current_commit = resolve_commit(root, root_fd=root_fd)
+        report = build_report(
+            root,
+            root_fd=root_fd,
+            analyser_ids=BASELINE_ANALYSERS,
+            commit=current_commit,
+        )
+        analyser_states = _suppression_analyser_states(report)
+        _document, suppressions = load_suppressions(
+            root,
+            current_commit,
+            report,
+            root_fd=root_fd,
+        )
+        require_clean_tree(root, root_fd=root_fd)
+        require_repository_identity(root, root_fd)
+        sys.stdout.write(
+            f"{TOOL_ID} {TOOL_VERSION} suppressions check "
+            f"commit {current_commit} analysers {analyser_states} "
+            f"findings {len(report.findings)} suppressions {len(suppressions)}{chr(10)}"
+        )
+        return 0
+    finally:
+        os.close(root_fd)
+
+
 def parse_analyser_ids(value: str | None) -> tuple[str, ...]:
     if value is None:
         return ()
@@ -4280,6 +4352,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="read and verify the committed baseline without writing",
     )
     baseline.set_defaults(handler=command_baseline)
+    suppressions = subparsers.add_parser(
+        "suppressions",
+        help="verify exact suppressions against the current committed report",
+    )
+    suppression_mode = suppressions.add_mutually_exclusive_group(required=True)
+    suppression_mode.add_argument(
+        "--check",
+        action="store_const",
+        const="check",
+        dest="mode",
+        help="validate the committed suppressions without writing",
+    )
+    suppressions.set_defaults(handler=command_suppressions)
     return parser
 
 
