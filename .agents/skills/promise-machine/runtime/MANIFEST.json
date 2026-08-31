@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1034,
-  "total_bytes": 22181096,
+  "total_bytes": 22181083,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4207,9 +4207,9 @@
       "source": "plugins/lazarus/docs/macos-path-repair-runbook.md"
     },
     {
-      "bytes": 25596,
+      "bytes": 25583,
       "path": "plugins/lazarus/docs/macos-path-repair-study.md",
-      "sha256": "3f2722118111a7c2acf450eedd42298e895836166d6b690859c2378496050f80",
+      "sha256": "82b41b3bd1db2ddb80017f661be335b7adf947b2792755432a1eb9db8d5d93c3",
       "source": "plugins/lazarus/docs/macos-path-repair-study.md"
     },
     {

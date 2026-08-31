@@ -114,14 +114,14 @@ fixture-byte-drift | a path repair changes the shipped fixture or release | rebu
 
 ## 6. Glossary seeds
 
-- **Descriptor root:** an already-open directory descriptor that is the authority for a confined tree operation.
-- **Path materialisation:** converting an open descriptor back to a filesystem pathname, such as `F_GETPATH` or `/proc/self/fd`.
-- **System root alias:** one exact root-level macOS symlink, verified as `/var`, `/tmp`, or `/etc` to its matching `private/*` target.
-- **User-controlled ancestor:** any path component below the admitted system root transition; it remains subject to no-follow.
-- **Identity:** the `(st_dev, st_ino)` pair used to prove an opened or named directory is still the intended inode.
-- **No-replace publication:** one atomic rename that refuses when the destination name already exists.
-- **Anchored cleanup:** bounded removal performed relative to open directory descriptors after inode rechecks.
-- **Darwin regression runner:** exact Python 3.14.6 execution on macOS that runs both defects and emits durable structured results.
+- A descriptor root is an already-open directory descriptor that is the authority for a confined tree operation.
+- Path materialisation converts an open descriptor back to a filesystem pathname, such as `F_GETPATH` or `/proc/self/fd`.
+- A system root alias is one exact root-level macOS symlink, verified as `/var`, `/tmp`, or `/etc` to its matching `private/*` target.
+- A user-controlled ancestor is any path component below the admitted system root transition; it remains subject to no-follow.
+- Identity is the `(st_dev, st_ino)` pair used to prove an opened or named directory is still the intended inode.
+- No-replace publication is one atomic rename that refuses when the destination name already exists.
+- Anchored cleanup is bounded removal performed relative to open directory descriptors after inode rechecks.
+- A Darwin regression runner is exact Python 3.14.6 execution on macOS that runs both defects and emits durable structured results.
 
 ## 7. Sources
 
