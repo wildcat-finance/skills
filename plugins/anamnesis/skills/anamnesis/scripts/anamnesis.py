@@ -18,7 +18,6 @@ import hashlib
 import json
 import os
 import re
-import resource
 import secrets
 import stat
 import sys
@@ -1059,6 +1058,7 @@ def verify_release(out):
                 f"not the manifested {quote(component['sha256'])}",
             )
         bodies[component["path"]] = body
+    checked_bodies = bodies
 
     # The manifest is not covered by its own digest, so its claims are checked
     # against the components instead. Without this, editing a count or dropping
@@ -1090,7 +1090,7 @@ def verify_release(out):
         raise Refusal("A123", "manifest unknowns differ from the released unknowns")
     if manifest["counts"] != _counts(graph):
         raise Refusal("A119", "manifest counts differ from the released components")
-    return manifest
+    return manifest, checked_bodies
 
 
 def measure_release(out):
@@ -1196,14 +1196,14 @@ PUBLIC_ONLY = "public"
 
 
 def _release_graph(out):
-    """Read a verified release back into its components."""
-    manifest = verify_release(out)
-    parts = {}
-    for component in manifest["components"]:
-        path = resolve_within(out, component["path"], component["path"])
-        parts[component["path"]] = json.loads(
-            read_bounded(path, MAX_RELEASE_BYTES, component["path"]))
-    return manifest, parts
+    """Take a verified release's components from the bytes verification read.
+
+    Reading them again would mean projecting bytes nobody checked: verification
+    would pass on one read and the adapter would speak from another. The checked
+    bodies are returned instead, so there is no second read to go stale.
+    """
+    manifest, bodies = verify_release(out)
+    return manifest, {name: json.loads(body) for name, body in bodies.items()}
 
 
 def _public_sources(manifest):
@@ -1429,7 +1429,7 @@ def cmd_release(args):
 
 
 def cmd_verify(args):
-    manifest = verify_release(args.release)
+    manifest, _ = verify_release(args.release)
     print(
         f"verified {manifest['release_id']}: "
         f"{len(manifest['components'])} component(s), "
@@ -1440,7 +1440,7 @@ def cmd_verify(args):
 
 
 def cmd_measure_release(args):
-    verify_release(args.release)
+    verify_release(args.release)  # refuses before anything is measured
     total = measure_release(args.release)
     if total > MAX_RELEASE_BYTES:
         raise Refusal(
@@ -1550,7 +1550,7 @@ def cmd_demo(args):
     print(f"1. two fresh builds agree on {release} across {components} components")
 
     out = os.path.join(args.specimen, "release")
-    manifest = verify_release(out)
+    manifest, _ = verify_release(out)
     print(f"2. the committed release verifies: {manifest['counts']['findings']} "
           f"finding(s), {manifest['counts']['rounds']} round(s), "
           f"{manifest['counts']['rounds_with_no_findings']} with no findings")
@@ -1576,6 +1576,10 @@ def cmd_demo(args):
           f"{sum(cohort['unknowns'].values())} unknown(s)")
 
     elapsed = time.monotonic() - started
+    # Imported here rather than at module scope: one command needs it, and a
+    # platform without it should still be able to admit and release.
+    import resource
+
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     unit = "bytes" if sys.platform == "darwin" else "kibibytes"
     print(

@@ -356,6 +356,31 @@ class ExpectedProjections(unittest.TestCase):
         self.assertTrue(event["record"])
         self.assertEqual(len(event["correlation_id"]), 16)
 
+class SingleRead(unittest.TestCase):
+    """S3-R1-01: an adapter speaks from the bytes verification checked."""
+
+    def test_verification_hands_back_the_bytes_it_checked(self):
+        manifest, bodies = anamnesis.verify_release(str(RELEASE))
+        self.assertEqual(
+            set(bodies), {c["path"] for c in manifest["components"]})
+        import hashlib
+        for component in manifest["components"]:
+            self.assertEqual(
+                hashlib.sha256(bodies[component["path"]]).hexdigest(),
+                component["sha256"])
+
+    def test_the_adapters_take_no_second_read(self):
+        source = Path(SCRIPT).read_text(encoding="utf-8")
+        graph = source.split("def _release_graph(", 1)[1].split("\ndef ", 1)[0]
+        self.assertNotIn("read_bounded", graph)
+        self.assertIn("verify_release(out)", graph)
+
+    def test_resource_is_not_a_module_level_dependency(self):
+        source = Path(SCRIPT).read_text(encoding="utf-8")
+        head = source.split("def ", 1)[0]
+        self.assertNotIn("import resource", head)
+        self.assertIn("import resource", source)
+
 
 if __name__ == "__main__":
     unittest.main()

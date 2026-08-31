@@ -338,8 +338,11 @@ class ReleaseBoundary(EdgeCases):
 
     def test_a_release_verifies_from_its_own_bytes(self):
         manifest, out = self.build()
-        checked = anamnesis.verify_release(out)
+        checked, bodies = anamnesis.verify_release(out)
         self.assertEqual(checked["release_id"], manifest["release_id"])
+        self.assertEqual(
+            set(bodies), {c["path"] for c in checked["components"]},
+            "verification returns the bytes it checked, so nothing reads them twice")
 
     def test_an_existing_destination_is_refused(self):
         _, out = self.build()
@@ -613,7 +616,7 @@ class HostileManifest(EdgeCases):
         self.assertEqual(self.refuses(), "A025")
 
     def test_the_untouched_release_still_verifies(self):
-        checked = anamnesis.verify_release(self.out)
+        checked, _ = anamnesis.verify_release(self.out)
         self.assertEqual(len(checked["components"]), 6)
 
 

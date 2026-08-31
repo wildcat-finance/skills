@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1018,
-  "total_bytes": 21860308,
+  "total_bytes": 21860619,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -625,9 +625,9 @@
       "source": "plugins/anamnesis/skills/anamnesis/schemas/synkrisis-observation-v1.json"
     },
     {
-      "bytes": 66265,
+      "bytes": 66576,
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "71ed90a61d7fd7f1d8b308c1d9f614b0dec73d162393e08e405912f73dfcd9ef",
+      "sha256": "9e9adc4e9290bb44a327405caf7dd066d822d0c792e2b0482da7349b280a65c6",
       "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
     },
     {
