@@ -4069,15 +4069,15 @@
     "pandects-search-record": {
       "bindings": {
         "evidence_classes": "campaign status joined to the canonical Evidence classes field",
-        "evidence_references": "captured search output and generated search-record JSON",
+        "evidence_references": "declared exercise map, captured search output and generated search-record JSON",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "engine, command, configuration, seed and sequence bounds",
-        "subject": "target revision, adapter and law identifiers",
+        "scope": "engine, command, configuration, seed, sequence bounds and per-law exercise evidence",
+        "subject": "target revision, adapter, catalogue law identifiers and declared exercise surfaces",
         "transition": "bounded campaign result joined to the canonical Authorises field",
-        "unknowns": "absent engines, unavailable values and timed-out campaigns"
+        "unknowns": "absent engines, unavailable values, timed-out campaigns and laws with no attributable surface in campaign output"
       },
-      "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
+      "sha256": "6c9a7281ce34020d3926ce319aad2d31031bf733456b1d90bd0baec3ec77b585",
       "source": "plugins/pandects/scripts/pandects.py"
     },
     "phylax-boundary-review": {
