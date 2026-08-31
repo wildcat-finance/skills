@@ -1,0 +1,254 @@
+{
+  "candidates": [
+    {
+      "id": "widen-const",
+      "summary": "Widen Synkrisis's producer constant to accept anamnesis-synkrisis-observation/v1 and map corpus findings onto the existing runs[] array of synkrisis-cohort/v1."
+    },
+    {
+      "id": "sibling-contract",
+      "summary": "Add a second Synkrisis cohort kind with its own producer contract, rule kinds and promise, along the seam ADR-004 names, leaving synkrisis-cohort/v1 untouched."
+    },
+    {
+      "id": "boundary-record",
+      "summary": "Change no Synkrisis schema. Record a decision placing corpus projections outside the cohort boundary and name what reads the projection instead."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "at-least",
+      "concern": "correctness",
+      "id": "denominator-homes",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 10,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "fabricated-run-fields",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "frontier-collision",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "invalidated-contract-bytes",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "acceptance-check-ms",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "release-components-rebuilt",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "widen-const",
+      "criterion": "denominator-homes",
+      "report": {
+        "path": "reports/widen-const-denominator-homes.json",
+        "sha256": "906429772616cf227ded1cc5409bd5b3c8f2246f4c7ad17d4da6918578ebef1a"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-const",
+      "criterion": "fabricated-run-fields",
+      "report": {
+        "path": "reports/widen-const-fabricated-run-fields.json",
+        "sha256": "7556399efd3980f3f4b942323e734b5208cfd928ddf491bfb634e0b513c6bd87"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-const",
+      "criterion": "frontier-collision",
+      "report": {
+        "path": "reports/widen-const-frontier-collision.json",
+        "sha256": "6eb2d1446df9802b0ffdea64a5eb8c28f4c0cdc4f0ed95d3d9edebbd56f57648"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-const",
+      "criterion": "invalidated-contract-bytes",
+      "report": {
+        "path": "reports/widen-const-invalidated-contract-bytes.json",
+        "sha256": "b116ef59d80c977f7ea31961f918942158d2b6492903c5c16cde5c1c109e84d0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "widen-const",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/widen-const-acceptance-check-ms.json",
+        "sha256": "e65e83372857e21b944eb5f0aeba4ff6d098c186becec405fb068b2588c15a4a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "widen-const",
+      "criterion": "release-components-rebuilt",
+      "report": {
+        "path": "reports/widen-const-release-components-rebuilt.json",
+        "sha256": "f9c87178b28b69ff482679df02f69665978b64909d386667776cd04723730bd0"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "sibling-contract",
+      "criterion": "denominator-homes",
+      "report": {
+        "path": "reports/sibling-contract-denominator-homes.json",
+        "sha256": "c85ab1ee5bafef7221394606642421127b2f8b9f4ce75af0b301b9064e267f60"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sibling-contract",
+      "criterion": "fabricated-run-fields",
+      "report": {
+        "path": "reports/sibling-contract-fabricated-run-fields.json",
+        "sha256": "9681077c34f871e57a4d63168116aecefc86a25e9f0e4228fa4711258724f03a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sibling-contract",
+      "criterion": "frontier-collision",
+      "report": {
+        "path": "reports/sibling-contract-frontier-collision.json",
+        "sha256": "865004aba6abad3bc486b8d50488634b55a0340325510444dfa3e7f9dddb20ba"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "sibling-contract",
+      "criterion": "invalidated-contract-bytes",
+      "report": {
+        "path": "reports/sibling-contract-invalidated-contract-bytes.json",
+        "sha256": "f2a42a9ab57d71b9ca844548bc6fa488c9cb7cbebcbaca038b6baa5ebb62c337"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sibling-contract",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/sibling-contract-acceptance-check-ms.json",
+        "sha256": "e4efb926297025cc067b90f046c881c68df6e3524f8233bc36b944ec5c49bd14"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sibling-contract",
+      "criterion": "release-components-rebuilt",
+      "report": {
+        "path": "reports/sibling-contract-release-components-rebuilt.json",
+        "sha256": "a35d258737900a179c9e53c7e14093f77b8187ddc3f7095d34d59abadc946716"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "boundary-record",
+      "criterion": "denominator-homes",
+      "report": {
+        "path": "reports/boundary-record-denominator-homes.json",
+        "sha256": "b1b84332d0adee35fb669363636d97a5cb3c14cbc47915bb948290f9dd50e5b7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "boundary-record",
+      "criterion": "fabricated-run-fields",
+      "report": {
+        "path": "reports/boundary-record-fabricated-run-fields.json",
+        "sha256": "6212caa750eb1db595400968a9d2918b1b9dc152ee90409228823d8027da9666"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "boundary-record",
+      "criterion": "frontier-collision",
+      "report": {
+        "path": "reports/boundary-record-frontier-collision.json",
+        "sha256": "3c92d4835faf81cdb28faf57a0a1df2d92e31dd06a6fb3b715dedbd1f1009388"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "boundary-record",
+      "criterion": "invalidated-contract-bytes",
+      "report": {
+        "path": "reports/boundary-record-invalidated-contract-bytes.json",
+        "sha256": "01e02431697ec496be36b8ecd136a7826c57727059d19751cb9cac5b5a406760"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "boundary-record",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/boundary-record-acceptance-check-ms.json",
+        "sha256": "21bd01f3faaa73f6a8727fc2da05f3f7c73e7dbbfcbff9d9fefbe35484b1a5d2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "boundary-record",
+      "criterion": "release-components-rebuilt",
+      "report": {
+        "path": "reports/boundary-record-release-components-rebuilt.json",
+        "sha256": "6c9f3af6fd808225fc0827672f4bbd9e284a14388a2c9d53be36c48bfb14e545"
+      },
+      "state": "pass"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "boundary-record",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

@@ -20,7 +20,7 @@ import unittest
 
 
 MAX_REPORT_BYTES = 64 * 1024
-STEPS = (1, 2, 3)
+STEPS = (1, 2, 3, 4, 5, 6)
 
 
 def worktree_root() -> Path:

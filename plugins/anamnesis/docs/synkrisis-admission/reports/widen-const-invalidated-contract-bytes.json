@@ -1,0 +1,9 @@
+{
+  "candidate": "widen-const",
+  "command": "python3 .hexaemeron/reports/resolve.py invalidated-contract-bytes",
+  "criterion": "invalidated-contract-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 6707
+}

@@ -457,8 +457,19 @@ class ByteCap(EdgeCases):
         ) if (PLUGIN_ROOT.parents[1] / ".hexaemeron/design-evidence.json").is_file() else None
         if record is None:
             self.skipTest("the design record is controller state and is not always present")
-        threshold = next(c["threshold"] for c in record["criteria"]
-                         if c["id"] == "seed-release-byte-cap")
+        threshold = next(
+            (
+                c["threshold"]
+                for c in record["criteria"]
+                if c["id"] == "seed-release-byte-cap"
+            ),
+            None,
+        )
+        if threshold is None:
+            self.skipTest(
+                "the design record in this worktree belongs to another Fiat run "
+                "and declares no seed-release-byte-cap criterion"
+            )
         self.assertEqual(anamnesis.MAX_RELEASE_BYTES, threshold)
 
 
