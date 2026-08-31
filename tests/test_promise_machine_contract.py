@@ -1756,6 +1756,14 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "import tempfile\ntempfile.TemporaryFile()\n",
             "import os\nos.rename('fixture', 'target')\n",
             "import os\nos.write(1, b'x')\n",
+            "import os\nos.putenv('FIAT884', 'x')\n",
+            "import os\nos.unsetenv('FIAT884')\n",
+            "import os\nos.chdir('/tmp')\n",
+            "import os\nos.umask(0)\n",
+            "import os\nos.kill(1, 0)\n",
+            "from pathlib import Path\nPath('/etc/passwd').read_text()\n",
+            "from pathlib import Path\n(Path.home() / '.config').read_text()\n",
+            "import os\nos.open('/etc/passwd', os.O_RDONLY)\n",
         )
         for source in sources:
             with self.subTest(source=source.splitlines()[-1]):
@@ -1781,9 +1789,23 @@ class PromiseSemanticGateTests(unittest.TestCase):
                 self.assertEqual(semantic_codes(findings), ["PM094"])
 
     def test_core_check_remains_clean_when_network_and_children_are_denied(self):
+        confined_root = ROOT.resolve()
         real_os_fdopen = os.fdopen
         real_os_open = os.open
         real_path_open = Path.open
+
+        def inside_root(path):
+            try:
+                candidate = Path(path)
+            except TypeError:
+                return False
+            if not candidate.is_absolute():
+                candidate = confined_root / candidate
+            try:
+                candidate.resolve(strict=False).relative_to(confined_root)
+            except (OSError, RuntimeError, ValueError):
+                return False
+            return True
 
         def guarded_os_fdopen(descriptor, mode="r", *args, **kwargs):
             if any(marker in mode for marker in "wax+"):
@@ -1796,11 +1818,15 @@ class PromiseSemanticGateTests(unittest.TestCase):
             )
             if flags & write_flags:
                 raise AssertionError("write-capable os.open used")
+            if kwargs.get("dir_fd") is None and not inside_root(path):
+                raise AssertionError("out-of-root os.open used")
             return real_os_open(path, flags, *args, **kwargs)
 
         def guarded_path_open(path, mode="r", *args, **kwargs):
             if any(marker in mode for marker in "wax+"):
                 raise AssertionError("write-capable Path.open used")
+            if not inside_root(path):
+                raise AssertionError("out-of-root Path.open used")
             return real_path_open(path, mode, *args, **kwargs)
 
         denied = mock.Mock(side_effect=AssertionError("side effect used"))
@@ -1821,18 +1847,24 @@ class PromiseSemanticGateTests(unittest.TestCase):
                 (
                     "chmod",
                     "chown",
+                    "chdir",
+                    "chroot",
+                    "fchdir",
                     "fchmod",
                     "fchown",
                     "ftruncate",
                     "lchmod",
                     "lchown",
                     "link",
+                    "kill",
+                    "killpg",
                     "makedirs",
                     "mkdir",
                     "mkfifo",
                     "mknod",
                     "pwrite",
                     "pwritev",
+                    "putenv",
                     "remove",
                     "removedirs",
                     "rename",
@@ -1841,7 +1873,9 @@ class PromiseSemanticGateTests(unittest.TestCase):
                     "rmdir",
                     "symlink",
                     "truncate",
+                    "umask",
                     "unlink",
+                    "unsetenv",
                     "utime",
                     "write",
                     "writev",

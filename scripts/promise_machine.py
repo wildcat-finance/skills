@@ -350,7 +350,12 @@ FORBIDDEN_CALLS = {
     "__builtins__.eval",
     "__builtins__.exec",
     "importlib.import_module",
+    "os._exit",
     "os.__dict__",
+    "os.abort",
+    "os.chdir",
+    "os.chroot",
+    "os.fchdir",
     "os.fork",
     "os.forkpty",
     "os.chown",
@@ -361,29 +366,52 @@ FORBIDDEN_CALLS = {
     "os.lchmod",
     "os.lchown",
     "os.link",
+    "os.kill",
+    "os.killpg",
     "os.makedirs",
     "os.mkdir",
     "os.mkfifo",
     "os.mknod",
+    "os.nice",
+    "os.path.expanduser",
+    "os.path.expandvars",
     "os.popen",
     "os.posix_spawn",
     "os.posix_spawnp",
     "os.pwrite",
     "os.pwritev",
+    "os.putenv",
     "os.remove",
     "os.removedirs",
     "os.rename",
     "os.renames",
     "os.rmdir",
+    "os.setegid",
+    "os.seteuid",
+    "os.setgid",
+    "os.setgroups",
+    "os.setpgid",
+    "os.setpgrp",
+    "os.setpriority",
+    "os.setregid",
+    "os.setresgid",
+    "os.setresuid",
+    "os.setreuid",
+    "os.setsid",
+    "os.setuid",
     "os.startfile",
     "os.symlink",
     "os.system",
     "os.truncate",
+    "os.umask",
+    "os.unsetenv",
     "os.utime",
     "os.write",
     "os.writev",
     "runpy.run_module",
     "runpy.run_path",
+    "pathlib.Path.cwd",
+    "pathlib.Path.home",
     "tempfile.NamedTemporaryFile",
     "tempfile.SpooledTemporaryFile",
     "tempfile.TemporaryDirectory",
@@ -407,6 +435,10 @@ FORBIDDEN_FILE_METHODS = {
 }
 FORBIDDEN_DYNAMIC_NAMES = {"__import__", "compile", "eval", "exec"}
 FORBIDDEN_OS_IMPORTS = {
+    "_exit",
+    "abort",
+    "chdir",
+    "chroot",
     "environ",
     "execl",
     "execle",
@@ -416,12 +448,30 @@ FORBIDDEN_OS_IMPORTS = {
     "execve",
     "execvp",
     "execvpe",
+    "fchdir",
     "fork",
     "forkpty",
     "getenv",
+    "kill",
+    "killpg",
+    "nice",
     "popen",
     "posix_spawn",
     "posix_spawnp",
+    "putenv",
+    "setegid",
+    "seteuid",
+    "setgid",
+    "setgroups",
+    "setpgid",
+    "setpgrp",
+    "setpriority",
+    "setregid",
+    "setresgid",
+    "setresuid",
+    "setreuid",
+    "setsid",
+    "setuid",
     "spawnl",
     "spawnle",
     "spawnlp",
@@ -432,6 +482,8 @@ FORBIDDEN_OS_IMPORTS = {
     "spawnvpe",
     "startfile",
     "system",
+    "umask",
+    "unsetenv",
 }
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
@@ -2060,6 +2112,17 @@ def check_core_source_text(source: str, shown: str):
         head, separator, tail = name.partition(".")
         return aliases.get(head, head) + (separator + tail if separator else "")
 
+    def external_path_literal(node):
+        if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
+            return False
+        normalized = node.value.replace("\\", "/")
+        parts = normalized.split("/")
+        return (
+            normalized.startswith(("/", "~"))
+            or re.match(r"^[A-Za-z]:/", normalized) is not None
+            or ".." in parts
+        )
+
     path_names: set[str] = set()
 
     def path_annotation(annotation):
@@ -2157,10 +2220,34 @@ def check_core_source_text(source: str, shown: str):
             name = resolve_alias(qualified_call_name(node.func))
             if forbidden_operation(name):
                 violations.append(f"forbidden call {name}")
+            if (
+                name == "pathlib.Path"
+                and node.args
+                and external_path_literal(node.args[0])
+            ):
+                violations.append("forbidden external path literal")
+            if (
+                name
+                in {
+                    "os.access",
+                    "os.listdir",
+                    "os.lstat",
+                    "os.open",
+                    "os.readlink",
+                    "os.scandir",
+                    "os.stat",
+                    "os.walk",
+                }
+                and node.args
+                and external_path_literal(node.args[0])
+            ):
+                violations.append(f"forbidden external filesystem read {name}")
             if isinstance(node.func, ast.Attribute) and path_expression(
                 node.func.value
             ):
-                if node.func.attr == "replace":
+                if node.func.attr == "expanduser":
+                    violations.append("forbidden home-directory path expansion")
+                elif node.func.attr == "replace":
                     violations.append("forbidden path mutation replace")
                 elif node.func.attr == "open":
                     mode_node = node.args[0] if node.args else None

@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1024,
-  "total_bytes": 21661460,
+  "total_bytes": 21663616,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -6003,9 +6003,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 196698,
+      "bytes": 198854,
       "path": "scripts/promise_machine.py",
-      "sha256": "a32285185739158ea53460b359953025ab671ae0c28829e2f26787ae44360f47",
+      "sha256": "1f9a7888e618864ac087b9b5d408fed2a0b7a68ba3e614f266dfb1fd0edf9d5d",
       "source": "scripts/promise_machine.py"
     },
     {
