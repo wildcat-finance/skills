@@ -215,6 +215,36 @@ class CheckTests(unittest.TestCase):
         self.vectors_path.symlink_to(real.name)
         self.assert_refuses("HOM-CHECK-PATH")
 
+    @unittest.skipUnless(
+        hasattr(os, "mkfifo") and hasattr(os, "O_NONBLOCK"),
+        "FIFO non-blocking reads require POSIX support",
+    )
+    def test_fifo_manifest_refuses_without_blocking(self):
+        self.manifest_path.unlink()
+        os.mkfifo(self.manifest_path)
+        try:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "check",
+                    "--manifest",
+                    "case/manifest.json",
+                    "--out",
+                    "build/checked.json",
+                ],
+                cwd=self.root,
+                capture_output=True,
+                text=True,
+                timeout=1.0,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            self.fail("a FIFO input blocked before the regular-file refusal")
+        self.assertEqual(result.returncode, HOMOLOGIA.INPUT_REFUSED)
+        self.assertEqual(json.loads(result.stderr)["code"], "HOM-CHECK-PATH")
+        self.assertFalse(self.output_path.exists())
+
     def test_malformed_manifest_refuses(self):
         shutil.copyfile(FIXTURES / "malformed-manifest.json", self.manifest_path)
         self.assert_refuses("HOM-CHECK-JSON")
@@ -557,10 +587,50 @@ class CheckTests(unittest.TestCase):
                 )
                 self.assertIs(schema["additionalProperties"], False)
                 path_pattern = re.compile(schema["$defs"]["path"]["pattern"])
-                for invalid in ("./vectors.jsonl", "nested/./vectors.jsonl", "nested/"):
+                for invalid in (
+                    "./vectors.jsonl",
+                    "nested/./vectors.jsonl",
+                    "nested/",
+                    "vectors\x00.jsonl",
+                    "nested/vectors.jsonl\n",
+                ):
                     with self.subTest(path=path.name, invalid=invalid):
-                        self.assertIsNone(path_pattern.fullmatch(invalid))
-                self.assertIsNotNone(path_pattern.fullmatch("nested/vectors.jsonl"))
+                        self.assertIsNone(path_pattern.search(invalid))
+                self.assertIsNotNone(path_pattern.search("nested/vectors.jsonl"))
+
+    def test_published_schema_patterns_match_the_authoritative_text_boundary(self):
+        manifest = json.loads(MANIFEST_SCHEMA.read_text(encoding="utf-8"))
+        vectors = json.loads(VECTOR_SCHEMA.read_text(encoding="utf-8"))
+
+        required_patterns = (
+            (manifest["$defs"]["identifier"], "pair\n"),
+            (manifest["properties"]["pair"]["properties"]["chain"]["properties"]["id"], "1\n"),
+            (
+                manifest["properties"]["pair"]["properties"]["chain"]["properties"]["contract"],
+                "0x" + "1" * 40 + "\n",
+            ),
+            (
+                manifest["properties"]["pair"]["properties"]["mirror"]["properties"]["revision"],
+                "sha256:" + "a" * 64 + "\n",
+            ),
+            (vectors["$defs"]["canonicalInteger"], "1\n"),
+            (vectors["properties"]["id"], "vector\n"),
+            (
+                vectors["$defs"]["provenance"]["oneOf"][1]["properties"]["block_hash"],
+                "0x" + "1" * 64 + "\n",
+            ),
+        )
+        for field, invalid in required_patterns:
+            with self.subTest(invalid=invalid):
+                self.assertIn("pattern", field)
+                self.assertIsNone(re.search(field["pattern"], invalid))
+
+        chain_function = manifest["properties"]["pair"]["properties"]["chain"]["properties"]["function"]
+        asserted_author = vectors["$defs"]["provenance"]["oneOf"][2]["properties"]["author"]
+        for field in (chain_function, asserted_author):
+            with self.subTest(field=field):
+                self.assertIn("pattern", field)
+                self.assertIsNone(re.search(field["pattern"], "   "))
 
     def test_committed_example_repeats_the_committed_checked_bytes(self):
         example_root = self.root / "plugins" / "homologia" / "examples" / "wad-interest-v0"

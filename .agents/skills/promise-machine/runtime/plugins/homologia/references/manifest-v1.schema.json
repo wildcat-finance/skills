@@ -2,13 +2,13 @@
   "$defs": {
     "identifier": {
       "maxLength": 128,
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])",
       "type": "string"
     },
     "path": {
       "maxLength": 1024,
       "minLength": 1,
-      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\\\)(?!.*//)(?!.*\\/$).+$",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001f\\u007f])(?!.*\\\\)(?!.*//)(?!.*\\/$).+(?![\\s\\S])",
       "type": "string"
     },
     "scale": {
@@ -33,7 +33,7 @@
       "additionalProperties": false,
       "properties": {
         "absolute": {
-          "pattern": "^(?:0|[1-9][0-9]*)$",
+          "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
           "type": "string"
         }
       },
@@ -54,16 +54,17 @@
           "additionalProperties": false,
           "properties": {
             "contract": {
-              "pattern": "^0x[0-9A-Fa-f]{40}$",
+              "pattern": "^0x[0-9A-Fa-f]{40}(?![\\s\\S])",
               "type": "string"
             },
             "function": {
               "maxLength": 256,
               "minLength": 1,
+              "pattern": "\\S",
               "type": "string"
             },
             "id": {
-              "pattern": "^(?:0|[1-9][0-9]*)$",
+              "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
               "type": "string"
             }
           },
@@ -84,7 +85,7 @@
               "$ref": "#/$defs/identifier"
             },
             "revision": {
-              "pattern": "^sha256:[0-9a-f]{64}$",
+              "pattern": "^sha256:[0-9a-f]{64}(?![\\s\\S])",
               "type": "string"
             },
             "scale": {

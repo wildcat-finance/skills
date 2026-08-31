@@ -138,7 +138,7 @@ def _integer(value: object, subject: str, *, unsigned: bool = False) -> str:
 def _lexical_parts(raw: object, subject: str) -> tuple[str, ...]:
     if not isinstance(raw, str) or not raw or len(raw) > 1024:
         _refuse("HOM-CHECK-PATH", subject, "use one bounded repository-relative path")
-    if "\x00" in raw or "\\" in raw:
+    if "\\" in raw or any(ord(character) < 32 or ord(character) == 127 for character in raw):
         _refuse("HOM-CHECK-PATH", subject, "use slash-separated repository-relative path syntax")
     pure = PurePosixPath(raw)
     pieces = tuple(raw.split("/"))
@@ -199,7 +199,18 @@ def _assert_named_identity(value: FileRead, subject: str) -> None:
 
 
 def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        named = path.lstat()
+    except OSError:
+        _refuse("HOM-CHECK-PATH", subject, "supply one existing non-symlink regular file")
+    if stat.S_ISLNK(named.st_mode) or not stat.S_ISREG(named.st_mode):
+        _refuse("HOM-CHECK-PATH", subject, "use one non-symlink regular file")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
     try:
         descriptor = os.open(path, flags)
     except OSError as error:

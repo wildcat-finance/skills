@@ -42,14 +42,19 @@ agreement verdict.
 
 Integers are base-10 strings. Zero is `0`; other values have no leading zero;
 negative zero, fractions, exponents and locale separators refuse. Chain ids,
-block numbers and absolute tolerances are unsigned.
+block numbers and absolute tolerances are unsigned. JSON Schema draft 2020-12
+validates numeric values rather than their source-token spelling, so a schema
+implementation may classify `18.0` as an integer. The authoritative checker
+reads the original JSON token and requires scale decimals to decode as an
+integer; write `18`, not `18.0`.
 
 Input paths use `/`, have no absolute, empty, dot or parent components, and
-remain under their declared directory. Manifest and output paths remain under
-the repository root. Existing symlinks refuse. Two names for the same file are
-one input and refuse as a repeated path. Each input is opened once with
-no-follow where the platform provides it, read through that descriptor, and
-checked against the named file again before output.
+contain no ASCII control character. They remain under their declared directory.
+Manifest and output paths remain under the repository root. Existing symlinks
+refuse. Two names for the same file are one input and refuse as a repeated path.
+Non-regular inputs refuse without a blocking read. Each input is opened once
+with no-follow and non-blocking flags where the platform provides them, read
+through that descriptor, and checked against the named file again before output.
 
 ## Fixed safety caps
 

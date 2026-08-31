@@ -33,3 +33,20 @@ Elenchus verdict: inconclusive
 | S1-R2-03 | low | plugins/homologia/references/manifest-v1.schema.json:11; plugins/homologia/references/vectors-v1.schema.json:10 | Both published path schemas admitted `./vectors.jsonl`, `nested/./vectors.jsonl` and `nested/`, although the authoritative validator refuses their dot or empty components. | fixed in this commit |
 
 Leads not pursued: The round-1 output-alias, unpaired-surrogate, oversized-integer and installed-ledger regressions remain fixed-green; the focused six-test repair set and 51-test `test_check` suite passed. The concurrent parent-directory substitution and one-extra-bounded-read leads remain outside the declared boundary or fail before decode and output as recorded in round 1. No further candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, three finding ids, severities, paths, reproductions and fixed statuses match this record item by item; the round-1 bytes were preserved as the prefix with SHA-256 `4868e5bba77d854dce7d690fd9dfa0c380169a2fd6c1fd245053d958f3be8bd0`.
+
+## Step 1, round 3 -- 2026-08-31T12:37:13Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R3-01 | medium | plugins/homologia/scripts/homologia.py:201 | A FIFO supplied as the manifest blocked in `os.open` before the regular-file refusal; the CLI exceeded the 1.0-second reproducer timeout without a stable code or output. | fixed in this commit |
+| S1-R3-02 | low | plugins/homologia/references/manifest-v1.schema.json:5; plugins/homologia/references/vectors-v1.schema.json:4; plugins/homologia/docs/schema-compatibility.md:43 | The published schemas admitted whitespace-only function or author fields, newline-suffixed scalar forms and NUL-bearing paths that the authoritative checker refused. Draft 2020-12 also classifies the numeric value `18.0` as an integer although the checker refuses that source token. | fixed in this commit |
+
+Leads not pursued: All six round-1 and round-2 fixes remain fixed-green, as do the two round-3 guards; the 53-test focused suite and 73-test complete Homologia suite passed. Concurrent parent-directory substitution remains outside the declared non-adversarial-directory boundary, and the aggregate cap may read one additional per-file-capped input but still refuses before decoding it or writing output. Cross-set reuse of a vector id has no reproduced collision because records retain their vector-set identity; the focused runbook guard and refusal scope ids within a set. The representable schema mismatches now refuse, while the unavoidable JSON Schema numeric-value equivalence for `18.0` is declared and the original-token checker remains authoritative. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, two finding ids, severities, paths, reproductions, qualifications and fixed statuses match this shaped record item by item; the round-1 and round-2 bytes were preserved as the prefix with SHA-256 `bb31931d0b0164cd2ce46595c5926404173b256ee726ed6d44abbfe6e9f6db8e`.
