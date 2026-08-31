@@ -12,9 +12,11 @@ none of them is executed.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
+import secrets
 import stat
 import sys
 
@@ -122,8 +124,15 @@ class Events:
         self.emitted.append(event)
         if self.path is not None:
             line = json.dumps(event, sort_keys=True, separators=(",", ":"))
-            with open(self.path, "a", encoding="utf-8") as handle:
-                handle.write(line + "\n")
+            # Append without following a symlink: an operator-named stream path
+            # is untrusted, and a link there would redirect every refusal we
+            # write into a file we never meant to touch.
+            flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(self.path, flags, 0o600)
+            try:
+                os.write(descriptor, (line + "\n").encode("utf-8"))
+            finally:
+                os.close(descriptor)
 
 
 def read_bounded(path, cap, what):
@@ -167,9 +176,19 @@ def text(value, where, limit=500):
     return value
 
 
+def _no_duplicate_keys(pairs):
+    """Refuse a duplicated key rather than silently keeping the last one."""
+    seen = {}
+    for key, value in pairs:
+        if key in seen:
+            raise Refusal("A025", f"policy declares {quote(key)} twice")
+        seen[key] = value
+    return seen
+
+
 def parse_policy(raw, where):
     try:
-        policy = json.loads(raw.decode("utf-8"))
+        policy = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise Refusal("A020", f"{where} is not valid JSON: {quote(error)}")
     closed_object(policy, POLICY_KEYS, "policy")
@@ -321,6 +340,55 @@ def admit_source(entry, root, cap, seen, events, policy_version, policy_digest):
     }
 
 
+@contextlib.contextmanager
+def refusals_recorded(events, version, policy_digest):
+    """Emit one durable refusal event for any refusal raised inside."""
+    try:
+        yield
+    except Refusal as refusal:
+        events.emit(
+            "anamnesis.source.refused",
+            version,
+            policy_digest,
+            refusal.record,
+            {"rule": refusal.code, "reason": refusal.message},
+        )
+        raise
+
+
+def validate_records(policy, known, events, version, policy_digest):
+    """Check every declared record against the admitted sources."""
+    record_ids = set()
+    with refusals_recorded(events, version, policy_digest):
+        for record in policy["records"]:
+            closed_object(record, RECORD_KEYS, "record")
+            record_id = record["id"]
+            if not isinstance(record_id, str) or not record_id:
+                raise Refusal("A070", "a record has no id")
+            if record_id in record_ids:
+                raise Refusal("A071", f"duplicate record id {quote(record_id)}", record_id)
+            record_ids.add(record_id)
+            if record["source"] not in known:
+                raise Refusal(
+                    "A072",
+                    f"record {quote(record_id)} names unadmitted source "
+                    f"{quote(record['source'])}",
+                    record_id,
+                )
+            text(record["native_id"], f"record {record_id} native id", 100)
+            text(record["round"], f"record {record_id} round", 200)
+    return record_ids
+
+
+def seed_scope(record_count):
+    """The pilot's curation scope, which the runbook fixes at 25 to 50."""
+    if not 25 <= record_count <= 50:
+        raise Refusal(
+            "A073",
+            f"the pilot declares {record_count} records; the runbook requires 25 to 50",
+        )
+
+
 def admit(policy_path, events):
     """Admit every source a policy declares. Any refusal stops the whole run."""
     root = os.path.dirname(os.path.abspath(policy_path)) or "."
@@ -334,19 +402,10 @@ def admit(policy_path, events):
     admitted = []
     total = 0
     for entry in policy["sources"]:
-        try:
+        with refusals_recorded(events, version, policy_digest):
             result = admit_source(
                 entry, root, cap, seen, events, version, policy_digest
             )
-        except Refusal as refusal:
-            events.emit(
-                "anamnesis.source.refused",
-                version,
-                policy_digest,
-                refusal.record,
-                {"rule": refusal.code, "reason": refusal.message},
-            )
-            raise
         total += result["bytes"]
         if total > MAX_TOTAL_SOURCE_BYTES:
             raise Refusal(
@@ -356,31 +415,7 @@ def admit(policy_path, events):
         admitted.append(result)
 
     known = {item["id"] for item in admitted}
-    record_ids = set()
-    for record in policy["records"]:
-        closed_object(record, RECORD_KEYS, "record")
-        record_id = record["id"]
-        if not isinstance(record_id, str) or not record_id:
-            raise Refusal("A070", "a record has no id")
-        if record_id in record_ids:
-            raise Refusal("A071", f"duplicate record id {quote(record_id)}", record_id)
-        record_ids.add(record_id)
-        if record["source"] not in known:
-            raise Refusal(
-                "A072",
-                f"record {quote(record_id)} names unadmitted source "
-                f"{quote(record['source'])}",
-                record_id,
-            )
-        text(record["native_id"], f"record {record_id} native id", 100)
-        text(record["round"], f"record {record_id} round", 200)
-
-    if not 25 <= len(record_ids) <= 50:
-        raise Refusal(
-            "A073",
-            f"the pilot declares {len(record_ids)} records; the runbook requires 25 to 50",
-        )
-
+    record_ids = validate_records(policy, known, events, version, policy_digest)
     return {
         "policy_version": version,
         "policy_sha256": policy_digest,
@@ -406,11 +441,20 @@ def write_report(path, criterion, value, command):
         raise Refusal("A080", f"report exceeds the {MAX_REPORT_BYTES}-byte cap")
     parent = os.path.dirname(os.path.abspath(path))
     os.makedirs(parent, exist_ok=True)
-    staging = path + ".partial"
-    with open(staging, "wb") as handle:
-        handle.write(encoded)
-        handle.flush()
-        os.fsync(handle.fileno())
+    # Stage under a name this process alone creates, refusing to open through a
+    # symlink or over an existing file, then promote atomically. A fixed
+    # ".partial" suffix let a second run write into the first run's staging.
+    staging = f"{path}.{os.getpid()}.{secrets.token_hex(8)}.partial"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(staging, flags, 0o600)
+    try:
+        os.write(descriptor, encoded)
+        os.fsync(descriptor)
+    except BaseException:
+        os.close(descriptor)
+        os.unlink(staging)
+        raise
+    os.close(descriptor)
     os.replace(staging, path)
     return report
 
@@ -429,6 +473,7 @@ def cmd_admit(args):
 def cmd_admit_seed(args):
     events = Events(args.events)
     result = admit(args.policy, events)
+    seed_scope(result["records"])
     command = (
         "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit-seed "
         f"--policy {args.policy} --report {args.report}"

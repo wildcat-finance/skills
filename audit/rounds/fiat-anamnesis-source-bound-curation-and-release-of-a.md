@@ -32,3 +32,19 @@ Elenchus verdict: guarded
 | S1-R2-02 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Only refusals raised inside the per-source loop emitted anamnesis.source.refused. A duplicated policy key, a duplicate record id, an unknown record key, a record naming an unadmitted source and the total-bytes ceiling all refused with nothing durable written, so an operator asking why a run refused had the exit code and no event. Every refusal now passes through one recorded boundary carrying its rule, record, policy version and correlation id | fixed in this round |
 
 Leads not pursued: two observations carry forward rather than changing code. The A025 duplicate-key refusal is raised while parsing the policy, before the policy version and digest are known, so its event records the rule and reason with a null record and a correlation id derived from the policy bytes alone; naming the version in that event would require trusting a field from the document being refused. The seed_scope bound of 25 to 50 is now a resolver-side constant rather than a policy field, which is right for the seed the runbook fixes and wrong for a second pilot; making the scope a declared policy field is step 2's to decide when the release policy schema lands. Round 2 added four guards to plugins/anamnesis/tests/test_s1_boundaries.py and moved two to the resolver boundary in plugins/anamnesis/tests/test_s1_admission.py; three of the four fail against parent commit 6ff91f01188f4ccb49ceef438daf9346491b44b6 and the fourth passed there already, because a source-level refusal was the one path that always recorded an event. The suite is 71 tests and green, the three discipline lints exit zero, the exact pending resolver writes its report and design_evidence --transition step:2 exits zero.
+
+## Step 1, round 3 -- 2026-08-31T04:04:04Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; private-egress=reviewed; partial-release=reviewed; evidence-strengthening=not-applicable; duplicate-collapse=not-applicable; fix-state-collapse=not-applicable; many-to-many-loss=not-applicable; taxonomy-drift=not-applicable; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from rounds 1 and 2. Round 3 re-ran the plugin suite, the three discipline lints, both Promise Machine checks and the whitespace check over the round 2 fixes, and looked at what those fixes left behind rather than at the source paths already reviewed twice.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R3-01 | low | .agents/skills/promise-machine/runtime/MANIFEST.json | The generated portable runtime still carried the pre-fix copies of anamnesis.py and hypomnema.py, so a copy-mode install would have shipped code the source tree had already corrected and the manifest bound bytes that no longer existed upstream. Rounds 1 and 2 changed both scripts and neither resynced the mirror | fixed in this round |
+
+Leads not pursued: one flake is recorded rather than fixed, because it is pre-existing and not this step's. tests/test_python_contract.py walks ROOT.rglob("*.md") without excluding tmp/, which is where scripts/run_checks.py stages its disposable snapshot, so running the root suite while a check run is in flight reports the snapshot's own copy of docs/promise-machine/evidence/2026-08-20-self-demonstration.md as stale runtime prose. The finding is transient, names a path under the gitignored run home rather than a tracked file, and disappears when the snapshot does; the same test passes against this tree with no check run in flight. It belongs to whoever owns the check runner's scratch boundary, not to a step that adds a plugin.

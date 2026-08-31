@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1014,
-  "total_bytes": 21856324,
+  "total_bytes": 21858543,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -573,9 +573,9 @@
       "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
     },
     {
-      "bytes": 17013,
+      "bytes": 18934,
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "bc7972d247d95ef08740f1771e3c5303bbbc0520fd08e7f5cf004f0571a8f733",
+      "sha256": "04fb456e9ab266d5b1287940e570ab92018f495749c1885076f03dd2e6097dea",
       "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
     },
     {
@@ -2451,9 +2451,9 @@
       "source": "plugins/hexaemeron/skills/hypomnema/agents/openai.yaml"
     },
     {
-      "bytes": 24987,
+      "bytes": 25285,
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "sha256": "15e86a563cf51bb532cc187ec1f6e3804bcbaabaf8236867823bda04c3842728",
+      "sha256": "0f39dfa3e1d45d547583faeb51a0ff39d4c21ba067a16f9f29b7a808e16666fb",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
     },
     {

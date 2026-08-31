@@ -29,9 +29,10 @@ A decision record is a markdown file named `ADR-<number>...` inside a
 directory named `decisions`. The shape codes hold it to the template the
 SKILL states: a Status whose first line is a status word, a comma and an
 ISO date, and the five sections Status, Context, Decision, Alternatives
-and Consequences. Directory walks skip `fixtures` directories relative to
-the walked root, because a specimen documenting a fault is not a record;
-naming a fixtures path directly still reads it.
+and Consequences. Directory walks skip `fixtures` and `specimens`
+directories relative to the walked root, because a specimen documenting a
+fault is not a record and a preserved source carries its origin's links;
+naming either path directly still reads it.
 
 In Markdown, a `runbook:` keyword inside an inline code span is a quoted
 specimen rather than a live pointer, so H003 passes over it. The keyword's
@@ -579,9 +580,13 @@ def walk(paths: list[str], include_vendored: bool = False) -> list[Path]:
                     continue
                 if not include_vendored and VENDORED & set(child.parts):
                     continue
-                # A specimen documenting a fault is not a record. Relative to
-                # the walked root, so naming a fixtures path still reads it.
-                if "fixtures" in child.relative_to(root).parts[:-1]:
+                # A specimen documenting a fault is not a record, and neither
+                # is a preserved source: its links belong to wherever it came
+                # from, and repointing one changes the bytes something else
+                # pins. Relative to the walked root, so naming the path still
+                # reads it.
+                skipped = {"fixtures", "specimens"}
+                if skipped & set(child.relative_to(root).parts[:-1]):
                     continue
                 out.append(child)
         else:
