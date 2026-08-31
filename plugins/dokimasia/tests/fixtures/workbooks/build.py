@@ -173,6 +173,44 @@ def too_many_members(target: Path) -> Path:
     return target
 
 
+def far_right_cell(target: Path) -> Path:
+    """A small archive whose rows each carry one cell far to the right.
+
+    A sheet is stored sparsely, so the rightmost reference decides how wide the
+    row becomes once materialised. The bytes stay small and compress normally,
+    so no archive cap sees the cost.
+    """
+    rows = "".join(
+        f'<row r="{index}"><c r="A{index}" t="inlineStr"><is><t>x</t></is></c>'
+        f'<c r="XFD{index}" t="inlineStr"><is><t>y</t></is></c></row>'
+        for index in range(1, 33)
+    )
+    sheet = (
+        '<?xml version="1.0"?>'
+        f'<worksheet xmlns="{MAIN}"><sheetData>{rows}</sheetData></worksheet>'
+    )
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("xl/workbook.xml", _workbook_xml(["Cases"]))
+        archive.writestr("xl/_rels/workbook.xml.rels", _rels_xml(1))
+        archive.writestr("xl/worksheets/sheet1.xml", sheet)
+    return target
+
+
+def unanchored_cell(target: Path) -> Path:
+    """A cell whose reference carries no column letters."""
+    sheet = (
+        '<?xml version="1.0"?>'
+        f'<worksheet xmlns="{MAIN}"><sheetData>'
+        '<row r="1"><c r="1" t="inlineStr"><is><t>ADM-01</t></is></c></row>'
+        "</sheetData></worksheet>"
+    )
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("xl/workbook.xml", _workbook_xml(["Cases"]))
+        archive.writestr("xl/_rels/workbook.xml.rels", _rels_xml(1))
+        archive.writestr("xl/worksheets/sheet1.xml", sheet)
+    return target
+
+
 def entity_declaration(target: Path) -> Path:
     """A well-formed archive whose sheet part declares expanding entities."""
     bomb = (
@@ -206,6 +244,8 @@ BUILDERS = {
     "zip-bomb.xlsx": zip_bomb,
     "traversal-member.xlsx": traversal_member,
     "too-many-members.xlsx": too_many_members,
+    "far-right-cell.xlsx": far_right_cell,
+    "unanchored-cell.xlsx": unanchored_cell,
     "entity-declaration.xlsx": entity_declaration,
     "not-a-spreadsheet.xlsx": not_a_spreadsheet,
 }

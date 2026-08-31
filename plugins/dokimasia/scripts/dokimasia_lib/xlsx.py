@@ -18,6 +18,11 @@ MAX_MEMBERS = 512
 MAX_MEMBER_BYTES = 64 * 1024 * 1024
 MAX_TOTAL_BYTES = 256 * 1024 * 1024
 MAX_EXPANSION_RATIO = 200
+# A sheet is stored sparsely, so one cell far to the right decides how wide
+# its row is once materialised. The archive caps cannot see that cost: it is
+# paid after the bytes are read and it scales with the column index, not with
+# the file. A reviewed sheet is tens of columns wide, so this is generous.
+MAX_COLUMNS = 256
 
 NAMESPACE = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 RELATIONS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
@@ -156,13 +161,31 @@ def _resolve_part(target: str) -> str:
     return f"xl/{target}"
 
 
-def _column(reference: str) -> int:
-    """Zero-based column index from a cell reference such as `AB7`."""
+def _column(reference: str, max_columns: int = MAX_COLUMNS) -> int:
+    """Zero-based column index from a cell reference such as `AB7`.
+
+    Refuses rather than returning a value the caller would use to size a row.
+    A reference with no column letters would otherwise yield -1, which lands in
+    a dictionary and then falls out of the row that dictionary builds, losing
+    the cell in silence. A reference far to the right would otherwise decide a
+    row's width on its own.
+    """
     index = 0
+    letters = 0
     for char in reference:
         if not char.isalpha():
             break
+        letters += 1
         index = index * 26 + (ord(char.upper()) - 64)
+    if not letters:
+        raise XlsxRefusal(
+            f"cell reference {reference!r} names no column, so its value has nowhere to go"
+        )
+    if index > max_columns:
+        raise XlsxRefusal(
+            f"cell reference {reference!r} is past the {max_columns}-column cap, "
+            "which bounds how wide one cell can make a row"
+        )
     return index - 1
 
 
@@ -188,7 +211,9 @@ def _cell_value(cell: ElementTree.Element, shared: list[str]) -> str:
 
 
 def read_sheets(
-    path: Path, max_member_bytes: int = MAX_MEMBER_BYTES
+    path: Path,
+    max_member_bytes: int = MAX_MEMBER_BYTES,
+    max_columns: int = MAX_COLUMNS,
 ) -> dict[str, list[list[str]]]:
     """Every sheet as a rectangular grid of strings, in workbook order."""
     if not zipfile.is_zipfile(path):
@@ -209,7 +234,7 @@ def read_sheets(
                 cells: dict[int, str] = {}
                 for cell in row.findall(f"{NAMESPACE}c"):
                     reference = cell.get("r") or ""
-                    cells[_column(reference)] = _cell_value(cell, shared)
+                    cells[_column(reference, max_columns)] = _cell_value(cell, shared)
                 width = max(cells) + 1 if cells else 0
                 rows.append([cells.get(index, "") for index in range(width)])
             sheets[sheet_name] = rows

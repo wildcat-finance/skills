@@ -32,6 +32,11 @@ the atomic identifiers a reviewer decided it holds.
 
 Each atomic case carries the whole source row and the identifier it came from,
 so nothing about the split is lossy and the round trip still rebuilds the row.
+A declared split names a row a reviewer read. If no row in the workbook carries
+that identifier, the import refuses: either the declaration is mistyped or this
+is not the workbook it was written against, and importing anyway would report a
+compound row as atomic while the workbook still holds it whole.
+
 An identifier that appears twice refuses, because a disposition could not then
 be attached to one row.
 
@@ -55,6 +60,15 @@ itself. A declared size is written by whoever built the container, so a check
 made only against it is a check the container can understate its way past. The
 reader asks for one byte more than the cap allows and refuses when that byte
 arrives, which holds whatever the header claims.
+
+A sheet is stored sparsely, so the rightmost cell reference in a row decides
+how wide that row becomes once it is materialised as a grid. That cost is paid
+after every archive cap has passed and it scales with the column index rather
+than with the file, so a small well-formed archive can ask for an enormous
+grid. A reference past the column cap refuses, and a reference carrying no
+column letters refuses rather than indexing at minus one and falling silently
+out of the row it belongs to. The reviewed workbook is twenty columns wide
+against a cap of two hundred and fifty-six.
 
 A part carrying a document type or entity declaration refuses before anything
 parses it. The XML parser in the standard library expands internal entities, so

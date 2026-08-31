@@ -162,5 +162,32 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(workbook.check(), [])
 
 
+class DeclaredSplits(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.made = build.build_all(Path(self.tmp.name))
+
+    def test_a_split_naming_no_row_refuses_rather_than_doing_nothing(self):
+        """A mistyped split must not report a compound row as atomic.
+
+        Silently importing would leave the reviewer believing a row had been
+        divided when the workbook still holds it whole.
+        """
+        with self.assertRaises(workbook.WorkbookError) as caught:
+            workbook.read_cases(
+                self.made["benign.xlsx"], splits={"NOPE-99": ["NOPE-99a", "NOPE-99b"]}
+            )
+        self.assertIn("matched no row", str(caught.exception))
+
+    def test_a_split_that_matches_still_divides_the_row(self):
+        cases = workbook.read_cases(
+            self.made["benign.xlsx"], splits={"M2-03": ["M2-03a", "M2-03b"]}
+        )
+        halves = [case for case in cases if case["source_id"] == "M2-03"]
+        self.assertEqual([case["id"] for case in halves], ["M2-03a", "M2-03b"])
+        self.assertEqual(halves[0]["fields"], halves[1]["fields"])
+
+
 if __name__ == "__main__":
     unittest.main()

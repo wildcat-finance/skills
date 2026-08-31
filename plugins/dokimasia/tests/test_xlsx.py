@@ -116,6 +116,31 @@ class RefusalTests(FixtureCase):
             f"a lying archive must refuse, not import: {message}",
         )
 
+    def test_a_far_right_cell_refuses_rather_than_deciding_a_row_width(self):
+        """A sparse sheet must not let one cell size the row it sits in.
+
+        The bytes are small and compress normally, so no archive cap sees the
+        cost; it is paid when the grid is materialised.
+        """
+        with self.assertRaises(xlsx.XlsxRefusal) as caught:
+            xlsx.read_sheets(self.made["far-right-cell.xlsx"])
+        self.assertIn("column cap", str(caught.exception))
+
+    def test_a_cell_reference_with_no_column_refuses_instead_of_vanishing(self):
+        # A reference with no letters used to index at -1, which then fell out
+        # of the row being built and lost the value without a word.
+        with self.assertRaises(xlsx.XlsxRefusal) as caught:
+            xlsx.read_sheets(self.made["unanchored-cell.xlsx"])
+        self.assertIn("names no column", str(caught.exception))
+
+    def test_a_sheet_within_the_column_cap_still_reads(self):
+        sheets = xlsx.read_sheets(self.made["benign.xlsx"])
+        widest = max(len(row) for rows in sheets.values() for row in rows)
+        self.assertLessEqual(widest, xlsx.MAX_COLUMNS)
+        self.assertTrue(
+            any(any(cell for cell in row) for rows in sheets.values() for row in rows)
+        )
+
     def test_an_entity_declaration_refuses_before_the_parser_expands_it(self):
         with self.assertRaises(xlsx.XlsxRefusal) as caught:
             xlsx.read_sheets(self.made["entity-declaration.xlsx"])

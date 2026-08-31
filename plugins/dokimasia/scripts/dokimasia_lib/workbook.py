@@ -68,6 +68,7 @@ def read_cases(path: Path, splits: dict[str, list[str]] | None = None) -> list[d
     sheets = xlsx.read_sheets(path)
     cases: list[dict] = []
     seen: set[str] = set()
+    matched: set[str] = set()
     for sheet_name, rows in sheets.items():
         header_index = _header_row(rows)
         if header_index is None:
@@ -81,6 +82,8 @@ def read_cases(path: Path, splits: dict[str, list[str]] | None = None) -> list[d
                 continue
             fields = _fields(row, columns)
             atomic = declared.get(identifier, [identifier])
+            if identifier in declared:
+                matched.add(identifier)
             for case_id in atomic:
                 if case_id in seen:
                     raise WorkbookError(
@@ -100,6 +103,16 @@ def read_cases(path: Path, splits: dict[str, list[str]] | None = None) -> list[d
                 raise WorkbookError(
                     f"the workbook holds more than the {MAX_CASES}-case cap"
                 )
+    unmatched = sorted(set(declared) - matched)
+    if unmatched:
+        # A split names a row a reviewer read. If no such row is here, either the
+        # declaration is mistyped or the workbook is not the one it was written
+        # against, and silently importing would report a compound row as atomic.
+        raise WorkbookError(
+            "declared split(s) for "
+            + ", ".join(repr(identifier) for identifier in unmatched)
+            + " matched no row in this workbook"
+        )
     return cases
 
 
@@ -185,6 +198,8 @@ def check() -> list[str]:
         "zip-bomb.xlsx": "ratio cap",
         "traversal-member.xlsx": "parent-directory segment",
         "too-many-members.xlsx": "member",
+        "far-right-cell.xlsx": "column cap",
+        "unanchored-cell.xlsx": "names no column",
         "entity-declaration.xlsx": "entity declaration",
         "not-a-spreadsheet.xlsx": "not a spreadsheet archive",
     }
