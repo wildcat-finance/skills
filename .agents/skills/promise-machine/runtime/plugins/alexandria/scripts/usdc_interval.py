@@ -377,7 +377,10 @@ class Reconciler:
         staged = {}
         for name in EVIDENCE_CLASSES:
             for entry in self.staging.entries(name):
-                envelope = load_bytes(entry["response"].encode(), f"staged {name} response")
+                envelope = load_bytes(
+                    entry["response"].encode(), f"staged {name} response",
+                    max_bytes=MAX_RAW_COMPONENT_BYTES,
+                )
                 staged[(entry["shard"], name)] = envelope.get("result")
         return staged
 
@@ -394,7 +397,12 @@ class Reconciler:
             max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
             preserve_integers=True,
         )
-        if not isinstance(envelope, dict) or envelope.get("id") != identifier or "result" not in envelope:
+        if (
+            not isinstance(envelope, dict)
+            or envelope.get("jsonrpc") != "2.0"
+            or envelope.get("id") != identifier
+            or "result" not in envelope
+        ):
             raise AlexandriaError(
                 f"shard {shard_index} {name} second-provider envelope does not match its request"
             )
@@ -423,8 +431,14 @@ class Reconciler:
             os.close(descriptor)
 
     def reconcile(self) -> dict:
-        state = self.staging.resume()
+        """Read the staging tree without changing it, then compare.
+
+        Reconciliation never resumes the collection, because `resume` truncates
+        every journal back to its checkpoint. Reading an interval must not be
+        able to destroy part of it, least of all on the path that then refuses.
+        """
         shards = self.plan["shards"]
+        state = self.staging.committed()
         if state["next_shard"] != len(shards):
             raise AlexandriaError(
                 "the interval is not completely collected, so there is nothing to reconcile"
@@ -462,7 +476,9 @@ class Reconciler:
                     [{"address": self.plan["proxy"], "fromBlock": hex(shard["start"]), "toBlock": hex(shard["end"])}],
                 )
             except AlexandriaError:
-                return self._unreconciled(shards, counts, staged)
+                return self._unreconciled(
+                    shards, counts, staged, compared, matched, disputed
+                )
 
             compared += 1
             if not isinstance(second_boundary, dict) or second_boundary.get("hash") != boundary.get("hash"):
@@ -514,7 +530,7 @@ class Reconciler:
         }
         return self._write(shards, counts, statuses, record, staged)
 
-    def _unreconciled(self, shards, counts, staged) -> dict:
+    def _unreconciled(self, shards, counts, staged, compared=0, matched=0, disputed=None) -> dict:
         for shard in shards:
             counts.setdefault(shard["index"], {
                 "boundary-blocks": 1,
@@ -522,9 +538,9 @@ class Reconciler:
                 "traces": len(staged[(shard["index"], "traces")]),
             })
         record = {
-            "compared": 0,
-            "disputed": [],
-            "matched": 0,
+            "compared": compared,
+            "disputed": list(disputed or []),
+            "matched": matched,
             "provider_class": self.provider_class,
             "status": "unreconciled",
         }

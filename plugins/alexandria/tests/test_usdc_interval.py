@@ -669,6 +669,77 @@ class ReconciliationTests(CollectorTestCase):
         dispute = schema["$defs"]["reconciliation"]["properties"]["disputed"]["items"]
         self.assertEqual(set(document["reconciliation"]["disputed"][0]), set(dispute["required"]))
 
+    def test_reconciling_an_incomplete_tree_changes_nothing(self):
+        """Refusing must not truncate the journals it refused to read."""
+        root = self.scratch("untouched")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at="shard 3 traces")).collect()
+        before = journals(root)
+        with self.assertRaisesRegex(AlexandriaError, "not completely collected"):
+            self.reconcile(root, FixtureTransport(self.state))
+        self.assertEqual(journals(root), before)
+
+    def test_a_successful_reconciliation_changes_no_journal(self):
+        root = self.collected("read-only")
+        before = journals(root)
+        self.reconcile(root, FixtureTransport(self.state))
+        self.assertEqual(journals(root), before)
+
+    def test_a_staged_record_above_the_control_limit_is_still_readable(self):
+        """The reader's ceiling is the one the writer enforced, not the smaller one.
+
+        The record here is deliberately just over the 8 MiB control limit and
+        far under the 64 MiB component limit the collector accepts, which is
+        the exact band a reader using the smaller default cannot read back.
+        """
+        from alexandria_lib.canonical import MAX_CONTROL_BYTES
+        from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES
+
+        self.assertGreater(MAX_RAW_COMPONENT_BYTES, MAX_CONTROL_BYTES)
+        root = self.scratch("wide")
+        staging = Staging(root, self.plan)
+        staging.resume()
+        wide = canonical_bytes({"id": 2, "jsonrpc": "2.0", "result": "0x" + "a" * MAX_CONTROL_BYTES})
+        self.assertGreater(len(wide), MAX_CONTROL_BYTES)
+        self.assertLess(len(wide), MAX_RAW_COMPONENT_BYTES)
+        staging.record(0, "logs", b"{}", wide)
+        end = self.plan["shards"][0]["end"]
+        staging.commit(0, end, self.state["blocks"][str(end)])
+        try:
+            entries = list(staging.entries("logs"))
+        except AlexandriaError as error:
+            staging.close()
+            self.fail(
+                "a staged record inside the component ceiling could not be read "
+                f"back: {error}"
+            )
+        staging.close()
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["response"].encode(), wide)
+
+    def test_an_unreconciled_interval_keeps_the_counts_it_reached(self):
+        def fail(_envelope):
+            raise TransportError("second provider transport failed")
+
+        root = self.collected("partial-counts")
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(self.state, {}, faults={"shard 3 logs second provider": fail}),
+        )
+        record = document["reconciliation"]
+        self.assertEqual(record["status"], "unreconciled")
+        self.assertGreater(record["compared"], 0)
+        self.assertLessEqual(record["matched"], record["compared"])
+
+    def test_a_second_provider_envelope_without_its_version_refuses(self):
+        root = self.collected("versionless")
+        transport = SecondProviderTransport(self.state, {}, faults={
+            "shard 0 logs second provider": canonical_bytes({"id": 2, "result": []}),
+        })
+        self.assertEqual(
+            self.reconcile(root, transport)["reconciliation"]["status"], "unreconciled"
+        )
+
     def test_reconciliation_opens_no_socket(self):
         root = self.collected()
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):

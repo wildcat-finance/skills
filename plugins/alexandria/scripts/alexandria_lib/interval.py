@@ -451,6 +451,30 @@ class Staging:
             "records": checkpoint["records"],
         }
 
+    def committed(self) -> dict:
+        """Report where the checkpoint stands without changing a single journal.
+
+        `resume` truncates, which is right when a collection is about to
+        continue and wrong for every reader. A reader that has to mutate the
+        thing it reads can destroy evidence on the path that then refuses.
+        """
+        if self.checkpoint_path.is_symlink():
+            raise AlexandriaError("interval checkpoint must not be a symlink")
+        if not self.checkpoint_path.exists():
+            return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
+        if not self.checkpoint_path.is_file():
+            raise AlexandriaError("interval checkpoint is not a regular file")
+        checkpoint = load_bytes(
+            _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
+        )
+        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        return {
+            "history": list(checkpoint["history"]),
+            "last_accepted": checkpoint["last_accepted"],
+            "next_shard": checkpoint["next_shard"],
+            "records": checkpoint["records"],
+        }
+
     def rewind_to(self, shard: int) -> dict:
         """Drop every record above one remembered boundary and continue from it.
 
@@ -517,7 +541,12 @@ class Staging:
             return
         for line in _read_journal(path).splitlines():
             if line:
-                yield load_bytes(line + b"\n", f"journal {name} entry")
+                # The ceiling here is the one `record` enforced when it wrote the
+                # entry. Reading under the smaller control limit would refuse a
+                # record this module had already accepted.
+                yield load_bytes(
+                    line + b"\n", f"journal {name} entry", max_bytes=MAX_JOURNAL_BYTES
+                )
 
     def close(self) -> None:
         for handle in self._handles.values():
@@ -884,8 +913,8 @@ def validate_reconciliation(reconciliation) -> None:
         raise AlexandriaError("an agreed reconciliation cannot carry a dispute")
     if reconciliation["status"] == "disputed" and not disputed:
         raise AlexandriaError("a disputed reconciliation names no dispute")
-    if reconciliation["status"] == "unreconciled" and reconciliation["compared"]:
-        raise AlexandriaError("an unreconciled interval compared nothing")
+    if reconciliation["status"] == "unreconciled" and reconciliation["matched"] > reconciliation["compared"]:
+        raise AlexandriaError("an unreconciled interval matched more than it compared")
 
 
 def _text(data: bytes, label: str) -> str:
