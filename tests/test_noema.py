@@ -4948,7 +4948,7 @@ class GitAnchorWitnessTests(unittest.TestCase):
         )
         self.assertEqual(
             checked["carrier_commit"],
-            "55089dab51888032a117ac986e76ace77c6172dc",
+            "cab2e8f642413bc94daf5a3a1481eec390bcb518",
         )
         self.assertEqual(
             {item["oid"] for item in checked["objects"]},

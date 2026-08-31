@@ -210,6 +210,10 @@ The measurement, cohort 1 and cohort 2 ledger digests are
 `069ec47c7f4c8809403f8c22b302264be166b38663bc09cff86556a71dac09fe`,
 `cbec46c8ae063db4829abd9d17f30dfef763d1f3ad07b55f6fc16f842b3d0757`
 and `65e5295bf5be968ec5f0ad567aa7185c9dc4280dfc25fb0d62d12243129ba6ee`.
+The historyless Git witness digest is
+`9e0e7affcd780e2fe2b3a0316fb624e58cb7534faf12db138b5ea66814567685`;
+it carries the exact signed anchor, its root tree and signed direct carrier
+`cab2e8f642413bc94daf5a3a1481eec390bcb518`.
 
 Earlier behavioral runs and incomplete measurements remain part of the
 decision record:
