@@ -630,7 +630,10 @@ content count subtracts that exact endpoint's wrapper value. Source and
 projections therefore use one request shape and one exact profile, while the
 private vocabulary digest remains an explicit unknown. These are real provider
 accounting values, not heuristic local estimates or a claim that a private
-token vocabulary was recovered.
+token vocabulary was recovered. Corpus amortisation exists only when every
+specimen carries byte-identical kernel and alias-dictionary components; drift
+refuses before an adapter call or evidence replay rather than hiding another
+component behind the first specimen.
 
 The fixed gates are first use at most 70% of relevant Markdown, steady state at
 most 40%, complete canonical Noema at most 55% of the declared source corpus,
@@ -667,9 +670,9 @@ run records that run; it does not predict a rerun or establish model quality.
 `noema-external-profiles/v1` binds the catalogue URL and observation date,
 requested and endpoint model ids, provider name and exact route tag, context
 and completion caps, quantisation, supported request parameters, uncached
-prompt/completion prices and threshold overrides. Its acquisition digest is
-separate from the complete profile digest. A provider-private vocabulary is
-`null`, never an invented checksum.
+prompt/completion prices, the explicit per-request price and threshold
+overrides. Its acquisition digest is separate from the complete profile
+digest. A provider-private vocabulary is `null`, never an invented checksum.
 
 External tokenizer or model programs are explicit digest-bound argv lists with
 a cleared environment, minimal allowlist, timeout and output cap. The bundled
@@ -678,9 +681,11 @@ OpenRouter adapter is fixed to `/usr/bin/python3 -I`, the current
 mode prevents repository and user-site modules from shadowing its transport.
 Requests bind one provider route, disable fallbacks, require declared
 parameters, deny data collection,
-require zero-data-retention routing and cap prompt/completion price at the
-acquired base rate. The credential crosses only as a private regular-file path
-and is never an argument, prompt, result or fixture value.
+require zero-data-retention routing and cap prompt, completion and per-request
+price at the acquired base rate. A route reporting no per-request fee records
+and sends an exact zero rather than leaving that spend class unbounded. The
+credential crosses only as a private regular-file path and is never an
+argument, prompt, result or fixture value.
 
 A live call rehashes both executable and repository invocation bytes before
 and after use. Portable evidence verification rehashes the repository adapter
@@ -690,18 +695,22 @@ does not require another machine to install or execute that binary.
 Every paid request reserves a conservative upper bound in one locked canonical
 ledger before the child starts. A recorded provider cost settles that exact
 request; an unavailable or unaccounted response retains its reservation. The
-ledger ceiling cannot change in place, so uncertain spend consumes authority
-rather than being silently retried. New dependencies, downloads, credentials,
-network calls, source disclosure and paid use require separate operator
-authority. Model output is untrusted data and never becomes a command, query,
-path, fact or authority edge.
+ledger uses exact bounded decimal addition and multiplication throughout; host
+decimal-context rounding cannot admit an over-ceiling reservation or hide
+settled spend. The ceiling cannot change in place, so uncertain spend consumes
+authority rather than being silently retried. New dependencies, downloads,
+credentials, network calls, source disclosure and paid use require separate
+operator authority. Model output is untrusted data and never becomes a command,
+query, path, fact or authority edge.
 
-The checked-in `tests/fixtures/noema-v1/evidence/` record binds the accepted
-2026-08-30 measurement, 32 answer-provenance records and 16/16 tally to one
-ancestor commit, tree, corpus, profile set, packet and case set. Corpus
-verification reconstructs the packet and tally before accepting those bytes.
-The exact counts, rejected predecessor runs and shadow-only decision live in
-ADR-059; raw provider transcripts are deliberately absent.
+When published by the corpus manifest, the checked-in
+`tests/fixtures/noema-v1/evidence/` record binds one accepted measurement, 32
+answer-provenance records and 16/16 tally to one ancestor commit, tree, corpus,
+profile set, packet and case set. Corpus verification reconstructs the packet
+and tally before accepting those bytes. The audit-repair checkpoint omits that
+anchor until its changed compiler and profiles receive a fresh run. The exact
+counts, rejected predecessor runs and shadow-only decision live in ADR-059;
+raw provider transcripts are deliberately absent.
 
 ## Versioning and recovery
 

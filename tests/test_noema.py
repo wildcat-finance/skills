@@ -285,7 +285,11 @@ def fake_external_profile(
         "max_prompt_tokens": 126976,
         "model": model,
         "observed_on": "2026-08-30",
-        "pricing": {"completion": "0.000001", "prompt": "0.000001"},
+        "pricing": {
+            "completion": "0.000001",
+            "prompt": "0.000001",
+            "request": "0",
+        },
         "pricing_overrides": [],
         "provider": provider,
         "provider_tag": "fake/local",
@@ -329,7 +333,7 @@ def fake_external_profile(
         "provider_policy": {
             "allow_fallbacks": False,
             "data_collection": "deny",
-            "max_price": {"completion": "1", "prompt": "1"},
+            "max_price": {"completion": "1", "prompt": "1", "request": "0"},
             "only": [acquisition["provider_tag"]],
             "require_parameters": True,
             "zdr": True,
@@ -6531,6 +6535,24 @@ class ExternalAdapterTests(unittest.TestCase):
         profile["provider_policy"]["max_price"]["completion"] = "2"
         self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PROVIDER_POLICY")
 
+    def test_missing_request_price_refuses(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        del profile["acquisition"]["pricing"]["request"]
+        profile["acquisition_sha256"] = noema._value_sha256(
+            profile["acquisition"]
+        )
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-TYPE.KEYS")
+
+    def test_request_price_ceiling_change_refuses(self):
+        profile = self.profile()
+        profile["provider_policy"] = copy.deepcopy(profile["provider_policy"])
+        profile["provider_policy"]["max_price"]["request"] = "0.1"
+        self.assertEqual(
+            self.profile_refusal(profile).code,
+            "NOE-E-ADAPTER.PROVIDER_POLICY",
+        )
+
     def test_missing_structured_output_support_refuses_evaluation_profile(self):
         profile = self.profile()
         profile["acquisition"] = copy.deepcopy(profile["acquisition"])
@@ -6680,6 +6702,24 @@ class ExternalAdapterTests(unittest.TestCase):
             noema._budget_record(self.ledger, Decimal("1"))
         self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
 
+    def test_budget_refuses_overcommit_hidden_by_decimal_context_rounding(self):
+        record = {
+            "budget_usd": "1",
+            "calls": 0,
+            "reservations": [
+                {
+                    "estimated_usd": "0.00000000000000000000000000006",
+                    "request_sha256": "e" * 64,
+                }
+            ],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0.99999999999999999999999999995",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_record(self.ledger, Decimal("1"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
+
     def test_budget_missing_parent_refuses_without_traceback(self):
         missing = self.directory / "missing" / "budget.json"
         with self.assertRaises(noema.Refusal) as raised:
@@ -6727,6 +6767,13 @@ class ExternalAdapterTests(unittest.TestCase):
         bound = noema._request_cost_bound(profile, b"x" * 1000, 64)
         expected = Decimal(1000 + 4096 + 64) * Decimal("0.000001")
         self.assertGreater(bound, expected)
+
+    def test_cost_bound_reserves_the_per_request_price(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["pricing"]["request"] = "0.25"
+        bound = noema._request_cost_bound(profile, b"", 1)
+        self.assertGreaterEqual(bound, Decimal("0.2625"))
 
     def test_conservative_prompt_bound_refuses_endpoint_overflow(self):
         profile = self.profile()
@@ -6827,7 +6874,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
         shutil.copytree(NOEMA_FIXTURES, cls.corpus_root)
         cls.manifest = cls.corpus_root / "manifest.json"
         corpus = read_json(cls.manifest)
-        corpus.pop("evidence")
+        corpus.pop("evidence", None)
         write_canonical_json(cls.manifest, corpus)
         cls.verified = noema.verify_specimen_corpus(cls.manifest)
         cls.documents = noema._measurement_documents(cls.manifest, cls.verified)
@@ -6962,6 +7009,54 @@ class MeasurementEvaluationTests(unittest.TestCase):
         value = copy.deepcopy(self.measurement)
         del value["profiles"][0]["documents"][0]["components"]["alias_dictionary"]
         self.assertEqual(self.measurement_refusal(value).code, "NOE-E-TYPE.KEYS")
+
+    def test_measurement_requires_byte_identical_shared_amortisation_components(self):
+        for name in ("kernel", "alias_dictionary"):
+            with self.subTest(component=name):
+                documents = copy.deepcopy(self.documents)
+                documents[1][name] += b"x"
+                with mock.patch.object(
+                    noema,
+                    "invoke_adapter",
+                    side_effect=AssertionError(
+                        "adapter called before component validation"
+                    ),
+                ) as invoke:
+                    with self.assertRaises(noema.Refusal) as raised:
+                        noema._measure_one_profile(
+                            self.profiles[0],
+                            documents,
+                            credential=None,
+                            budget=Decimal("5"),
+                            budget_ledger=(
+                                self.directory / f"shared-{name}-budget.json"
+                            ),
+                        )
+                self.assertEqual(
+                    raised.exception.code,
+                    "NOE-E-MEASURE.COMPONENT",
+                )
+                invoke.assert_not_called()
+                with self.assertRaises(noema.Refusal) as replayed:
+                    noema._validate_measurement_report(
+                        self.measurement,
+                        corpus_sha256=noema._value_sha256(
+                            noema._corpus_identity_value(
+                                self.verified["manifest"]
+                            )
+                        ),
+                        counts=self.verified["counts"],
+                        profile_record=self.profile_record,
+                        profile_raw=self.profile_raw,
+                        profiles=self.profiles,
+                        documents=documents,
+                        repository_commit=self.measurement["repository_commit"],
+                        repository_tree=self.measurement["repository_tree"],
+                    )
+                self.assertEqual(
+                    replayed.exception.code,
+                    "NOE-E-MEASURE.COMPONENT",
+                )
 
     def test_measurement_dictionary_undercount_refuses(self):
         value = copy.deepcopy(self.measurement)

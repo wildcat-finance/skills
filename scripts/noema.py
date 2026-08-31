@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Iterable
 import copy
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
 import fcntl
 from hashlib import sha256
 import heapq
@@ -178,6 +179,7 @@ MAX_ADAPTER_ENVIRONMENT = 16
 MAX_ANSWER_ID_BYTES = 128
 MAX_PACKET_BYTES = 4_194_304
 MAX_CHAT_TRANSPORT_TOKENS = 4_096
+DECIMAL_WORK_PRECISION = 256
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_KEY_PATH_ENV = "NOEMA_OPENROUTER_KEY_FILE"
 EXTERNAL_PROFILE_FAMILIES = ("anthropic", "google", "open-weight", "openai")
@@ -7299,6 +7301,21 @@ def _decimal_string(value: Decimal) -> str:
     return text or "0"
 
 
+def _decimal_total(values: Iterable[Decimal]) -> Decimal:
+    with localcontext() as context:
+        context.prec = DECIMAL_WORK_PRECISION
+        return sum(values, Decimal(0))
+
+
+def _decimal_product(*values: Decimal) -> Decimal:
+    with localcontext() as context:
+        context.prec = DECIMAL_WORK_PRECISION
+        result = Decimal(1)
+        for value in values:
+            result *= value
+        return result
+
+
 def _string_array(
     value: object,
     field: str,
@@ -7426,9 +7443,13 @@ def _profile_acquisition(value: object, field: str) -> dict[str, object]:
             f"{field}.provider_tag",
             "provider route tag is outside the closed endpoint alphabet",
         )
-    pricing = _exact_keys(acquisition["pricing"], {"completion", "prompt"}, f"{field}.pricing")
-    _decimal_value(pricing["prompt"], f"{field}.pricing.prompt", maximum="1")
-    _decimal_value(pricing["completion"], f"{field}.pricing.completion", maximum="1")
+    pricing = _exact_keys(
+        acquisition["pricing"],
+        {"completion", "prompt", "request"},
+        f"{field}.pricing",
+    )
+    for name in ("completion", "prompt", "request"):
+        _decimal_value(pricing[name], f"{field}.pricing.{name}", maximum="1")
     overrides = acquisition["pricing_overrides"]
     if not isinstance(overrides, list) or len(overrides) > 8:
         refuse("NOE-E-BOUNDS.ARRAY", f"{field}.pricing_overrides", "pricing override set exceeds its bound")
@@ -7607,15 +7628,24 @@ def _validate_external_profile(
     )
     expected_max_price = {
         name: _decimal_string(
-            _decimal_value(
-                acquisition["pricing"][name],
-                f"{field}.acquisition.pricing.{name}",
-                maximum="1",
+            _decimal_product(
+                _decimal_value(
+                    acquisition["pricing"][name],
+                    f"{field}.acquisition.pricing.{name}",
+                    maximum="1",
+                ),
+                Decimal("1000000"),
             )
-            * Decimal("1000000")
         )
         for name in ("completion", "prompt")
     }
+    expected_max_price["request"] = _decimal_string(
+        _decimal_value(
+            acquisition["pricing"]["request"],
+            f"{field}.acquisition.pricing.request",
+            maximum="1",
+        )
+    )
     if policy != {
         "allow_fallbacks": False,
         "data_collection": "deny",
@@ -8012,17 +8042,16 @@ def _budget_record(path: Path, budget: Decimal) -> dict[str, object]:
                 refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.reservations", "reservations must be unique and sorted")
             prior = request
         spent = _decimal_value(record["spent_usd"], "budget_ledger.spent_usd")
-        reserved = sum(
+        reserved = _decimal_total(
             (
                 _decimal_value(
                     item["estimated_usd"],
                     "budget_ledger.reservations.estimated_usd",
                 )
                 for item in reservations
-            ),
-            Decimal(0),
+            )
         )
-        if spent + reserved > budget:
+        if _decimal_total((spent, reserved)) > budget:
             refuse(
                 "NOE-E-BUDGET.LEDGER",
                 "budget_ledger",
@@ -8049,11 +8078,11 @@ def _budget_reserve(path: Path, budget: Decimal, request_digest: str, estimate: 
         if any(item["request_sha256"] == request_digest for item in reservations):
             refuse("NOE-E-BUDGET.DUPLICATE", "budget_ledger", "request already has an unresolved reservation")
         committed = _decimal_value(record["spent_usd"], "budget_ledger.spent_usd")
-        reserved = sum(
-            (_decimal_value(item["estimated_usd"], "budget_ledger.reservations") for item in reservations),
-            Decimal(0),
+        reserved = _decimal_total(
+            _decimal_value(item["estimated_usd"], "budget_ledger.reservations")
+            for item in reservations
         )
-        if committed + reserved + estimate > budget:
+        if _decimal_total((committed, reserved, estimate)) > budget:
             refuse("NOE-E-BUDGET.EXHAUSTED", "budget_ledger", "next request would exceed the authorised spend ceiling")
         reservations.append({"estimated_usd": _decimal_string(estimate), "request_sha256": request_digest})
         record["reservations"] = sorted(reservations, key=lambda item: item["request_sha256"])
@@ -8076,12 +8105,18 @@ def _budget_finalize(path: Path, budget: Decimal, request_digest: str, actual: D
         estimate = _decimal_value(matches[0]["estimated_usd"], "budget_ledger.reservations.estimated_usd")
         if actual > estimate:
             refuse("NOE-E-BUDGET.OVERRUN", "budget_ledger", "provider cost exceeded the conservative reservation")
-        spent = _decimal_value(record["spent_usd"], "budget_ledger.spent_usd") + actual
+        spent = _decimal_total(
+            (
+                _decimal_value(record["spent_usd"], "budget_ledger.spent_usd"),
+                actual,
+            )
+        )
         remaining = [item for item in reservations if item["request_sha256"] != request_digest]
-        if spent + sum(
-            (_decimal_value(item["estimated_usd"], "budget_ledger.reservations") for item in remaining),
-            Decimal(0),
-        ) > budget:
+        reserved = _decimal_total(
+            _decimal_value(item["estimated_usd"], "budget_ledger.reservations")
+            for item in remaining
+        )
+        if _decimal_total((spent, reserved)) > budget:
             refuse("NOE-E-BUDGET.OVERRUN", "budget_ledger", "settled usage exceeds the authorised ceiling")
         record["spent_usd"] = _decimal_string(spent)
         record["calls"] = int(record["calls"]) + 1
@@ -8095,10 +8130,20 @@ def _request_cost_bound(profile: dict[str, object], prompt: bytes, output_tokens
     pricing = profile["acquisition"]["pricing"]
     prompt_price = _decimal_value(pricing["prompt"], "profile.pricing.prompt", maximum="1")
     completion_price = _decimal_value(pricing["completion"], "profile.pricing.completion", maximum="1")
-    return (
-        Decimal(len(prompt) + MAX_CHAT_TRANSPORT_TOKENS) * prompt_price
-        + Decimal(output_tokens) * completion_price
-    ) * Decimal("1.05")
+    request_price = _decimal_value(
+        pricing["request"],
+        "profile.pricing.request",
+        maximum="1",
+    )
+    prompt_cost = _decimal_product(
+        Decimal(len(prompt) + MAX_CHAT_TRANSPORT_TOKENS),
+        prompt_price,
+    )
+    completion_cost = _decimal_product(Decimal(output_tokens), completion_price)
+    return _decimal_product(
+        _decimal_total((request_price, prompt_cost, completion_cost)),
+        Decimal("1.05"),
+    )
 
 
 def _validate_request_capacity(
@@ -8127,11 +8172,14 @@ def _validate_request_capacity(
         if conservative_input >= int(override["min_prompt_tokens"]):
             active_pricing = override
     for name in ("completion", "prompt"):
-        active_per_million = _decimal_value(
-            active_pricing[name],
-            f"profile.pricing.{name}",
-            maximum="1",
-        ) * Decimal("1000000")
+        active_per_million = _decimal_product(
+            _decimal_value(
+                active_pricing[name],
+                f"profile.pricing.{name}",
+                maximum="1",
+            ),
+            Decimal("1000000"),
+        )
         allowed = _decimal_value(
             profile["provider_policy"]["max_price"][name],
             f"profile.provider_policy.max_price.{name}",
@@ -8398,7 +8446,7 @@ def _openrouter_adapter() -> int:
         )
         max_price = _exact_keys(
             policy["max_price"],
-            {"completion", "prompt"},
+            {"completion", "prompt", "request"},
             "adapter_request.provider_policy.max_price",
         )
         price_values = {
@@ -8407,7 +8455,7 @@ def _openrouter_adapter() -> int:
                 f"adapter_request.provider_policy.max_price.{name}",
                 maximum="1000000",
             )
-            for name in ("completion", "prompt")
+            for name in ("completion", "prompt", "request")
         }
         if (
             policy["allow_fallbacks"] is not False
@@ -8776,6 +8824,35 @@ def _measurement_profile_passes(value: dict[str, object]) -> bool:
     return all(bool(gate["passes"]) for gate in value["gates"].values())
 
 
+def _shared_measurement_bootstrap(
+    documents: list[dict[str, object]],
+) -> tuple[bytes, bytes]:
+    if not documents:
+        refuse(
+            "NOE-E-MEASURE.COMPONENT",
+            "measurement.documents",
+            "corpus amortisation requires at least one document",
+        )
+    shared: list[bytes] = []
+    for name in ("kernel", "alias_dictionary"):
+        expected = documents[0].get(name)
+        if not isinstance(expected, bytes):
+            refuse(
+                "NOE-E-MEASURE.COMPONENT",
+                f"measurement.documents[0].{name}",
+                "shared amortisation component is not bytes",
+            )
+        for index, document in enumerate(documents[1:], start=1):
+            if document.get(name) != expected:
+                refuse(
+                    "NOE-E-MEASURE.COMPONENT",
+                    f"measurement.documents[{index}].{name}",
+                    "corpus amortisation requires byte-identical shared components",
+                )
+        shared.append(expected)
+    return shared[0], shared[1]
+
+
 def _measure_one_profile(
     profile: dict[str, object],
     documents: list[dict[str, object]],
@@ -8784,6 +8861,7 @@ def _measure_one_profile(
     budget: Decimal,
     budget_ledger: Path,
 ) -> dict[str, object]:
+    shared_kernel, shared_alias_dictionary = _shared_measurement_bootstrap(documents)
     profile_digest = _value_sha256(profile)
     transport_prompt = _measurement_prompt(b"")
     overhead_response = invoke_adapter(
@@ -8915,9 +8993,9 @@ def _measure_one_profile(
         corpus_source = b"\n".join(item["source"] for item in selected)
         shared_first_use = (
             b"NOEMA-KERNEL\n"
-            + selected[0]["kernel"]
+            + shared_kernel
             + b"NOEMA-ALIAS-DICTIONARY\n"
-            + selected[0]["alias_dictionary"]
+            + shared_alias_dictionary
             + b"NOEMA-OPERATION-SLICES\n"
             + b"\n".join(item["operation_slice"] for item in selected)
         )
@@ -8958,13 +9036,22 @@ def _measure_one_profile(
         "acquisition_sha256": profile["acquisition_sha256"],
         "amortised": amortised,
         "cost_usd": _decimal_string(
-            _decimal_value(transport["cost_usd"], "measurement.transport.cost_usd", maximum="1000")
-            + sum(
+            _decimal_total(
                 (
-                    _decimal_value(item["cost_usd"], "measurement.observation.cost_usd", maximum="1000")
-                    for item in cache.values()
-                ),
-                Decimal(0),
+                    _decimal_value(
+                        transport["cost_usd"],
+                        "measurement.transport.cost_usd",
+                        maximum="1000",
+                    ),
+                    *(
+                        _decimal_value(
+                            item["cost_usd"],
+                            "measurement.observation.cost_usd",
+                            maximum="1000",
+                        )
+                        for item in cache.values()
+                    ),
+                )
             )
         ),
         "documents": measured_documents,
@@ -9143,6 +9230,7 @@ def _validate_measurement_report(
     repository_commit: str,
     repository_tree: str,
 ) -> tuple[dict[str, object], bool]:
+    shared_kernel, shared_alias_dictionary = _shared_measurement_bootstrap(documents)
     report = _exact_keys(
         value,
         {
@@ -9389,9 +9477,9 @@ def _validate_measurement_report(
             corpus_source = b"\n".join(item["source"] for item in selected)
             shared_first_use = (
                 b"NOEMA-KERNEL\n"
-                + selected[0]["kernel"]
+                + shared_kernel
                 + b"NOEMA-ALIAS-DICTIONARY\n"
-                + selected[0]["alias_dictionary"]
+                + shared_alias_dictionary
                 + b"NOEMA-OPERATION-SLICES\n"
                 + b"\n".join(item["operation_slice"] for item in selected)
             )
@@ -9427,9 +9515,22 @@ def _validate_measurement_report(
                 f"{field}.observations",
                 "measurement observations include unreferenced or omitted component calls",
             )
-        expected_cost = _decimal_value(transport["cost_usd"], f"{field}.transport.cost_usd", maximum="1000") + sum(
-            (_decimal_value(item["cost_usd"], f"{field}.observations.cost_usd", maximum="1000") for item in observations.values()),
-            Decimal(0),
+        expected_cost = _decimal_total(
+            (
+                _decimal_value(
+                    transport["cost_usd"],
+                    f"{field}.transport.cost_usd",
+                    maximum="1000",
+                ),
+                *(
+                    _decimal_value(
+                        item["cost_usd"],
+                        f"{field}.observations.cost_usd",
+                        maximum="1000",
+                    )
+                    for item in observations.values()
+                ),
+            )
         )
         if _decimal_value(measured["cost_usd"], f"{field}.cost_usd", maximum="1000") != expected_cost:
             refuse("NOE-E-BUDGET.ACCOUNTING", f"{field}.cost_usd", "measurement cost differs from invocation costs")

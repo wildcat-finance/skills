@@ -117,12 +117,20 @@ profiles or answers. The private vocabulary digest remains unknown for all
 four providers by design; token counts are endpoint accounting, not recovered
 tokenizer vocabularies.
 
+The audit-repair checkpoint deliberately withdraws that run from the corpus
+manifest while the changed compiler and profile bytes await a fresh anchored
+run. The figures below remain historical evidence, not evidence for the repair
+checkpoint.
+
 The complete corpus component counts are below. Bytes are representation bytes
 and therefore common to every profile; the remaining columns are
 endpoint-reported tokens after subtraction of the profile's measured wrapper.
 `first use sum` is the sum of four independent per-specimen first uses. The
 acceptance gate instead uses the four-document amortised first use shown in the
-next table, where the kernel and aliases are paid once.
+next table, where the kernel and aliases are paid once. That amortisation is
+defined only because all four byte strings are identical for each shared
+component; generation and replay fail closed if a later corpus violates that
+precondition.
 
 | component | bytes | Anthropic | Google | open-weight | OpenAI |
 | --- | ---: | ---: | ---: | ---: | ---: |

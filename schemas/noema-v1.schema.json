@@ -1883,10 +1883,11 @@
         "pricing": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["completion", "prompt"],
+          "required": ["completion", "prompt", "request"],
           "properties": {
             "completion": { "$ref": "#/$defs/decimalAmount" },
-            "prompt": { "$ref": "#/$defs/decimalAmount" }
+            "prompt": { "$ref": "#/$defs/decimalAmount" },
+            "request": { "$ref": "#/$defs/decimalAmount" }
           }
         },
         "pricing_overrides": {
@@ -1933,10 +1934,11 @@
         "max_price": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["completion", "prompt"],
+          "required": ["completion", "prompt", "request"],
           "properties": {
             "completion": { "$ref": "#/$defs/decimalAmount" },
-            "prompt": { "$ref": "#/$defs/decimalAmount" }
+            "prompt": { "$ref": "#/$defs/decimalAmount" },
+            "request": { "$ref": "#/$defs/decimalAmount" }
           }
         },
         "only": {
