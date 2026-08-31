@@ -587,3 +587,56 @@ aggregation and failure rule. This run does neither post hoc.
 
 **Still holding.** Step 5: exit holds for continued shadowing only. Integration
 remains out of scope.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output, atomic reports,
+provider-cost exponent bounds, exact JSON-number price ceilings, combined
+settled-plus-pending call cardinality, v1-to-v2 ledger migration, settlement
+before semantic refusal and terminal actual-cost overruns. Audit repairs use
+`python3 tests/run_tests.py --elenchus-report {report}`, format
+`unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. Every
+source and Noema prompt carries the same representation-neutral decision
+contract: asking, confirmation and approval are requirements rather than
+permission; absent authorising actors cannot satisfy them; candidate outcome
+fields are alternatives, not governing evidence. Negative tests prohibit case,
+candidate, consequence and required-answer leakage. The repaired signed anchor
+runs one four-family measurement; only provider unavailability or unknown
+accounting permits one unchanged retry, while a substantive gate failure does
+not. It then runs two exact same-packet evaluation cohorts regardless of the
+first result. A split permits exactly one unchanged tie-break cohort. The fresh
+anchor is accepted only when at least two complete cohorts score 16/16; unknown
+or incomplete cohorts do not pass. Every attempted run and digest remains in
+the decision record. Profiles, seed, prompts, candidates, gates and models stay
+fixed throughout.
+
+**Why.** The Step 5 audit found four more boundary defects after the first
+accepted evidence: provider numeric exponents could escape the response byte
+cap during fixed rendering; non-integral price ceilings could change through a
+lossy float; settled and pending calls had independent rather than aggregate
+caps; and a charged response could be rejected before actual cost settlement,
+while a provider overrun left a smaller reusable reservation. The repair bounds
+numbers before rendering, refuses lossy policy serialization, gives the ledger
+one combined settled-plus-pending call cap, and records a terminal breach
+before refusing. The
+fresh evidence rule is declared before any replacement call and treats seed `0`
+as best-effort rather than shopping for one passing sample.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: exit holds for continued shadowing only. Integration
+remains out of scope.

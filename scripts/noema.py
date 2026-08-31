@@ -163,7 +163,8 @@ MEASUREMENT_SCHEMA = "noema-measurement/v1"
 EVALUATION_PACKET_SCHEMA = "noema-evaluation-packet/v1"
 EVALUATION_ANSWERS_SCHEMA = "noema-evaluation-answers/v1"
 EVALUATION_REPORT_SCHEMA = "noema-evaluation/v1"
-BUDGET_LEDGER_SCHEMA = "noema-budget-ledger/v1"
+LEGACY_BUDGET_LEDGER_SCHEMA = "noema-budget-ledger/v1"
+BUDGET_LEDGER_SCHEMA = "noema-budget-ledger/v2"
 CORPUS_EVIDENCE_SCHEMA = "noema-corpus-evidence/v1"
 MAX_SPECIMENS = 16
 MAX_SOURCE_SPANS = 32_768
@@ -177,6 +178,7 @@ MAX_ADAPTER_STDERR_BYTES = 8_192
 MAX_ADAPTER_ARGV = 32
 MAX_ADAPTER_ENVIRONMENT = 16
 MAX_ANSWER_ID_BYTES = 128
+MAX_BUDGET_CALLS = 100_000
 MAX_PACKET_BYTES = 4_194_304
 EVALUATION_SEED = 0
 MAX_CHAT_TRANSPORT_TOKENS = 4_096
@@ -7302,6 +7304,48 @@ def _decimal_string(value: Decimal) -> str:
     return text or "0"
 
 
+def _provider_decimal(value: object, field: str, *, maximum: str = "1000") -> Decimal:
+    if isinstance(value, bool):
+        refuse("NOE-E-BUDGET.ACCOUNTING", field, "provider omitted exact decimal accounting")
+    if isinstance(value, str):
+        return _decimal_value(value, field, maximum=maximum)
+    if isinstance(value, int):
+        if value < 0 or value > int(Decimal(maximum)):
+            refuse("NOE-E-BOUNDS.DECIMAL", field, "decimal exceeds its fixed bound")
+        return Decimal(value)
+    if not isinstance(value, Decimal) or not value.is_finite() or value < 0:
+        refuse("NOE-E-BUDGET.ACCOUNTING", field, "provider omitted exact decimal accounting")
+    if value > Decimal(maximum):
+        refuse("NOE-E-BOUNDS.DECIMAL", field, "decimal exceeds its fixed bound")
+    if value.is_zero():
+        return Decimal(0)
+    digits = len(value.as_tuple().digits)
+    exponent = value.as_tuple().exponent
+    integral_digits = digits + exponent
+    if exponent >= 0:
+        fixed_length = digits + exponent
+    elif integral_digits > 0:
+        fixed_length = digits + 1
+    else:
+        fixed_length = 2 - integral_digits + digits
+    if fixed_length > 64:
+        refuse("NOE-E-TYPE.DECIMAL", field, "exact decimal exceeds its fixed representation bound")
+    return value
+
+
+def _provider_json_number(value: Decimal, field: str) -> int | float:
+    if value == value.to_integral_value():
+        return int(value)
+    converted = float(value)
+    if Decimal(str(converted)) != value:
+        refuse(
+            "NOE-E-ADAPTER.PROVIDER_POLICY",
+            field,
+            "provider policy decimal has no exact JSON number representation",
+        )
+    return converted
+
+
 def _decimal_total(values: Iterable[Decimal]) -> Decimal:
     with localcontext() as context:
         context.prec = DECIMAL_WORK_PRECISION
@@ -8045,16 +8089,40 @@ def _assert_budget_parent(
 def _budget_record(path: Path, budget: Decimal) -> dict[str, object]:
     if path.exists():
         value, _raw = _read_canonical_json(path, "budget_ledger", maximum_depth=8)
-        record = _exact_keys(value, {"budget_usd", "calls", "reservations", "schema", "spent_usd"}, "budget_ledger")
-        if record["schema"] != BUDGET_LEDGER_SCHEMA:
+        if not isinstance(value, dict):
+            refuse("NOE-E-BUDGET.LEDGER", "budget_ledger", "budget ledger is not an object")
+        schema = value.get("schema")
+        if schema == LEGACY_BUDGET_LEDGER_SCHEMA:
+            record = dict(
+                _exact_keys(
+                    value,
+                    {"budget_usd", "calls", "reservations", "schema", "spent_usd"},
+                    "budget_ledger",
+                )
+            )
+            record["breach"] = None
+            record["schema"] = BUDGET_LEDGER_SCHEMA
+        elif schema == BUDGET_LEDGER_SCHEMA:
+            record = _exact_keys(
+                value,
+                {"breach", "budget_usd", "calls", "reservations", "schema", "spent_usd"},
+                "budget_ledger",
+            )
+        else:
             refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.schema", "unsupported budget ledger")
         if _decimal_value(record["budget_usd"], "budget_ledger.budget_usd") != budget:
             refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.budget_usd", "budget cannot change inside one ledger")
         _decimal_value(record["spent_usd"], "budget_ledger.spent_usd")
-        _bounded_integer(record["calls"], "budget_ledger.calls", 100_000)
+        calls = _bounded_integer(record["calls"], "budget_ledger.calls", MAX_BUDGET_CALLS)
         reservations = record["reservations"]
-        if not isinstance(reservations, list) or len(reservations) > 100_000:
+        if not isinstance(reservations, list) or len(reservations) > MAX_BUDGET_CALLS:
             refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.reservations", "reservation set is invalid")
+        if calls + len(reservations) > MAX_BUDGET_CALLS:
+            refuse(
+                "NOE-E-BUDGET.LEDGER",
+                "budget_ledger",
+                "settled and pending call count exceeds its fixed bound",
+            )
         prior = ""
         for index, item_value in enumerate(reservations):
             item = _exact_keys(item_value, {"estimated_usd", "request_sha256"}, f"budget_ledger.reservations[{index}]")
@@ -8064,6 +8132,23 @@ def _budget_record(path: Path, budget: Decimal) -> dict[str, object]:
                 refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.reservations", "reservations must be unique and sorted")
             prior = request
         spent = _decimal_value(record["spent_usd"], "budget_ledger.spent_usd")
+        breach = record["breach"]
+        if breach is not None:
+            breach_record = _exact_keys(
+                breach,
+                {"actual_usd", "estimated_usd", "reason", "request_sha256"},
+                "budget_ledger.breach",
+            )
+            _decimal_value(breach_record["actual_usd"], "budget_ledger.breach.actual_usd")
+            _decimal_value(breach_record["estimated_usd"], "budget_ledger.breach.estimated_usd")
+            if breach_record["reason"] not in {"ceiling-exceeded", "reservation-exceeded"}:
+                refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.breach.reason", "budget breach reason is invalid")
+            _digest(breach_record["request_sha256"], "budget_ledger.breach.request_sha256")
+            refuse(
+                "NOE-E-BUDGET.BREACH",
+                "budget_ledger.breach",
+                "a recorded provider charge breached its authorised bound",
+            )
         reserved = _decimal_total(
             (
                 _decimal_value(
@@ -8081,6 +8166,7 @@ def _budget_record(path: Path, budget: Decimal) -> dict[str, object]:
             )
         return record
     return {
+        "breach": None,
         "budget_usd": _decimal_string(budget),
         "calls": 0,
         "reservations": [],
@@ -8097,6 +8183,8 @@ def _budget_reserve(path: Path, budget: Decimal, request_digest: str, estimate: 
     try:
         record = _budget_record(path, budget)
         reservations = list(record["reservations"])
+        if int(record["calls"]) + len(reservations) >= MAX_BUDGET_CALLS:
+            refuse("NOE-E-BUDGET.LIMIT", "budget_ledger", "call count reached its fixed bound")
         if any(item["request_sha256"] == request_digest for item in reservations):
             refuse("NOE-E-BUDGET.DUPLICATE", "budget_ledger", "request already has an unresolved reservation")
         committed = _decimal_value(record["spent_usd"], "budget_ledger.spent_usd")
@@ -8115,8 +8203,7 @@ def _budget_reserve(path: Path, budget: Decimal, request_digest: str, estimate: 
 
 def _budget_finalize(path: Path, budget: Decimal, request_digest: str, actual: Decimal) -> None:
     _digest(request_digest, "budget_ledger.request_sha256")
-    if actual < 0:
-        refuse("NOE-E-BUDGET.ACCOUNTING", "budget_ledger", "provider cost cannot be negative")
+    actual = _provider_decimal(actual, "budget_ledger.actual_usd")
     lock = _acquire_budget_lock(path)
     try:
         record = _budget_record(path, budget)
@@ -8125,8 +8212,6 @@ def _budget_finalize(path: Path, budget: Decimal, request_digest: str, actual: D
         if len(matches) != 1:
             refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.reservations", "request reservation is missing")
         estimate = _decimal_value(matches[0]["estimated_usd"], "budget_ledger.reservations.estimated_usd")
-        if actual > estimate:
-            refuse("NOE-E-BUDGET.OVERRUN", "budget_ledger", "provider cost exceeded the conservative reservation")
         spent = _decimal_total(
             (
                 _decimal_value(record["spent_usd"], "budget_ledger.spent_usd"),
@@ -8138,12 +8223,28 @@ def _budget_finalize(path: Path, budget: Decimal, request_digest: str, actual: D
             _decimal_value(item["estimated_usd"], "budget_ledger.reservations")
             for item in remaining
         )
-        if _decimal_total((spent, reserved)) > budget:
-            refuse("NOE-E-BUDGET.OVERRUN", "budget_ledger", "settled usage exceeds the authorised ceiling")
+        reservation_overrun = actual > estimate
+        ceiling_overrun = _decimal_total((spent, reserved)) > budget
         record["spent_usd"] = _decimal_string(spent)
-        record["calls"] = int(record["calls"]) + 1
+        calls = int(record["calls"]) + 1
+        if calls > MAX_BUDGET_CALLS:
+            refuse("NOE-E-BUDGET.LEDGER", "budget_ledger.calls", "settled call count exceeds its fixed bound")
+        record["calls"] = calls
         record["reservations"] = remaining
+        if reservation_overrun or ceiling_overrun:
+            record["breach"] = {
+                "actual_usd": _decimal_string(actual),
+                "estimated_usd": _decimal_string(estimate),
+                "reason": "reservation-exceeded" if reservation_overrun else "ceiling-exceeded",
+                "request_sha256": request_digest,
+            }
         _atomic_write(path, _canonical_json(record))
+        if reservation_overrun or ceiling_overrun:
+            refuse(
+                "NOE-E-BUDGET.OVERRUN",
+                "budget_ledger",
+                "provider charge was recorded but breached its authorised bound",
+            )
     finally:
         _release_budget_lock(lock, path)
 
@@ -8214,7 +8315,11 @@ def _validate_request_capacity(
             )
 
 
-def _adapter_response(value: object, request_digest: str, profile: dict[str, object], field: str) -> dict[str, object]:
+def _adapter_response_envelope(
+    value: object,
+    request_digest: str,
+    field: str,
+) -> tuple[dict[str, object], Decimal | None]:
     response = _exact_keys(
         value,
         {
@@ -8239,6 +8344,15 @@ def _adapter_response(value: object, request_digest: str, profile: dict[str, obj
         refuse("NOE-E-DIGEST.ADAPTER", f"{field}.request_sha256", "adapter answered another request")
     if response["status"] not in {"recorded", "unknown"}:
         refuse("NOE-E-ADAPTER.RESPONSE", f"{field}.status", "adapter status is invalid")
+    actual = _decimal_value(response["cost_usd"], f"{field}.cost_usd", maximum="1000")
+    return response, actual if response["status"] == "recorded" else None
+
+
+def _adapter_response_semantics(
+    response: dict[str, object],
+    profile: dict[str, object],
+    field: str,
+) -> dict[str, object]:
     for name in ("model", "provider"):
         _safe_text(response[name], f"{field}.{name}", 256)
     if response["status"] == "recorded" and (
@@ -8248,7 +8362,6 @@ def _adapter_response(value: object, request_digest: str, profile: dict[str, obj
         refuse("NOE-E-ADAPTER.IDENTITY_CHANGED", field, "provider answered with another model identity")
     for name in ("input_tokens", "output_tokens"):
         _bounded_integer(response[name], f"{field}.{name}", 10_000_000)
-    _decimal_value(response["cost_usd"], f"{field}.cost_usd", maximum="1000")
     for name in ("generation_id", "finish_reason", "answer_code"):
         _safe_text(response[name], f"{field}.{name}", 256)
     if re.fullmatch(r"NOE-(?:OK|E-[A-Z0-9_.-]+)", str(response["answer_code"])) is None:
@@ -8273,6 +8386,16 @@ def _adapter_response(value: object, request_digest: str, profile: dict[str, obj
     if response["status"] == "recorded" and response["generation_id"] == "unknown":
         refuse("NOE-E-ADAPTER.RESPONSE", field, "recorded adapter response omits its generation identity")
     return response
+
+
+def _adapter_response(
+    value: object,
+    request_digest: str,
+    profile: dict[str, object],
+    field: str,
+) -> dict[str, object]:
+    response, _actual = _adapter_response_envelope(value, request_digest, field)
+    return _adapter_response_semantics(response, profile, field)
 
 
 def _adapter_request_bytes(
@@ -8354,7 +8477,10 @@ def invoke_adapter(
         "adapter",
     )
     response_value = _decode_json(stdout, "adapter_response", canonical=True, maximum_depth=8)
-    response = _adapter_response(response_value, request_digest, profile, "adapter_response")
+    response, actual = _adapter_response_envelope(response_value, request_digest, "adapter_response")
+    if actual is not None:
+        _budget_finalize(budget_ledger, budget, request_digest, actual)
+    response = _adapter_response_semantics(response, profile, "adapter_response")
     if response["status"] == "recorded" and int(response["output_tokens"]) > output_tokens:
         refuse(
             "NOE-E-ADAPTER.PARAMETER",
@@ -8370,13 +8496,6 @@ def invoke_adapter(
     if mode == "measurement" and response["status"] == "recorded" and response["answer_code"] != "NOE-OK":
         refuse("NOE-E-TOKENIZER.COUNT", "adapter_response.answer_code", "recorded measurement adapter returned a refusal")
     _validate_external_profile(profile, root, "adapter_profile", verify_files=True)
-    if response["status"] == "recorded":
-        _budget_finalize(
-            budget_ledger,
-            budget,
-            request_digest,
-            _decimal_value(response["cost_usd"], "adapter_response.cost_usd", maximum="1000"),
-        )
     return response
 
 
@@ -8524,7 +8643,10 @@ def _openrouter_adapter() -> int:
         credential = _read_regular(key_path, "credential", 512).decode("ascii").strip()
         provider_payload = dict(policy)
         provider_payload["max_price"] = {
-            name: int(value) if value == value.to_integral_value() else float(value)
+            name: _provider_json_number(
+                value,
+                f"adapter_request.provider_policy.max_price.{name}",
+            )
             for name, value in price_values.items()
         }
         payload: dict[str, object] = {
@@ -8596,14 +8718,7 @@ def _openrouter_adapter() -> int:
         input_tokens = _bounded_integer(usage.get("prompt_tokens"), "provider_response.usage.prompt_tokens", 10_000_000)
         output_tokens = _bounded_integer(usage.get("completion_tokens"), "provider_response.usage.completion_tokens", 10_000_000)
         raw_cost = usage.get("cost")
-        if isinstance(raw_cost, Decimal):
-            cost = raw_cost
-        elif isinstance(raw_cost, int) and not isinstance(raw_cost, bool):
-            cost = Decimal(raw_cost)
-        elif isinstance(raw_cost, str):
-            cost = _decimal_value(raw_cost, "provider_response.usage.cost", maximum="1000")
-        else:
-            refuse("NOE-E-BUDGET.ACCOUNTING", "provider_response.usage.cost", "provider omitted exact cost")
+        cost = _provider_decimal(raw_cost, "provider_response.usage.cost")
         answer_id: str | None = None
         answer_code = "NOE-OK"
         if mode == "evaluation":

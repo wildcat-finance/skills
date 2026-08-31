@@ -410,6 +410,16 @@ authorised live 32-call boundary; it likewise requires an explicit budget.
 `tally-evaluation --packet --answers --output` performs no external call and
 rederives the fixed 16 source/Noema family pairs.
 
+The live boundary sends a provider price ceiling only when each decimal has an
+exact JSON-number representation, and bounds provider-reported cost before
+rendering it. Budget ledger v2 migrates an open v1 ledger on its next write,
+caps settled plus pending calls as one population, and settles every recorded
+charge whose schema, request digest, status and cost fields validate before
+judging the answer or provider metadata. A
+charge above its reservation or total ceiling records the actual cost and a
+terminal breach; later calls refuse. Unknown or malformed responses keep their
+full reservation because their exact charge is unavailable.
+
 All input leaves must be regular files. Repository-bound reads open and recheck
 every ancestor relative to retained directory descriptors. Module resolution
 opens one real module directory, reads only digest-requested leaves relative to

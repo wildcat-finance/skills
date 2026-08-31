@@ -6466,6 +6466,37 @@ class ExternalAdapterTests(unittest.TestCase):
             )
         return raised.exception
 
+    def invoke_openrouter_child(self, request_raw, provider_response):
+        credential = self.directory / "openrouter-key"
+        write_bytes(credential, b"sk-or-v1-test-only-value\n")
+        credential.chmod(0o600)
+
+        class CaptureOpener:
+            request = None
+
+            def open(self, request, timeout):
+                self.request = request
+                self.timeout = timeout
+                return io.BytesIO(provider_response)
+
+        opener = CaptureOpener()
+        stdin = mock.Mock()
+        stdin.buffer = io.BytesIO(request_raw)
+        stdout = mock.Mock()
+        stdout.buffer = io.BytesIO()
+        with (
+            mock.patch.object(noema.sys, "stdin", stdin),
+            mock.patch.object(noema.sys, "stdout", stdout),
+            mock.patch.object(noema.urllib.request, "build_opener", return_value=opener),
+            mock.patch.dict(
+                noema.os.environ,
+                {noema.OPENROUTER_KEY_PATH_ENV: str(credential)},
+                clear=False,
+            ),
+        ):
+            self.assertEqual(noema._openrouter_adapter(), 0)
+        return opener, json.loads(stdout.buffer.getvalue())
+
     def invoke_refusal(self, mode, expected, **profile_changes):
         with self.assertRaises(noema.Refusal) as raised:
             self.invoke(self.profile(mode, **profile_changes))
@@ -6657,9 +6688,6 @@ class ExternalAdapterTests(unittest.TestCase):
             mode="evaluation",
             context_nonce="context.evaluation",
         )
-        credential = self.directory / "openrouter-key"
-        write_bytes(credential, b"sk-or-v1-test-only-value\n")
-        credential.chmod(0o600)
         provider_response = noema._canonical_json(
             {
                 "choices": [
@@ -6675,33 +6703,89 @@ class ExternalAdapterTests(unittest.TestCase):
             }
         )
 
-        class CaptureOpener:
-            request = None
-
-            def open(self, request, timeout):
-                self.request = request
-                self.timeout = timeout
-                return io.BytesIO(provider_response)
-
-        opener = CaptureOpener()
-        stdin = mock.Mock()
-        stdin.buffer = io.BytesIO(request_raw)
-        stdout = mock.Mock()
-        stdout.buffer = io.BytesIO()
-        with (
-            mock.patch.object(noema.sys, "stdin", stdin),
-            mock.patch.object(noema.sys, "stdout", stdout),
-            mock.patch.object(noema.urllib.request, "build_opener", return_value=opener),
-            mock.patch.dict(
-                noema.os.environ,
-                {noema.OPENROUTER_KEY_PATH_ENV: str(credential)},
-                clear=False,
-            ),
-        ):
-            self.assertEqual(noema._openrouter_adapter(), 0)
+        opener, response = self.invoke_openrouter_child(request_raw, provider_response)
         self.assertIsNotNone(opener.request)
         self.assertEqual(json.loads(opener.request.data)["seed"], 0)
-        self.assertEqual(json.loads(stdout.buffer.getvalue())["status"], "recorded")
+        self.assertEqual(response["status"], "recorded")
+
+    def test_openrouter_child_refuses_unbounded_provider_cost_exponent(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        provider_response = noema._canonical_json(
+            {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"answer_id":"answer.fake"}'},
+                    }
+                ],
+                "id": "generation.test",
+                "model": profile["model"],
+                "provider": profile["provider"],
+                "usage": {
+                    "completion_tokens": 1,
+                    "cost": "1e1000000000",
+                    "prompt_tokens": 8,
+                },
+            }
+        ).replace(b'"1e1000000000"', b"1e1000000000")
+        _opener, response = self.invoke_openrouter_child(request_raw, provider_response)
+        self.assertEqual(response["answer_code"], "NOE-E-BOUNDS.DECIMAL")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_provider_policy_requires_exact_json_number(self):
+        self.assertEqual(
+            noema._provider_json_number(Decimal("0.75"), "policy"),
+            0.75,
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._provider_json_number(
+                Decimal("0.1000000000000000000000001"),
+                "policy",
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.PROVIDER_POLICY")
+
+    def test_openrouter_child_refuses_lossy_price_before_network(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        request = json.loads(request_raw)
+        request["provider_policy"]["max_price"]["prompt"] = (
+            "0.1000000000000000000000001"
+        )
+        opener, response = self.invoke_openrouter_child(
+            noema._canonical_json(request),
+            b"{}\n",
+        )
+        self.assertIsNone(opener.request)
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.PROVIDER_POLICY")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_provider_decimal_bounds_fixed_expansion_before_render(self):
+        small = noema._provider_decimal(Decimal("1e-7"), "cost")
+        self.assertEqual(noema._decimal_string(small), "0.0000001")
+        self.assertEqual(
+            noema._provider_decimal(Decimal("0e-1000000000"), "cost"),
+            Decimal(0),
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._provider_decimal(Decimal("1e-1000000000"), "cost")
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.DECIMAL")
 
     def test_environment_overlap_refuses(self):
         profile = self.profile(environment_allowlist=["NOEMA_FAKE_MODE"])
@@ -6776,6 +6860,8 @@ class ExternalAdapterTests(unittest.TestCase):
 
     def test_changed_model_identity_refuses(self):
         self.invoke_refusal("wrong-model", "NOE-E-ADAPTER.IDENTITY_CHANGED")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["reservations"]), (1, []))
 
     def test_changed_provider_identity_refuses(self):
         self.invoke_refusal("wrong-provider", "NOE-E-ADAPTER.IDENTITY_CHANGED")
@@ -6800,9 +6886,22 @@ class ExternalAdapterTests(unittest.TestCase):
 
     def test_provider_cost_above_reservation_refuses(self):
         self.invoke_refusal("high-cost", "NOE-E-BUDGET.OVERRUN")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["spent_usd"], ledger["reservations"]), (1, "0.9", []))
+        self.assertEqual(ledger["breach"]["reason"], "reservation-exceeded")
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(
+                self.ledger,
+                Decimal("1"),
+                "f" * 64,
+                Decimal("0.01"),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.BREACH")
 
     def test_provider_output_above_requested_bound_refuses(self):
         self.invoke_refusal("output-overrun", "NOE-E-ADAPTER.PARAMETER")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["reservations"]), (1, []))
 
     def test_budget_reserve_and_finalize_are_atomic(self):
         request = "a" * 64
@@ -6834,6 +6933,7 @@ class ExternalAdapterTests(unittest.TestCase):
 
     def test_budget_refuses_tampered_overcommit(self):
         record = {
+            "breach": None,
             "budget_usd": "1",
             "calls": 0,
             "reservations": [{"estimated_usd": "0.6", "request_sha256": "d" * 64}],
@@ -6847,6 +6947,7 @@ class ExternalAdapterTests(unittest.TestCase):
 
     def test_budget_refuses_overcommit_hidden_by_decimal_context_rounding(self):
         record = {
+            "breach": None,
             "budget_usd": "1",
             "calls": 0,
             "reservations": [
@@ -6862,6 +6963,60 @@ class ExternalAdapterTests(unittest.TestCase):
         with self.assertRaises(noema.Refusal) as raised:
             noema._budget_record(self.ledger, Decimal("1"))
         self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
+
+    def test_budget_refuses_combined_call_and_reservation_overflow(self):
+        record = {
+            "breach": None,
+            "budget_usd": "1",
+            "calls": noema.MAX_BUDGET_CALLS,
+            "reservations": [
+                {"estimated_usd": "0", "request_sha256": "e" * 64}
+            ],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_record(self.ledger, Decimal("1"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
+
+    def test_budget_refuses_reservation_at_call_cap(self):
+        record = {
+            "breach": None,
+            "budget_usd": "1",
+            "calls": noema.MAX_BUDGET_CALLS,
+            "reservations": [],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(
+                self.ledger,
+                Decimal("1"),
+                "e" * 64,
+                Decimal("0.1"),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LIMIT")
+
+    def test_budget_migrates_legacy_ledger_on_next_write(self):
+        record = {
+            "budget_usd": "1",
+            "calls": 0,
+            "reservations": [],
+            "schema": noema.LEGACY_BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0",
+        }
+        write_canonical_json(self.ledger, record)
+        noema._budget_reserve(
+            self.ledger,
+            Decimal("1"),
+            "e" * 64,
+            Decimal("0.1"),
+        )
+        migrated, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual(migrated["schema"], noema.BUDGET_LEDGER_SCHEMA)
+        self.assertIsNone(migrated["breach"])
 
     def test_budget_missing_parent_refuses_without_traceback(self):
         missing = self.directory / "missing" / "budget.json"
