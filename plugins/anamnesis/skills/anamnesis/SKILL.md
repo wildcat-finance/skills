@@ -2,7 +2,7 @@
 name: anamnesis
 description: Preserve audit findings and the changes that answered them as a source-bound corpus. Admit a source only against an explicit rights basis, keep the producer's bytes and identifiers unchanged, curate submissions, adjudicated findings, occurrences, remediation attempts and verifications as separate records, and release checked read-only projections for Elenchus and Synkrisis. Use when someone asks to preserve, curate, release or query a corpus of audit findings and their remedies. Do not use it to judge whether a finding is real, to prove a fix correct, or to compare runs.
 metadata:
-  version: "1.1.0"
+  version: "2.1.0"
 ---
 
 # Anamnesis
@@ -20,7 +20,7 @@ version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md). Read that ledger before starting work intended to
 advance Anamnesis itself.
 
-**Current frontier.** The curation graph and the deterministic release ship. Submissions, findings, occurrences, remediation attempts and verifications are separate records joined by many-to-many edges; a severity outside the policy taxonomy is quarantined rather than mapped; a duplicate cluster arrives from the policy and keeps every submission; and a release rebuilds byte-for-byte or refuses. The Elenchus and Synkrisis projections are declared boundaries that refuse by name.
+**Current frontier.** The whole seed path ships. Two fresh builds of the pilot agree on the release id, the file set and every component byte; the Elenchus view has no field a verdict could occupy; the Synkrisis view carries its cohort, denominators, policy, exclusions and unknowns; and restricted material reaches neither adapter.
 
 Three siblings sit next to it and none of them is a substitute:
 
@@ -120,10 +120,49 @@ The build stages beside its destination and promotes it only once every
 component is written, so a killed run leaves nothing that could be mistaken for
 a release.
 
-### The consumer projections
+### `analogues` and `observations` -- the consumer projections
 
-Not implemented in this version. Runbook step 3 owes the Elenchus and Synkrisis
-adapters.
+Each consumer reads one closed, versioned, read-only view.
+
+```bash
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py analogues \
+  --release plugins/anamnesis/specimens/pilot/release \
+  --kind severity --value high
+
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py observations \
+  --release plugins/anamnesis/specimens/pilot/release \
+  --cohort-rule "every public finding in the release"
+```
+
+The Elenchus view has no field a verdict could occupy, so a past `guarded`
+result cannot travel through it into a present case. Elenchus still reproduces
+the present failure and still earns its own guard.
+
+The Synkrisis view carries its cohort, every denominator, the policy that
+produced it, its exclusions and its unknowns, so an included count cannot be
+read as a share of anything the corpus did not see.
+
+Restricted material crosses neither. A source whose disclosure class is not
+`public` reaches no analogue and no cohort member, and the withholding is
+counted rather than left silent.
+
+**Synkrisis does not yet admit this producer.** Its manifest gate requires the
+producer contract `promise-machine-run-observation/v1`, and
+`anamnesis-synkrisis-observation/v1` is not that. Anamnesis emits the
+projection; whether Synkrisis admits it is Synkrisis's own decision and has not
+been made. Until it is, the view is produced and not consumed.
+
+### `demo` and `verify-rebuild` -- the whole path
+
+```bash
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py demo \
+  --specimen plugins/anamnesis/specimens/pilot
+```
+
+Two fresh builds, compared byte for byte; the committed release verified
+against them; both views read; and duration and peak resident memory printed as
+baselines with no budget declared for either. See
+[docs/demo.md](../../docs/demo.md).
 
 ## Rights, disclosure and egress
 
@@ -189,7 +228,6 @@ did not run, say so plainly and do not describe its result as successful.
 - Recovery: Inspect the quarantine list and the policy that produced it, correct the taxonomy, the duplicate map or the disclosure classes, and rerun `curate`.
 - Exceptions: none
 
-
 ### anamnesis-corpus-release
 
 - Promise: A successful `release` followed by `verify` establishes that one closed manifest names every component by exact digest, the policy that produced it, its counts with their denominators, its exclusions and its unknowns, and that those components rebuild byte-for-byte from the same inputs under the same policy.
@@ -200,4 +238,28 @@ did not run, say so plainly and do not describe its result as successful.
 - Consequence: 2
 - Refuses: An existing destination, a component whose digest or byte count differs from the manifest, a release directory holding a file the manifest does not name or missing one it does, a manifest declaring another schema, a non-regular entry in the release, and a total above the byte cap.
 - Recovery: Inspect the failing component named by the refusal, rebuild the release from the same inputs and compare the release id, or correct the inputs and build a new release rather than editing one in place.
+- Exceptions: none
+
+### anamnesis-consumer-projection
+
+- Promise: A successful `analogues` or `observations` establishes that one closed, versioned, read-only view was read from a verified release, carrying only the fields its schema declares, with no verification state in an analogue and every denominator beside every count in an observation, and with no record from a source whose disclosure class is not public.
+- Evidence: The verified release and its recomputed manifest, the public-source set taken from the manifest's disclosure classes, the closed field set checked against the declared schema, the closed remediation-state enumeration an analogue admits, the counted withholding, and the stated not-established text.
+- Evidence classes: checked, recomputed, recorded
+- Boundary: A projection establishes what the corpus recorded and what it withheld. An analogue does not establish a cause for any present failure, that the present failure is the same defect, or that a recorded remedy would work again. An observation does not establish how common anything is outside the records it counted. Emitting the Synkrisis view does not establish that Synkrisis admits its producer contract; it does not.
+- Authorises: Handing Elenchus a starting point it must still reproduce and guard, and handing a declared consumer a cohort it may compare within the stated denominators.
+- Consequence: 1
+- Refuses: An unknown query kind, an empty query value or unstated cohort rule, a remediation carrying a verification state, a payload whose field set differs from its schema, a payload declaring another schema or producer, and any record from a non-public source.
+- Recovery: Inspect the refusal's rule, correct the query or the release it reads, and rerun the adapter; a projection is never edited after it is emitted.
+- Exceptions: none
+
+### anamnesis-deterministic-rebuild
+
+- Promise: A successful `verify-rebuild` establishes that two builds of the same specimen under the same policy, into fresh directories, produced the same release id, the same file set and byte-identical components, and that each build verified on its own.
+- Evidence: Two independent builds in separate temporary directories, the compared release ids, the compared directory listings, the byte comparison of every component, and both verification results.
+- Evidence classes: checked, recomputed
+- Boundary: The rebuild establishes that the build is a function of its declared inputs and policy on this machine at this commit. It does not establish that the inputs are the right ones, that the corpus is complete, or that a different interpreter or platform agrees.
+- Authorises: Recording the deterministic-rebuild conformance result the design record names, and treating the committed release as reproducible from its inputs.
+- Consequence: 2
+- Refuses: Two builds disagreeing on the release id, on the file set, or on any component byte, a build that does not verify, and a destination that already exists.
+- Recovery: Compare the two builds' components to find which one drifted, remove any non-deterministic input the diff exposes, and rerun the rebuild.
 - Exceptions: none

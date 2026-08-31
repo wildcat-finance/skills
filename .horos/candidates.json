@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16203207,
+    "bytes_blob": 16210393,
     "bytes_generated": 98
   },
   "entries": [
@@ -252,7 +252,7 @@
       "path": "audit/rounds/fiat-975-remove-the-child-or-golden-retriever-primer.synopsis.md"
     },
     {
-      "bytes": 20139,
+      "bytes": 27325,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

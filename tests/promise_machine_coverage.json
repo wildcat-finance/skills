@@ -213,10 +213,60 @@
       "path": "plugins/anamnesis/tests/test_s1_admission.py",
       "selector": "test_the_pilot_admits_every_declared_source_and_record"
     },
+    "anamnesis-projection-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_a_projection_missing_the_cohort_is_refused"
+    },
+    "anamnesis-projection-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_the_projection_carries_no_verdict_field_a_verdict_could_fill"
+    },
+    "anamnesis-projection-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_every_count_arrives_with_its_denominators"
+    },
+    "anamnesis-projection-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_a_query_that_matches_nothing_returns_an_empty_view"
+    },
+    "anamnesis-projection-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_a_projection_with_another_producer_is_refused"
+    },
     "anamnesis-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
       "path": "plugins/anamnesis/tests/test_s1_admission.py",
       "selector": "test_correcting_a_refused_policy_admits_on_rerun"
+    },
+    "anamnesis-rebuild-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_a_partial_build_never_verifies"
+    },
+    "anamnesis-rebuild-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_one_changed_policy_byte_changes_the_bound_digest"
+    },
+    "anamnesis-rebuild-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_two_fresh_builds_agree_byte_for_byte"
+    },
+    "anamnesis-rebuild-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_a_rebuild_into_an_occupied_directory_is_refused"
+    },
+    "anamnesis-rebuild-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+      "selector": "test_one_changed_input_byte_changes_the_bound_digest"
     },
     "anamnesis-release-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -3085,6 +3135,38 @@
       "group": "executable",
       "promise_id": "anamnesis-corpus-release",
       "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "anamnesis-projection-m",
+        "O": "anamnesis-projection-o",
+        "P": "anamnesis-projection-p",
+        "R": "anamnesis-projection-r",
+        "S": "anamnesis-projection-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "anamnesis-consumer-projection",
+      "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "anamnesis-rebuild-m",
+        "O": "anamnesis-rebuild-o",
+        "P": "anamnesis-rebuild-p",
+        "R": "anamnesis-rebuild-r",
+        "S": "anamnesis-rebuild-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "anamnesis-deterministic-rebuild",
+      "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
     }
   ],
   "run_observation": {
@@ -3360,6 +3442,20 @@
         "subject": "release_id and component paths",
         "transition": "successful release and verify status joined to the canonical Authorises field",
         "unknowns": "the manifest's unknowns map and its exclusions"
+      },
+      "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"
+    },
+    "anamnesis-deterministic-rebuild": {
+      "bindings": {
+        "evidence_classes": "checked and recomputed values joined to the canonical Evidence classes field",
+        "evidence_references": "the two builds' components and their compared bytes",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the specimen's declared inputs and its curation policy",
+        "subject": "release_id and the compared component set",
+        "transition": "successful verify-rebuild status joined to the canonical Authorises field",
+        "unknowns": "platform and interpreter dependence, stated as outside the claim"
       },
       "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
       "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"

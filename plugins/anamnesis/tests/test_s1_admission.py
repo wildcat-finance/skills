@@ -349,9 +349,13 @@ class Refusals(unittest.TestCase):
         self.assertEqual(out.getvalue(), "")
         self.assertTrue(err.getvalue().startswith("refused ["))
 
-    def test_the_skill_still_names_the_step_that_owes_the_projections(self):
+    def test_the_skill_names_the_admission_that_has_not_happened(self):
+        """Step 3 shipped both projections. What is still owed is the other
+        side: Synkrisis gates on one producer identity and this is not it."""
         skill = (PLUGIN_ROOT / "skills/anamnesis/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Runbook step 3 owes the Elenchus and Synkrisis", skill)
+        self.assertIn("Synkrisis does not yet admit this producer", skill)
+        self.assertIn("promise-machine-run-observation/v1", skill)
+        self.assertIn("produced and not consumed", skill)
 
 
 if __name__ == "__main__":

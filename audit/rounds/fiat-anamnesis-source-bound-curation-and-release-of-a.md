@@ -116,3 +116,52 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the three carried observations stand unchanged and are the honest residue of this step. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the conformance report are promoted with os.rename after an existence check, which narrows rather than closes the window. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct but reads oddly. None of the three admits a bad release: the first is a boundary on what verification establishes, and the other two are narrower guarantees than the root test runner's descriptor-held promotion, recorded as narrower rather than claimed as equal. The step's battery is green: 132 Anamnesis tests, 777 root tests, phylax, ephoros and hypomnema each exit 0, both Promise Machine checks clean, all seven release components rebuild byte-identical from the same inputs, the pilot release measures 168,532 bytes against the 50,000,000-byte cap, design_evidence --transition step:3 exits zero and the working tree is clean.
+
+## Step 3, round 1 -- 2026-08-31T06:16:18Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: the security suite waiver still holds; this step adds Python, two JSON schemas, committed projections, event examples and documentation, and changes no Solidity. Every register id is now reviewed, because both consumer boundaries exist at this commit. Also unchecked: hosted CI, the controller receipt, push and publication, whether a different interpreter or platform reproduces the release, and whether Synkrisis would accept this producer contract if asked, which is Synkrisis's decision and has not been made.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | high | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Both adapters read every release component a second time, after verification had already read and digest-checked it. Verification would pass on one read and the projection would speak from another, so a component replaced between the two reached a consumer with nothing having checked it. This is the same defect as S2-R1-02 in a new place, and it is closed the stronger way: verification now returns the bytes it checked and the adapters take no second read at all | fixed in this round |
+| S3-R1-02 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | resource was imported at module scope for the benefit of one command's memory baseline, so on a platform without it every operation including admission and release would fail at import. A baseline is the least important thing the module does and was the only thing that could stop it loading | fixed in this round |
+
+Leads not pursued: three observations carry forward and one is new. Carried unchanged: the unknowns map is digest-covered but not recomputable from the sources without re-curating them; the staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window; and a manifest naming a component path outside the release refuses under a path rule rather than a manifest rule. New: the projections are checked against their closed field sets by the adapter and not against the JSON Schema files that declare them, so a schema and its adapter could drift apart without a test noticing; the committed expected projections make that drift visible as a diff, which is weaker than validating and is what exists. Every fix carries its exact specimen in plugins/anamnesis/tests/test_s3_consumers.py; the three new guards were run against parent commit d4ebacc47301501df0afe7ac95d439b4270cd974, where two fail and one errors, and against the fixed tree, where all 170 tests pass.
+
+## Step 3, round 2 -- 2026-08-31T06:19:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: unchanged from round 1. Round 2 re-ran the battery over round 1's fixes and then took up the one lead round 1 recorded rather than carrying it a third time.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Each projection's field set was a constant beside the schema file that declares the same thing, so the adapter and its schema could drift apart with nothing comparing them. Nothing was wrong today: both constants matched their schema exactly, which is why this is a duplication rather than a defect. The field sets now derive from the schema files, and a schema declaring an optional field is refused, because a projection's shape is closed and an optional field is a hole in it | fixed in this round |
+
+Leads not pursued: the three carried observations stand unchanged and none admits a bad release. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window, and closing it needs the directory-descriptor promotion the root test runner uses. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct and reads oddly. One statement about this round's own evidence: four of the five new guards pass against parent commit f9b02dd9fc1778e48bb4e2a59401b6f97c73b726, because the constants they now derive were already correct there; only the new A160 refusal fails there. The fix removes a duplication and adds a refusal, and it reproduced no defect, which is why the verdict is passed rather than guarded.
+
+## Step 3, round 3 -- 2026-08-31T06:23:43Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: unchanged from rounds 1 and 2. This round re-ran the whole battery over round 2's change and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three carried observations stand and are the honest residue of the whole run. The unknowns map is digest-covered and recomputed against the manifest, so verification establishes that the released map is the map the manifest claims and not that the map is right; recomputing it needs the sources and a re-curation. The staged release and both conformance reports are promoted with os.rename after an existence check, so a destination created between the two would be replaced rather than refused; the check narrows the window and does not close it, and closing it needs the directory-descriptor promotion the root test runner already uses, which is a narrower guarantee recorded as narrower rather than claimed as equal. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule. None of the three admits a bad release or a projection carrying something it should not. The step's battery is green: 175 Anamnesis tests, 777 root tests, phylax, ephoros and hypomnema each exit 0, both Promise Machine checks clean, the demo runs the whole path, design_evidence --transition integration exits zero and the working tree is clean.

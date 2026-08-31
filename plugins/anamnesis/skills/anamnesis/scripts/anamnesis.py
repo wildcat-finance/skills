@@ -21,6 +21,8 @@ import re
 import secrets
 import stat
 import sys
+import tempfile
+import time
 
 POLICY_SCHEMA = "anamnesis-pilot-policy/v1"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -1056,6 +1058,7 @@ def verify_release(out):
                 f"not the manifested {quote(component['sha256'])}",
             )
         bodies[component["path"]] = body
+    checked_bodies = bodies
 
     # The manifest is not covered by its own digest, so its claims are checked
     # against the components instead. Without this, editing a count or dropping
@@ -1087,7 +1090,7 @@ def verify_release(out):
         raise Refusal("A123", "manifest unknowns differ from the released unknowns")
     if manifest["counts"] != _counts(graph):
         raise Refusal("A119", "manifest counts differ from the released components")
-    return manifest
+    return manifest, checked_bodies
 
 
 def measure_release(out):
@@ -1162,6 +1165,251 @@ def _admitted_texts(policy_path, admitted):
     return texts
 
 
+
+# ---------------------------------------------------------------------------
+# The consumer projections.
+#
+# Each consumer reads one closed, versioned, read-only view. The views are
+# narrow on purpose: the Elenchus projection has no field a verdict could
+# occupy, so a past `guarded` result cannot travel through it into a present
+# case, and the Synkrisis projection carries every denominator so a count
+# cannot be read as a claim about records the corpus never saw.
+#
+# Restricted material crosses neither. ADR-003 admits a restricted source for
+# preservation under an identifier and a digest; it does not admit it onward.
+
+ANALOGUE_SCHEMA = "anamnesis-elenchus-analogue/v1"
+OBSERVATION_SCHEMA = "anamnesis-synkrisis-observation/v1"
+
+ANALOGUE_NOT_ESTABLISHED = (
+    "An analogue is a past case that looks similar. It does not establish a "
+    "cause for the present failure, that the present failure is the same "
+    "defect, or that any remedy recorded here would work again. Elenchus must "
+    "still reproduce the present failure and still earn its own guard."
+)
+OBSERVATION_NOT_ESTABLISHED = (
+    "Every count here is a count of the records this release holds. It does not "
+    "establish how common anything is outside them, that the corpus is "
+    "complete, or that an excluded record was rightly excluded."
+)
+PUBLIC_ONLY = "public"
+
+
+def _release_graph(out):
+    """Take a verified release's components from the bytes verification read.
+
+    Reading them again would mean projecting bytes nobody checked: verification
+    would pass on one read and the adapter would speak from another. The checked
+    bodies are returned instead, so there is no second read to go stale.
+    """
+    manifest, bodies = verify_release(out)
+    return manifest, {name: json.loads(body) for name, body in bodies.items()}
+
+
+def _public_sources(manifest):
+    """The sources a projection may speak about at all."""
+    return {s["id"] for s in manifest["sources"] if s["disclosure"] == PUBLIC_ONLY}
+
+
+def analogues(out, kind, value):
+    """The Elenchus view: source-linked analogues and no verdict."""
+    if kind not in ("file", "severity", "native-id"):
+        raise Refusal("A140", f"unknown analogue query kind {quote(kind)}")
+    if not value:
+        raise Refusal("A141", "an analogue query needs a value")
+    manifest, parts = _release_graph(out)
+    speakable = _public_sources(manifest)
+    assertions = parts["assertions.json"]
+    relations = parts["relations.json"]
+
+    remediation_by_id = {
+        a["id"]: a for a in assertions if a["kind"] == "remediation"}
+    addressed = {}
+    for relation in relations:
+        if relation["kind"] == "addressed-by":
+            addressed.setdefault(relation["from"], []).append(relation["to"])
+
+    found = []
+    for assertion in assertions:
+        if assertion["kind"] != "finding":
+            continue
+        if assertion["source"] not in speakable:
+            continue
+        native = assertion["native"]
+        if kind == "file" and native.get("file") != value:
+            continue
+        if kind == "severity" and native.get("severity") != value:
+            continue
+        if kind == "native-id" and native.get("native_id") != value:
+            continue
+        remediations = []
+        for remediation_id in sorted(addressed.get(assertion["id"], [])):
+            record = remediation_by_id.get(remediation_id)
+            if record is None:
+                continue
+            state = record["state"]["value"]
+            # A verification state has no route into this view. If one ever
+            # reached a remediation record, refuse rather than pass it on.
+            if state not in ("proposed", "applied", "released", "deployed",
+                             "reverted", "unknown"):
+                raise Refusal(
+                    "A142",
+                    f"remediation {quote(remediation_id)} carries state "
+                    f"{quote(state)}, which an analogue may not report",
+                )
+            remediations.append({
+                "id": remediation_id,
+                "state": state,
+                "basis": record["state"]["basis"],
+            })
+        found.append({
+            "finding": assertion["id"],
+            "source": assertion["source"],
+            "native_id": native.get("native_id", ""),
+            "severity": native.get("severity", ""),
+            "locator": dict(assertion["locator"]),
+            "remediations": remediations,
+            "adjudication": assertion["state"]["value"],
+        })
+
+    return {
+        "schema": ANALOGUE_SCHEMA,
+        "release_id": manifest["release_id"],
+        "query": {"kind": kind, "value": value},
+        "analogues": sorted(found, key=lambda a: a["finding"]),
+        "verdict": None,
+        "not_established": ANALOGUE_NOT_ESTABLISHED,
+    }
+
+
+def observations(out, cohort_rule):
+    """The Synkrisis view: one cohort, with every denominator it needs."""
+    if not cohort_rule:
+        raise Refusal("A143", "an observation needs a stated cohort rule")
+    manifest, parts = _release_graph(out)
+    speakable = _public_sources(manifest)
+    assertions = parts["assertions.json"]
+
+    members = sorted(
+        a["id"] for a in assertions
+        if a["kind"] == "finding" and a["source"] in speakable
+    )
+    withheld = sum(
+        1 for a in assertions
+        if a["kind"] == "finding" and a["source"] not in speakable
+    )
+    denominators = dict(manifest["counts"])
+    denominators["findings_withheld_by_disclosure"] = withheld
+    return {
+        "schema": OBSERVATION_SCHEMA,
+        "producer": OBSERVATION_SCHEMA,
+        "release_id": manifest["release_id"],
+        "cohort": {
+            "id": f"cohort:{manifest['release_id'][:16]}",
+            "included": len(members),
+            "members": members,
+        },
+        "denominators": dict(sorted(denominators.items())),
+        "policy": {
+            "curation_version": manifest["policy"]["version"],
+            "taxonomy": (
+                f"{manifest['policy']['taxonomy']['name']} "
+                f"{manifest['policy']['taxonomy']['version']}"
+            ),
+            "cohort_rule": cohort_rule,
+        },
+        "exclusions": manifest["exclusions"],
+        "unknowns": manifest["unknowns"],
+        "not_established": OBSERVATION_NOT_ESTABLISHED,
+    }
+
+
+def check_projection(payload, schema, required):
+    """Hold a projection to its own closed shape before it leaves."""
+    if payload.get("schema") != schema:
+        raise Refusal("A144", f"projection does not declare {schema}")
+    missing = sorted(required - set(payload))
+    extra = sorted(set(payload) - required)
+    if missing or extra:
+        raise Refusal(
+            "A145",
+            f"projection shape differs from {schema}: missing={missing} extra={extra}",
+        )
+    return payload
+
+
+SCHEMA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas")
+
+
+def projection_fields(filename):
+    """The field set a projection schema declares, read from the schema.
+
+    Holding this as a constant beside the schema let the two drift: an adapter
+    could gain a field the schema never declared, or lose one it requires, and
+    nothing compared them. The schema is the single statement of the shape.
+    """
+    path = os.path.normpath(os.path.join(SCHEMA_DIR, filename))
+    raw = read_bounded(path, MAX_POLICY_BYTES, f"schema {filename}")
+    document = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
+    declared = set(document["properties"])
+    required = set(document["required"])
+    if declared != required:
+        raise Refusal(
+            "A160",
+            f"schema {quote(filename)} declares optional fields {sorted(declared - required)}; "
+            "a projection's shape is closed and every field is required",
+        )
+    return declared
+
+
+ANALOGUE_FIELDS = projection_fields("elenchus-analogue-v1.json")
+OBSERVATION_FIELDS = projection_fields("synkrisis-observation-v1.json")
+
+
+def _rebuild_once(specimen, destination):
+    """Build the specimen's release into a fresh directory."""
+    policy_path = os.path.join(specimen, "policy.json")
+    curation_path = os.path.join(specimen, "curation-policy.json")
+    result = admit(policy_path, Events())
+    policy = load_curation_policy(curation_path)
+    texts = _admitted_texts(policy_path, result["sources"])
+    graph = curate(result["sources"], policy, texts)
+    return build_release(destination, policy, result["sources"], graph)
+
+
+def verify_rebuild(specimen):
+    """Build twice into fresh directories and compare every byte.
+
+    Two builds of the same inputs under the same policy must agree on the
+    release id and on every component. Comparing only the id would pass a build
+    whose components drifted while their digests stayed in the manifest.
+    """
+    with tempfile.TemporaryDirectory() as first_root, \
+            tempfile.TemporaryDirectory() as second_root:
+        first = os.path.join(first_root, "release")
+        second = os.path.join(second_root, "release")
+        left = _rebuild_once(specimen, first)
+        right = _rebuild_once(specimen, second)
+        if left["release_id"] != right["release_id"]:
+            raise Refusal(
+                "A150",
+                f"two builds disagree: {quote(left['release_id'])} and "
+                f"{quote(right['release_id'])}",
+            )
+        verify_release(first)
+        verify_release(second)
+        names = sorted(os.listdir(first))
+        if names != sorted(os.listdir(second)):
+            raise Refusal("A151", "two builds wrote different file sets")
+        for name in names:
+            a = read_bounded(os.path.join(first, name), MAX_RELEASE_BYTES, name)
+            b = read_bounded(os.path.join(second, name), MAX_RELEASE_BYTES, name)
+            if a != b:
+                raise Refusal(
+                    "A152", f"two builds disagree on component {quote(name)}")
+        return left["release_id"], len(names)
+
+
 def cmd_ingest(args):
     events = Events(args.events)
     result = admit(args.policy, events)
@@ -1202,7 +1450,7 @@ def cmd_release(args):
 
 
 def cmd_verify(args):
-    manifest = verify_release(args.release)
+    manifest, _ = verify_release(args.release)
     print(
         f"verified {manifest['release_id']}: "
         f"{len(manifest['components'])} component(s), "
@@ -1213,7 +1461,7 @@ def cmd_verify(args):
 
 
 def cmd_measure_release(args):
-    verify_release(args.release)
+    verify_release(args.release)  # refuses before anything is measured
     total = measure_release(args.release)
     if total > MAX_RELEASE_BYTES:
         raise Refusal(
@@ -1253,6 +1501,119 @@ def cmd_measure_release(args):
     os.replace(staging, args.report)
     print(f"release is {total} bytes, within the {MAX_RELEASE_BYTES}-byte cap; "
           f"wrote {args.report}")
+    return 0
+
+
+def cmd_analogues(args):
+    payload = check_projection(
+        analogues(args.release, args.kind, args.value), ANALOGUE_SCHEMA,
+        ANALOGUE_FIELDS)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_observations(args):
+    payload = check_projection(
+        observations(args.release, args.cohort_rule), OBSERVATION_SCHEMA,
+        OBSERVATION_FIELDS)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def _write_report(path, criterion, value, unit, command):
+    report = {
+        "schema": REPORT_SCHEMA,
+        "candidate": CANDIDATE,
+        "criterion": criterion,
+        "value": value,
+        "unit": unit,
+        "command": command,
+        "exit": 0,
+    }
+    encoded = (json.dumps(report, indent=2) + "\n").encode("utf-8")
+    if len(encoded) > MAX_REPORT_BYTES:
+        raise Refusal("A080", f"report exceeds the {MAX_REPORT_BYTES}-byte cap")
+    parent = os.path.dirname(os.path.abspath(path))
+    os.makedirs(parent, exist_ok=True)
+    staging = f"{path}.{os.getpid()}.{secrets.token_hex(8)}.partial"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(staging, flags, 0o600)
+    try:
+        os.write(descriptor, encoded)
+        os.fsync(descriptor)
+    except BaseException:
+        os.close(descriptor)
+        os.unlink(staging)
+        raise
+    os.close(descriptor)
+    os.replace(staging, path)
+    return report
+
+
+def cmd_verify_rebuild(args):
+    release, components = verify_rebuild(args.specimen)
+    command = (
+        "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py "
+        f"verify-rebuild --specimen {args.specimen} --report {args.report}"
+    )
+    _write_report(args.report, "deterministic-rebuild", True, "boolean", command)
+    print(
+        f"two fresh builds agree on {release} across {components} component(s); "
+        f"wrote {args.report}"
+    )
+    return 0
+
+
+def cmd_demo(args):
+    """The whole path, from the study's problem statement."""
+    started = time.monotonic()
+    release, components = verify_rebuild(args.specimen)
+    print(f"1. two fresh builds agree on {release} across {components} components")
+
+    out = os.path.join(args.specimen, "release")
+    manifest, _ = verify_release(out)
+    print(f"2. the committed release verifies: {manifest['counts']['findings']} "
+          f"finding(s), {manifest['counts']['rounds']} round(s), "
+          f"{manifest['counts']['rounds_with_no_findings']} with no findings")
+    if manifest["release_id"] != release:
+        raise Refusal(
+            "A153",
+            f"the committed release is {quote(manifest['release_id'])} but a fresh "
+            f"build produces {quote(release)}",
+        )
+
+    view = check_projection(
+        analogues(out, "severity", "high"), ANALOGUE_SCHEMA, ANALOGUE_FIELDS)
+    print(f"3. Elenchus analogues for severity high: {len(view['analogues'])}; "
+          f"verdict {view['verdict']}")
+
+    cohort = check_projection(
+        observations(out, "every public finding in the release"),
+        OBSERVATION_SCHEMA, OBSERVATION_FIELDS)
+    print(f"4. Synkrisis cohort {cohort['cohort']['id']}: "
+          f"{cohort['cohort']['included']} included against "
+          f"{cohort['denominators']['findings']} findings; "
+          f"{len(cohort['exclusions'])} exclusion(s), "
+          f"{sum(cohort['unknowns'].values())} unknown(s)")
+
+    elapsed = time.monotonic() - started
+    # Imported here rather than at module scope: one command needs it, and a
+    # platform without it should still be able to admit and release.
+    import resource
+
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    unit = "bytes" if sys.platform == "darwin" else "kibibytes"
+    print(
+        f"5. baseline, not a threshold: {elapsed:.2f}s wall clock, peak resident "
+        f"{peak} {unit}. No budget is declared for either, so neither gates."
+    )
+    if args.report:
+        command = (
+            "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py demo "
+            f"--specimen {args.specimen} --report {args.report}"
+        )
+        _write_report(args.report, "deterministic-rebuild", True, "boolean", command)
+        print(f"6. wrote {args.report}")
     return 0
 
 
@@ -1309,6 +1670,31 @@ def build_parser():
     measure.add_argument("--release", required=True)
     measure.add_argument("--report", required=True)
     measure.set_defaults(handler=cmd_measure_release)
+
+    analogue = sub.add_parser(
+        "analogues", help="the Elenchus view: source-linked analogues, no verdict")
+    analogue.add_argument("--release", required=True)
+    analogue.add_argument("--kind", required=True,
+                          choices=("file", "severity", "native-id"))
+    analogue.add_argument("--value", required=True)
+    analogue.set_defaults(handler=cmd_analogues)
+
+    observation = sub.add_parser(
+        "observations", help="the Synkrisis view: one cohort with its denominators")
+    observation.add_argument("--release", required=True)
+    observation.add_argument("--cohort-rule", required=True)
+    observation.set_defaults(handler=cmd_observations)
+
+    rebuild = sub.add_parser(
+        "verify-rebuild", help="build twice into fresh directories and compare")
+    rebuild.add_argument("--specimen", required=True)
+    rebuild.add_argument("--report", required=True)
+    rebuild.set_defaults(handler=cmd_verify_rebuild)
+
+    demo = sub.add_parser("demo", help="run the whole path over one specimen")
+    demo.add_argument("--specimen", required=True)
+    demo.add_argument("--report", default=None)
+    demo.set_defaults(handler=cmd_demo)
 
     return parser
 
