@@ -141,9 +141,14 @@ def _bounded_fetch(
                     connection_socket.settimeout(
                         max(0.001, min(CONNECT_TIMEOUT_SECONDS, remaining))
                     )
-                chunk = response.read(
+                read_chunk = getattr(response, "read1", response.read)
+                chunk = read_chunk(
                     min(CHUNK_BYTES, MAX_UPSTREAM_BYTES + 1 - total)
                 )
+                if deadline - clock() <= 0:
+                    raise TimeoutError(
+                        "total verification deadline expired while reading"
+                    )
                 if not isinstance(chunk, bytes):
                     raise ValueError("upstream response returned non-byte content")
                 if not chunk:

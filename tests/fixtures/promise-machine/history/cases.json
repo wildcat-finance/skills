@@ -7,6 +7,8 @@
     {"name": "undeclared-active-id", "expected_finding": "PM103"},
     {"name": "semantic-reuse", "expected_finding": "PM104"},
     {"name": "unrecorded-retirement", "expected_finding": "PM105"},
+    {"name": "unhashable-continuity-action", "expected_finding": "PM105"},
+    {"name": "invalid-rename-shape", "expected_finding": "PM105"},
     {"name": "broken-rename-or-split-edge", "expected_finding": "PM106"}
   ]
 }

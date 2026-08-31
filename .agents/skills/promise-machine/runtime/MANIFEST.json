@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1042,
-  "total_bytes": 22636192,
+  "total_bytes": 22636793,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -6094,9 +6094,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 306450,
+      "bytes": 306801,
       "path": "scripts/promise_machine.py",
-      "sha256": "de4dfa1a0ee25e44be9b81c46d41f36c6fc7ecc9b8f485809fc61917da3c42a6",
+      "sha256": "e83269d2e51b258523a91c6fd8fb160792a67c96653b9bc981280ab42bfb62a6",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6112,9 +6112,9 @@
       "source": "scripts/run_observation_capture.py"
     },
     {
-      "bytes": 10045,
+      "bytes": 10295,
       "path": "scripts/verify_vendored_provenance.py",
-      "sha256": "c79825bdd1b799bcc525c7d3a2e072421aee21cf4d3ccccc5674de7f3dea3dff",
+      "sha256": "cff659953c9d117d9b2993cba23c42243a4ce9fd0a19f778ff00bcff03e61bdc",
       "source": "scripts/verify_vendored_provenance.py"
     },
     {
