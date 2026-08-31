@@ -1007,6 +1007,20 @@ class IntervalCheckTests(CollectorTestCase):
         }
         self.assertEqual(naming, set(EVIDENCE_CLASSES))
 
+    def test_an_epoch_and_a_shard_naming_one_block_must_agree(self):
+        """Two sources describing the interval's last block cannot disagree."""
+        staging, output = self.pipeline("hash-clash")
+        epochs = deepcopy(self.epochs)
+        epochs[-1]["end_hash"] = "0x" + "77" * 32
+        self.build(staging, output, epochs=epochs)
+        with self.assertRaisesRegex(AlexandriaError, "name different block hashes"):
+            check_interval(output)
+
+    def test_an_epoch_agreeing_with_its_shard_passes(self):
+        staging, output = self.pipeline("hash-agree")
+        self.build(staging, output)
+        self.assertEqual(check_interval(output)["shard_statuses"], {"complete": 5})
+
     def test_the_check_opens_no_socket_and_changes_no_file(self):
         staging, output = self.pipeline("read-only")
         self.build(staging, output)

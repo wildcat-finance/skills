@@ -1,0 +1,5 @@
+{
+  "agrees_with": "primary.json",
+  "note": "The second provider's view of the same synthetic interval. It agrees with the first everywhere, so the demonstration's release records an agreement; the tests cover what a disagreement does.",
+  "provider_class": "second synthetic archive provider, class only"
+}

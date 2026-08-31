@@ -987,6 +987,19 @@ def check_interval(release_root: Path) -> dict:
     if expected != end + 1:
         raise AlexandriaError(f"the shard table leaves block {expected} uncovered")
 
+    # An epoch boundary and a shard boundary can name the same block. Where they
+    # do, they came from different evidence and have to agree: the epoch hash
+    # from the operator's chain reads, the shard hash from what the collector
+    # itself saw at that block.
+    shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
+    for epoch in receipt["epochs"]:
+        boundary = int(epoch["end_block"])
+        if boundary in shard_hashes and epoch["end_hash"] != shard_hashes[boundary]:
+            raise AlexandriaError(
+                f"the epoch ending at block {boundary} and the shard ending there "
+                "name different block hashes"
+            )
+
     finality = plan["finality"]
     if finality["policy"] not in FINALITY_POLICIES:
         raise AlexandriaError("the release's finality policy is not recognised")
