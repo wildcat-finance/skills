@@ -541,6 +541,7 @@ Version 1 applies every limit before returning a partial graph or result:
 | external profiles | 8 |
 | one adapter input / stdout / stderr | 1,048,576 / 65,536 / 8,192 bytes |
 | one adapter timeout | 600 seconds |
+| adapter completion | 16 measurement tokens / 2,048 evaluation tokens |
 | evaluation packet | 4,194,304 bytes, 8 cases and 16 prompts |
 
 The graph-node count includes source records, term nodes, each embedded module
@@ -643,7 +644,9 @@ Evaluation emits one answer-free complete-source prompt and one Noema
 kernel/dictionary/slice prompt per case, one fresh process and nonce each. The
 Noema prompt contains no Markdown source excerpt. Both representations receive
 the same closed runtime context: selected authority, tools, operation, state,
-target and facts. Each fact exposes its truth value, evidence digest and exact
+target and facts. `authority` lists established authorising actors. Facts bind
+exact propositions to `true`, `false` or `unknown`; an absent condition is
+unknown. Each fact exposes its truth value, evidence digest and exact
 prefix proposition; its id must recompute from that proposition, and the
 proposition must resolve to a typed authored or macro-expanded proposition in
 the verified graph. A free fact name, non-proposition graph list or unresolved
@@ -692,6 +695,13 @@ rather than being silently retried. New dependencies, downloads, credentials,
 network calls, source disclosure and paid use require separate operator
 authority. Model output is untrusted data and never becomes a command, query,
 path, fact or authority edge.
+
+The checked-in `tests/fixtures/noema-v1/evidence/` record binds the accepted
+2026-08-30 measurement, 32 answer-provenance records and 16/16 tally to one
+ancestor commit, tree, corpus, profile set, packet and case set. Corpus
+verification reconstructs the packet and tally before accepting those bytes.
+The exact counts, rejected predecessor runs and shadow-only decision live in
+ADR-059; raw provider transcripts are deliberately absent.
 
 ## Versioning and recovery
 

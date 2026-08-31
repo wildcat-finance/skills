@@ -4883,6 +4883,35 @@ class SourceBindingTests(unittest.TestCase):
         self.assertEqual(verified["counts"]["specimens"], 4)
         self.assertEqual(verified["counts"]["members"], 17)
 
+    def test_corpus_evidence_binds_one_complete_accepted_run(self):
+        corpus = read_json(CORPUS_MANIFEST)
+        evidence = corpus["evidence"]
+        measurement = read_json(NOEMA_FIXTURES / evidence["measurement"])
+        answers = read_json(NOEMA_FIXTURES / evidence["answers"])
+        evaluation = read_json(NOEMA_FIXTURES / evidence["evaluation"])
+        self.assertEqual(measurement["summary"]["status"], "accepted")
+        self.assertEqual(
+            answers["summary"],
+            {
+                "expected": 32,
+                "recorded": 32,
+                "status": "recorded",
+                "unknown": 0,
+            },
+        )
+        self.assertEqual(
+            evaluation["summary"],
+            {"failed": 0, "pairs": 16, "passed": 16, "status": "accepted"},
+        )
+
+    def test_corpus_evidence_byte_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = root / "evidence/evaluation.json"
+            path.write_bytes(path.read_bytes() + b"\n")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVIDENCE")
+
     def test_each_specimen_id_names_its_fixed_canonical_source(self):
         for name in SPECIMEN_NAMES:
             identity = read_json(specimen_directory(name) / "source.json")
@@ -5393,6 +5422,10 @@ class SpecimenRoundTripTests(unittest.TestCase):
 
     def test_earlier_specimen_snapshot_is_held_through_the_corpus_verdict(self):
         with copied_corpus() as root:
+            manifest_path = root / "manifest.json"
+            manifest = read_json(manifest_path)
+            manifest.pop("evidence")
+            write_canonical_json(manifest_path, manifest)
             original = noema._verify_specimen
             calls = 0
 
@@ -5415,7 +5448,7 @@ class SpecimenRoundTripTests(unittest.TestCase):
                 side_effect=mutate_after_later_specimen,
             ):
                 with self.assertRaises(noema.Refusal) as raised:
-                    noema.verify_specimen_corpus(root / "manifest.json")
+                    noema.verify_specimen_corpus(manifest_path)
         self.assertEqual(raised.exception.code, "NOE-E-IO.CHANGED")
 
     def test_closed_inventory_stops_at_the_first_unexpected_member(self):
@@ -6790,10 +6823,16 @@ class MeasurementEvaluationTests(unittest.TestCase):
             cls.profile_path,
             require_measurement_families=True,
         )
-        cls.verified = noema.verify_specimen_corpus(CORPUS_MANIFEST)
-        cls.documents = noema._measurement_documents(CORPUS_MANIFEST, cls.verified)
+        cls.corpus_root = cls.directory / "corpus"
+        shutil.copytree(NOEMA_FIXTURES, cls.corpus_root)
+        cls.manifest = cls.corpus_root / "manifest.json"
+        corpus = read_json(cls.manifest)
+        corpus.pop("evidence")
+        write_canonical_json(cls.manifest, corpus)
+        cls.verified = noema.verify_specimen_corpus(cls.manifest)
+        cls.documents = noema._measurement_documents(cls.manifest, cls.verified)
         cls.measurement, cls.measurement_success = noema.measure_corpus(
-            CORPUS_MANIFEST,
+            cls.manifest,
             cls.profile_path,
             credential=None,
             budget=Decimal("5"),
@@ -6801,7 +6840,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
         )
         cls.packet_directory = cls.directory / "packet"
         noema.emit_evaluation_packet(
-            CORPUS_MANIFEST,
+            cls.manifest,
             cls.profile_path,
             cls.packet_directory,
         )
@@ -7024,7 +7063,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
             budget_ledger=self.directory / "unused-budget.json",
             budget_usd=None,
             credential_file=None,
-            manifest=CORPUS_MANIFEST,
+            manifest=self.manifest,
             output=self.directory / "replayed-measurement.json",
             profiles=self.profile_path,
         )
@@ -7046,7 +7085,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
             budget_ledger=self.directory / "unused-rejected-budget.json",
             budget_usd=None,
             credential_file=None,
-            manifest=CORPUS_MANIFEST,
+            manifest=self.manifest,
             output=self.directory / "replayed-rejected-measurement.json",
             profiles=self.profile_path,
         )
@@ -7063,7 +7102,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
         with scratch_directory("noema-packet-repeat-") as temporary:
             repeated = Path(temporary) / "packet"
             noema.emit_evaluation_packet(
-                CORPUS_MANIFEST,
+                self.manifest,
                 self.profile_path,
                 repeated,
             )
@@ -7378,7 +7417,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
         with mock.patch.object(noema, "invoke_adapter", side_effect=recorded_answer):
             report, success = noema.run_evaluation(
                 self.packet_directory / "manifest.json",
-                CORPUS_MANIFEST,
+                self.manifest,
                 self.profile_path,
                 credential=None,
                 budget=Decimal("5"),
@@ -7408,7 +7447,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
         ):
             report, success = noema.run_evaluation(
                 self.packet_directory / "manifest.json",
-                CORPUS_MANIFEST,
+                self.manifest,
                 self.profile_path,
                 credential=None,
                 budget=Decimal("5"),
@@ -7432,7 +7471,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
         with mock.patch.object(noema, "invoke_adapter", side_effect=failure):
             answers, success = noema.run_evaluation(
                 self.packet_directory / "manifest.json",
-                CORPUS_MANIFEST,
+                self.manifest,
                 self.profile_path,
                 credential=None,
                 budget=Decimal("5"),
@@ -7462,7 +7501,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.run_evaluation(
                     packet / "manifest.json",
-                    CORPUS_MANIFEST,
+                    self.manifest,
                     self.profile_path,
                     credential=None,
                     budget=Decimal("5"),
@@ -7484,7 +7523,7 @@ class MeasurementEvaluationTests(unittest.TestCase):
                 with self.assertRaises(noema.Refusal) as raised:
                     noema.run_evaluation(
                         packet / "manifest.json",
-                        CORPUS_MANIFEST,
+                        self.manifest,
                         self.profile_path,
                         credential=None,
                         budget=Decimal("5"),
