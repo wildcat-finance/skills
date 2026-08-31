@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1032,
-  "total_bytes": 22134361,
+  "file_count": 1033,
+  "total_bytes": 22202366,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -60,10 +60,10 @@
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
-      "bytes": 9126,
+      "bytes": 9320,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "d007e903b12f375d50e9c89b8d6f3935d3f9447ace78a1e027755fddabd413fa",
+      "sha256": "ddb08895ca655a1ed40787749f71c932d43aea292e4203c072b0bbc9dba60a2b",
       "source": null
     },
     {
@@ -595,10 +595,16 @@
       "source": "plugins/anamnesis/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3917,
+      "bytes": 13423,
       "path": "plugins/anamnesis/README.md",
-      "sha256": "a1bf6317ee8f0980fcad39a840aedb99fb36d35f4f8fcde7fe361a4798176182",
+      "sha256": "708b6eeb831bffba44bc9cd46d4651d775dc25d238f04b9b97d7d7e57a669112",
       "source": "plugins/anamnesis/README.md"
+    },
+    {
+      "bytes": 58214,
+      "path": "plugins/anamnesis/assets/characters/anamnesis.webp",
+      "sha256": "57016e69bf1aa2139188e0e67eeb17376d49c8944649b19f90fb643ef00d6cc2",
+      "source": "plugins/anamnesis/assets/characters/anamnesis.webp"
     },
     {
       "bytes": 2837,
@@ -649,9 +655,9 @@
       "source": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md"
     },
     {
-      "bytes": 17295,
+      "bytes": 17386,
       "path": "plugins/anamnesis/skills/anamnesis/SKILL.md",
-      "sha256": "0fd04d7e07bb42f89d4479bf4812004dd5189a23855619f1c260b0cc1c41a453",
+      "sha256": "fde4ea6ac9b829f5b7e505d95cfeb8ba86cf2cf1aa01bbc8e3b7fba1186394f3",
       "source": "plugins/anamnesis/skills/anamnesis/SKILL.md"
     },
     {

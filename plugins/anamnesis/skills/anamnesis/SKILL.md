@@ -5,6 +5,10 @@ metadata:
   version: "2.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/anamnesis.webp" width="1200">
+</p>
+
 # Anamnesis
 
 From *anamnesis*, calling back to mind what was already known. An audit finding
