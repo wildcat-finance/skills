@@ -1,0 +1,116 @@
+## Step 1, round 1 -- 2026-08-31T11:57:45Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | high | plugins/homologia/scripts/homologia.py:622 | On a case-insensitive filesystem, an output spelling that aliases a manifest or vector input bypassed lexical path equality and atomically replaced that input. | fixed in this commit |
+| S1-R1-02 | medium | plugins/homologia/scripts/homologia.py:287 | JSON-escaped unpaired surrogates and oversized integer tokens escaped the stable refusal boundary as uncaught `UnicodeEncodeError` or `ValueError`; both failures preserved an existing output. | fixed in this commit |
+| S1-R1-03 | low | .agents/skills/promise-machine/runtime/plugins/homologia/skills/homologia/EVOLUTION.md:16 | The installed-runtime ledger linked to an absent `../../tests/test_check.py`, so the first Hypomnema pass exited 1. | fixed in this commit |
+
+Leads not pursued: Concurrent parent-directory symlink substitution between lexical inspection and descriptor open or output replacement was not reproduced; the declared step covers existing symlinks and named-file replacement, not an adversarial directory owner. The aggregate check may read at most one extra per-file-capped input before refusal, but it refuses before JSON decoding and output as declared. Elenchus remained inconclusive because the source-bound runbook supplies the unittest command but no report format or report file; no substitute runner was used.
+
+## Step 1, round 2 -- 2026-08-31T12:17:12Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R2-01 | medium | plugins/homologia/scripts/homologia.py:607 | Uniqueness covered descriptor strings but not file identity, so two declared names for one vector file were admitted as two sets; a case-insensitive alias reproduced a checked record with `vector_set_count` 2. | fixed in this commit |
+| S1-R2-02 | medium | plugins/homologia/scripts/homologia.py:369 | A `recorded` expected answer with chain id 43114 was admitted under a pair pinned to chain id 1, misbinding the expected evidence to the declared computation. | fixed in this commit |
+| S1-R2-03 | low | plugins/homologia/references/manifest-v1.schema.json:11; plugins/homologia/references/vectors-v1.schema.json:10 | Both published path schemas admitted `./vectors.jsonl`, `nested/./vectors.jsonl` and `nested/`, although the authoritative validator refuses their dot or empty components. | fixed in this commit |
+
+Leads not pursued: The round-1 output-alias, unpaired-surrogate, oversized-integer and installed-ledger regressions remain fixed-green; the focused six-test repair set and 51-test `test_check` suite passed. The concurrent parent-directory substitution and one-extra-bounded-read leads remain outside the declared boundary or fail before decode and output as recorded in round 1. No further candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, three finding ids, severities, paths, reproductions and fixed statuses match this record item by item; the round-1 bytes were preserved as the prefix with SHA-256 `4868e5bba77d854dce7d690fd9dfa0c380169a2fd6c1fd245053d958f3be8bd0`.
+
+## Step 1, round 3 -- 2026-08-31T12:37:13Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R3-01 | medium | plugins/homologia/scripts/homologia.py:201 | A FIFO supplied as the manifest blocked in `os.open` before the regular-file refusal; the CLI exceeded the 1.0-second reproducer timeout without a stable code or output. | fixed in this commit |
+| S1-R3-02 | low | plugins/homologia/references/manifest-v1.schema.json:5; plugins/homologia/references/vectors-v1.schema.json:4; plugins/homologia/docs/schema-compatibility.md:43 | The published schemas admitted whitespace-only function or author fields, newline-suffixed scalar forms and NUL-bearing paths that the authoritative checker refused. Draft 2020-12 also classifies the numeric value `18.0` as an integer although the checker refuses that source token. | fixed in this commit |
+
+Leads not pursued: All six round-1 and round-2 fixes remain fixed-green, as do the two round-3 guards; the 53-test focused suite and 73-test complete Homologia suite passed. Concurrent parent-directory substitution remains outside the declared non-adversarial-directory boundary, and the aggregate cap may read one additional per-file-capped input but still refuses before decoding it or writing output. Cross-set reuse of a vector id has no reproduced collision because records retain their vector-set identity; the focused runbook guard and refusal scope ids within a set. The representable schema mismatches now refuse, while the unavoidable JSON Schema numeric-value equivalence for `18.0` is declared and the original-token checker remains authoritative. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, two finding ids, severities, paths, reproductions, qualifications and fixed statuses match this shaped record item by item; the round-1 and round-2 bytes were preserved as the prefix with SHA-256 `bb31931d0b0164cd2ce46595c5926404173b256ee726ed6d44abbfe6e9f6db8e`.
+
+## Step 1, round 4 -- 2026-08-31T12:56:59Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R4-01 | low | plugins/homologia/scripts/homologia.py:458 | The JSONL reader used Python's broad `splitlines()` boundary: U+0085, U+2028 and U+2029 inside valid JSON strings refused with `HOM-CHECK-JSON` and no output, while bare CR between two JSON objects was admitted as two records and wrote output. | fixed in this commit |
+
+Leads not pursued: All eight round-1 through round-3 fixes remain fixed-green, as do the three round-4 separator guards; the 56-test focused suite and 76-test complete Homologia suite passed. Concurrent parent-directory substitution remains outside the declared non-adversarial-directory boundary, and the aggregate cap may read one additional per-file-capped input but still refuses before decoding it or writing output. Cross-set reuse of a vector id has no reproduced collision because records retain their vector-set identity; the focused runbook guard and refusal scope ids within a set. The representable schema mismatches remain closed, while the unavoidable JSON Schema numeric-value equivalence for `18.0` is declared and the original-token checker remains authoritative. No further candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, finding id, severity, path, reproductions, qualifications and fixed status match this shaped record item by item; all three earlier round records were preserved as the prefix with SHA-256 `98200544a488d9cde1be14e1191c3ba753e4c6a472d1d94620087e78cd625c18`.
+
+## Step 1, round 5 -- 2026-08-31T13:14:52Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R5-01 | low | plugins/homologia/references/manifest-v1.schema.json:11,63; plugins/homologia/references/vectors-v1.schema.json:10,64 | The published schemas used engine-dependent `.` and `\S` tokens: native ECMAScript regex evaluation rejected checker-admitted U+2028 and U+2029 paths, admitted U+001C- or U+0085-only text the checker refused, and rejected checker-admitted U+FEFF-only text. | fixed in this commit |
+
+Leads not pursued: All nine round-1 through round-4 fixes remain fixed-green, as do the two round-5 cross-engine guards; the 58-test focused suite and 78-test complete Homologia suite passed. The explicit text class preserves the Python runtime domain pinned by `.python-version` to 3.14.6: U+001C through U+001F and U+0085 are whitespace, while U+FEFF is data; comparison across all 1,114,112 Unicode code points found no difference from the starting checker. The `[\s\S]` path form matched the authoritative lexical boundary across 7,381 Python and ECMAScript cases, including U+2028 and U+2029, with no mismatch. Concurrent parent-directory substitution remains outside the declared non-adversarial-directory boundary, and the aggregate cap may read one additional per-file-capped input but still refuses before decoding it or writing output. Cross-set reuse of a vector id has no reproduced collision because records retain their vector-set identity; the focused runbook guard and refusal scope ids within a set. The unavoidable JSON Schema numeric-value equivalence for `18.0` remains declared and the original-token checker remains authoritative. No second candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, finding id, severity, paths, bidirectional reproductions, pinned-domain rationale and fixed status match this shaped record item by item; all four earlier round records were preserved as the prefix with SHA-256 `f0c533469025a36fe0e70868703509f9b7b331f9e9e1d825a2a0768661581b25`.
+
+## Step 1, round 6 -- 2026-08-31T13:40:24Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R6-01 | medium | plugins/homologia/scripts/homologia.py:228 | The reader used its initial `lstat` only to reject a non-regular name and never compared that file version with the descriptor opened next; an atomic regular-file replacement in the gap was admitted and bound the replacement bytes instead of refusing the declared named-file race. | fixed in this commit |
+
+Leads not pursued: All ten round-1 through round-5 fixes remain fixed-green, as do the three round-6 descriptor-race guards; the 61-test focused suite and 81-test complete Homologia suite passed. The minimal pre-fix interleaving changed the vector inode from 163480452 to 163480453, installed output with replacement SHA-256 `5b691d124baeb84e44c0da154bb68d3420b0d373d0fec45ef894f4302bcdd3f0` and expected integer `999`, and made the retained red guard exit 1 because no `HOM-CHECK-PATH` refusal occurred. The repair compares mode, device, inode, size, nanosecond modification time and nanosecond metadata-change time from initial name to opened descriptor, after the descriptor read and against the final name; same-inode rewrites with restored modification time refuse at both checked gaps. A 22,621-case Python and ECMAScript path-pattern differential found no mismatch. Concurrent parent-directory substitution remains outside the declared non-adversarial-directory boundary, and the aggregate cap may read one additional per-file-capped input but still refuses before decoding it or writing output. Cross-set reuse of a vector id has no reproduced collision because records retain their vector-set identity; the focused runbook guard and refusal scope ids within a set. The unavoidable JSON Schema numeric-value equivalence for `18.0` remains declared and the original-token checker remains authoritative. No second candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, finding id, severity, path, red failure and output evidence, complete version tuple, qualifications and fixed status match this shaped record item by item; all five earlier round records were preserved as the prefix with SHA-256 `6d15819cf24c31bc4c14b955ffdf765e7698fb047266f7b068bf673d744a9f0a`.
+
+## Step 1, round 7 -- 2026-08-31T13:55:51Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: All eleven round-1 through round-6 fixes remain fixed-green; the 61-test focused suite and 81-test complete Homologia suite passed. Fresh review covered the complete mode, device, inode, size, `mtime_ns` and `ctime_ns` tuple across initial name, opened descriptor, post-read descriptor, immediate named check, retained `FileRead` and final named check. A reduced mid-read same-inode rewrite fired on the actual vector descriptor, retained mode, device, inode, size and `mtime_ns`, changed `ctime_ns` from 1788184363527504885 to 1788184363528129349, refused with `HOM-CHECK-PATH` and preserved the sentinel output; the first diagnostic that did not fire was discarded as a `/var` versus `/private/var` harness-path error. Concurrent parent-directory substitution remains outside the declared non-adversarial-directory boundary, and the aggregate cap may read one additional per-file-capped input but still refuses before decoding it or writing output. Cross-set reuse of a vector id has no reproduced collision because records retain their vector-set identity; the focused runbook guard and refusal scope ids within a set. The unavoidable JSON Schema numeric-value equivalence for `18.0` remains declared and the original-token checker remains authoritative. A programmatic lone-surrogate path was not graded because the run's UTF-8 macOS filesystem refused materialising such a regular-file name with errno 92; JSON-embedded lone surrogates remain covered by the stable strict-JSON refusal. No candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. This zero-finding round has no fixes commit and therefore no Elenchus run or verdict. Phylax, Ephoros and Hypomnema each exited 0. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, null verdict, exact zero-finding row, test counts, descriptor evidence, qualifications and leads match this shaped record item by item; all six earlier round records were preserved as the prefix with SHA-256 `78f8e48c37ed4a1aac28e935dd8d15ec4640c1171573e16c5a13420a88ebe952`.
