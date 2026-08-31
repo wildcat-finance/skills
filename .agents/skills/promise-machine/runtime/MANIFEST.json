@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 995,
-  "total_bytes": 21716571,
+  "file_count": 1018,
+  "total_bytes": 21917431,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -36,6 +36,10 @@
       "reason": "development suites and other fixtures remain in the full source checkout; the listed closed model-proxy-v1 fixture set closes the portable commands and vectors advertised by the copied reference"
     },
     {
+      "pattern": "plugins/anamnesis/specimens/**",
+      "reason": "the preserved audit sources and the corpus release built from them are data the router never reads; they remain in the full source checkout, where the tests that rebuild and compare them run"
+    },
+    {
       "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
       "reason": "the large offline trace inputs remain in the full source checkout"
     },
@@ -50,16 +54,16 @@
   ],
   "files": [
     {
-      "bytes": 6901,
+      "bytes": 7030,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "cb5e32e054335ebab10b35c1b194fade1d37a3cba0ed49d35315a73fa8f6d403",
+      "sha256": "48cfb58aa59881ea915ce536d97f3a5094a7e0938f7a345927f6c3cdb0dc3be9",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
-      "bytes": 9125,
+      "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "70c2679e2b28ea0d8c80b124889dd04f8a09aa134603984c2ffae8c4bc0fab02",
+      "sha256": "986d0d28efe5263e85419e06373b40ca0d7e3f5e2643dda0b3662dcee947f3f5",
       "source": null
     },
     {
@@ -69,9 +73,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 13874,
+      "bytes": 14500,
       "path": "AGENTS.md",
-      "sha256": "eff47c7cd9d3960ee4731cc373373e2bbb599a2c9310ee06d56af15f6a54a3dc",
+      "sha256": "2cecf00a2b88474ab0ad9c3eab2fe713d637772a592d501760bfe52107781ad0",
       "source": "AGENTS.md"
     },
     {
@@ -487,6 +491,144 @@
       "path": "plugins/alexandria/skills/alexandria/agents/openai.yaml",
       "sha256": "4c1fce07fb2d0c9d4b5188da3df8513b4447fadf8d7af6ec2467cefc184f813d",
       "source": "plugins/alexandria/skills/alexandria/agents/openai.yaml"
+    },
+    {
+      "bytes": 3035,
+      "path": "plugins/anamnesis/AGENTS.md",
+      "sha256": "5bd644e1fbb3e4d818faf6b06783ea3cd4f1bcf45c197412f7c7dd19810d3296",
+      "source": "plugins/anamnesis/AGENTS.md"
+    },
+    {
+      "bytes": 11342,
+      "path": "plugins/anamnesis/LICENSE",
+      "sha256": "624ddb0910d0925eafa5ac16a65a1360417e3d7c72aff6df0f3eab475695b68d",
+      "source": "plugins/anamnesis/LICENSE"
+    },
+    {
+      "bytes": 27732,
+      "path": "plugins/anamnesis/PROMISE_MACHINE.md",
+      "sha256": "f996fb645c81a8f398a2384ed4d8da0e058a9c017ea37fbbee36e499c9ef2e15",
+      "source": "plugins/anamnesis/PROMISE_MACHINE.md"
+    },
+    {
+      "bytes": 3917,
+      "path": "plugins/anamnesis/README.md",
+      "sha256": "a1bf6317ee8f0980fcad39a840aedb99fb36d35f4f8fcde7fe361a4798176182",
+      "source": "plugins/anamnesis/README.md"
+    },
+    {
+      "bytes": 2837,
+      "path": "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md",
+      "sha256": "7077ffc1726997e36c9aa9cb7545fada9f0fa25583b81a074c3c92a986ad1e22",
+      "source": "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md"
+    },
+    {
+      "bytes": 2616,
+      "path": "plugins/anamnesis/docs/decisions/ADR-002-corpus-graph.md",
+      "sha256": "b64d20b1696d54bd62325ecbf3abd271acc24226ae64c6161bc614e4a3506622",
+      "source": "plugins/anamnesis/docs/decisions/ADR-002-corpus-graph.md"
+    },
+    {
+      "bytes": 2657,
+      "path": "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md",
+      "sha256": "379a9b961d38a8cce0435b21778cf6fc552415a6c1b3bb88e3d0c957cc6e4e93",
+      "source": "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md"
+    },
+    {
+      "bytes": 2408,
+      "path": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md",
+      "sha256": "af26682ca33639ddb217b17ca31c49c52b5562296e82ae1cb2d83cfc5e80f6bb",
+      "source": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md"
+    },
+    {
+      "bytes": 2605,
+      "path": "plugins/anamnesis/docs/demo.md",
+      "sha256": "b523e14fc000502dfc4aafc8732a77091803ab25b7e9ab990ff234f9702673cb",
+      "source": "plugins/anamnesis/docs/demo.md"
+    },
+    {
+      "bytes": 9848,
+      "path": "plugins/anamnesis/docs/runbook.md",
+      "sha256": "afdf10f0b957b40f44c2c66dee8f66c773d8c9904c927d682ef4dff71eeda3a1",
+      "source": "plugins/anamnesis/docs/runbook.md"
+    },
+    {
+      "bytes": 21209,
+      "path": "plugins/anamnesis/docs/study.md",
+      "sha256": "d5d86cf7be16cd5dc3523535a92c20066b13c9f12adb50ad294025b230375891",
+      "source": "plugins/anamnesis/docs/study.md"
+    },
+    {
+      "bytes": 3671,
+      "path": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md",
+      "sha256": "a3b60c4f65ed19227e4f8f0b1e9d58d1e603afba11ff243ca77a41a89e4a8ba4",
+      "source": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md"
+    },
+    {
+      "bytes": 17295,
+      "path": "plugins/anamnesis/skills/anamnesis/SKILL.md",
+      "sha256": "0fd04d7e07bb42f89d4479bf4812004dd5189a23855619f1c260b0cc1c41a453",
+      "source": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "bytes": 2623,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json",
+      "sha256": "c49b552b1747f95a1dff894fefd4cfad7d9a1fb3e2903da38130edbc29aba5ef",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json"
+    },
+    {
+      "bytes": 2840,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/elenchus-analogue-v1.json",
+      "sha256": "831fd35e8ae28909e8a9886bd8e700687de7635c13348e352bd06eef2c42c78f",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/elenchus-analogue-v1.json"
+    },
+    {
+      "bytes": 1825,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/engagement-v1.json",
+      "sha256": "12a3ca5d76af0121e22e7b642f61ae0380eb38c6c6e8341d26a46a5d74dba706",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/engagement-v1.json"
+    },
+    {
+      "bytes": 1793,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/policy-v1.json",
+      "sha256": "dded70eeaf953a213fc2b89f50cb49745903c3871f6f1e067e42a0945b6f99e7",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/policy-v1.json"
+    },
+    {
+      "bytes": 1054,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/relation-v1.json",
+      "sha256": "501facb569e1afba43a2c5a66b0e663c8c79c39804c93da3f2b1219ac627b586",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/relation-v1.json"
+    },
+    {
+      "bytes": 3656,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json",
+      "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"
+    },
+    {
+      "bytes": 1863,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/rights-v1.json",
+      "sha256": "61eca1b7a95c327e952caa9ece52b19623330b9e2c0604857039d8fcabda82b0",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/rights-v1.json"
+    },
+    {
+      "bytes": 3141,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json",
+      "sha256": "6349a4747ae141f18513cb5c9384f96320cd7e99dfbaa5aef34a69cec7607f23",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
+    },
+    {
+      "bytes": 2359,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/synkrisis-observation-v1.json",
+      "sha256": "72f7184df1145d3b775e7412551dd7e48bf680ac1863b88b06960fccd3550e07",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/synkrisis-observation-v1.json"
+    },
+    {
+      "bytes": 67480,
+      "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+      "sha256": "6318f3ae4cd74e35354d706a1216fa76fea2b6446a2fc2f5b45ad1a61401e645",
+      "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
     },
     {
       "bytes": 5761,
@@ -2337,9 +2479,9 @@
       "source": "plugins/hexaemeron/skills/hypomnema/agents/openai.yaml"
     },
     {
-      "bytes": 24987,
+      "bytes": 25285,
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "sha256": "15e86a563cf51bb532cc187ec1f6e3804bcbaabaf8236867823bda04c3842728",
+      "sha256": "0f39dfa3e1d45d547583faeb51a0ff39d4c21ba067a16f9f29b7a808e16666fb",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
     },
     {

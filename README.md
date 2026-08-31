@@ -167,6 +167,9 @@ operations, examples, evidence contract, and current frontier.
   evidence statements. It records coverage, not universal truth.
 - [Synkrisis](./plugins/synkrisis) compares declared observations from several
   runs under one operator-declared policy and bounded rule catalogue.
+- [Anamnesis](./plugins/anamnesis) keeps audit findings and the changes that
+  answered them, admitted against an explicit rights basis. It releases
+  read-only projections rather than lending its source material.
 
 ### Protocol behaviour and Solidity
 

@@ -1,0 +1,167 @@
+## Step 1, round 1 -- 2026-08-31T03:48:15Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; private-egress=reviewed; partial-release=reviewed; evidence-strengthening=not-applicable; duplicate-collapse=not-applicable; fix-state-collapse=not-applicable; many-to-many-loss=not-applicable; taxonomy-drift=not-applicable; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: the security suite is waived for this step and the waiver is on the ledger. The diff adds Python, JSON schemas, Markdown and preserved Markdown specimens and changes no Solidity, so x-ray, solidity-auditor and fizz have no target. The seven not-applicable register items name mechanisms that do not exist at this commit: assertions, mappers, duplicate clusters, remediation state, relation validation, the release build and both consumer adapters are owed by runbook steps 2 and 3, and admission neither writes a release nor answers a consumer. Also unchecked: hosted CI, the controller receipt, push and publication, and whether a declared rights basis is lawful, which admission records rather than establishes.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | The refusal event stream was appended with a plain open(path, "a"). An --events path that was a symlink therefore redirected every recorded refusal into the link's target and appended to a file the run never meant to touch. The stream path is untrusted operator input, on the same filesystem boundary the step opens for sources | fixed in this round |
+| S1-R1-02 | medium | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | The conformance report staged through a fixed "<report>.partial" name opened with open(staging, "wb"). That followed a symlink planted at the exact staging path and wrote the report body through it, and it let two concurrent runs share one staging file. The report path is caller-named under .hexaemeron/, so the staging name was predictable | fixed in this round |
+| S1-R1-03 | medium | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | json.loads kept the last value of a duplicated key. A policy could therefore declare one source digest to anyone reading its bytes and a different one to the parser that admitted them, while the closed-key check saw a single key and passed. A corpus whose whole promise is that preserved bytes match a declared digest cannot let the declaration be ambiguous | fixed in this round |
+
+Leads not pursued: three residual races are recorded rather than fixed, each bounded by a check that runs after it. First, read_bounded stats a source and then reopens it, and resolve_within stats each path component before that reopen, so a component could be replaced between the two; both are closed downstream by O_NOFOLLOW on the final open, the bounded cap+1 read, the exact byte-count comparison and the SHA-256 comparison, and a substitution surviving all four has to produce the declared digest. Second, os.replace promotes the report onto a caller-named path, so a symlink at the destination is replaced rather than followed, which is the intended outcome. Third, the destination directory is not held by a descriptor across that promotion; the root runner's writer does hold one and this writer does not, recorded as the narrower guarantee rather than claimed as equal. Separately, the pilot policy's max_source_bytes of 1,000,000 and the module's 8,000,000-byte ceiling and 50,000,000-byte total were reviewed as declared bounds and not measured against a hostile source larger than the ceiling, because no such specimen exists at this commit. Every fix carries its exact bad specimen in plugins/anamnesis/tests/test_s1_boundaries.py. All four guards were run against the parent commit 708f2ec919aed0712d39e7f9a80f675e4d22d756, where they fail, and against the fixed tree, where they pass with the whole 65-test suite.
+
+## Step 1, round 2 -- 2026-08-31T03:53:50Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; private-egress=reviewed; partial-release=reviewed; evidence-strengthening=not-applicable; duplicate-collapse=not-applicable; fix-state-collapse=not-applicable; many-to-many-loss=not-applicable; taxonomy-drift=not-applicable; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from round 1. The suite waiver still holds, the seven not-applicable items are still owed by runbook steps 2 and 3, and hosted CI, the controller receipt, push and publication are still outside this round. Round 2 re-ran the three discipline lints and the plugin suite over the round 1 fixes and then reviewed the code paths round 1 did not reach: the record loop, the total-bytes ceiling, the policy root derivation and the placement of the pilot's curation scope.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R2-01 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | admit refused any policy declaring fewer than 25 or more than 50 records, so the pilot's curation scope was enforced as a law of the product. The study calls that range a curation scope for the seed, not a property of a corpus, and a member whose job is custody cannot refuse a corpus for being the wrong size. The check moved to seed_scope, called by the admit-seed resolver that the design record actually scopes | fixed in this round |
+| S1-R2-02 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Only refusals raised inside the per-source loop emitted anamnesis.source.refused. A duplicated policy key, a duplicate record id, an unknown record key, a record naming an unadmitted source and the total-bytes ceiling all refused with nothing durable written, so an operator asking why a run refused had the exit code and no event. Every refusal now passes through one recorded boundary carrying its rule, record, policy version and correlation id | fixed in this round |
+
+Leads not pursued: two observations carry forward rather than changing code. The A025 duplicate-key refusal is raised while parsing the policy, before the policy version and digest are known, so its event records the rule and reason with a null record and a correlation id derived from the policy bytes alone; naming the version in that event would require trusting a field from the document being refused. The seed_scope bound of 25 to 50 is now a resolver-side constant rather than a policy field, which is right for the seed the runbook fixes and wrong for a second pilot; making the scope a declared policy field is step 2's to decide when the release policy schema lands. Round 2 added four guards to plugins/anamnesis/tests/test_s1_boundaries.py and moved two to the resolver boundary in plugins/anamnesis/tests/test_s1_admission.py; three of the four fail against parent commit 6ff91f01188f4ccb49ceef438daf9346491b44b6 and the fourth passed there already, because a source-level refusal was the one path that always recorded an event. The suite is 71 tests and green, the three discipline lints exit zero, the exact pending resolver writes its report and design_evidence --transition step:2 exits zero.
+
+## Step 1, round 3 -- 2026-08-31T04:04:04Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; private-egress=reviewed; partial-release=reviewed; evidence-strengthening=not-applicable; duplicate-collapse=not-applicable; fix-state-collapse=not-applicable; many-to-many-loss=not-applicable; taxonomy-drift=not-applicable; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from rounds 1 and 2. Round 3 re-ran the plugin suite, the three discipline lints, both Promise Machine checks and the whitespace check over the round 2 fixes, and looked at what those fixes left behind rather than at the source paths already reviewed twice.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R3-01 | low | .agents/skills/promise-machine/runtime/MANIFEST.json | The generated portable runtime still carried the pre-fix copies of anamnesis.py and hypomnema.py, so a copy-mode install would have shipped code the source tree had already corrected and the manifest bound bytes that no longer existed upstream. Rounds 1 and 2 changed both scripts and neither resynced the mirror | fixed in this round |
+
+Leads not pursued: one flake is recorded rather than fixed, because it is pre-existing and not this step's. tests/test_python_contract.py walks ROOT.rglob("*.md") without excluding tmp/, which is where scripts/run_checks.py stages its disposable snapshot, so running the root suite while a check run is in flight reports the snapshot's own copy of docs/promise-machine/evidence/2026-08-20-self-demonstration.md as stale runtime prose. The finding is transient, names a path under the gitignored run home rather than a tracked file, and disappears when the snapshot does; the same test passes against this tree with no check run in flight. It belongs to whoever owns the check runner's scratch boundary, not to a step that adds a plugin.
+
+## Step 1, round 4 -- 2026-08-31T04:27:41Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; private-egress=reviewed; partial-release=reviewed; evidence-strengthening=not-applicable; duplicate-collapse=not-applicable; fix-state-collapse=not-applicable; many-to-many-loss=not-applicable; taxonomy-drift=not-applicable; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from rounds 1 to 3. This round re-ran the whole battery over the round 3 fix and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: one red check is recorded and is not this step's. The selected check plan run at this commit reports lazarus-suite failed; the same suite fails identically on the unmodified base checkout, and this run changes no file under plugins/lazarus. The cause is environmental rather than a regression: on macOS the TMPDIR the suite writes into resolves through /var to /private/var, and lazarus_lib/release.py refuses a statement path containing a symlink, so every release test raises PathError before it reaches its assertion. It belongs to Lazarus, is reproducible from a clean clone on this platform, and would fail whatever this step contained. The step's own battery is green: 71 Anamnesis tests, 776 root tests, phylax, ephoros and hypomnema each exit 0, promise_machine check reports 17 plugins and 17 copies clean, portable_promise_machine check reports no drift, git diff --check is clean, the pending resolver writes its report and design_evidence --transition step:2 exits zero.
+
+## Step 2, round 1 -- 2026-08-31T05:35:09Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: the security suite waiver still holds; this step adds Python, JSON schemas, Markdown fixtures and a generated release, and changes no Solidity. The two not-applicable register items are the consumer boundaries runbook step 3 owes: no adapter exists at this commit, so nothing can leak a cohort or overreach across one. Also unchecked: hosted CI, the controller receipt, push and publication, whether the mapper reads every Warden format that has ever existed, and whether the pilot's 41 findings are the right 41 to have preserved.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | verify checked every component against the manifest and never checked the manifest against the components. The manifest is not covered by its own digest, so editing a count, dropping an exclusion, emptying the unknowns map, forging the policy version or replacing the release id passed verification untouched. A release whose own claims cannot be checked is a claim about nothing | fixed in this round |
+| S2-R1-02 | high | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Admission verified each source digest and returned; curation then read the same files a second time and verified nothing. A source replaced between the two reads was curated with admission having passed on different bytes, which defeats the digest the whole corpus rests on | fixed in this round |
+| S2-R1-03 | medium | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Release verification bounded each component by the 8,000,000-byte source ceiling rather than the 50,000,000-byte release cap, so a release legitimately within its own cap could not be verified at all once one component passed 8 MB. The bound was the wrong one for the object being read | fixed in this round |
+| S2-R1-04 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | A source that was not valid UTF-8 reached decode with errors="strict" outside any refusal path, so it surfaced as a UnicodeDecodeError traceback rather than a named refusal with its rule and record | fixed in this round |
+
+Leads not pursued: three observations carry forward. The unknowns map is now a release component, so it is digest-covered and recomputed against the manifest, but verification still cannot recompute it from the sources without re-curating them; it establishes that the map in the manifest is the map that was released, not that the map is right. The mapper's finding-row pattern combines two lazy quantifiers with surrounding whitespace classes, which is a backtracking shape; on the pilot and the fixtures it is linear, and the source byte cap bounds any input it sees, so no bound was measured and none is claimed. os.rename promotes the staged release after an existence check, so a destination created between the two would be replaced rather than refused; the check narrows the window and does not close it, and the same is true of the report promotion. Every fix carries its exact specimen in plugins/anamnesis/tests/test_s2_curation.py; the four new guards were run against parent commit 627a0f3eeb56ccb745ddf1aaa553bebebe968be1, where three fail and one errors, and against the fixed tree, where all 120 tests pass.
+
+## Step 2, round 2 -- 2026-08-31T05:42:49Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from round 1. Round 2 re-ran the battery over round 1's fixes and then reviewed the paths those fixes opened: the manifest is now read as a structured document rather than skipped past, so this round asked what happens when that document is hostile rather than merely wrong.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Round 1 made verify read the manifest's own fields, and nothing held that manifest to a shape first. A release from elsewhere carries an untrusted manifest: a missing key, a components list that is not a list, a component named twice, a malformed digest, a negative byte count or a component path pointing outside the release all reached a KeyError or a bad read rather than a named refusal. A traceback names no rule and leaves the caller nothing to repair | fixed in this round |
+| S2-R2-02 | low | tests/test_python_contract.py | The runtime-pin prose scan walked every Markdown file under the repository root without excluding tmp/, which is Fiat's documented run-worktree home and where scripts/run_checks.py stages its disposable snapshot. Running the root suite while a check run was in flight reported the snapshot's own copy of a shipped document as stale runtime prose. This was recorded as a lead in step 1 round 4 and hit three more times in this step, so it is fixed rather than carried again | fixed in this round |
+
+Leads not pursued: two observations carry forward from round 1 unchanged, because neither is closed by this round's work. The unknowns map is digest-covered and recomputed against the manifest, so verification establishes that the released map is the map the manifest claims, and not that the map is right; recomputing it needs the sources and a re-curation. The staged release and the conformance report are both promoted with os.rename after an existence check, so a destination created between the two is replaced rather than refused; the check narrows the window and does not close it, and closing it needs a directory-descriptor promotion of the kind the root test runner already uses. A third is new and also carried: resolve_within now guards component paths, so a manifest naming a path outside the release refuses, but the refusal arrives as a path rule rather than a manifest rule, which reads oddly in a release context. Round 2 added twelve guards to plugins/anamnesis/tests/test_s2_curation.py and one to tests/test_python_contract.py; nine of the twelve fail against parent commit 7dbdbad719b414a6af1f82559f3bdec4986938eb and the pin-scan guard fails there on both tmp/ paths.
+
+## Step 2, round 3 -- 2026-08-31T05:46:49Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=not-applicable; adapter-overreach=not-applicable
+
+Not checked: unchanged from rounds 1 and 2. This round re-ran the whole battery over round 2's fixes and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three carried observations stand unchanged and are the honest residue of this step. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the conformance report are promoted with os.rename after an existence check, which narrows rather than closes the window. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct but reads oddly. None of the three admits a bad release: the first is a boundary on what verification establishes, and the other two are narrower guarantees than the root test runner's descriptor-held promotion, recorded as narrower rather than claimed as equal. The step's battery is green: 132 Anamnesis tests, 777 root tests, phylax, ephoros and hypomnema each exit 0, both Promise Machine checks clean, all seven release components rebuild byte-identical from the same inputs, the pilot release measures 168,532 bytes against the 50,000,000-byte cap, design_evidence --transition step:3 exits zero and the working tree is clean.
+
+## Step 3, round 1 -- 2026-08-31T06:16:18Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: the security suite waiver still holds; this step adds Python, two JSON schemas, committed projections, event examples and documentation, and changes no Solidity. Every register id is now reviewed, because both consumer boundaries exist at this commit. Also unchecked: hosted CI, the controller receipt, push and publication, whether a different interpreter or platform reproduces the release, and whether Synkrisis would accept this producer contract if asked, which is Synkrisis's decision and has not been made.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | high | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Both adapters read every release component a second time, after verification had already read and digest-checked it. Verification would pass on one read and the projection would speak from another, so a component replaced between the two reached a consumer with nothing having checked it. This is the same defect as S2-R1-02 in a new place, and it is closed the stronger way: verification now returns the bytes it checked and the adapters take no second read at all | fixed in this round |
+| S3-R1-02 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | resource was imported at module scope for the benefit of one command's memory baseline, so on a platform without it every operation including admission and release would fail at import. A baseline is the least important thing the module does and was the only thing that could stop it loading | fixed in this round |
+
+Leads not pursued: three observations carry forward and one is new. Carried unchanged: the unknowns map is digest-covered but not recomputable from the sources without re-curating them; the staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window; and a manifest naming a component path outside the release refuses under a path rule rather than a manifest rule. New: the projections are checked against their closed field sets by the adapter and not against the JSON Schema files that declare them, so a schema and its adapter could drift apart without a test noticing; the committed expected projections make that drift visible as a diff, which is weaker than validating and is what exists. Every fix carries its exact specimen in plugins/anamnesis/tests/test_s3_consumers.py; the three new guards were run against parent commit d4ebacc47301501df0afe7ac95d439b4270cd974, where two fail and one errors, and against the fixed tree, where all 170 tests pass.
+
+## Step 3, round 2 -- 2026-08-31T06:19:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: unchanged from round 1. Round 2 re-ran the battery over round 1's fixes and then took up the one lead round 1 recorded rather than carrying it a third time.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | low | plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py | Each projection's field set was a constant beside the schema file that declares the same thing, so the adapter and its schema could drift apart with nothing comparing them. Nothing was wrong today: both constants matched their schema exactly, which is why this is a duplication rather than a defect. The field sets now derive from the schema files, and a schema declaring an optional field is refused, because a projection's shape is closed and an optional field is a hole in it | fixed in this round |
+
+Leads not pursued: the three carried observations stand unchanged and none admits a bad release. The unknowns map is digest-covered but not recomputable from the sources without re-curating them. The staged release and the reports are promoted with os.rename after an existence check, which narrows rather than closes the window, and closing it needs the directory-descriptor promotion the root test runner uses. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule, which is correct and reads oddly. One statement about this round's own evidence: four of the five new guards pass against parent commit f9b02dd9fc1778e48bb4e2a59401b6f97c73b726, because the constants they now derive were already correct there; only the new A160 refusal fails there. The fix removes a duplication and adds a refusal, and it reproduced no defect, which is why the verdict is passed rather than guarded.
+
+## Step 3, round 3 -- 2026-08-31T06:23:43Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-rights=reviewed; source-byte-drift=reviewed; evidence-strengthening=reviewed; duplicate-collapse=reviewed; fix-state-collapse=reviewed; many-to-many-loss=reviewed; private-egress=reviewed; partial-release=reviewed; taxonomy-drift=reviewed; cohort-leakage=reviewed; adapter-overreach=reviewed
+
+Not checked: unchanged from rounds 1 and 2. This round re-ran the whole battery over round 2's change and found nothing new in the step's scope.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three carried observations stand and are the honest residue of the whole run. The unknowns map is digest-covered and recomputed against the manifest, so verification establishes that the released map is the map the manifest claims and not that the map is right; recomputing it needs the sources and a re-curation. The staged release and both conformance reports are promoted with os.rename after an existence check, so a destination created between the two would be replaced rather than refused; the check narrows the window and does not close it, and closing it needs the directory-descriptor promotion the root test runner already uses, which is a narrower guarantee recorded as narrower rather than claimed as equal. A manifest naming a component path outside the release refuses under a path rule rather than a manifest rule. None of the three admits a bad release or a projection carrying something it should not. The step's battery is green: 175 Anamnesis tests, 777 root tests, phylax, ephoros and hypomnema each exit 0, both Promise Machine checks clean, the demo runs the whole path, design_evidence --transition integration exits zero and the working tree is clean.

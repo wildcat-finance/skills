@@ -1,0 +1,21 @@
+{
+  "disclosure": {
+    "derived_text": [
+      "public"
+    ]
+  },
+  "mapper": {
+    "name": "warden-audit-round-markdown",
+    "version": "1"
+  },
+  "taxonomy": {
+    "name": "warden-severity",
+    "severities": [
+      "high",
+      "medium",
+      "low"
+    ],
+    "version": "1"
+  },
+  "version": "curation-2026-08-31"
+}

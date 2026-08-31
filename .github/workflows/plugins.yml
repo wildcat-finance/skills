@@ -24,6 +24,7 @@ jobs:
       matrix:
         scope:
           - alexandria
+          - anamnesis
           - ariadne
           - berean
           - brevitas

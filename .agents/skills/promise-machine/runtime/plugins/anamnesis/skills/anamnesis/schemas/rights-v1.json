@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/anamnesis/schemas/rights-v1.json",
+  "title": "anamnesis-rights/v1",
+  "description": "The permission basis and disclosure class that control whether a source may be preserved and what may be released from it. Public visibility is not a rights basis. The validator in skills/anamnesis/scripts/anamnesis.py is the executable authority; this file declares the same closed shape for a reader.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["basis", "disclosure", "holder", "statement"],
+  "properties": {
+    "basis": {
+      "description": "How preservation is permitted. 'licence' names an open licence in the source itself. 'permission' names a written grant. 'contract' names an agreement. 'digest-only' permits an identifier and a hash while refusing the bytes.",
+      "enum": ["licence", "permission", "contract", "digest-only"]
+    },
+    "disclosure": {
+      "description": "What may leave the corpus. 'public' admits derived text. 'restricted' admits identifiers and digests alone. 'embargoed' is refused at admission.",
+      "enum": ["public", "restricted", "embargoed"]
+    },
+    "holder": {
+      "description": "The party whose permission this basis records.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "statement": {
+      "description": "The exact recorded claim: a licence identifier, or the text of the grant relied on.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "expires": {
+      "description": "An ISO 8601 date after which the basis is no longer relied on, or absent when it does not expire. Absent is not 'never'; it means the source did not establish one.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    }
+  }
+}
