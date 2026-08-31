@@ -3868,6 +3868,50 @@ class PromiseCoverageTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM071", [item["code"] for item in report["findings"]])
 
+    def test_runtime_catalogue_reports_every_independent_row_fault(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            coverage_path, document = write_coverage_fixture(target)
+            skill = target / "plugins/hexaemeron/skills/elenchus/SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    "- Consequence: 1", "- Consequence: 2"
+                ),
+                encoding="utf-8",
+            )
+            source = target / "tests/evidence.py"
+            specimen = (
+                target
+                / "tests"
+                / "fixtures"
+                / "promise-machine"
+                / "runtime"
+                / "example-check.json"
+            )
+            specimen.parent.mkdir(parents=True)
+            specimen.write_text("{}\n", encoding="utf-8")
+            binding = fixture_runtime_binding(
+                "tests/evidence.py", hashlib.sha256(source.read_bytes()).hexdigest()
+            )
+            for kind in ("positive", "negative"):
+                binding[kind]["path"] = specimen.relative_to(target).as_posix()
+                binding[kind]["sha256"] = f"malformed-{kind}-digest"
+            document["runtime"] = {"example-check": binding}
+            coverage_path.write_text(json.dumps(document), encoding="utf-8")
+            completed = run_cli(
+                "check", "--only", "runtime", "--root", target, "--json"
+            )
+        report = json.loads(completed.stdout)
+        messages = [item["message"] for item in report["findings"]]
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual([item["code"] for item in report["findings"]], ["PM095"] * 2)
+        self.assertTrue(
+            any("runtime positive specimen digest is malformed" in item for item in messages)
+        )
+        self.assertTrue(
+            any("runtime negative specimen digest is malformed" in item for item in messages)
+        )
+
     def test_runtime_binding_source_read_is_bounded(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)

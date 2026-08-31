@@ -4974,14 +4974,15 @@ def check_runtime(root: Path, inventory: Inventory):
             root, record, binding, binding_path, positive_evidence
         )
         if catalogue_findings:
-            findings.append(
+            findings.extend(
                 runtime_finding(
                     record,
                     binding,
                     binding_path,
                     "catalogue",
-                    catalogue_findings[0].message,
+                    item.message,
                 )
+                for item in catalogue_findings
             )
             continue
         positive, positive_findings = read_runtime_specimen(
