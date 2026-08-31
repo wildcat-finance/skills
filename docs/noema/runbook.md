@@ -493,3 +493,25 @@ evidence rather than stress testing.
 
 **Still holding.** Step 5: entry holds; exit holds. Integration remains out of
 scope.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Every source and Noema evaluation prompt now carries the same
+decision contract: asking, confirmation and approval are requirements rather
+than permission; when the document conditions the queried effect on one of
+them and no authorising actor is established, the effect is not permitted.
+Candidate output fields are alternatives, not governing evidence. The corpus,
+queries, candidates, gates, profiles and fixed seed are unchanged.
+
+**Why.** The first seed-`0` cohort reproduced the same 15/16 Google source miss,
+falsifying sampling noise as the whole cause. The prompt defined the authority
+array but not how natural-language approval requirements map into a decision,
+while exposing consequence and controlling-node labels inside both candidate
+outputs. That let an output alternative supply semantics the source did not.
+The shared contract closes the experimental ambiguity without naming a case,
+candidate id, consequence or required answer.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds. Integration remains out of
+scope.

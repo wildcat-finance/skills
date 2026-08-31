@@ -602,7 +602,7 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "0ec314eb5ef38f9524c1b79000fbaf647c87ef963a1e3cdb30d8cf684d4e3e3c",
+            "470120c69bbbbc3866cb892910e00106743cba507dc3a0fe8f724bcbfed0b5c9",
         )
 
     def test_repository_python_pin_is_exact(self):
@@ -7409,15 +7409,21 @@ class MeasurementEvaluationTests(unittest.TestCase):
                     self.assertNotIn(source_excerpt, payload)
 
     def test_each_prompt_defines_runtime_context_semantics(self):
-        contract = (
+        context_contract = (
             b"runtime_context contract: authority lists established authorizing actors; "
             b"facts bind exact propositions to true, false, or unknown; "
             b"absent conditions are unknown.\n"
         )
+        decision_contract = (
+            b"decision contract: when the document conditions the queried effect on asking, "
+            b"confirmation, or approval and authority is empty, the effect is not permitted; "
+            b"candidate outcome fields are alternatives, not governing evidence.\n"
+        )
         for case in self.packet["cases"]:
             for prompt in case["prompts"]:
                 payload = (self.packet_directory / prompt["path"]).read_bytes()
-                self.assertEqual(payload.count(contract), 1)
+                self.assertEqual(payload.count(context_contract), 1)
+                self.assertEqual(payload.count(decision_contract), 1)
 
     def test_phylax_consequence_case_binds_ask_first_without_minting_approval(self):
         directory = specimen_directory("phylax")

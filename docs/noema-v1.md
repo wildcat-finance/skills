@@ -658,7 +658,11 @@ proposition must resolve to a typed authored or macro-expanded proposition in
 the verified graph. A free fact name, non-proposition graph list or unresolved
 digest refuses before packet publication. The source prompt additionally
 receives its exact bound excerpt; the Noema prompt receives only the bound node
-id because the slice is its semantic evidence.
+id because the slice is its semantic evidence. A representation-neutral
+decision contract states that asking, confirmation and approval are
+requirements rather than permission: when the document conditions the queried
+effect on one of them and no authorising actor is established, the effect is
+not permitted. Candidate fields are alternatives, not governing evidence.
 
 Candidate ids are opaque and their order carries no oracle. The packet is
 complete only after its manifest is written, its closed directory inventory is
