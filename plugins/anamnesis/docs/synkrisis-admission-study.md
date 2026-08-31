@@ -197,7 +197,7 @@ carry signals carry none. The one question a person will ask later is "why does
 the Synkrisis view exist with nothing reading it", and the answer is the
 decision record itself rather than an emitted signal. The reader the run names
 runs from a terminal and reports through its exit status and output;
-[ephoros](../ephoros/SKILL.md) owns what a signal must carry, and none is owed
+[ephoros](https://github.com/wildcat-finance/skills/blob/9783e2631de1614716eda5043cd843768d3baa06/plugins/hexaemeron/skills/ephoros/SKILL.md) owns what a signal must carry, and none is owed
 here.
 
 ## 9. Boundaries, per capability
@@ -208,14 +208,14 @@ reads no credential and adds no dependency. The one boundary worth naming is the
 reader: it reads a release projection that a policy declared, and it must not
 read anything the projection's disclosure rules withheld. That control already
 exists in Anamnesis and is not reimplemented here.
-[phylax](../phylax/SKILL.md) owns the boundary list and its controls.
+[phylax](https://github.com/wildcat-finance/skills/blob/9783e2631de1614716eda5043cd843768d3baa06/plugins/hexaemeron/skills/phylax/SKILL.md) owns the boundary list and its controls.
 
 ## 10. The budget, or its absence
 
 No performance budget. The run adds prose, one decision record and a guard test.
 The measured `acceptance-check-ms` figures in the design record are selection
 evidence comparing candidates, not a budget this run must hold.
-[metron](../metron/SKILL.md) owns what a budget carries; none is declared, and
+[metron](https://github.com/wildcat-finance/skills/blob/9783e2631de1614716eda5043cd843768d3baa06/plugins/hexaemeron/skills/metron/SKILL.md) owns what a budget carries; none is declared, and
 no change here is made in the name of speed.
 
 ## 11. The fail-closed posture
@@ -225,7 +225,7 @@ row failing the versioning arithmetic; the Synkrisis frontier tuple changing;
 the named reader failing its guard. A fix follows the guard convention: the
 test fails against the parent commit and passes against the fixed tree, and the
 guard names the exact specimen.
-[elenchus](../elenchus/SKILL.md) owns the triage order and the guard rule.
+[elenchus](https://github.com/wildcat-finance/skills/blob/9783e2631de1614716eda5043cd843768d3baa06/plugins/hexaemeron/skills/elenchus/SKILL.md) owns the triage order and the guard rule.
 
 ## 12. Decisions and their homes
 
@@ -240,5 +240,5 @@ Two decisions here are expensive to reverse and each earns a record.
 - **What reads the projection instead.** Named in the same record, with the
   reader existing and guarded rather than only described.
 
-[hypomnema](../hypomnema/SKILL.md) owns which decisions earn a record and where
+[hypomnema](https://github.com/wildcat-finance/skills/blob/9783e2631de1614716eda5043cd843768d3baa06/plugins/hexaemeron/skills/hypomnema/SKILL.md) owns which decisions earn a record and where
 each one lives.

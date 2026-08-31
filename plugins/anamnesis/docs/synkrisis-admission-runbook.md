@@ -154,3 +154,13 @@ budget is declared. elenchus: the prose reconciliation is driven by a cold read
 rather than by memory of what was written, so a missed document is a test
 failure rather than an oversight. hypomnema: the ledger row is the durable
 record of the decision and its home is fixed by the versioning contract.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: `plugins/anamnesis/docs/synkrisis-admission-runbook.md` is byte-identical to the receipted `.hexaemeron/runbook.md`; `plugins/anamnesis/docs/synkrisis-admission-study.md` is byte-identical to the receipted `.hexaemeron/study.md` except for the five discipline citations, which are commit-pinned absolute URLs at `9783e2631de1614716eda5043cd843768d3baa06` rather than relative paths that resolve to nothing; the design record and its eighteen reports are committed under `plugins/anamnesis/docs/synkrisis-admission/`; `plugins/anamnesis/tests/elenchus.py` admits steps 4 to 6; the anamnesis suite and the root suite are green; `python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py plugins/anamnesis/docs/synkrisis-admission-study.md plugins/anamnesis/docs/synkrisis-admission-runbook.md` exits zero; and `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition step:2` exits zero before the pull request is ready.
+
+**Why.** Step 1 round 1 found the study's five discipline citations written as `../<skill>/SKILL.md`, which resolve from the Protasis skill directory they were copied from and from nowhere else. Hypomnema exits 1 on the committed copy. The receipted study is immutable and `amend study` only appends, so the body cannot be corrected in place; the committed copy carries the corrected links and the receipted copy keeps the originals. The prior Anamnesis study pins the same five citations to its own starting commit, so this restores the house convention rather than inventing one.
+
+**Steps touched.** Step 1
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
