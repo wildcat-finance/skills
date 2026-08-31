@@ -4,12 +4,12 @@ description: >
   Build one checked cohort from validated Promise Machine run observations
   under an operator-declared comparison policy, infer bounded findings from a
   digest-bound rule catalogue, render the fixed-template report, and verify
-  that all three artefacts recompute from their original inputs. Version 4.1.0
+  that all three artefacts recompute from their original inputs. Version 4.2.0
   delivers all four operations under a measured work budget. Do not capture or
   redact observations, debug one failing run, judge a model, act on a finding,
   or report a relation as a cause.
 metadata:
-  version: "4.1.0"
+  version: "4.2.0"
 ---
 
 <p align="center">
@@ -28,7 +28,7 @@ recommend or run another frontier pass after that ledger becomes mature.
 ## Where this sits
 
 Synkrisis owns comparison and bounded inference over validated observations
-from comparable agent runs. Version 4.1.0 implements the checked cohort, the
+from comparable agent runs. Version 4.2.0 implements the checked cohort, the
 bounded rule catalogue over it, the fixed-template report and the whole-path
 verification, all held to a measured work budget, while capture, redaction,
 receipt binding, causal triage, issue filing, repository mutation, and Fiat

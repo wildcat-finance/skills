@@ -159,8 +159,9 @@ class MarketplaceProseTests(unittest.TestCase):
             readme.index("./assets/characters/shoggoth.png"),
             readme.index("# The Shoggoth"),
         )
-        self.assertIn("## What Is It?", readme)
-        self.assertIn("## The Promise Machine", readme)
+        self.assertIn("## What can it do today?", readme)
+        self.assertIn("## How the collective works", readme)
+        self.assertIn("[Promise Machine contract](./PROMISE_MACHINE.md)", readme)
         self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
@@ -256,7 +257,7 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_root_readme_maps_every_plugin(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("## Meet the Shoggoth", readme)
+        self.assertIn("## Meet the collective", readme)
         self.assertNotIn("## Current status", readme)
         for name in PLUGINS:
             with self.subTest(plugin=name):
@@ -265,8 +266,8 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_root_readme_names_the_complete_collective(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        roster = readme.split("## Meet the Shoggoth", 1)[1].split(
-            "## How the members fit together", 1
+        roster = readme.split("## Meet the collective", 1)[1].split(
+            "## Try it", 1
         )[0]
 
         governed = sorted(

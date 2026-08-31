@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Sapheneia",
     "shortDescription": "AuDHD-shaped replies, audit records, issues and comments.",
-    "longDescription": "Shapes the agent's own commentary and final replies for AuDHD engineers, or one bounded agent-authored audit record, GitHub issue, or issue comment. Session shaping keeps actions, boundaries, working state, evidence, unknowns and next steps explicit until the reader turns it off. The durable-record operation preserves protected evidence and host structure without activating session mode.",
+    "longDescription": "Sapheneia shapes an agent's commentary and final replies for AuDHD readers, keeping actions, boundaries, working state, evidence, unknowns, and next steps visible until the reader turns it off. A separate bounded operation reshapes one agent-authored audit record, GitHub issue, or issue comment while preserving protected evidence and host structure. It does not diagnose the reader or change another skill's facts. The ten rules have not yet been held against a published cross-model task corpus.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

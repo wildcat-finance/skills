@@ -40,9 +40,9 @@ DELIVERY_PACKAGE_VERSIONS = {
     "alexandria": "0.3.1",
     "ariadne": "1.3.0",
     "berean": "0.1.2",
-    "brevitas": "0.2.1",
+    "brevitas": "0.2.2",
     "hermes": "0.1.1",
-    "hexaemeron": "1.6.11",
+    "hexaemeron": "1.6.19",
     "homologia": "0.1.0",
     "horos": "0.1.1",
     "janus": "0.1.1",
@@ -51,7 +51,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "pandects": "0.1.1",
     "probitas": "0.1.3",
     "sapheneia": "0.1.2",
-    "synkrisis": "0.5.0",
+    "synkrisis": "0.5.1",
     "tabularium": "0.3.1",
 }
 

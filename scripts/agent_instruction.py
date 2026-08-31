@@ -32,7 +32,7 @@ CHECK_RECORD_SCHEMA = "wildcat-agent-instruction-check-record/v1"
 MANIFEST_ID = "wildcat-agent-instruction-manifest/v1"
 MANIFEST_SCHEMA_ID = "https://wildcat.finance/schemas/agent-instruction-manifest-v1.schema.json"
 MANIFEST_SCHEMA_PATH = "tests/fixtures/agent-instruction-v1/manifest.schema.json"
-MANIFEST_SCHEMA_SHA256 = "d2359338c20b8dc69b11c3fb654d6b028af04f5d2fdf6da50b0dc0c04176c00d"
+MANIFEST_SCHEMA_SHA256 = "b09b2d38f0c491977e121b2a38f0bc39185d09aa98f110419fdbf37e4e0419e1"
 FIXTURE_ROOT = "tests/fixtures/agent-instruction-v1"
 EVIDENCE_ROOT = f"{FIXTURE_ROOT}/evidence"
 EVIDENCE_ARTIFACTS = {
@@ -2114,9 +2114,9 @@ def validate_manifest(manifest: Any) -> dict[str, Any]:
         review = _object(fixture["review"], ("reviewer", "date", "source_ref", "statement"), f"{path}.review")
         if _identifier(review["reviewer"], f"{path}.review.reviewer") != FIXTURE_REVIEWER:
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.reviewer")
-        if _string(review["date"], f"{path}.review.date") != "2026-08-30":
+        if _string(review["date"], f"{path}.review.date") != "2026-08-31":
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.date")
-        if _string(review["source_ref"], f"{path}.review.source_ref") != "d1ca7ba5af741d45d1da6492632661e688157bff":
+        if _string(review["source_ref"], f"{path}.review.source_ref") != "1c1137898bce9086c34310bd29b5cf8a889f800c":
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.source_ref")
         if _string(review["statement"], f"{path}.review.statement") != "reviewed-source-to-model-binding":
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.statement")

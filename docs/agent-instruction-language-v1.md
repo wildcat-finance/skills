@@ -14,7 +14,7 @@ The contract is licensed under the repository's existing
 [`pyproject.toml`](../pyproject.toml). This document does not duplicate either
 file or introduce a package dependency.
 
-[ADR-051](decisions/ADR-051-encode-a-closed-agent-instruction-model.md) records
+[ADR-062](decisions/ADR-062-encode-a-closed-agent-instruction-model.md) records
 why the source remains authoritative and why a closed model was selected.
 
 ## Run the bounded demonstration
@@ -34,9 +34,9 @@ python3 scripts/agent_instruction.py parity --manifest tests/fixtures/agent-inst
 
 The checked 2026-08-30 run binds three round trips, 15 reviewed source
 bindings, nine questions, and 14 hostile mutations. The source corpus is
-11,025 bytes and 2,499 tokens. The compact corpus is 6,060 bytes and 2,170
+11,170 bytes and 2,528 tokens. The compact corpus is 6,069 bytes and 2,174
 tokens; its complete 932-byte, 277-token decoder bootstrap makes the compared
-total 6,992 bytes and 2,447 tokens, saving 4,033 bytes and 52 tokens on this
+total 7,001 bytes and 2,451 tokens, saving 4,169 bytes and 77 tokens on this
 three-document cohort. Both recorded model families returned the required
 answer for all 18 source-versus-compact pairs, across 36 isolated calls.
 
@@ -429,18 +429,18 @@ decoder bootstrap under the same profile. The checked report records:
 
 | material | bytes | tokens |
 | --- | ---: | ---: |
-| source corpus | 11,025 | 2,499 |
-| canonical-model corpus | 8,563 | 2,070 |
-| compact corpus | 6,060 | 2,170 |
+| source corpus | 11,170 | 2,528 |
+| canonical-model corpus | 8,569 | 2,078 |
+| compact corpus | 6,069 | 2,174 |
 | decoder bootstrap | 932 | 277 |
-| compact corpus plus bootstrap | 6,992 | 2,447 |
-| compact-plus-bootstrap minus source | -4,033 | -52 |
+| compact corpus plus bootstrap | 7,001 | 2,451 |
+| compact-plus-bootstrap minus source | -4,169 | -77 |
 
-The strict three-document gate passes because `2,447 < 2,499`. The report also
+The strict three-document gate passes because `2,451 < 2,528`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
-not assumed to save tokens: the Fiat fixture reports `-65`, Horos reports
-`+731`, and Promise Machine reports `-164` after adding the entire bootstrap.
-The two-document prefix reports `+389`; only the declared three-document cohort
+not assumed to save tokens: the Fiat fixture reports `-91`, Horos reports
+`+733`, and Promise Machine reports `-165` after adding the entire bootstrap.
+The two-document prefix reports `+365`; only the declared three-document cohort
 is the acceptance cohort.
 
 ### Isolated family parity

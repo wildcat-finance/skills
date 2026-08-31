@@ -4,7 +4,7 @@
 
 Policy: [../VERSIONING.md](../VERSIONING.md)
 
-- Current version: `phylax-v1.4.0`
+- Current version: `phylax-v1.5.0`
 
 ## Frontier
 
@@ -22,3 +22,4 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 | `phylax-v1.2.0` | generation | `off-chain-boundary-controls` | `3d0057bb195f303c0e40b5782bf59ab0cba53e3172478c6a331d5990236ac604` | [credential argv fixtures](../../tests/test_phylax_checker.py), [study](../../../../docs/phylax-credential-argv/study.md) | P004 now walks only the inline argv expression of a resolved subprocess runner for credential-named values; assignment dataflow remains deliberately out of scope. |
 | `phylax-v1.3.0` | generation | `off-chain-boundary-controls` | `3d0057bb195f303c0e40b5782bf59ab0cba53e3172478c6a331d5990236ac604` | [unsafe-deserialization fixtures](../../tests/test_phylax_checker.py), [study](../../../../docs/phylax-unsafe-deserialization/study.md) | P008 adds source-local import resolution for the issue's pickle, marshal, YAML and dynamic-execution calls; assignment dataflow, custom-loader proofs and `marshal.loads` remain deliberately out of scope. |
 | `phylax-v1.4.0` | generation | `off-chain-boundary-controls` | `3d0057bb195f303c0e40b5782bf59ab0cba53e3172478c6a331d5990236ac604` | [hostile conformance manifest](../../tests/fixtures/model-proxy-v1/manifest.json), [component guards](../../tests/test_phylax_model_proxy.py), [normative reference](references/model-proxy-v1.md), [ADR-046](../../../../docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md) | The synthetic job-scoped model proxy now has one digest-bound positive-and-hostile conformance command, content-free proof output, and explicit #698, #699, live-provider, public-pilot, and #702 Fiat integration/end-to-end dependency gaps; the mature lint frontier is unchanged. |
+| `phylax-v1.5.0` | generation | `off-chain-boundary-controls` | `3d0057bb195f303c0e40b5782bf59ab0cba53e3172478c6a331d5990236ac604` | [single-assignment fixtures](../../tests/test_phylax_checker.py), [study](../../../../docs/phylax-single-assignment-locals/study.md) | P002, P004 and P008 share an eight-hop resolver for preceding, once-bound direct function locals; rebinding, compound and unsupported targets, comprehensions, nested and closure scope, module scope and interprocedural analysis remain unresolved. |

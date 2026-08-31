@@ -3,8 +3,8 @@
 This reference specifies the controller-owned capsule accepted by
 [ADR-028](https://github.com/wildcat-finance/skills/blob/main/docs/decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md).
 The capsule moves exact `.hexaemeron` bytes. It does not replace the standing
-Git bundle, signature proof, checkpoint archive, outer sidecar, Drive object or
-issue note.
+Git bundle, signature proof, local checkpoint archive, outer sidecar or direct
+agent hand-off.
 
 ## Export command
 
@@ -145,14 +145,19 @@ establish the same boundary.
 Restore treats the capsule as hostile. Before it creates active state, it
 checks the schema and closed object shapes, canonical manifest encoding,
 resource declarations, sorted inventory, every file digest, state identity,
-the exact ledger prefix and tail, controller version, accepted boundary,
-semantic next directive and local Git refs. Capsule reads use the export
-ceilings and no-follow, stable-file rules. The controller inventory is closed:
-an excluded live `lock` appearing in a capsule is an extra entry and refuses.
-A study or runbook receipt must name a relative path with no empty, dot,
-parent or backslash segment. A `.hexaemeron/` source is verified from its
-capsule copy before the worktree exists; other sources are verified from the
-fresh Git tree. Both use the ordinary 2 MiB source cap.
+the exact ledger prefix and tail, a controller version in the restoring
+controller's explicit compatibility set, accepted boundary, semantic next
+directive and local Git refs. Capsule reads use the export ceilings and
+no-follow, stable-file rules. The controller inventory is closed: an excluded
+live `lock` appearing in a capsule is an extra entry and refuses.
+
+New study and runbook receipts store a relative path with no empty, dot,
+parent or backslash segment. A legacy absolute receipt is accepted only when
+its recorded old origin, derived worktree and run branch agree and the source
+is an exact safe descendant of that worktree; restore converts it to the same
+portable relative form. A `.hexaemeron/` source is verified from its capsule
+copy before the worktree exists; other sources are verified from the fresh Git
+tree. Both use the ordinary 2 MiB source cap.
 
 ## Relocation transaction
 
@@ -167,11 +172,12 @@ derived worktree home is traversed component by component without following a
 link, and its exact ignore file is read or created through the pinned home.
 
 The private stage receives the verified controller tree. All files other than
-`state.json` and `ledger.jsonl` remain byte-identical. Fiat changes only
-`config.git.origin` and `config.git.worktree`, then appends one
-`checkpoint:restore` entry to the exact imported ledger prefix. That entry
-binds the manifest, source state and ledger digests, prior tail, full ref map
-and relocated state fingerprint. The completed controller directory is
+`state.json` and `ledger.jsonl` remain byte-identical. Fiat changes
+`config.git.origin`, `config.git.worktree`, and any admitted legacy study or
+runbook artifact path, then appends one `checkpoint:restore` entry to the exact
+imported ledger prefix. That entry binds the manifest, source state and ledger
+digests, prior tail, full ref map and relocated state fingerprint. The
+completed controller directory is
 published with an atomic no-replace rename. State and ledger replacements are
 written relative to the pinned private-stage directory and stop if its named
 identity changes. The relocated state remains under the controller-source cap
@@ -207,8 +213,10 @@ new or interrupted publication.
 ## Outer recovery boundary
 
 These commands do not create or verify the Git bundle, package an archive,
-publish to GitHub or Drive, handle keys or mint a semantic checkpoint
-identity. ADR-028 retains those jobs in the standing manual outer procedure.
-Restore accepts a directory already obtained and verified by that procedure;
-it does not extract an archive or fetch a remote object. Continuation means
-the imported ledger plus its one relocation entry, never a fresh Fiat ledger.
+handle keys or mint a semantic checkpoint identity. ADR-028 retains those jobs
+in the mandatory local outer procedure. That procedure writes to the fixed
+checkpoint store under the origin checkout and publishes nothing remotely.
+Restore accepts a directory already extracted and verified from the local
+archive handed over by another agent; it does not extract an archive or fetch a
+remote object. Continuation means the imported ledger plus its one relocation
+entry, never a fresh Fiat ledger.

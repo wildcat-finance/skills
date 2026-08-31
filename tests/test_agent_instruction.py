@@ -1846,8 +1846,9 @@ class FixtureBindingTests(RefusalAssertions, unittest.TestCase):
 
     def test_overlapping_sibling_bindings_refuse(self):
         model = fixture_model("fiat-study-runbook-phase")
+        sibling = next(item for item in model["bindings"] if item["node"] == "study-phase")
         binding = next(item for item in model["bindings"] if item["node"] == "runbook-phase")
-        binding["start"], binding["end"] = "17650", "17800"
+        binding["start"] = str(int(sibling["end"]) - 1)
         self.assertRefusal("WAI-E-REFERENCE.OVERLAP", AI.validate_model, model)
 
     def test_unsafe_source_path_in_manifest_refuses(self):
@@ -3216,7 +3217,7 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             sorted(record["path"] for record in coverage["documentation"]),
             [
                 "docs/agent-instruction-language-v1.md",
-                "docs/decisions/ADR-051-encode-a-closed-agent-instruction-model.md",
+                "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
             ],
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]

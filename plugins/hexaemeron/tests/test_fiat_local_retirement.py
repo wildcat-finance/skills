@@ -53,6 +53,25 @@ class FiatLocalRetirementTests(HexctlCase):
             )
             self.assertEqual(result.stdout, "")
 
+    def test_reset_preserves_the_origin_checkpoint_store(self):
+        self.land_a_run()
+        checkpoint = os.path.join(
+            self.dir,
+            ".hexaemeron",
+            "checkpoints",
+            "fiat-fixture",
+            "step-1-" + "a" * 40,
+            "checkpoint.zip",
+        )
+        os.makedirs(os.path.dirname(checkpoint), exist_ok=True)
+        with open(checkpoint, "wb") as handle:
+            handle.write(b"verified-local-checkpoint")
+
+        self.run_ctl("reset")
+
+        with open(checkpoint, "rb") as handle:
+            self.assertEqual(handle.read(), b"verified-local-checkpoint")
+
     def test_explicit_force_can_override_local_ignore_boundary(self):
         self.land_a_run()
         self.run_ctl("reset")

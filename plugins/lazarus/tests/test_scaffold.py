@@ -305,7 +305,7 @@ class ScaffoldTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        def event_paths(source, event):
+        def event_paths(source, event, required=True):
             event_match = re.search(
                 rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
                 source,
@@ -315,6 +315,8 @@ class ScaffoldTests(unittest.TestCase):
                 r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
                 event_match["body"],
             )
+            if not required and paths_match is None:
+                return None
             self.assertIsNotNone(paths_match)
             return set(
                 re.findall(r'^      - "([^"]+)"$', paths_match["paths"], re.M)
@@ -328,9 +330,23 @@ class ScaffoldTests(unittest.TestCase):
             with self.subTest(event=event):
                 lazarus_paths = event_paths(workflow, event)
                 self.assertTrue(lazarus_paths.isdisjoint(shared_paths))
-                self.assertTrue(
-                    shared_paths.issubset(event_paths(repo_workflow, event))
-                )
+                self.assertIsNone(event_paths(repo_workflow, event, required=False))
+
+        plugins_path = support.REPO_ROOT / ".github/workflows/plugins.yml"
+        self.assertTrue(plugins_path.is_file(), "the complete plugin workflow is missing")
+        plugins_workflow = plugins_path.read_text(encoding="utf-8")
+        for event in ("push", "pull_request"):
+            with self.subTest(aggregate_event=event):
+                self.assertIsNone(event_paths(plugins_workflow, event, required=False))
+        # The aggregate gate shards the declared graph, one job per scope, so
+        # Lazarus is covered by its own shard rather than by a single --full
+        # invocation. What matters here is unchanged: the gate carries no path
+        # filter, so its context reaches every pull request.
+        self.assertIn(
+            "python3 scripts/run_checks.py\n          --scope ${{ matrix.scope }}",
+            plugins_workflow,
+        )
+        self.assertIn("          - lazarus\n", plugins_workflow)
 
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)
