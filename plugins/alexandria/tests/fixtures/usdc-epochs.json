@@ -1,0 +1,58 @@
+{
+  "block_hashes": {
+    "15331586": "0x5b0171e11d95dd5e7ac0d459bd520b15ab3bbb0b5089b66e4723f4ede16c163b",
+    "15333999": "0xd6bcc44d73ad66b8313ce7caea4136e8498c541f81a1473190411740963cf5a0",
+    "15334000": "0x926f8d86cb703deb60f37be7f1575e9b4b788e903e6cbbcf40ebdc50ed4246d2",
+    "15338499": "0x40f227ae5b0b55bbe6867046f3aaf35f23f3b3c9e5b2f99a45faa2d377de853a",
+    "15338500": "0x27a4cfdac54fad68c2904a742c3bf9106d9f1df8390168176d05b059276333f1",
+    "15341585": "0xef26438d1db7a759736d77f6fa7bf2c797cc1a85c7695dc5c64f7f58c50e5be8"
+  },
+  "chain": "eip155:1",
+  "code_reads": {
+    "0x1b0e765f6224c21223aea2af16c1c46e38885a40": "0x60806040000000000000000000000000000000000000000000000000",
+    "0x285617313887d43c62f21ea5f7b0f4b8f31c0d33": "0x60806040020202020202020202020202020202020202020202020202",
+    "0x42f9505a376761b180e27a01ba0554244ed1de7d": "0x60806040010101010101010101010101010101010101010101010101"
+  },
+  "deployment": "ethereum-usdc-comet",
+  "interval": {
+    "end": "15341585",
+    "start": "15331586"
+  },
+  "note": "Synthetic Ethereum USDC Comet epoch evidence for the interval collector's tests. Block hashes and transaction hashes are derived from a fixed string, not observed on any chain; the proxy, implementation slot and Upgraded topic are the real ones.",
+  "proxy": "0xc3d688b66703497daa19211eedff47f25384cdc3",
+  "slot_reads": {
+    "15331586": "0x0000000000000000000000001b0e765f6224c21223aea2af16c1c46e38885a40",
+    "15334000": "0x00000000000000000000000042f9505a376761b180e27a01ba0554244ed1de7d",
+    "15338500": "0x000000000000000000000000285617313887d43c62f21ea5f7b0f4b8f31c0d33"
+  },
+  "upgrade_logs": [
+    {
+      "address": "0xc3d688b66703497daa19211eedff47f25384cdc3",
+      "blockHash": "0x926f8d86cb703deb60f37be7f1575e9b4b788e903e6cbbcf40ebdc50ed4246d2",
+      "blockNumber": "0xe9fa70",
+      "data": "0x",
+      "logIndex": "0x3",
+      "removed": false,
+      "topics": [
+        "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b",
+        "0x00000000000000000000000042f9505a376761b180e27a01ba0554244ed1de7d"
+      ],
+      "transactionHash": "0x8e690441db610dd20e4306926bb6d11b6ef2fef8fd3dd904d14f4d205c59d6ca",
+      "transactionIndex": "0x7"
+    },
+    {
+      "address": "0xc3d688b66703497daa19211eedff47f25384cdc3",
+      "blockHash": "0x27a4cfdac54fad68c2904a742c3bf9106d9f1df8390168176d05b059276333f1",
+      "blockNumber": "0xea0c04",
+      "data": "0x",
+      "logIndex": "0x4",
+      "removed": false,
+      "topics": [
+        "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b",
+        "0x000000000000000000000000285617313887d43c62f21ea5f7b0f4b8f31c0d33"
+      ],
+      "transactionHash": "0x2c18b62f9b81223307f339c07f0cd16defddd424e05f50c32ff446e90b802bcf",
+      "transactionIndex": "0x7"
+    }
+  ]
+}

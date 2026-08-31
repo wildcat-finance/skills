@@ -45,10 +45,24 @@ MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
 CHAIN_RE = re.compile(r"^eip155:(0|[1-9][0-9]*)$")
+WORD_RE = re.compile(r"^0x[0-9a-f]{64}$")
+CODE_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 
 JOURNAL_DIRECTORY = "journals"
 CHECKPOINT_NAME = "checkpoint.json"
+
+# The EIP-1967 implementation slot, and the ERC-1967 `Upgraded(address)` topic.
+# Neither is computed here, because the standard library carries no keccak.
+# Both are attested by the preserved Phase 0 capture in this repository: the
+# slot is the exact `eth_getStorageAt` parameter in
+# `examples/compound-v3-phase0-v0/input/corpus.json`, and the topic appears in
+# the proxy runtime bytecode preserved at
+# `examples/compound-v3-phase0-v0/input/responses/old-proxy-code.json`.
+IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+UPGRADED_TOPIC = "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
+ZERO_ADDRESS = "0x" + "0" * 40
+MAX_EPOCHS = 256
 
 
 def plan_shards(start: int, end: int, width: int) -> list[dict]:
@@ -381,6 +395,220 @@ class Staging:
         return False
 
 
+
+def discover_epochs(
+    *,
+    chain: str,
+    deployment: str,
+    proxy: str,
+    interval,
+    upgrade_logs,
+    slot_reads,
+    code_reads,
+    block_hashes,
+) -> list[dict]:
+    """Tile a declared interval with code-hash-bound implementation epochs.
+
+    Every input is bytes somebody already preserved.  Nothing here reads a
+    chain, and nothing infers an implementation it was not given: a boundary
+    without its own slot read is refused rather than inheriting the epoch
+    before or after it, because the pinned `CometExt.version()` returns the
+    constant string `0` and cannot tell two implementations apart.
+    """
+    if not isinstance(chain, str) or CHAIN_RE.fullmatch(chain) is None:
+        raise AlexandriaError("epoch chain is not an eip155 identifier")
+    if not isinstance(deployment, str) or NAME_RE.fullmatch(deployment) is None:
+        raise AlexandriaError("epoch deployment is not a name")
+    proxy = _address(proxy, "epoch proxy")
+    if not isinstance(interval, dict) or set(interval) != {"end", "start"}:
+        raise AlexandriaError("epoch interval has an unknown shape")
+    start = _decimal(interval["start"], "epoch interval start")
+    end = _decimal(interval["end"], "epoch interval end")
+    if end < start:
+        raise AlexandriaError("epoch interval end must not precede its start")
+
+    boundaries = [start]
+    openings = {start: None}
+    previous = None
+    if not isinstance(upgrade_logs, (list, tuple)):
+        raise AlexandriaError("upgrade logs are not a list")
+    if len(upgrade_logs) > MAX_EPOCHS:
+        raise AlexandriaError(f"more than {MAX_EPOCHS} upgrade logs were supplied")
+    for position, log in enumerate(upgrade_logs):
+        block, opening = _upgrade_log(log, proxy, position)
+        if previous is not None and block <= previous:
+            raise AlexandriaError("upgrade logs are not in ascending block order")
+        previous = block
+        if not start <= block <= end:
+            raise AlexandriaError(
+                f"upgrade log at block {block} falls outside the declared interval"
+            )
+        if block == start:
+            openings[start] = opening
+            continue
+        boundaries.append(block)
+        openings[block] = opening
+
+    epochs = []
+    for position, boundary in enumerate(boundaries):
+        closing = boundaries[position + 1] - 1 if position + 1 < len(boundaries) else end
+        implementation = _implementation(slot_reads, boundary)
+        code = _runtime_code(code_reads, implementation)
+        epochs.append({
+            "chain": chain,
+            "deployment": deployment,
+            "end_block": str(closing),
+            "end_hash": _block_hash(block_hashes, closing),
+            "implementation": implementation,
+            "implementation_code_sha256": hashlib.sha256(code).hexdigest(),
+            "proxy": proxy,
+            "start_block": str(boundary),
+            "start_hash": _block_hash(block_hashes, boundary),
+            "upgrade": openings[boundary],
+        })
+
+    validate_epochs(epochs, start, end)
+    return epochs
+
+
+def validate_epochs(epochs, start: int, end: int) -> None:
+    """Check that an epoch table tiles its interval exactly, with no gap or overlap."""
+    if not isinstance(epochs, list) or not epochs:
+        raise AlexandriaError("epoch table is empty")
+    if len(epochs) > MAX_EPOCHS:
+        raise AlexandriaError(f"epoch table holds more than {MAX_EPOCHS} epochs")
+    required = {
+        "chain", "deployment", "end_block", "end_hash", "implementation",
+        "implementation_code_sha256", "proxy", "start_block", "start_hash",
+        "upgrade",
+    }
+    expected = start
+    for epoch in epochs:
+        if not isinstance(epoch, dict) or set(epoch) != required:
+            raise AlexandriaError("epoch has an unknown shape")
+        first = _decimal(epoch["start_block"], "epoch start block")
+        last = _decimal(epoch["end_block"], "epoch end block")
+        if last < first:
+            raise AlexandriaError("epoch end block precedes its start block")
+        if first != expected:
+            raise AlexandriaError(
+                f"epoch table leaves block {expected} uncovered"
+                if first > expected
+                else f"epoch table overlaps at block {first}"
+            )
+        for field in ("end_hash", "start_hash"):
+            if not isinstance(epoch[field], str) or HASH_RE.fullmatch(epoch[field]) is None:
+                raise AlexandriaError(f"epoch {field} is not a 32-byte hash")
+        _address(epoch["implementation"], "epoch implementation")
+        if (
+            not isinstance(epoch["implementation_code_sha256"], str)
+            or CODE_DIGEST_RE.fullmatch(epoch["implementation_code_sha256"]) is None
+        ):
+            raise AlexandriaError("epoch implementation code digest is not a SHA-256")
+        upgrade = epoch["upgrade"]
+        if upgrade is not None:
+            if not isinstance(upgrade, dict) or set(upgrade) != {
+                "block_number", "log_index", "transaction_hash",
+            }:
+                raise AlexandriaError("epoch upgrade coordinates have an unknown shape")
+            if _decimal(upgrade["block_number"], "epoch upgrade block") != first:
+                raise AlexandriaError("epoch upgrade block does not open its epoch")
+        expected = last + 1
+    if expected != end + 1:
+        raise AlexandriaError(f"epoch table leaves block {expected} uncovered")
+
+
+def _upgrade_log(log, proxy: str, position: int):
+    if not isinstance(log, dict):
+        raise AlexandriaError(f"upgrade log {position} is not an object")
+    for field in ("address", "blockNumber", "logIndex", "topics", "transactionHash"):
+        if field not in log:
+            raise AlexandriaError(f"upgrade log {position} has no {field}")
+    # ephoros: allow no telemetry here: `log` is a JSON-RPC event log a provider returned, and `address` is its emitting-contract field
+    if _address(log["address"], f"upgrade log {position} emitting contract") != proxy:
+        raise AlexandriaError(f"upgrade log {position} was not emitted by the proxy")
+    topics = log["topics"]
+    if not isinstance(topics, list) or len(topics) != 2:
+        raise AlexandriaError(f"upgrade log {position} does not carry two topics")
+    if not isinstance(topics[0], str) or topics[0].lower() != UPGRADED_TOPIC:
+        raise AlexandriaError(f"upgrade log {position} is not an Upgraded(address) log")
+    block = _quantity(log["blockNumber"], f"upgrade log {position} block number")
+    return block, {
+        "block_number": str(block),
+        "log_index": _quantity(log["logIndex"], f"upgrade log {position} log index"),
+        "transaction_hash": _hash(log["transactionHash"], f"upgrade log {position} transaction"),
+    }
+
+
+def _implementation(slot_reads, block: int) -> str:
+    if not isinstance(slot_reads, dict):
+        raise AlexandriaError("implementation slot reads are not a mapping")
+    word = slot_reads.get(str(block), slot_reads.get(block))
+    if word is None:
+        raise AlexandriaError(
+            f"block {block} opens an epoch with no implementation slot read of its own"
+        )
+    if not isinstance(word, str) or WORD_RE.fullmatch(word.lower()) is None:
+        raise AlexandriaError(f"implementation slot read at block {block} is not a 32-byte word")
+    if word[2:26].strip("0") != "":
+        raise AlexandriaError(
+            f"implementation slot read at block {block} is not a left-padded address"
+        )
+    implementation = "0x" + word[-40:].lower()
+    if implementation == ZERO_ADDRESS:
+        raise AlexandriaError(f"implementation slot read at block {block} is the zero address")
+    return implementation
+
+
+def _runtime_code(code_reads, implementation: str) -> bytes:
+    if not isinstance(code_reads, dict):
+        raise AlexandriaError("runtime code reads are not a mapping")
+    value = code_reads.get(implementation)
+    if value is None:
+        raise AlexandriaError(f"implementation {implementation} has no runtime code read")
+    if not isinstance(value, str) or not value.startswith("0x") or len(value) % 2:
+        raise AlexandriaError(f"implementation {implementation} runtime code is not hexadecimal")
+    body = value[2:]
+    if not body:
+        raise AlexandriaError(f"implementation {implementation} has empty runtime code")
+    try:
+        return bytes.fromhex(body)
+    except ValueError as exc:
+        raise AlexandriaError(
+            f"implementation {implementation} runtime code is not hexadecimal"
+        ) from exc
+
+
+def _block_hash(block_hashes, block: int) -> str:
+    if not isinstance(block_hashes, dict):
+        raise AlexandriaError("block hashes are not a mapping")
+    value = block_hashes.get(str(block), block_hashes.get(block))
+    if value is None:
+        raise AlexandriaError(f"block {block} has no preserved block hash")
+    return _hash(value, f"block {block} hash")
+
+
+def _address(value, label: str) -> str:
+    if not isinstance(value, str) or ADDRESS_RE.fullmatch(value.lower()) is None:
+        raise AlexandriaError(f"{label} is not a 20-byte address")
+    return value.lower()
+
+
+def _hash(value, label: str) -> str:
+    if not isinstance(value, str) or HASH_RE.fullmatch(value.lower()) is None:
+        raise AlexandriaError(f"{label} is not a 32-byte hash")
+    return value.lower()
+
+
+def _quantity(value, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, str) or not value.startswith("0x"):
+        raise AlexandriaError(f"{label} is not a hexadecimal quantity")
+    try:
+        return int(value, 16)
+    except ValueError as exc:
+        raise AlexandriaError(f"{label} is not a hexadecimal quantity") from exc
+
+
 def _text(data: bytes, label: str) -> str:
     try:
         return data.decode("utf-8")
@@ -467,6 +695,9 @@ def _read_regular(path: Path, label: str, maximum: int) -> bytes:
 
 __all__ = [
     "CHECKPOINT_FORMAT",
+    "IMPLEMENTATION_SLOT",
+    "MAX_EPOCHS",
+    "UPGRADED_TOPIC",
     "EVIDENCE_CLASSES",
     "FINALITY_POLICIES",
     "MAX_SHARDS",
@@ -475,9 +706,11 @@ __all__ = [
     "RECEIPT_FORMAT",
     "Staging",
     "contained",
+    "discover_epochs",
     "plan_digest",
     "plan_shards",
     "resolve_root",
     "validate_checkpoint",
+    "validate_epochs",
     "validate_plan",
 ]

@@ -18,6 +18,10 @@ from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import (  # noqa: E402
     CHECKPOINT_FORMAT,
     EVIDENCE_CLASSES,
+    IMPLEMENTATION_SLOT,
+    UPGRADED_TOPIC,
+    discover_epochs,
+    validate_epochs,
     MAX_SHARDS,
     MAX_SHARD_WIDTH,
     PLAN_FORMAT,
@@ -450,6 +454,165 @@ class StagingGuardTests(unittest.TestCase):
             staging.record(1, "logs", b"{}", b"{}")
             with self.assertRaisesRegex(AlexandriaError, "record baseline"):
                 staging.commit(1, 1001, HASH)
+
+
+
+EPOCH_FIXTURE = PLUGIN / "tests" / "fixtures" / "usdc-epochs.json"
+
+
+def epoch_evidence(**overrides):
+    value = json.loads(EPOCH_FIXTURE.read_text(encoding="utf-8"))
+    value = {
+        "block_hashes": value["block_hashes"],
+        "chain": value["chain"],
+        "code_reads": value["code_reads"],
+        "deployment": value["deployment"],
+        "interval": value["interval"],
+        "proxy": value["proxy"],
+        "slot_reads": value["slot_reads"],
+        "upgrade_logs": value["upgrade_logs"],
+    }
+    value = deepcopy(value)
+    value.update(overrides)
+    return value
+
+
+class EpochDiscoveryTests(unittest.TestCase):
+    def test_the_pinned_constants_are_the_ones_the_preserved_capture_used(self):
+        corpus = json.loads(
+            (PLUGIN / "examples" / "compound-v3-phase0-v0" / "input" / "corpus.json")
+            .read_text(encoding="utf-8")
+        )
+        slots = {
+            item["params"][1]
+            for item in corpus["requests"]
+            if item["name"].endswith("implementation-slot")
+        }
+        self.assertEqual(slots, {IMPLEMENTATION_SLOT})
+        code = json.loads(
+            (PLUGIN / "examples" / "compound-v3-phase0-v0" / "input" / "responses"
+             / "old-proxy-code.json").read_text(encoding="utf-8")
+        )
+        self.assertIn(UPGRADED_TOPIC[2:], code["result"])
+
+    def test_a_two_upgrade_interval_is_tiled_exactly(self):
+        epochs = discover_epochs(**epoch_evidence())
+        self.assertEqual(len(epochs), 3)
+        self.assertEqual(epochs[0]["start_block"], "15331586")
+        self.assertEqual(epochs[-1]["end_block"], "15341585")
+        for earlier, later in zip(epochs, epochs[1:]):
+            self.assertEqual(int(later["start_block"]), int(earlier["end_block"]) + 1)
+        self.assertEqual(
+            len({epoch["implementation_code_sha256"] for epoch in epochs}), 3
+        )
+
+    def test_the_first_epoch_is_clipped_to_the_interval_and_names_no_upgrade(self):
+        epochs = discover_epochs(**epoch_evidence())
+        self.assertIsNone(epochs[0]["upgrade"])
+        for epoch in epochs[1:]:
+            self.assertEqual(epoch["upgrade"]["block_number"], epoch["start_block"])
+
+    def test_an_interval_with_no_upgrade_is_one_epoch(self):
+        evidence = epoch_evidence(upgrade_logs=[], interval={"end": "15333999", "start": "15331586"})
+        evidence["block_hashes"]["15333999"] = evidence["block_hashes"]["15333999"]
+        epochs = discover_epochs(**evidence)
+        self.assertEqual(len(epochs), 1)
+        self.assertIsNone(epochs[0]["upgrade"])
+
+    def test_a_zero_address_slot_read_refuses(self):
+        evidence = epoch_evidence()
+        evidence["slot_reads"]["15331586"] = "0x" + "0" * 64
+        with self.assertRaisesRegex(AlexandriaError, "zero address"):
+            discover_epochs(**evidence)
+
+    def test_an_empty_runtime_code_read_refuses_with_its_own_message(self):
+        evidence = epoch_evidence()
+        first = "0x1b0e765f6224c21223aea2af16c1c46e38885a40"
+        evidence["code_reads"][first] = "0x"
+        with self.assertRaisesRegex(AlexandriaError, "empty runtime code"):
+            discover_epochs(**evidence)
+
+    def test_a_slot_read_that_is_not_a_word_refuses(self):
+        evidence = epoch_evidence()
+        evidence["slot_reads"]["15331586"] = "0xdeadbeef"
+        with self.assertRaisesRegex(AlexandriaError, "32-byte word"):
+            discover_epochs(**evidence)
+
+    def test_a_slot_read_carrying_more_than_an_address_refuses(self):
+        evidence = epoch_evidence()
+        evidence["slot_reads"]["15331586"] = "0x" + "1" * 64
+        with self.assertRaisesRegex(AlexandriaError, "left-padded address"):
+            discover_epochs(**evidence)
+
+    def test_unordered_upgrade_logs_refuse(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"] = list(reversed(evidence["upgrade_logs"]))
+        with self.assertRaisesRegex(AlexandriaError, "ascending block order"):
+            discover_epochs(**evidence)
+
+    def test_an_upgrade_log_outside_the_interval_refuses(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"][1]["blockNumber"] = hex(15_400_000)
+        with self.assertRaisesRegex(AlexandriaError, "outside the declared interval"):
+            discover_epochs(**evidence)
+
+    def test_a_boundary_with_no_slot_read_of_its_own_refuses(self):
+        evidence = epoch_evidence()
+        del evidence["slot_reads"]["15338500"]
+        with self.assertRaisesRegex(AlexandriaError, "no implementation slot read of its own"):
+            discover_epochs(**evidence)
+
+    def test_a_log_from_another_address_refuses(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"][0]["address"] = "0x" + "ab" * 20
+        with self.assertRaisesRegex(AlexandriaError, "not emitted by the proxy"):
+            discover_epochs(**evidence)
+
+    def test_a_log_carrying_another_topic_refuses(self):
+        evidence = epoch_evidence()
+        evidence["upgrade_logs"][0]["topics"][0] = "0x" + "cd" * 32
+        with self.assertRaisesRegex(AlexandriaError, "not an Upgraded"):
+            discover_epochs(**evidence)
+
+    def test_a_missing_block_hash_refuses(self):
+        evidence = epoch_evidence()
+        del evidence["block_hashes"]["15341585"]
+        with self.assertRaisesRegex(AlexandriaError, "no preserved block hash"):
+            discover_epochs(**evidence)
+
+    def test_a_table_that_leaves_a_hole_refuses(self):
+        epochs = discover_epochs(**epoch_evidence())
+        epochs[1]["start_block"] = str(int(epochs[1]["start_block"]) + 1)
+        with self.assertRaisesRegex(AlexandriaError, "uncovered"):
+            validate_epochs(epochs, 15_331_586, 15_341_585)
+
+    def test_a_table_that_overlaps_refuses(self):
+        epochs = discover_epochs(**epoch_evidence())
+        epochs[1]["start_block"] = str(int(epochs[1]["start_block"]) - 1)
+        with self.assertRaisesRegex(AlexandriaError, "overlaps"):
+            validate_epochs(epochs, 15_331_586, 15_341_585)
+
+    def test_a_table_short_of_the_interval_end_refuses(self):
+        epochs = discover_epochs(**epoch_evidence())
+        epochs[-1]["end_block"] = str(int(epochs[-1]["end_block"]) - 1)
+        with self.assertRaisesRegex(AlexandriaError, "uncovered"):
+            validate_epochs(epochs, 15_331_586, 15_341_585)
+
+    def test_the_table_matches_the_receipt_schema(self):
+        epochs = discover_epochs(**epoch_evidence())
+        schema = json.loads(
+            (PLUGIN / "schemas" / "interval-receipt-v1.schema.json").read_text()
+        )
+        definition = schema["$defs"]["epoch"]
+        self.assertFalse(definition["additionalProperties"])
+        for epoch in epochs:
+            self.assertEqual(set(epoch), set(definition["required"]))
+        upgrade = definition["properties"]["upgrade"]["oneOf"][1]
+        self.assertEqual(set(epochs[1]["upgrade"]), set(upgrade["required"]))
+
+    def test_discovery_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            discover_epochs(**epoch_evidence())
 
 
 class SchemaTests(unittest.TestCase):
