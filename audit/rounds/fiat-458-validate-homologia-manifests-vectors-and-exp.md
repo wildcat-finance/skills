@@ -15,3 +15,21 @@ Elenchus verdict: inconclusive
 | S1-R1-03 | low | .agents/skills/promise-machine/runtime/plugins/homologia/skills/homologia/EVOLUTION.md:16 | The installed-runtime ledger linked to an absent `../../tests/test_check.py`, so the first Hypomnema pass exited 1. | fixed in this commit |
 
 Leads not pursued: Concurrent parent-directory symlink substitution between lexical inspection and descriptor open or output replacement was not reproduced; the declared step covers existing symlinks and named-file replacement, not an adversarial directory owner. The aggregate check may read at most one extra per-file-capped input before refusal, but it refuses before JSON decoding and output as declared. Elenchus remained inconclusive because the source-bound runbook supplies the unittest command but no report format or report file; no substitute runner was used.
+
+## Step 1, round 2 -- 2026-08-31T12:17:12Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: path-containment=reviewed; descriptor-race=reviewed; cap-before-decode=reviewed; duplicate-json-key=reviewed; scale-identity=reviewed; proved-provenance=reviewed; provenance-strengthening=reviewed; tolerance-declaration=reviewed; partial-write=reviewed; deterministic-record=reviewed
+
+Not checked: X-Ray, Solidity Auditor, Solidity, EVM execution, network or RPC behaviour, and mirror execution; the recorded security suite waiver applies to this non-Solidity step
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R2-01 | medium | plugins/homologia/scripts/homologia.py:607 | Uniqueness covered descriptor strings but not file identity, so two declared names for one vector file were admitted as two sets; a case-insensitive alias reproduced a checked record with `vector_set_count` 2. | fixed in this commit |
+| S1-R2-02 | medium | plugins/homologia/scripts/homologia.py:369 | A `recorded` expected answer with chain id 43114 was admitted under a pair pinned to chain id 1, misbinding the expected evidence to the declared computation. | fixed in this commit |
+| S1-R2-03 | low | plugins/homologia/references/manifest-v1.schema.json:11; plugins/homologia/references/vectors-v1.schema.json:10 | Both published path schemas admitted `./vectors.jsonl`, `nested/./vectors.jsonl` and `nested/`, although the authoritative validator refuses their dot or empty components. | fixed in this commit |
+
+Leads not pursued: The round-1 output-alias, unpaired-surrogate, oversized-integer and installed-ledger regressions remain fixed-green; the focused six-test repair set and 51-test `test_check` suite passed. The concurrent parent-directory substitution and one-extra-bounded-read leads remain outside the declared boundary or fail before decode and output as recorded in round 1. No further candidate crossed the supported-input and observable-consequence threshold during the ten-risk manual review. Elenchus remained inconclusive because the immutable runbook declares the unittest command but no report format or report file; no substitute runner was used. The mandated audit filter is exactly `--audit-filter sapheneia:sapheneia`. The frozen heading, schema, ten risk ids, waiver, verdict, three finding ids, severities, paths, reproductions and fixed statuses match this record item by item; the round-1 bytes were preserved as the prefix with SHA-256 `4868e5bba77d854dce7d690fd9dfa0c380169a2fd6c1fd245053d958f3be8bd0`.

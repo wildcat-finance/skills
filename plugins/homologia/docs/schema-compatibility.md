@@ -30,8 +30,8 @@ The three accepted forms are deliberately separate:
 - `proved` requires `lazarus_artifact`, a repository-relative reference. This
   step checks the reference's syntax and does not open it or repeat Lazarus's
   proof work.
-- `recorded` requires canonical chain id and block number strings plus a
-  32-byte block hash.
+- `recorded` requires a canonical chain id exactly equal to `pair.chain.id`, a
+  canonical block number string and a 32-byte block hash.
 - `asserted` requires a bounded, non-empty author name.
 
 The class is evidence attached to the supplied expected integer. Admission
@@ -46,7 +46,8 @@ block numbers and absolute tolerances are unsigned.
 
 Input paths use `/`, have no absolute, empty, dot or parent components, and
 remain under their declared directory. Manifest and output paths remain under
-the repository root. Existing symlinks refuse. Each input is opened once with
+the repository root. Existing symlinks refuse. Two names for the same file are
+one input and refuse as a repeated path. Each input is opened once with
 no-follow where the platform provides it, read through that descriptor, and
 checked against the named file again before output.
 

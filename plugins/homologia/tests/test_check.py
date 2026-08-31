@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -114,6 +116,17 @@ class CheckTests(unittest.TestCase):
         self.write_vectors([vector])
         self.check()
 
+    def test_recorded_answer_chain_must_match_the_pair(self):
+        vector = self.vectors()[0]
+        vector["expected"]["provenance"] = {
+            "class": "recorded",
+            "chain_id": "43114",
+            "block_number": "100",
+            "block_hash": "0x" + "2" * 64,
+        }
+        self.write_vectors([vector])
+        self.assert_refuses("HOM-CHECK-PROVENANCE")
+
     def test_asserted_answer_requires_a_named_author(self):
         vector = self.vectors()[0]
         vector["expected"]["provenance"] = {"class": "asserted"}
@@ -163,6 +176,17 @@ class CheckTests(unittest.TestCase):
         manifest = self.manifest()
         duplicate = dict(manifest["vector_sets"][0])
         duplicate["id"] = "second"
+        manifest["vector_sets"].append(duplicate)
+        self.write_manifest(manifest)
+        self.assert_refuses("HOM-CHECK-DUPLICATE")
+
+    def test_filesystem_alias_of_a_vector_path_refuses(self):
+        alias = self.root / "case" / "vectors-alias.jsonl"
+        os.link(self.vectors_path, alias)
+        manifest = self.manifest()
+        duplicate = dict(manifest["vector_sets"][0])
+        duplicate["id"] = "alias"
+        duplicate["path"] = alias.name
         manifest["vector_sets"].append(duplicate)
         self.write_manifest(manifest)
         self.assert_refuses("HOM-CHECK-DUPLICATE")
@@ -532,6 +556,11 @@ class CheckTests(unittest.TestCase):
                     schema["$schema"], "https://json-schema.org/draft/2020-12/schema"
                 )
                 self.assertIs(schema["additionalProperties"], False)
+                path_pattern = re.compile(schema["$defs"]["path"]["pattern"])
+                for invalid in ("./vectors.jsonl", "nested/./vectors.jsonl", "nested/"):
+                    with self.subTest(path=path.name, invalid=invalid):
+                        self.assertIsNone(path_pattern.fullmatch(invalid))
+                self.assertIsNotNone(path_pattern.fullmatch("nested/vectors.jsonl"))
 
     def test_committed_example_repeats_the_committed_checked_bytes(self):
         example_root = self.root / "plugins" / "homologia" / "examples" / "wad-interest-v0"

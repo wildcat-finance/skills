@@ -339,7 +339,9 @@ def _validate_pair(value: object) -> dict[str, Any]:
     return pair
 
 
-def _validate_provenance(value: object, subject: str) -> dict[str, Any]:
+def _validate_provenance(
+    value: object, subject: str, *, pair_chain_id: str
+) -> dict[str, Any]:
     if not isinstance(value, dict) or not isinstance(value.get("class"), str):
         _refuse("HOM-CHECK-PROVENANCE", subject, "declare one closed provenance object")
     provenance_class = value["class"]
@@ -364,6 +366,12 @@ def _validate_provenance(value: object, subject: str) -> dict[str, Any]:
             _integer(provenance["block_number"], f"{subject}.block_number", unsigned=True)
         except Refusal:
             _refuse("HOM-CHECK-PROVENANCE", subject, "supply canonical chain and block identity")
+        if provenance["chain_id"] != pair_chain_id:
+            _refuse(
+                "HOM-CHECK-PROVENANCE",
+                subject,
+                "make the recorded chain id exactly equal to pair.chain.id",
+            )
         if not isinstance(provenance["block_hash"], str) or not HASH_RE.fullmatch(provenance["block_hash"]):
             _refuse("HOM-CHECK-PROVENANCE", subject, "supply one 32-byte hexadecimal block hash")
         return provenance
@@ -388,6 +396,7 @@ def _validate_vector(
     set_id: str,
     position: int,
     declared_tolerance: dict[str, str] | None,
+    pair_chain_id: str,
 ) -> dict[str, Any]:
     subject = f"vector_sets.{set_id}.vectors.{position}"
     vector = _closed_object(
@@ -407,7 +416,11 @@ def _validate_vector(
         vector["expected"], required={"integer", "provenance"}, subject=f"{subject}.expected"
     )
     _integer(expected["integer"], f"{subject}.expected.integer")
-    _validate_provenance(expected["provenance"], f"{subject}.expected.provenance")
+    _validate_provenance(
+        expected["provenance"],
+        f"{subject}.expected.provenance",
+        pair_chain_id=pair_chain_id,
+    )
     if "tolerance" in vector:
         tolerance = _tolerance(vector["tolerance"], f"{subject}.tolerance")
         if declared_tolerance is None or tolerance != declared_tolerance:
@@ -424,6 +437,7 @@ def _parse_vectors(
     *,
     set_id: str,
     declared_tolerance: dict[str, str] | None,
+    pair_chain_id: str,
     limit: int,
 ) -> list[dict[str, Any]]:
     try:
@@ -445,6 +459,7 @@ def _parse_vectors(
             set_id=set_id,
             position=position,
             declared_tolerance=declared_tolerance,
+            pair_chain_id=pair_chain_id,
         )
         vector_id = vector["id"]
         if vector_id in seen:
@@ -550,6 +565,7 @@ def check_manifest(
     sources = [manifest_source]
     seen_ids: set[str] = set()
     seen_paths: set[str] = set()
+    seen_input_identities = {(manifest_source.device, manifest_source.inode)}
     total_vectors = 0
     manifest_directory = manifest_path.parent
     for position, descriptor_value in enumerate(descriptors, start=1):
@@ -588,6 +604,14 @@ def check_manifest(
         source = _read_bounded_file(
             vector_path, limit=limits.max_file_bytes, subject=f"vector_set.{set_id}"
         )
+        source_identity = (source.device, source.inode)
+        if source_identity in seen_input_identities:
+            _refuse(
+                "HOM-CHECK-DUPLICATE",
+                descriptor_path,
+                "declare each input file once, without filesystem aliases",
+            )
+        seen_input_identities.add(source_identity)
         sources.append(source)
         aggregate_bytes += source.size
         if aggregate_bytes > limits.max_aggregate_bytes:
@@ -600,6 +624,7 @@ def check_manifest(
             source,
             set_id=set_id,
             declared_tolerance=declared_tolerance,
+            pair_chain_id=pair["chain"]["id"],
             limit=limits.max_vectors_per_set,
         )
         total_vectors += len(vectors)

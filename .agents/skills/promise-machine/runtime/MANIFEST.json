@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1042,
-  "total_bytes": 22200383,
+  "total_bytes": 22201397,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3319,9 +3319,9 @@
       "source": "plugins/homologia/docs/homologia-study.md"
     },
     {
-      "bytes": 4901,
+      "bytes": 5016,
       "path": "plugins/homologia/docs/schema-compatibility.md",
-      "sha256": "3178b6f08bf9a9f766261c6a3b6c53e229a8abf37ea4f7dae53e8fd91357f6b2",
+      "sha256": "b98de5f4275e635a840ba7543d9c0ba5699145395cfccafed70d2eacb59708ec",
       "source": "plugins/homologia/docs/schema-compatibility.md"
     },
     {
@@ -3349,21 +3349,21 @@
       "source": "plugins/homologia/examples/wad-interest-v0/vectors-recorded.jsonl"
     },
     {
-      "bytes": 3273,
+      "bytes": 3285,
       "path": "plugins/homologia/references/manifest-v1.schema.json",
-      "sha256": "ba5ec1861e22fcb7f8b6c08f5807c17ae18032b21b0d1bc5cba8e274c14adf8e",
+      "sha256": "d6e8c2b446eb09f9f78505786911cccc2dc91aaf09cb81fd124e4a9f295428a0",
       "source": "plugins/homologia/references/manifest-v1.schema.json"
     },
     {
-      "bytes": 3191,
+      "bytes": 3203,
       "path": "plugins/homologia/references/vectors-v1.schema.json",
-      "sha256": "c8aa448d81eaee75440f2f3c2588471ab6b6e20aaea9e67d0da0c2dbed25ddc4",
+      "sha256": "59eee93bd1df2f0a6e9aecf0dc84a31df63d2e55dd02cd5e5078079513de38a4",
       "source": "plugins/homologia/references/vectors-v1.schema.json"
     },
     {
-      "bytes": 26601,
+      "bytes": 27476,
       "path": "plugins/homologia/scripts/homologia.py",
-      "sha256": "54cd500ab89d641942e24c64db171dfbbed4b7459a622f195f23ae5eff5ce98e",
+      "sha256": "d97502c42316db4507d2663aa64b21c26ebb024d84195b258c2d8947668974be",
       "source": "plugins/homologia/scripts/homologia.py"
     },
     {
