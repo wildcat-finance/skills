@@ -18,7 +18,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "dead_code.py"
 MONITOR_SCRIPT = ROOT / "scripts" / "dead_code_monitoring" / "sitecustomize.py"
-SCHEMA_PATH = ROOT / "schemas" / "dead-code-report-v1.schema.json"
+SCHEMA_PATH = ROOT / "schemas" / "dead-code-report-v2.schema.json"
+BASELINE_SCHEMA_PATH = ROOT / "schemas" / "dead-code-report-v1.schema.json"
 SUPPRESSION_SCHEMA_PATH = ROOT / "schemas" / "dead-code-suppressions-v1.schema.json"
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "dead-code.yml"
 CHECK_MAP_PATH = ROOT / "tests" / "check-map-v1.json"
@@ -33,6 +34,12 @@ ADR_PATH = (
     / "docs"
     / "decisions"
     / "ADR-053-keep-dead-code-discovery-report-only.md"
+)
+LIVE_ADR_PATH = (
+    ROOT
+    / "docs"
+    / "decisions"
+    / "ADR-062-separate-live-worktree-reports-from-baselines.md"
 )
 EXPECTED_STUDY_SHA256 = "da8ceed7ee91168e4ab60b1d3ba27c4e59df40be3a9dadd87d0dba17af8059e6"
 EXPECTED_RUNBOOK_SHA256 = "e5ea55c688615d9d1d0322e8c82bba335acfd6745cac99f49b471a564f860857"
@@ -505,7 +512,7 @@ class RenderingTests(TemporaryRepositoryTestCase):
         document = json.loads(dead_code.render_json(self._report()))
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         self.assertEqual(set(document), set(schema["required"]))
-        self.assertEqual(document["schema"], "dead-code-report/v1")
+        self.assertEqual(document["schema"], "dead-code-report/v2")
         self.assertEqual(document["tool"], {"id": "dead-code", "version": "1"})
 
     def test_schema_fixes_tool_universe_status_and_finding_identities(self):
@@ -520,6 +527,10 @@ class RenderingTests(TemporaryRepositoryTestCase):
             "analysis",
         )
         self.assertEqual(
+            definitions["sourceIdentity"]["properties"]["id"]["$ref"],
+            "#/$defs/sha256Identity",
+        )
+        self.assertEqual(
             definitions["universeIdentity"]["properties"]["id"]["$ref"],
             "#/$defs/sha256Identity",
         )
@@ -528,13 +539,39 @@ class RenderingTests(TemporaryRepositoryTestCase):
             "#/$defs/sha256Identity",
         )
 
-    def test_text_and_json_carry_the_same_tree_universe_status_and_counts(self):
+    def test_worktree_source_cannot_claim_baseline_eligibility(self):
+        base = self._report()
+        worktree_identity = "sha256:" + "a" * 64
+        source = dead_code.SourceIdentity(
+            kind=dead_code.WORKTREE_SOURCE_KIND,
+            identity=dead_code.source_identity(
+                dead_code.WORKTREE_SOURCE_KIND,
+                base.universe.commit,
+                base.universe.tree,
+                worktree_identity,
+            ),
+            head_commit=base.universe.commit,
+            git_tree=base.universe.tree,
+            worktree_identity=worktree_identity,
+            baseline_eligible=True,
+        )
+        report = dead_code.Report(
+            base.universe,
+            base.statuses,
+            base.findings,
+            source,
+        )
+        with self.assertRaisesRegex(dead_code.Refusal, "cannot be baseline-eligible"):
+            dead_code.validate_report(report)
+
+    def test_text_and_json_carry_the_same_source_universe_status_and_counts(self):
         report = self._report()
         document = json.loads(dead_code.render_json(report))
         text = dead_code.render_text(report)
         for value in (
-            document["tree"]["commit"],
-            document["tree"]["git_tree"],
+            document["source"]["id"],
+            document["source"]["head_commit"],
+            document["source"]["git_tree"],
             document["universe"]["id"],
             document["status"]["state"],
         ):
@@ -924,7 +961,10 @@ class CommandLineTests(TemporaryRepositoryTestCase):
         completed = self._run("report", "--json")
         self.assertEqual(completed.returncode, 0, completed.stderr)
         document = json.loads(completed.stdout)
-        self.assertEqual(document["schema"], "dead-code-report/v1")
+        self.assertEqual(document["schema"], "dead-code-report/v2")
+        self.assertEqual(document["source"]["kind"], "commit")
+        self.assertTrue(document["source"]["baseline_eligible"])
+        self.assertIsNone(document["source"]["worktree_identity"])
         self.assertEqual(document["universe"]["analysed_count"], 3)
         self.assertEqual(document["status"]["state"], "not-run")
 
@@ -934,6 +974,122 @@ class CommandLineTests(TemporaryRepositoryTestCase):
         self.assertEqual(completed.returncode, 2)
         self.assertIn("modified tracked", completed.stderr)
         self.assertEqual(completed.stdout, "")
+
+    def test_worktree_report_captures_dirty_tracked_bytes_and_is_not_baseline_eligible(self):
+        original_head = git(self.root, "rev-parse", "HEAD").strip()
+        original_tree = git(self.root, "rev-parse", "HEAD^{tree}").strip()
+        (self.root / "a.py").write_text(
+            "def worktree_only():" + NL + "    return 1" + NL,
+            encoding="utf-8",
+        )
+
+        completed = self._run(
+            "report",
+            "--worktree",
+            "--json",
+            "--analyser",
+            "python",
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        document = json.loads(completed.stdout)
+        source = document["source"]
+        self.assertEqual(source["kind"], "worktree-snapshot")
+        self.assertEqual(source["head_commit"], original_head)
+        self.assertNotEqual(source["git_tree"], original_tree)
+        self.assertTrue(source["worktree_identity"].startswith("sha256:"))
+        self.assertFalse(source["baseline_eligible"])
+        self.assertEqual(document["status"]["state"], "ran")
+        self.assertIn("a.py", document["universe"]["analysed"])
+        self.assertEqual(
+            source["id"],
+            dead_code.source_identity(
+                source["kind"],
+                source["head_commit"],
+                source["git_tree"],
+                source["worktree_identity"],
+            ),
+        )
+        repeated = self._run(
+            "report",
+            "--worktree",
+            "--json",
+            "--analyser",
+            "python",
+        )
+        self.assertEqual(repeated.returncode, 0, repeated.stderr)
+        repeated_document = json.loads(repeated.stdout)
+        self.assertEqual(repeated_document["source"], document["source"])
+        self.assertEqual(repeated_document["universe"], document["universe"])
+        self.assertEqual(repeated_document["findings"], document["findings"])
+        runner_parent = self.root / "tmp" / "check-runner"
+        self.assertFalse(
+            runner_parent.exists() and any(runner_parent.iterdir()),
+            "the live report retained a checked-runner snapshot",
+        )
+
+    def test_worktree_report_includes_staged_paths_but_not_untracked_paths(self):
+        staged = self.root / "staged.py"
+        staged.write_text("staged = True" + NL, encoding="utf-8")
+        git(self.root, "add", "staged.py")
+        (self.root / "scratch.py").write_text(
+            "untracked = True" + NL,
+            encoding="utf-8",
+        )
+
+        completed = self._run("report", "--worktree", "--json")
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        analysed = json.loads(completed.stdout)["universe"]["analysed"]
+        self.assertIn("staged.py", analysed)
+        self.assertNotIn("scratch.py", analysed)
+
+    def test_worktree_report_excludes_an_unstaged_deletion(self):
+        (self.root / "b.py").unlink()
+
+        completed = self._run("report", "--worktree", "--json")
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        analysed = json.loads(completed.stdout)["universe"]["analysed"]
+        self.assertNotIn("b.py", analysed)
+
+    def test_worktree_report_refuses_commit_bound_coverage(self):
+        (self.root / "a.py").write_text("changed" + NL, encoding="utf-8")
+
+        completed = self._run(
+            "report",
+            "--worktree",
+            "--analyser",
+            "coverage",
+            "--coverage",
+            ".dead-code/coverage.json",
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("commit-bound coverage", completed.stderr)
+        self.assertEqual(completed.stdout, "")
+
+    def test_worktree_report_requests_shared_read_only_git_objects(self):
+        runner = dead_code._load_snapshot_runner()
+        real_make_snapshot = runner.make_snapshot
+        observed = {}
+
+        def recording_make_snapshot(*args, **kwargs):
+            observed.update(kwargs)
+            return real_make_snapshot(*args, **kwargs)
+
+        with (
+            mock.patch.object(dead_code, "_load_snapshot_runner", return_value=runner),
+            mock.patch.object(
+                runner,
+                "make_snapshot",
+                side_effect=recording_make_snapshot,
+            ),
+        ):
+            report = dead_code.build_worktree_report(self.root)
+
+        self.assertEqual(report.resolved_source().kind, "worktree-snapshot")
+        self.assertIs(observed.get("share_objects"), True)
 
     def test_output_flag_writes_schema_valid_shape_inside_repository(self):
         completed = self._run(
@@ -997,7 +1153,7 @@ class CommandLineTests(TemporaryRepositoryTestCase):
         report_path = held / ".dead-code" / "report.json"
         self.assertEqual(
             json.loads(report_path.read_text(encoding="utf-8"))["schema"],
-            "dead-code-report/v1",
+            "dead-code-report/v2",
         )
 
     def test_repository_substitution_before_discovery_keeps_the_opened_tree(self):
@@ -1043,7 +1199,7 @@ class CommandLineTests(TemporaryRepositoryTestCase):
                 held.rename(self.root)
 
         self.assertEqual(result, 0)
-        self.assertEqual(report["tree"]["commit"], original_commit)
+        self.assertEqual(report["source"]["head_commit"], original_commit)
         self.assertIn("a.py", report["universe"]["analysed"])
         self.assertNotIn("outside.py", report["universe"]["analysed"])
 
@@ -2974,24 +3130,46 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertIn("checked runner", text)
         self.assertIn("one analyser in every plugin", text)
 
+    def test_live_report_adr_keeps_snapshot_baseline_and_coverage_boundaries_separate(self):
+        text = LIVE_ADR_PATH.read_text(encoding="utf-8")
+        for heading in (
+            "## Status",
+            "## Context",
+            "## Decision",
+            "## Alternatives",
+            "## Consequences",
+        ):
+            self.assertIn(heading, text)
+        self.assertIn("report --worktree", text)
+        self.assertIn("baseline-eligible", text)
+        self.assertIn("Coverage", text)
+
     def test_schema_is_closed_at_every_named_record_identity(self):
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         self.assertFalse(schema["additionalProperties"])
         for name in (
             "toolIdentity",
-            "treeIdentity",
+            "sourceIdentity",
             "universeIdentity",
             "analysisStatus",
             "analyserStatus",
             "analyserRecord",
+            "finding",
+        ):
+            self.assertFalse(schema["$defs"][name]["additionalProperties"])
+        baseline_schema = json.loads(
+            BASELINE_SCHEMA_PATH.read_text(encoding="utf-8")
+        )
+        for name in (
             "baseline",
             "baselineUniverse",
             "baselineAnalyser",
             "baselineFinding",
             "baselineSuppressions",
-            "finding",
         ):
-            self.assertFalse(schema["$defs"][name]["additionalProperties"])
+            self.assertFalse(
+                baseline_schema["$defs"][name]["additionalProperties"]
+            )
         record = dead_code.AnalyserRecord(
             "fixture",
             "family",
@@ -3030,8 +3208,10 @@ class ShippedSurfaceTests(unittest.TestCase):
             ".github/workflows/dead-code.yml",
             "docs/dead-code",
             "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md",
+            "docs/decisions/ADR-062-separate-live-worktree-reports-from-baselines.md",
             "docs/promise-machine/dead-code-v1.md",
             "schemas/dead-code-report-v1.schema.json",
+            "schemas/dead-code-report-v2.schema.json",
             "schemas/dead-code-suppressions-v1.schema.json",
             "scripts/dead_code.py",
             "scripts/dead_code_monitoring",
@@ -3048,10 +3228,11 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertIn("scripts/run_checks.py --scope dead-code", text)
         self.assertIn('python-version-file: ".python-version"', text)
 
-    def test_workflow_and_operator_guide_carry_the_exact_four_command_demo(self):
+    def test_workflow_and_operator_guide_carry_the_exact_five_command_demo(self):
         commands = (
             "python3 scripts/dead_code.py report",
             "python3 scripts/dead_code.py report --json",
+            "python3 scripts/dead_code.py report --worktree",
             "python3 scripts/dead_code.py baseline --check",
             "python3 scripts/run_checks.py --scope dead-code",
         )

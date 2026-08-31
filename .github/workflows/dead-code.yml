@@ -11,8 +11,10 @@ on:
       - '.github/workflows/dead-code.yml'
       - 'docs/dead-code/**'
       - 'docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md'
+      - 'docs/decisions/ADR-062-separate-live-worktree-reports-from-baselines.md'
       - 'docs/promise-machine/dead-code-v1.md'
       - 'schemas/dead-code-report-v1.schema.json'
+      - 'schemas/dead-code-report-v2.schema.json'
       - 'schemas/dead-code-suppressions-v1.schema.json'
       - 'scripts/dead_code.py'
       - 'scripts/run_checks.py'
@@ -29,8 +31,10 @@ on:
       - '.github/workflows/dead-code.yml'
       - 'docs/dead-code/**'
       - 'docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md'
+      - 'docs/decisions/ADR-062-separate-live-worktree-reports-from-baselines.md'
       - 'docs/promise-machine/dead-code-v1.md'
       - 'schemas/dead-code-report-v1.schema.json'
+      - 'schemas/dead-code-report-v2.schema.json'
       - 'schemas/dead-code-suppressions-v1.schema.json'
       - 'scripts/dead_code.py'
       - 'scripts/run_checks.py'
@@ -60,6 +64,7 @@ jobs:
         run: |
           python3 scripts/dead_code.py report
           python3 scripts/dead_code.py report --json
+          python3 scripts/dead_code.py report --worktree
           python3 scripts/dead_code.py baseline --check > "$RUNNER_TEMP/baseline-check.txt"
           cat "$RUNNER_TEMP/baseline-check.txt"
           python3 scripts/run_checks.py --scope dead-code

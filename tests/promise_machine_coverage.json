@@ -78,7 +78,7 @@
     "contract": "dead-code-baseline/v1",
     "documentation": {
       "path": "docs/promise-machine/dead-code-v1.md",
-      "sha256": "2c629e8e890cd108959bae2eb311cc6f1f0a240c970c888ce4a902a3ccb4c4b2"
+      "sha256": "3b05a8c42c49d155b3ad5089d11f62120e93ee1d9bf236ae10eea44ba868909f"
     },
     "fixtures": [
       {
@@ -89,7 +89,7 @@
     "promise_id": "promise-machine-dead-code-baseline",
     "runtime": {
       "path": "scripts/dead_code.py",
-      "sha256": "3b3b9d9d960a19c1a0795a7b8dba3cf1c5aca1104000955c521d77e34b745052"
+      "sha256": "83183f1a197c7f0ac4c00dce26966b496addfcdad2c3117c8521488fa693461d"
     },
     "schema_source": {
       "path": "schemas/dead-code-report-v1.schema.json",
@@ -115,10 +115,10 @@
         "test_record_changed_after_its_publication_commit_refuses",
         "test_undiscoverable_publication_commit_refuses",
         "test_write_then_check_uses_two_commit_publication",
-        "test_workflow_and_operator_guide_carry_the_exact_four_command_demo",
+        "test_workflow_and_operator_guide_carry_the_exact_five_command_demo",
         "test_workflow_summary_carries_the_publication_commit_as_plain_text"
       ],
-      "sha256": "ec5fbe64d95fa55b87fb5bbd91895388c280cd1b2d3120d84b862612610ac3ba"
+      "sha256": "f1a9936bccb1de97b9d225aee21d5a98658ee484a1e676e9027a712425b7d247"
     },
     "transition": "record and verify one report-only static candidate baseline over an exact clean source commit, with only exact current suppressions accepted and no finding count treated as deletion or merge authority"
   },
