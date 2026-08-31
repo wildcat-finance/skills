@@ -63,6 +63,7 @@ jobs:
       - name: Goldfinch fixture and default-temporary release
         run: |
           python3 - <<'PY'
+          import hashlib
           import json
           import platform
           import shutil
@@ -73,7 +74,87 @@ jobs:
 
           root = Path.cwd()
           sys.path.insert(0, str(root / "plugins" / "lazarus" / "scripts"))
+          from lazarus_lib.paths import read_confined_bytes
           from lazarus_lib.release import verify_release, write_release
+
+          def _read_test_report(root):
+              report = read_confined_bytes(
+                  root,
+                  ".lazarus-ci/lazarus-darwin-tests.json",
+                  max_bytes=4096,
+              )
+
+              def _closed_object(pairs):
+                  result = {}
+                  for key, value in pairs:
+                      if key in result:
+                          raise ValueError("duplicate test report field")
+                      result[key] = value
+                  return result
+
+              try:
+                  tests = json.loads(report, object_pairs_hook=_closed_object)
+              except (json.JSONDecodeError, TypeError, ValueError):
+                  raise AssertionError("the complete Lazarus test report is malformed") from None
+              fields = {
+                  "schema",
+                  "complete",
+                  "testsRun",
+                  "failures",
+                  "errors",
+                  "skipped",
+                  "expectedFailures",
+                  "unexpectedSuccesses",
+              }
+              if type(tests) is not dict or set(tests) != fields:
+                  raise AssertionError("the complete Lazarus test report has changed shape")
+              if tests["schema"] != "elenchus.unittest.v1" or tests["complete"] is not True:
+                  raise AssertionError("the complete Lazarus test report is unavailable")
+              for field in fields - {"schema", "complete"}:
+                  if type(tests[field]) is not int or tests[field] < 0:
+                      raise AssertionError("the complete Lazarus test counters are malformed")
+              return tests, hashlib.sha256(report).hexdigest()
+
+          def _acceptance_event(
+              commit,
+              environment,
+              tests,
+              test_report_sha256,
+              fixture_digest,
+              release_digest,
+              statement_sha256,
+              alias_class,
+          ):
+              return {
+                  "schema": "lazarus.darwin-acceptance.v1",
+                  "event": "lazarus_darwin_acceptance",
+                  "stage": "complete",
+                  "commit": commit,
+                  "environment": environment,
+                  "tests": {
+                      "exit": 0,
+                      "report_sha256": test_report_sha256,
+                      "run": tests["testsRun"],
+                      "failures": tests["failures"],
+                      "errors": tests["errors"],
+                      "skipped": tests["skipped"],
+                      "expected_failures": tests["expectedFailures"],
+                      "unexpected_successes": tests["unexpectedSuccesses"],
+                  },
+                  "fixture": {
+                      "comparison": "byte-identical",
+                      "digest": fixture_digest,
+                  },
+                  "release": {
+                      "verification_exit": 0,
+                      "verified": True,
+                      "statement_sha256": statement_sha256,
+                      "fixture_digest": fixture_digest,
+                      "digest": release_digest,
+                  },
+                  "lexical_root": alias_class,
+                  "darwin_root_alias": alias_class,
+              }
 
           def _tree_bytes(directory):
               return {
@@ -82,13 +163,7 @@ jobs:
                   if path.is_file()
               }
 
-          tests = json.loads(
-              (root / ".lazarus-ci" / "lazarus-darwin-tests.json").read_text(
-                  encoding="utf-8"
-              )
-          )
-          if tests.get("schema") != "elenchus.unittest.v1" or not tests.get("complete"):
-              raise AssertionError("the complete Lazarus test report is unavailable")
+          tests, test_report_sha256 = _read_test_report(root)
           if tests["testsRun"] <= 0:
               raise AssertionError("the complete Lazarus suite ran no tests")
           if tests["skipped"] != 0:
@@ -164,30 +239,15 @@ jobs:
           commit = subprocess.check_output(
               ["git", "rev-parse", "HEAD"], cwd=root, text=True
           ).strip()
-          evidence = {
-              "schema": "lazarus.darwin-acceptance.v1",
-              "event": "lazarus_darwin_acceptance",
-              "stage": "complete",
-              "commit": commit,
-              "environment": environment,
-              "tests": {
-                  "run": tests["testsRun"],
-                  "failures": tests["failures"],
-                  "errors": tests["errors"],
-                  "skipped": tests["skipped"],
-                  "expected_failures": tests["expectedFailures"],
-                  "unexpected_successes": tests["unexpectedSuccesses"],
-              },
-              "fixture": {
-                  "comparison": "byte-identical",
-                  "digest": fixture_event["fixture_digest"],
-              },
-              "release": {
-                  "verified": True,
-                  "fixture_digest": verified["fixture_digest"],
-                  "digest": verified["release_digest"],
-              },
-              "darwin_root_alias": alias_class,
-          }
+          evidence = _acceptance_event(
+              commit,
+              environment,
+              tests,
+              test_report_sha256,
+              fixture_event["fixture_digest"],
+              verified["release_digest"],
+              verified["statement_sha256"],
+              alias_class,
+          )
           print(json.dumps(evidence, sort_keys=True, separators=(",", ":")))
           PY
