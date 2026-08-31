@@ -417,6 +417,13 @@ def _read_statement(path: str | Path) -> bytes:
     time this read begins.
     """
     handed = Path(path)
+    if ".." in handed.parts:
+        # ``abspath`` is lexical: collapsing a parent segment after a symlink
+        # can name different bytes from the path the caller handed over. It can
+        # also make a user-controlled first ancestor disappear and expose one
+        # of the Darwin root aliases to the bounded exception below. Refuse the
+        # ambiguous spelling instead of changing which file is read.
+        raise PathError("statement path contains a parent segment")
     absolute = Path(os.path.abspath(os.fspath(handed)))
     directory_flags = (
         os.O_RDONLY
@@ -540,7 +547,7 @@ def _open_darwin_root_alias(
     expected_link, physical = contract
     first = os.stat(alias, dir_fd=root_fd, follow_symlinks=False)
     if not stat.S_ISLNK(first.st_mode):
-        return None
+        raise _root_alias_refusal(handed)
     if os.readlink(os.fsencode(alias), dir_fd=root_fd) != expected_link:
         raise _root_alias_refusal(handed)
 

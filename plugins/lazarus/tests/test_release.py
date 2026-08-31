@@ -708,6 +708,25 @@ class RefusedReleaseTests(unittest.TestCase):
             finally:
                 os.close(root_fd)
 
+    def test_a_darwin_root_alias_replaced_by_a_directory_is_refused(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "var").mkdir()
+            root_fd = os.open(root, flags)
+            try:
+                with mock.patch.object(
+                    release_module.sys, "platform", "darwin"
+                ), self.assertRaisesRegex(PathError, "symlink or non-directory"):
+                    release_module._open_darwin_root_alias(
+                        root_fd,
+                        "var",
+                        flags,
+                        Path("/var/statement.json"),
+                    )
+            finally:
+                os.close(root_fd)
+
     def test_a_changed_darwin_root_target_identity_is_refused(self):
         flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
         with tempfile.TemporaryDirectory() as directory:
@@ -827,6 +846,35 @@ class RefusedReleaseTests(unittest.TestCase):
                 statement=nested / "statement.json",
             )
             self.assertIn("symlink", str(error))
+
+    @unittest.skipUnless(
+        sys.platform == "darwin",
+        "macOS root aliases exist only on Darwin",
+    )
+    def test_a_parent_segment_cannot_normalise_into_a_darwin_root_alias(self):
+        with tempfile.TemporaryDirectory(
+            prefix="fiat881-alias-parent-"
+        ) as directory:
+            root = Path(directory)
+            deep = root / "elsewhere" / "deep"
+            deep.mkdir(parents=True)
+            (root / "gate").symlink_to(deep, target_is_directory=True)
+            filename = f"{root.name}-statement.json"
+            kernel_path = root / filename
+            normalised_path = root.parent / filename
+            kernel_path.write_bytes(b"kernel-path-bytes")
+            with normalised_path.open("xb") as handle:
+                handle.write(b"normalised-path-bytes")
+            handed = root / "gate" / ".." / ".." / filename
+            try:
+                self.assertNotEqual(
+                    os.path.realpath(handed),
+                    os.path.abspath(handed),
+                )
+                with self.assertRaisesRegex(PathError, "parent segment"):
+                    release_module._read_statement(handed)
+            finally:
+                normalised_path.unlink(missing_ok=True)
 
     def test_linux_does_not_enter_the_darwin_root_alias_exception(self):
         flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
