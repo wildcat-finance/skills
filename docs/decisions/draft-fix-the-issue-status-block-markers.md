@@ -2,13 +2,19 @@
 
 ## Status
 
-Proposed, 2026-08-31. Unnumbered on purpose. A number is assigned when this
-record merges, per issue #888, which records ADR-050 colliding at authoring time
-and the ADR-024 duplicate that turned `main` red until #582 renumbered the Wave
-Delta chain. The filename carries no `ADR-` prefix because
-`tests/test_decision_records.py` globs `ADR-*.md` and then requires digits, so a
-prefixed draft fails `test_every_filename_follows_the_convention`. Issue #888
-lists the draft form as an open question and stays free to settle it.
+Proposed, 2026-08-31. Unnumbered on purpose, and nothing assigns the number
+yet. Issue #888 proposes that records take their number at merge, and records
+why: ADR-050 collided at authoring time, and the ADR-024 duplicate turned `main`
+red until #582 renumbered the Wave Delta chain. That proposal is open, and the
+repository ruleset requires only `identity` and `invariants`, so no gate assigns
+a number, checks that one was assigned, or refuses a record that stays
+unnumbered. Whoever merges this record gives it a number by hand, or leaves it
+unnumbered knowingly.
+
+The filename carries no `ADR-` prefix because `tests/test_decision_records.py`
+globs `ADR-*.md` and then requires digits, so a prefixed draft fails
+`test_every_filename_follows_the_convention`. Issue #888 lists the draft form as
+an open question and stays free to settle it.
 
 ## Context
 
