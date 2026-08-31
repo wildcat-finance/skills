@@ -45,3 +45,20 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the three carried observations stand and are the honest residue of this step. The committed reports name a resolver under .hexaemeron/ that is never committed, so they cannot be rerun from the repository alone. The committed study is a corrected rendering of the receipted study rather than a byte copy, and nothing recomputes one from the other. The runner's three non-zero exits, 1 for test failure, 2 for report-write failure and 3 for an empty suite, are not declared anywhere outside the source. None of the three admits a wrong design record or a step that reports success without running its guards. The step's battery is green: 181 Anamnesis tests, 118 Synkrisis tests, phylax, ephoros and hypomnema each exit 0, git diff --check is clean, and design_evidence --transition step:2 exits zero.
+
+## Step 2, round 1 -- 2026-08-31T21:17:17Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: decision-overreach=reviewed; reader-unnamed=reviewed; frontier-drift=reviewed; projection-drift=reviewed; stale-prose=reviewed; ledger-arithmetic=not-applicable
+
+Not checked: the security suite waiver still holds; this step adds Markdown and Python tests and changes no Solidity. The one not-applicable register item is the ledger row, which step 3 owns. Also unchecked: hosted CI, the controller receipt, push and publication, and whether Synkrisis would in fact decline the admission if asked, which this record does not claim to know.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md | ADR-004 states that the Synkrisis projection emits "the audit-corpus observation schema Synkrisis explicitly admits". Synkrisis has never admitted it, the SKILL.md and pull request 1024 both say so, and ADR-005 now records the opposite decision in the same directory. Two accepted records disagreeing about the same fact leaves a reader no way to tell which is current. No ADR in this repository had ever been superseded, so the correction is a Status annotation naming ADR-005 rather than a rewrite of the reasoning, and a guard holds it there | fixed in this round |
+| S2-R1-02 | low | plugins/anamnesis/docs/decisions/ADR-005-corpus-projections-outside-the-cohort-boundary.md | ADR-005 cited "ADR-004" three times meaning the Synkrisis record about reachability evidence, while sitting in a directory whose own ADR-004 is a different document about consumer projections. A reader resolving the reference locally reaches the wrong file. All three now name Synkrisis explicitly and the first carries the full repository path | fixed in this round |
+
+Leads not pursued: two observations carry forward. The register item reader-unnamed is reviewed rather than closed: ADR-005 names the reader as the projection read directly under its own schema, with the emitting command, the shape gate and the self-sufficiency guard behind it, and that is a named surface rather than a named consumer. No other member reads it today and the record says so plainly, so the honest statement is that the projection is legible on its own terms, not that something consumes it. Separately, the ADR-004 correction establishes that the earlier record now carries the right status, and it does not establish that every other first-party document is consistent; the cold read that answers that is step 3's, and the guard added here checks one document rather than the set.

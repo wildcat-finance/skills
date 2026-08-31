@@ -10,7 +10,9 @@ Anamnesis emits `anamnesis-synkrisis-observation/v1`. Synkrisis admits one
 producer identity, `promise-machine-run-observation/v1`, checked at two places:
 `load_manifest` refuses another with `SK008`, and cohort verification refuses one
 with `SK012`. The projection is produced and not consumed, and that gap has been
-Anamnesis's held next job since the consumer projections shipped.
+Anamnesis's held next job since the consumer projections shipped. Anamnesis's own
+ADR-004 said the schema was one "Synkrisis explicitly admits"; that was wrong when
+written, and its status now says so.
 
 The two shapes disagree about what a member is. A Synkrisis cohort member is a
 run. Its schema requires nine fields per member, and six of them have no source
@@ -28,8 +30,10 @@ no findings, submissions, verifications, and findings withheld by disclosure.
 There is no single population to partition, so there is nothing for the
 included, excluded and unknown arrays to be a partition of.
 
-Synkrisis has already refused a different input class on this reasoning. Its
-ADR-004 rejected issue-437 reachability candidates because "a disposition
+Synkrisis has already refused a different input class on this reasoning.
+Synkrisis's own ADR-004, at
+`plugins/synkrisis/docs/decisions/ADR-004-separate-run-and-reachability-evidence.md`,
+rejected issue-437 reachability candidates because "a disposition
 describes a run, and a reachability candidate is not a run". A finding is not a
 run either.
 
@@ -61,7 +65,7 @@ object declares none and is closed. The held job requires denominators and
 exclusions to survive, and this is the option that loses them.
 
 **A sibling cohort kind in Synkrisis.** A second producer contract, its own rule
-kinds and its own promise, which is the seam Synkrisis's ADR-004 named for a
+kinds and its own promise, which is the seam that same Synkrisis ADR-004 named for a
 future admission. This is the option that would work, and it is not Anamnesis's
 to take. It is a frontier-scale change to Synkrisis, whose ledger is open at
 `synkrisis-v4.2.0` on a different held job about captured run observations. The
@@ -73,8 +77,8 @@ skill.
 Anamnesis emits a projection that no other member consumes, and that is now a
 recorded position rather than an unanswered question.
 
-The seam stays open. If Synkrisis later wants corpus comparison, its ADR-004
-already describes the shape: a new producer contract in the manifest, a new rule
+The seam stays open. If Synkrisis later wants corpus comparison, that Synkrisis
+ADR-004 already describes the shape: a new producer contract in the manifest, a new rule
 kind, and a promise stating what the combination establishes and what it refuses.
 Nothing here forecloses that, and nothing here obliges it.
 

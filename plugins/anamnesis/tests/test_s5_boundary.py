@@ -19,6 +19,7 @@ SCRIPT = PLUGIN_ROOT / "skills/anamnesis/scripts/anamnesis.py"
 RELEASE = PLUGIN_ROOT / "specimens/pilot/release"
 
 SELF_SUFFICIENCY = ("denominators", "exclusions", "unknowns", "not_established")
+DECISIONS = PLUGIN_ROOT / "docs/decisions"
 
 
 def load():
@@ -86,6 +87,20 @@ class RemovingWhatMakesItLegibleIsRefused(ProjectionCase):
 
     def test_a_projection_without_not_established_is_refused(self) -> None:
         self.refuse_without("not_established")
+
+
+class TheTwoRecordsAgree(unittest.TestCase):
+    """ADR-004 claimed Synkrisis admits this producer. It never did, and ADR-005
+    now says the opposite, so the earlier record has to carry the correction."""
+
+    def test_adr_004_status_carries_the_correction(self) -> None:
+        text = (DECISIONS / "ADR-004-consumer-projections.md").read_text(
+            encoding="utf-8"
+        )
+        status = text.split("## Status", 1)[1].split("##", 1)[0]
+        self.assertIn("Corrected in part by ADR-005", status)
+        self.assertIn("has never admitted it", status)
+
 
 
 if __name__ == "__main__":
