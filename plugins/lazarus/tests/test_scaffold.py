@@ -5,8 +5,13 @@ import json
 import re
 import sys
 import unittest
+from pathlib import Path
 
-from . import support
+if __package__:
+    from . import support
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from tests import support
 from lazarus_lib import __version__
 
 sys.path.insert(0, str(support.REPO_ROOT))
@@ -358,6 +363,56 @@ class ScaffoldTests(unittest.TestCase):
             (support.PLUGIN_ROOT / "LICENSE").read_bytes(),
             (support.REPO_ROOT / "LICENSE").read_bytes(),
         )
+
+    def test_darwin_job_holds_both_macos_path_repairs(self):
+        workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
+            encoding="utf-8"
+        )
+        match = re.search(r"(?ms)^  darwin:\n(?P<body>.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)", workflow)
+        self.assertIsNotNone(match, "the durable Darwin job is missing")
+        body = match["body"]
+        self.assertEqual(
+            (support.REPO_ROOT / ".python-version").read_text(encoding="utf-8"),
+            "3.14.6\n",
+        )
+
+        for term in (
+            "runs-on: macos-15",
+            'python-version-file: ".python-version"',
+            "python3 -m pip install --requirement plugins/lazarus/requirements.lock",
+            "test ! -e .lazarus-ci",
+            "python3 plugins/lazarus/tests/run_tests.py --elenchus-report .lazarus-ci/lazarus-darwin-tests.json",
+            'tests["skipped"] != 0',
+            "tempfile.TemporaryDirectory()",
+            '"build-fixture"',
+            "_tree_bytes(rebuilt_fixture) != _tree_bytes(checked_fixture)",
+            "write_release(rebuilt_fixture, statement, release)",
+            "verify_release(release)",
+            '["git", "rev-parse", "HEAD"]',
+            "platform.system()",
+            "platform.machine()",
+            "platform.python_version()",
+            '"event": "lazarus_darwin_acceptance"',
+            '"comparison": "byte-identical"',
+            '"verified": True',
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, body)
+
+        self.assertEqual(
+            re.findall(r"(?m)^permissions:\n  ([a-z-]+): ([a-z]+)$", workflow),
+            [("contents", "read")],
+        )
+        for forbidden in (
+            ".hexaemeron",
+            "permissions:",
+            "secrets.",
+            "--rpc-url",
+            "lazarus.py capture",
+            "actions/upload-artifact",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, body)
 
     def test_lazarus_owns_its_structured_unittest_runner(self):
         tests = support.PLUGIN_ROOT / "tests"
