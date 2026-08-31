@@ -6,6 +6,21 @@ step's branch, logs everything, fixes on a stacked branch, and repeats
 until a round comes back clean or the remaining leads are judged not worth
 another pass.
 
+## One warden per step
+
+Delegate a step's first round to a new Warden, and every later round of the
+same step to that same agent. The suite documents Warden reads in round 1 come
+to 164,611 bytes; a fresh agent reads all of them again from nothing. Keeping
+the agent is the only thing that avoids that. A round number cannot, because an
+agent that has not read a document has not read it, and telling it otherwise
+would put a false claim in its context.
+
+Start a new Warden when the step changes, when the host cannot keep an agent
+alive between rounds, or when its context was lost. A new Warden reads the
+suite documents in full. Nothing about the evidence changes either way: one
+round still produces one `audit-round` receipt, and the round is still the unit
+Fiat records.
+
 ## One round
 
 1. Before selecting X-Ray, read the
@@ -15,7 +30,9 @@ another pass.
    `x-ray` pass first, then `solidity-auditor`. Both are vendored under
    `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read
    each SKILL.md and follow
-   it. Give each the step's full diff and the contracts it touches, not a
+   it, unless this same agent already read them for an earlier round of
+   this step. Give each the step's full diff and the contracts it touches,
+   not a
    summary. Its adapter is a preparation layer only: build the full logical
    scope from the current tree, read and digest every current source, and
    preserve every pinned X-Ray source-read and verification call. Reuse
