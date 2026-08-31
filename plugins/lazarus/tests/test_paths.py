@@ -154,6 +154,22 @@ class PathTests(unittest.TestCase):
             finally:
                 os.close(root_fd)
 
+    def test_descriptor_inventory_does_not_share_an_active_caller_scan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            expected = {"one.json", "two.json", "three.json"}
+            for name in expected:
+                (root / name).write_bytes(name.encode("utf-8"))
+            root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                with os.scandir(root_fd) as caller_scan:
+                    first = next(caller_scan).name
+                    self.assertEqual(list_fixture_files(root_fd), expected)
+                    caller_inventory = {first, *(entry.name for entry in caller_scan)}
+                self.assertEqual(caller_inventory, expected)
+            finally:
+                os.close(root_fd)
+
     def test_descriptor_root_refuses_a_file_without_closing_it(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "record.json"

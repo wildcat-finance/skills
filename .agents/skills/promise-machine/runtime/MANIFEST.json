@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1034,
-  "total_bytes": 22180785,
+  "total_bytes": 22181096,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4687,9 +4687,9 @@
       "source": "plugins/lazarus/scripts/lazarus_lib/manifest.py"
     },
     {
-      "bytes": 12472,
+      "bytes": 12783,
       "path": "plugins/lazarus/scripts/lazarus_lib/paths.py",
-      "sha256": "a44a7211fb335ace520b79ea6753a60f94ea410294584e2abf54e44664c65d74",
+      "sha256": "f3bf005c2ab2711b0ea226631d9c259a969e48f491a3065e614c8dcc58f02634",
       "source": "plugins/lazarus/scripts/lazarus_lib/paths.py"
     },
     {

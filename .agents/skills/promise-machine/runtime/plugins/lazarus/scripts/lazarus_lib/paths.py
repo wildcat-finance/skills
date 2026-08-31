@@ -284,20 +284,24 @@ def _directory_flags() -> int:
 def _open_root(root: FixtureRoot) -> int:
     """Open an independent owned reference to a fixture root.
 
-    Integer roots are caller-owned. This function duplicates them, verifies
-    the duplicate is a directory, and closes only the duplicate downstream.
-    No descriptor is reconstructed as a pathname.
+    Integer roots are caller-owned. Opening ``.`` relative to one gives the
+    helper an independent directory description; ``dup`` would share the
+    caller's directory cursor and let an active scan hide inventory entries.
+    The helper closes only its independent descriptor downstream. No
+    descriptor is reconstructed as a pathname.
     """
 
     _require_secure_directory_capabilities()
     try:
         if isinstance(root, int) and not isinstance(root, bool):
-            current = os.dup(root)
+            current = os.open(".", _directory_flags(), dir_fd=root)
         else:
             current = os.open(root, _directory_flags())
     except (OSError, TypeError, NotImplementedError) as exc:
         if getattr(exc, "errno", None) == errno.ELOOP:
             raise PathError(f"fixture root is a symlink: {root}") from exc
+        if getattr(exc, "errno", None) == errno.ENOTDIR:
+            raise PathError(f"fixture root is not a directory: {root}") from exc
         raise PathError(f"fixture root is unavailable: {root}") from exc
     try:
         if not stat.S_ISDIR(os.fstat(current).st_mode):
