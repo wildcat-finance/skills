@@ -101,7 +101,7 @@ def footer(c: canvas.Canvas, page: int, *, dark: bool = False) -> None:
     color = HexColor("#B9BCC6") if dark else MUTED
     c.setFillColor(color)
     c.setFont("Helvetica", 7)
-    c.drawString(MARGIN, 22, "wildcat skills / external contributor field guide / 24 August 2026")
+    c.drawString(MARGIN, 22, "wildcat skills - the shoggoth / contributor field guide / 31 August 2026")
     c.drawRightString(PAGE_W - MARGIN, 22, f"{page:02d}")
 
 
@@ -199,7 +199,7 @@ def draw_cover(c: canvas.Canvas) -> None:
     c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
     c.setFillColor(GOLD)
     c.rect(0, PAGE_H - 8, PAGE_W, 8, stroke=0, fill=1)
-    label(c, "Wildcat Skills / external contributor field guide", MARGIN, PAGE_H - 52, GOLD)
+    label(c, "Wildcat Labs Skills - the Shoggoth / contributor field guide", MARGIN, PAGE_H - 52, GOLD)
 
     card(c, 44, 154, 430, 340, fill=white, stroke=white, radius=15)
     draw_image_contained(c, COVER_IMAGE, 56, 166, 406, 316)
@@ -218,7 +218,7 @@ def draw_cover(c: canvas.Canvas) -> None:
     )
     para(
         c,
-        "The external route from one Atlas number to one finished Fiat contribution.",
+        "Start with one real gap: try it, preserve it, explain it, or build the next checked piece.",
         504,
         275,
         285,
@@ -232,7 +232,7 @@ def draw_cover(c: canvas.Canvas) -> None:
     c.roundRect(504, 170, 292, 84, 13, stroke=0, fill=1)
     para(
         c,
-        "ASK THE ATLAS FOR A NUMBER.<br/>PICK YOUR HARNESS.<br/>FINISH WHAT YOU START.",
+        "YOU DO NOT NEED TO<br/>LEARN THE WHOLE COLLECTIVE<br/>BEFORE YOU CAN HELP",
         524,
         184,
         252,
@@ -244,9 +244,9 @@ def draw_cover(c: canvas.Canvas) -> None:
     )
 
     steps = [
-        ("1", "ATLAS", "one open job"),
-        ("2", "HARNESS", "one local run"),
-        ("3", "GITHUB", "one reviewable PR"),
+        ("1", "TRY", "one real operation"),
+        ("2", "PROVE", "one useful change"),
+        ("3", "SHARE", "one reviewable result"),
     ]
     x = 44
     for number, heading, detail in steps:
@@ -260,81 +260,72 @@ def draw_cover(c: canvas.Canvas) -> None:
     c.showPage()
 
 
-def draw_number_page(c: canvas.Canvas) -> None:
+def draw_contribution_page(c: canvas.Canvas) -> None:
     page_heading(
         c,
-        "The Atlas assigns the work",
-        "Aye, here you go - #123",
-        "",
+        "Choose the size of the contribution",
+        "Make one real gap smaller.",
+        "A reproducible failure or clear example can be more valuable than a broad new feature.",
         2,
     )
 
-    card(c, 44, 341, 754, 128, fill=BUNKER, stroke=GOLD, accent=GOLD, radius=13)
-    label(c, "Verified step hand-off", 64, 438, GOLD)
+    card(c, 44, 352, 754, 104, fill=BUNKER, stroke=GOLD, accent=GOLD, radius=13)
+    label(c, "Start where you have evidence", 64, 425, GOLD)
     para(
         c,
-        "After every completed step, Fiat saves a verified checkpoint in its fixed local store before the next directive. Agents hand over the local path and digests directly; this is not a user choice. Mid-step state is not portable.",
+        "You can test one shipped operation, add a missing specimen or adapter, improve a confusing front door, implement one recorded frontier, or review a promise and its recovery path.",
         64,
-        370,
-        545,
-        60,
-        size=13.5,
-        leading=17,
+        375,
+        710,
+        42,
+        size=12.2,
+        leading=15.5,
         color=white,
         font="Helvetica-Bold",
     )
-    c.setFillColor(GOLD)
-    c.roundRect(632, 373, 142, 46, 10, stroke=0, fill=1)
-    para(c, "YOU ARE NOT<br/>SHOGGOTH", 642, 382, 122, 28, size=9, leading=12, color=BUNKER, font="Helvetica-Bold", align=TA_CENTER)
 
     boxes = [
         (
-            "ONE POOL",
-            "The Atlas draws at random from every open issue whose recorded hard dependencies are closed.",
+            "TRY",
+            "Run one documented operation on real work. Preserve the exact command, first failure, and boundary it exposed.",
             BLUE,
         ),
         (
-            "ONE NUMBER",
-            "The hand-off carries the issue number, exact GitHub URL and the filled-in Fiat prompt.",
+            "ADD",
+            "Contribute one source adapter, historical specimen, host boundary, corpus rule, or checked example.",
             GOLD,
         ),
         (
-            "NO WAVE CHOICE",
-            "Wave order stays visible as project context. The contributor does not choose a Wave at this front door.",
+            "BUILD",
+            "Take one accepted evolution frontier through implementation, a red-to-green guard, prose, and checks.",
             PURPLE,
         ),
     ]
     box_w = 238
     for index, (heading, body, accent) in enumerate(boxes):
         x = 44 + index * 258
-        card(c, x, 142, box_w, 155, fill=white, accent=accent)
-        label(c, heading, x + 18, 266, accent)
-        para(c, body, x + 18, 172, box_w - 36, 82, size=10.5, leading=14, color=SLATE)
+        card(c, x, 190, box_w, 130, fill=white, accent=accent)
+        label(c, heading, x + 18, 288, accent)
+        para(c, body, x + 18, 214, box_w - 36, 65, size=9.8, leading=13, color=SLATE)
 
-    c.setFillColor(BLUE)
-    c.roundRect(44, 70, 754, 48, 11, stroke=0, fill=1)
-    para(
-        c,
-        "USE ONE ROUTE ONCE. Every button or API request makes a fresh random allocation.",
-        60,
-        84,
-        722,
-        20,
-        size=10.5,
-        color=white,
-        font="Helvetica-Bold",
-        align=TA_CENTER,
-    )
-    c.linkURL(JOB_API, (44, 70, 798, 118), relative=0, thickness=0)
+    card(c, 44, 64, 356, 94, fill=white, accent=BLUE)
+    label(c, "Self-directed route", 62, 127, BLUE)
+    para(c, "Choose one gap. Read its README, runtime contract, canonical skill, and current evolution frontier. Run the scoped checks.", 62, 79, 320, 40, size=9.2, leading=12)
+
+    card(c, 420, 64, 378, 94, fill=OASIS, stroke=GOLD, accent=GOLD)
+    label(c, "Atlas + Fiat route", 438, 127, GOLD)
+    para(c, "Want the project to choose an unblocked issue and control the whole delivery? Use one Atlas route on the next page.", 438, 79, 342, 40, size=9.2, leading=12, color=BUNKER)
+    c.linkURL(GUIDE, (44, 64, 400, 158), relative=0, thickness=0)
+    c.linkURL(ATLAS, (420, 64, 798, 158), relative=0, thickness=0)
     c.showPage()
 
 
 def draw_harness_page(c: canvas.Canvas) -> None:
     page_heading(
         c,
-        "README launch options",
+        "The Atlas and Fiat route",
         "Pick the path it actually supports.",
-        "A checked bootstrap, a native package and a file-reading fallback are three different things.",
+        "The Atlas chooses one unblocked issue. A bootstrap, a local package, and a file-reading fallback are different things.",
         3,
     )
 
@@ -415,7 +406,7 @@ def draw_fiat_page(c: canvas.Canvas) -> None:
         c,
         "Fiat handles the bounded run",
         "Visible steps. One reviewable contribution.",
-        "The issue supplies the problem. Fiat supplies the order, checks and record around the change.",
+        "Fiat supplies the order, checks, and record around one bounded issue.",
         4,
     )
 
@@ -536,12 +527,12 @@ def build(output: Path) -> None:
         pageCompression=1,
         invariant=1,
     )
-    pdf.setTitle("Ask the Atlas for a number")
-    pdf.setSubject("External contributor guide for a complete local Fiat run")
+    pdf.setTitle("How to help build the Shoggoth")
+    pdf.setSubject("Contributor routes for Wildcat Labs Skills, from a small checked specimen to a complete Fiat delivery")
     pdf.setAuthor("Wildcat Labs")
     pdf.setCreator("scripts/build_contributor_guide.py")
     draw_cover(pdf)
-    draw_number_page(pdf)
+    draw_contribution_page(pdf)
     draw_harness_page(pdf)
     draw_fiat_page(pdf)
     draw_trouble_page(pdf)

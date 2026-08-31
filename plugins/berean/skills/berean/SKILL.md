@@ -38,9 +38,9 @@ the release assembled from those inputs, grades its recorded answers, and keeps
 promotion and rollback as records. Ariadne may bind the resulting release to
 its evidence after Berean has finished.
 
-Synkrisis is specified to compare validated observations from several agent
-runs, not to grade recorded answers or infer model quality. Its current
-scaffold refuses all four declared operations and produces no finding.
+Synkrisis compares validated observations from several agent runs through four
+shipped operations. It does not grade recorded answers, infer model quality,
+or change Berean's release gates.
 
 ## Frontier
 

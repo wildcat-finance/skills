@@ -12,6 +12,18 @@ Synkrisis builds one checked cohort from validated Promise Machine run observati
 **Next Fiat job.** Use /hexaemeron:fiat to build one cohort from captured production run observations under the shipped policy schema, run the rule catalogue over it, and reconcile every refusal or missed pattern into rule or schema repairs; accept it when the cohort, findings and report recompute from preserved inputs and each repair carries a red-to-green guard. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Synkrisis when several agent runs have already produced validated
+observations and a person can declare which differences may be compared. It
+checks the cohort, applies a digest-bound deterministic rule catalogue, renders
+a fixed report, and verifies all three artefacts from the original inputs.
+
+All four operations ship. The current two rule kinds have only been exercised
+on constructed records, not a captured production cohort. Findings remain
+bounded inferences: they do not establish cause, model quality, or permission
+to act.
+
 ## Place in the collective
 
 The Promise Machine records what one agent run observably did: the
@@ -28,31 +40,24 @@ Elenchus works one failure to its cause, and Horos sets the repository-reading
 boundary. A finding suggests a next owner; a person still decides whether
 anything happens.
 
-## What this step ships
+## What it ships today
 
-This is Step 5 of the committed
-[runbook](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/runbook.md),
-built from the committed
-[study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md)
-for [issue 449](https://github.com/wildcat-finance/skills/issues/449), and it
-completes that runbook:
+- `cohort` validates every declared run, recomputes its digest and accepted
+  prefix, applies the operator's comparison policy, and keeps excluded and
+  unknown runs visible;
+- `diagnose` re-reads the included observations and applies only catalogue
+  rules whose required dimensions, fields, and sample count are present;
+- `render` produces the report from fixed templates, refusing causal language;
+- `verify` rebuilds the cohort, findings, and report from the original inputs;
+  and
+- `scripts/bench_synkrisis.py` exercises a declared 100-run, 100,000-event
+  universe and refuses when the slowest repetition exceeds 5.0 seconds or
+  256 MiB on the runner it records.
 
-- `scripts/bench_synkrisis.py`: the 100-run, 100,000-event universe
-  materialised from the committed scale specification into a private temporary
-  directory, the whole path run over it, and a refusal when the slowest
-  repetition exceeds the declared 5.0-second and 256 MiB ceilings. The result
-  prints the interpreter, the platform, the specification digest, the
-  repetitions and the observed maxima, so a reader knows what was measured and
-  where;
-- the demonstration path, run twice from clean inputs with byte-identical
-  outputs; and
-- two negative demonstrations at the command surface: a policy leaving no
-  eligible run refuses with `SK010`, and a catalogue whose rule prose asserts
-  a cause refuses with `SK011`. Neither writes an artefact.
-
-The frontier now points past this runbook. Every rule is proved on constructed
-example records, and no cohort built from captured production observations has
-exercised the catalogue.
+The demonstration path is repeatable from clean inputs and has explicit
+negative cases for an empty eligible cohort and a rule that claims cause. The
+remaining evidence gap is field use: no captured production cohort has tested
+the two current rule kinds.
 
 ## How it works
 

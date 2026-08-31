@@ -12,6 +12,17 @@ Hermes measures one named Solidity gas optimisation class at a time and rejects 
 **Next Fiat job.** Use /hexaemeron:fiat to widen the Hermes optimisation classes against the pinned rule corpus until every rule with a source-level candidate can be selected, starting with the reduction in storage writes that STO-09's neighbour STO-12 needs and no class names. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Hermes for a proposed Solidity gas change, one optimisation class at a
+time. It seals a baseline, measures the candidate, reruns behaviour tests, and
+checks protected storage layouts, selectors, and relevant unchecked
+arithmetic before keeping the saving.
+
+It is not a general performance tool or a security audit. Its 12 current
+classes can select 62 of the 120 rules in the pinned corpus; the other 58 rules
+do not yet have a selectable candidate class.
+
 ## Place in the collective
 
 Hermes alone owns Solidity gas optimisation. Metron measures performance in

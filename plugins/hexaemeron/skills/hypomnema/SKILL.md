@@ -32,9 +32,9 @@ README, or alert pointer must survive and which existing home owns it. During
 Fiat's prose phase it runs before Scribe applies Imprimatur and Vulgate. Fiat
 keeps the mask order, pull-request text, and receipt.
 
-A future Synkrisis finding may give a maintainer a reason to write or point to
-a record. The current scaffold produces no finding, and neither version gets
-to choose a durable home without Hypomnema's ordinary placement judgement.
+A Synkrisis finding may give a maintainer a reason to write or point to a
+record. It does not choose the durable home; Hypomnema's ordinary placement
+judgement still owns that decision.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
