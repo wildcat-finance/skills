@@ -3281,15 +3281,37 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_portable_promise_machine_runtime_is_current(self):
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts/portable_promise_machine.py"), "check"],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+    def test_portable_promise_machine_package_is_current(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            package = Path(temporary) / "package"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/portable_promise_machine.py"),
+                    "package",
+                    "--out",
+                    str(package),
+                ],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            verifier = (
+                package
+                / ".agents/skills/promise-machine/scripts/verify_runtime.py"
+            )
+            verified = subprocess.run(
+                [sys.executable, str(verifier)],
+                cwd=package,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                verified.returncode, 0, verified.stdout + verified.stderr
+            )
 
     def assert_stale_report_refuses(self, evidence_key: str, field_path: tuple[str, ...], code: str) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -110,7 +110,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "c7bc708d30e5ef42eb23d4117f1329a212820fb2334410b01e36248039b97c71",
+      "sha256": "bc731ed721f937917b02ad51e3e0ea439fbe1a722651b3aee02d873a46e144f3",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
@@ -122,7 +122,7 @@
         "test_bound_manifest_runs_complete_clean_demonstration",
         "test_compact_documents_reproduce_from_bound_models",
         "test_plugin_promise_machine_copies_are_current",
-        "test_portable_promise_machine_runtime_is_current",
+        "test_portable_promise_machine_package_is_current",
         "test_stale_measurement_report_refuses",
         "test_stale_parity_report_refuses"
       ]

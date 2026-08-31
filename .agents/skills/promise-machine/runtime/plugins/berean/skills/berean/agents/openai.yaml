@@ -1,4 +1,0 @@
-interface:
-  display_name: "Berean"
-  short_description: "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals."
-  default_prompt: "Use Berean to build, verify or evaluate an evidence-backed protocol-agent release against its pinned corpus and preserved chain reads."

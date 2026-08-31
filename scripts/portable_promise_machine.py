@@ -19,6 +19,19 @@ CONTRACT_ID = "promise-machine/v1"
 MANIFEST_SCHEMA = "promise-machine-portable-runtime/v1"
 GENERATOR = "scripts/portable_promise_machine.py"
 TARGET = Path(".agents/skills/promise-machine/runtime")
+PACKAGE_ROOT = Path(".agents/skills/promise-machine")
+SKILLS_CONFIG = Path("skills.sh.json")
+
+# The files the package carries that this repository authors rather than
+# generates.  They stay at these paths here: repo_contract.py binds two of them
+# by constant, and the Promise contract names the router inside a closed
+# quotable set.  See ADR-054's successor.
+PACKAGE_AUTHORED = (
+    Path(".agents/plugins/marketplace.json"),
+    Path(".agents/skills/promise-machine/SKILL.md"),
+    Path(".agents/skills/promise-machine/PORTABLE.md"),
+    Path(".agents/skills/promise-machine/scripts/verify_runtime.py"),
+)
 PORTABLE_BOUNDARY = ".horos/boundary.json"
 
 ROOT_FILES = (
@@ -464,6 +477,149 @@ def stage_runtime(root: Path) -> str:
     return "staged"
 
 
+def source_commit(root: Path) -> str:
+    """Return the exact commit the package is generated from."""
+    result = subprocess.run(  # phylax: allow subprocess: fixed local git argv, no shell
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=_git_environment(),
+    )
+    if result.returncode != 0:
+        raise PackageError("could not read the source commit: " + result.stderr.strip())
+    commit = result.stdout.strip()
+    if len(commit) != 40 or not all(c in "0123456789abcdef" for c in commit):
+        raise PackageError(f"source commit is not a full object name: {commit!r}")
+    return commit
+
+
+def _package_config() -> bytes:
+    """The grouping the published package carries, independent of this tree."""
+    document = {
+        "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+        "notGrouped": "bottom",
+        "groupings": [
+            {
+                "title": "Install the Wildcat collective",
+                "description": (
+                    "The dependency-closed Promise Machine router verifies its "
+                    "bundled runtime, selects one canonical specialist, and "
+                    "preserves every evidence boundary and named hand-off."
+                ),
+                "skills": ["promise-machine"],
+            }
+        ],
+    }
+    return (json.dumps(document, indent=2) + "\n").encode("utf-8")
+
+
+def _package_readme(commit: str) -> bytes:
+    text = f"""# Wildcat skills runtime
+
+Every file here is generated. Nothing in this repository is authored, and an
+edit made here is overwritten by the next rebuild.
+
+The source is [wildcat-finance/skills](https://github.com/wildcat-finance/skills).
+This package was generated from commit `{commit}` by
+`{GENERATOR}` in that repository.
+
+## Install
+
+```
+npx skills add wildcat-finance/skills-runtime --skill promise-machine
+```
+
+Then verify the installed copy against its own manifest:
+
+```
+python3 .agents/skills/promise-machine/scripts/verify_runtime.py
+```
+
+## Rebuilding
+
+A scheduled workflow in this repository clones the public source hourly,
+regenerates the package, verifies it, and commits only when the bytes changed.
+A failed verification publishes nothing and fails the run, so the last good
+package stays published.
+
+Changes belong upstream. Open issues and pull requests against
+`wildcat-finance/skills`.
+"""
+    return text.encode("utf-8")
+
+
+def _package_bytes(root: Path, commit: str) -> dict[str, bytes]:
+    """Return every path the published package carries, keyed relative to it."""
+    payload, manifest = expected_files(root)
+    files: dict[str, bytes] = {}
+    for relative in PACKAGE_AUTHORED:
+        source = root / relative
+        if source.is_symlink() or not source.is_file():
+            raise PackageError(f"authored package file is absent: {relative}")
+        files[relative.as_posix()] = source.read_bytes()
+    runtime = PACKAGE_ROOT / "runtime"
+    for relative, data in payload.items():
+        files[(runtime / relative).as_posix()] = data
+    files[(runtime / "MANIFEST.json").as_posix()] = manifest
+    files[SKILLS_CONFIG.as_posix()] = _package_config()
+    files["README.md"] = _package_readme(commit)
+    return files
+
+
+# A directory this generator wrote carries its manifest at this path. Anything
+# else that is not empty belongs to somebody, and writing a package replaces the
+# whole directory, so an occupied destination is refused rather than cleared.
+PACKAGE_MARKER = PACKAGE_ROOT / "runtime" / "MANIFEST.json"
+
+
+def _checked_output(raw: str) -> Path:
+    """Resolve the output directory, refusing a symlink, a bad parent, or work."""
+    out = Path(raw)
+    if out.is_symlink():
+        raise PackageError(f"output directory is a symlink: {out}")
+    resolved = out.resolve()
+    parent = resolved.parent
+    if not parent.is_dir():
+        raise PackageError(f"output parent is not a directory: {parent}")
+    if not resolved.exists():
+        return resolved
+    if not resolved.is_dir():
+        raise PackageError(f"output path is not a directory: {resolved}")
+    if not any(resolved.iterdir()):
+        return resolved
+    if not (resolved / PACKAGE_MARKER).is_file():
+        raise PackageError(
+            f"output directory is not empty and is not a generated package: {resolved}; "
+            "remove it or name an empty directory"
+        )
+    return resolved
+
+
+def package(root: Path, raw_out: str, commit: str | None) -> Path:
+    """Write a complete installable package into a named directory."""
+    out = _checked_output(raw_out)
+    files = _package_bytes(root, commit or source_commit(root))
+    for relative in files:
+        pure = PurePosixPath(relative)
+        if pure.is_absolute() or ".." in pure.parts:
+            raise PackageError(f"unsafe package path: {relative}")
+    with tempfile.TemporaryDirectory(prefix=".promise-machine-package.", dir=out.parent) as raw:
+        candidate = Path(raw) / "package"
+        candidate.mkdir()
+        for relative, data in sorted(files.items()):
+            destination = candidate / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(data)
+            origin = root / relative
+            if origin.is_file() and not origin.is_symlink():
+                destination.chmod(origin.stat().st_mode & 0o777)
+        if out.exists():
+            shutil.rmtree(out)
+        candidate.replace(out)
+    return out
+
+
 def repository_root(raw: str | None) -> Path:
     root = Path(raw) if raw else Path(__file__).resolve().parents[1]
     root = root.resolve()
@@ -474,7 +630,9 @@ def repository_root(raw: str | None) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("check", "sync"))
+    parser.add_argument("action", choices=("check", "sync", "package"))
+    parser.add_argument("--out", help="directory to write a complete package into")
+    parser.add_argument("--source-commit", help="exact source commit to record in the package")
     parser.add_argument("--root", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     try:
@@ -482,6 +640,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.action == "sync":
             status = sync(root)
             print(f"synchronised {TARGET.as_posix()} ({status})")
+        elif args.action == "package":
+            if not args.out:
+                parser.exit(2, "portable Promise Machine: package needs --out\n")
+            written = package(root, args.out, args.source_commit)
+            print(f"packaged {written}")
         else:
             check(root)
             print(f"checked {TARGET.as_posix()}")

@@ -1,7 +1,0 @@
-{
-  "expectation": "compress",
-  "mode": "report",
-  "origin_artifact_path": "credit-default-swaps/audit/AUDIT.md",
-  "origin_ranges": [[80, 80], [92, 99]],
-  "origin_sha256": "2cdd9bb04532ec278184d2a3290a0b0b72c02be47ca634911428440ddbed6d58"
-}
