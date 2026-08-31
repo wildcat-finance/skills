@@ -231,6 +231,58 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
         verifier.assert_called_once()
         return receipt
 
+    def assert_clean_filter_refuses_without_execution(self, scope: str) -> None:
+        with tempfile.TemporaryDirectory() as outside:
+            sentinel = Path(outside) / "clean-filter-executed"
+            if scope == "--worktree":
+                git(
+                    self.repo.path,
+                    "config",
+                    "--local",
+                    "extensions.worktreeConfig",
+                    "true",
+                )
+            git(
+                self.repo.path,
+                "config",
+                scope,
+                "filter.hostile.clean",
+                "sh -c 'touch \"$FILTER_SENTINEL\"; cat'",
+            )
+            write(
+                self.repo.path,
+                ".git/info/attributes",
+                "* filter=hostile\n",
+            )
+            stderr = io.StringIO()
+            stopped = None
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"FILTER_SENTINEL": str(sentinel)},
+                ),
+                mock.patch.object(
+                    self.module,
+                    "verify_local_commit",
+                    return_value=self.repo.candidate,
+                ),
+                contextlib.redirect_stderr(stderr),
+            ):
+                try:
+                    self.module.decision_assignment_receipt(
+                        str(self.repo.path),
+                        self.repo.report_path,
+                        self.repo.candidate,
+                        candidate_ref="refs/heads/candidate",
+                    )
+                except SystemExit as error:
+                    stopped = error.code
+            self.assertEqual((stopped, sentinel.exists()), (2, False))
+            self.assertIn(
+                "configures a clean or process filter",
+                stderr.getvalue(),
+            )
+
     def test_exact_report_candidate_and_ordered_trailers_are_receipted(self):
         receipt = self.receipt()
         self.assertEqual(receipt["schema"], "fiat-decision-assignment-composition/v1")
@@ -242,6 +294,15 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
         self.assertEqual(receipt["mappings"], self.repo.report["mappings"])
         self.assertRegex(receipt["report_sha256"], r"\A[0-9a-f]{64}\Z")
         self.assertRegex(receipt["commit_message_sha256"], r"\A[0-9a-f]{64}\Z")
+
+    def test_repository_without_clean_filters_still_verifies(self):
+        self.assertEqual(self.receipt()["candidate"], self.repo.candidate)
+
+    def test_local_clean_filter_refuses_before_worktree_observation(self):
+        self.assert_clean_filter_refuses_without_execution("--local")
+
+    def test_worktree_clean_filter_refuses_before_worktree_observation(self):
+        self.assert_clean_filter_refuses_without_execution("--worktree")
 
     def test_stale_base_ref_refuses_before_a_receipt(self):
         git(self.repo.path, "checkout", "--quiet", "main")

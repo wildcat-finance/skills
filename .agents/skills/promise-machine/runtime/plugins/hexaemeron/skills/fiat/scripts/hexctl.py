@@ -6740,8 +6740,70 @@ def _replay_decision_assignment_report(
         die("decision assignment private replay repository cannot be prepared")
 
 
+def _decision_assignment_filter_config(
+    base_dir: str, scope: str
+) -> tuple[int, bytes]:
+    """Read one fixed repository config scope without exposing its values."""
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "config",
+            scope,
+            "--includes",
+            "--name-only",
+            "--get-regexp",
+            r"^filter\..*\.(clean|process)$",
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in {0, 1}:
+        die("decision assignment repository filter configuration cannot be read")
+    return status, output
+
+
+def _decision_assignment_reject_clean_filters(base_dir: str) -> None:
+    """Refuse executable clean-filter state before Git observes the worktree."""
+    status, output = _decision_assignment_filter_config(base_dir, "--local")
+    if status == 0 or output:
+        die("decision assignment repository configures a clean or process filter")
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "config",
+            "--local",
+            "--includes",
+            "--type=bool",
+            "--get",
+            "extensions.worktreeConfig",
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in {0, 1}:
+        die("decision assignment repository filter configuration cannot be read")
+    if status == 1:
+        if output:
+            die("decision assignment repository filter configuration is malformed")
+        return
+    try:
+        enabled = output.decode("ascii").strip()
+    except UnicodeDecodeError:
+        enabled = ""
+    if enabled == "false":
+        return
+    if enabled != "true":
+        die("decision assignment repository filter configuration is malformed")
+    status, output = _decision_assignment_filter_config(base_dir, "--worktree")
+    if status == 0 or output:
+        die("decision assignment repository configures a clean or process filter")
+
+
 def _decision_assignment_worktree(base_dir: str) -> tuple[tuple[str, str], str, bytes]:
     """Capture the repository, HEAD, and exact clean status without locks."""
+    _decision_assignment_reject_clean_filters(base_dir)
     repository = _native_relation_repository_identity(base_dir)
     head = _native_relation_commit(base_dir, "HEAD", "decision assignment worktree HEAD")
     status = _native_relation_git(
