@@ -734,6 +734,30 @@ class TestDelegationPackets(HexctlCase):
             os.path.exists(os.path.join(self.target, ".hexaemeron", "brief.json"))
         )
 
+    def test_status_field_returns_one_value_not_the_state(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        one = self.run_ctl("status", "--field", "observation_run_id").stdout
+        self.assertEqual(json.loads(one), whole["observation_run_id"])
+        self.assertLess(len(one), len(json.dumps(whole)))
+        for absent in ("steps", "receipts", "config"):
+            self.assertNotIn(absent, one)
+
+    def test_status_field_walks_a_dotted_path(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        out = self.run_ctl("status", "--field", "config.audit.max_rounds").stdout
+        self.assertEqual(json.loads(out), whole["config"]["audit"]["max_rounds"])
+
+    def test_status_field_refuses_an_unknown_path(self):
+        self.to_audit()
+        self.run_ctl("status", "--field", "config.audit.nope", expect=2)
+        self.run_ctl("status", "--field", "not_a_key", expect=2)
+
+    def test_status_field_and_json_are_mutually_exclusive(self):
+        self.to_audit()
+        self.run_ctl("status", "--json", "--field", "observation_run_id", expect=2)
+
 class XRayReuseStateSeparationTests(HexctlCase):
     FORBIDDEN_FIELDS = frozenset(
         {
