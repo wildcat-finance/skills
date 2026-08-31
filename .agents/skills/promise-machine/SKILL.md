@@ -43,6 +43,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Preserve audit findings and the changes that answered them | [Anamnesis](../../../plugins/anamnesis/AGENTS.md) | `anamnesis` |
 | Verify a protocol agent against pinned corpora and chain reads | [Berean](../../../plugins/berean/AGENTS.md) | `berean` |
 | Constrain the volume and structure of engineering prose | [Brevitas](../../../plugins/brevitas/AGENTS.md) | `brevitas` |
+| Inspect or work on the planned frontend coverage boundary; substantive operations currently refuse | [Dokimasia](../../../plugins/dokimasia/AGENTS.md) | `dokimasia` |
 | Measure one Solidity gas-optimisation class | [Hermes](../../../plugins/hermes/AGENTS.md) | `hermes` |
 | Validate a Homologia manifest and evidence-classed expected integers, or inspect the later contract-to-mirror boundary; mirror execution and verdicts currently refuse | [Homologia](../../../plugins/homologia/AGENTS.md) | `homologia` |
 | Classify evidenced reading sinks | [Horos](../../../plugins/horos/AGENTS.md) | `horos` |
