@@ -11,6 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -60,6 +61,11 @@ def canonical(value: object) -> bytes:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def clear_source_cache() -> None:
+    cached = getattr(AI, "_source_object", AI._source_blob)
+    cached.cache_clear()
 
 
 def scratch_directory(prefix: str = "instruction-architecture-"):
@@ -161,11 +167,59 @@ class CorpusManifestTests(unittest.TestCase):
         self.assertNotEqual(changed, AI.build_manifest())
 
     def test_live_source_drift_refuses(self):
-        AI._source_blob.cache_clear()
+        clear_source_cache()
         with mock.patch.object(AI, "_read_regular", return_value=b"not the Git blob"):
             with self.assertRaisesRegex(AI.Refusal, "source drift"):
                 AI._source_blob("AGENTS.md")
-        AI._source_blob.cache_clear()
+        clear_source_cache()
+
+    def test_cached_git_object_never_skips_live_source_drift_check(self):
+        clear_source_cache()
+        self.addCleanup(clear_source_cache)
+        with (
+            mock.patch.object(AI, "_git", return_value=b"pinned"),
+            mock.patch.object(
+                AI, "_read_regular", side_effect=[b"pinned", b"drifted"]
+            ) as live_read,
+        ):
+            self.assertEqual(AI._source_blob("AGENTS.md"), b"pinned")
+            with self.assertRaisesRegex(AI.Refusal, "source drift"):
+                AI._source_blob("AGENTS.md")
+            self.assertEqual(live_read.call_count, 2)
+
+    def test_git_output_limit_stops_producer_before_completion(self):
+        with scratch_directory() as inside:
+            root = Path(inside)
+            binary = root / "bin"
+            binary.mkdir()
+            marker = root / "producer-finished"
+            fake_git = binary / "git"
+            producer = (
+                "import os\n"
+                "from pathlib import Path\n"
+                "import time\n"
+                "for _ in range(8):\n"
+                "    os.write(1, b'x' * 512)\n"
+                "    time.sleep(0.1)\n"
+                "Path(os.environ['INSTRUCTION_ARCHITECTURE_TEST_MARKER']).write_text('done')\n"
+            )
+            fake_git.write_text(
+                "#!/usr/bin/env python3\n"
+                "import subprocess\n"
+                "import sys\n"
+                f"subprocess.Popen([sys.executable, '-c', {producer!r}])\n",
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            environment = {
+                "PATH": f"{binary}{os.pathsep}{os.environ.get('PATH', '')}",
+                "INSTRUCTION_ARCHITECTURE_TEST_MARKER": str(marker),
+            }
+            with mock.patch.dict(AI.os.environ, environment, clear=False):
+                with self.assertRaisesRegex(AI.Refusal, "output exceeded"):
+                    AI._git(["ignored"], limit=1_024)
+            time.sleep(1)
+            self.assertFalse(marker.exists())
 
     def test_regular_read_refuses_parent_symlink_escape(self):
         with (
@@ -256,6 +310,18 @@ class CorpusManifestTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(AI.Refusal, "JSON token limit"):
                 AI._load_record(wide)
+
+    def test_oversized_json_integer_refuses_without_parser_exception(self):
+        with scratch_directory() as inside:
+            record = Path(inside) / "integer.json"
+            record.write_bytes(b'{"value":' + b"1" * 5_000 + b"}\n")
+            try:
+                AI._load_record(record)
+            except Exception as exc:
+                self.assertIsInstance(exc, AI.Refusal)
+                self.assertRegex(str(exc), "strict UTF-8 JSON")
+            else:
+                self.fail("oversized JSON integer was accepted")
 
     def test_output_refuses_parent_symlink_escape_without_writing(self):
         with (
@@ -362,6 +428,39 @@ class BytePartitionTests(unittest.TestCase):
             self.assertEqual(
                 containing["classification"], "exact_literal_or_evidence", path
             )
+
+    def test_shorter_or_mismatched_fence_inside_long_fence_is_literal(self):
+        specimens = {
+            "shorter-backtick": b"````text\n```\nstill literal\n````\nafter\n",
+            "shorter-backtick-info": b"````text\n```python\nstill literal\n````\nafter\n",
+            "mismatched-tilde": b"````text\n~~~\nstill literal\n````\nafter\n",
+            "mismatched-tilde-info": b"````text\n~~~text\nstill literal\n````\nafter\n",
+        }
+        for name, source in specimens.items():
+            with self.subTest(name=name):
+                with mock.patch.object(AI, "_source_blob", return_value=source):
+                    try:
+                        ranges = AI._partition_ranges(f"{name}.md", generated=False)
+                    except AI.Refusal as exc:
+                        self.fail(f"valid outer fence was refused: {exc}")
+                literal = source.index(b"still literal")
+                prose = source.index(b"after")
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= literal < item["end"]
+                    ),
+                    "exact_literal_or_evidence",
+                )
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= prose < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
 
     def test_partition_rebuild_and_command_are_exact(self):
         self.assertEqual(self.partition, AI.build_partition(self.manifest))

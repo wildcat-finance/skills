@@ -17,9 +17,12 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import secrets
+import selectors
+import signal
 import stat
 import subprocess
 import sys
+import time
 from functools import lru_cache
 from typing import Any, Iterable
 
@@ -259,7 +262,9 @@ def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
             object_pairs_hook=_closed_object,
             parse_constant=_reject_constant,
         )
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except Refusal:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         raise Refusal("record is not strict UTF-8 JSON") from exc
     if not isinstance(value, dict):
         raise Refusal("record root must be an object")
@@ -289,29 +294,99 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
             "GIT_LITERAL_PATHSPECS": "1",
         }
     )
+    process: subprocess.Popen[bytes] | None = None
     try:
-        result = subprocess.run(
+        process = subprocess.Popen(
             ["git", "--no-optional-locks", "-C", str(ROOT), *arguments],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            check=False,
-            timeout=20,
             env=environment,
+            start_new_session=True,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except OSError as exc:
         raise Refusal("bounded Git read failed") from exc
-    if len(result.stdout) > limit or len(result.stderr) > 65_536:
-        raise Refusal("bounded Git output exceeded its limit")
-    if result.returncode != 0:
-        raise Refusal("bounded Git read refused the source")
-    return result.stdout
+    assert process.stdout is not None and process.stderr is not None
+    selector = selectors.DefaultSelector()
+    stdout = bytearray()
+    stderr = bytearray()
+    deadline = time.monotonic() + 20
+    completed = False
+    try:
+        selector.register(process.stdout, selectors.EVENT_READ, (stdout, limit))
+        selector.register(process.stderr, selectors.EVENT_READ, (stderr, 65_536))
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise Refusal("bounded Git read timed out")
+            try:
+                events = selector.select(remaining)
+            except OSError as exc:
+                raise Refusal("bounded Git output capture failed") from exc
+            if not events:
+                raise Refusal("bounded Git read timed out")
+            for key, _ in events:
+                buffer, cap = key.data
+                try:
+                    chunk = os.read(key.fd, min(65_536, cap + 1 - len(buffer)))
+                except OSError as exc:
+                    raise Refusal("bounded Git output capture failed") from exc
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) > cap:
+                    raise Refusal("bounded Git output exceeded its limit")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise Refusal("bounded Git read timed out")
+        try:
+            returncode = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as exc:
+            raise Refusal("bounded Git read timed out") from exc
+        if returncode != 0:
+            raise Refusal("bounded Git read refused the source")
+        completed = True
+        return bytes(stdout)
+    finally:
+        selector.close()
+        if not completed:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+        if process.poll() is None:
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
+        try:
+            process.stdout.close()
+            process.stderr.close()
+        except OSError:
+            pass
 
 
 @lru_cache(maxsize=256)
-def _source_blob(path: str) -> bytes:
+def _source_object(path: str) -> bytes:
     _safe_relative(path)
-    blob = _git(["cat-file", "blob", f"{SOURCE_REF}:{path}"], MAX_SOURCE_BYTES)
+    return _git(["cat-file", "blob", f"{SOURCE_REF}:{path}"], MAX_SOURCE_BYTES)
+
+
+def _source_blob(path: str) -> bytes:
+    blob = _source_object(path)
     live = _read_regular(ROOT / path, MAX_SOURCE_BYTES)
     if live != blob:
         raise Refusal(f"source drift: {path}")
@@ -721,32 +796,75 @@ def _partition_ranges(path: str, generated: bool) -> list[dict[str, Any]]:
                 "span_sha256": _sha256(data),
             }
         ]
+    lines = data.splitlines(keepends=True)
+
+    def fence_marker(line: bytes) -> tuple[bytes, bytes] | None:
+        match = re.match(rb"^ {0,3}(`{3,}|~{3,})([^\r\n]*)", line)
+        return None if match is None else (match.group(1), match.group(2))
+
+    def opens(marker: tuple[bytes, bytes]) -> bool:
+        fence, remainder = marker
+        return fence[:1] == b"~" or b"`" not in remainder
+
+    def closes(marker: tuple[bytes, bytes], active: tuple[int, int]) -> bool:
+        fence, remainder = marker
+        return (
+            fence[0] == active[0]
+            and len(fence) >= active[1]
+            and not remainder.strip(b" \t")
+        )
+
+    @lru_cache(maxsize=None)
+    def commonmark_suffix_is_balanced(start: int) -> bool:
+        active: tuple[int, int] | None = None
+        for line in lines[start:]:
+            marker = fence_marker(line)
+            if marker is None:
+                continue
+            if active is not None:
+                if closes(marker, active):
+                    active = None
+            elif opens(marker):
+                fence, _ = marker
+                active = (fence[0], len(fence))
+        return active is None
+
     ranges: list[tuple[int, int, str]] = []
     offset = 0
-    fence_stack: list[tuple[int, int]] = []
-    for line in data.splitlines(keepends=True):
-        marker = re.match(rb"^ {0,3}(`{3,}|~{3,})([^\r\n]*)", line)
+    active_fence: tuple[int, int] | None = None
+    pending_template: tuple[int, int] | None = None
+    for index, line in enumerate(lines):
+        marker = fence_marker(line)
         classification = "governed_operative_semantics"
-        if fence_stack:
+        if active_fence is not None:
             classification = "exact_literal_or_evidence"
             if marker is not None:
-                fence = marker.group(1)
-                remainder = marker.group(2)
-                active = fence_stack[-1]
-                if (
-                    fence[0] == active[0]
-                    and len(fence) >= active[1]
-                    and not remainder.strip(b" \t")
+                fence, remainder = marker
+                if closes(marker, active_fence):
+                    if (
+                        pending_template is not None
+                        and closes(marker, pending_template)
+                        and not commonmark_suffix_is_balanced(index + 1)
+                    ):
+                        pending_template = None
+                    else:
+                        active_fence = None
+                        pending_template = None
+                elif pending_template is not None and closes(
+                    marker, pending_template
                 ):
-                    fence_stack.pop()
-                elif fence[:1] == b"~" or b"`" not in remainder:
-                    fence_stack.append((fence[0], len(fence)))
+                    pending_template = None
+                elif remainder.strip(b" \t") and opens(marker):
+                    # Three source templates deliberately show fenced diffs inside
+                    # a surrounding fence. Blank or unmatched inner markers remain
+                    # CommonMark literals; only an explicit balanced template pair
+                    # can delay the surrounding close.
+                    pending_template = (fence[0], len(fence))
         elif marker is not None:
-            fence = marker.group(1)
-            remainder = marker.group(2)
-            if fence[:1] == b"~" or b"`" not in remainder:
+            fence, _ = marker
+            if opens(marker):
                 classification = "exact_literal_or_evidence"
-                fence_stack.append((fence[0], len(fence)))
+                active_fence = (fence[0], len(fence))
         end = offset + len(line)
         if ranges and ranges[-1][2] == classification:
             ranges[-1] = (ranges[-1][0], end, classification)
@@ -756,11 +874,11 @@ def _partition_ranges(path: str, generated: bool) -> list[dict[str, Any]]:
     if offset < len(data):
         classification = (
             "exact_literal_or_evidence"
-            if fence_stack
+            if active_fence is not None
             else "governed_operative_semantics"
         )
         ranges.append((offset, len(data), classification))
-    if fence_stack:
+    if active_fence is not None:
         raise Refusal(f"unterminated Markdown fence: {path}")
     return [
         {
