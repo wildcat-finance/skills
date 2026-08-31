@@ -23,7 +23,7 @@ deduplication. similar prose is not deduplicated.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 105
+`loader-graph.json` records 19 roots and 107
 edges. every edge cites a source path, exact byte range, source digest and span
 digest. unconditional runtime loads and conditional selection or reference
 loads remain distinct. a file's presence creates no edge. fixtures and

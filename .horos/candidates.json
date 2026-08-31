@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16665625,
+    "bytes_blob": 16666526,
     "bytes_generated": 98
   },
   "entries": [
@@ -582,16 +582,16 @@
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },
     {
-      "bytes": 61005,
+      "bytes": 61020,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 61005 bytes",
+      "evidence": "no newline in the first 4096 bytes of 61020 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 56043,
+      "bytes": 56929,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 56043 bytes",
+      "evidence": "no newline in the first 4096 bytes of 56929 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }

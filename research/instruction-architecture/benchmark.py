@@ -60,6 +60,11 @@ EXTERNAL_SKILL_PREFIXES = (
     "plugins/hexaemeron/skills/solidity-auditor/",
     "plugins/hexaemeron/skills/x-ray/",
 )
+BASELINE_FIXTURE_ROOT = PurePosixPath("tests/fixtures/instruction-architecture")
+BASELINE_RECONCILIATION = PurePosixPath(
+    "docs/instruction-architecture/corpus-reconciliation.md"
+)
+SCRATCH_ROOT = PurePosixPath("tmp")
 
 
 class Refusal(ValueError):
@@ -71,10 +76,15 @@ def _sha256(data: bytes) -> str:
 
 
 def _canonical_json(value: Any) -> bytes:
-    return (
-        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        + "\n"
-    ).encode("utf-8")
+    try:
+        return (
+            json.dumps(
+                value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            )
+            + "\n"
+        ).encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise Refusal("record contains a non-Unicode-scalar string") from exc
 
 
 def _reject_constant(value: str) -> None:
@@ -85,13 +95,19 @@ def _closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
-            raise Refusal(f"duplicate JSON key: {key}")
+            raise Refusal("duplicate JSON key")
         result[key] = value
     return result
 
 
 def _safe_relative(path: str) -> PurePosixPath:
-    if not isinstance(path, str) or not path or len(path.encode("utf-8")) > 1024:
+    if not isinstance(path, str) or not path:
+        raise Refusal("unsafe repository path")
+    try:
+        encoded = path.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise Refusal("unsafe repository path") from exc
+    if len(encoded) > 1024:
         raise Refusal("unsafe repository path")
     candidate = PurePosixPath(path)
     if candidate.is_absolute() or "\\" in path:
@@ -125,6 +141,21 @@ def _repository_relative(path: Path, label: str) -> PurePosixPath:
     except ValueError as exc:
         raise Refusal(f"{label} leaves repository") from exc
     return _safe_relative(relative)
+
+
+def _confined_output(
+    path: Path,
+    label: str,
+    *,
+    exact: tuple[PurePosixPath, ...],
+    roots: tuple[PurePosixPath, ...],
+) -> Path:
+    relative = _repository_relative(path, label)
+    if relative in exact or any(
+        relative == root or root in relative.parents for root in roots
+    ):
+        return ROOT / Path(*relative.parts)
+    raise Refusal(f"{label} leaves its owned output scope")
 
 
 def _directory_flags() -> int:
@@ -290,6 +321,7 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
     environment.update(
         {
             "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_NO_REPLACE_OBJECTS": "1",
             "GIT_TERMINAL_PROMPT": "0",
             "GIT_LITERAL_PATHSPECS": "1",
         }
@@ -311,7 +343,7 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
     stdout = bytearray()
     stderr = bytearray()
     deadline = time.monotonic() + 20
-    completed = False
+    leader_reaped = False
     try:
         selector.register(process.stdout, selectors.EVENT_READ, (stdout, limit))
         selector.register(process.stderr, selectors.EVENT_READ, (stderr, 65_536))
@@ -344,13 +376,18 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
             returncode = process.wait(timeout=remaining)
         except subprocess.TimeoutExpired as exc:
             raise Refusal("bounded Git read timed out") from exc
+        # Reaping releases the numeric process-group id. Do not signal that id
+        # afterwards: another session may own it by the time cleanup runs.
+        leader_reaped = True
         if returncode != 0:
             raise Refusal("bounded Git read refused the source")
-        completed = True
         return bytes(stdout)
     finally:
         selector.close()
-        if not completed:
+        # Popen sets returncode before wait returns. Preserve that evidence if
+        # an asynchronous exception lands between the return and assignment.
+        leader_reaped = leader_reaped or process.returncode is not None
+        if not leader_reaped:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
@@ -499,7 +536,7 @@ def _loader_roots(path: str, document_class: str) -> list[str]:
     if path == "AGENTS.md":
         return ["repository", "agent-skills"]
     if path == "PROMISE_MACHINE.md":
-        return ["repository"]
+        return ["repository", "agent-skills"]
     if path == ".agents/skills/promise-machine/SKILL.md":
         return ["repository", "agent-skills"]
     if document_class == "promise_machine_contract":
@@ -705,6 +742,20 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "`.agents/skills/promise-machine/SKILL.md`",
     )
     router = ".agents/skills/promise-machine/SKILL.md"
+    add_edge(
+        router,
+        "AGENTS.md",
+        "conditional",
+        "the Agent Skills source-checkout path requires the root runtime before routing",
+        "../../../AGENTS.md",
+    )
+    add_edge(
+        router,
+        "PROMISE_MACHINE.md",
+        "conditional",
+        "the Agent Skills source-checkout path loads the suite law",
+        "../../../PROMISE_MACHINE.md",
+    )
     for plugin in plugins:
         runtime = f"plugins/{plugin}/AGENTS.md"
         add_edge(
@@ -1469,12 +1520,25 @@ unmeasured until the later arm and case builders exist.
 
 
 def build_baseline(args: argparse.Namespace) -> bytes:
+    output = _confined_output(
+        args.output,
+        "baseline output",
+        exact=(BASELINE_FIXTURE_ROOT,),
+        roots=(SCRATCH_ROOT,),
+    )
+    reconciliation = args.reconciliation
+    if reconciliation is not None:
+        reconciliation = _confined_output(
+            reconciliation,
+            "reconciliation output",
+            exact=(BASELINE_RECONCILIATION,),
+            roots=(SCRATCH_ROOT,),
+        )
     manifest = build_manifest()
     graph = build_loader_graph(manifest)
     partition = build_partition(manifest)
     cohorts = build_cohorts(manifest)
     seal = build_holdout_seal(manifest, cohorts)
-    output = args.output
     records = {
         "corpus-manifest.json": manifest,
         "loader-graph.json": graph,
@@ -1494,9 +1558,9 @@ def build_baseline(args: argparse.Namespace) -> bytes:
         "artifacts": digests,
     }
     _atomic_write(output / "artifact-inventory.json", _canonical_json(inventory))
-    if args.reconciliation is not None:
+    if reconciliation is not None:
         _atomic_write(
-            args.reconciliation,
+            reconciliation,
             _reconciliation_markdown(manifest, graph, partition, cohorts),
         )
     return _result(

@@ -221,6 +221,51 @@ class CorpusManifestTests(unittest.TestCase):
             time.sleep(1)
             self.assertFalse(marker.exists())
 
+    def test_nonzero_git_exit_never_signals_a_reaped_process_group(self):
+        with mock.patch.object(AI.os, "killpg") as killpg:
+            with self.assertRaisesRegex(AI.Refusal, "refused the source"):
+                AI._git(["definitely-not-a-git-command"])
+        killpg.assert_not_called()
+
+    def test_git_replace_ref_cannot_pivot_the_source_object(self):
+        with scratch_directory("instruction-architecture-git-") as inside:
+            repository = Path(inside) / "repository"
+            repository.mkdir()
+
+            def git(*arguments: str) -> str:
+                result = subprocess.run(
+                    ["git", "-C", str(repository), *arguments],
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=10,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                return result.stdout.strip()
+
+            git("init", "--quiet")
+            git("config", "user.name", "fixture")
+            git("config", "user.email", "fixture@example.invalid")
+            git("config", "commit.gpgsign", "false")
+            source = repository / "source.md"
+            source.write_text("original\n", encoding="utf-8")
+            git("add", "source.md")
+            git("commit", "--quiet", "-m", "original")
+            original = git("rev-parse", "HEAD")
+            source.write_text("replacement\n", encoding="utf-8")
+            git("commit", "--quiet", "-am", "replacement")
+            replacement = git("rev-parse", "HEAD")
+            git("replace", original, replacement)
+            self.assertEqual(
+                git("cat-file", "blob", f"{original}:source.md"), "replacement"
+            )
+            with mock.patch.object(AI, "ROOT", repository):
+                self.assertEqual(
+                    AI._git(["cat-file", "blob", f"{original}:source.md"]),
+                    b"original\n",
+                )
+
     def test_regular_read_refuses_parent_symlink_escape(self):
         with (
             scratch_directory() as inside,
@@ -322,6 +367,53 @@ class CorpusManifestTests(unittest.TestCase):
                 self.assertRegex(str(exc), "strict UTF-8 JSON")
             else:
                 self.fail("oversized JSON integer was accepted")
+
+    def test_non_scalar_json_refuses_without_encoder_exception(self):
+        with scratch_directory() as inside:
+            record = Path(inside) / "surrogate.json"
+            record.write_bytes(b'{"value":"\\ud800"}\n')
+            duplicate = Path(inside) / "duplicate-surrogate.json"
+            duplicate.write_bytes(b'{"\\ud800":1,"\\ud800":2}\n')
+            for specimen in (record, duplicate):
+                with self.subTest(specimen=specimen.name):
+                    try:
+                        AI._load_record(specimen)
+                    except AI.Refusal as exc:
+                        self.assertTrue(str(exc).isascii())
+                    except Exception as exc:
+                        self.fail(f"unbounded parser exception: {type(exc).__name__}")
+                    else:
+                        self.fail("non-scalar JSON was accepted")
+
+    def test_build_baseline_refuses_unowned_output_paths_before_derivation(self):
+        manifest = {"source": {"tree_sha256": "0" * 64}, "totals": {}}
+        graph = {"roots": [], "edges": []}
+        cohorts = {"holdout": {"logical_skills": []}}
+        for output, reconciliation in (
+            (ROOT, None),
+            (FIXTURES, ROOT / "AGENTS.md"),
+            (FIXTURES, ROOT / ".git/config"),
+        ):
+            with self.subTest(output=output, reconciliation=reconciliation):
+                arguments = mock.Mock(output=output, reconciliation=reconciliation)
+                with (
+                    mock.patch.object(AI, "build_manifest", return_value=manifest) as derive,
+                    mock.patch.object(AI, "build_loader_graph", return_value=graph),
+                    mock.patch.object(AI, "build_partition", return_value={}),
+                    mock.patch.object(AI, "build_cohorts", return_value=cohorts),
+                    mock.patch.object(AI, "build_holdout_seal", return_value={}),
+                    mock.patch.object(AI, "_reconciliation_markdown", return_value=b""),
+                    mock.patch.object(AI, "_atomic_write") as write,
+                ):
+                    try:
+                        AI.build_baseline(arguments)
+                    except AI.Refusal:
+                        refused = True
+                    else:
+                        refused = False
+                self.assertTrue(refused, "unowned output path was accepted")
+                derive.assert_not_called()
+                write.assert_not_called()
 
     def test_output_refuses_parent_symlink_escape_without_writing(self):
         with (
@@ -496,7 +588,7 @@ class LoaderGraphTests(unittest.TestCase):
 
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
-        self.assertEqual(len(self.graph["edges"]), 105)
+        self.assertEqual(len(self.graph["edges"]), 107)
         for relation in [*self.graph["roots"], *self.graph["edges"]]:
             evidence = relation["evidence"]
             source = AI._source_blob(evidence["path"])
@@ -507,6 +599,24 @@ class LoaderGraphTests(unittest.TestCase):
                 hashlib.sha256(source[evidence["start"] : evidence["end"]]).hexdigest(),
                 evidence["span_sha256"],
             )
+
+    def test_agent_skills_root_loads_the_source_checkout_runtime_and_law(self):
+        router = ".agents/skills/promise-machine/SKILL.md"
+        expected = {
+            (router, "AGENTS.md"),
+            (router, "PROMISE_MACHINE.md"),
+        }
+        edges = {
+            (item["source"], item["target"]): item for item in self.graph["edges"]
+        }
+        self.assertLessEqual(expected, set(edges))
+        self.assertTrue(all(edges[pair]["kind"] == "conditional" for pair in expected))
+        promise = next(
+            item
+            for item in self.manifest["documents"]
+            if item["path"] == "PROMISE_MACHINE.md"
+        )
+        self.assertEqual(promise["loader_roots"], ["repository", "agent-skills"])
 
     def test_every_reference_has_a_conditional_inbound_edge(self):
         references = {
