@@ -437,7 +437,7 @@ projection count, the same tokenizer/profile measures both sides, all
 components and variance are retained, and a miss records rejection rather than
 moving the limit. elenchus: any adapter, contamination, count or answer failure
 is reduced under fake executables and guarded before the exact live case is
-rerun. hypomnema: ADR-055 receives the measured choice, rejected alternatives,
+rerun. hypomnema: ADR-059 receives the measured choice, rejected alternatives,
 unknowns and authority condition; the public contract and fixtures retain
 interface and evidence details without turning the study into the standing
 record.
@@ -515,3 +515,23 @@ candidate id, consequence or required answer.
 
 **Still holding.** Step 5: entry holds; exit holds. Integration remains out of
 scope.
+
+### Amendment -- 2026-08-30
+
+**What changed.** The final evidence anchor records the sole predeclared exact
+repeat of the final packet. The first cohort is retained as rejected evidence:
+15/16 after OpenAI reversed Fiat's ordered Noema explanation. The repeat passed
+16/16 after only that selection changed. No profile, seed, prompt, candidate,
+gate or model changed between them.
+
+**Why.** Provider seed `0` is best-effort, not a deterministic replay key. The
+accepted repeat establishes one complete capability run under Step 5's stated
+run-specific contract; it does not erase its predecessor or establish a
+frequency. Any later integration that wants to use family evaluation as a gate
+must first choose a deterministic judge or preregister a repetition,
+aggregation and failure rule. This run does neither post hoc.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: exit holds for continued shadowing only. Integration
+remains out of scope.

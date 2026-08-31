@@ -717,10 +717,12 @@ When published by the corpus manifest, the checked-in
 `tests/fixtures/noema-v1/evidence/` record binds one accepted measurement, 32
 answer-provenance records and 16/16 tally to one ancestor commit, tree, corpus,
 profile set, packet and case set. Corpus verification reconstructs the packet
-and tally before accepting those bytes. The audit-repair checkpoint omits that
-anchor until its changed compiler and profiles receive a fresh run. The exact
-counts, rejected predecessor runs and shadow-only decision live in ADR-059;
-raw provider transcripts are deliberately absent.
+and tally before accepting those bytes. One exact same-packet predecessor
+scored 15/16 and the repeat scored 16/16 despite profile seed `0`; the provider
+seed is therefore best-effort, and this evidence is a capability record rather
+than a reproducibility claim. The exact counts, rejected predecessor runs and
+shadow-only decision live in ADR-059; raw provider transcripts are deliberately
+absent.
 
 ## Versioning and recovery
 
