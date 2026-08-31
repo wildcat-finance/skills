@@ -44,7 +44,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Verify a protocol agent against pinned corpora and chain reads | [Berean](../../../plugins/berean/AGENTS.md) | `berean` |
 | Constrain the volume and structure of engineering prose | [Brevitas](../../../plugins/brevitas/AGENTS.md) | `brevitas` |
 | Measure one Solidity gas-optimisation class | [Hermes](../../../plugins/hermes/AGENTS.md) | `hermes` |
-| Inspect or work on the planned contract-to-mirror integer comparison boundary; substantive operations currently refuse | [Homologia](../../../plugins/homologia/AGENTS.md) | `homologia` |
+| Validate a Homologia manifest and evidence-classed expected integers, or inspect the later contract-to-mirror boundary; mirror execution and verdicts currently refuse | [Homologia](../../../plugins/homologia/AGENTS.md) | `homologia` |
 | Classify evidenced reading sinks | [Horos](../../../plugins/horos/AGENTS.md) | `horos` |
 | Check hook effects around a host action | [Janus](../../../plugins/janus/AGENTS.md) | `janus` |
 | Preserve finite historical Ethereum state and exact RPC traffic | [Lazarus](../../../plugins/lazarus/AGENTS.md) | `lazarus` |

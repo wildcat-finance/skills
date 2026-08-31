@@ -1108,6 +1108,31 @@
       "selector": "test_the_canonical_skill_states_the_declared_version",
       "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
     },
+    "homologia-provenance-m": {
+      "path": "plugins/homologia/tests/test_check.py",
+      "selector": "test_proved_answer_requires_a_lazarus_artefact",
+      "claim": "A proved label with no Lazarus artefact reference refuses before a checked record is written."
+    },
+    "homologia-provenance-o": {
+      "path": "plugins/homologia/tests/test_check.py",
+      "selector": "test_checked_record_is_not_a_verdict",
+      "claim": "The checked record contains no verdict, agreement or correctness claim, preserving the nearest tempting overclaim as unavailable."
+    },
+    "homologia-provenance-p": {
+      "path": "plugins/homologia/tests/test_check.py",
+      "selector": "test_proved_answer_with_a_safe_lazarus_artefact_is_admitted",
+      "claim": "A closed proved expected answer with one safe Lazarus artefact reference is admitted into the source-bound checked record."
+    },
+    "homologia-provenance-r": {
+      "path": "plugins/homologia/tests/test_check.py",
+      "selector": "test_refusal_preserves_existing_output",
+      "claim": "Repair and rerun remain available because a refused input leaves an existing checked-record destination byte-identical."
+    },
+    "homologia-provenance-s": {
+      "path": "plugins/homologia/tests/test_check.py",
+      "selector": "test_unequal_scale_id_refuses",
+      "claim": "A vector set for a different scale subject refuses rather than inheriting the mirror's scale identity."
+    },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/horos/tests/test_boundary.py",
@@ -3227,6 +3252,22 @@
         "S": "homologia-scaffold-s",
         "O": "homologia-scaffold-o",
         "R": "homologia-scaffold-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "homologia-expected-answer-provenance",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "homologia-provenance-p",
+        "M": "homologia-provenance-m",
+        "S": "homologia-provenance-s",
+        "O": "homologia-provenance-o",
+        "R": "homologia-provenance-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."

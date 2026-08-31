@@ -1,7 +1,7 @@
 {
   "name": "homologia",
-  "version": "0.1.0",
-  "description": "Scaffold for a future integer comparison between one on-chain computation and one off-chain mirror; substantive operations currently refuse.",
+  "version": "1.1.0",
+  "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -20,12 +20,12 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Homologia",
-    "shortDescription": "Scaffold for a future integer comparison between one on-chain computation and one off-chain mirror; substantive operations currently refuse.",
-    "longDescription": "Homologia is the planned home for checking whether one pinned Solidity computation and one pinned TypeScript or Python mirror return the same integers over declared vectors. That matters when rounding direction, fixed-point scale, or token-decimal handling is duplicated off-chain. The comparison does not run today. Version 0.1.0 ships the contract, packaging, and a help-only command; it validates no manifest, executes no mirror, compares no vector, and produces no verdict. Every substantive verb refuses. The completed design would preserve each divergence as a specimen and would report agreement only over the supplied vectors, never correctness of either implementation.",
+    "shortDescription": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
+    "longDescription": "Homologia checks whether one pinned Solidity computation and one pinned TypeScript or Python mirror can be compared over declared integer vectors. Version 1.1.0 validates one closed manifest, exact scale identity, safe paths, fixed caps, canonical integers, declared tolerances and proved, recorded or asserted expected-answer provenance. It binds the admitted source bytes into one deterministic checked-inputs record. It executes no mirror, compares no answers and produces no verdict, so the record establishes neither agreement nor correctness.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],
-    "defaultPrompt": "Use $homologia to inspect the current contract-to-mirror comparison scaffold and state which operation must be implemented before this pair can be checked."
+    "defaultPrompt": "Use $homologia to validate this declared manifest and its expected-answer provenance into checked inputs, or state why mirror execution and a verdict are not yet available."
   },
   "license": "Apache-2.0"
 }
