@@ -75,25 +75,30 @@ class AbbreviatedReceiptsStillIntegrate(unittest.TestCase):
             ],
         }
 
-    def _refusal(self, state, current_step, tips, resolves=None):
+    def _refusal(self, state, current_step, tips, resolves=None, relations=None):
         """The stderr the check dies with, or None when it returns."""
         module = self.hexctl
         resolves = resolves or {}
+        relations = relations or {}
 
         def tip(_dir, branch, label="remote run branch tip"):
             return tips[branch]
 
         def resolve(_dir, ref, label):
-            """Stand in for `git rev-parse --verify <ref>^{commit}`."""
+            """Stand in for native `git rev-parse --verify <ref>^{commit}`."""
             if ref in resolves:
                 return resolves[ref]
             module.die(f"{label} does not resolve to a commit")
+
+        def relation(_dir, recorded, tip):
+            return relations.get((recorded, tip), 1)
 
         captured = StringIO()
         with mock.patch.object(module, "step_branch_name",
                                side_effect=lambda _s, step: f"branch-{step['n']}"), \
              mock.patch.object(module, "remote_branch_tip", side_effect=tip), \
-             mock.patch.object(module, "resolved_commit", side_effect=resolve), \
+             mock.patch.object(module, "_native_relation_commit", side_effect=resolve), \
+             mock.patch.object(module, "_native_ancestry_status", side_effect=relation), \
              redirect_stderr(captured):
             try:
                 module.refuse_rewritten_stack(".", state, current_step)
@@ -115,16 +120,30 @@ class AbbreviatedReceiptsStillIntegrate(unittest.TestCase):
             "an abbreviated receipt naming the branch tip was read as a rewrite",
         )
 
-    def test_an_abbreviated_receipt_naming_another_commit_is_still_refused(self):
-        """Resolving must not soften the check. A short SHA that resolves
-        somewhere other than the tip is the rewrite this check exists for."""
+    def test_an_abbreviated_ancestor_of_the_tip_is_accepted(self):
+        """A legacy short receipt retains the same descendant route as a full one."""
+        state = self._state()
+        state["steps"][2]["receipts"]["push"]["head_commit"] = "b" * 8
+        message = self._refusal(
+            state,
+            2,
+            {"branch-3": "c" * 40},
+            {"b" * 8: "b" * 40},
+            {("b" * 40, "c" * 40): 0},
+        )
+        self.assertIsNone(message, "a resolved legacy ancestor was refused")
+
+    def test_an_abbreviated_nonancestor_is_still_refused(self):
+        """Resolving must not soften a relation whose old head is absent."""
         state = self._state()
         state["steps"][2]["receipts"]["push"]["head_commit"] = "b" * 8
         message = self._refusal(
             state, 2, {"branch-3": "c" * 40}, {"b" * 8: "b" * 40}
         )
-        self.assertIsNotNone(message, "a genuine mismatch was accepted")
-        self.assertIn("has been rewritten since it was pushed", message)
+        self.assertIsNotNone(message, "a genuine non-ancestor was accepted")
+        self.assertIn("is not an ancestor", message)
+        self.assertIn("b" * 40, message)
+        self.assertIn("c" * 40, message)
 
     def test_an_unresolvable_receipt_is_named_rather_than_called_a_rewrite(self):
         """A receipt naming nothing is a receipt this check cannot evaluate. It
@@ -145,16 +164,23 @@ class AbbreviatedReceiptsStillIntegrate(unittest.TestCase):
         calls = []
 
         def resolve(_dir, ref, label):
-            calls.append(ref)
+            calls.append(("resolve", ref))
             return ref
+
+        def relation(_dir, recorded, tip):
+            calls.append(("relation", recorded, tip))
+            return 0
 
         with mock.patch.object(module, "step_branch_name",
                                side_effect=lambda _s, step: f"branch-{step['n']}"), \
              mock.patch.object(module, "remote_branch_tip",
                                side_effect=lambda *_a, **_k: "c" * 40), \
-             mock.patch.object(module, "resolved_commit", side_effect=resolve):
+             mock.patch.object(module, "_native_relation_commit", side_effect=resolve), \
+             mock.patch.object(module, "_native_ancestry_status", side_effect=relation):
             module.refuse_rewritten_stack(".", self._state(), 2)
-        self.assertEqual(calls, [], "a full-length matching receipt was resolved")
+        self.assertEqual(
+            calls, [], "a full-length matching receipt performed relation work"
+        )
 
 
 if __name__ == "__main__":

@@ -54,6 +54,7 @@ MARKETPLACE_CONTEXT_START = "<!-- marketplace-context:start -->"
 MARKETPLACE_CONTEXT_END = "<!-- marketplace-context:end -->"
 IMMUTABLE_CONTEXT_PREFIXES = (
     ("audit",),
+    ("specimens",),
     ("skills", "fizz"),
     ("skills", "solidity-auditor"),
     ("skills", "x-ray"),
@@ -105,10 +106,13 @@ def marketplace_frontiers(path):
 def mutable_marketplace_surface(plugin_root, path):
     """Whether a context block is first-party prose that may track now.
 
-    Audit logs are historical evidence. The three Pashov roots are
-    upstream-owned distribution copies. Their recorded marketplace context is
-    allowed to describe the installation moment rather than being rewritten
-    when the first-party landing page advances.
+    Audit logs are historical evidence, and so are preserved specimens: a
+    specimen that quotes a marketplace-context marker is recording that the
+    marker was there, and rewriting it to track the current landing page would
+    destroy the thing it preserves. The three Pashov roots are upstream-owned
+    distribution copies. Their recorded marketplace context is allowed to
+    describe the installation moment rather than being rewritten when the
+    first-party landing page advances.
     """
     relative = path.relative_to(plugin_root)
     return not any(
@@ -159,8 +163,9 @@ class MarketplaceProseTests(unittest.TestCase):
             readme.index("./assets/characters/shoggoth.png"),
             readme.index("# The Shoggoth"),
         )
-        self.assertIn("## What Is It?", readme)
-        self.assertIn("## The Promise Machine", readme)
+        self.assertIn("## What can it do today?", readme)
+        self.assertIn("## How the collective works", readme)
+        self.assertIn("[Promise Machine contract](./PROMISE_MACHINE.md)", readme)
         self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
@@ -256,7 +261,7 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_root_readme_maps_every_plugin(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("## Meet the Shoggoth", readme)
+        self.assertIn("## Meet the collective", readme)
         self.assertNotIn("## Current status", readme)
         for name in PLUGINS:
             with self.subTest(plugin=name):
@@ -265,8 +270,8 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_root_readme_names_the_complete_collective(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        roster = readme.split("## Meet the Shoggoth", 1)[1].split(
-            "## How the members fit together", 1
+        roster = readme.split("## Meet the collective", 1)[1].split(
+            "## Try it", 1
         )[0]
 
         governed = sorted(
@@ -274,7 +279,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 25)
+        self.assertEqual(len(governed), 26)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin

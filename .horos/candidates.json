@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16134137,
+    "bytes_blob": 16448723,
     "bytes_generated": 98
   },
   "entries": [
@@ -75,6 +75,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
+    },
+    {
+      "bytes": 41059,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-395-resumable-ethereum-usdc-interval-collector.synopsis.md"
     },
     {
       "bytes": 297271,
@@ -236,6 +243,41 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
+    },
+    {
+      "bytes": 86469,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 84421",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.md"
+    },
+    {
+      "bytes": 87424,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
+    },
+    {
+      "bytes": 17050,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-936-report-dead-code-baseline-staleness-instead.synopsis.md"
+    },
+    {
+      "bytes": 31881,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-975-remove-the-child-or-golden-retriever-primer.synopsis.md"
+    },
+    {
+      "bytes": 27325,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md"
     },
     {
       "bytes": 59394,
@@ -524,6 +566,13 @@
       "evidence": "no newline in the first 4096 bytes of 203679 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
+    },
+    {
+      "bytes": 23378,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 23378 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }
   ],
   "schema": 2,

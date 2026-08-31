@@ -1,0 +1,8 @@
+WAI1
+D i3:doc t13:Minimal\smodel
+  S i3:src p9:source.md h64:0000000000000000000000000000000000000000000000000000000000000000
+  H i7:section t7:Section
+    R i4:rule t16:Keep\sexact\sbytes
+  B i3:src i3:doc 0 90 i8:shoggoth
+  B i3:src i7:section 0 90 i8:shoggoth
+  B i3:src i4:rule 10 70 i8:shoggoth

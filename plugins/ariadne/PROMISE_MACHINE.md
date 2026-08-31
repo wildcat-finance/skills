@@ -6,9 +6,30 @@
 
 # Promise Machine contract
 
-This document is the normative contract for every skill distributed as part of
-Wildcat Labs Skills. Plugin-local files with this name are generated,
-byte-identical installation copies. They are not separate laws.
+The Promise Machine is the rule that stops one useful result becoming a larger,
+unsupported claim as it moves between agents.
+
+Suppose Lazarus records the RPC response and proves one account-storage
+relation for a historical test. A later agent may say that the named relation
+was proved and the other response bytes were recorded. It may not describe the
+whole response as proved, call the provider canonical, or use the fixture as a
+whole-protocol safety result. The evidence moves forward with its original
+boundary.
+
+That is the practical purpose of this contract. Every governed operation says:
+
+- what success establishes;
+- which evidence supports it;
+- what the result still does not establish;
+- which next action it permits;
+- which action must stop when the evidence is missing; and
+- how a person or agent can inspect, repair, rerun, roll back, or leave safely.
+
+This is the normative contract for every skill distributed as part of Wildcat
+Labs Skills. The copies inside plugins are generated from this file and must be
+byte-identical. They are installation copies, not separate laws. In the source
+distribution, `docs/the-promise-machine-explained-properly.md` gives an
+example-led introduction.
 
 ## Contract identity
 
@@ -21,16 +42,16 @@ evolution version.
 > No skill may claim more than its evidence establishes, or authorise a more
 > consequential transition than that evidence warrants.
 
-This principle applies to every answer, artefact, repository change,
-publication, deployment and external action produced through the suite. A
-passing check establishes only the promise that names it. It does not establish
-the skill's general correctness, the truth of its inputs or any neighbouring
-claim.
+This principle applies to answers, derived artefacts, repository changes,
+publications, deployments, security conclusions, financial conclusions, and
+other external actions produced through the suite. A passing check establishes
+only the promise that names it. It does not establish the skill's general
+correctness, the truth of its inputs, or a neighbouring claim.
 
 ## Scope
 
 The contract applies to first-party skills, nested skills, vendored skills,
-routers, runtime contracts, generated copies and evidence handoffs. Each
+routers, runtime contracts, generated copies, and evidence hand-offs. Each
 logical skill has one canonical implementation. Routers select that
 implementation and establish no domain result of their own.
 
@@ -255,6 +276,20 @@ findings. The checker reaches no network and executes no evidence command.
 - Consequence: 0
 - Refuses: An absent, unreadable, non-UTF-8 or non-JSON corpus, a corpus declaring a schema this checker does not support, a top-level value that is not an object, a missing or mistyped `cases`, `pairs` or `runs` key, an empty case list, a case whose field set or expectation the schema does not name, a repeated case id, a required case field that is present but empty, a `contested` that is not a list of canonical names, a quotation that is not the three keys the schema names, a quoted path outside the closed set, a canonical name no `SKILL.md` declares, a sentence its named section no longer contains, an empty or whitespace-only quotation, which would otherwise occur in every section, a pair whose field set, id, separated skills or quotation the schema does not name, and a run block whose field set the schema does not name, whose digest disagrees with the cases on disk, whose `failures` is present but is not a list, or whose case, pass and fail counts cannot all be true. It also refuses a router row whose canonical selection no case expects, two rows selecting the same canonical skill, which one case would cover for both, the one row that names no canonical skill left unquoted by every case that selects, a selection cell that is neither a canonical name in backticks nor that row's known phrase, a router carrying no `## Select one runtime contract` section or no selection table inside it, a section whose parsed rows and table lines disagree, a corpus declaring no pairs at all, a declared pair no case contests in full, and a pair carrying no list of separated skills to contest. It also refuses a run block that is not an object, a `model` that is absent, empty or not a string, a `date` that is not a `YYYY-MM-DD` date, a `prompt_template_sha256` that is not a lowercase sha256 digest, without which the prompt the run used is unrecoverable, an absent or unreadable prompt template, a `prompt_template_sha256` that is not the digest of the prompt template committed beside the corpus, since a digest naming bytes the repository does not hold is evidence about no prompt at all, a run covering no cases at all, whose counts agree with each other while measuring nothing, a failure entry whose field set is not exactly `case` and `selected`, a failure naming a case id this corpus does not hold, the same case id named by two failures, and a failure recording an answer that is neither a canonical name a `SKILL.md` declares nor one of the two refusal forms.
 - Recovery: Read the failure, which names the case or pair, the file and the sentence it looked for; requote the current sentence or retire the case rather than rewording the source the corpus grades, correct a canonical name that no longer resolves, and regrade a stale run block instead of editing its digest to agree.
+- Exceptions: none
+
+## Agent instruction prototype promise
+
+### promise-machine-agent-instruction-prototype
+
+- Promise: A successful `python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json` establishes that the three source-bound fixture models validate, decode from their compact forms to the exact canonical JSON bytes, reformat identically, retain all 15 reviewed bindings and answer all 14 hostile mutations by their declared outcome; it also establishes that the manifest binds one accepted same-profile measurement record and one accepted isolated two-family parity record for those exact corpus bytes.
+- Evidence: The digest-bound manifest and schema, three authored source spans, canonical models, compact documents, 15 reviewed source-span records, nine closed questions, 14 hostile mutations and three exact round trips; the accepted 10-case same-profile measurement report; the accepted 18/18-pair, 36-call parity report for `qwen35-aeon-27b-q4-k-m` and `gptoss-120b-mxfp4`; the complete decoder bootstrap, checked local profiles, reference checker, specialised coverage entry, focused integration tests, and zero command exit.
+- Evidence classes: checked, recomputed, measured, recorded
+- Boundary: Canonical-model equality applies only after the reviewed Markdown-to-model bindings and only to this closed version-1 vocabulary. Token counts and fresh-context answers are observations from the exact recorded local profiles, fixture bytes, bootstrap, prompts and run dates. The result does not establish losslessness for arbitrary English, deployed-agent transfer, general model behaviour, repository-wide migration safety, or Shoggoth readiness, and no adapter output has instruction authority.
+- Authorises: Treating the exact checked compact documents as derived views of their bound canonical models; reporting the bound three-fixture structural, mutation, same-profile measurement and isolated-family parity results with their limits attached; and rerunning the same local demonstration without widening its source, profile or authority boundary.
+- Consequence: 1
+- Refuses: A missing, additional, linked, stale, malformed or mismatched manifest, source, span, schema, model, compact form, question, mutation, bootstrap, profile, prompt or report; incomplete bindings or risk coverage; a failed round trip or mutation; an unavailable or changed adapter identity; heuristic, negative or non-integer token counts; a non-negative bootstrap-inclusive cohort delta; aliased families; reused context; an unlisted answer; a timeout or cap breach; or any attempt to treat a model or adapter as instruction authority.
+- Recovery: Read the stable refusal code and node path; restore the exact bound source or profile, repair the reviewed model, checker or declared evidence at its owned boundary, regenerate every affected derivative, rerun all structural and hostile checks, then rerun the complete measurement and parity cohorts before checking the manifest again. Do not edit a digest, expected answer or refusal set merely to fit an observation.
 - Exceptions: none
 
 ## Installation copies

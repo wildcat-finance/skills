@@ -123,8 +123,8 @@ class GitEnvironmentIsolation(unittest.TestCase):
                      "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"):
             self.assertIn(name, env)
 
-    def test_the_helper_leaves_the_outer_index_alone(self):
-        """The end-to-end form: pollute the environment and check nothing moved."""
+    def test_the_helper_leaves_the_outer_staged_state_alone(self):
+        """The end-to-end form: pollute the environment and check nothing staged."""
         outer = subprocess.run(
             ["git", "-C", str(ROOT), "rev-parse", "--absolute-git-dir"],
             capture_output=True, text=True,
@@ -132,7 +132,16 @@ class GitEnvironmentIsolation(unittest.TestCase):
         if outer.returncode != 0:
             self.skipTest("not inside a git work tree")
         index = Path(outer.stdout.strip()) / "index"
-        before = index.stat().st_mtime_ns if index.exists() else None
+
+        def staged_state():
+            completed = subprocess.run(
+                ["git", "-C", str(ROOT), "diff", "--cached", "--name-status", "--"],
+                capture_output=True,
+                check=True,
+            )
+            return completed.stdout
+
+        before = staged_state()
 
         with tempfile.TemporaryDirectory() as work:
             os.environ["GIT_INDEX_FILE"] = str(index)
@@ -143,10 +152,10 @@ class GitEnvironmentIsolation(unittest.TestCase):
             finally:
                 os.environ.pop("GIT_INDEX_FILE", None)
 
-        after = index.stat().st_mtime_ns if index.exists() else None
+        after = staged_state()
         self.assertEqual(
             before, after,
-            "the outer index was written by a git call meant for a temporary tree",
+            "a git call meant for a temporary tree changed the outer staged state",
         )
 
 
@@ -189,6 +198,16 @@ class GuardMutationTests(unittest.TestCase):
         self.assertEqual(
             drifted_paths(self.root),
             [".horos/boundary.json#counts", "src/schema.py"],
+        )
+
+    def test_new_ordinary_records_without_a_refresh_are_count_drift(self):
+        write(self.root, "audit/rounds/run.md", "audit round\n")
+        write(self.root, "audit/rounds/run.synopsis.md", "audit synopsis\n")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-qm", "audit records")
+        self.assertEqual(
+            drifted_paths(self.root),
+            [".horos/boundary.json#counts"],
         )
 
     def test_an_entry_the_tree_no_longer_earns_is_named(self):

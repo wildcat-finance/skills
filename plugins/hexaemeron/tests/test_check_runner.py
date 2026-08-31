@@ -71,6 +71,30 @@ class CheckMapContractTests(unittest.TestCase):
         unowned = [p for p in listing if p and run_checks.owner_of(self.check_map, p) is None]
         self.assertEqual(unowned, [], f"paths without a declared owner: {unowned[:10]}")
 
+    def test_every_plugin_directory_has_one_owned_suite_scope(self) -> None:
+        plugins = {
+            path.name for path in (REPO_ROOT / "plugins").iterdir() if path.is_dir()
+        }
+        owners = {
+            path.removeprefix("plugins/"): scope
+            for path, scope in self.check_map.owners
+            if path.startswith("plugins/") and "/" not in path[8:]
+        }
+        self.assertEqual(set(owners), plugins)
+        for plugin in sorted(plugins):
+            with self.subTest(plugin=plugin):
+                self.assertEqual(owners[plugin], plugin)
+                self.assertIn(plugin, self.check_map.scopes)
+                self.assertIn(plugin, self.check_map.dependencies)
+                checks = [
+                    self.check_map.checks[check_id]
+                    for check_id in self.check_map.scopes[plugin].checks
+                ]
+                self.assertTrue(
+                    any(check.kind == "suite" for check in checks),
+                    f"{plugin} has no suite check",
+                )
+
     def test_a_written_elenchus_report_does_not_refuse_the_plan(self) -> None:
         """Regression: the step's own runner contract broke its own planner.
 
@@ -955,13 +979,15 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(selected | set(payload["omitted_checks"]), set(check_map.checks))
         self.assertEqual(payload["omitted_checks"], [])
 
-    def test_scoped_plan_json_exits_zero_and_selects_a_subset(self) -> None:
+    def test_scoped_plan_json_exits_zero_and_accounts_for_selection(self) -> None:
         proc = self.run_cli("--scope", "hexaemeron", "--plan", "--format", "json")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         payload = json.loads(proc.stdout)
         selected = {c["id"] for c in payload["selected_checks"]}
         self.assertIn("hexaemeron-suite", selected)
         self.assertIn("hexaemeron", payload["selected_scopes"])
+        check_map = run_checks.load_map(REPO_ROOT)
+        self.assertEqual(selected | set(payload["omitted_checks"]), set(check_map.checks))
         authority_changed = {
             "scripts/run_checks.py", "tests/check-map-v1.json"
         }.intersection(payload["changed_paths"])
@@ -970,8 +996,6 @@ class CommandLineTests(unittest.TestCase):
                 payload["omitted_checks"], [],
                 "a runner/map change must force complete self-audit",
             )
-        else:
-            self.assertTrue(payload["omitted_checks"], "a scoped plan must omit something")
 
     def test_plan_accounts_for_every_selected_check_exactly_once(self) -> None:
         proc = self.run_cli("--full", "--plan", "--format", "json")

@@ -72,13 +72,23 @@ CONTRACT = "promise-machine/v1"
 # direct SKILL.md and archive URLs; the `github` type this repository installs
 # through never consults them.  Held anyway so the package stays installable by
 # every route the CLI offers.  See ADR-054.
-MAX_FILES = 1_000
+#
+# At sixteen plugins the payload sat at 995 files, five short of the CLI's
+# default. Adding a seventeenth crossed it, and no per-plugin trim closes a
+# repository-wide gap: the pressure is structural. The generated package now
+# lives in `wildcat-finance/skills-runtime`, outside this source tree. Raising
+# the file cap here accommodates that package; it does not claim that the
+# `well-known` and `download` routes fit while the payload exceeds 1,000 files.
+# The byte cap is untouched and still binds. Do not trim shipped package content
+# merely to hold the old file count.
+MAX_FILES = 1_100
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
+    "plugins/anamnesis/specimens/**",
     "plugins/*/tests/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
