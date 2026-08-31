@@ -17,6 +17,13 @@
       "kind": "suite",
       "script": "tests/test_dead_code.py"
     },
+    "dead-code-suppressions-check": {
+      "title": "Current dead-code suppression validation",
+      "argv": ["python3", "scripts/dead_code.py", "suppressions", "--check"],
+      "cwd": ".",
+      "kind": "command",
+      "script": "scripts/dead_code.py"
+    },
     "alexandria-suite": {
       "title": "Alexandria suite",
       "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/alexandria/tests", "-t", "plugins/alexandria"],
@@ -197,7 +204,7 @@
     },
     "dead-code": {
       "title": "Report-only dead-code discovery",
-      "checks": ["dead-code-suite"]
+      "checks": ["dead-code-suite", "dead-code-suppressions-check"]
     },
     "repo-lints": {
       "title": "Repository-wide tree lints",
@@ -290,8 +297,10 @@
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
     {"path": "docs/dead-code", "scope": "dead-code"},
+    {"path": "docs/dead-code-checkout-suppressions", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
+    {"path": "docs/decisions/ADR-064-check-current-dead-code-suppressions-separately.md", "scope": "dead-code"},
     {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
     {"path": "repo_contract.py", "scope": "root"},
     {"path": "schemas", "scope": "schemas"},

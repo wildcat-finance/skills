@@ -208,7 +208,7 @@
     "contract": "dead-code-baseline/v1",
     "documentation": {
       "path": "docs/promise-machine/dead-code-v1.md",
-      "sha256": "3b05a8c42c49d155b3ad5089d11f62120e93ee1d9bf236ae10eea44ba868909f"
+      "sha256": "bece591c40eeb97b6c78a0f50c83d74c7f4162630206dcbf0211e49b8b6ff8ff"
     },
     "fixtures": [
       {
@@ -219,7 +219,7 @@
     "promise_id": "promise-machine-dead-code-baseline",
     "runtime": {
       "path": "scripts/dead_code.py",
-      "sha256": "83183f1a197c7f0ac4c00dce26966b496addfcdad2c3117c8521488fa693461d"
+      "sha256": "838a52981abf9345490f8aeed7059ce27ba0c41c569b6cc76068913d1c126482"
     },
     "schema_source": {
       "path": "schemas/dead-code-report-v1.schema.json",
@@ -232,10 +232,22 @@
     "tests": {
       "path": "tests/test_dead_code.py",
       "selectors": [
+        "test_empty_committed_suppressions_pass_with_one_bounded_summary",
         "test_one_exact_suppression_is_accepted",
+        "test_one_exact_committed_suppression_passes",
         "test_broad_suppression_identity_refuses",
+        "test_report_and_suppressions_bind_the_same_once_resolved_commit",
+        "test_missing_committed_suppressions_refuse",
+        "test_committed_suppression_directory_refuses",
+        "test_committed_suppression_symlink_refuses",
+        "test_oversized_committed_suppressions_refuse",
+        "test_committed_hostile_suppressions_refuse_with_bounded_diagnostics",
+        "test_dirty_tree_refuses_without_a_validation_result",
+        "test_repository_substitution_refuses_without_a_validation_result",
+        "test_incomplete_analyser_states_refuse_without_a_validation_result",
         "test_baseline_record_cannot_retain_a_repository_candidate",
         "test_failed_analyser_cannot_be_written_to_a_baseline",
+        "test_baseline_check_still_reads_source_commit_suppressions",
         "test_source_change_after_publication_is_stale",
         "test_unmoved_checkout_reports_a_current_baseline",
         "test_currency_line_names_at_most_five_changed_paths",
@@ -245,12 +257,15 @@
         "test_record_changed_after_its_publication_commit_refuses",
         "test_undiscoverable_publication_commit_refuses",
         "test_write_then_check_uses_two_commit_publication",
+        "test_check_map_declares_the_focused_dead_code_scope",
+        "test_checked_dead_code_scope_selects_suite_and_live_validator",
+        "test_operator_guide_names_checkout_validation_without_workflow_duplication",
         "test_workflow_and_operator_guide_carry_the_exact_five_command_demo",
         "test_workflow_summary_carries_the_publication_commit_as_plain_text"
       ],
-      "sha256": "6f529611f7ee2e26ed948191548491b6403e25beea6defb4728a2fb0f34119b0"
+      "sha256": "6da6f1724e94c573f02fdbb2ea37282a0e4998af2128e159a71d9d17cbca0fc8"
     },
-    "transition": "record and verify one report-only static candidate baseline over an exact clean source commit, with only exact current suppressions accepted and no finding count treated as deletion or merge authority"
+    "transition": "record and verify one report-only static candidate baseline over its exact clean source commit, and separately validate exact suppressions against the same clean current commit, with no finding count treated as deletion or merge authority"
   },
   "evidence": {
     "alexandria-m": {

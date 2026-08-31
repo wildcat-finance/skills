@@ -26,6 +26,12 @@ CHECK_MAP_PATH = ROOT / "tests" / "check-map-v1.json"
 STUDY_PATH = ROOT / "docs" / "dead-code" / "study.md"
 RUNBOOK_PATH = ROOT / "docs" / "dead-code" / "runbook.md"
 MEASUREMENT_PATH = ROOT / "docs" / "dead-code" / "measurement.md"
+CHECKOUT_STUDY_PATH = (
+    ROOT / "docs" / "dead-code-checkout-suppressions" / "study.md"
+)
+CHECKOUT_RUNBOOK_PATH = (
+    ROOT / "docs" / "dead-code-checkout-suppressions" / "runbook.md"
+)
 OPERATOR_PATH = ROOT / "docs" / "promise-machine" / "dead-code-v1.md"
 BASELINE_PATH = ROOT / ".dead-code" / "baseline.json"
 SUPPRESSIONS_PATH = ROOT / ".dead-code" / "suppressions.json"
@@ -35,6 +41,12 @@ ADR_PATH = (
     / "decisions"
     / "ADR-053-keep-dead-code-discovery-report-only.md"
 )
+CHECKOUT_ADR_PATH = (
+    ROOT
+    / "docs"
+    / "decisions"
+    / "ADR-064-check-current-dead-code-suppressions-separately.md"
+)
 LIVE_ADR_PATH = (
     ROOT
     / "docs"
@@ -43,6 +55,12 @@ LIVE_ADR_PATH = (
 )
 EXPECTED_STUDY_SHA256 = "da8ceed7ee91168e4ab60b1d3ba27c4e59df40be3a9dadd87d0dba17af8059e6"
 EXPECTED_RUNBOOK_SHA256 = "e5ea55c688615d9d1d0322e8c82bba335acfd6745cac99f49b471a564f860857"
+EXPECTED_CHECKOUT_STUDY_SHA256 = (
+    "5709f08b2374f2792bf63ebf8e62a493213b0003b4bba01e7c5cffafdbe9d462"
+)
+EXPECTED_CHECKOUT_RUNBOOK_SHA256 = (
+    "484e2160be5c4069cea83daf3b38114db0dda14bad48bf253efa0071c45191f1"
+)
 NL = chr(10)
 
 SPEC = importlib.util.spec_from_file_location("dead_code", SCRIPT)
@@ -2996,6 +3014,19 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
         self.assertEqual(dead_code.command_baseline(check), 0)
         self.assertEqual(source, git(self.root, "rev-parse", "HEAD^").strip())
 
+    def test_baseline_check_still_reads_source_commit_suppressions(self):
+        self._baseline_repository()
+        recorded = self._publish_record()
+        source_commit = recorded["tree"]["commit"]
+        with mock.patch.object(
+            dead_code,
+            "load_suppressions",
+            wraps=dead_code.load_suppressions,
+        ) as load:
+            self.assertEqual(self._check(), 0)
+        self.assertEqual(load.call_count, 1)
+        self.assertEqual(load.call_args.args[1], source_commit)
+
     def test_dirty_tree_refuses_baseline_write(self):
         self._baseline_repository()
         (self.root / "src" / "a.py").write_text("changed = 1" + NL, encoding="utf-8")
@@ -3104,6 +3135,332 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
                 self._check()
 
 
+class CheckoutSuppressionCommandTests(TemporaryRepositoryTestCase):
+    def _report(self, commit, *, states=("ran", "degraded")):
+        findings = (
+            dead_code.Finding(
+                "python",
+                "src/a.py",
+                "unused",
+                "fixture candidate",
+                "medium",
+                "dynamic references can retain the symbol",
+            ),
+            dead_code.Finding(
+                "repository",
+                "src/b.py",
+                None,
+                "fixture repository candidate",
+                "low",
+                "computed paths can retain the file",
+            ),
+        )
+        return dead_code.Report(
+            dead_code.Universe(
+                commit,
+                "b" * 40,
+                "sha256:" + "c" * 64,
+                2,
+                ("src/a.py", "src/b.py"),
+                (),
+            ),
+            tuple(
+                dead_code.AnalyserStatus(
+                    analyser_id,
+                    state,
+                    (
+                        dead_code.PYTHON_ANALYSER_VERSION
+                        if analyser_id == "python"
+                        else dead_code.REPOSITORY_ANALYSER_VERSION
+                    ),
+                    "fixture completed",
+                )
+                for analyser_id, state in zip(
+                    dead_code.BASELINE_ANALYSERS,
+                    states,
+                    strict=True,
+                )
+            ),
+            findings,
+        )
+
+    def _suppression(self, report, index=0):
+        finding = report.findings[index]
+        return {
+            "finding_id": finding.identity,
+            "owner": "maintainers",
+            "path": finding.path,
+            "reason": "retained for dynamic registration",
+            "symbol": finding.symbol,
+        }
+
+    def _raw(self, entries):
+        return dead_code._render_json_document(
+            {
+                "entries": entries,
+                "schema": dead_code.SUPPRESSIONS_SCHEMA_ID,
+            }
+        )
+
+    def _build_regular(self, root, raw):
+        build_repository(
+            root,
+            files={
+                ".dead-code/suppressions.json": raw,
+                "src/a.py": "unused = 1" + NL,
+                "src/b.py": "fixture = 1" + NL,
+            },
+        )
+        return git(root, "rev-parse", "HEAD").strip()
+
+    def _run(self, root, report):
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with mock.patch.object(dead_code, "build_report", return_value=report):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = dead_code.main(
+                    ["--directory", str(root), "suppressions", "--check"]
+                )
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def test_empty_committed_suppressions_pass_with_one_bounded_summary(self):
+        commit = self._build_regular(self.root, self._raw([]))
+        before = git(self.root, "status", "--porcelain", "--untracked-files=no")
+        code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(stderr, "")
+        self.assertEqual(stdout.count(NL), 1)
+        self.assertLess(len(stdout.encode("utf-8")), 512)
+        self.assertIn(f"dead-code 1 suppressions check commit {commit}", stdout)
+        self.assertIn("analysers python=ran,repository=degraded", stdout)
+        self.assertIn("findings 2 suppressions 0", stdout)
+        self.assertEqual(
+            git(self.root, "status", "--porcelain", "--untracked-files=no"),
+            before,
+        )
+
+    def test_one_exact_committed_suppression_passes(self):
+        report = self._report("a" * 40)
+        commit = self._build_regular(
+            self.root,
+            self._raw([self._suppression(report)]),
+        )
+        code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(stderr, "")
+        self.assertIn("findings 2 suppressions 1", stdout)
+
+    def test_report_and_suppressions_bind_the_same_once_resolved_commit(self):
+        commit = self._build_regular(self.root, self._raw([]))
+        report = self._report(commit)
+        arguments = dead_code.argparse.Namespace(directory=str(self.root), mode="check")
+        output = io.StringIO()
+        with mock.patch.object(
+            dead_code,
+            "resolve_commit",
+            wraps=dead_code.resolve_commit,
+        ) as resolve:
+            with mock.patch.object(
+                dead_code,
+                "build_report",
+                return_value=report,
+            ) as build:
+                with mock.patch.object(
+                    dead_code,
+                    "load_suppressions",
+                    return_value=(
+                        {"entries": [], "schema": dead_code.SUPPRESSIONS_SCHEMA_ID},
+                        (),
+                    ),
+                ) as load:
+                    with contextlib.redirect_stdout(output):
+                        self.assertEqual(dead_code.command_suppressions(arguments), 0)
+        self.assertEqual(resolve.call_count, 1)
+        self.assertEqual(build.call_args.kwargs["commit"], commit)
+        self.assertEqual(
+            build.call_args.kwargs["analyser_ids"],
+            dead_code.BASELINE_ANALYSERS,
+        )
+        self.assertEqual(load.call_args.args[1], commit)
+
+    def test_missing_committed_suppressions_refuse(self):
+        build_repository(
+            self.root,
+            files={
+                "src/a.py": "unused = 1" + NL,
+                "src/b.py": "fixture = 1" + NL,
+            },
+        )
+        commit = git(self.root, "rev-parse", "HEAD").strip()
+        code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("is absent from commit", stderr)
+
+    def test_committed_suppression_directory_refuses(self):
+        build_repository(
+            self.root,
+            files={
+                ".dead-code/suppressions.json/entry": "not a file" + NL,
+                "src/a.py": "unused = 1" + NL,
+                "src/b.py": "fixture = 1" + NL,
+            },
+        )
+        commit = git(self.root, "rev-parse", "HEAD").strip()
+        code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("is not a regular file", stderr)
+
+    def test_committed_suppression_symlink_refuses(self):
+        build_repository(
+            self.root,
+            files={
+                ".dead-code/target.json": self._raw([]),
+                "src/a.py": "unused = 1" + NL,
+                "src/b.py": "fixture = 1" + NL,
+            },
+        )
+        (self.root / ".dead-code" / "suppressions.json").symlink_to("target.json")
+        git(self.root, "add", ".dead-code/suppressions.json")
+        git(self.root, "commit", "--quiet", "-m", "add suppression symlink")
+        commit = git(self.root, "rev-parse", "HEAD").strip()
+        code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("is not a regular file", stderr)
+
+    def test_oversized_committed_suppressions_refuse(self):
+        commit = self._build_regular(self.root, self._raw([]))
+        with mock.patch.object(dead_code, "MAX_SUPPRESSIONS_BYTES", 8):
+            code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("exceeds 8 bytes", stderr)
+
+    def test_committed_hostile_suppressions_refuse_with_bounded_diagnostics(self):
+        report = self._report("a" * 40)
+        first = self._suppression(report, 0)
+        second = self._suppression(report, 1)
+        cases = (
+            ("malformed", "{" + NL, "not valid JSON"),
+            (
+                "duplicate-key",
+                '{"entries":[],"entries":[],"schema":"dead-code-suppressions/v1"}'
+                + NL,
+                "repeats JSON key entries",
+            ),
+            (
+                "broad",
+                self._raw([{**first, "finding_id": "sha256:*"}]),
+                "sha256 identity",
+            ),
+            ("duplicate", self._raw([first, first]), "repeats suppression"),
+            (
+                "unsorted",
+                self._raw(
+                    sorted(
+                        (first, second),
+                        key=lambda item: item["finding_id"],
+                        reverse=True,
+                    )
+                ),
+                "not sorted",
+            ),
+            (
+                "stale",
+                self._raw([{**first, "path": "src/absent.py"}]),
+                "stale target",
+            ),
+            (
+                "mismatched",
+                self._raw([{**first, "path": second["path"]}]),
+                "target does not match",
+            ),
+            (
+                "unused",
+                self._raw([{**first, "finding_id": "sha256:" + "d" * 64}]),
+                "is unused",
+            ),
+        )
+        for name, raw, expected in cases:
+            with self.subTest(name=name):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory).resolve()
+                    commit = self._build_regular(root, raw)
+                    code, stdout, stderr = self._run(root, self._report(commit))
+                self.assertEqual(code, 2)
+                self.assertEqual(stdout, "")
+                self.assertEqual(stderr.count(NL), 1)
+                self.assertLess(len(stderr.encode("utf-8")), 1024)
+                self.assertIn(expected, stderr)
+
+    def test_dirty_tree_refuses_without_a_validation_result(self):
+        commit = self._build_regular(self.root, self._raw([]))
+        (self.root / "src" / "a.py").write_text("changed = 1" + NL, encoding="utf-8")
+        code, stdout, stderr = self._run(self.root, self._report(commit))
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("modified tracked", stderr)
+
+    def test_repository_substitution_refuses_without_a_validation_result(self):
+        commit = self._build_regular(self.root, self._raw([]))
+        report = self._report(commit)
+        outside = self.root.parent / (self.root.name + "-outside-directory")
+        held = self.root.parent / (self.root.name + "-opened-repository")
+        outside.mkdir()
+
+        def substitute_repository(_root, *args, **kwargs):
+            self.root.rename(held)
+            self.root.symlink_to(outside, target_is_directory=True)
+            return report
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        try:
+            with mock.patch.object(
+                dead_code,
+                "build_report",
+                side_effect=substitute_repository,
+            ):
+                with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    code = dead_code.main(
+                        ["--directory", str(self.root), "suppressions", "--check"]
+                    )
+        finally:
+            if self.root.is_symlink():
+                self.root.unlink()
+            if held.exists():
+                held.rename(self.root)
+            outside.rmdir()
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("repository path was substituted", stderr.getvalue())
+
+    def test_incomplete_analyser_states_refuse_without_a_validation_result(self):
+        commit = self._build_regular(self.root, self._raw([]))
+        for state in ("failed", "not-available"):
+            with self.subTest(state=state):
+                code, stdout, stderr = self._run(
+                    self.root,
+                    self._report(commit, states=("ran", state)),
+                )
+                self.assertEqual(code, 2)
+                self.assertEqual(stdout, "")
+                self.assertIn(f"repository={state}", stderr)
+
+        complete = self._report(commit)
+        partial = dead_code.Report(
+            complete.universe,
+            complete.statuses[:1],
+            complete.findings[:1],
+        )
+        code, stdout, stderr = self._run(self.root, partial)
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout, "")
+        self.assertIn("analyser set is incomplete", stderr)
+
+
 class ShippedSurfaceTests(unittest.TestCase):
     def test_receipted_study_and_runbook_digests_are_preserved(self):
         self.assertEqual(
@@ -3113,6 +3470,14 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertEqual(
             hashlib.sha256(RUNBOOK_PATH.read_bytes()).hexdigest(),
             EXPECTED_RUNBOOK_SHA256,
+        )
+        self.assertEqual(
+            hashlib.sha256(CHECKOUT_STUDY_PATH.read_bytes()).hexdigest(),
+            EXPECTED_CHECKOUT_STUDY_SHA256,
+        )
+        self.assertEqual(
+            hashlib.sha256(CHECKOUT_RUNBOOK_PATH.read_bytes()).hexdigest(),
+            EXPECTED_CHECKOUT_RUNBOOK_SHA256,
         )
 
     def test_adr_has_the_repository_shape_and_records_both_ownership_boundaries(self):
@@ -3129,6 +3494,23 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertIn("Horos", text)
         self.assertIn("checked runner", text)
         self.assertIn("one analyser in every plugin", text)
+
+    def test_checkout_suppression_decision_records_placement_and_alternatives(self):
+        text = CHECKOUT_ADR_PATH.read_text(encoding="utf-8")
+        for heading in (
+            "## Status",
+            "## Context",
+            "## Decision",
+            "## Alternatives",
+            "## Consequences",
+        ):
+            self.assertIn(heading, text)
+        for record in ("ADR-045", "ADR-053", "ADR-059"):
+            self.assertIn(record, text)
+        self.assertIn("suppressions --check", text)
+        self.assertIn("report` mode", text)
+        self.assertIn("baseline --check", text)
+        self.assertIn("67.54 seconds", text)
 
     def test_live_report_adr_keeps_snapshot_baseline_and_coverage_boundaries_separate(self):
         text = LIVE_ADR_PATH.read_text(encoding="utf-8")
@@ -3190,12 +3572,38 @@ class ShippedSurfaceTests(unittest.TestCase):
         check_map = json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
         self.assertEqual(
             check_map["scopes"]["dead-code"]["checks"],
-            ["dead-code-suite"],
+            ["dead-code-suite", "dead-code-suppressions-check"],
         )
         self.assertEqual(
             check_map["checks"]["dead-code-suite"]["argv"],
             ["python3", "-m", "unittest", "tests.test_dead_code", "-v"],
         )
+        self.assertEqual(
+            check_map["checks"]["dead-code-suppressions-check"]["argv"],
+            ["python3", "scripts/dead_code.py", "suppressions", "--check"],
+        )
+        self.assertEqual(
+            check_map["checks"]["dead-code-suppressions-check"]["kind"],
+            "command",
+        )
+
+    def test_checked_dead_code_scope_selects_suite_and_live_validator(self):
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "run_checks.py"),
+                "--plan",
+                "--scope",
+                "dead-code",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("dead-code-suite", completed.stdout)
+        self.assertIn("dead-code-suppressions-check", completed.stdout)
 
     def test_check_map_assigns_every_dead_code_surface_to_the_scope(self):
         check_map = json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
@@ -3207,8 +3615,10 @@ class ShippedSurfaceTests(unittest.TestCase):
             ".dead-code",
             ".github/workflows/dead-code.yml",
             "docs/dead-code",
+            "docs/dead-code-checkout-suppressions",
             "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md",
             "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md",
+            "docs/decisions/ADR-064-check-current-dead-code-suppressions-separately.md",
             "docs/promise-machine/dead-code-v1.md",
             "schemas/dead-code-report-v1.schema.json",
             "schemas/dead-code-report-v2.schema.json",
@@ -3220,6 +3630,11 @@ class ShippedSurfaceTests(unittest.TestCase):
         )
         for path in expected:
             self.assertEqual(owners.get(path), "dead-code", path)
+
+    def test_operator_guide_names_checkout_validation_without_workflow_duplication(self):
+        command = "python3 scripts/dead_code.py suppressions --check"
+        self.assertIn(command, OPERATOR_PATH.read_text(encoding="utf-8"))
+        self.assertNotIn(command, WORKFLOW_PATH.read_text(encoding="utf-8"))
 
     def test_workflow_is_read_only_and_runs_the_checked_scope(self):
         text = WORKFLOW_PATH.read_text(encoding="utf-8")
