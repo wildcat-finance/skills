@@ -2,10 +2,10 @@
 
 ## Status
 
-Accepted for continued shadowing, 2026-08-30. Step 5 passed its fixed semantic,
-token and model-family gates. This accepts further evaluation, not integration,
-native authorship or migration. A later ADR must supersede this one before any
-authority reversal or repository migration.
+Accepted, 2026-08-30. Continued shadowing only. Step 5 passed its fixed
+semantic, token and model-family gates. This accepts further evaluation, not
+integration, native authorship or migration. A later ADR must supersede this
+one before any authority reversal or repository migration.
 
 ## Context
 

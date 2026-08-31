@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16134137,
+    "bytes_blob": 16286858,
     "bytes_generated": 98
   },
   "entries": [
@@ -524,6 +524,20 @@
       "evidence": "no newline in the first 4096 bytes of 203679 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
+    },
+    {
+      "bytes": 29808,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 29808 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/answers.json"
+    },
+    {
+      "bytes": 122913,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 122913 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/measurement.json"
     }
   ],
   "schema": 2,
