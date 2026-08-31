@@ -126,6 +126,18 @@ date, input digests, raw-answer byte identities, and outcome counts. `verify`
 recomputes that record. None of the three commands opens a socket, reads a
 credential, invokes a model, or starts a child process.
 
+The driver accepts only the request-only schema, the exact promise set assigned
+to each corpus, and one full model and run identity across the eleven coverage
+rows. Each template placeholder appears exactly once. Rendering replaces only
+tokens already present in that template, so braces supplied by a request remain
+data instead of starting a second template pass.
+
+Repository and answer reads walk descriptor-relative paths without following
+links and open the final file in non-blocking mode. They require a stable
+regular-file identity before and after each bounded read. Packet and run-record
+writes use exclusive descriptor-relative creation. A platform without those
+controls refuses instead of weakening the boundary.
+
 The core `evaluation` check independently reads the committed answer sheet and
 run record, recomputes the source-tree and corpus digests, grades all 55
 outcomes, and refuses missing, partial, duplicate, extra, edited, stale,
