@@ -122,3 +122,19 @@ Elenchus verdict: guarded
 | S4-R1-03 | low | plugins/alexandria/scripts/usdc_interval.py | An interval left unreconciled reported `compared` and `matched` as zero even when several shards had already agreed before the second provider stopped answering, and `validate_reconciliation` required exactly that. The interval genuinely is unreconciled, but discarding the comparisons already made tells a reader less than the run knew. The record keeps the counts it reached. | fixed in 0d8a0a18dbf74d4519b1885bc3f0deac7324d8c6 |
 
 Leads not pursued: the fixes commit changed tests as well as code, and four guards fail against `51e18329fef4576cfa88a85749c2c22708f332a6` by assertion with no infrastructure error, so the verdict is `guarded` and the fixed tree reports 440 of 440 with zero skips. One thing about how that verdict was reached is worth stating: the guard for S4-R1-02 first let `AlexandriaError` escape, which unittest counts as an error, and a mixed report would have been `inconclusive`. It now catches the refusal and calls `self.fail` with the message, because the refusal is the defect under test rather than a failure to run the test. The earlier draft of that guard was weaker still: it wrote a 12 KB record, which the unfixed reader accepts, so it passed against the parent and proved nothing; it now writes a record deliberately just over the control limit and far under the component limit. Two bounded things are recorded rather than fixed. `_staged` keeps the last entry when a journal somehow holds two for one shard and class, which a completed collection cannot produce and a rewind truncates away. And a shard whose logs disagree is `partial` while one whose boundary disagrees is `failed`, which is the harvest specification's own split; nothing here decides which provider is right. S1-R1-07 and S2-R1-04 stay open and accepted.
+
+## Step 4, round 2 -- 2026-08-31T06:02:35Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: reconciliation-bias=reviewed; endpoint-leak=reviewed; unbounded-response=reviewed; staging-path-escape=reviewed; torn-shard=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; silent-truncation=not-applicable; reorg-rewind=not-applicable; epoch-gap=not-applicable; coverage-inflation=not-applicable
+
+Not checked: nothing new. Step 5 still owns coverage and the Pashov pair remains waived. The round re-read the repaired reader for faults the repair could have introduced: `committed` refuses a symlinked or non-regular checkpoint before it reads, returns shard zero for an absent one, and validates the checkpoint against the same plan digest `resume` does, so the two agree about what a checkpoint means; and the unreconciled path now fills any shard counts it had not reached from the staged responses rather than leaving the table short.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 440 of 440 with zero skips, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:5` with the reconciliation conformance report passing on seventeen cases. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `committed` and `resume` now both read and validate the checkpoint, which is the same work twice on the collect path, and folding them would mean one method that sometimes truncates. The two bounded items from round 1 still stand, as do S1-R1-07 and S2-R1-04.
