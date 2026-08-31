@@ -41,6 +41,11 @@ MAX_SHARD_WIDTH = 50_000
 MAX_SHARDS = 4_096
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
+# How far back a reorg can be walked before the collector refuses instead of
+# guessing. Bounded because the checkpoint is working state, not a chain.
+MAX_HISTORY = 16
+MAX_PAGE_LIMIT = 100_000
+MAX_TIMEOUT_SECONDS = 600
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
@@ -101,7 +106,7 @@ def validate_plan(plan) -> None:
     """Check one closed `alexandria-interval-plan/v1` document."""
     required = {
         "chain", "deployment", "evidence_classes", "finality", "format",
-        "interval", "proxy", "shard_width", "shards", "venue",
+        "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     if not isinstance(plan, dict) or set(plan) != required:
         raise AlexandriaError("interval plan has an unknown shape")
@@ -142,6 +147,20 @@ def validate_plan(plan) -> None:
         depth = finality["confirmations"]
         if not isinstance(depth, int) or isinstance(depth, bool) or depth < 1:
             raise AlexandriaError("interval plan confirmation depth must be a positive integer")
+    provider = plan["provider"]
+    if not isinstance(provider, dict) or set(provider) != {
+        "class", "page_limit", "timeout_seconds",
+    }:
+        raise AlexandriaError("interval plan provider has an unknown shape")
+    if not isinstance(provider["class"], str) or not 1 <= len(provider["class"]) <= 256:
+        raise AlexandriaError("interval plan provider class is not a bounded name")
+    if any(character in provider["class"] for character in ("://", "@")):
+        raise AlexandriaError("interval plan provider class must not carry an endpoint")
+    for field, ceiling in (("page_limit", MAX_PAGE_LIMIT), ("timeout_seconds", MAX_TIMEOUT_SECONDS)):
+        value = provider[field]
+        if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= ceiling:
+            raise AlexandriaError(f"interval plan provider {field} is out of range")
+
     boundary = _decimal(finality["block_number"], "interval plan finality block")
     if boundary < end:
         raise AlexandriaError("interval plan end block is above its finality boundary")
@@ -154,7 +173,10 @@ def validate_plan(plan) -> None:
 
 def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> None:
     """Check one closed `alexandria-interval-checkpoint/v1` document."""
-    required = {"format", "last_accepted", "next_shard", "offsets", "plan_sha256", "records"}
+    required = {
+        "format", "history", "last_accepted", "next_shard", "offsets",
+        "plan_sha256", "records",
+    }
     if not isinstance(checkpoint, dict) or set(checkpoint) != required:
         raise AlexandriaError("interval checkpoint has an unknown shape")
     if checkpoint["format"] != CHECKPOINT_FORMAT:
@@ -173,10 +195,48 @@ def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> N
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
+    history = checkpoint["history"]
+    if not isinstance(history, list) or len(history) > MAX_HISTORY:
+        raise AlexandriaError(
+            f"interval checkpoint history holds more than {MAX_HISTORY} entries"
+        )
+    previous = None
+    for entry in history:
+        if not isinstance(entry, dict) or set(entry) != {
+            "block_hash", "block_number", "offsets", "records", "shard",
+        }:
+            raise AlexandriaError("interval checkpoint history entry has an unknown shape")
+        shard = entry["shard"]
+        if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < shard_count:
+            raise AlexandriaError("interval checkpoint history names a shard outside its plan")
+        if previous is not None and shard <= previous:
+            raise AlexandriaError("interval checkpoint history is not in ascending shard order")
+        previous = shard
+        _decimal(entry["block_number"], "interval checkpoint history block")
+        if (
+            not isinstance(entry["block_hash"], str)
+            or HASH_RE.fullmatch(entry["block_hash"]) is None
+        ):
+            raise AlexandriaError("interval checkpoint history block hash is not a 32-byte hash")
+        if not isinstance(entry["records"], int) or isinstance(entry["records"], bool) or entry["records"] < 0:
+            raise AlexandriaError("interval checkpoint history record count is not a count")
+        entry_offsets = entry["offsets"]
+        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(EVIDENCE_CLASSES):
+            raise AlexandriaError(
+                "interval checkpoint history offsets do not cover every evidence class"
+            )
+        for name, value in entry_offsets.items():
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise AlexandriaError(
+                    f"interval checkpoint history offset for {name} is not a byte count"
+                )
+
     accepted = checkpoint["last_accepted"]
     if accepted is None:
         if checkpoint["next_shard"] != 0:
             raise AlexandriaError("interval checkpoint past shard zero must name its accepted block")
+        if history:
+            raise AlexandriaError("interval checkpoint at shard zero must carry no history")
         return
     if not isinstance(accepted, dict) or set(accepted) != {"block_hash", "block_number"}:
         raise AlexandriaError("interval checkpoint accepted block has an unknown shape")
@@ -186,6 +246,14 @@ def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> N
         or HASH_RE.fullmatch(accepted["block_hash"]) is None
     ):
         raise AlexandriaError("interval checkpoint accepted block hash is not a 32-byte hash")
+    if not history or history[-1]["shard"] != checkpoint["next_shard"] - 1:
+        raise AlexandriaError("interval checkpoint history does not end at its own boundary")
+    if (
+        history[-1]["block_hash"] != accepted["block_hash"]
+        or history[-1]["offsets"] != checkpoint["offsets"]
+        or history[-1]["records"] != checkpoint["records"]
+    ):
+        raise AlexandriaError("interval checkpoint history disagrees with its own boundary")
 
 
 def plan_digest(plan) -> str:
@@ -250,6 +318,7 @@ class Staging:
         self._records = 0
         self._sizes: dict[str, int] = {}
         self._resumed = False
+        self._history: list[dict] = []
 
     # -- journals ---------------------------------------------------------
 
@@ -322,12 +391,20 @@ class Staging:
             handle.flush()
             os.fsync(handle.fileno())
             offsets[name] = handle.tell()
+        number = str(_decimal(block_number, "committed block"))
+        history = [entry for entry in self._history if entry["shard"] < shard]
+        history.append({
+            "block_hash": block_hash,
+            "block_number": number,
+            "offsets": offsets,
+            "records": self._records,
+            "shard": shard,
+        })
+        self._history = history[-MAX_HISTORY:]
         checkpoint = {
             "format": CHECKPOINT_FORMAT,
-            "last_accepted": {
-                "block_hash": block_hash,
-                "block_number": str(_decimal(block_number, "committed block")),
-            },
+            "history": list(self._history),
+            "last_accepted": {"block_hash": block_hash, "block_number": number},
             "next_shard": shard + 1,
             "offsets": offsets,
             "plan_sha256": self.digest,
@@ -348,8 +425,9 @@ class Staging:
                 if path.is_file():
                     _truncate(path, 0)
             self._records = 0
+            self._history = []
             self._resumed = True
-            return {"last_accepted": None, "next_shard": 0, "records": 0}
+            return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
         data = _read_control(self.checkpoint_path, "interval checkpoint")
@@ -364,12 +442,73 @@ class Staging:
             if size != offset:
                 _truncate(path, offset)
         self._records = checkpoint["records"]
+        self._history = list(checkpoint["history"])
         self._resumed = True
         return {
+            "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
             "next_shard": checkpoint["next_shard"],
             "records": checkpoint["records"],
         }
+
+    def rewind_to(self, shard: int) -> dict:
+        """Drop every record above one remembered boundary and continue from it.
+
+        The trail is bounded, so a reorg deeper than `MAX_HISTORY` accepted
+        shards refuses here rather than being papered over: the collector would
+        otherwise have to guess which of its journals is still on the chain it
+        started from.
+        """
+        if not self._resumed:
+            raise AlexandriaError("resume must establish the record baseline before a rewind")
+        matches = [entry for entry in self._history if entry["shard"] == shard]
+        if not matches:
+            raise AlexandriaError(
+                f"shard {shard} is not in the checkpoint's rewind history"
+            )
+        entry = matches[0]
+        self.close()
+        for name in EVIDENCE_CLASSES:
+            path = self._journal_path(name)
+            offset = entry["offsets"][name]
+            size = path.stat().st_size if path.is_file() else 0
+            if size < offset:
+                raise AlexandriaError(f"journal {name} is shorter than its rewind offset")
+            if size != offset:
+                _truncate(path, offset)
+        self._records = entry["records"]
+        self._history = [item for item in self._history if item["shard"] <= shard]
+        checkpoint = {
+            "format": CHECKPOINT_FORMAT,
+            "history": list(self._history),
+            "last_accepted": {
+                "block_hash": entry["block_hash"],
+                "block_number": entry["block_number"],
+            },
+            "next_shard": shard + 1,
+            "offsets": entry["offsets"],
+            "plan_sha256": self.digest,
+            "records": entry["records"],
+        }
+        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        return checkpoint
+
+    def discard(self) -> dict:
+        """Drop every record and every remembered boundary, back to shard zero."""
+        if self.checkpoint_path.is_symlink():
+            raise AlexandriaError("interval checkpoint must not be a symlink")
+        self.close()
+        for name in EVIDENCE_CLASSES:
+            path = self._journal_path(name)
+            if path.is_file():
+                _truncate(path, 0)
+        if self.checkpoint_path.exists():
+            self.checkpoint_path.unlink()
+        self._records = 0
+        self._history = []
+        self._resumed = True
+        return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
 
     def entries(self, name: str):
         """Yield the staged entries of one class, in the order they were kept."""
@@ -741,6 +880,7 @@ __all__ = [
     "UPGRADED_TOPIC",
     "EVIDENCE_CLASSES",
     "FINALITY_POLICIES",
+    "MAX_HISTORY",
     "MAX_SHARDS",
     "MAX_SHARD_WIDTH",
     "PLAN_FORMAT",

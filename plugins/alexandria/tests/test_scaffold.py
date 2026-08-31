@@ -41,6 +41,24 @@ class AlexandriaScaffoldTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertIn(command, result.stdout)
 
+    def test_the_interval_collector_cli_keeps_its_network_path_explicit(self):
+        command = PLUGIN_ROOT / "scripts" / "usdc_interval.py"
+        result = subprocess.run(
+            [sys.executable, str(command), "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("collect", result.stdout)
+        empty = subprocess.run(
+            [sys.executable, str(command)], capture_output=True, text=True, check=False
+        )
+        self.assertEqual(empty.returncode, 2)
+        self.assertNotIn("Traceback", empty.stderr)
+        source = command.read_text(encoding="utf-8")
+        self.assertIn("ALEXANDRIA_COMPOUND_RPC_URL", source)
+
     def test_compound_phase0_cli_keeps_network_capture_explicit(self):
         result = subprocess.run(
             [sys.executable, str(COMPOUND_COMMAND), "--help"],

@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1001,
-  "total_bytes": 21766947,
+  "file_count": 1002,
+  "total_bytes": 21792091,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "202906ebaa7cb0c187f209795af7d1eae79bbf923229c9d1ce2927c99959f0a0",
+      "sha256": "1474a612cd25e046cae102a1fb892ea1a7e6c8fa525448a0bf26781c6ed467bc",
       "source": null
     },
     {
@@ -351,15 +351,15 @@
       "source": "plugins/alexandria/schemas/demo-summary-v1.schema.json"
     },
     {
-      "bytes": 1348,
+      "bytes": 2947,
       "path": "plugins/alexandria/schemas/interval-checkpoint-v1.schema.json",
-      "sha256": "7021b515ca219da4fac161723247337514c2ba33c17f07c4141ddaedeca5a68a",
+      "sha256": "2ce8ccf23794deb21d88cbbb9cc5c76a42ab0ffd2d1419e1a3f42a4fbfd6a9c2",
       "source": "plugins/alexandria/schemas/interval-checkpoint-v1.schema.json"
     },
     {
-      "bytes": 2639,
+      "bytes": 4259,
       "path": "plugins/alexandria/schemas/interval-plan-v1.schema.json",
-      "sha256": "63af61ad8754256d944d93d88896da96494190bff4018bbfc3c3e874f9a2ee1f",
+      "sha256": "5d71f64a332a4549e3e304618cfa7530c2717d19cb084f5248c6189b36ff0dc0",
       "source": "plugins/alexandria/schemas/interval-plan-v1.schema.json"
     },
     {
@@ -435,9 +435,9 @@
       "source": "plugins/alexandria/scripts/alexandria_lib/index.py"
     },
     {
-      "bytes": 32720,
+      "bytes": 39538,
       "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
-      "sha256": "02fed4f03e97b12d9945922f7c1aa8e2ea297dd8033160f271e87fb6fa8272ca",
+      "sha256": "63d8cc3bcee9b608385569437a77bdeb8f5ea9f04588c3653c50fc0704f21c87",
       "source": "plugins/alexandria/scripts/alexandria_lib/interval.py"
     },
     {
@@ -505,6 +505,12 @@
       "path": "plugins/alexandria/scripts/compound_v3_phase0.py",
       "sha256": "6d40e68e34ad1648e1e0752efade4b60c689cfead7aab8e5f15bf72480ad909e",
       "source": "plugins/alexandria/scripts/compound_v3_phase0.py"
+    },
+    {
+      "bytes": 15107,
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "sha256": "fe19233b87c22c85412eb22995d1b024a412ded718491d95b0b40734f7df059f",
+      "source": "plugins/alexandria/scripts/usdc_interval.py"
     },
     {
       "bytes": 2368,

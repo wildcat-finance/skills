@@ -22,6 +22,7 @@ from alexandria_lib.interval import (  # noqa: E402
     UPGRADED_TOPIC,
     discover_epochs,
     validate_epochs,
+    MAX_HISTORY,
     MAX_SHARDS,
     MAX_SHARD_WIDTH,
     PLAN_FORMAT,
@@ -52,6 +53,11 @@ def plan(start=1000, end=1099, width=25, **overrides):
         },
         "format": PLAN_FORMAT,
         "interval": {"end": str(end), "start": str(start)},
+        "provider": {
+            "class": "public archive endpoint, class recorded without its URL",
+            "page_limit": 10000,
+            "timeout_seconds": 25,
+        },
         "proxy": PROXY,
         "shard_width": width,
         "shards": plan_shards(start, end, width),
@@ -168,16 +174,57 @@ class PlanValidationTests(unittest.TestCase):
 
 class CheckpointValidationTests(unittest.TestCase):
     def checkpoint(self, **overrides):
+        offsets = {name: 0 for name in EVIDENCE_CLASSES}
         value = {
             "format": CHECKPOINT_FORMAT,
+            "history": [{
+                "block_hash": HASH,
+                "block_number": "1024",
+                "offsets": dict(offsets),
+                "records": 3,
+                "shard": 0,
+            }],
             "last_accepted": {"block_hash": HASH, "block_number": "1024"},
             "next_shard": 1,
-            "offsets": {name: 0 for name in EVIDENCE_CLASSES},
+            "offsets": offsets,
             "plan_sha256": "a" * 64,
             "records": 3,
         }
         value.update(overrides)
         return value
+
+    def test_history_must_end_at_the_checkpoint_boundary(self):
+        value = self.checkpoint(next_shard=2)
+        with self.assertRaisesRegex(AlexandriaError, "does not end at its own boundary"):
+            validate_checkpoint(value, "a" * 64, 4)
+
+    def test_history_must_agree_with_the_boundary_it_names(self):
+        value = self.checkpoint()
+        value["history"][0]["block_hash"] = OTHER_HASH
+        with self.assertRaisesRegex(AlexandriaError, "disagrees with its own boundary"):
+            validate_checkpoint(value, "a" * 64, 4)
+
+    def test_history_out_of_shard_order_refuses(self):
+        value = self.checkpoint(next_shard=2)
+        first = deepcopy(value["history"][0])
+        second = deepcopy(first)
+        second["shard"] = 1
+        value["history"] = [second, first]
+        value["last_accepted"] = {"block_hash": HASH, "block_number": "1024"}
+        with self.assertRaisesRegex(AlexandriaError, "ascending shard order"):
+            validate_checkpoint(value, "a" * 64, 4)
+
+    def test_a_history_longer_than_the_trail_refuses(self):
+        value = self.checkpoint()
+        entry = value["history"][0]
+        value["history"] = [dict(entry, shard=index) for index in range(MAX_HISTORY + 1)]
+        with self.assertRaisesRegex(AlexandriaError, "more than"):
+            validate_checkpoint(value, "a" * 64, 64)
+
+    def test_a_checkpoint_at_shard_zero_carries_no_history(self):
+        value = self.checkpoint(last_accepted=None, next_shard=0)
+        with self.assertRaisesRegex(AlexandriaError, "must carry no history"):
+            validate_checkpoint(value, "a" * 64, 4)
 
     def test_a_well_formed_checkpoint_is_accepted(self):
         validate_checkpoint(self.checkpoint(), "a" * 64, 4)
@@ -199,6 +246,24 @@ class CheckpointValidationTests(unittest.TestCase):
         value = self.checkpoint(last_accepted=None)
         with self.assertRaisesRegex(AlexandriaError, "accepted block"):
             validate_checkpoint(value, "a" * 64, 4)
+
+    def test_an_unknown_provider_field_refuses(self):
+        value = plan()
+        value["provider"]["endpoint"] = "https://example.invalid/rpc"
+        with self.assertRaisesRegex(AlexandriaError, "provider has an unknown shape"):
+            validate_plan(value)
+
+    def test_a_provider_class_carrying_an_endpoint_refuses(self):
+        value = plan()
+        value["provider"]["class"] = "https://example.invalid/rpc"
+        with self.assertRaisesRegex(AlexandriaError, "must not carry an endpoint"):
+            validate_plan(value)
+
+    def test_a_provider_page_limit_out_of_range_refuses(self):
+        value = plan()
+        value["provider"]["page_limit"] = 0
+        with self.assertRaisesRegex(AlexandriaError, "page_limit is out of range"):
+            validate_plan(value)
 
     def test_a_truncated_block_hash_refuses(self):
         value = self.checkpoint(last_accepted={"block_hash": "0xab", "block_number": "1"})
@@ -307,7 +372,10 @@ class StagingTests(unittest.TestCase):
             staging.resume()
             staging.record(0, "logs", b"{}", b"{}")
         with Staging(self.root, self.plan) as staging:
-            self.assertEqual(staging.resume(), {"last_accepted": None, "next_shard": 0, "records": 0})
+            self.assertEqual(
+                staging.resume(),
+                {"history": [], "last_accepted": None, "next_shard": 0, "records": 0},
+            )
         self.assertEqual((self.root / "journals" / "logs.jsonl").stat().st_size, 0)
 
     def test_resume_after_a_clean_boundary_continues_from_the_next_shard(self):
