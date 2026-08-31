@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16210393,
+    "bytes_blob": 16407664,
     "bytes_generated": 98
   },
   "entries": [
@@ -236,6 +236,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
+    },
+    {
+      "bytes": 86469,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 84421",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.md"
+    },
+    {
+      "bytes": 87424,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
     },
     {
       "bytes": 17050,
@@ -545,6 +559,13 @@
       "evidence": "no newline in the first 4096 bytes of 203679 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
+    },
+    {
+      "bytes": 23378,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 23378 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }
   ],
   "schema": 2,
