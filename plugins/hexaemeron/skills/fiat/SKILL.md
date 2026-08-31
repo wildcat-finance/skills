@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.46.1"
+  version: "5.47.1"
 ---
 
 <p align="center">
@@ -178,6 +178,14 @@ the second.
    Pass `--run-branch <name>` only when the user wants an exact override. With
    `--task-issue`, that override must start with `fiat/<issue>-`.
 
+   With a GitHub task issue, `init` reads that issue's filing contract before it
+   creates any state, worktree or branch. `Fiat-Required: 0` refuses: the filer
+   decided the work is one independent pull request, so do it that way, point the
+   issue at that pull request, and close it there. A body that declares neither
+   the line nor a `carryover` block refuses too, naming what to add. Do not
+   reword the issue past the refusal to get a run: if the decision was wrong,
+   change it to `Fiat-Required: 1` and say why in the issue first.
+
 **Sync the base first.** A run inherits every mistake in the ref it was cut
 from, and a local checkout that has been sitting is the normal case rather than
 the exception:
@@ -293,7 +301,11 @@ state transition.
    rule required one, pass its exact URL to `init --task-issue <url>`. Do not
    invent an issue. A first `task_issue` record after initialization is refused
    because the stored branch might already be published; an exact repeat of the
-   initial receipt is a no-op.
+   initial receipt is a no-op. `init` reads that issue's `Fiat-Required` line
+   and `carryover` block and refuses a `0` or a malformed contract before it
+   creates anything, so a refusal costs nothing but the read. A run naming no
+   issue, or a tracker that is not GitHub, records the nulls in the init
+   receipt and warns; report that gap rather than treating it as a `1`.
 7. Nothing else.
 
 ## Branches, stacks, and the one merge
@@ -655,7 +667,16 @@ evict the earlier receipt. Use a merge commit: a squash or rebase cannot carry
 the checked `[base, candidate]` parent pair. The terminal receipt replays that
 actual pair and refuses a post-check base move.
 Then name everything the run
-left unfinished in its body under `## Carried forward`, wait for its gates,
+left unfinished in its body under `## Carried forward`, as one fenced
+`carryover` block whose rows are `<id> | <disposition> | <reference>`. Each row
+disposes of its item: `filed` and `duplicate` point at one canonical GitHub
+issue URL, the item's own new issue or the existing issue that already carries
+it, and `none` says why the item earns neither. Compare against what is already
+open before filing a second copy, and never file one merely to fill a row. A run
+that leaves nothing writes the single row `none | none | <why nothing is
+carried>`. `done integrate` refuses a section that answers in prose alone, so
+integration does not proceed on leftovers nothing was decided about. Then wait
+for its gates,
 merge it without bypassing them, require GitHub to report `verified: true` and
 `reason: valid` for every pushed commit and merge SHA, delete the run branch and the step branches
 where policy allows, and verify or close any recorded task issue. GitHub only
@@ -709,7 +730,14 @@ Use `hexctl halt --reason ...` so the stop itself is on the ledger.
 - Never call a plan or implementation complete while its own final changes,
   PR, task branch, or recorded issue still need routine stage, push, merge,
   deletion, or closure work.
-- Never create a GitHub issue merely to satisfy this workflow.
+- Never create a GitHub issue merely to satisfy this workflow, including to fill
+  a `carryover` row. A row whose item earns no issue takes the `none`
+  disposition and states why.
+- Never start a run against an issue declaring `Fiat-Required: 0`, and never
+  edit that line to `1` yourself to get past the refusal.
+- Never leave an outstanding item named in prose alone. Every one is filed as its
+  own issue, pointed at the issue that already carries it, or refused with a
+  stated reason, in the run pull request's `carryover` block.
 - Never disclose a failed, unavailable, or inconclusive contributor check.
 - Never install a wider-marketplace plugin before the study receipt exists.
 - Never run or recommend a frontier Fiat job for a skill whose ledger is
@@ -853,11 +881,11 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-final-integration
 
 - Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, every whole-side or superseded-intersection risk path was explicitly acknowledged, and the computed product/base overlap received bounded green composition checks. Version 1 requires exact individual coverage. Version 2 requires exact individual coverage outside every selected source-registered prefix and exact manifest, blob, digest and Git-tree evidence for each complete final aggregate. A relation-bearing run replayed its newest exact resolution from the actual `[base, candidate]` merge parents without a later base move. Every primary author the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
-- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, the replayed `fiat-sync-resolution-guard/v1` whole-side, superseded-intersection and acknowledged path arrays, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries the active `fiat-version-resolution/v1` receipt when declared, actual integration parents with the base first and candidate second, exact-object relation replay and post-merge base-tip read, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each primary author, final controller state and verified ledger.
+- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, the replayed `fiat-sync-resolution-guard/v1` whole-side, superseded-intersection and acknowledged path arrays, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries the active `fiat-version-resolution/v1` receipt when declared, actual integration parents with the base first and candidate second, exact-object relation replay and post-merge base-tip read, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each primary author, the parsed `carryover` rows of the run pull request's `## Carried forward` section with its exact digest, final controller state and verified ledger.
 - Evidence classes: checked, recorded
-- Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. A sync-path acknowledgement records inspection, not semantic correctness. The revalidation receipt establishes only the named checks over the computed and declared integration surface. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded primary author by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor, and it does not treat the separately recorded committer as an author.
+- Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. A sync-path acknowledgement records inspection, not semantic correctness. The revalidation receipt establishes only the named checks over the computed and declared integration surface. A `carryover` row establishes that its item was disposed of, not that the disposition was right: a referenced issue is never opened, and a stated reason is never judged. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded primary author by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor, and it does not treat the separately recorded committer as an author.
 - Authorises: Publication of the complete run to the named base and a final report limited to the merged artefacts and recorded evidence.
 - Consequence: 3
-- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, a missing or non-replaying sync resolution guard, missing, extra, duplicate or unsorted path acknowledgements, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded primary author carried by nothing, or integration without explicit delivery authority.
+- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, a missing or non-replaying sync resolution guard, missing, extra, duplicate or unsorted path acknowledgements, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded primary author carried by nothing, a `## Carried forward` section holding no `carryover` block or a row that disposes of its item in neither a filed issue, an existing issue nor a stated reason, or integration without explicit delivery authority.
 - Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, inspect and acknowledge the exact sync-risk paths the controller names, rerun its integration-sensitive checks, receipt that revalidation, then resolve declared versions without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, inspect every old-composition/base-advance intersection path, rerun bounded revalidation and supersede the exact active sync with a reason; the old sync and version-resolution receipts remain in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none
