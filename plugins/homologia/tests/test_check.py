@@ -639,6 +639,47 @@ class CheckTests(unittest.TestCase):
                         self.assertIsNone(path_pattern.search(invalid))
                 self.assertIsNotNone(path_pattern.search("nested/vectors.jsonl"))
 
+    def test_published_path_patterns_are_ecma_portable(self):
+        expected = (
+            r"^(?!/)(?![\s\S]*(?:^|/)\.{1,2}(?:/|$))"
+            r"(?![\s\S]*[\u0000-\u001f\u007f])"
+            r"(?![\s\S]*\\)(?![\s\S]*//)(?![\s\S]*/$)"
+            r"[\s\S]+(?![\s\S])"
+        )
+        for path in (MANIFEST_SCHEMA, VECTOR_SCHEMA):
+            with self.subTest(path=path.name):
+                schema = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(schema["$defs"]["path"]["pattern"], expected)
+        for separator in ("\u2028", "\u2029"):
+            with self.subTest(separator=ord(separator)):
+                value = f"vectors{separator}set.jsonl"
+                self.assertEqual(HOMOLOGIA._lexical_parts(value, "path"), (value,))
+                self.assertIsNotNone(re.search(expected, value))
+
+    def test_published_text_patterns_pin_whitespace_explicitly(self):
+        expected = (
+            r"[^\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680"
+            r"\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]"
+        )
+        manifest = json.loads(MANIFEST_SCHEMA.read_text(encoding="utf-8"))
+        vectors = json.loads(VECTOR_SCHEMA.read_text(encoding="utf-8"))
+        fields = (
+            manifest["properties"]["pair"]["properties"]["chain"]["properties"][
+                "function"
+            ],
+            vectors["$defs"]["provenance"]["oneOf"][2]["properties"]["author"],
+        )
+        for field in fields:
+            with self.subTest(field=field):
+                self.assertEqual(field["pattern"], expected)
+        for whitespace in ("\u001c", "\u0085"):
+            with self.subTest(whitespace=ord(whitespace)):
+                self.assertIsNone(re.search(expected, whitespace))
+                with self.assertRaises(HOMOLOGIA.Refusal):
+                    HOMOLOGIA._text(whitespace, "text")
+        self.assertIsNotNone(re.search(expected, "\ufeff"))
+        self.assertEqual(HOMOLOGIA._text("\ufeff", "text"), "\ufeff")
+
     def test_published_schema_patterns_match_the_authoritative_text_boundary(self):
         manifest = json.loads(MANIFEST_SCHEMA.read_text(encoding="utf-8"))
         vectors = json.loads(VECTOR_SCHEMA.read_text(encoding="utf-8"))

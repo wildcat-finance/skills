@@ -26,6 +26,14 @@ compatibility. A future additive field therefore needs a new schema identity
 and a validator that understands its meaning. Existing version-1 bytes keep
 their meaning.
 
+Function and author text must contain at least one code point outside the
+version-1 whitespace set. That set preserves the Python runtime boundary pinned
+in [`../../../.python-version`](../../../.python-version): U+001C through
+U+001F and U+0085 are whitespace, while U+FEFF is data. The schemas enumerate
+it instead of using engine-dependent `\S`. Their path patterns likewise use
+`[\s\S]` for any-code-point spans, so Python and ECMAScript engines agree when
+a path contains U+2028 or U+2029.
+
 ## Expected-answer provenance
 
 The three accepted forms are deliberately separate:

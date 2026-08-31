@@ -42,6 +42,10 @@ UNSIGNED_INTEGER_RE = re.compile(r"^(?:0|[1-9][0-9]*)$")
 ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-fA-F]{64}$")
 REVISION_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+TEXT_CONTENT_RE = re.compile(
+    r"[^\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680"
+    r"\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]"
+)
 
 
 class Limits(NamedTuple):
@@ -119,7 +123,11 @@ def _identifier(value: object, subject: str) -> str:
 
 
 def _text(value: object, subject: str, *, maximum: int = 256) -> str:
-    if not isinstance(value, str) or not value.strip() or len(value) > maximum:
+    if (
+        not isinstance(value, str)
+        or not TEXT_CONTENT_RE.search(value)
+        or len(value) > maximum
+    ):
         _refuse("HOM-CHECK-SHAPE", subject, "supply a bounded non-empty string")
     return value
 
