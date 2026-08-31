@@ -506,11 +506,15 @@ class VersionRelationTests(HexctlCase):
             exact_base=anchor_commit,
             exact_head=head_commit,
         )
+        design_transition = module._prepare_design_transition(
+            self.target, state, "integration"
+        )
+        module._append_design_transition(state, design_transition)
         module.commit(
             self.target,
             state,
             "fixture:integrate",
-            {"head": head_commit},
+            {"head": head_commit, "design_transition": design_transition},
         )
         return module, state, receipt
 
@@ -2395,16 +2399,23 @@ class VersionRelationTests(HexctlCase):
                 encoding="utf-8",
             ) as handle:
                 worktree = handle.read().strip()
+            self.write_design_evidence(worktree)
             with open(
                 os.path.join(worktree, "study.md"), "w", encoding="utf-8"
             ) as handle:
                 handle.write("# Study\n")
             control(worktree, "done", "study", "--artifact", "study.md")
             with open(
+                os.path.join(worktree, ".hexaemeron", "state.json"),
+                encoding="utf-8",
+            ) as handle:
+                state = json.load(handle)
+            with open(
                 os.path.join(worktree, "runbook.md"), "w", encoding="utf-8"
             ) as handle:
                 handle.write(
-                    "# Runbook\n\n"
+                    self.design_lock_block(state)
+                    + "\n# Runbook\n\n"
                     + self.relation_block("fiat")
                     + "\n## Step 1: Build\n\n**Goal.** Build.\n"
                 )
@@ -2769,7 +2780,7 @@ class VersionRelationTests(HexctlCase):
         _, state = self.receipt_runbook()
         self.assertEqual(
             set(state["receipts"]["runbook"]),
-            {"artifact", "sha256", "step_count"},
+            {"artifact", "sha256", "step_count", "design_lock"},
         )
         raw = self.run_ctl("next").stdout
         directive = json.loads(raw)
@@ -2821,6 +2832,17 @@ class VersionRelationTests(HexctlCase):
                 },
                 "branch": branch,
                 "branch_from": "fiat/test-topic",
+                "design_evidence": {
+                    "schema": state["receipts"]["study"]["design_evidence"]["schema"],
+                    "path": os.path.realpath(
+                        os.path.join(
+                            self.target,
+                            state["receipts"]["study"]["design_evidence"]["artifact"],
+                        )
+                    ),
+                    "sha256": state["receipts"]["study"]["design_evidence"]["sha256"],
+                    "selected": state["receipts"]["study"]["design_evidence"]["selected"],
+                },
             },
         }
         self.assertEqual(raw, json.dumps(expected) + "\n")
@@ -2873,7 +2895,7 @@ class VersionRelationTests(HexctlCase):
 
         self.assertEqual(
             set(state["receipts"]["runbook"]),
-            {"artifact", "sha256", "step_count"},
+            {"artifact", "sha256", "step_count", "design_lock"},
         )
         self.assertNotIn("version_relations", self.run_ctl("next").stdout)
         self.run_ctl("verify")

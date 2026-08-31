@@ -46,7 +46,7 @@ RECOVERY_GENERATOR_SHA256 = (
     "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75"
 )
 INTEGRATED_CONTROLLER_SHA256 = (
-    "49d0cec84a489912d635b8e9f85fdfa9a4a7e746ea80b919f550cb36baed041e"
+    "a08b0b498db00e02eb5d3db75cac90002f770af80a8578cc8a7fb003b5be74d2"
 )
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
@@ -283,6 +283,7 @@ class Issue429RecoveryTests(unittest.TestCase):
         )
         digests = [coverage["run_observation_binding"]["controller"]["sha256"]]
         for promise in (
+            "fiat-design-evidence",
             "fiat-final-integration",
             "fiat-local-retirement",
             "fiat-receipted-delivery",

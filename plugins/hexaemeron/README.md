@@ -49,7 +49,7 @@ Let there be light. A deterministic controller (`hexctl`) decides what comes nex
 
 1. Study the topic and write a linted study file.
 2. Derive a runbook of discrete, self-contained steps.
-3. Implement the least complicated construction that satisfies each runbook step.
+3. Implement the checked candidate bound into the runbook, one step at a time.
 4. Run the vendored Pashov suite (`x-ray`, `solidity-auditor`, `fizz`) in rounds until a round comes back clean or the remaining leads are judged not worth another pass, shape each audit record through Sapheneia, and put fixes on a stacked branch.
 5. Rewrite every shipped document and the PR text through the bundled `imprimatur` lint and `vulgate` voice mask.
 6. Push the step branch, open its pull request against the step below it, and move to the next step.

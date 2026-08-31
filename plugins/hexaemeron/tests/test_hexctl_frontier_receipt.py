@@ -209,6 +209,7 @@ class FrontierReceiptCase(HexctlCase):
         """The whole topology up to and including the sync receipt."""
         self.run_ctl("init", "--topic", "frontier receipt",
                      "--frontier", self.ledger_rel)
+        self.write_design_evidence()
         base_sha = self.publish_base_rows()
         self.advance_to_merged_step()
         self.write_ledger(

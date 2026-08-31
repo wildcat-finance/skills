@@ -120,6 +120,224 @@ class TestLifecycle(HexctlCase):
         self.assertEqual(out["title"], "Scaffold")
 
 
+class TestDesignEvidenceLifecycle(HexctlCase):
+    def controller_bytes(self):
+        root = os.path.join(self.target, ".hexaemeron")
+        return tuple(
+            Path(os.path.join(root, name)).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+    def record(self):
+        path = os.path.join(self.target, ".hexaemeron", "design-evidence.json")
+        with open(path, encoding="utf-8") as handle:
+            return path, json.load(handle)
+
+    def write_record(self, path, record):
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(record, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+    def study(self):
+        study = self.write(
+            "study.md",
+            "# Study\n\n```risk-register\none | boundary | check\n```\n",
+        )
+        self.run_ctl("done", "study", "--artifact", study)
+        return study
+
+    def test_study_lock_requires_the_fixed_checked_record_without_mutation(self):
+        self.init()
+        os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
+        before = self.controller_bytes()
+        study = self.write("study.md", "# Study\n")
+        refused = self.run_ctl(
+            "done", "study", "--artifact", study, expect=2
+        )
+        self.assertIn("design-evidence artefact is unavailable", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_selection_pending_names_the_exact_recovery_and_cannot_lock(self):
+        self.init()
+        path, record = self.record()
+        result = next(
+            item for item in record["results"]
+            if item["candidate"] == "bounded" and item["criterion"] == "peak-space"
+        )
+        result.clear()
+        result.update({
+            "candidate": "bounded",
+            "criterion": "peak-space",
+            "state": "pending",
+            "resolver": "python3 measure-space.py",
+            "report": "design-reports/bounded-peak-space-later.json",
+            "blocks": "design-lock",
+        })
+        self.write_record(path, record)
+        before = self.controller_bytes()
+        study = self.write("study.md", "# Study\n")
+        refused = self.run_ctl(
+            "done", "study", "--artifact", study, expect=2
+        )
+        self.assertIn("D007", refused.stderr)
+        self.assertIn("python3 measure-space.py", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_runbook_must_bind_the_exact_design_lock(self):
+        self.init()
+        self.study()
+        self.auto_design_lock = False
+        body = "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n"
+        runbook = self.write("runbook.md", body)
+        steps = self.write("steps.json", '["Core"]')
+        before = self.controller_bytes()
+        missing = self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps,
+            expect=2,
+        )
+        self.assertIn("requires a design-lock block", missing.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+        wrong = self.design_lock_block().replace(
+            self.state()["receipts"]["study"]["design_evidence"]["sha256"],
+            "f" * 64,
+        )
+        self.write("runbook.md", wrong + "\n" + body)
+        mismatch = self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps,
+            expect=2,
+        )
+        self.assertIn("does not match the receipted", mismatch.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+        self.write("runbook.md", self.design_lock_block() + "\n" + body)
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        receipt = self.state()["receipts"]["runbook"]
+        self.assertEqual(receipt["design_lock"]["candidate"], "bounded")
+
+    def test_pending_conformance_blocks_only_its_named_step(self):
+        self.init()
+        path, record = self.record()
+        criterion = next(
+            item for item in record["criteria"] if item["id"] == "restart-safe"
+        )
+        criterion["stage"] = "conformance"
+        criterion["blocks"] = "step:2"
+        result = next(
+            item for item in record["results"]
+            if item["candidate"] == "bounded" and item["criterion"] == "restart-safe"
+        )
+        result.clear()
+        result.update({
+            "candidate": "bounded",
+            "criterion": "restart-safe",
+            "state": "pending",
+            "resolver": "python3 prove-restart.py",
+            "report": "design-reports/bounded-restart-later.json",
+            "blocks": "step:2",
+        })
+        self.write_record(path, record)
+        study = self.study()
+        runbook = self.write(
+            "runbook.md",
+            "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n\n"
+            "## Step 2: Finish\n\n**Goal.** Finish.\n",
+        )
+        steps = self.write("steps.json", '["Core", "Finish"]')
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-m", "fixture")
+        state = self.state()
+        for step in state["steps"]:
+            self.git("branch", self.step_branch(step["n"], state))
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        before = self.controller_bytes()
+        push_args = (
+            "done", "push", "--pr-url",
+            "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", self.fake_sha("head1"),
+            "--pr-base", self.step_base(1),
+        )
+        refused = self.run_ctl(*push_args, expect=2)
+        self.assertIn("D008", refused.stderr)
+        self.assertIn("bounded/restart-safe", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+        payload = {
+            "schema": "protasis-design-report/v1",
+            "candidate": "bounded",
+            "criterion": "restart-safe",
+            "value": True,
+            "unit": "boolean",
+            "command": "python3 prove-restart.py",
+            "exit": 0,
+        }
+        report = os.path.join(
+            self.target, ".hexaemeron", "design-reports",
+            "bounded-restart-later.json",
+        )
+        with open(report, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, sort_keys=True)
+            handle.write("\n")
+        self.run_ctl(*push_args)
+        state = self.state()
+        self.assertEqual(state["current_step"], 2)
+        transition = state["receipts"]["study"]["design_evidence"]["transitions"][-1]
+        self.assertEqual(transition["transition"], "step:2")
+        self.assertEqual(
+            [(item["candidate"], item["criterion"]) for item in transition["reports"]],
+            [("bounded", "restart-safe")],
+        )
+
+    def test_verify_replays_report_receipts_and_detects_tampering(self):
+        self.to_steps(("Core",))
+        self.run_ctl("verify")
+        report = os.path.join(
+            self.target, ".hexaemeron", "design-reports", "bounded-warm-time.json"
+        )
+        with open(report, "a", encoding="utf-8") as handle:
+            handle.write(" ")
+        refused = self.run_ctl("verify", expect=2)
+        self.assertIn("report digest does not match", refused.stderr)
+
+    def test_legacy_state_continues_without_fabricated_design_evidence(self):
+        self.init()
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        state.pop("contracts")
+        hexctl_module().commit(
+            self.target, state, "fixture:legacy-design-contract", {}
+        )
+        os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
+        study = self.write("study.md", "# Legacy study\n")
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self.write(
+            "runbook.md", "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n"
+        )
+        steps = self.write("steps.json", '["Core"]')
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        self.assertNotIn(
+            "design_evidence", self.state()["receipts"]["study"]
+        )
+
+
 class TestDelegationPackets(HexctlCase):
     def assert_packet(self, directive, agent, fields):
         self.assertEqual(directive["agent"], agent)
@@ -135,7 +353,7 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             out,
             "surveyor",
-            ("topic", "target_dir", "base_ref", "output_path"),
+            ("topic", "target_dir", "base_ref", "output_path", "design_output_path"),
         )
         self.assertEqual(out["brief"]["topic"], "packet work")
         self.assertEqual(out["brief"]["target_dir"], os.path.realpath(self.target))
@@ -143,6 +361,12 @@ class TestDelegationPackets(HexctlCase):
         self.assertEqual(
             out["brief"]["output_path"],
             os.path.realpath(os.path.join(self.target, ".hexaemeron", "study.md")),
+        )
+        self.assertEqual(
+            out["brief"]["design_output_path"],
+            os.path.realpath(
+                os.path.join(self.target, ".hexaemeron", "design-evidence.json")
+            ),
         )
         self.assertEqual(out["state_sha256"], hashlib.sha256(
             json.dumps(self.state(), sort_keys=True, separators=(",", ":")).encode()
@@ -170,7 +394,15 @@ class TestDelegationPackets(HexctlCase):
         self.git("branch", self.step_branch(1, state))
 
         mason = self.next_json()
-        self.assert_packet(mason, "mason", ("runbook_step", "branch", "branch_from"))
+        self.assert_packet(
+            mason,
+            "mason",
+            ("runbook_step", "branch", "branch_from", "design_evidence"),
+        )
+        self.assertEqual(
+            set(mason["brief"]["design_evidence"]),
+            {"schema", "path", "sha256", "selected"},
+        )
         source = mason["brief"]["runbook_step"]
         self.assertEqual(
             set(source),
@@ -198,7 +430,7 @@ class TestDelegationPackets(HexctlCase):
             "warden",
             ("step_branch", "stacked_branch", "security_suite", "plugin_root",
              "audit_log_path", "round", "audit_filter", "risk_register",
-             "runbook_step"),
+             "runbook_step", "design_evidence"),
         )
         risk = warden["brief"]["risk_register"]
         self.assertEqual(set(risk), {"markdown", "path", "sha256"})
@@ -2782,7 +3014,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.assertEqual(mason_first, mason_second)
         self.assertEqual(
             set(mason_first["brief"]),
-            {"runbook_step", "branch", "branch_from"},
+            {"runbook_step", "branch", "branch_from", "design_evidence"},
         )
         expected_markdown = "## Step 1: Core\n\n**Goal.** Ship Core.\n"
         expected_source = {
@@ -2792,9 +3024,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             "amendments": [],
             "effective_sha256": hashlib.sha256(expected_markdown.encode()).hexdigest(),
             "path": os.path.realpath(os.path.join(self.target, "runbook.md")),
-            "sha256": hashlib.sha256(
-                ("# Runbook\n\n" + expected_markdown).encode()
-            ).hexdigest(),
+            "sha256": self.state()["receipts"]["runbook"]["sha256"],
             "number": 1,
             "title": "Core",
         }
@@ -2817,8 +3047,12 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             {
                 "step_branch", "stacked_branch", "security_suite", "plugin_root",
                 "audit_log_path", "round", "audit_filter", "risk_register",
-                "runbook_step",
+                "runbook_step", "design_evidence",
             },
+        )
+        self.assertEqual(
+            warden_first["brief"]["design_evidence"],
+            mason_first["brief"]["design_evidence"],
         )
 
     def test_a_legacy_absent_key_survives_every_reader_and_later_round(self):
