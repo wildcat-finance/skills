@@ -28,6 +28,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -99,8 +101,8 @@ class AncestryAnswerCase(unittest.TestCase):
         self.assertIsNone(unknown)
 
 
-class EarlyMergeAdoptionCase(HexctlCase):
-    """The receipt an adopted early merge leaves, and the three refusals."""
+class AdoptionHarness(HexctlCase):
+    """Shared drivers. Carries no tests of its own, so nothing runs twice."""
 
     URL_TEMPLATE = "https://github.com/wildcat-finance/example/pull/{}"
 
@@ -165,6 +167,10 @@ class EarlyMergeAdoptionCase(HexctlCase):
             "--pr-base", self.step_base(number, state),
             expect=expect,
         )
+
+
+class EarlyMergeAdoptionCase(AdoptionHarness):
+    """The receipt an adopted early merge leaves, and the three refusals."""
 
     def test_an_early_merged_step_is_adopted_and_recorded_explicitly(self):
         self._to_push(1)
@@ -278,6 +284,138 @@ class AdoptionSwitchCase(unittest.TestCase):
     def test_only_a_stacked_step_is_offered_adoption(self):
         source = HEXCTL.read_text(encoding="utf-8")
         self.assertIn("adopt_early_merge=stacked,", source)
+
+
+class RecordedAdoptionCase(unittest.TestCase):
+    """A recorded fact is about to stand in for an action, so it is read closed."""
+
+    MERGE = "e" * 40
+    TIP = "a" * 40
+
+    def setUp(self):
+        self.hexctl = hexctl_module()
+
+    def complete(self, **overrides):
+        early = {
+            "merge_commit": self.MERGE,
+            "reachable_from": "fiat/run-step-1",
+            "base_tip": self.TIP,
+            "github_verified": [self.MERGE],
+        }
+        early.update(overrides)
+        return {"early_merge": early}
+
+    def refusal(self, receipt):
+        stderr = StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
+            self.hexctl.recorded_adoption(receipt)
+        return stderr.getvalue()
+
+    def test_a_complete_record_is_returned_closed(self):
+        adoption = self.hexctl.recorded_adoption(self.complete())
+        self.assertEqual(
+            sorted(adoption),
+            ["base_tip", "github_verified", "merge_commit", "reachable_from"],
+        )
+        self.assertEqual(adoption["merge_commit"], self.MERGE)
+
+    def test_a_step_with_no_adoption_reads_as_none_rather_than_refusing(self):
+        """A run from before this change infers nothing and still owes a merge."""
+        self.assertIsNone(self.hexctl.recorded_adoption({}))
+        self.assertIsNone(self.hexctl.recorded_adoption({"early_merge": None}))
+
+    def test_an_incomplete_record_refuses(self):
+        cases = {
+            "merge_commit": None,
+            "reachable_from": None,
+            "base_tip": None,
+            "github_verified": None,
+            "short-merge-sha": "e" * 7,
+        }
+        for field, value in cases.items():
+            key = "merge_commit" if field == "short-merge-sha" else field
+            with self.subTest(case=field):
+                self.assertIn("incomplete", self.refusal(self.complete(**{key: value})))
+
+    def test_a_verification_that_does_not_name_the_merge_refuses(self):
+        """Verified-something is not verified-this."""
+        self.assertIn("incomplete", self.refusal(self.complete(github_verified=["b" * 40])))
+
+
+class AdoptedMergeStepCase(AdoptionHarness):
+    """`done merge-step` for an adopted step, and what it still refuses."""
+
+    def _adopt_and_push(self, number, merge):
+        self.adopted_merge = merge
+        url, head, _branch = self._pull_request(number, merge_sha=merge)
+        self._push(number, url, head)
+        return url
+
+    def _finish_ordinary(self, number):
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(number),
+            "--commit", f"abc{number}",
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        url, head, _branch = self._pull_request(number)
+        self._push(number, url, head)
+        return url
+
+    def test_an_adopted_step_is_satisfied_from_its_record(self):
+        merge = "e" * 40
+        self._to_push(1)
+        self._adopt_and_push(1, merge)
+        self.adopted_merge = None
+        self._finish_ordinary(2)
+
+        directive = self.next_json()
+        self.assertEqual((directive["do"], directive["step"]), ("merge-step", 1))
+        self.assertEqual(directive["adopted_merge"], merge)
+        self.assertIn("already merged early", directive["merge"])
+        self.assertIn(merge, directive["then"])
+
+        self.run_ctl("done", "merge-step", "--step", "1", "--merge-commit", merge)
+        record = self.state()["integrate"]["merges"]["1"]
+        self.assertEqual(record["satisfied_by"], "adopted-early-merge")
+        self.assertEqual(record["adopted_merge"]["merge_commit"], merge)
+
+    def test_an_ordinary_step_still_records_that_it_merged(self):
+        self._to_push(1)
+        url, head, _branch = self._pull_request(1)
+        self._push(1, url, head)
+        self._finish_ordinary(2)
+        directive = self.next_json()
+        self.assertNotIn("adopted_merge", directive)
+        self.run_ctl("done", "merge-step", "--step", "1", "--merge-commit", "a" * 40)
+        record = self.state()["integrate"]["merges"]["1"]
+        self.assertEqual(record["satisfied_by"], "merge")
+        self.assertIsNone(record["adopted_merge"])
+
+    def test_an_adopted_step_refuses_a_merge_commit_it_did_not_adopt(self):
+        merge = "e" * 40
+        self._to_push(1)
+        self._adopt_and_push(1, merge)
+        self.adopted_merge = None
+        self._finish_ordinary(2)
+        result = self.run_ctl(
+            "done", "merge-step", "--step", "1", "--merge-commit", "d" * 40, expect=2
+        )
+        self.assertIn("was adopted at push with merge", result.stderr)
+        self.assertIn("does not merge again", result.stderr)
+
+    def test_verify_replays_a_run_carrying_an_adopted_merge(self):
+        merge = "e" * 40
+        self._to_push(1)
+        self._adopt_and_push(1, merge)
+        self.adopted_merge = None
+        self._finish_ordinary(2)
+        self.run_ctl("done", "merge-step", "--step", "1", "--merge-commit", merge)
+        self.run_ctl("verify")
 
 
 def run_elenchus_report(argv):

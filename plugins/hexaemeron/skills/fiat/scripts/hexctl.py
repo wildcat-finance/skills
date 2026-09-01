@@ -6876,20 +6876,37 @@ def _integrate_directive(
     for step in state["steps"]:
         if step["n"] in merged:
             continue
-        pr_url = as_dict(step["receipts"].get("push")).get("pr_url")
-        return {
+        push_receipt = as_dict(step["receipts"].get("push"))
+        pr_url = push_receipt.get("pr_url")
+        # A step adopted at push has already merged, so the directive names the
+        # commit that carried it instead of a merge command. Saying so here is
+        # what stops the integrate phase's silence about that step reading as an
+        # omission, and it saves the caller looking the SHA up.
+        adopted = as_dict(push_receipt.get("early_merge")).get("merge_commit")
+        adopted = adopted if isinstance(adopted, str) else None
+        directive = {
             "do": "merge-step",
             "step": step["n"],
             "title": step["title"],
             "branch": step_branch_name(state, step),
             "pr_url": pr_url,
             "into": run_branch,
-            "merge": step_merge_command(pr_url),
+            "merge": (
+                step_merge_command(pr_url)
+                if adopted is None
+                else (
+                    f"already merged early as {adopted}; adopted at push and "
+                    "not merged again"
+                )
+            ),
             "then": (
                 f"hexctl done merge-step --step {step['n']} "
-                "--merge-commit <sha>"
+                f"--merge-commit {adopted if adopted else '<sha>'}"
             ),
         }
+        if adopted is not None:
+            directive["adopted_merge"] = adopted
+        return directive
     then = "hexctl done integrate --pr-url <url> --merge-commit <sha>"
     task_issue = expected_task_issue(state)
     if task_issue:
@@ -8303,11 +8320,28 @@ def done_merge_step(args, state: dict) -> None:
     refuse_rewritten_stack(args.dir, state, args.step)
     step = state["steps"][args.step - 1]
     push_receipt = as_dict(step["receipts"].get("push"))
+    # A step whose pull request merged before integrate was adopted at push,
+    # with its merge already reachable from the base it targeted and already
+    # GitHub-verified. Merging again is not available and not needed: the
+    # expectation here is that GitHub still reports that same merge, into the
+    # base the pull request actually had, rather than the run branch the
+    # directive names for a step that has yet to merge.
+    adoption = recorded_adoption(push_receipt)
+    if adoption is None:
+        expected_merge_base = pending["into"]
+    else:
+        if args.merge_commit != adoption["merge_commit"]:
+            die(
+                f"step {args.step} was adopted at push with merge "
+                f"{adoption['merge_commit']}; --merge-commit must name that "
+                "exact commit, because this step does not merge again"
+            )
+        expected_merge_base = adoption["reachable_from"]
     pr_record = inspect_pull_request(
         args.dir,
         pending["pr_url"],
         expected_head=pending["branch"],
-        expected_base=pending["into"],
+        expected_base=expected_merge_base,
         expected_head_sha=None,
         expected_merge_sha=args.merge_commit,
     )
@@ -8371,6 +8405,8 @@ def done_merge_step(args, state: dict) -> None:
         "github_verified": github_verified,
         "pull_request": pr_record,
         "effective_push": effective_push,
+        "satisfied_by": ("adopted-early-merge" if adoption else "merge"),
+        "adopted_merge": adoption,
     }
     _append_design_transition(state, design_transition)
     event = {
@@ -8381,6 +8417,8 @@ def done_merge_step(args, state: dict) -> None:
         "github_verified": github_verified,
         "pull_request": pr_record,
         "effective_push": effective_push,
+        "satisfied_by": ("adopted-early-merge" if adoption else "merge"),
+        "adopted_merge": adoption,
     }
     if design_transition is not None:
         event["design_transition"] = design_transition
@@ -10986,6 +11024,46 @@ def _ancestry_answer(base_dir: str, candidate: str, descendant: str) -> bool | N
         base_dir, "git", ["merge-base", "--is-ancestor", candidate, descendant]
     )
     return None if status not in (0, 1) else status == 0
+
+
+def recorded_adoption(push_receipt: dict) -> dict | None:
+    """One complete adopted-merge record, or ``None`` when the step has none.
+
+    A recorded fact is about to stand in for an action, so a partial record is
+    refused rather than read around: the merge commit, the ref it was reachable
+    from, that ref's observed tip and GitHub's verification of the merge all
+    have to be present, and the verification has to name the merge itself.
+    Anything less means the adoption was never completed, and the step still
+    owes a merge.
+    """
+    early = as_dict(push_receipt.get("early_merge"))
+    if not early:
+        return None
+    merge_sha = early.get("merge_commit")
+    base_ref = early.get("reachable_from")
+    base_tip = early.get("base_tip")
+    verified = early.get("github_verified")
+    if (
+        not isinstance(merge_sha, str)
+        or COMMIT_RE.fullmatch(merge_sha) is None
+        or not isinstance(base_ref, str)
+        or not base_ref
+        or not isinstance(base_tip, str)
+        or COMMIT_RE.fullmatch(base_tip) is None
+        or not isinstance(verified, list)
+        or merge_sha not in verified
+    ):
+        die(
+            "recorded early merge is incomplete; a step is satisfied from an "
+            "adoption only when its merge commit, base ref, base tip and "
+            "GitHub verification of that merge are all recorded"
+        )
+    return {
+        "merge_commit": merge_sha,
+        "reachable_from": base_ref,
+        "base_tip": base_tip,
+        "github_verified": verified,
+    }
 
 
 def adopted_merge_base_tip(base_dir: str, merge_sha: str, base_ref: str) -> str:
