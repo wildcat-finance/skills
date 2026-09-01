@@ -24,9 +24,9 @@ SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
 VERSION = "0.1.0"
-UNBUILT = ("inventory", "workbook", "reconcile", "demonstrate")
+UNBUILT = ("workbook", "reconcile", "demonstrate")
+KEPT_PROMISES = ("dokimasia-scaffold-identity", "dokimasia-source-inventory")
 UNKEPT_PROMISES = (
-    "dokimasia-source-inventory",
     "dokimasia-workbook-lineage",
     "dokimasia-disposition-closure",
 )
@@ -89,7 +89,7 @@ class ContractTests(unittest.TestCase):
         # identity is the one promise it declares.
         text = SKILL.read_text(encoding="utf-8")
         declared = re.findall(r"^### (dokimasia-[a-z-]+)$", text, re.M)
-        self.assertEqual(declared, ["dokimasia-scaffold-identity"])
+        self.assertEqual(declared, list(KEPT_PROMISES))
         for promise in UNKEPT_PROMISES:
             with self.subTest(promise=promise):
                 self.assertNotIn(promise, declared)
@@ -97,7 +97,7 @@ class ContractTests(unittest.TestCase):
     def test_the_contract_names_the_step_each_unkept_promise_arrives_with(self):
         # Collapse wrapping: the contract is prose and reflows, the claim does not.
         text = " ".join(SKILL.read_text(encoding="utf-8").split())
-        for promise, step in zip(UNKEPT_PROMISES, ("step 2", "step 3", "step 4")):
+        for promise, step in zip(UNKEPT_PROMISES, ("step 3", "step 4")):
             with self.subTest(promise=promise):
                 self.assertIn(f"`{promise}`", text)
                 self.assertIn(f"{step} owes it", text)
@@ -255,6 +255,11 @@ class CommandTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 3, result.stdout)
                 self.assertIn("not built yet", result.stderr)
                 self.assertEqual(result.stdout, "")
+
+    def test_the_inventory_verb_is_built_and_self_checks(self):
+        result = run("inventory", "--check")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("check clean", result.stdout)
 
     def test_the_version_flag_reports_the_scaffold(self):
         result = run("--version")

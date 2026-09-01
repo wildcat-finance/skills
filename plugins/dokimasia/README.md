@@ -47,13 +47,15 @@ skill may propose one and can never mark an item covered on its own.
 | Verb | State |
 | --- | --- |
 | `selftest` | built: proves the packaging, contract and ledger agree on one version |
-| `inventory` | refuses; step 2 owes it |
+| `inventory` | built: compiles a pinned checkout into a digest-bound inventory |
 | `workbook` | refuses; step 3 owes it |
 | `reconcile` | refuses; step 4 owes it |
 | `demonstrate` | refuses; step 5 owes it |
 
 ```bash
 python3 plugins/dokimasia/scripts/dokimasia.py selftest
+python3 plugins/dokimasia/scripts/dokimasia.py inventory --check
+python3 plugins/dokimasia/scripts/dokimasia.py inventory --root <a-pinned-checkout>
 ```
 
 ## What is committed here
