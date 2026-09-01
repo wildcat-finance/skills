@@ -68,6 +68,7 @@ space, which is unbounded and which no static compile enumerates.
 |---|---|
 | inventory | compiles routes, API handlers, actions and guards from a pinned checkout |
 | workbook | imports a reviewed spreadsheet, preserving every row's identity |
+| propose | drafts an unconfirmed disposition set a reviewer edits rather than authors |
 | reconcile | joins both sides and assigns exactly one disposition per scoped item |
 | demonstrate | runs one complete scrutiny and emits its digest-bound record |
 | selftest | proves the packaging and the contract agree, and emits its report |
@@ -85,22 +86,24 @@ name shape and nesting depth. Every path a scrutiny reads or writes stays
 below its declared root, and no path this skill writes is followed through a
 symlink.
 
-A person owns every disposition. The skill may propose one and may never mark
-an item covered on its own.
+A person owns every disposition. The skill drafts `manual` and `excluded`
+entries and marks every one unconfirmed; only a person's confirmation admits an
+entry as a disposition. It never drafts `covered`, and holds no code path that
+constructs it.
 
 ## Promises
 
 `dokimasia-scaffold-identity`, `dokimasia-source-inventory`,
-`dokimasia-workbook-lineage`, `dokimasia-disposition-closure` and
+`dokimasia-workbook-lineage`, `dokimasia-drafted-dispositions`,
+`dokimasia-disposition-closure` and
 `dokimasia-pinned-scrutiny` below are the promises this version keeps. A
 promise with no case that could support it is the overclaim the root law
 refuses, so nothing else is declared.
 
-Every declared verb is built and every declared promise is kept. What this
-version does not have is a way to help a reviewer author a disposition set:
-the first scrutiny of a real release scoped 261 items and found none carrying
-a disposition, because writing them is 261 entries by hand. The ledger holds
-that as the next frontier.
+Every declared verb is built and every declared promise is kept. A reviewer
+no longer authors a disposition set from nothing: `propose` drafts one covering
+every scoped item, and the reconciler admits only the entries a person
+confirmed, so drafting cannot move a coverage figure.
 
 ## Promise Machine contract
 
@@ -138,6 +141,18 @@ that as the next frontier.
 - Consequence: 2
 - Refuses: An archive over the member, total or expansion caps, a member delivering more bytes than the cap allows whatever size it declares, a member carrying a document type or entity declaration, a member name that is absolute or holds a parent-directory segment, a file that is not a zip archive, a sheet naming a missing or absent part, a cell reference past the column cap, a cell reference naming no column, a shared string index the table does not hold, an identifier appearing twice, a workbook over the case cap, a declared split matching no row in the workbook, and a split whose atomic cases disagree about the row they came from.
 - Recovery: Read the refusal, which names the cap, member or identifier that caused it, correct the workbook or the declared split, and rerun `dokimasia workbook`.
+- Exceptions: none
+
+### dokimasia-drafted-dispositions
+
+- Promise: A successful `dokimasia propose` establishes that one drafted disposition set covered every scoped item exactly once, that every entry it emitted was `manual` or `excluded`, carried a reason drawn from the record it was built from and was marked unconfirmed, that the set validated against its committed schema before it was written, and that a regeneration carried every confirmed or edited entry forward byte for byte while replacing only entries no person had touched.
+- Evidence: The two bounded record reads, the scoped set built from both sides, the declared inventory and workbook digests carried onto the set, the per-kind reason templates and the declared reason cap, the emitted state vocabulary measured against the draftable pair, the recorded per-entry draft digest, the preserved, replaced, added and dropped counts, the schema check before the write, the staged write and rename, the one-segment label under the declared evidence root, and the committed fixtures the contract check drives.
+- Evidence classes: checked, recorded
+- Boundary: The record establishes what was drafted, not that a draft is right. It does not establish that an item belongs in the state it was drafted as, that a reason is a good reason, that a reviewer read it, or that anything was tested. A drafted set answers for nothing: it closes the ratio at zero until a person confirms an entry, and confirmation is the only thing this verb cannot do.
+- Authorises: Handing a reviewer a complete draft to edit, and regenerating it against moved records without losing what they already decided.
+- Consequence: 2
+- Refuses: An existing set declaring the wrong schema, answering for one item twice, or holding an entry that is not an object or names no item; a template producing an empty reason or one over the declared cap; a scoped set over the item cap; a drafted set breaching its committed schema; a label that is not one safe path segment under the declared evidence root; and a write through a symlink or onto anything that is not a regular file.
+- Recovery: Read the refusal, which names the entry, the cap or the label that caused it, correct the existing set or the label, and rerun `dokimasia propose`; the reviewer's file is left exactly as it was.
 - Exceptions: none
 
 ### dokimasia-disposition-closure

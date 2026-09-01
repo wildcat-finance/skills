@@ -62,3 +62,36 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the items from round 1 stand unchanged. Confirmed sound this round against the fixed tree, each with its output read rather than discarded: the three lints exit zero over the step's 27 changed paths; `run_checks --scope dokimasia` is green; all five check verbs exit zero when invoked from the repository root; the suite passes 237/237 with both pinned inputs supplied and 237 with the regeneration test skipped; the committed synopsis matches a fresh render; and the working tree is clean at the recorded head. One apparent finding this round was the auditor's error rather than the code's: a sweep reported every check verb refusing, and the cause was running it from the plugin directory rather than the repository root, so the script path did not resolve. That is the same class of mistake the previous run recorded at step 5 round 5, arrived at by a different route, and it is written down here because a sweep that reports five refusals and is believed is worse than one that reports none.
+
+## Step 3, round 1 -- 2026-09-01T21:44:35Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: proposal-covered-path=reviewed; regeneration-clobber=reviewed; confirmation-forgery=reviewed; reason-overclaim=reviewed; emitted-set-unvalidated=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; evidence-digest-binding=reviewed; disposition-closure=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed
+
+Not checked: the generator was exercised against the committed fixtures and not against the pinned release, which step 4 owes; whether a drafted state is the right one for a given item, and whether a drafted reason reads well to a reviewer, are judgements no check here makes; nothing establishes that a reviewer will read a draft rather than confirming it wholesale, which is the risk the design accepts and ADR-002 states; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | plugins/dokimasia/scripts/dokimasia_lib/propose.py | Deciding whether a scoped item counted as replaced or added walked the existing disposition list once per scoped item. Both sides admit 40,000 entries under the declared cap, so a regeneration near it would have cost on the order of a billion comparisons on a path whose only output is three counters. This is the shape recorded as S2-R1-01 in the reconciler one step earlier, reintroduced in new code by the same reflex, which is why it is named rather than quietly corrected: the first one was a slip, and a second in the same run says the pattern needs stating. Fixed by deciding against the `seen` set the loop above already builds. | fixed in 04773842 |
+| S3-R1-02 | low | plugins/dokimasia/scripts/dokimasia_lib/propose.py | `_reason_for` took a `case_fields` argument that its only caller passed empty and its body never read. A parameter shaped like a dependency that is not one costs a reader the same as a docstring describing work a helper does not do, which the previous run recorded as S4-R4-01; both invite a check that the code does not reward. Fixed by removing it. | fixed in 04773842 |
+
+Leads not pursued: an entry's `proposed_sha256` is the reviewer's own file, so somebody who edits a reason and recomputes that digest by hand makes the entry read as untouched and lose the edit on the next regeneration. The cost falls on whoever did it and the field is documented as the generator's, so this is accepted rather than defended against; a tamper-evident version would need a key this skill deliberately does not hold. `entry_digest` excludes `confirmed`, so confirming an entry does not move its digest and the confirmation check runs first in `_touched`; that ordering is what makes a confirmed entry survive whether or not its text also changed. The regeneration counters are reported to stderr rather than recorded in the set, so a reviewer reading only the file cannot tell what the last run replaced; the runbook asks for the counts to be reported and the coverage record carries the three figures that matter for the ratio, so widening the set's own schema for run history is out of this step's scope. A drafted `excluded` reason states that no reviewed case cites the item, which is true of the workbook as imported and would stop being true if a later import changed; the reason is a draft a person is expected to correct, and the reconciler never reads it.
+
+## Step 3, round 2 -- 2026-09-01T21:45:26Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: proposal-covered-path=reviewed; regeneration-clobber=reviewed; confirmation-forgery=reviewed; reason-overclaim=reviewed; emitted-set-unvalidated=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; evidence-digest-binding=reviewed; disposition-closure=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed
+
+Not checked: the same negative space as round 1; the generator was exercised against the committed fixtures and not the pinned release, whether a drafted state or reason is right stays a human judgement, nothing establishes a reviewer will read a draft rather than confirm it wholesale, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the items from round 1 stand unchanged. Confirmed sound this round against the fixed tree, each with its output read: the three lints exit zero over the step's five changed paths; `run_checks --scope dokimasia` is green; all six check verbs exit zero from the repository root; the suite passes 264/264 with both pinned inputs supplied; the committed synopsis matches a fresh render; and the working tree is clean at the recorded head. Four properties were driven rather than read and are recorded so a later round need not rediscover them: a label carrying a separator or a parent reference refuses with exit 2 and writes nothing outside the declared evidence root, checked against `/tmp` afterwards; the executable source of the proposal module carries no `covered` literal once docstrings and comments are stripped, and `DRAFTABLE` holds exactly the two draftable states; a real write followed by two hand edits and a regeneration preserved both edited entries byte for byte and replaced the other thirteen; and two drafts of the same records serialise identically.
