@@ -36,9 +36,10 @@ MAX_JSON_BYTES = 8 * 1024 * 1024
 MAX_GIT_OUTPUT = 4 * 1024 * 1024
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
 MAX_JSON_DEPTH = 64
-MAX_JSON_TOKENS = 100_000
+MAX_JSON_TOKENS = 1_000_000
 MAX_JSON_NUMBER_CHARS = 640
 EXPECTED_COUNTS = {
+    "fixed_input": 2,
     "skill_contract": 32,
     "structured_reference": 12,
     "runtime_contract": 18,
@@ -54,10 +55,10 @@ EXPECTED_COUNTS = {
     "operation_reference": 25,
 }
 EXPECTED_TOTALS = {
-    "physical_files": 188,
-    "physical_bytes": 2_290_439,
-    "unique_files": 171,
-    "unique_bytes": 1_818_995,
+    "physical_files": 190,
+    "physical_bytes": 2_290_443,
+    "unique_files": 173,
+    "unique_bytes": 1_818_999,
 }
 PARTITION_CLASSES = (
     "governed_operative_semantics",
@@ -78,10 +79,51 @@ BASELINE_RECONCILIATION = PurePosixPath(
 SCRATCH_ROOT = PurePosixPath("tmp")
 BASELINE_RECORD_NAMES = (
     "corpus-manifest.json",
+    "invocation-profiles.json",
     "loader-graph.json",
     "byte-partition.json",
     "cohorts.json",
     "holdout-seal.json",
+)
+
+INVOCATION_PROFILE_SCHEMA = PurePosixPath(
+    "research/instruction-architecture/schemas/invocation-profile-v1.schema.json"
+)
+EXPECTED_PROFILE_COUNTS = {
+    "alexandria": 3,
+    "anamnesis": 3,
+    "ariadne": 7,
+    "berean": 2,
+    "brevitas": 2,
+    "elenchus": 3,
+    "ephoros": 2,
+    "fiat": 415,
+    "fizz": 6,
+    "fizz-convert": 1,
+    "fizz-sync": 1,
+    "hermes": 2,
+    "homologia": 2,
+    "horos": 2,
+    "hypomnema": 2,
+    "imprimatur": 2,
+    "janus": 2,
+    "kronos": 26,
+    "lazarus": 5,
+    "lemma": 3,
+    "metron": 3,
+    "pandects": 2,
+    "phylax": 3,
+    "probitas": 3,
+    "protasis": 3,
+    "sapheneia": 2,
+    "solidity-auditor": 1,
+    "synkrisis": 4,
+    "tabularium": 4,
+    "vulgate": 2,
+    "x-ray": 1,
+}
+EXPECTED_PROFILE_PROJECTION_SHA256 = (
+    "82a352d00f210ceb91dfae12b9060fbcd284e20739f891e1908625546a7a8814"
 )
 
 FRONTIER_SKILLS = (
@@ -132,6 +174,88 @@ FIZZ_WORKER_PROMPTS = (
     "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md",
     "plugins/hexaemeron/skills/fizz/agents/report-writer.md",
 )
+
+SELECTABLE_SKILL_PATHS = {
+    "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
+    "anamnesis": "plugins/anamnesis/skills/anamnesis/SKILL.md",
+    "ariadne": "plugins/ariadne/skills/ariadne/SKILL.md",
+    "berean": "plugins/berean/skills/berean/SKILL.md",
+    "brevitas": "plugins/brevitas/skills/brevitas/SKILL.md",
+    "elenchus": "plugins/hexaemeron/skills/elenchus/SKILL.md",
+    "ephoros": "plugins/hexaemeron/skills/ephoros/SKILL.md",
+    "fiat": "plugins/hexaemeron/skills/fiat/SKILL.md",
+    "fizz": "plugins/hexaemeron/skills/fizz/SKILL.md",
+    "fizz-convert": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md",
+    "fizz-sync": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+    "hermes": "plugins/hermes/skills/hermes/SKILL.md",
+    "homologia": "plugins/homologia/skills/homologia/SKILL.md",
+    "horos": "plugins/horos/skills/horos/SKILL.md",
+    "hypomnema": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+    "imprimatur": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+    "janus": "plugins/janus/skills/janus/SKILL.md",
+    "kronos": "plugins/hexaemeron/skills/kronos/SKILL.md",
+    "lazarus": "plugins/lazarus/skills/lazarus/SKILL.md",
+    "lemma": "plugins/lemma/skills/lemma/SKILL.md",
+    "metron": "plugins/hexaemeron/skills/metron/SKILL.md",
+    "pandects": "plugins/pandects/skills/pandects/SKILL.md",
+    "phylax": "plugins/hexaemeron/skills/phylax/SKILL.md",
+    "probitas": "plugins/probitas/skills/probitas/SKILL.md",
+    "protasis": "plugins/hexaemeron/skills/protasis/SKILL.md",
+    "sapheneia": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+    "solidity-auditor": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+    "synkrisis": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+    "tabularium": "plugins/tabularium/skills/tabularium/SKILL.md",
+    "vulgate": "plugins/hexaemeron/skills/vulgate/SKILL.md",
+    "x-ray": "plugins/hexaemeron/skills/x-ray/SKILL.md",
+}
+
+FIXED_AGENT_INPUTS = (
+    (
+        "plugins/hexaemeron/skills/x-ray/VERSION",
+        "plugins/hexaemeron/skills/x-ray/SKILL.md",
+        "plugins/hexaemeron/skills/x-ray/SKILL.md",
+        "Read the local `VERSION` file from `$SKILL_DIR/VERSION`",
+    ),
+    (
+        "plugins/hexaemeron/skills/solidity-auditor/VERSION",
+        "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+        "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+        "Read the local `VERSION` file from the same directory as this skill",
+    ),
+)
+
+REFERENCE_ONLY_MARKDOWN = {
+    "plugins/hexaemeron/skills/imprimatur/references/agent-replies.md": (
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "references/agent-replies.md",
+        "the link occurs only in the human References section",
+    ),
+    "plugins/hexaemeron/skills/imprimatur/references/lexicon-rationale.md": (
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "references/lexicon-rationale.md",
+        "the link occurs only in the human References section",
+    ),
+    "plugins/hexaemeron/skills/imprimatur/references/rewriting.md": (
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "references/rewriting.md",
+        "the link occurs only in the human References section",
+    ),
+    "plugins/pandects/docs/applicability.md": (
+        "plugins/pandects/skills/pandects/SKILL.md",
+        "`docs/applicability.md` states the rules once",
+        "the source describes the document but never directs an agent to read it",
+    ),
+    "plugins/pandects/docs/writing-a-law.md": (
+        "plugins/pandects/skills/pandects/SKILL.md",
+        "`docs/writing-a-law.md`",
+        "the source describes the document but never directs an agent to read it",
+    ),
+    "plugins/pandects/integrations/wildcat/APPLICABILITY.md": (
+        "plugins/pandects/skills/pandects/SKILL.md",
+        "`integrations/wildcat/APPLICABILITY.md` carries all of them",
+        "the source describes the document but never directs an agent to read it",
+    ),
+}
 
 # path, canonical owner, source path, exact source needle
 OPERATION_REFERENCES = (
@@ -420,6 +544,25 @@ def _structured_metadata() -> dict[str, dict[str, Any]]:
         }
     if len(result) != 12:
         raise Refusal(f"structured reference inventory drift: {len(result)}")
+    return result
+
+
+@lru_cache(maxsize=1)
+def _fixed_agent_metadata() -> dict[str, dict[str, str]]:
+    """Return source-required non-Markdown bytes read into agent context."""
+    result: dict[str, dict[str, str]] = {}
+    for path, owner, source_path, source_needle in FIXED_AGENT_INPUTS:
+        if path in result:
+            raise Refusal(f"duplicate fixed agent input: {path}")
+        result[path] = {
+            "canonical_owner": owner,
+            "admission_kind": "fixed-agent-input",
+            "load_semantics": "agent-or-prompt",
+            "source_path": source_path,
+            "source_needle": source_needle,
+        }
+    if len(result) != 2:
+        raise Refusal(f"fixed agent input inventory drift: {len(result)}")
     return result
 
 
@@ -984,6 +1127,11 @@ def _corpus_paths() -> list[str]:
     selected.extend(
         sorted(path for path in structured if path not in reference_structured)
     )
+    fixed_agent = _fixed_agent_metadata()
+    missing_fixed_agent = set(fixed_agent) - set(names)
+    if missing_fixed_agent:
+        raise Refusal(f"fixed agent input missing: {min(missing_fixed_agent)}")
+    selected.extend(sorted(fixed_agent))
     admitted = set(_additional_metadata())
     missing = admitted - set(names)
     if missing:
@@ -998,6 +1146,8 @@ def _corpus_paths() -> list[str]:
 
 
 def _document_class(path: str) -> str:
+    if path in _fixed_agent_metadata():
+        return "fixed_input"
     if path in _structured_metadata():
         return "structured_reference"
     admission = _additional_metadata().get(path)
@@ -1115,6 +1265,9 @@ def _derive_corpus_fixed_point(
         for path in (metadata["source_path"], metadata["runtime_path"])
         if path is not None
     }
+    anchor_paths.update(
+        metadata["source_path"] for metadata in _fixed_agent_metadata().values()
+    )
     document_paths = {item["path"] for item in documents}
     if not set(overrides) <= document_paths | anchor_paths:
         raise Refusal("fixed-point source inventory is invalid")
@@ -1162,12 +1315,25 @@ def _derive_corpus_fixed_point(
         if _structured_metadata()[path]["admission_kind"] == "mandatory-rule-data"
     }
     structured = reference_structured | mandatory_data
+    fixed_agent: set[str] = set()
+    for path, metadata in _fixed_agent_metadata().items():
+        source_data = (
+            overrides[metadata["source_path"]]
+            if metadata["source_path"] in overrides
+            else _source_blob(metadata["source_path"])
+        )
+        if (
+            path in frozen_tree
+            and metadata["source_needle"].encode("utf-8") in source_data
+        ):
+            fixed_agent.add(path)
     return {
         "occurrences": markdown["occurrences"],
         "markdown_targets": markdown["targets"],
         "structured_targets": sorted(structured),
         "mandatory_executable_targets": sorted(mandatory_executable),
-        "targets": sorted(set(markdown["targets"]) | structured),
+        "fixed_agent_targets": sorted(fixed_agent),
+        "targets": sorted(set(markdown["targets"]) | structured | fixed_agent),
         "excluded": markdown["excluded"],
     }
 
@@ -1210,6 +1376,9 @@ def _logical_document(path: str, document_class: str) -> str:
         return f"skill:{_skill_name(owner)}"
     if document_class == "markdown_reference":
         return f"skill:{_skill_name(_reference_owner(path))}"
+    if document_class == "fixed_input":
+        owner = _fixed_agent_metadata()[path]["canonical_owner"]
+        return f"skill:{_skill_name(owner)}"
     if document_class == "structured_reference":
         owner = _structured_metadata()[path]["canonical_owner"]
         return f"skill:{_skill_name(owner)}"
@@ -1229,6 +1398,8 @@ def _authority_tier(path: str, document_class: str) -> str:
         return "plugin_runtime"
     if document_class == "skill_contract":
         return "canonical_skill"
+    if document_class == "fixed_input":
+        return "fixed_input"
     if document_class == "structured_reference":
         return "conditional_reference"
     additional = {
@@ -1258,6 +1429,8 @@ def _same_repository_markdown_url(value: str) -> str | None:
 
 
 def _canonical_owner(path: str, document_class: str) -> str:
+    if document_class == "fixed_input":
+        return _fixed_agent_metadata()[path]["canonical_owner"]
     if document_class == "structured_reference":
         return _structured_metadata()[path]["canonical_owner"]
     admission = _additional_metadata().get(path)
@@ -1270,7 +1443,7 @@ def _canonical_owner(path: str, document_class: str) -> str:
     return path
 
 
-def build_manifest() -> dict[str, Any]:
+def build_manifest(profiles: dict[str, Any] | None = None) -> dict[str, Any]:
     paths = _corpus_paths()
     provisional: list[dict[str, Any]] = []
     by_digest: dict[str, list[str]] = {}
@@ -1282,6 +1455,8 @@ def build_manifest() -> dict[str, Any]:
         owner = _canonical_owner(path, document_class)
         admission = _additional_metadata().get(path)
         structured = _structured_metadata().get(path)
+        fixed_agent = _fixed_agent_metadata().get(path)
+        reference_only = REFERENCE_ONLY_MARKDOWN.get(path)
         provisional.append(
             {
                 "path": path,
@@ -1290,6 +1465,8 @@ def build_manifest() -> dict[str, Any]:
                 "admission_kind": (
                     structured["admission_kind"]
                     if structured is not None
+                    else fixed_agent["admission_kind"]
+                    if fixed_agent is not None
                     else (
                         "issue-census"
                         if admission is None
@@ -1305,6 +1482,10 @@ def build_manifest() -> dict[str, Any]:
                 "load_semantics": (
                     structured["load_semantics"]
                     if structured is not None
+                    else fixed_agent["load_semantics"]
+                    if fixed_agent is not None
+                    else "reference-only"
+                    if reference_only is not None
                     else "agent-or-prompt"
                 ),
                 "loader_roots": [],
@@ -1314,6 +1495,12 @@ def build_manifest() -> dict[str, Any]:
                         structured["source_path"], structured["source_needle"]
                     )
                     if structured is not None
+                    else _evidence(
+                        fixed_agent["source_path"], fixed_agent["source_needle"]
+                    )
+                    if fixed_agent is not None
+                    else _evidence(reference_only[0], reference_only[1])
+                    if reference_only is not None
                     else None
                 ),
                 "runtime_evidence": (
@@ -1333,13 +1520,15 @@ def build_manifest() -> dict[str, Any]:
         raise Refusal(f"corpus fixed point omits {min(missing_closure)}")
     if set(closure["structured_targets"]) != set(_structured_metadata()):
         raise Refusal("structured fixed-point inventory disagrees with its anchors")
+    if set(closure["fixed_agent_targets"]) != set(_fixed_agent_metadata()):
+        raise Refusal("fixed agent input inventory disagrees with its anchors")
     if set(closure["mandatory_executable_targets"]) != {
         path
         for path, metadata in _structured_metadata().items()
         if metadata["load_semantics"] == "mandatory-executable"
     }:
         raise Refusal("mandatory executable semantics disagree with live anchors")
-    topology = _build_topology(provisional)
+    topology = _build_topology(provisional, profiles)
     loader_reachability = _reachability_by_root(
         topology["roots"], topology["edges"], "active_roots"
     )
@@ -1424,6 +1613,812 @@ def _evidence(path: str, needle: str) -> dict[str, Any]:
     }
 
 
+def _profile_source_evidence(
+    selected_skill: str, required_documents: tuple[str, ...]
+) -> list[dict[str, Any]]:
+    """Bind each profile to frozen source spans without using loader edges."""
+    anchors: dict[tuple[str, int, int], dict[str, Any]] = {}
+    skill_path = SELECTABLE_SKILL_PATHS[selected_skill]
+    evidence = _evidence(skill_path, f"name: {selected_skill}")
+    anchors[(evidence["path"], evidence["start"], evidence["end"])] = evidence
+    for path in required_documents:
+        metadata = (
+            _additional_metadata().get(path)
+            or _structured_metadata().get(path)
+            or _fixed_agent_metadata().get(path)
+        )
+        if metadata is None:
+            continue
+        evidence = _evidence(metadata["source_path"], metadata["source_needle"])
+        anchors[(evidence["path"], evidence["start"], evidence["end"])] = evidence
+    return [anchors[key] for key in sorted(anchors)]
+
+
+def _profile_fixed_inputs(required_documents: tuple[str, ...]) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    for path in sorted(required_documents):
+        metadata = _structured_metadata().get(path)
+        if metadata is None:
+            metadata = _fixed_agent_metadata().get(path)
+        if metadata is None:
+            continue
+        if metadata["load_semantics"] == "reference-only":
+            raise Refusal(f"profile loads a reference-only input: {path}")
+        result.append({"path": path, "load_semantics": metadata["load_semantics"]})
+    return result
+
+
+def build_invocation_profiles() -> dict[str, Any]:
+    """Expand the finite source-declared bounded invocation grammar."""
+    profiles: list[dict[str, Any]] = []
+    evolution = {
+        name: str(PurePosixPath(path).with_name("EVOLUTION.md"))
+        for name, path in SELECTABLE_SKILL_PATHS.items()
+        if name
+        not in {"fizz", "fizz-convert", "fizz-sync", "solidity-auditor", "x-ray"}
+    }
+    versioning = "plugins/hexaemeron/skills/VERSIONING.md"
+    promises = "plugins/hexaemeron/PROMISES.md"
+    xray_version = "plugins/hexaemeron/skills/x-ray/VERSION"
+    sol_aud_version = "plugins/hexaemeron/skills/solidity-auditor/VERSION"
+
+    def add(
+        skill: str,
+        local_id: str,
+        phase: str,
+        *,
+        documents: tuple[str, ...] = (),
+        workers: tuple[str, ...] = (),
+    ) -> None:
+        required = tuple(
+            sorted(dict.fromkeys((SELECTABLE_SKILL_PATHS[skill],) + documents))
+        )
+        worker_prompts = tuple(sorted(dict.fromkeys(workers)))
+        if not set(worker_prompts) <= set(required):
+            raise Refusal(f"profile worker leaves required documents: {skill}:{local_id}")
+        profile_id = f"{skill}:{local_id}"
+        profiles.append(
+            {
+                "id": profile_id,
+                "selected_skill": skill,
+                "phase": phase,
+                "applicability": f"bounded-operation:{skill}:{phase}",
+                "branch_state": local_id.split("__"),
+                "exclusive_group": f"{skill}:{phase}",
+                "required_documents": list(required),
+                "worker_prompts": list(worker_prompts),
+                "fixed_inputs": _profile_fixed_inputs(required),
+                "source_evidence": _profile_source_evidence(skill, required),
+            }
+        )
+
+    def frontier(skill: str) -> None:
+        add(
+            skill,
+            "frontier-gate",
+            "gate-only frontier admission",
+            documents=(evolution[skill], versioning),
+        )
+
+    add("alexandria", "ordinary", "capture/query/release")
+    add(
+        "alexandria",
+        "ethereum-usdc-interval",
+        "Ethereum USDC interval capture",
+        documents=(
+            "plugins/alexandria/docs/usdc-interval-collector.md",
+            "plugins/alexandria/docs/study.md",
+            "plugins/alexandria/docs/runbook.md",
+        ),
+    )
+    frontier("alexandria")
+
+    add("anamnesis", "ordinary", "capture/verify/release")
+    add(
+        "anamnesis",
+        "demo-or-rebuild",
+        "demo or verify-rebuild",
+        documents=("plugins/anamnesis/docs/demo.md",),
+    )
+    frontier("anamnesis")
+
+    add("ariadne", "ordinary", "inspect/verify/replay")
+    for local_id, phase, documents in (
+        (
+            "capture-release",
+            "capture release",
+            (
+                "plugins/ariadne/docs/capturing-a-release.md",
+                "plugins/ariadne/docs/solidity-release.md",
+            ),
+        ),
+        (
+            "capture-dataset",
+            "capture dataset",
+            (
+                "plugins/ariadne/docs/capturing-a-dataset.md",
+                "plugins/ariadne/docs/dataset.md",
+            ),
+        ),
+        (
+            "capture-state-fixture",
+            "capture state fixture",
+            (
+                "plugins/ariadne/docs/capturing-a-state-fixture.md",
+                "plugins/ariadne/docs/state-fixture.md",
+            ),
+        ),
+        (
+            "capture-grounded-agent",
+            "capture grounded agent",
+            (
+                "plugins/ariadne/docs/capturing-a-grounded-agent.md",
+                "plugins/ariadne/docs/grounded-agent.md",
+            ),
+        ),
+        (
+            "conformance",
+            "conformance",
+            ("plugins/ariadne/docs/conformance.md",),
+        ),
+    ):
+        add("ariadne", local_id, phase, documents=documents)
+    frontier("ariadne")
+
+    for name in (
+        "berean",
+        "brevitas",
+        "homologia",
+        "horos",
+        "hypomnema",
+        "janus",
+        "sapheneia",
+        "vulgate",
+    ):
+        add(name, "ordinary", "ordinary operation")
+        frontier(name)
+
+    hermes_runtime = (
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
+        "plugins/hermes/skills/hermes/references/optimisation-catalogue.md",
+    )
+    add("hermes", "gas-operation", "gas analysis", documents=hermes_runtime)
+    frontier("hermes")
+
+    add("elenchus", "ordinary", "ordinary failure analysis")
+    add(
+        "elenchus",
+        "contract-fix",
+        "contract failure",
+        documents=(SELECTABLE_SKILL_PATHS["fizz-sync"], promises),
+    )
+    frontier("elenchus")
+
+    add(
+        "ephoros",
+        "ordinary",
+        "telemetry operation",
+        documents=(SELECTABLE_SKILL_PATHS["phylax"],),
+    )
+    frontier("ephoros")
+
+    fizz_common = tuple(
+        f"plugins/hexaemeron/skills/fizz/references/{name}.md"
+        for name in ("template-map", "selection-policy", "setup-playbook", "handler-patterns")
+    )
+    fizz_report = ("plugins/hexaemeron/skills/fizz/agents/report-writer.md",)
+    fizz_invariant = (
+        "plugins/hexaemeron/skills/fizz/references/property-generation.md",
+        *tuple(path for path in FIZZ_WORKER_PROMPTS if path != fizz_report[0] and not path.endswith("protocol-analyzer.md")),
+    )
+    xray_full = (
+        SELECTABLE_SKILL_PATHS["x-ray"],
+        xray_version,
+        promises,
+        "plugins/hexaemeron/skills/x-ray/references/threats.md",
+        "plugins/hexaemeron/skills/x-ray/references/templates.md",
+    )
+    for xray_state, invariant_state in itertools.product(
+        ("existing", "acquire", "fallback"), ("off", "on")
+    ):
+        documents = fizz_common + fizz_report + (promises,)
+        workers = fizz_report
+        if xray_state in {"acquire", "fallback"}:
+            documents += xray_full
+        if xray_state == "fallback":
+            analyzer = "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md"
+            documents += (analyzer,)
+            workers += (analyzer,)
+        if invariant_state == "on":
+            documents += fizz_invariant
+            workers += tuple(path for path in fizz_invariant if "/agents/" in path)
+        add(
+            "fizz",
+            f"xray-{xray_state}__invariants-{invariant_state}",
+            "fuzz-suite generation",
+            documents=documents,
+            workers=workers,
+        )
+
+    add("fizz-convert", "convert", "property conversion", documents=(promises,))
+    add("fizz-sync", "sync", "harness reconciliation", documents=(promises,))
+
+    imprimatur_lexicons = (
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+    )
+    add("imprimatur", "lint", "production lint", documents=imprimatur_lexicons)
+    frontier("imprimatur")
+
+    add("metron", "ordinary", "measurement")
+    add(
+        "metron",
+        "budget-check",
+        "budget check",
+        documents=("plugins/hexaemeron/skills/metron/references/budget-check.md",),
+    )
+    frontier("metron")
+
+    add("phylax", "ordinary", "off-chain review")
+    add(
+        "phylax",
+        "model-proxy",
+        "model proxy review",
+        documents=("plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",),
+    )
+    frontier("phylax")
+
+    protasis_disciplines = tuple(
+        SELECTABLE_SKILL_PATHS[name]
+        for name in ("ephoros", "phylax", "metron", "elenchus", "hypomnema")
+    )
+    add("protasis", "runbook", "runbook validation")
+    add("protasis", "study", "study validation", documents=protasis_disciplines)
+    frontier("protasis")
+
+    sol_aud_general = tuple(
+        f"plugins/hexaemeron/skills/solidity-auditor/references/{name}.md"
+        for name in ("report-formatting", "judging", "senior-auditor-sop")
+    )
+    sol_aud_agents = tuple(
+        path
+        for path in _frozen_tree_paths()
+        if path.startswith(
+            "plugins/hexaemeron/skills/solidity-auditor/references/hacking-agents/"
+        )
+        and path.endswith("-agent.md")
+    )
+    sol_aud_shared = (
+        "plugins/hexaemeron/skills/solidity-auditor/references/hacking-agents/shared-rules.md",
+    )
+    add(
+        "solidity-auditor",
+        "audit",
+        "Solidity audit",
+        documents=(sol_aud_version, promises)
+        + sol_aud_general
+        + sol_aud_shared
+        + sol_aud_agents,
+        workers=sol_aud_agents,
+    )
+    add(
+        "x-ray",
+        "audit",
+        "pre-audit analysis",
+        documents=xray_full[1:],
+    )
+
+    add("lazarus", "ordinary", "capture/verify/replay")
+    add(
+        "lazarus",
+        "anchored-capture",
+        "anchored capture",
+        documents=("plugins/lazarus/docs/chain-anchors.md",),
+    )
+    add(
+        "lazarus",
+        "preservation-release",
+        "preservation release",
+        documents=("plugins/lazarus/docs/preservation-release.md",),
+    )
+    add(
+        "lazarus",
+        "maintenance",
+        "maintenance",
+        documents=("plugins/lazarus/docs/study.md", "plugins/lazarus/docs/runbook.md"),
+    )
+    frontier("lazarus")
+
+    add("lemma", "ordinary", "generate/verify")
+    add(
+        "lemma",
+        "changed-or-unexpected",
+        "change/judge/unexpected-output",
+        documents=("plugins/lemma/INVARIANTS.md",),
+    )
+    frontier("lemma")
+
+    add("pandects", "ordinary", "law operation")
+    frontier("pandects")
+
+    probitas_base = (
+        "plugins/probitas/skills/probitas/references/gates.md",
+        "plugins/probitas/skills/probitas/references/venues.md",
+    )
+    add("probitas", "dossier", "dossier operation", documents=probitas_base)
+    add(
+        "probitas",
+        "add-venue",
+        "add venue",
+        documents=probitas_base + ("plugins/probitas/docs/adding-a-venue.md",),
+    )
+    frontier("probitas")
+
+    synkrisis_rules = ("plugins/synkrisis/references/rules-v1.json",)
+    add("synkrisis", "cohort-or-render", "cohort or render")
+    add("synkrisis", "diagnose", "diagnose", documents=synkrisis_rules)
+    add("synkrisis", "verify", "verify", documents=synkrisis_rules)
+    frontier("synkrisis")
+
+    add("tabularium", "ordinary", "capture/verify")
+    add(
+        "tabularium",
+        "add-adapter",
+        "add adapter",
+        documents=("plugins/tabularium/docs/adding-an-adapter.md",),
+    )
+    add(
+        "tabularium",
+        "mapping-or-release",
+        "correct mapping or release-policy",
+        documents=("plugins/tabularium/docs/release-policy.md",),
+    )
+    frontier("tabularium")
+
+    kronos_own = (evolution["kronos"],)
+    full_ledgers = tuple(
+        sorted(path for name, path in evolution.items() if name != "kronos")
+    )
+    open_full_targets = (
+        "alexandria",
+        "anamnesis",
+        "berean",
+        "brevitas",
+        "hermes",
+        "ephoros",
+        "fiat",
+        "hypomnema",
+        "imprimatur",
+        "metron",
+        "vulgate",
+        "homologia",
+        "horos",
+        "janus",
+        "lazarus",
+        "lemma",
+        "pandects",
+        "probitas",
+        "sapheneia",
+        "synkrisis",
+        "tabularium",
+    )
+    phase_scope = ("protasis", "phylax", "ephoros", "metron", "elenchus", "hypomnema")
+    open_phase_targets = ("ephoros", "metron", "hypomnema")
+
+    def add_kronos(
+        scope: str, targets: tuple[str, ...], ledgers: tuple[str, ...]
+    ) -> None:
+        common = kronos_own + ledgers
+        add("kronos", f"{scope}__rank-only", f"{scope} rank-only pass", documents=common)
+        for target in targets:
+            add(
+                "kronos",
+                f"{scope}__dispatch-{target}",
+                f"{scope} rank plus one target dispatch",
+                documents=common
+                + (SELECTABLE_SKILL_PATHS["fiat"], SELECTABLE_SKILL_PATHS[target]),
+            )
+
+    add_kronos("full", open_full_targets, full_ledgers)
+    add_kronos(
+        "phase", open_phase_targets, tuple(evolution[name] for name in phase_scope)
+    )
+
+    fiat_protasis = (SELECTABLE_SKILL_PATHS["protasis"],)
+    phylax_states = {
+        "none": (),
+        "phylax": (SELECTABLE_SKILL_PATHS["phylax"],),
+        "phylax-proxy": (
+            SELECTABLE_SKILL_PATHS["phylax"],
+            "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
+        ),
+        "ephoros-phylax": (
+            SELECTABLE_SKILL_PATHS["ephoros"],
+            SELECTABLE_SKILL_PATHS["phylax"],
+        ),
+        "ephoros-phylax-proxy": (
+            SELECTABLE_SKILL_PATHS["ephoros"],
+            SELECTABLE_SKILL_PATHS["phylax"],
+            "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
+        ),
+    }
+    metron_states = {
+        "none": (),
+        "metron": (SELECTABLE_SKILL_PATHS["metron"],),
+        "metron-budget": (
+            SELECTABLE_SKILL_PATHS["metron"],
+            "plugins/hexaemeron/skills/metron/references/budget-check.md",
+        ),
+    }
+    elenchus_states = {
+        "none": (),
+        "elenchus": (SELECTABLE_SKILL_PATHS["elenchus"],),
+        "elenchus-contract": (
+            SELECTABLE_SKILL_PATHS["elenchus"],
+            SELECTABLE_SKILL_PATHS["fizz-sync"],
+            promises,
+        ),
+    }
+    hypomnema_states = {
+        "none": (),
+        "hypomnema": (SELECTABLE_SKILL_PATHS["hypomnema"],),
+    }
+    hermes_states = {
+        "none": (),
+        "hermes": (SELECTABLE_SKILL_PATHS["hermes"],) + hermes_runtime,
+    }
+    for worker, phylax, metron, elenchus, hypomnema, hermes in itertools.product(
+        ("inline", "mason"),
+        phylax_states,
+        metron_states,
+        elenchus_states,
+        hypomnema_states,
+        hermes_states,
+    ):
+        documents = (
+            fiat_protasis
+            + phylax_states[phylax]
+            + metron_states[metron]
+            + elenchus_states[elenchus]
+            + hypomnema_states[hypomnema]
+            + hermes_states[hermes]
+        )
+        workers: tuple[str, ...] = ()
+        if worker == "mason":
+            workers = ("plugins/hexaemeron/agents/mason.md",)
+            documents += workers
+        add(
+            "fiat",
+            f"implement__{worker}__{phylax}__{metron}__{elenchus}__{hypomnema}__{hermes}",
+            "implement directive",
+            documents=documents,
+            workers=workers,
+        )
+
+    audit_loop = "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
+    sapheneia = SELECTABLE_SKILL_PATHS["sapheneia"]
+    for worker, phylax, fix in itertools.product(
+        ("inline", "warden"), ("phylax", "phylax-proxy"), ("none", "elenchus")
+    ):
+        documents = (
+            audit_loop,
+            sapheneia,
+            SELECTABLE_SKILL_PATHS["phylax"],
+            SELECTABLE_SKILL_PATHS["ephoros"],
+            SELECTABLE_SKILL_PATHS["hypomnema"],
+        )
+        if phylax == "phylax-proxy":
+            documents += (
+                "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
+            )
+        if fix == "elenchus":
+            documents += (SELECTABLE_SKILL_PATHS["elenchus"],)
+        workers = ()
+        if worker == "warden":
+            workers = ("plugins/hexaemeron/agents/warden.md",)
+            documents += workers
+        add(
+            "fiat",
+            f"audit-nonsol__{worker}__{phylax}__fix-{fix}",
+            "non-Solidity audit round",
+            documents=documents,
+            workers=workers,
+        )
+
+    xray_reuse = "plugins/hexaemeron/skills/fiat/references/xray-reuse.md"
+    sol_aud_full = (
+        SELECTABLE_SKILL_PATHS["solidity-auditor"],
+        sol_aud_version,
+        promises,
+    ) + sol_aud_general + sol_aud_shared + sol_aud_agents
+    fizz_later = (SELECTABLE_SKILL_PATHS["fizz"], promises)
+    fizz_full_existing = (
+        SELECTABLE_SKILL_PATHS["fizz"],
+        promises,
+    ) + fizz_common + fizz_report + fizz_invariant
+    fizz_audit_states = {
+        "absent": (),
+        "later-campaign": fizz_later,
+        "full-generation": fizz_full_existing,
+    }
+    for worker, fizz_state, fix in itertools.product(
+        ("inline", "warden"),
+        fizz_audit_states,
+        ("none", "elenchus", "elenchus-contract"),
+    ):
+        documents = (
+            audit_loop,
+            xray_reuse,
+            sapheneia,
+        ) + xray_full + sol_aud_full + fizz_audit_states[fizz_state]
+        if fix == "elenchus":
+            documents += (SELECTABLE_SKILL_PATHS["elenchus"],)
+        elif fix == "elenchus-contract":
+            documents += (
+                SELECTABLE_SKILL_PATHS["elenchus"],
+                SELECTABLE_SKILL_PATHS["fizz-sync"],
+                promises,
+            )
+        workers = sol_aud_agents
+        if fizz_state == "full-generation":
+            workers += fizz_report + tuple(
+                path for path in fizz_invariant if "/agents/" in path
+            )
+        if worker == "warden":
+            workers += ("plugins/hexaemeron/agents/warden.md",)
+            documents += ("plugins/hexaemeron/agents/warden.md",)
+        add(
+            "fiat",
+            f"audit-solidity__{worker}__fizz-{fizz_state}__fix-{fix}",
+            "Solidity audit round",
+            documents=documents,
+            workers=workers,
+        )
+
+    prose_base = (
+        "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+        SELECTABLE_SKILL_PATHS["hypomnema"],
+        SELECTABLE_SKILL_PATHS["imprimatur"],
+        *imprimatur_lexicons,
+        SELECTABLE_SKILL_PATHS["vulgate"],
+    )
+    for worker, brevitas, task_issue, last_step in itertools.product(
+        ("inline", "scribe"), (False, True), (False, True), (False, True)
+    ):
+        documents = prose_base
+        workers = ()
+        if worker == "scribe":
+            workers = ("plugins/hexaemeron/agents/scribe.md",)
+            documents += workers
+        if brevitas:
+            documents += (SELECTABLE_SKILL_PATHS["brevitas"],)
+        if task_issue:
+            documents += (sapheneia,)
+        if last_step:
+            documents += (
+                "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
+            )
+        add(
+            "fiat",
+            f"prose__{worker}__brevitas-{int(brevitas)}__issue-{int(task_issue)}__last-{int(last_step)}",
+            "prose directive",
+            documents=documents,
+            workers=workers,
+        )
+
+    for worker in ("inline", "surveyor"):
+        documents = (
+            SELECTABLE_SKILL_PATHS["protasis"],
+        ) + protasis_disciplines + (
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+        ) + imprimatur_lexicons
+        workers = ()
+        if worker == "surveyor":
+            workers = ("plugins/hexaemeron/agents/surveyor.md",)
+            documents += workers
+        add(
+            "fiat",
+            f"study__{worker}",
+            "study directive",
+            documents=documents,
+            workers=workers,
+        )
+
+    fiat_other = {
+        "controller-basic": (),
+        "frontier-gate": (evolution["fiat"], versioning),
+        "marketplace-day1": (
+            "plugins/hexaemeron/skills/fiat/references/wildcat-marketplace.md",
+        ),
+        "marketplace-post-spec": (
+            "plugins/hexaemeron/skills/fiat/references/wildcat-marketplace.md",
+            "plugins/hexaemeron/skills/fiat/references/plugin-currency.md",
+        ),
+        "currency-remediation": (
+            "plugins/hexaemeron/skills/fiat/references/plugin-currency.md",
+        ),
+        "checkpoint-transfer": (
+            "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
+            "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
+        ),
+        "observation-receipt": ("docs/fiat-run-observation-binding-v1.md",),
+        "runbook": (
+            SELECTABLE_SKILL_PATHS["protasis"],
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            *imprimatur_lexicons,
+        ),
+        "close-audit": (audit_loop,),
+        "delivery": (
+            "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
+        ),
+        "integrate-task-issue": (
+            "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
+            sapheneia,
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            *imprimatur_lexicons,
+            SELECTABLE_SKILL_PATHS["vulgate"],
+        ),
+    }
+    for local_id, documents in fiat_other.items():
+        add(
+            "fiat",
+            local_id,
+            "bounded controller operation",
+            documents=documents,
+        )
+
+    profiles.sort(key=lambda item: item["id"])
+    ids = [item["id"] for item in profiles]
+    if len(ids) != len(set(ids)):
+        raise Refusal("duplicate invocation profile id")
+    counts = {
+        skill: sum(item["selected_skill"] == skill for item in profiles)
+        for skill in sorted(EXPECTED_PROFILE_COUNTS)
+    }
+    projection_sha256 = _sha256(_canonical_json(profiles))
+    return {
+        "schema": f"{SCHEMA_PREFIX}-invocation-profiles/v1",
+        "source_ref": SOURCE_REF,
+        "counts": counts,
+        "totals": {
+            "normalized_profiles": len(profiles),
+            "repository_roots": len(profiles) * 2,
+            "agent_skills_roots": len(profiles) * 2,
+            "standalone_roots": len(profiles),
+            "scenario_roots": len(profiles) * 5,
+        },
+        "projection_sha256": projection_sha256,
+        "profiles": profiles,
+    }
+
+
+def _validate_invocation_profiles(record: dict[str, Any]) -> None:
+    """Validate source spans and exact ledger identity without calling its builder."""
+    _require_fields(
+        record,
+        ("schema", "source_ref", "counts", "totals", "projection_sha256", "profiles"),
+        ("schema", "source_ref", "counts", "totals", "projection_sha256", "profiles"),
+        "invocation profiles",
+    )
+    if record["schema"] != f"{SCHEMA_PREFIX}-invocation-profiles/v1":
+        raise Refusal("invocation profile schema drift")
+    if record["source_ref"] != SOURCE_REF:
+        raise Refusal("invocation profile source ref drift")
+    profiles = record["profiles"]
+    if not isinstance(profiles, list) or len(profiles) != 519:
+        raise Refusal("invocation profile denominator drift")
+    if record["counts"] != EXPECTED_PROFILE_COUNTS:
+        raise Refusal("invocation profile per-skill count drift")
+    expected_totals = {
+        "normalized_profiles": 519,
+        "repository_roots": 1_038,
+        "agent_skills_roots": 1_038,
+        "standalone_roots": 519,
+        "scenario_roots": 2_595,
+    }
+    if record["totals"] != expected_totals:
+        raise Refusal("invocation profile route total drift")
+    if record["projection_sha256"] != _sha256(_canonical_json(profiles)):
+        raise Refusal("invocation profile projection digest mismatch")
+    if record["projection_sha256"] != EXPECTED_PROFILE_PROJECTION_SHA256:
+        raise Refusal("invocation profile source oracle mismatch")
+    ids: list[str] = []
+    observed_counts = {skill: 0 for skill in EXPECTED_PROFILE_COUNTS}
+    fiat_phases: dict[str, int] = {}
+    for index, profile in enumerate(profiles):
+        _require_fields(
+            profile,
+            (
+                "id",
+                "selected_skill",
+                "phase",
+                "applicability",
+                "branch_state",
+                "exclusive_group",
+                "required_documents",
+                "worker_prompts",
+                "fixed_inputs",
+                "source_evidence",
+            ),
+            (
+                "id",
+                "selected_skill",
+                "phase",
+                "applicability",
+                "branch_state",
+                "exclusive_group",
+                "required_documents",
+                "worker_prompts",
+                "fixed_inputs",
+                "source_evidence",
+            ),
+            f"invocation profile {index}",
+        )
+        skill = profile["selected_skill"]
+        if skill not in SELECTABLE_SKILL_PATHS or not profile["id"].startswith(f"{skill}:"):
+            raise Refusal("invocation profile selected skill drift")
+        ids.append(profile["id"])
+        observed_counts[skill] += 1
+        if skill == "fiat":
+            phase = profile["phase"]
+            fiat_phases[phase] = fiat_phases.get(phase, 0) + 1
+        documents = profile["required_documents"]
+        workers = profile["worker_prompts"]
+        if (
+            not isinstance(documents, list)
+            or documents != sorted(set(documents))
+            or SELECTABLE_SKILL_PATHS[skill] not in documents
+            or not isinstance(workers, list)
+            or workers != sorted(set(workers))
+            or not set(workers) <= set(documents)
+        ):
+            raise Refusal("invocation profile document or worker union drift")
+        for path in documents:
+            _safe_relative(path)
+            if path not in _frozen_tree_paths():
+                raise Refusal(f"invocation profile document leaves source: {path}")
+            if path in REFERENCE_ONLY_MARKDOWN:
+                raise Refusal(f"invocation profile reaches human reference: {path}")
+        expected_fixed = _profile_fixed_inputs(tuple(documents))
+        if profile["fixed_inputs"] != expected_fixed:
+            raise Refusal("invocation profile fixed input semantics drift")
+        if not isinstance(profile["source_evidence"], list) or not profile["source_evidence"]:
+            raise Refusal("invocation profile lacks source evidence")
+        for evidence in profile["source_evidence"]:
+            _require_fields(
+                evidence,
+                ("path", "start", "end", "source_sha256", "span_sha256"),
+                ("path", "start", "end", "source_sha256", "span_sha256"),
+                "invocation profile evidence",
+            )
+            data = _source_blob(evidence["path"])
+            start = evidence["start"]
+            end = evidence["end"]
+            if (
+                not isinstance(start, int)
+                or not isinstance(end, int)
+                or start < 0
+                or end <= start
+                or end > len(data)
+                or _sha256(data) != evidence["source_sha256"]
+                or _sha256(data[start:end]) != evidence["span_sha256"]
+            ):
+                raise Refusal("invocation profile source span drift")
+    if ids != sorted(set(ids)) or observed_counts != EXPECTED_PROFILE_COUNTS:
+        raise Refusal("invocation profile id product drift")
+    if fiat_phases != {
+        "implement directive": 360,
+        "Solidity audit round": 18,
+        "non-Solidity audit round": 8,
+        "prose directive": 16,
+        "study directive": 2,
+        "bounded controller operation": 11,
+    }:
+        raise Refusal("Fiat invocation profile branch product drift")
+
+
 def _reference_link(
     owner: str, target: str, reachable: set[str]
 ) -> tuple[str, str] | None:
@@ -1467,12 +2462,19 @@ def _reachability_by_root(
         for path in (edge["source"], edge["target"])
     }
     observed: dict[str, set[str]] = {path: set() for path in paths}
+    roots_by_id = {root["id"]: root for root in roots}
+    adjacency_by_root: dict[str, dict[str, set[str]]] = {
+        identifier: {} for identifier in roots_by_id
+    }
+    for edge in edges:
+        scope = edge[scope_field]
+        identifiers = roots_by_id if "*" in scope else scope
+        for identifier in identifiers:
+            adjacency_by_root[identifier].setdefault(edge["source"], set()).add(
+                edge["target"]
+            )
     for root in roots:
-        adjacency: dict[str, set[str]] = {}
-        for edge in edges:
-            scope = edge[scope_field]
-            if "*" in scope or root["id"] in scope:
-                adjacency.setdefault(edge["source"], set()).add(edge["target"])
+        adjacency = adjacency_by_root[root["id"]]
         pending = [root["node"]]
         reached: set[str] = set()
         while pending:
@@ -1486,543 +2488,381 @@ def _reachability_by_root(
     return observed
 
 
-def _validate_complete_scenarios(
-    topology: dict[str, Any],
-    skill_paths: dict[str, str],
-    document_owner: dict[str, str],
-) -> None:
-    """Refuse incomplete routes, undeclared conditions, and branch unions."""
+def _scenario_base(route: str, selected_skill: str) -> str:
+    path = SELECTABLE_SKILL_PATHS[selected_skill]
+    plugin = _plugin(path)
+    if plugin is None:
+        raise Refusal(f"profile skill has no plugin: {path}")
+    if route == "standalone":
+        return f"standalone:{plugin}:skill:{selected_skill}"
+    if route in {"repository", "agent-skills"}:
+        return f"{route}:skill:{selected_skill}"
+    raise Refusal(f"unknown scenario route: {route}")
+
+
+def _scenario_host_root(route: str, selected_skill: str) -> str:
+    if route == "repository":
+        return "repository"
+    if route == "agent-skills":
+        return "agent-skills"
+    plugin = _plugin(SELECTABLE_SKILL_PATHS[selected_skill])
+    if route != "standalone" or plugin is None:
+        raise Refusal(f"unknown scenario host route: {route}")
+    return f"standalone:{plugin}"
+
+
+def _scenario_expected_documents(
+    route: str,
+    credential: str,
+    profile: dict[str, Any],
+) -> set[str]:
+    """Derive a route's exact document union independently of graph edges."""
+    skill = profile["selected_skill"]
+    selected = SELECTABLE_SKILL_PATHS[skill]
+    plugin = _plugin(selected)
+    if plugin is None:
+        raise Refusal(f"profile skill has no plugin: {selected}")
+    runtime = f"plugins/{plugin}/AGENTS.md"
+    promise = f"plugins/{plugin}/PROMISE_MACHINE.md"
     router = ".agents/skills/promise-machine/SKILL.md"
     portable = ".agents/skills/promise-machine/PORTABLE.md"
+    expected = set(profile["required_documents"])
+    expected.update({runtime, promise, selected})
+    if route == "repository":
+        expected.update({"AGENTS.md", "SHOGGOTH.md", "PROMISE_MACHINE.md", router})
+    elif route == "agent-skills":
+        expected.update(
+            {
+                router,
+                portable,
+                "AGENTS.md",
+                "SHOGGOTH.md",
+                "PROMISE_MACHINE.md",
+            }
+        )
+    elif route != "standalone":
+        raise Refusal(f"unknown scenario route: {route}")
+    if credential == "github-contributor":
+        if route == "standalone":
+            raise Refusal("standalone profiles cannot resolve suite credentials")
+        expected.add("CONTRIBUTORS.md")
+    elif credential != "absent":
+        raise Refusal(f"unknown scenario credential: {credential}")
+    return expected
+
+
+def _validate_source_evidence(evidence: dict[str, Any], label: str) -> None:
+    _require_fields(
+        evidence,
+        ("path", "start", "end", "source_sha256", "span_sha256"),
+        ("path", "start", "end", "source_sha256", "span_sha256"),
+        label,
+    )
+    data = _source_blob(evidence["path"])
+    start = evidence["start"]
+    end = evidence["end"]
+    if (
+        not isinstance(start, int)
+        or isinstance(start, bool)
+        or not isinstance(end, int)
+        or isinstance(end, bool)
+        or start < 0
+        or end <= start
+        or end > len(data)
+        or _sha256(data) != evidence["source_sha256"]
+        or _sha256(data[start:end]) != evidence["span_sha256"]
+    ):
+        raise Refusal(f"{label} does not bind frozen source bytes")
+
+
+def _bundle_evidence(profile: dict[str, Any], target: str) -> dict[str, Any]:
+    selected = SELECTABLE_SKILL_PATHS[profile["selected_skill"]]
+    metadata = (
+        _additional_metadata().get(target)
+        or _structured_metadata().get(target)
+        or _fixed_agent_metadata().get(target)
+    )
+    if metadata is not None:
+        if target == "plugins/synkrisis/references/rules-v1.json":
+            operation = f"operation:synkrisis:{profile['branch_state'][-1]}"
+            needle = SYNKRISIS_RULE_SOURCE_NEEDLES.get(operation)
+            if needle is not None:
+                return _evidence(metadata["source_path"], needle)
+        return _evidence(metadata["source_path"], metadata["source_needle"])
+    reachable = set(profile["required_documents"]) - {target}
+    link = _reference_link(selected, target, reachable)
+    if link is not None:
+        source, needle = link
+        return _evidence(source, needle)
+    for evidence in profile["source_evidence"]:
+        if evidence["path"] == selected:
+            return evidence
+    raise Refusal(f"profile target has no source witness: {profile['id']}: {target}")
+
+
+def _bundle_relation(
+    profile: dict[str, Any], target: str
+) -> tuple[str, str, dict[str, Any] | None]:
+    document_class = _document_class(target)
+    if target in _fixed_agent_metadata():
+        return "fixed-agent-input", "agent-or-prompt", None
+    structured = _structured_metadata().get(target)
+    if structured is not None:
+        if structured["load_semantics"] == "reference-only":
+            raise Refusal(f"profile reaches reference-only input: {target}")
+        runtime_needle = structured["runtime_needle"]
+        if target == "plugins/synkrisis/references/rules-v1.json":
+            operation = f"operation:synkrisis:{profile['branch_state'][-1]}"
+            runtime_needle = SYNKRISIS_RULE_RUNTIME_NEEDLES.get(operation)
+        if structured["runtime_path"] is None or runtime_needle is None:
+            raise Refusal(f"mandatory input lacks runtime witness: {target}")
+        return (
+            "mandatory-executable",
+            "mandatory-executable",
+            _evidence(structured["runtime_path"], runtime_needle),
+        )
+    if document_class == "worker_prompt":
+        return "worker-dispatch", "agent-or-prompt", None
+    if document_class in {"frontier_ledger", "frontier_policy"}:
+        return "frontier-gate", "agent-or-prompt", None
+    if document_class == "skill_contract":
+        return "operation-branch", "agent-or-prompt", None
+    return "conditional", "agent-or-prompt", None
+
+
+def _validate_complete_scenarios(
+    topology: dict[str, Any], profiles: dict[str, Any]
+) -> None:
+    """Check the exact profile x route x credential product by reachability."""
+    _validate_invocation_profiles(profiles)
+    profile_rows = {item["id"]: item for item in profiles["profiles"]}
     root_rows = topology["scenario_roots"]
     roots = {item["id"]: item for item in root_rows}
-    if len(roots) != len(root_rows):
-        raise Refusal("duplicate scenario root")
+    if len(roots) != len(root_rows) or len(roots) != 2_595:
+        raise Refusal("scenario root denominator or identity drift")
+    expected_ids: set[str] = set()
+    for profile in profiles["profiles"]:
+        for route, credentials in (
+            ("repository", ("absent", "github-contributor")),
+            ("agent-skills", ("absent", "github-contributor")),
+            ("standalone", ("absent",)),
+        ):
+            base = _scenario_base(route, profile["selected_skill"])
+            for credential in credentials:
+                expected_ids.add(
+                    f"{base}:profile:{profile['id']}:credential:{credential}"
+                )
+    if set(roots) != expected_ids:
+        raise Refusal("scenario roots do not equal the 5N profile product")
+    route_counts = {route: 0 for route in ("repository", "agent-skills", "standalone")}
+    profile_counts = {identifier: 0 for identifier in profile_rows}
+    expected_bases: set[str] = set()
+    for identifier, root in roots.items():
+        _require_fields(
+            root,
+            (
+                "id",
+                "node",
+                "mode",
+                "base_scenario",
+                "route",
+                "selected_skill",
+                "profile_id",
+                "credential",
+                "conditions",
+                "evidence",
+            ),
+            (
+                "id",
+                "node",
+                "mode",
+                "base_scenario",
+                "route",
+                "selected_skill",
+                "profile_id",
+                "credential",
+                "conditions",
+                "evidence",
+            ),
+            f"scenario root {identifier}",
+        )
+        profile = profile_rows.get(root["profile_id"])
+        if profile is None or root["selected_skill"] != profile["selected_skill"]:
+            raise Refusal(f"scenario root has an unknown profile: {identifier}")
+        route = root["route"]
+        credential = root["credential"]
+        base = _scenario_base(route, root["selected_skill"])
+        selected = SELECTABLE_SKILL_PATHS[root["selected_skill"]]
+        plugin = _plugin(selected)
+        assert plugin is not None
+        expected_node = {
+            "repository": "AGENTS.md",
+            "agent-skills": ".agents/skills/promise-machine/SKILL.md",
+            "standalone": f"plugins/{plugin}/AGENTS.md",
+        }.get(route)
+        expected_conditions = [f"profile:{profile['id']}"]
+        if credential == "github-contributor":
+            expected_conditions.append("credential:github-contributor")
+        expected_conditions.sort()
+        if (
+            root["base_scenario"] != base
+            or root["node"] != expected_node
+            or root["mode"] != "conditional"
+            or root["conditions"] != expected_conditions
+            or identifier
+            != f"{base}:profile:{profile['id']}:credential:{credential}"
+        ):
+            raise Refusal(f"scenario root binding drift: {identifier}")
+        _scenario_expected_documents(route, credential, profile)
+        _validate_source_evidence(root["evidence"], "scenario root evidence")
+        route_counts[route] += 1
+        profile_counts[profile["id"]] += 1
+        expected_bases.add(base)
+    if route_counts != {
+        "repository": 1_038,
+        "agent-skills": 1_038,
+        "standalone": 519,
+    } or set(profile_counts.values()) != {5}:
+        raise Refusal("scenario route totals drift")
+    if len(expected_bases) != 93:
+        raise Refusal("scenario base product drift")
+
     scenario_ids = set(roots)
-    known_conditions = {
-        edge["condition"]
-        for edge in topology["scenario_edges"]
-        if edge["condition"] is not None
-    }
-    expected_templates: dict[str, dict[str, str]] = {}
-    for name, path in skill_paths.items():
-        plugin = _plugin(path)
-        if plugin is None:
-            raise Refusal(f"scenario skill has no plugin: {path}")
-        runtime = f"plugins/{plugin}/AGENTS.md"
-        expected_templates[f"agent-skills:skill:{name}"] = {
-            "node": router,
-            "route": "agent-skills",
-            "selected_skill": name,
-        }
-        expected_templates[f"repository:skill:{name}"] = {
-            "node": "AGENTS.md",
-            "route": "repository",
-            "selected_skill": name,
-        }
-        expected_templates[f"standalone:{plugin}:skill:{name}"] = {
-            "node": runtime,
-            "route": "standalone",
-            "selected_skill": name,
-        }
     for edge in topology["scenario_edges"]:
+        _require_fields(
+            edge,
+            (
+                "id",
+                "source",
+                "target",
+                "kind",
+                "load_type",
+                "reason",
+                "condition",
+                "eligible_base_scenarios",
+                "active_scenarios",
+                "evidence",
+                "runtime_evidence",
+            ),
+            (
+                "id",
+                "source",
+                "target",
+                "kind",
+                "load_type",
+                "reason",
+                "condition",
+                "eligible_base_scenarios",
+                "active_scenarios",
+                "evidence",
+                "runtime_evidence",
+            ),
+            f"scenario edge {edge.get('id', '?')}",
+        )
         scope = edge["active_scenarios"]
-        if not scope or "*" in scope or not set(scope) <= scenario_ids:
-            raise Refusal("scenario edge has a wildcard or unknown scope")
-        eligible = set(edge["eligible_base_scenarios"])
-        if not eligible or not eligible <= set(expected_templates):
-            raise Refusal("scenario edge has an unknown base scope")
-        condition = edge["condition"]
+        if scope != sorted(set(scope)) or not scope or "*" in scope or not set(scope) <= scenario_ids:
+            raise Refusal(f"scenario edge scope is open: {edge['id']}")
+        bases = sorted({roots[item]["base_scenario"] for item in scope})
+        if edge["eligible_base_scenarios"] != bases:
+            raise Refusal(f"scenario edge base scope drift: {edge['id']}")
+        if edge["condition"] is not None:
+            raise Refusal(f"scenario edge bypasses profile-ledger scoping: {edge['id']}")
+        if edge["load_type"] == "mandatory-executable":
+            if edge["runtime_evidence"] is None:
+                raise Refusal(f"mandatory edge lacks runtime evidence: {edge['id']}")
+        elif edge["runtime_evidence"] is not None:
+            raise Refusal(f"agent input claims executable runtime evidence: {edge['id']}")
+        _validate_source_evidence(edge["evidence"], "scenario edge evidence")
+        if edge["runtime_evidence"] is not None:
+            _validate_source_evidence(
+                edge["runtime_evidence"], "scenario runtime evidence"
+            )
+
+    observed = _reachability_by_root(
+        root_rows, topology["scenario_edges"], "active_scenarios"
+    )
+    reached = {
+        identifier: {path for path, scope in observed.items() if identifier in scope}
+        for identifier in roots
+    }
+    for identifier, root in roots.items():
+        profile = profile_rows[root["profile_id"]]
+        expected = _scenario_expected_documents(
+            root["route"], root["credential"], profile
+        )
+        if reached[identifier] != expected:
+            missing = sorted(expected - reached[identifier])
+            leaked = sorted(reached[identifier] - expected)
+            detail = f"missing {missing[0]}" if missing else f"leaked {leaked[0]}"
+            raise Refusal(f"scenario document union drift: {identifier}: {detail}")
+    for edge in topology["scenario_edges"]:
+        for identifier in edge["active_scenarios"]:
+            if edge["source"] not in reached[identifier] or edge["target"] not in reached[identifier]:
+                raise Refusal(f"scenario edge lacks a realizable witness: {edge['id']}")
+
+    reference_only = {item["path"] for item in topology["reference_only"]}
+    expected_reference_only = {
+        path
+        for path, metadata in _structured_metadata().items()
+        if metadata["load_semantics"] == "reference-only"
+    } | set(REFERENCE_ONLY_MARKDOWN)
+    if reference_only != expected_reference_only or len(reference_only) != 12:
+        raise Refusal("reference-only ledger drift")
+    if any(reference_only & paths for paths in reached.values()):
+        raise Refusal("reference-only evidence became scenario-reachable")
+
+    for path in _fixed_agent_metadata():
         expected_scope = {
             identifier
             for identifier, root in roots.items()
-            if root["base_scenario"] in eligible
-            and (condition is None or condition in root["conditions"])
+            if path in profile_rows[root["profile_id"]]["required_documents"]
         }
-        if set(scope) != expected_scope:
-            raise Refusal("scenario edge scope is not condition-complete")
-        if condition is not None and any(
-            condition not in roots[identifier]["conditions"] for identifier in scope
+        actual_scope = observed.get(path, set())
+        incoming = [
+            edge for edge in topology["scenario_edges"] if edge["target"] == path
+        ]
+        if actual_scope != expected_scope or not incoming or any(
+            edge["kind"] != "fixed-agent-input"
+            or edge["load_type"] != "agent-or-prompt"
+            or edge["runtime_evidence"] is not None
+            for edge in incoming
         ):
-            raise Refusal("conditional scenario edge leaks outside its condition")
-    for identifier, root in roots.items():
-        conditions = root["conditions"]
-        if conditions != sorted(set(conditions)):
-            raise Refusal(f"scenario conditions are not closed and sorted: {identifier}")
-        if not set(conditions) <= known_conditions:
-            raise Refusal(f"scenario names an unknown condition: {identifier}")
-        if (root["mode"] == "unconditional") != (not conditions):
-            raise Refusal(f"scenario mode disagrees with its conditions: {identifier}")
-        base = expected_templates.get(root["base_scenario"])
-        if (
-            base is None
-            or root["node"] != base["node"]
-            or root["route"] != base["route"]
-            or root["selected_skill"] != base["selected_skill"]
-        ):
-            raise Refusal(f"scenario has an invalid base binding: {identifier}")
-        if not conditions and identifier != root["base_scenario"]:
-            raise Refusal(f"scenario aliases an unconditional base: {identifier}")
-    observed = _reachability_by_root(
-        root_rows,
-        topology["scenario_edges"],
-        "active_scenarios",
-    )
-    reached = {
-        identifier: {path for path, scopes in observed.items() if identifier in scopes}
-        for identifier in roots
-    }
-    synkrisis_rules = "plugins/synkrisis/references/rules-v1.json"
-    synkrisis_edges = [
-        edge
-        for edge in topology["scenario_edges"]
-        if edge["target"] == synkrisis_rules
-    ]
-    if {
-        edge["condition"] for edge in synkrisis_edges
-    } != set(SYNKRISIS_RULE_OPERATIONS) or any(
-        edge["kind"] != "mandatory-executable"
-        or edge["load_type"] != "mandatory-executable"
-        for edge in synkrisis_edges
-    ):
-        raise Refusal("Synkrisis rule operations are not exact and exclusive")
-    for identifier, root in roots.items():
-        operations = set(root["conditions"]) & set(SYNKRISIS_RULE_OPERATIONS)
-        if len(operations) > 1 or (
-            operations and root["selected_skill"] != "synkrisis"
-        ):
-            raise Refusal(f"Synkrisis scenario unions rule operations: {identifier}")
-        expected_rules = (
-            root["selected_skill"] == "synkrisis" and len(operations) == 1
-        )
-        if (synkrisis_rules in reached[identifier]) != expected_rules:
-            raise Refusal(f"Synkrisis rule reachability is inexact: {identifier}")
-    for operation in SYNKRISIS_RULE_OPERATIONS:
-        if not any(
-            root["selected_skill"] == "synkrisis"
-            and operation in root["conditions"]
-            for root in roots.values()
-        ):
-            raise Refusal(f"Synkrisis rule operation has no scenario: {operation}")
-    scribe = "plugins/hexaemeron/agents/scribe.md"
-    scribe_scenarios = {
-        identifier for identifier in roots if scribe in reached[identifier]
-    }
-    if not scribe_scenarios or any(
-        roots[identifier]["selected_skill"] != "fiat"
-        for identifier in scribe_scenarios
-    ):
-        raise Refusal("Scribe reachability is not an exact Fiat phase invocation")
-    for target, metadata in _structured_metadata().items():
-        if metadata["load_semantics"] != "mandatory-executable" or target == synkrisis_rules:
+            raise Refusal(f"fixed agent input semantics drift: {path}")
+    for path, metadata in _structured_metadata().items():
+        if metadata["load_semantics"] == "reference-only":
             continue
-        owner_skill = _skill_name(metadata["canonical_owner"])
-        for identifier, root in roots.items():
-            applicable = root["selected_skill"] == owner_skill
-            if owner_skill == "imprimatur":
-                applicable = applicable or scribe in reached[identifier]
-            if (target in reached[identifier]) != applicable:
-                raise Refusal(
-                    f"mandatory executable reachability is inexact: {identifier}: {target}"
-                )
-    runtimes = {
-        f"plugins/{plugin}/AGENTS.md"
-        for plugin in {
-            _plugin(path) for path in skill_paths.values() if _plugin(path) is not None
-        }
-    }
-    expected_base_ids: set[str] = set()
-    for name, path in sorted(skill_paths.items()):
-        plugin = _plugin(path)
-        if plugin is None:
-            raise Refusal(f"scenario skill has no plugin: {path}")
-        runtime = f"plugins/{plugin}/AGENTS.md"
-        promise = f"plugins/{plugin}/PROMISE_MACHINE.md"
-        identifiers = {
-            "agent-skills": f"agent-skills:skill:{name}",
-            "repository": f"repository:skill:{name}",
-            "standalone": f"standalone:{plugin}:skill:{name}",
-        }
-        expected_base_ids.update(identifiers.values())
-        matching_ids = {
+        expected_scope = {
             identifier
             for identifier, root in roots.items()
-            if root["base_scenario"] in identifiers.values()
+            if path in profile_rows[root["profile_id"]]["required_documents"]
         }
-        selection = [
-            edge
-            for edge in topology["scenario_edges"]
-            if edge["source"] == runtime and edge["target"] == path
+        incoming = [
+            edge for edge in topology["scenario_edges"] if edge["target"] == path
         ]
-        if (
-            len(selection) != 1
-            or selection[0]["condition"] is not None
-            or set(selection[0]["active_scenarios"]) != matching_ids
+        if observed.get(path, set()) != expected_scope or not incoming or any(
+            edge["kind"] != "mandatory-executable"
+            or edge["load_type"] != "mandatory-executable"
+            or edge["runtime_evidence"] is None
+            for edge in incoming
         ):
-            raise Refusal(f"scenario selection scope is incomplete: {path}")
-        for route, base_identifier in identifiers.items():
-            expected_node = {
-                "agent-skills": router,
-                "repository": "AGENTS.md",
-                "standalone": runtime,
-            }[route]
-            route_ids = {
-                identifier
-                for identifier, root in roots.items()
-                if root["base_scenario"] == base_identifier
-            }
-            if not route_ids or any(
-                roots[identifier]["node"] != expected_node
-                or roots[identifier]["route"] != route
-                or roots[identifier]["selected_skill"] != name
-                for identifier in route_ids
-            ):
-                raise Refusal(
-                    f"scenario starts at the wrong host route: {base_identifier}"
-                )
-            for identifier in route_ids:
-                required = {runtime, promise, path}
-                forbidden = runtimes - {runtime}
-                if route == "agent-skills":
-                    required.update(
-                        {
-                            "AGENTS.md",
-                            "SHOGGOTH.md",
-                            "PROMISE_MACHINE.md",
-                            router,
-                            portable,
-                        }
-                    )
-                elif route == "repository":
-                    required.update(
-                        {"AGENTS.md", "SHOGGOTH.md", "PROMISE_MACHINE.md", router}
-                    )
-                    forbidden.add(portable)
-                else:
-                    forbidden.update(
-                        {
-                            "AGENTS.md",
-                            "SHOGGOTH.md",
-                            "PROMISE_MACHINE.md",
-                            router,
-                            portable,
-                        }
-                    )
-                missing = required - reached[identifier]
-                leaked = forbidden & reached[identifier]
-                if missing:
-                    raise Refusal(
-                        f"scenario omits required loader node: {identifier}: {min(missing)}"
-                    )
-                if leaked:
-                    raise Refusal(
-                        f"scenario crosses its route or selection: {identifier}: {min(leaked)}"
-                    )
-    covered_base_ids = {root["base_scenario"] for root in roots.values()}
-    if covered_base_ids != expected_base_ids:
-        raise Refusal("scenario roots omit the route/selection base product")
-
-    contributor_condition = "credential:github-contributor"
-    for name, path in sorted(skill_paths.items()):
-        plugin = _plugin(path)
-        if plugin is None:
-            raise Refusal(f"scenario skill has no plugin: {path}")
-        identifiers = {
-            "agent-skills": f"agent-skills:skill:{name}",
-            "repository": f"repository:skill:{name}",
-            "standalone": f"standalone:{plugin}:skill:{name}",
-        }
-        route_vectors: dict[str, frozenset[tuple[str, ...]]] = {}
-        for route, base_identifier in identifiers.items():
-            rows = [
-                root
-                for root in roots.values()
-                if root["base_scenario"] == base_identifier
-            ]
-            raw_vectors = [tuple(root["conditions"]) for root in rows]
-            if len(raw_vectors) != len(set(raw_vectors)):
-                raise Refusal(f"scenario route repeats a condition vector: {name}")
-            contributor_rows = [
-                root for root in rows if contributor_condition in root["conditions"]
-            ]
-            expected_contributor_vectors = 0 if route == "standalone" else 1
-            if len(contributor_rows) != expected_contributor_vectors:
-                raise Refusal(f"scenario credential placement is incomplete: {name}")
-            route_vectors[route] = frozenset(
-                tuple(
-                    condition
-                    for condition in root["conditions"]
-                    if condition != contributor_condition
-                )
-                for root in rows
-            )
-        if len(set(route_vectors.values())) != 1:
-            raise Refusal(f"scenario route condition product is incomplete: {name}")
-
-    for edge in topology["scenario_edges"]:
-        witnesses = (
-            set(edge["active_scenarios"])
-            & observed[edge["source"]]
-            & observed[edge["target"]]
-        )
-        if not witnesses:
-            raise Refusal(f"scenario edge has no realizable witness: {edge['id']}")
-    for identifier, root in roots.items():
-        for condition in root["conditions"]:
-            matches = [
-                edge
-                for edge in topology["scenario_edges"]
-                if edge["condition"] == condition
-                and identifier in edge["active_scenarios"]
-                and edge["source"] in reached[identifier]
-                and edge["target"] in reached[identifier]
-            ]
-            if not matches:
-                raise Refusal(
-                    f"scenario condition does not fire: {identifier}"
-                )
-
-    ariadne = skill_paths["ariadne"]
-    ariadne_operations = {
-        edge["condition"]
-        for edge in topology["scenario_edges"]
-        if edge["source"] == ariadne
-        and edge["target"] in ARIADNE_OPERATION_CONDITIONS
-    }
-    for identifier, root in roots.items():
-        count = len(set(root["conditions"]) & ariadne_operations)
-        if count > 1 or (
-            root["selected_skill"] == "ariadne" and count != 1
-        ):
-            raise Refusal(f"Ariadne scenario does not select one operation: {identifier}")
-
-    kronos = skill_paths["kronos"]
-    fiat = skill_paths["fiat"]
-    versioning = "plugins/hexaemeron/skills/VERSIONING.md"
-    kronos_ledger = "plugins/hexaemeron/skills/kronos/EVOLUTION.md"
-    candidate_ledgers = {
-        f"{prefix}/EVOLUTION.md"
-        for prefix in FRONTIER_SKILLS
-        if f"{prefix}/EVOLUTION.md" != kronos_ledger
-    }
-    kronos_base_ids = {
-        root["base_scenario"]
-        for root in roots.values()
-        if root["selected_skill"] == "kronos"
-    }
-    kronos_scenario_ids = {
-        identifier
-        for identifier, root in roots.items()
-        if root["selected_skill"] == "kronos"
-    }
-    ranking_evidence = _evidence(
-        kronos,
-        "Walk the whole scope and find every `EVOLUTION.md` beneath it",
-    )
-    host_ranking_edges = [
-        edge
-        for edge in topology["edges"]
-        if edge["source"] == kronos and edge["target"] in candidate_ledgers
-    ]
-    if (
-        len(candidate_ledgers) != 25
-        or len(kronos_base_ids) != 3
-        or len(kronos_scenario_ids) != 83
-        or len(host_ranking_edges) != len(candidate_ledgers)
-        or {edge["target"] for edge in host_ranking_edges} != candidate_ledgers
-        or any(
-            edge["kind"] != "frontier-gate"
-            or edge["load_type"] != "agent-or-prompt"
-            or edge["active_roots"] != ["*"]
-            or edge["evidence"] != ranking_evidence
-            for edge in host_ranking_edges
-        )
-    ):
-        raise Refusal("Kronos host ranking scan is incomplete")
-    scenario_ranking_edges = [
-        edge
-        for edge in topology["scenario_edges"]
-        if edge["source"] == kronos and edge["target"] in candidate_ledgers
-    ]
-    if (
-        len(scenario_ranking_edges) != len(candidate_ledgers)
-        or {edge["target"] for edge in scenario_ranking_edges}
-        != candidate_ledgers
-        or any(
-            edge["kind"] != "frontier-gate"
-            or edge["load_type"] != "agent-or-prompt"
-            or edge["condition"] is not None
-            or set(edge["eligible_base_scenarios"]) != kronos_base_ids
-            or set(edge["active_scenarios"]) != kronos_scenario_ids
-            or edge["evidence"] != ranking_evidence
-            for edge in scenario_ranking_edges
-        )
-    ):
-        raise Refusal("Kronos scenario ranking scan is incomplete")
-    for identifier in kronos_scenario_ids:
-        if (
-            reached[identifier] & candidate_ledgers != candidate_ledgers
-            or versioning not in reached[identifier]
-        ):
-            raise Refusal(f"Kronos scenario omits ranking input: {identifier}")
-    kronos_branches = [
-        edge
-        for edge in topology["scenario_edges"]
-        if edge["source"] == kronos
-        and edge["kind"] == "operation-branch"
-        and edge["target"] in set(skill_paths.values())
-    ]
-    dispatch = next(edge for edge in kronos_branches if edge["target"] == fiat)
-    for identifier, root in roots.items():
-        fired = {
-            edge["target"]
-            for edge in kronos_branches
-            if edge["condition"] in root["conditions"]
-        }
-        non_dispatch = fired - {fiat}
-        selected_kronos = root["selected_skill"] == "kronos"
-        if (
-            len(non_dispatch) > 1
-            or (non_dispatch and fiat not in fired)
-            or (selected_kronos and (len(non_dispatch) != 1 or fiat not in fired))
-        ):
-            raise Refusal(f"Kronos scenario is not one dispatched target: {identifier}")
-        if non_dispatch and dispatch["condition"] not in root["conditions"]:
-            raise Refusal(f"Kronos scenario omits Fiat dispatch: {identifier}")
-
-    # Reconstruct the expected vectors from the potential graph rather than
-    # trusting the declared roots or active scopes that are being validated.
-    base_paths: dict[str, dict[str, tuple[dict[str, Any], ...]]] = {}
-    for base_identifier, base in sorted(expected_templates.items()):
-        paths: dict[str, tuple[dict[str, Any], ...]] = {base["node"]: ()}
-        eligible_edges = sorted(
-            (
-                edge
-                for edge in topology["scenario_edges"]
-                if base_identifier in edge["eligible_base_scenarios"]
-            ),
-            key=lambda edge: edge["id"],
-        )
-        while True:
-            changed = False
-            for edge in eligible_edges:
-                prefix = paths.get(edge["source"])
-                if prefix is None:
-                    continue
-                candidate = (*prefix, edge)
-                current = paths.get(edge["target"])
-                candidate_key = (
-                    len(candidate),
-                    tuple(row["id"] for row in candidate),
-                )
-                current_key = (
-                    len(current),
-                    tuple(row["id"] for row in current),
-                ) if current is not None else None
-                if current_key is None or candidate_key < current_key:
-                    paths[edge["target"]] = candidate
-                    changed = True
-            if not changed:
-                break
-        base_paths[base_identifier] = paths
-
-    expected_vectors: dict[str, set[tuple[str, ...]]] = {
-        base_identifier: set() for base_identifier in expected_templates
-    }
-    target_conditions = {
-        edge["condition"]
-        for edge in topology["scenario_edges"]
-        if edge["source"] == kronos
-        and edge["target"] in set(skill_paths.values()) - {fiat}
-        and edge["condition"] is not None
-    }
-    for edge in topology["scenario_edges"]:
-        condition = edge["condition"]
-        if condition is None:
-            continue
-        candidates: list[
-            tuple[tuple[bool, int], str, tuple[dict[str, Any], ...]]
-        ] = []
-        desired_owner = document_owner.get(edge["target"], edge["source"])
-        for base_identifier in edge["eligible_base_scenarios"]:
-            base = expected_templates[base_identifier]
-            path = base_paths[base_identifier].get(edge["source"])
-            if path is None:
-                continue
-            path_conditions = {
-                row["condition"] for row in path if row["condition"] is not None
-            }
-            semantic_priority = (
-                skill_paths[base["selected_skill"]] != desired_owner,
-                len(path_conditions),
-            )
-            candidates.append((semantic_priority, base_identifier, path))
-        if not candidates:
-            raise Refusal(f"scenario oracle cannot reach condition: {edge['id']}")
-        best_priority = min(priority for priority, _, _ in candidates)
-        for priority, base_identifier, path in candidates:
-            if priority != best_priority:
-                continue
-            vector = {
-                row["condition"] for row in path if row["condition"] is not None
-            }
-            vector.add(condition)
-            if vector & target_conditions:
-                vector.add(dispatch["condition"])
-            expected_vectors[base_identifier].add(tuple(sorted(vector)))
-
-    ariadne_operations = {
-        edge["condition"]
-        for edge in topology["scenario_edges"]
-        if edge["source"] == skill_paths["ariadne"]
-        and edge["target"] in ARIADNE_OPERATION_CONDITIONS
-        and edge["condition"] is not None
-    }
-    canonical_ariadne_operation = min(ariadne_operations)
-    canonical_kronos_target = min(target_conditions)
-    for base_identifier, base in expected_templates.items():
-        vectors = expected_vectors[base_identifier]
-        if base["selected_skill"] == "ariadne":
-            normalized = set()
-            for vector in vectors | {()}:
-                conditions = set(vector)
-                if not conditions & ariadne_operations:
-                    conditions.add(canonical_ariadne_operation)
-                normalized.add(tuple(sorted(conditions)))
-            vectors = normalized
-        elif base["selected_skill"] == "kronos":
-            normalized = set()
-            for vector in vectors | {()}:
-                conditions = set(vector)
-                conditions.add(dispatch["condition"])
-                if not conditions & target_conditions:
-                    conditions.add(canonical_kronos_target)
-                normalized.add(tuple(sorted(conditions)))
-            vectors = normalized
-        else:
-            vectors = vectors | {()}
-        expected_vectors[base_identifier] = vectors
-
-    for base_identifier, expected in sorted(expected_vectors.items()):
-        actual = {
-            tuple(root["conditions"])
-            for root in roots.values()
-            if root["base_scenario"] == base_identifier
-        }
-        if actual != expected:
-            raise Refusal(
-                f"scenario source-derived condition product disagrees: {base_identifier}"
-            )
+            raise Refusal(f"structured input semantics drift: {path}")
 
 
-def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
+def _build_topology(
+    documents: list[dict[str, Any]], profiles: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Build exact profile-scoped routes; no edge-minimised witness fiction."""
+    if profiles is None:
+        profiles = build_invocation_profiles()
+    _validate_invocation_profiles(profiles)
     document_paths = {item["path"] for item in documents}
+    if set(SELECTABLE_SKILL_PATHS.values()) - document_paths:
+        raise Refusal("profile skills leave the manifest")
     plugins = sorted(
         {
-            _plugin(item["path"])
-            for item in documents
-            if item["document_class"] == "runtime_contract"
-            and _plugin(item["path"]) is not None
+            _plugin(path)
+            for path in SELECTABLE_SKILL_PATHS.values()
+            if _plugin(path) is not None
         }
     )
     roots = [
@@ -2043,829 +2883,291 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         },
     ]
     for plugin in plugins:
-        node = f"plugins/{plugin}/AGENTS.md"
+        runtime = f"plugins/{plugin}/AGENTS.md"
         roots.append(
             {
                 "id": f"standalone:{plugin}",
-                "node": node,
+                "node": runtime,
                 "mode": "unconditional",
-                "evidence": _evidence(node, "## Promise Machine binding"),
+                "evidence": _evidence(runtime, "## Promise Machine binding"),
             }
         )
-    edges: list[dict[str, Any]] = []
+    roots.sort(key=lambda item: item["id"])
 
-    def add_edge(
+    scenario_roots: list[dict[str, Any]] = []
+    route_evidence = {
+        "repository": _evidence("AGENTS.md", "The safe loading path is short:"),
+        "agent-skills": _evidence(
+            ".agents/skills/promise-machine/SKILL.md",
+            "Choose the runtime before routing.",
+        ),
+    }
+    for profile in profiles["profiles"]:
+        skill = profile["selected_skill"]
+        selected = SELECTABLE_SKILL_PATHS[skill]
+        plugin = _plugin(selected)
+        if plugin is None:
+            raise Refusal(f"profile skill has no plugin: {selected}")
+        runtime = f"plugins/{plugin}/AGENTS.md"
+        standalone_evidence = _evidence(runtime, "## Promise Machine binding")
+        for route, credentials in (
+            ("repository", ("absent", "github-contributor")),
+            ("agent-skills", ("absent", "github-contributor")),
+            ("standalone", ("absent",)),
+        ):
+            base = _scenario_base(route, skill)
+            node = {
+                "repository": "AGENTS.md",
+                "agent-skills": ".agents/skills/promise-machine/SKILL.md",
+                "standalone": runtime,
+            }[route]
+            for credential in credentials:
+                conditions = [f"profile:{profile['id']}"]
+                if credential == "github-contributor":
+                    conditions.append("credential:github-contributor")
+                conditions.sort()
+                scenario_roots.append(
+                    {
+                        "id": f"{base}:profile:{profile['id']}:credential:{credential}",
+                        "node": node,
+                        "mode": "conditional",
+                        "base_scenario": base,
+                        "route": route,
+                        "selected_skill": skill,
+                        "profile_id": profile["id"],
+                        "credential": credential,
+                        "conditions": conditions,
+                        "evidence": (
+                            standalone_evidence
+                            if route == "standalone"
+                            else route_evidence[route]
+                        ),
+                    }
+                )
+    scenario_roots.sort(key=lambda item: item["id"])
+    roots_by_id = {item["id"]: item for item in scenario_roots}
+    profiles_by_id = {item["id"]: item for item in profiles["profiles"]}
+    bundle_relations: dict[
+        tuple[str, str], tuple[str, str, dict[str, Any] | None, dict[str, Any]]
+    ] = {}
+    for profile in profiles["profiles"]:
+        selected = SELECTABLE_SKILL_PATHS[profile["selected_skill"]]
+        for target in profile["required_documents"]:
+            if target == selected:
+                continue
+            kind, load_type, runtime_evidence = _bundle_relation(profile, target)
+            bundle_relations[(profile["id"], target)] = (
+                kind,
+                load_type,
+                runtime_evidence,
+                _bundle_evidence(profile, target),
+            )
+
+    relations: dict[
+        tuple[str, str, str, str, bytes, bytes], dict[str, Any]
+    ] = {}
+
+    def add_relation(
+        root_id: str,
         source: str,
         target: str,
         kind: str,
         reason: str,
-        needle: str,
+        evidence: dict[str, Any],
         *,
-        evidence_path: str | None = None,
-        active_roots: tuple[str, ...] = ("*",),
         load_type: str = "agent-or-prompt",
-        runtime_path: str | None = None,
-        runtime_needle: str | None = None,
+        runtime_evidence: dict[str, Any] | None = None,
     ) -> None:
         if source not in document_paths or target not in document_paths:
-            raise Refusal("loader edge leaves the frozen corpus")
-        if (runtime_path is None) != (runtime_needle is None):
-            raise Refusal(f"incomplete loader runtime evidence: {source} -> {target}")
-        if (load_type == "mandatory-executable") != (runtime_path is not None):
-            raise Refusal(f"loader edge type disagrees with runtime: {source} -> {target}")
-        if any(
-            item["source"] == source and item["target"] == target for item in edges
-        ):
-            raise Refusal(f"duplicate loader edge: {source} -> {target}")
-        edges.append(
+            raise Refusal(f"scenario relation leaves manifest: {source} -> {target}")
+        evidence_key = _canonical_json(evidence)
+        runtime_key = b"" if runtime_evidence is None else _canonical_json(runtime_evidence)
+        key = (source, target, kind, load_type, evidence_key, runtime_key)
+        row = relations.setdefault(
+            key,
             {
-                "id": f"edge-{len(edges) + 1:03d}",
                 "source": source,
                 "target": target,
                 "kind": kind,
                 "load_type": load_type,
                 "reason": reason,
-                "active_roots": list(active_roots),
-                "evidence": _evidence(evidence_path or source, needle),
-                "runtime_evidence": (
-                    _evidence(runtime_path, runtime_needle)
-                    if runtime_path is not None and runtime_needle is not None
-                    else None
-                ),
-            }
+                "condition": None,
+                "evidence": evidence,
+                "runtime_evidence": runtime_evidence,
+                "active_scenarios": set(),
+            },
         )
+        row["active_scenarios"].add(root_id)
 
-    add_edge(
-        "AGENTS.md",
-        "SHOGGOTH.md",
-        "unconditional",
-        "the repository runtime loads the collective identity before routing",
-        "[Shoggoth collective identity](SHOGGOTH.md)",
-        active_roots=("repository", "agent-skills"),
-    )
-    if _same_repository_markdown_url(CONTRIBUTORS_CANONICAL_URL) != "CONTRIBUTORS.md":
-        raise Refusal("canonical contributor URL did not resolve to the pinned path")
-    add_edge(
-        "SHOGGOTH.md",
-        "CONTRIBUTORS.md",
-        "credential-identity",
-        "the identity contract conditionally resolves an existing credential to the canonical local roster",
-        CONTRIBUTORS_CANONICAL_URL,
-        active_roots=("repository", "agent-skills"),
-    )
-    add_edge(
-        "AGENTS.md",
-        "PROMISE_MACHINE.md",
-        "unconditional",
-        "the repository runtime requires the suite-wide law before selection",
-        "[Promise Machine contract](PROMISE_MACHINE.md)",
-        active_roots=("repository", "agent-skills"),
-    )
-    add_edge(
-        "AGENTS.md",
-        ".agents/skills/promise-machine/SKILL.md",
-        "unconditional",
-        "the repository runtime routes requests through the sole host-neutral entrypoint",
-        "`.agents/skills/promise-machine/SKILL.md`",
-        active_roots=("repository", "agent-skills"),
-    )
     router = ".agents/skills/promise-machine/SKILL.md"
-    add_edge(
-        router,
-        "AGENTS.md",
-        "conditional",
-        "the Agent Skills source-checkout path requires the root runtime before routing",
-        "../../../AGENTS.md",
-        active_roots=("repository",),
-    )
-    add_edge(
-        router,
-        "PROMISE_MACHINE.md",
-        "conditional",
-        "the Agent Skills source-checkout path loads the suite law",
-        "../../../PROMISE_MACHINE.md",
-        active_roots=("repository",),
-    )
     portable = ".agents/skills/promise-machine/PORTABLE.md"
-    add_edge(
-        router,
-        portable,
-        "installed-route",
-        "the isolated Agent Skills installation loads its dependency-closed runtime contract",
-        "read `PORTABLE.md`",
-        active_roots=("agent-skills",),
-    )
-    for target, needle in (
-        ("SHOGGOTH.md", "runtime/SHOGGOTH.md"),
-        ("PROMISE_MACHINE.md", "runtime/PROMISE_MACHINE.md"),
-        ("AGENTS.md", "runtime/AGENTS.md"),
-    ):
-        add_edge(
-            portable,
-            target,
-            "installed-route",
-            "the installed contract maps a verified runtime copy to its pinned canonical source",
-            needle,
-            active_roots=("agent-skills",),
-        )
-    for plugin in plugins:
+    for root in scenario_roots:
+        profile = profiles_by_id[root["profile_id"]]
+        selected = SELECTABLE_SKILL_PATHS[root["selected_skill"]]
+        plugin = _plugin(selected)
+        assert plugin is not None
         runtime = f"plugins/{plugin}/AGENTS.md"
-        add_edge(
-            router,
-            runtime,
-            "conditional",
-            "the router loads the runtime contract only when its selection row wins",
-            f"../../../plugins/{plugin}/AGENTS.md",
-            active_roots=("repository", "agent-skills"),
-        )
         promise = f"plugins/{plugin}/PROMISE_MACHINE.md"
-        add_edge(
+        identifier = root["id"]
+        if root["route"] == "repository":
+            for source, target, kind, needle in (
+                ("AGENTS.md", "SHOGGOTH.md", "unconditional", "[Shoggoth collective identity](SHOGGOTH.md)"),
+                ("AGENTS.md", "PROMISE_MACHINE.md", "unconditional", "[Promise Machine contract](PROMISE_MACHINE.md)"),
+                ("AGENTS.md", router, "unconditional", "`.agents/skills/promise-machine/SKILL.md`"),
+            ):
+                add_relation(
+                    identifier,
+                    source,
+                    target,
+                    kind,
+                    "the repository route follows its unconditional host contract",
+                    _evidence(source, needle),
+                )
+        elif root["route"] == "agent-skills":
+            add_relation(
+                identifier,
+                router,
+                portable,
+                "installed-route",
+                "the isolated route loads its dependency-closed runtime contract",
+                _evidence(router, "read `PORTABLE.md`"),
+            )
+            for target, needle in (
+                ("SHOGGOTH.md", "runtime/SHOGGOTH.md"),
+                ("PROMISE_MACHINE.md", "runtime/PROMISE_MACHINE.md"),
+                ("AGENTS.md", "runtime/AGENTS.md"),
+            ):
+                add_relation(
+                    identifier,
+                    portable,
+                    target,
+                    "installed-route",
+                    "the portable runtime maps to its pinned canonical source",
+                    _evidence(portable, needle),
+                )
+        if root["credential"] == "github-contributor":
+            add_relation(
+                identifier,
+                "SHOGGOTH.md",
+                "CONTRIBUTORS.md",
+                "credential-identity",
+                "the checkout route resolves the supplied contributor credential",
+                _evidence("SHOGGOTH.md", CONTRIBUTORS_CANONICAL_URL),
+            )
+        if root["route"] != "standalone":
+            add_relation(
+                identifier,
+                router,
+                runtime,
+                "conditional",
+                "the router loads the selected plugin runtime",
+                _evidence(router, f"../../../plugins/{plugin}/AGENTS.md"),
+            )
+        add_relation(
+            identifier,
             runtime,
             promise,
             "unconditional",
-            "a standalone plugin runtime loads its generated suite-law copy",
-            "[Promise Machine contract](PROMISE_MACHINE.md)",
+            "the plugin runtime loads its suite-law copy",
+            _evidence(runtime, "[Promise Machine contract](PROMISE_MACHINE.md)"),
         )
-        skills = sorted(
-            item["path"]
-            for item in documents
-            if item["document_class"] == "skill_contract"
-            and _plugin(item["path"]) == plugin
+        relative = PurePosixPath(selected).relative_to(
+            PurePosixPath("plugins") / plugin
+        ).as_posix()
+        add_relation(
+            identifier,
+            runtime,
+            selected,
+            "conditional",
+            "the runtime loads exactly the selected canonical skill",
+            _evidence(runtime, relative),
         )
-        for skill in skills:
-            relative = (
-                PurePosixPath(skill)
-                .relative_to(PurePosixPath("plugins") / plugin)
-                .as_posix()
+        for target in profile["required_documents"]:
+            if target == selected:
+                continue
+            kind, load_type, runtime_evidence, evidence = bundle_relations[
+                (profile["id"], target)
+            ]
+            add_relation(
+                identifier,
+                selected,
+                target,
+                kind,
+                "the source-owned invocation profile requires this document",
+                evidence,
+                load_type=load_type,
+                runtime_evidence=runtime_evidence,
             )
-            add_edge(
-                runtime,
-                skill,
-                "conditional",
-                "the plugin selection table loads exactly the selected canonical skill",
-                relative,
-            )
-    for path, metadata in sorted(_additional_metadata().items()):
-        document_class = metadata["document_class"]
-        if document_class in (
-            "identity_contract",
-            "identity_roster",
-            "router_install_contract",
-        ):
-            continue
-        source = metadata["source_path"]
-        add_edge(
-            source,
-            path,
-            metadata["edge_kind"],
-            "the source-directed admission requires this Markdown load",
-            metadata["source_needle"],
-        )
-    for prefix in FRONTIER_SKILLS:
-        ledger = f"{prefix}/EVOLUTION.md"
-        add_edge(
-            ledger,
-            "plugins/hexaemeron/skills/VERSIONING.md",
-            "frontier-gate",
-            "the admitted frontier ledger requires the shared versioning policy",
-            "VERSIONING.md",
-        )
-    kronos_skill = "plugins/hexaemeron/skills/kronos/SKILL.md"
-    for prefix in FRONTIER_SKILLS:
-        ledger = f"{prefix}/EVOLUTION.md"
-        if ledger == "plugins/hexaemeron/skills/kronos/EVOLUTION.md":
-            continue
-        add_edge(
-            kronos_skill,
-            ledger,
-            "frontier-gate",
-            "Kronos reads every governed non-Kronos frontier ledger before ranking",
-            "Walk the whole scope and find every `EVOLUTION.md` beneath it",
-        )
-    references_by_owner: dict[str, list[str]] = {}
-    for item in documents:
-        if item["document_class"] == "markdown_reference":
-            references_by_owner.setdefault(item["canonical_owner"], []).append(
-                item["path"]
-            )
-    for owner, references in sorted(references_by_owner.items()):
-        reachable = {owner}
-        pending = set(references)
-        while pending:
-            progress = False
-            for target in sorted(pending):
-                link = _reference_link(owner, target, reachable)
-                if link is None:
-                    continue
-                source, needle = link
-                add_edge(
-                    source,
-                    target,
-                    "conditional",
-                    "the selected skill or an already linked reference directs this load",
-                    needle,
-                )
-                reachable.add(target)
-                pending.remove(target)
-                progress = True
-                break
-            if not progress:
-                raise Refusal(f"unproved reference loader edge: {sorted(pending)[0]}")
-    reference_only: list[dict[str, Any]] = []
-    for target, metadata in sorted(_structured_metadata().items()):
-        if metadata["load_semantics"] == "reference-only":
-            reference_only.append(
-                {
-                    "path": target,
-                    "canonical_owner": metadata["canonical_owner"],
-                    "reason": (
-                        "the immutable schema is admitted as structured authority "
-                        "but no mandatory default executable loads it"
-                    ),
-                    "source_evidence": _evidence(
-                        metadata["source_path"], metadata["source_needle"]
-                    ),
-                }
-            )
-            continue
-        runtime_path = metadata["runtime_path"]
-        runtime_needle = metadata["runtime_needle"]
-        if runtime_path is None or runtime_needle is None:
-            raise Refusal(f"mandatory executable lacks runtime evidence: {target}")
-        add_edge(
-            metadata["canonical_owner"],
-            target,
-            "mandatory-executable",
-            "the selected skill's mandatory default executable reads this frozen input",
-            metadata["source_needle"],
-            evidence_path=metadata["source_path"],
-            load_type="mandatory-executable",
-            runtime_path=runtime_path,
-            runtime_needle=runtime_needle,
-        )
-    skill_paths: dict[str, str] = {}
-    for item in documents:
-        if item["document_class"] != "skill_contract":
-            continue
-        name = _skill_name(item["path"])
-        if name in skill_paths:
-            raise Refusal(f"duplicate scenario skill name: {name}")
-        skill_paths[name] = item["path"]
 
-    selectable_skills = {
-        name: path for name, path in skill_paths.items() if path != router
-    }
-    scenario_roots: list[dict[str, Any]] = []
-    skill_scenarios: dict[str, tuple[str, ...]] = {}
-    plugin_scenarios: dict[str, list[str]] = {plugin: [] for plugin in plugins}
-    route_scenarios: dict[str, list[str]] = {
-        "repository": [],
-        "agent-skills": [],
-        "standalone": [],
-    }
-    for name, path in sorted(selectable_skills.items()):
-        plugin = _plugin(path)
-        if plugin is None or plugin not in plugin_scenarios:
-            raise Refusal(f"scenario skill has no runtime contract: {path}")
-        runtime = f"plugins/{plugin}/AGENTS.md"
-        identifiers = (
-            f"agent-skills:skill:{name}",
-            f"repository:skill:{name}",
-            f"standalone:{plugin}:skill:{name}",
-        )
-        skill_scenarios[name] = identifiers
-        for route, identifier, node, evidence_path, needle in (
-            (
-                "agent-skills",
-                identifiers[0],
-                router,
-                router,
-                "Choose the runtime before routing.",
-            ),
-            (
-                "repository",
-                identifiers[1],
-                "AGENTS.md",
-                "AGENTS.md",
-                "The safe loading path is short:",
-            ),
-            (
-                "standalone",
-                identifiers[2],
-                runtime,
-                runtime,
-                "## Promise Machine binding",
-            ),
-        ):
-            scenario_roots.append(
-                {
-                    "id": identifier,
-                    "node": node,
-                    "mode": "unconditional",
-                    "base_scenario": identifier,
-                    "route": route,
-                    "selected_skill": name,
-                    "conditions": [],
-                    "evidence": _evidence(evidence_path, needle),
-                }
-            )
-            route_scenarios[route].append(identifier)
-            plugin_scenarios[plugin].append(identifier)
-    scenario_roots.sort(key=lambda item: item["id"])
-    base_scenario_ids = {item["id"] for item in scenario_roots}
     scenario_edges: list[dict[str, Any]] = []
-
-    def add_scenario_edge(
-        source: str,
-        target: str,
-        kind: str,
-        reason: str,
-        needle: str,
-        *,
-        evidence_path: str | None = None,
-        active_scenarios: Iterable[str] = ("*",),
-        conditioned: bool = True,
-        condition_name: str | None = None,
-        load_type: str = "agent-or-prompt",
-        runtime_path: str | None = None,
-        runtime_needle: str | None = None,
-    ) -> None:
-        if source not in document_paths or target not in document_paths:
-            raise Refusal("scenario edge leaves the frozen corpus")
-        if (runtime_path is None) != (runtime_needle is None):
-            raise Refusal(f"incomplete scenario runtime evidence: {source} -> {target}")
-        if (load_type == "mandatory-executable") != (runtime_path is not None):
-            raise Refusal(f"scenario edge type disagrees with runtime: {source} -> {target}")
-        scope = sorted(set(active_scenarios))
-        if not scope or ("*" in scope and scope != ["*"]):
-            raise Refusal("scenario edge has an invalid scope")
-        if scope == ["*"]:
-            scope = sorted(base_scenario_ids)
-        if not set(scope) <= base_scenario_ids:
-            raise Refusal("scenario edge names an unknown scenario")
-        edge_id = f"scenario-edge-{len(scenario_edges) + 1:03d}"
-        condition = None
-        if conditioned:
-            condition = condition_name or f"{kind}:{edge_id}:{target}"
-        if any(
-            item["source"] == source
-            and item["target"] == target
-            and item["condition"] == condition
-            for item in scenario_edges
-        ):
-            raise Refusal(
-                f"duplicate scenario edge: {source} -> {target}: {condition}"
-            )
+    for index, (_, row) in enumerate(sorted(relations.items()), start=1):
+        scope = sorted(row.pop("active_scenarios"))
         scenario_edges.append(
             {
-                "id": edge_id,
-                "source": source,
-                "target": target,
-                "kind": kind,
-                "load_type": load_type,
-                "reason": reason,
-                "condition": condition,
-                "_base_scenarios": scope,
-                "evidence": _evidence(evidence_path or source, needle),
-                "runtime_evidence": (
-                    _evidence(runtime_path, runtime_needle)
-                    if runtime_path is not None and runtime_needle is not None
-                    else None
+                "id": f"scenario-edge-{index:05d}",
+                **row,
+                "eligible_base_scenarios": sorted(
+                    {roots_by_id[item]["base_scenario"] for item in scope}
+                ),
+                "active_scenarios": scope,
+            }
+        )
+
+    host_relation_rows: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    for edge in scenario_edges:
+        key = (edge["source"], edge["target"], edge["kind"], edge["load_type"])
+        candidate = host_relation_rows.get(key)
+        if candidate is None:
+            candidate = {
+                "source": edge["source"],
+                "target": edge["target"],
+                "kind": edge["kind"],
+                "load_type": edge["load_type"],
+                "reason": edge["reason"],
+                "evidence": edge["evidence"],
+                "runtime_evidence": edge["runtime_evidence"],
+                "active_roots": set(),
+            }
+            host_relation_rows[key] = candidate
+        for identifier in edge["active_scenarios"]:
+            root = roots_by_id[identifier]
+            candidate["active_roots"].add(
+                _scenario_host_root(root["route"], root["selected_skill"])
+            )
+    edges: list[dict[str, Any]] = []
+    for index, (_, row) in enumerate(sorted(host_relation_rows.items()), start=1):
+        edges.append(
+            {
+                "id": f"edge-{index:04d}",
+                **{key: value for key, value in row.items() if key != "active_roots"},
+                "active_roots": sorted(row["active_roots"]),
+            }
+        )
+
+    reference_only: list[dict[str, Any]] = []
+    for path, metadata in sorted(_structured_metadata().items()):
+        if metadata["load_semantics"] != "reference-only":
+            continue
+        reference_only.append(
+            {
+                "path": path,
+                "canonical_owner": metadata["canonical_owner"],
+                "reason": "the schema is authority but no production invocation reads it",
+                "source_evidence": _evidence(
+                    metadata["source_path"], metadata["source_needle"]
                 ),
             }
         )
-
-    checkout_scenarios = (
-        *route_scenarios["repository"],
-        *route_scenarios["agent-skills"],
-    )
-    for source, target, kind, needle in (
-        ("AGENTS.md", "SHOGGOTH.md", "unconditional", "SHOGGOTH.md"),
-        ("SHOGGOTH.md", "CONTRIBUTORS.md", "credential-identity", "CONTRIBUTORS.md"),
-        ("AGENTS.md", "PROMISE_MACHINE.md", "unconditional", "PROMISE_MACHINE.md"),
-        ("AGENTS.md", router, "unconditional", router),
-    ):
-        add_scenario_edge(
-            source,
-            target,
-            kind,
-            "the shared scenario follows the source-directed load",
-            needle,
-            active_scenarios=checkout_scenarios,
-            conditioned=kind == "credential-identity",
-            condition_name=(
-                "credential:github-contributor"
-                if kind == "credential-identity"
-                else None
-            ),
-        )
-    add_scenario_edge(
-        router,
-        portable,
-        "installed-route",
-        "the isolated Agent Skills scenario loads its dependency-closed runtime contract",
-        "PORTABLE.md",
-        active_scenarios=route_scenarios["agent-skills"],
-        conditioned=False,
-    )
-    for target, needle in (
-        ("SHOGGOTH.md", "runtime/SHOGGOTH.md"),
-        ("PROMISE_MACHINE.md", "runtime/PROMISE_MACHINE.md"),
-        ("AGENTS.md", "runtime/AGENTS.md"),
-    ):
-        add_scenario_edge(
-            portable,
-            target,
-            "installed-route",
-            "the installed scenario maps a verified runtime copy to its pinned canonical source",
-            needle,
-            active_scenarios=route_scenarios["agent-skills"],
-            conditioned=False,
-        )
-    for plugin in plugins:
-        runtime = f"plugins/{plugin}/AGENTS.md"
-        routed_scenarios = [
-            identifier
-            for identifier in plugin_scenarios[plugin]
-            if not identifier.startswith("standalone:")
-        ]
-        add_scenario_edge(
-            router,
-            runtime,
-            "conditional",
-            "the route loads only the runtime contract for the selected skill",
-            f"../../../plugins/{plugin}/AGENTS.md",
-            active_scenarios=routed_scenarios,
-            conditioned=False,
-        )
-        add_scenario_edge(
-            runtime,
-            f"plugins/{plugin}/PROMISE_MACHINE.md",
-            "unconditional",
-            "the plugin scenario loads its suite-law copy",
-            "PROMISE_MACHINE.md",
-            active_scenarios=plugin_scenarios[plugin],
-            conditioned=False,
-        )
-    for name, path in sorted(selectable_skills.items()):
-        plugin = _plugin(path)
-        assert plugin is not None
-        runtime = f"plugins/{plugin}/AGENTS.md"
-        relative = (
-            PurePosixPath(path)
-            .relative_to(PurePosixPath("plugins") / plugin)
-            .as_posix()
-        )
-        add_scenario_edge(
-            runtime,
-            path,
-            "conditional",
-            "the runtime loads exactly the selected canonical skill",
-            relative,
-            active_scenarios=skill_scenarios[name],
-            conditioned=False,
-        )
-    owned_targets: dict[str, list[tuple[str, dict[str, str]]]] = {}
-    for target, metadata in sorted(_additional_metadata().items()):
-        if metadata["document_class"] in (
-            "identity_contract",
-            "identity_roster",
-            "router_install_contract",
-        ):
-            continue
-        owned_targets.setdefault(metadata["canonical_owner"], []).append(
-            (target, metadata)
-        )
-    for owner, targets in sorted(owned_targets.items()):
-        for target, metadata in targets:
-            source = metadata["source_path"]
-            if source != owner and source not in document_paths:
-                raise Refusal(f"admission anchor leaves corpus: {source}")
-            add_scenario_edge(
-                source,
-                target,
-                metadata["edge_kind"],
-                "the selected workflow follows its admitted source directive",
-                metadata["source_needle"],
-                condition_name=ARIADNE_OPERATION_CONDITIONS.get(target),
-            )
-    for ledger in (f"{prefix}/EVOLUTION.md" for prefix in FRONTIER_SKILLS):
-        add_scenario_edge(
-            ledger,
-            "plugins/hexaemeron/skills/VERSIONING.md",
-            "frontier-gate",
-            "the frontier ledger requires the shared versioning policy",
-            "VERSIONING.md",
-            conditioned=False,
-        )
-    for owner, references in sorted(references_by_owner.items()):
-        reachable = {owner}
-        pending = set(references)
-        while pending:
-            for target in sorted(pending):
-                link = _reference_link(owner, target, reachable)
-                if link is None:
-                    continue
-                source, needle = link
-                add_scenario_edge(
-                    source,
-                    target,
-                    "conditional",
-                    "the selected skill recursively follows a required reference",
-                    needle,
-                )
-                reachable.add(target)
-                pending.remove(target)
-                break
-            else:
-                raise Refusal(
-                    f"unproved scenario reference edge: {sorted(pending)[0]}"
-                )
-
-    for target, metadata in sorted(_structured_metadata().items()):
-        if metadata["load_semantics"] == "reference-only":
-            continue
-        runtime_path = metadata["runtime_path"]
-        runtime_needle = metadata["runtime_needle"]
-        if runtime_path is None or runtime_needle is None:
-            raise Refusal(f"mandatory executable lacks runtime evidence: {target}")
-        conditions: tuple[str | None, ...] = (
-            SYNKRISIS_RULE_OPERATIONS
-            if target == "plugins/synkrisis/references/rules-v1.json"
-            else (None,)
-        )
-        owner_skill = _skill_name(metadata["canonical_owner"])
-        invocation_bases = set(skill_scenarios[owner_skill])
-        if owner_skill == "imprimatur":
-            invocation_bases.update(skill_scenarios["fiat"])
-        for condition in conditions:
-            scenario_runtime_needle = (
-                SYNKRISIS_RULE_RUNTIME_NEEDLES[condition]
-                if condition is not None
-                else runtime_needle
-            )
-            scenario_source_needle = (
-                SYNKRISIS_RULE_SOURCE_NEEDLES[condition]
-                if condition is not None
-                else metadata["source_needle"]
-            )
-            add_scenario_edge(
-                metadata["canonical_owner"],
-                target,
-                "mandatory-executable",
-                "the applicable operation's mandatory executable reads this frozen input",
-                scenario_source_needle,
-                evidence_path=metadata["source_path"],
-                active_scenarios=invocation_bases,
-                conditioned=condition is not None,
-                condition_name=condition,
-                load_type="mandatory-executable",
-                runtime_path=runtime_path,
-                runtime_needle=scenario_runtime_needle,
-            )
-
-    fiat = "plugins/hexaemeron/skills/fiat/SKILL.md"
-    for name in ("protasis", "phylax", "ephoros", "metron", "elenchus", "hypomnema"):
-        add_scenario_edge(
-            fiat,
-            skill_paths[name],
-            "operation-branch",
-            "Fiat delegates the named phase content contract",
-            f"[{name}]",
-        )
-    for name in ("x-ray", "solidity-auditor", "fizz"):
-        add_scenario_edge(
-            fiat,
-            skill_paths[name],
-            "operation-branch",
-            "Fiat conditionally loads the vendored security suite",
-            f"`{name}`",
-        )
-    fizz = skill_paths["fizz"]
-    add_scenario_edge(
-        fizz,
-        skill_paths["x-ray"],
-        "operation-branch",
-        "Fizz requires X-Ray before its analyzer fallback",
-        "x-ray Acquisition Protocol",
-    )
-    kronos = skill_paths["kronos"]
-    for prefix in FRONTIER_SKILLS:
-        ledger = f"{prefix}/EVOLUTION.md"
-        if ledger == "plugins/hexaemeron/skills/kronos/EVOLUTION.md":
-            continue
-        add_scenario_edge(
-            kronos,
-            ledger,
-            "frontier-gate",
-            "Kronos reads every governed non-Kronos frontier ledger before ranking",
-            "Walk the whole scope and find every `EVOLUTION.md` beneath it",
-            active_scenarios=skill_scenarios["kronos"],
-            conditioned=False,
-        )
-    add_scenario_edge(
-        kronos,
-        fiat,
-        "operation-branch",
-        "Kronos dispatches an accepted selection through Fiat",
-        "dispatches that exact job to Fiat",
-        condition_name="nested-selection:kronos:dispatch-fiat",
-    )
-    for prefix in FRONTIER_SKILLS:
-        target = f"{prefix}/SKILL.md"
-        if target in (kronos, fiat):
-            continue
-        add_scenario_edge(
-            kronos,
-            target,
-            "operation-branch",
-            "Kronos reads the dynamically selected first-party skill",
-            "Read the selected skill's canonical instructions",
-            condition_name=f"nested-selection:kronos:target:{_skill_name(target)}",
-        )
-    scribe = "plugins/hexaemeron/agents/scribe.md"
-    for name, needle in (("imprimatur", "imprimatur.py"), ("vulgate", "vulgate/SKILL.md")):
-        add_scenario_edge(
-            scribe,
-            skill_paths[name],
-            "operation-branch",
-            "the prose worker loads its required mask",
-            needle,
-            conditioned=False,
-        )
-    warden = "plugins/hexaemeron/agents/warden.md"
-    for name, needle in (
-        ("x-ray", "x-ray/SKILL.md"),
-        ("solidity-auditor", "solidity-auditor/SKILL.md"),
-        ("fizz", "fizz/SKILL.md"),
-        ("sapheneia", "sapheneia:sapheneia"),
-    ):
-        add_scenario_edge(
-            warden,
-            skill_paths[name],
-            "operation-branch",
-            "the audit worker follows its required review or filter contract",
-            needle,
-        )
-
-    base_roots = list(scenario_roots)
-    route_order = {"repository": 0, "agent-skills": 1, "standalone": 2}
-    document_owner = {
-        item["path"]: item["canonical_owner"] for item in documents
-    }
-    paths_by_base: dict[str, dict[str, list[dict[str, Any]]]] = {}
-    for root in base_roots:
-        adjacency: dict[str, list[dict[str, Any]]] = {}
-        for edge in scenario_edges:
-            if root["id"] in edge["_base_scenarios"]:
-                adjacency.setdefault(edge["source"], []).append(edge)
-        for rows in adjacency.values():
-            rows.sort(key=lambda item: item["id"])
-        paths: dict[str, list[dict[str, Any]]] = {root["node"]: []}
-        pending = [root["node"]]
-        cursor = 0
-        while cursor < len(pending):
-            node = pending[cursor]
-            cursor += 1
-            for edge in adjacency.get(node, []):
-                if edge["target"] in paths:
-                    continue
-                paths[edge["target"]] = [*paths[node], edge]
-                pending.append(edge["target"])
-        paths_by_base[root["id"]] = paths
-
-    kronos_dispatch = next(
-        edge
-        for edge in scenario_edges
-        if edge["source"] == kronos and edge["target"] == fiat
-    )
-    kronos_target_conditions = {
-        edge["condition"]
-        for edge in scenario_edges
-        if edge["source"] == kronos
-        and edge["target"] in set(skill_paths.values()) - {fiat}
-    }
-    vectors_by_base: dict[str, set[tuple[str, ...]]] = {
-        root["id"]: set() for root in base_roots
-    }
-    for edge in scenario_edges:
-        condition = edge["condition"]
-        if condition is None:
-            continue
-        candidates: list[
-            tuple[tuple[int, int, int, int, str], dict[str, Any], list[dict[str, Any]]]
-        ] = []
-        desired_owner = document_owner.get(edge["target"], edge["source"])
-        for root in base_roots:
-            if root["id"] not in edge["_base_scenarios"]:
-                continue
-            path = paths_by_base[root["id"]].get(edge["source"])
-            if path is None:
-                continue
-            path_conditions = {
-                row["condition"] for row in path if row["condition"] is not None
+    for path, (source, needle, reason) in sorted(REFERENCE_ONLY_MARKDOWN.items()):
+        reference_only.append(
+            {
+                "path": path,
+                "canonical_owner": _canonical_owner(path, "markdown_reference"),
+                "reason": reason,
+                "source_evidence": _evidence(source, needle),
             }
-            selected_path = selectable_skills[root["selected_skill"]]
-            priority = (
-                selected_path != desired_owner,
-                len(path_conditions),
-                route_order[root["route"]],
-                len(path),
-                root["id"],
-            )
-            candidates.append((priority, root, path))
-        if not candidates:
-            raise Refusal(f"conditional scenario edge is unreachable: {edge['id']}")
-        best_semantic_priority = min(priority[:2] for priority, _, _ in candidates)
-        for priority, root, path in sorted(candidates, key=lambda item: item[0]):
-            if priority[:2] != best_semantic_priority:
-                continue
-            vector = {
-                row["condition"] for row in path if row["condition"] is not None
-            }
-            vector.add(condition)
-            if vector & kronos_target_conditions:
-                dispatch_condition = kronos_dispatch["condition"]
-                if dispatch_condition is None:
-                    raise Refusal("Kronos dispatch edge is not conditional")
-                vector.add(dispatch_condition)
-            vectors_by_base[root["id"]].add(tuple(sorted(vector)))
-
-    ariadne_skill = skill_paths["ariadne"]
-    ariadne_operation_conditions = {
-        edge["condition"]
-        for edge in scenario_edges
-        if edge["source"] == ariadne_skill
-        and edge["target"]
-        in {
-            path
-            for path, owner, _, _ in OPERATION_REFERENCES
-            if owner == ariadne_skill
-        }
-    }
-    canonical_ariadne_condition = min(ariadne_operation_conditions)
-    canonical_kronos_target = min(kronos_target_conditions)
-    dispatch_condition = kronos_dispatch["condition"]
-    if dispatch_condition is None:
-        raise Refusal("Kronos dispatch edge is not conditional")
-    for root in base_roots:
-        vectors = vectors_by_base[root["id"]]
-        if root["selected_skill"] == "ariadne":
-            normalised = set()
-            for vector in vectors | {()}:
-                conditions = set(vector)
-                if not conditions & ariadne_operation_conditions:
-                    conditions.add(canonical_ariadne_condition)
-                normalised.add(tuple(sorted(conditions)))
-            vectors_by_base[root["id"]] = normalised
-        elif root["selected_skill"] == "kronos":
-            normalised = set()
-            for vector in vectors | {()}:
-                conditions = set(vector)
-                conditions.add(dispatch_condition)
-                if not conditions & kronos_target_conditions:
-                    conditions.add(canonical_kronos_target)
-                normalised.add(tuple(sorted(conditions)))
-            vectors_by_base[root["id"]] = normalised
-
-    roots_by_id = {root["id"]: root for root in base_roots}
-    scenario_roots = [
-        root
-        for root in base_roots
-        if root["selected_skill"] not in {"ariadne", "kronos"}
-    ]
-    for base_identifier in sorted(vectors_by_base):
-        base = roots_by_id[base_identifier]
-        for index, conditions in enumerate(
-            sorted(vectors_by_base[base_identifier]), start=1
-        ):
-            identifier = f"{base_identifier}:conditions:{index:03d}"
-            scenario_roots.append(
-                {
-                    "id": identifier,
-                    "node": base["node"],
-                    "mode": "conditional",
-                    "base_scenario": base_identifier,
-                    "route": base["route"],
-                    "selected_skill": base["selected_skill"],
-                    "conditions": list(conditions),
-                    "evidence": base["evidence"],
-                }
-            )
-    scenario_roots.sort(key=lambda item: item["id"])
-    for edge in scenario_edges:
-        base_scope = sorted(set(edge.pop("_base_scenarios")))
-        edge["eligible_base_scenarios"] = base_scope
-        base_scope_set = set(base_scope)
-        condition = edge["condition"]
-        edge["active_scenarios"] = sorted(
-            root["id"]
-            for root in scenario_roots
-            if root["base_scenario"] in base_scope_set
-            and (condition is None or condition in root["conditions"])
         )
-        if not edge["active_scenarios"]:
-            raise Refusal(f"scenario edge has no declared invocation: {edge['id']}")
+    reference_only.sort(key=lambda item: item["path"])
     topology = {
         "roots": roots,
         "edges": edges,
@@ -2873,14 +3175,19 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         "scenario_edges": scenario_edges,
         "reference_only": reference_only,
     }
-    _validate_complete_scenarios(topology, selectable_skills, document_owner)
+    _validate_complete_scenarios(topology, profiles)
     return topology
 
 
-def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
+def build_loader_graph(
+    manifest: dict[str, Any], profiles: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    if profiles is None:
+        profiles = build_invocation_profiles()
+    _validate_invocation_profiles(profiles)
     manifest_digest = _artifact_digest(manifest)
     documents = manifest["documents"]
-    topology = _build_topology(documents)
+    topology = _build_topology(documents, profiles)
     observed_roots = _reachability_by_root(
         topology["roots"], topology["edges"], "active_roots"
     )
@@ -2902,12 +3209,22 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
             )
     by_path = {item["path"]: item for item in documents}
     reference_only_paths = {item["path"] for item in topology["reference_only"]}
-    if reference_only_paths != {
+    if reference_only_paths != ({
         path
         for path, metadata in _structured_metadata().items()
         if metadata["load_semantics"] == "reference-only"
-    }:
+    } | set(REFERENCE_ONLY_MARKDOWN)):
         raise Refusal("reference-only graph ledger is incomplete")
+    for path in REFERENCE_ONLY_MARKDOWN:
+        document = by_path[path]
+        if (
+            document["load_semantics"] != "reference-only"
+            or document["loader_roots"]
+            or document["scenario_reachability"]
+            or any(edge["target"] == path for edge in topology["edges"])
+            or any(edge["target"] == path for edge in topology["scenario_edges"])
+        ):
+            raise Refusal(f"human reference became production-reachable: {path}")
     for path, metadata in _structured_metadata().items():
         document = by_path[path]
         host_edges = [edge for edge in topology["edges"] if edge["target"] == path]
@@ -2920,43 +3237,44 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
             ]:
                 raise Refusal(f"reference-only graph reachability is nonzero: {path}")
             continue
-        expected_scenarios = (
-            2 if path == "plugins/synkrisis/references/rules-v1.json" else 1
-        )
-        if len(host_edges) != 1 or len(scenario_edges) != expected_scenarios:
+        if not host_edges or not scenario_edges:
             raise Refusal(f"mandatory executable graph is incomplete: {path}")
-        for edge in host_edges:
-            if (
-                edge["source"] != metadata["canonical_owner"]
-                or edge["kind"] != "mandatory-executable"
-                or edge["load_type"] != "mandatory-executable"
-                or edge["evidence"] != document["source_evidence"]
-                or edge["runtime_evidence"] != document["runtime_evidence"]
-            ):
-                raise Refusal(f"mandatory executable evidence drift: {path}")
-        for edge in scenario_edges:
-            expected_runtime = document["runtime_evidence"]
-            expected_source = document["source_evidence"]
-            if path == "plugins/synkrisis/references/rules-v1.json":
-                condition = edge["condition"]
-                if condition not in SYNKRISIS_RULE_RUNTIME_NEEDLES:
-                    raise Refusal("Synkrisis scenario lacks operation runtime proof")
-                expected_runtime = _evidence(
-                    metadata["runtime_path"],
-                    SYNKRISIS_RULE_RUNTIME_NEEDLES[condition],
-                )
-                expected_source = _evidence(
-                    metadata["source_path"],
-                    SYNKRISIS_RULE_SOURCE_NEEDLES[condition],
-                )
-            if (
-                edge["source"] != metadata["canonical_owner"]
-                or edge["kind"] != "mandatory-executable"
-                or edge["load_type"] != "mandatory-executable"
-                or edge["evidence"] != expected_source
-                or edge["runtime_evidence"] != expected_runtime
-            ):
-                raise Refusal(f"mandatory scenario evidence drift: {path}")
+        if any(
+            edge["kind"] != "mandatory-executable"
+            or edge["load_type"] != "mandatory-executable"
+            or edge["runtime_evidence"] is None
+            for edge in [*host_edges, *scenario_edges]
+        ):
+            raise Refusal(f"mandatory executable semantics drift: {path}")
+        expected_runtime = {document["runtime_evidence"]["span_sha256"]}
+        if path == "plugins/synkrisis/references/rules-v1.json":
+            expected_runtime = {
+                _evidence(metadata["runtime_path"], needle)["span_sha256"]
+                for needle in SYNKRISIS_RULE_RUNTIME_NEEDLES.values()
+            }
+        observed_runtime = {
+            edge["runtime_evidence"]["span_sha256"] for edge in scenario_edges
+        }
+        if observed_runtime != expected_runtime:
+            raise Refusal(f"mandatory runtime operation proof drift: {path}")
+    for path in _fixed_agent_metadata():
+        document = by_path[path]
+        incoming = [
+            edge
+            for edge in [*topology["edges"], *topology["scenario_edges"]]
+            if edge["target"] == path
+        ]
+        if (
+            not incoming
+            or document["load_semantics"] != "agent-or-prompt"
+            or any(
+                edge["kind"] != "fixed-agent-input"
+                or edge["load_type"] != "agent-or-prompt"
+                or edge["runtime_evidence"] is not None
+                for edge in incoming
+            )
+        ):
+            raise Refusal(f"fixed agent input graph drift: {path}")
     exclusions = [
         {
             "class": class_name,
@@ -2970,6 +3288,7 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "schema": f"{SCHEMA_PREFIX}-loader-graph/v1",
         "source_ref": SOURCE_REF,
         "manifest_sha256": manifest_digest,
+        "invocation_profiles_sha256": _artifact_digest(profiles),
         "roots": topology["roots"],
         "edges": topology["edges"],
         "scenario_roots": topology["scenario_roots"],
@@ -2992,6 +3311,9 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
             "mandatory_executable_edges_have_runtime_evidence": True,
             "reference_only_records_have_zero_reachability": True,
             "synkrisis_rule_operations_are_exclusive": True,
+            "invocation_profiles_are_source_owned": True,
+            "profile_route_product_is_exact": True,
+            "fixed_agent_inputs_are_not_executed": True,
         },
     }
 
@@ -3124,7 +3446,8 @@ def build_partition(manifest: dict[str, Any]) -> dict[str, Any]:
         ranges = _partition_ranges(
             document["path"],
             generated,
-            exact_literal=document["document_class"] == "structured_reference",
+            exact_literal=document["document_class"]
+            in {"fixed_input", "structured_reference"},
         )
         for item in ranges:
             totals[item["classification"]] += item["end"] - item["start"]
@@ -3405,6 +3728,33 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
             raise Refusal(f"manifest document {index} has a non-closed field set")
         _safe_relative(item["path"])
         structured = _structured_metadata().get(item["path"])
+        fixed_agent = _fixed_agent_metadata().get(item["path"])
+        reference_only = REFERENCE_ONLY_MARKDOWN.get(item["path"])
+        if fixed_agent is not None:
+            if (
+                item["document_class"] != "fixed_input"
+                or item["load_semantics"] != "agent-or-prompt"
+                or item["source_evidence"]
+                != _evidence(
+                    fixed_agent["source_path"], fixed_agent["source_needle"]
+                )
+                or item["runtime_evidence"] is not None
+                or not item["loader_roots"]
+                or not item["scenario_reachability"]
+            ):
+                raise Refusal(f"fixed agent input semantics drift: {item['path']}")
+            continue
+        if reference_only is not None:
+            source, needle, _ = reference_only
+            if (
+                item["load_semantics"] != "reference-only"
+                or item["source_evidence"] != _evidence(source, needle)
+                or item["runtime_evidence"] is not None
+                or item["loader_roots"]
+                or item["scenario_reachability"]
+            ):
+                raise Refusal(f"human reference semantics drift: {item['path']}")
+            continue
         if structured is None:
             if (
                 item["load_semantics"] != "agent-or-prompt"
@@ -3487,18 +3837,26 @@ def _result(command: str, artifact: bytes, metrics: dict[str, Any]) -> bytes:
 
 
 def verify_corpus(args: argparse.Namespace) -> bytes:
-    expected = build_manifest()
+    profiles, _ = _load_record(args.profiles)
+    _validate_invocation_profiles(profiles)
+    if profiles != build_invocation_profiles():
+        raise Refusal("invocation profile fixture is stale")
+    expected = build_manifest(profiles)
     manifest, raw = _verify_exact(args.manifest, expected, "corpus manifest")
     _validate_manifest_shape(manifest)
     return _result("verify-corpus", raw, manifest["totals"])
 
 
 def verify_loader(args: argparse.Namespace) -> bytes:
+    profiles, _ = _load_record(args.profiles)
+    _validate_invocation_profiles(profiles)
+    if profiles != build_invocation_profiles():
+        raise Refusal("invocation profile fixture is stale")
     manifest, _ = _load_record(args.manifest)
     _validate_manifest_shape(manifest)
-    if manifest != build_manifest():
+    if manifest != build_manifest(profiles):
         raise Refusal("loader manifest is stale")
-    expected = build_loader_graph(manifest)
+    expected = build_loader_graph(manifest, profiles)
     graph, raw = _verify_exact(args.graph, expected, "loader graph")
     paths = {item["path"] for item in manifest["documents"]}
     for edge in [*graph["edges"], *graph["scenario_edges"]]:
@@ -3542,10 +3900,26 @@ def verify_loader(args: argparse.Namespace) -> bytes:
     )
 
 
+def verify_profiles(args: argparse.Namespace) -> bytes:
+    expected = build_invocation_profiles()
+    profiles, raw = _verify_exact(
+        args.profiles, expected, "invocation profiles"
+    )
+    _validate_invocation_profiles(profiles)
+    if args.manifest is not None:
+        manifest, _ = _load_record(args.manifest)
+        _validate_manifest_shape(manifest)
+        if manifest != build_manifest(profiles):
+            raise Refusal("profile manifest is stale")
+    return _result("verify-profiles", raw, profiles["totals"])
+
+
 def verify_partition(args: argparse.Namespace) -> bytes:
+    profiles, _ = _load_record(args.profiles)
+    _validate_invocation_profiles(profiles)
     manifest, _ = _load_record(args.manifest)
     _validate_manifest_shape(manifest)
-    if manifest != build_manifest():
+    if manifest != build_manifest(profiles):
         raise Refusal("partition manifest is stale")
     expected = build_partition(manifest)
     partition, raw = _verify_exact(args.partition, expected, "byte partition")
@@ -3556,9 +3930,11 @@ def verify_partition(args: argparse.Namespace) -> bytes:
 
 
 def verify_seal(args: argparse.Namespace) -> bytes:
+    profiles, _ = _load_record(args.profiles)
+    _validate_invocation_profiles(profiles)
     manifest, _ = _load_record(args.manifest)
     _validate_manifest_shape(manifest)
-    if manifest != build_manifest():
+    if manifest != build_manifest(profiles):
         raise Refusal("seal manifest is stale")
     expected_cohorts = build_cohorts(manifest)
     cohorts, _ = _verify_exact(args.cohorts, expected_cohorts, "cohorts")
@@ -3698,6 +4074,7 @@ def _atomic_write(path: Path, data: bytes) -> None:
 
 def _reconciliation_markdown(
     manifest: dict[str, Any],
+    profiles: dict[str, Any],
     graph: dict[str, Any],
     partition: dict[str, Any],
     cohorts: dict[str, Any],
@@ -3747,6 +4124,18 @@ def _reconciliation_markdown(
             f"`{source['path']}:{source['start']}-{source['end']}` | "
             f"{runtime_anchor} |"
         )
+    fixed_input_rows: list[str] = []
+    for path, metadata in sorted(_fixed_agent_metadata().items()):
+        source = _evidence(metadata["source_path"], metadata["source_needle"])
+        fixed_input_rows.append(
+            f"| `{path}` | {documents[path]['bytes']} | `{documents[path]['sha256']}` | "
+            f"`{metadata['canonical_owner']}` | "
+            f"`{source['path']}:{source['start']}-{source['end']}` |"
+        )
+    reference_only_rows = "\n".join(
+        f"| `{item['path']}` | `{item['canonical_owner']}` | {item['reason']} |"
+        for item in graph["reference_only"]
+    )
     fixed_point = _derive_corpus_fixed_point(manifest["documents"])
     fixed_point_additions = sorted(set(fixed_point["targets"]) - set(documents))
     if fixed_point_additions:
@@ -3773,9 +4162,11 @@ deduplication. similar prose is not deduplicated.
 
 ## source-directed admissions
 
-the {len(_additional_metadata())} paths below close the imperative and conditional agent-load directives
-that the original issue census omitted. each row binds the admitted class,
-condition, exact source bytes and source anchor at the frozen ref.
+the {len(_additional_metadata())} paths below close the source-directed
+Markdown census that the original issue inventory omitted. admission does not
+itself imply production reachability: the profile ledger classifies six of
+these Markdown paths as human evidence only. each row binds the admitted
+class, condition, exact source bytes and source anchor at the frozen ref.
 
 | class | admission | path | bytes | source anchor |
 | --- | --- | --- | ---: | --- |
@@ -3806,6 +4197,26 @@ scenario reachability. Hermes's corpus and schema and Imprimatur's three
 lexicons load whenever their owner is selected. Synkrisis's rule catalogue has
 separate, mutually exclusive `diagnose` and `verify` source and runtime spans.
 
+## fixed agent inputs
+
+X-Ray and Solidity Auditor each direct the agent to read the local two-byte
+`VERSION` file. these files are prompt context with `agent-or-prompt`
+semantics, not executable or parsed structured data.
+
+| path | bytes | sha256 | owner | source anchor |
+| --- | ---: | --- | --- | --- |
+{chr(10).join(fixed_input_rows)}
+
+## reference-only evidence
+
+the graph keeps exactly 12 authority or human-evidence records with zero host
+or scenario reachability: six immutable schemas, three Imprimatur documents
+listed only under `References`, and three descriptive Pandects documents.
+
+| path | owner | reason |
+| --- | --- | --- |
+{reference_only_rows}
+
 ## excluded links
 
 these representative links do not create loader edges. the classification is
@@ -3820,16 +4231,19 @@ source-bound rather than inferred from a file's presence.
 `loader-graph.json` records {len(graph["roots"])} roots and {len(graph["edges"])}
 host edges, plus {len(graph["scenario_roots"])} scenario roots and
 {len(graph["scenario_edges"])} scenario edges and {len(graph["reference_only"])}
-reference-only records. the scenarios cover the exact 93
-base combinations of 31 selectable canonical skills and the repository,
-isolated Agent Skills and standalone-plugin host routes. 87 bases admit a
-zero-condition invocation; Ariadne and Kronos instead require an operation or
-target-plus-Fiat vector on all three routes. Synkrisis adds exclusive
-`diagnose` and `verify` vectors. conditional roots carry one closed,
-sorted invocation vector. each starts at its real host entry, loads
-only the selected plugin runtime and skill, and includes only descendants whose
-conditions fire. no scenario edge uses a wildcard, every potential edge has a
-realizable witness, and sibling Kronos targets or Ariadne operations do not
+reference-only records. `invocation-profiles.json` contains exactly
+{profiles['totals']['normalized_profiles']} normalized, source-owned bounded
+operation profiles across all 31 selectable skills. each profile expands to
+two repository roots, two Agent Skills roots and one standalone root:
+{profiles['totals']['repository_roots']:,} +
+{profiles['totals']['agent_skills_roots']:,} +
+{profiles['totals']['standalone_roots']:,} =
+{profiles['totals']['scenario_roots']:,}. those scenarios retain the exact 93
+route/skill bases while preserving every source-required worker, nested skill,
+fixed input and executable input in the applicable phase. each reached union
+must equal the profile ledger plus its route contract; no shortest-path or
+singleton-edge witness can satisfy that oracle. no scenario edge uses a
+wildcard, every edge has a realizable witness, and exclusive profiles cannot
 co-occur. every edge cites a source path, exact byte range,
 source digest and span digest. unconditional runtime loads, installed routes,
 identity checks, overlays, frontier gates, worker dispatches, operation
@@ -3864,7 +4278,7 @@ output. later work may open that envelope once; Step 1 does not score it.
 
 ## refusal boundary
 
-all four verification commands rebuild from the fixed Git ref and compare the
+all five verification commands rebuild from the fixed Git ref and compare the
 live source bytes before accepting an artefact. Git runs by one absolute
 system-owned executable with lazy fetch, global and system configuration,
 prompts and ambient environment disabled. a path, byte, digest, loader span,
@@ -3904,18 +4318,17 @@ def build_baseline(args: argparse.Namespace) -> bytes:
             or any(target in reconciliation.parents for target in artifact_targets)
         ):
             raise Refusal("reconciliation output overlaps baseline artifacts")
-    manifest = build_manifest()
-    graph = build_loader_graph(manifest)
+    profiles = build_invocation_profiles()
+    _validate_invocation_profiles(profiles)
+    manifest = build_manifest(profiles)
+    graph = build_loader_graph(manifest, profiles)
     partition = build_partition(manifest)
     cohorts = build_cohorts(manifest)
     seal = build_holdout_seal(manifest, cohorts)
-    records = dict(
-        zip(
-            BASELINE_RECORD_NAMES,
-            (manifest, graph, partition, cohorts, seal),
-            strict=True,
-        )
-    )
+    values = (manifest, profiles, graph, partition, cohorts, seal)
+    if len(values) != len(BASELINE_RECORD_NAMES):
+        raise Refusal("baseline artifact inventory cardinality drift")
+    records = dict(zip(BASELINE_RECORD_NAMES, values))
     digests: dict[str, dict[str, Any]] = {}
     for name, value in records.items():
         data = _canonical_json(value)
@@ -3931,7 +4344,7 @@ def build_baseline(args: argparse.Namespace) -> bytes:
     if reconciliation is not None:
         _atomic_write(
             reconciliation,
-            _reconciliation_markdown(manifest, graph, partition, cohorts),
+            _reconciliation_markdown(manifest, profiles, graph, partition, cohorts),
         )
     return _result(
         "build-baseline",
@@ -3969,20 +4382,45 @@ def parser() -> argparse.ArgumentParser:
 
     corpus = subparsers.add_parser("verify-corpus")
     corpus.add_argument("--manifest", type=_path, required=True)
+    corpus.add_argument(
+        "--profiles",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/invocation-profiles.json",
+    )
     corpus.set_defaults(handler=verify_corpus)
+
+    profile_check = subparsers.add_parser("verify-profiles")
+    profile_check.add_argument("--profiles", type=_path, required=True)
+    profile_check.add_argument("--manifest", type=_path)
+    profile_check.set_defaults(handler=verify_profiles)
 
     loader = subparsers.add_parser("verify-loader")
     loader.add_argument("--manifest", type=_path, required=True)
+    loader.add_argument(
+        "--profiles",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/invocation-profiles.json",
+    )
     loader.add_argument("--graph", type=_path, required=True)
     loader.set_defaults(handler=verify_loader)
 
     partition = subparsers.add_parser("verify-partition")
     partition.add_argument("--manifest", type=_path, required=True)
+    partition.add_argument(
+        "--profiles",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/invocation-profiles.json",
+    )
     partition.add_argument("--partition", type=_path, required=True)
     partition.set_defaults(handler=verify_partition)
 
     seal = subparsers.add_parser("verify-seal")
     seal.add_argument("--manifest", type=_path, required=True)
+    seal.add_argument(
+        "--profiles",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/invocation-profiles.json",
+    )
     seal.add_argument("--cohorts", type=_path, required=True)
     seal.add_argument("--seal", type=_path, required=True)
     seal.set_defaults(handler=verify_seal)

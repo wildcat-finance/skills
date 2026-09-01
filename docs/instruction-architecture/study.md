@@ -644,3 +644,157 @@ The 188-file corpus, byte partition, development/holdout membership and byte den
 **Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected scenario graph, manifest and artifact identities; only Step 1's exit and tests require replacement.
 
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Replace graph-minimised condition witnesses with a checked,
+source-owned invocation-profile ledger. One normalized profile is one bounded
+prompt-bearing operation, directive or dispatch phase for one selected skill.
+Union every document, fixed non-Markdown input and worker that source requires
+sequentially in that operation; split mutually exclusive modes; take the full
+product of independent optional and fallback branches; and keep a frontier gate
+as its own profile rather than a modifier on an ordinary operation. A repeated
+Fiat controller loop or Kronos loop does not create another profile when the
+same bounded phase and required-byte union repeat. The loader graph consumes the
+ledger; it does not infer the ledger from shortest paths, owner priority, edge
+scope or roots that survived generation.
+
+The checked-in ledger has one row per normalized profile with selected skill,
+stable profile id, bounded phase, applicability predicate, independent branch
+state, exclusive group, exact required canonical documents, exact fixed
+non-Markdown inputs and whether each is executed or only read, exact workers, and frozen
+source path, byte span and digest for every obligation. Its exact per-skill
+profile counts are:
+
+```text
+alexandria 3       anamnesis 3       ariadne 7          berean 2
+brevitas 2         elenchus 3         ephoros 2          fiat 415
+fizz 6             fizz-convert 1     fizz-sync 1        hermes 2
+homologia 2        horos 2            hypomnema 2        imprimatur 2
+janus 2            kronos 26          lazarus 5          lemma 3
+metron 3           pandects 2         phylax 3           probitas 3
+protasis 3         sapheneia 2        solidity-auditor 1 synkrisis 4
+tabularium 4       vulgate 2          x-ray 1
+```
+
+The 30 non-Fiat skills contribute 104 profiles. Fiat contributes 415:
+360 implement profiles (`2 * 5 * 3 * 3 * 2 * 2` for inline/delegated Mason,
+the five Phylax/Ephoros states, three Metron states, three Elenchus states, two
+Hypomnema states and two Hermes states); 26 audit profiles (`2 * ((2 * 2) +
+(3 * 3))` for inline/delegated Warden over the non-Solidity and Solidity
+branches); 16 prose profiles (inline/delegated Scribe crossed with Brevitas,
+task-issue Sapheneia and last-step carryover); two study profiles
+(inline/delegated Surveyor); and 11 other fixed controller operations. The
+Phylax/Ephoros factor has five, not six, states because Ephoros's verification
+requires the Phylax rule and the proxy reference is the only independent
+Phylax submode.
+
+Therefore the exact route-neutral denominator is `N = 519`. Existing usable
+GitHub credentials are an independent condition under `SHOGGOTH.md:46-53`, not
+one skill-level witness: repository checkout and isolated Agent Skills each
+emit credential-absent and credential-present variants of every normalized
+profile, while standalone emits credential-absent only. Exact route totals are
+repository `2N = 1,038`, isolated Agent Skills `2N = 1,038`, and standalone
+`N = 519`, for exactly 2,595 scenario roots. Removing only the credential state
+from any route must reproduce the same 519 profile ids and required-byte unions.
+
+Kronos profiles stop at one rank-only pass or one rank-plus-single-target Fiat
+dispatch iteration. The default current-checkout scope reads all 25 governed
+non-Kronos ledgers and has one rank-only plus 21 currently open target profiles;
+phase-only reads its fixed six ledgers and has one rank-only plus three currently
+open target profiles, for 22 + 4 = 26. Every profile also reads Kronos's own
+terminal ledger. It does not read shared `VERSIONING.md` in this bounded phase,
+because it advances no Kronos frontier and Fiat owns all work after dispatch.
+Repeated iterations and unions of several targets are outside one dispatch.
+Arbitrary user-named repositories, directories and ledger subsets are
+parameterized external runtime scopes, not concrete source-frozen roots; Fiat's
+optional task-supplied `version-relations` target set is excluded for the same
+reason. Neither is represented by a symbolic row pretending to have one exact
+prompt-byte union.
+
+The ledger preserves every source-declared bundle. This includes Alexandria's
+collector/study/runbook trio (`plugins/alexandria/skills/alexandria/SKILL.md:
+243-254`), Ariadne's paired operation documents, Protasis's five discipline
+contracts (`plugins/hexaemeron/skills/protasis/SKILL.md:177-206`), Fizz's common
+references, always-on report writer and optional eight-worker invariant branch
+(`plugins/hexaemeron/skills/fizz/SKILL.md:397-455`), Solidity-auditor's report,
+judging, SOP, shared rules, local `VERSION` and all 12 worker prompts
+(`plugins/hexaemeron/skills/solidity-auditor/SKILL.md:27-29,69-95`), X-Ray's
+local `VERSION` and two references (`plugins/hexaemeron/skills/x-ray/SKILL.md:
+42-45`), Hermes's corpus/schema/catalogue, Probitas's gates/venues pair, and
+each Fiat worker and nested phase contract (`plugins/hexaemeron/skills/fiat/
+SKILL.md:349-368,381-388,692-702`; `plugins/hexaemeron/agents/mason.md:39-59`;
+`scribe.md:39-62`; `surveyor.md:39-70`; `warden.md:39-71,114-118`). The vendored
+overlay remains mandatory in every operational Fizz, Fizz-convert, Fizz-sync,
+X-Ray and Solidity-auditor profile and in no unrelated direct profile.
+
+For Fiat audit, the controller's source-bound phase contract resolves Warden's
+broad Pashov wording: when `security_suite` records a suite list, the Solidity
+branch runs X-Ray then Solidity-auditor and the applicable Fizz branch; when it
+records a waiver or no configured suite, `audit-loop.md:156-196` makes Phylax,
+Ephoros and Hypomnema the mechanical non-Solidity branch, consistent with
+`warden.md:114-118`. The profile ledger records those as exclusive branches;
+it never unions the waived and Pashov paths.
+
+Six currently claimed production loads are not source instructions. The three
+Imprimatur Markdown links occur only under `## References`
+(`plugins/hexaemeron/skills/imprimatur/SKILL.md:148-153`), and Pandects merely
+says that three documents `carries`, `has` or `states` information
+(`plugins/pandects/skills/pandects/SKILL.md:237-247`). Keep those six in the
+physical corpus as optional human evidence, but reclassify them as
+reference-only with empty production roots and reachability. Together with the
+six existing reference-only structured schemas, the exact reference-only count
+is 12. Imprimatur's three lexicon JSON files remain mandatory executable input
+for every lint profile.
+
+The two vendored audit skills' fixed local `VERSION` inputs were also absent
+from the manifest. X-Ray reads `plugins/hexaemeron/skills/x-ray/VERSION` and
+Solidity-auditor reads
+`plugins/hexaemeron/skills/solidity-auditor/VERSION`; both files are two bytes,
+exact-unique and source-required agent/prompt inputs. Their remote version
+fetches remain parameterized external network observations rather than frozen
+corpus files.
+
+The extension-agnostic sweep found no third fixed input. Fizz's local `VERSION`
+has no source read. Descriptive `.python-version`/`pyproject.toml` toolchain
+pins, an optional Elenchus worked-example shell expansion, generated
+`.horos/boundary.json`, scripts, templates, tests/evals, examples/specimens,
+outputs and caller/project inputs remain in their declared TCB or runtime
+classes and do not enter agent/prompt context. Root `AGENTS.md:318-319` also
+disables the generated Horos reading boundary during this audit.
+
+The corrected physical corpus is 190 files and 2,290,443 bytes, with 173
+exact-unique files and 1,818,999 exact-unique bytes. Governed operative and
+generated-duplicate totals remain 1,473,399 and 471,444 bytes; exact literal or
+evidence becomes 345,600 bytes. The 19 physical host roots, five-skill holdout
+membership, 31 holdout paths and 363,804 held bytes (`0.200002`) remain fixed.
+Development becomes 142 paths and 1,455,195 bytes (`0.799998`). Withdraw the
+prior 237-host-edge, 277-scenario-edge,
+656-scenario-root, `198`, `229/229/198`, Ariadne/Kronos/Synkrisis distribution
+and seven-output identity claims. Host and scenario edge totals must be emitted
+only after rebuilding from the checked ledger and source spans. Regenerate the
+ledger, graph, manifest reachability, manifest-bound partition and cohort,
+artifact inventory, reconciliation and seal commitment atomically before Step
+2. Holdout membership, its membership digest, its case-envelope digest and
+`opened: false` remain unchanged. No holdout answer, scorer key or paid model
+output has been opened or created.
+
+**Why.** Follow-on audit 2 proved that the builder independently minimizes each
+conditional edge to one owner/shortest-path witness and that the validator
+repeats the same construction from declared roots and edge scopes. It therefore
+certifies singleton witnesses while omitting mandatory co-firing bundles,
+independent branch products, worker alternatives and credential cross-products.
+It also treats descriptive/reference links as production reads. The existing
+198-profile denominator is self-consistent but not source-complete, and the
+extension-agnostic corpus check still omits two files that selected skills
+directly read. Therefore every
+scenario-reachable and later complete-prompt denominator and every identity
+sealed over them is unsound.
+
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected profile,
+scenario, manifest and seal identities; only Step 1's exit and tests require
+replacement.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.

@@ -2,15 +2,16 @@
 
 source: `a2b634d8e039af988bf30c8316defccf70071d8d`
 
-the framework-74 corpus contains 188 physical files and
-2,290,439 physical bytes. exact whole-file deduplication leaves
-171 files and 1,818,995 bytes. these are
+the framework-74 corpus contains 190 physical files and
+2,290,443 physical bytes. exact whole-file deduplication leaves
+173 files and 1,818,999 bytes. these are
 repository denominators, not prompt-size or semantic-compression claims.
 
 ## inventory
 
 | class | files |
 | --- | ---: |
+| `fixed_input` | 2 |
 | `frontier_ledger` | 26 |
 | `frontier_policy` | 1 |
 | `identity_contract` | 1 |
@@ -32,9 +33,11 @@ deduplication. similar prose is not deduplicated.
 
 ## source-directed admissions
 
-the 70 paths below close the imperative and conditional agent-load directives
-that the original issue census omitted. each row binds the admitted class,
-condition, exact source bytes and source anchor at the frozen ref.
+the 70 paths below close the source-directed
+Markdown census that the original issue inventory omitted. admission does not
+itself imply production reachability: the profile ledger classifies six of
+these Markdown paths as human evidence only. each row binds the admitted
+class, condition, exact source bytes and source anchor at the frozen ref.
 
 | class | admission | path | bytes | source anchor |
 | --- | --- | --- | ---: | --- |
@@ -145,6 +148,38 @@ scenario reachability. Hermes's corpus and schema and Imprimatur's three
 lexicons load whenever their owner is selected. Synkrisis's rule catalogue has
 separate, mutually exclusive `diagnose` and `verify` source and runtime spans.
 
+## fixed agent inputs
+
+X-Ray and Solidity Auditor each direct the agent to read the local two-byte
+`VERSION` file. these files are prompt context with `agent-or-prompt`
+semantics, not executable or parsed structured data.
+
+| path | bytes | sha256 | owner | source anchor |
+| --- | ---: | --- | --- | --- |
+| `plugins/hexaemeron/skills/solidity-auditor/VERSION` | 2 | `1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2` | `plugins/hexaemeron/skills/solidity-auditor/SKILL.md` | `plugins/hexaemeron/skills/solidity-auditor/SKILL.md:1179-1246` |
+| `plugins/hexaemeron/skills/x-ray/VERSION` | 2 | `53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3` | `plugins/hexaemeron/skills/x-ray/SKILL.md` | `plugins/hexaemeron/skills/x-ray/SKILL.md:2289-2344` |
+
+## reference-only evidence
+
+the graph keeps exactly 12 authority or human-evidence records with zero host
+or scenario reachability: six immutable schemas, three Imprimatur documents
+listed only under `References`, and three descriptive Pandects documents.
+
+| path | owner | reason |
+| --- | --- | --- |
+| `plugins/hexaemeron/skills/imprimatur/references/agent-replies.md` | `plugins/hexaemeron/skills/imprimatur/SKILL.md` | the link occurs only in the human References section |
+| `plugins/hexaemeron/skills/imprimatur/references/lexicon-rationale.md` | `plugins/hexaemeron/skills/imprimatur/SKILL.md` | the link occurs only in the human References section |
+| `plugins/hexaemeron/skills/imprimatur/references/rewriting.md` | `plugins/hexaemeron/skills/imprimatur/SKILL.md` | the link occurs only in the human References section |
+| `plugins/homologia/references/manifest-v1.schema.json` | `plugins/homologia/skills/homologia/SKILL.md` | the schema is authority but no production invocation reads it |
+| `plugins/homologia/references/vectors-v1.schema.json` | `plugins/homologia/skills/homologia/SKILL.md` | the schema is authority but no production invocation reads it |
+| `plugins/pandects/docs/applicability.md` | `plugins/pandects/skills/pandects/SKILL.md` | the source describes the document but never directs an agent to read it |
+| `plugins/pandects/docs/writing-a-law.md` | `plugins/pandects/skills/pandects/SKILL.md` | the source describes the document but never directs an agent to read it |
+| `plugins/pandects/integrations/wildcat/APPLICABILITY.md` | `plugins/pandects/skills/pandects/SKILL.md` | the source describes the document but never directs an agent to read it |
+| `plugins/synkrisis/references/cohort-v1.schema.json` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | the schema is authority but no production invocation reads it |
+| `plugins/synkrisis/references/findings-v1.schema.json` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | the schema is authority but no production invocation reads it |
+| `plugins/synkrisis/references/policy-v1.schema.json` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | the schema is authority but no production invocation reads it |
+| `plugins/synkrisis/references/rule-v1.schema.json` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | the schema is authority but no production invocation reads it |
+
 ## excluded links
 
 these representative links do not create loader edges. the classification is
@@ -161,19 +196,22 @@ source-bound rather than inferred from a file's presence.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 237
-host edges, plus 656 scenario roots and
-277 scenario edges and 6
-reference-only records. the scenarios cover the exact 93
-base combinations of 31 selectable canonical skills and the repository,
-isolated Agent Skills and standalone-plugin host routes. 87 bases admit a
-zero-condition invocation; Ariadne and Kronos instead require an operation or
-target-plus-Fiat vector on all three routes. Synkrisis adds exclusive
-`diagnose` and `verify` vectors. conditional roots carry one closed,
-sorted invocation vector. each starts at its real host entry, loads
-only the selected plugin runtime and skill, and includes only descendants whose
-conditions fire. no scenario edge uses a wildcard, every potential edge has a
-realizable witness, and sibling Kronos targets or Ariadne operations do not
+`loader-graph.json` records 19 roots and 324
+host edges, plus 2595 scenario roots and
+325 scenario edges and 12
+reference-only records. `invocation-profiles.json` contains exactly
+519 normalized, source-owned bounded
+operation profiles across all 31 selectable skills. each profile expands to
+two repository roots, two Agent Skills roots and one standalone root:
+1,038 +
+1,038 +
+519 =
+2,595. those scenarios retain the exact 93
+route/skill bases while preserving every source-required worker, nested skill,
+fixed input and executable input in the applicable phase. each reached union
+must equal the profile ledger plus its route contract; no shortest-path or
+singleton-edge witness can satisfy that oracle. no scenario edge uses a
+wildcard, every edge has a realizable witness, and exclusive profiles cannot
 co-occur. every edge cites a source path, exact byte range,
 source digest and span digest. unconditional runtime loads, installed routes,
 identity checks, overlays, frontier gates, worker dispatches, operation
@@ -194,10 +232,10 @@ human-only and no byte is treated as a saving through uncertainty.
 ## cohorts
 
 the development cohort holds 27
-logical skills and 1,455,191 exact-unique
-bytes (0.799997). the sealed holdout holds
+logical skills and 1,455,195 exact-unique
+bytes (0.799998). the sealed holdout holds
 five logical skills and 363,804 exact-unique
-bytes (0.200003). memberships are disjoint.
+bytes (0.200002). memberships are disjoint.
 the development set covers every shared root and runtime contract, all ten
 file-size deciles, authority tier, admitted document class and construct class
 recorded in `cohorts.json`.
@@ -208,7 +246,7 @@ output. later work may open that envelope once; Step 1 does not score it.
 
 ## refusal boundary
 
-all four verification commands rebuild from the fixed Git ref and compare the
+all five verification commands rebuild from the fixed Git ref and compare the
 live source bytes before accepting an artefact. Git runs by one absolute
 system-owned executable with lazy fetch, global and system configuration,
 prompts and ambient environment disabled. a path, byte, digest, loader span,

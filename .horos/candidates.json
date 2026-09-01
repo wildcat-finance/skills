@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17053055,
+    "bytes_blob": 29606096,
     "bytes_generated": 98
   },
   "entries": [
@@ -14,7 +14,7 @@
       "path": "audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 29928,
+      "bytes": 55751,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -582,23 +582,30 @@
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     },
     {
-      "bytes": 139560,
+      "bytes": 144945,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 139560 bytes",
+      "evidence": "no newline in the first 4096 bytes of 144945 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },
     {
-      "bytes": 153133,
+      "bytes": 5034918,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 153133 bytes",
+      "evidence": "no newline in the first 4096 bytes of 5034918 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 281711,
+      "bytes": 1053297,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 281711 bytes",
+      "evidence": "no newline in the first 4096 bytes of 1053297 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/invocation-profiles.json"
+    },
+    {
+      "bytes": 6868462,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 6868462 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }

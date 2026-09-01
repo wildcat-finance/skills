@@ -932,3 +932,218 @@ Complete replacement Tests: Retain every current Step 1 test and command. Replac
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. The committed corpus manifest binds exactly 190 agent-facing instruction
+   and reference files and 2,290,443 physical bytes at the entry ref. Exact
+   whole-file deduplication yields 173 files and 1,818,999 bytes. Fourteen fixed
+   non-Markdown inputs are admitted: the prior 12 JSON inputs plus X-Ray's
+   two-byte local `VERSION` and Solidity-auditor's distinct two-byte local
+   `VERSION`, each proved by its direct `SKILL.md` Read instruction. Their remote
+   version fetches remain external runtime observations. An extension-agnostic
+   fixed-point pass reproduces the exact inventory and a second pass adds
+   nothing. Fizz's unread `VERSION`, descriptive toolchain pins, the generated
+   Horos boundary, optional shell-expanded configuration and dynamic remote or
+   target inputs remain excluded with exact source reasons. No script, output
+   template, test/eval, example/specimen, generated output or caller/project
+   input enters.
+2. Every physical byte belongs to one ordered, gapless, digest-bound partition
+   range. The totals are exactly 1,473,399 governed operative, 345,600 exact
+   literal or evidence, 471,444 generated duplicate, zero human-only and zero
+   unsupported bytes. The Promise Machine family remains the only exact
+   duplicate family.
+3. A source-owned
+   `tests/fixtures/instruction-architecture/invocation-profiles.json` record
+   under schema `wildcat-instruction-architecture-invocation-profiles/v1`
+   contains exactly 519 normalized rows across all 31 selected skills. One row
+   is one bounded prompt-bearing operation, directive or dispatch phase and
+   carries a stable profile id, selected skill, applicability predicate,
+   independent optional/fallback state, exclusive group, exact required
+   canonical documents, exact worker prompts, fixed non-Markdown inputs classified as
+   executed or read-only, and exact source path/span/digest evidence. Sequential
+   same-operation requirements are one union; exclusive modes are separate;
+   independent optional and fallback states form their complete product; a
+   gate-only frontier is separate from ordinary execution. The exact per-skill
+   counts are `alexandria=3, anamnesis=3, ariadne=7, berean=2, brevitas=2,
+   elenchus=3, ephoros=2, fiat=415, fizz=6, fizz-convert=1, fizz-sync=1,
+   hermes=2, homologia=2, horos=2, hypomnema=2, imprimatur=2, janus=2,
+   kronos=26, lazarus=5, lemma=3, metron=3, pandects=2, phylax=3,
+   probitas=3, protasis=3, sapheneia=2, solidity-auditor=1, synkrisis=4,
+   tabularium=4, vulgate=2, x-ray=1`. Fiat's 415 split exactly into 360
+   implement, 26 audit, 16 prose, two study and 11 other bounded controller
+   operations. Production generation and validation consume this record; they
+   never derive it by minimizing graph edges or by quantifying over roots the
+   generator already emitted.
+4. The loader graph retains 19 physical host roots and emits exactly 2,595
+   scenario roots from the profile ledger. Let `N=519`: repository checkout has
+   `2N=1,038`, isolated Agent Skills has `2N=1,038`, and standalone has
+   `N=519`. Every normalized profile appears once with credential absent and
+   once with credential present on each checkout route and once with credential
+   absent on standalone. Stripping only credential state yields the same 519
+   ids and required-byte unions on all three routes. Every graph edge is proved
+   by a frozen source or mandatory-runtime span and labelled agent/prompt,
+   mandatory executable, fixed agent/prompt input or reference-only. The three
+   Imprimatur Markdown
+   `References` links and three descriptive Pandects documents join the six
+   Homologia/Synkrisis schemas as exactly 12 reference-only records with empty
+   production roots and reachability; Imprimatur's three lexicons, Hermes's
+   corpus/schema and Synkrisis's `diagnose`/`verify` rules retain their exact
+   mandatory-executable profiles. All five vendored skills load `PROMISES.md`
+   in every operational profile.
+
+   Every Kronos profile reads its own ledger. Default full scope reads all 25
+   governed non-Kronos ledgers and emits one rank-only plus 21 currently open
+   single-target dispatch profiles; phase-only reads its fixed six ledgers and
+   emits one rank-only plus three currently open single-target dispatch
+   profiles. No bounded Kronos profile loads shared `VERSIONING.md`, dispatches
+   a mature target, unions multiple targets or executes a target-only input.
+   Arbitrary named Kronos scopes and Fiat `version-relations` target subsets are
+   explicitly classified as parameterized external runtime input and contribute
+   no concrete source-frozen scenario root. On Fiat audit, a recorded Pashov
+   suite and the audit-loop waiver are exclusive: the former loads X-Ray,
+   X-Ray's local `VERSION`, Solidity-auditor, Solidity-auditor's local `VERSION`
+   and the applicable Fizz branch; the latter loads the
+   Phylax/Ephoros/Hypomnema non-Solidity gates. Every Fiat implement, audit,
+   prose and study profile preserves the applicable inline/delegated worker
+   alternative and complete discipline or mask bundle.
+5. The unchanged seed and selection method still produce exactly `alexandria`,
+   `fizz`, `phylax`, `probitas` and `sapheneia`: 31 exact-unique paths and
+   363,804 bytes (`0.200002`). Development is the disjoint remaining 142 paths
+   and 1,455,195 bytes (`0.799998`) and covers every shared contract, class,
+   authority tier, construct and size decile. Regenerate manifest reachability,
+   the manifest-bound partition/cohort, artifact inventory, reconciliation and
+   seal commitment against the profile and graph identities. Holdout membership,
+   membership digest, closed 16-slot case-envelope digest and `opened: false`
+   remain unchanged; no prompt, answer, scorer key or model output exists.
+6. `build-baseline` atomically reproduces the six records, artifact inventory
+   and reconciliation: eight outputs byte for byte. `verify-corpus`,
+   `verify-profiles`, `verify-loader`, `verify-partition` and `verify-seal` each
+   emit one bounded correlated JSON result and repeat byte-identically. Profile
+   validation independently checks the frozen source spans, per-skill counts,
+   branch grammar, document/worker/input unions and route expansion without
+   calling the graph builder's selection or scope helpers. Draft 2020-12 schemas
+   and runtime validators remain equivalent. The amended study/runbook receipt,
+   focused and root suites, parent-attributable selected checks, Elenchus,
+   Phylax, Ephoros, Hypomnema, Protasis, Imprimatur, Horos, synopsis and diff
+   gates pass. No live instruction, loader, router, marketplace or production
+   path changes.
+
+Complete replacement Files: Retain every current Step 1 file and add
+`research/instruction-architecture/schemas/invocation-profile-v1.schema.json`
+and
+`tests/fixtures/instruction-architecture/invocation-profiles.json`; include the
+new record in the source-bound artifact inventory and reconciliation. No other
+path is authorized.
+
+Complete replacement Tests: Extend `CorpusManifestTests`,
+`BytePartitionTests`, `LoaderGraphTests`, `HoldoutSealTests` and a new
+`InvocationProfileTests` surface to bind all six records, the 190-path physical
+inventory, byte/partition/holdout totals, 31 selected skills, the exact
+per-skill profile counts above, `N=519`, Fiat's `360/26/16/2/11` split, route
+totals `1,038/1,038/519`, 2,595 scenario roots, 19 physical host roots and 12
+reference-only records. Bind all 14 fixed non-Markdown inputs, including both
+local `VERSION` paths, bytes, digests, owners and direct Read spans. The
+independent oracle must read and digest every
+ledger source span and reconstruct the expected profile ids, exact required
+document/worker/input sets and credential expansion without importing or
+calling production profile, graph, scope or minimization helpers.
+
+Add hostile mutants that each must refuse:
+
+1. Split one sequential bundle or worker set: Alexandria's three documents,
+   an Ariadne pair, Protasis's five disciplines, Fizz's common/report or
+   eight-worker branch, Solidity-auditor's local `VERSION`, 12 workers and
+   shared rules, X-Ray's local `VERSION` and references, Hermes's three inputs,
+   Probitas's gates/venues, or one Fiat
+   worker/discipline/mask bundle.
+2. Merge exclusive modes, omit one independent optional/fallback combination,
+   omit an inline or delegated worker alternative, select a mature Kronos
+   target, union two Kronos targets, or collapse Synkrisis `diagnose` and
+   `verify` because they read equal bytes.
+3. Put the vendored overlay in one singleton witness rather than every
+   applicable profile; omit or demote a mandatory fixed input to reference-only; execute
+   a target-only structured input on Kronos selection; or give any of the six
+   Imprimatur/Pandects human references production reachability.
+4. Delete or add a profile and make the same deletion or addition in graph
+   roots and every edge scope; alter, overlap or stale one source span; change a
+   required target while preserving counts; remove one credential variant; add
+   a standalone credential variant; or let route order choose one otherwise
+   equivalent profile. The independent oracle must still reject the synchronized
+   fiction.
+5. Union Warden's waived and Pashov branches; omit one of Scribe's Brevitas,
+   task-issue or last-step combinations; model an unbounded Fiat/Kronos loop;
+   enumerate an arbitrary named Kronos subset; or claim an exact prompt union
+   for a task-supplied Fiat `version-relations` set. Admit Fizz's unread
+   `VERSION`, `.python-version`, `pyproject.toml`, the generated Horos boundary
+   or a remote version response as fixed prompt input. Retain every prior
+   strict-JSON, schema/runtime-path, Git/source, subprocess, resource, output
+   alias, atomic-write, race, seal and fresh-`tmp/` hostile guard.
+
+Run these exact commands from the repository root under the pinned runtime:
+
+```text
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py build-baseline
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-corpus --manifest tests/fixtures/instruction-architecture/corpus-manifest.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-profiles --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --profiles tests/fixtures/instruction-architecture/invocation-profiles.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-loader --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --graph tests/fixtures/instruction-architecture/loader-graph.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-partition --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-seal --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
+uv run --no-project --python 3.14.6 python -m unittest tests.test_instruction_architecture.CorpusManifestTests tests.test_instruction_architecture.BytePartitionTests tests.test_instruction_architecture.InvocationProfileTests tests.test_instruction_architecture.LoaderGraphTests tests.test_instruction_architecture.HoldoutSealTests -v
+uv run --no-project --python 3.14.6 python tests/run_tests.py --elenchus-report .elenchus/fiat-1046-step-1.json
+uv run --no-project --python 3.14.6 python scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+cmp -s .hexaemeron/runbook.md docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/instruction-architecture/study.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/instruction-architecture/study.md docs/instruction-architecture/runbook.md docs/instruction-architecture/corpus-reconciliation.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+uv run --no-project --python 3.14.6 python plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Run the five verifiers twice and require byte-identical stdout. Rebuild once
+into a fresh `tmp/` destination with `--output` and `--reconciliation`; validate
+the schemas and all six records and require all eight outputs to equal the
+committed bytes. Require Elenchus schema `elenchus.unittest.v1`; an
+infrastructure-failed fixture overlay remains inconclusive.
+
+**Why.** Follow-on audit 2 found that production creates singleton
+shortest-path witnesses for conditional edges and validation reconstructs the
+same fiction from already-declared roots and scopes. Mandatory bundles,
+independent branch products, worker alternatives and the credential product are
+therefore absent while all current checks pass. Six descriptive/reference links
+are also treated as executed loads. The prior `N=198`, 656-root and derived
+prompt/seal identities are not source-complete.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: The complete replacement Exit in
+the immediately preceding amendment block (amendment SHA-256
+`d0724990657c51c4c49caa4a5f01c4ac77cd99550d624e461fd6ffc2a01f8750`) is
+incorporated here verbatim by reference and remains unchanged, including its
+exact command block beginning with `uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py build-baseline`. Complete
+replacement Files: The complete replacement Files in that immediately preceding
+amendment block is incorporated here verbatim by reference and remains
+unchanged. Complete replacement Tests: The complete replacement Tests in that
+immediately preceding amendment block is incorporated here verbatim by reference
+and remains unchanged.
+
+**Why.** The preceding amendment repaired the Step 1 definition but incorrectly
+marked its exit broken. A holding verdict states whether the definition still
+holds; it does not claim that implementation has already satisfied the Exit.
+The broken verdict therefore blocked implementation from resuming against the
+repaired definition.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
