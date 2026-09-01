@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16544121,
+    "bytes_blob": 16546546,
     "bytes_generated": 98
   },
   "entries": [
@@ -287,7 +287,7 @@
       "path": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md"
     },
     {
-      "bytes": 49214,
+      "bytes": 51639,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
