@@ -1,0 +1,9 @@
+{
+  "candidate": "harness-emitter",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "source-and-oracle-bound",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

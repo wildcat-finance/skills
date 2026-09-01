@@ -44,6 +44,7 @@ jobs:
           - ci
           - dead-code
           - docs
+          - dokimasia
           - hermes
           - hexaemeron
           - homologia
