@@ -1,0 +1,321 @@
+{
+  "candidates": [
+    {
+      "id": "confirmed-flag",
+      "summary": "One artefact. Every disposition entry carries a required `confirmed` boolean and the digest of the proposal it came from. `propose` regenerates the file in place, carrying every confirmed or edited entry forward byte for byte and replacing only entries no person has touched."
+    },
+    {
+      "id": "proposal-overlay",
+      "summary": "Two artefacts, one direction. `propose` writes a proposals file it owns outright and never reads back. A reviewer confirms by copying an entry into the dispositions file, which the generator never opens, so edits survive because nothing can rewrite them."
+    },
+    {
+      "id": "two-file-merge",
+      "summary": "Two artefacts, joined at read time. `propose` owns the proposals file; the reviewer owns a confirmations file naming the ids they accept and any reason they replaced. The reconciler reads both and treats an unconfirmed proposal as no disposition at all."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "no-covered-path",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "confirmed-entries-preserved",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "vocabulary-unchanged",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "reviewer-actions-per-item",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "reviewer-artefacts",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "proposal-refused-unconfirmed",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "regeneration-preserves-edits",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "pinned-closure-above-zero",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "confirmed-flag",
+      "criterion": "no-covered-path",
+      "report": {
+        "path": "reports/selection/confirmed-flag-no-covered-path.json",
+        "sha256": "5d77a93ef7f456a4d795132d3108a7f9f4ef457aa0ca57ed27f4264fc4cbe5a4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "confirmed-flag",
+      "criterion": "confirmed-entries-preserved",
+      "report": {
+        "path": "reports/selection/confirmed-flag-confirmed-entries-preserved.json",
+        "sha256": "91fbd885a6d7753d2862478771e4afcb25836e405067861b6988cc87d0a98ec5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "confirmed-flag",
+      "criterion": "vocabulary-unchanged",
+      "report": {
+        "path": "reports/selection/confirmed-flag-vocabulary-unchanged.json",
+        "sha256": "38092490b8aa6409ebc3685b335ba46ac16daf1191a729c9b259d36a3999a309"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "confirmed-flag",
+      "criterion": "reviewer-actions-per-item",
+      "report": {
+        "path": "reports/selection/confirmed-flag-reviewer-actions-per-item.json",
+        "sha256": "70533c49a364f194b6dd1eba78f70af625ce085a70b63feec3e4a0d76e22c79f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "confirmed-flag",
+      "criterion": "reviewer-artefacts",
+      "report": {
+        "path": "reports/selection/confirmed-flag-reviewer-artefacts.json",
+        "sha256": "14ee2ae2aef2dca92baabaa1d8b28cc8731b1b0475e7ef43ed95ab61488d3be2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "confirmed-flag",
+      "criterion": "proposal-refused-unconfirmed",
+      "report": "reports/conformance/confirmed-flag-proposal-refused-unconfirmed.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "confirmed-flag",
+      "criterion": "regeneration-preserves-edits",
+      "report": "reports/conformance/confirmed-flag-regeneration-preserves-edits.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "confirmed-flag",
+      "criterion": "pinned-closure-above-zero",
+      "report": "reports/conformance/confirmed-flag-pinned-closure-above-zero.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    },
+    {
+      "candidate": "proposal-overlay",
+      "criterion": "no-covered-path",
+      "report": {
+        "path": "reports/selection/proposal-overlay-no-covered-path.json",
+        "sha256": "37c8158cb4fdc9de0642719533069e73b8162f6fcad0db1e9eff5b220c80b660"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "proposal-overlay",
+      "criterion": "confirmed-entries-preserved",
+      "report": {
+        "path": "reports/selection/proposal-overlay-confirmed-entries-preserved.json",
+        "sha256": "4069f7a308d5fe629276fd8e03ed0735948b2474b2b342e714aa8a43a6e5d197"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "proposal-overlay",
+      "criterion": "vocabulary-unchanged",
+      "report": {
+        "path": "reports/selection/proposal-overlay-vocabulary-unchanged.json",
+        "sha256": "c12490614b5e53262edf78e52078e8015f3d994d3d590c0858996f10734f0b62"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "proposal-overlay",
+      "criterion": "reviewer-actions-per-item",
+      "report": {
+        "path": "reports/selection/proposal-overlay-reviewer-actions-per-item.json",
+        "sha256": "667e96b5a5315f8ba5e147c101f2dd7cf2dba10060a418335fb340e5256a0680"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "proposal-overlay",
+      "criterion": "reviewer-artefacts",
+      "report": {
+        "path": "reports/selection/proposal-overlay-reviewer-artefacts.json",
+        "sha256": "5694207367e1af422ac01dac749c04ddbddf882d4402d9200a36c033019ce38a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "proposal-overlay",
+      "criterion": "proposal-refused-unconfirmed",
+      "report": "reports/conformance/proposal-overlay-proposal-refused-unconfirmed.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "proposal-overlay",
+      "criterion": "regeneration-preserves-edits",
+      "report": "reports/conformance/proposal-overlay-regeneration-preserves-edits.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "proposal-overlay",
+      "criterion": "pinned-closure-above-zero",
+      "report": "reports/conformance/proposal-overlay-pinned-closure-above-zero.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    },
+    {
+      "candidate": "two-file-merge",
+      "criterion": "no-covered-path",
+      "report": {
+        "path": "reports/selection/two-file-merge-no-covered-path.json",
+        "sha256": "39b39af78690a37e7259e7f9ae90764472153780f0524aa23a780899beedf242"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "two-file-merge",
+      "criterion": "confirmed-entries-preserved",
+      "report": {
+        "path": "reports/selection/two-file-merge-confirmed-entries-preserved.json",
+        "sha256": "681f840946f1b5f9656b65d4ab5057188a9c29f408a7f10943f70234ef015f55"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "two-file-merge",
+      "criterion": "vocabulary-unchanged",
+      "report": {
+        "path": "reports/selection/two-file-merge-vocabulary-unchanged.json",
+        "sha256": "40733569feba73b212df586be58db69e2d0834ad2becd76a7acd2a4289eadefb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "two-file-merge",
+      "criterion": "reviewer-actions-per-item",
+      "report": {
+        "path": "reports/selection/two-file-merge-reviewer-actions-per-item.json",
+        "sha256": "b6b40b8bb865c32f8d560f92abf64d530ad38702349117c5f8a69864dd12b34c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "two-file-merge",
+      "criterion": "reviewer-artefacts",
+      "report": {
+        "path": "reports/selection/two-file-merge-reviewer-artefacts.json",
+        "sha256": "ee413603e1c0540507aad91a1fef546801aaab33d4954693dc8d85516670b5bf"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "two-file-merge",
+      "criterion": "proposal-refused-unconfirmed",
+      "report": "reports/conformance/two-file-merge-proposal-refused-unconfirmed.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "two-file-merge",
+      "criterion": "regeneration-preserves-edits",
+      "report": "reports/conformance/two-file-merge-regeneration-preserves-edits.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "two-file-merge",
+      "criterion": "pinned-closure-above-zero",
+      "report": "reports/conformance/two-file-merge-pinned-closure-above-zero.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "confirmed-flag",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

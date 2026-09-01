@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wildcat.finance/schemas/dokimasia/dispositions/v1.json",
+  "title": "Dokimasia disposition set",
+  "description": "The reviewer's own artefact: one entry per scoped item a decision has been drafted or made for, written against the exact inventory and workbook digests it was built from. Every entry carries a `confirmed` boolean, and only a confirmed entry is admitted as a disposition; an unconfirmed one is a draft this tool wrote and nobody has agreed to. Closed, so an unknown key is a refusal. Until this version the set was a hand-written input that nothing emitted and nothing validated; `propose` emits it, which brings it under the rule that every emitted record is checked against its committed schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "inventory_sha256", "workbook_sha256", "dispositions"],
+  "properties": {
+    "schema": { "const": "dokimasia-dispositions/v1" },
+    "inventory_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The inventory record this set was written against. A set naming a digest that has moved is stale and refuses rather than being carried forward."
+    },
+    "workbook_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The workbook record this set was written against, under the same staleness rule."
+    },
+    "generated_by": {
+      "type": "string",
+      "maxLength": 128,
+      "description": "The skill version that drafted this set, present when a generator wrote it and absent on a set written entirely by hand. It records provenance and confers no authority: a generated entry is still admitted only once a person confirms it."
+    },
+    "dispositions": {
+      "type": "array",
+      "maxItems": 40000,
+      "items": { "$ref": "#/definitions/entry" }
+    }
+  },
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item", "disposition", "reason", "oracle", "confirmed"],
+      "properties": {
+        "item": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "The scoped item this entry decides, named as the reconciler names it."
+        },
+        "disposition": {
+          "enum": ["covered", "manual", "excluded"],
+          "description": "ADR-001 fixes this set at three states. A generator may write only `manual` or `excluded`; `covered` is reserved to a person holding an item to a reviewed oracle, and no proposal path constructs it."
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Required non-empty for `manual` and `excluded`, which the reconciler enforces. An unexplained exclusion is how a denominator shrinks quietly."
+        },
+        "oracle": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "The workbook case a covered item is held to. Refused on any other disposition, because an entry reading as both decided-by-a-person and held-to-a-case states two different things about one item."
+        },
+        "confirmed": {
+          "type": "boolean",
+          "description": "A person's mark, and the only thing that admits this entry as a disposition. False on every entry a generator writes, and a generator cannot set it true. An unconfirmed entry leaves its item undisposed and holds the closure ratio down exactly as an absent entry does."
+        },
+        "proposed_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The digest of the entry as it was drafted, recorded so a regeneration can tell an untouched draft from one a person edited. Absent on an entry written by hand, which is never treated as untouched."
+        }
+      }
+    }
+  }
+}
