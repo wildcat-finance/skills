@@ -295,6 +295,31 @@ class ShapeTests(unittest.TestCase):
             )
         self.assertIn("D028", str(caught.exception))
 
+    def test_a_symlinked_source_refuses_before_it_spends_the_budget(self):
+        budget = demonstrations._Budget(maximum=64)
+        with tempfile.TemporaryDirectory() as name:
+            root = pathlib.Path(name)
+            (root / "corpus").mkdir()
+            target = root / "large.json"
+            target.write_bytes(b"{}" + b" " * 4096)
+            os.symlink(target, root / "corpus" / "linked.json")
+            record = copy.deepcopy(self.valid)
+            record["status"] = "constructed"
+            record["sources"] = [
+                {
+                    "id": "corpus",
+                    "class": "fixture",
+                    "path": "corpus/linked.json",
+                    "sha256": "0" * 64,
+                }
+            ]
+            with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                demonstrations.check_record(
+                    root, SPECIMEN, record, verify_bytes=True, budget=budget
+                )
+            self.assertIn("D025", str(caught.exception))
+        self.assertEqual(budget.remaining, 64)
+
     def test_the_default_budget_covers_the_whole_live_check(self):
         self.assertGreater(
             demonstrations.MAX_RUN_SOURCE_BYTES, demonstrations.MAX_SOURCE_BYTES

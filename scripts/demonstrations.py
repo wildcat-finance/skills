@@ -31,7 +31,8 @@ MAX_LEDGER_BYTES = 262_144
 MAX_SOURCE_BYTES = 33_554_432
 # Per-source caps bound one read. A whole check reads every declared source in
 # all 26 records, so the run needs its own ceiling or 26 records of 32 sources
-# each can ask for gigabytes before anything refuses.
+# each can ask for gigabytes before anything refuses. The budget is charged after
+# each bounded read, so a run reads at most this plus one source.
 MAX_RUN_SOURCE_BYTES = 268_435_456
 MAX_SOURCES = 32
 MAX_COMMANDS = 16
@@ -257,16 +258,17 @@ def _check_source(
     )
     if root is None:
         return source_class
-    if budget is not None:
-        try:
-            size = os.stat(os.path.join(root, relative)).st_size
-        except OSError as exc:
-            _fail("D025", f"{where}.path cannot be read: {exc}")
-        budget.spend(size, where=where)
     try:
         payload = _read_regular_file(root, relative, maximum=MAX_SOURCE_BYTES)
     except TopologyError as exc:
         _fail("D025", f"{where}.path cannot be read: {exc}")
+    # Charge the budget with the bytes the no-follow read actually returned. A
+    # size taken beforehand would have to follow the path, so a symlinked source
+    # could spend the run's budget on a file this reader then refuses, and the
+    # refusal would land on whichever honest record came next. The per-source cap
+    # bounds the overrun to one source.
+    if budget is not None:
+        budget.spend(len(payload), where=where)
     observed = hashlib.sha256(payload).hexdigest()
     _require(
         observed == digest,
