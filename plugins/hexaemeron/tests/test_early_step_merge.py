@@ -440,6 +440,87 @@ class AdoptedMergeStepCase(AdoptionHarness):
         self.run_ctl("verify")
 
 
+class EarlyMergeEndToEndCase(AdoptionHarness):
+    """Issue 1021's whole sequence, against a disposable repository.
+
+    Open a step pull request, let it merge before integrate, then receipt the
+    push and bring the stack down until the run is ready to integrate. The point
+    of driving it end to end rather than asserting each transition separately is
+    that the original failure was not any one refusal: it was that there was
+    nowhere to go afterwards, which only shows up when the run has to continue.
+    """
+
+    def _finish_ordinary(self, number):
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(number),
+            "--commit", f"abc{number}",
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        url, head, _branch = self._pull_request(number)
+        self._push(number, url, head)
+        return url
+
+    def test_an_early_merged_step_reaches_integrate_without_a_rewritten_ref(self):
+        adopted = "e" * 40
+        self._to_push(1)
+
+        # The pull request merges before the receipt, which is the failure.
+        self.adopted_merge = adopted
+        url, head, branch = self._pull_request(1, merge_sha=adopted)
+        self._push(1, url, head)
+        self.adopted_merge = None
+
+        receipted_head = self.state()["steps"][0]["receipts"]["push"]["head_commit"]
+        self.assertEqual(receipted_head, self.fake_sha(head))
+
+        self._finish_ordinary(2)
+
+        # Step 1 is completed from its record; step 2 merges ordinarily.
+        self.run_ctl("done", "merge-step", "--step", "1", "--merge-commit", adopted)
+        self.run_ctl("done", "merge-step", "--step", "2", "--merge-commit", "a" * 40)
+
+        finished = self.state()
+        first = finished["integrate"]["merges"]["1"]
+        second = finished["integrate"]["merges"]["2"]
+        self.assertEqual(first["satisfied_by"], "adopted-early-merge")
+        self.assertEqual(first["adopted_merge"]["merge_commit"], adopted)
+        self.assertEqual(second["satisfied_by"], "merge")
+
+        # No ref was rewritten: the head the push receipt named is untouched,
+        # and the receipt itself is the one the run wrote at push time.
+        self.assertEqual(
+            finished["steps"][0]["receipts"]["push"]["head_commit"], receipted_head
+        )
+        self.assertEqual(self.fake_refs[branch], head)
+
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "integrate")
+        self.run_ctl("verify")
+
+    def test_the_adopted_step_needs_no_second_pull_request(self):
+        """The 972 recovery opened one by hand. This one does not."""
+        adopted = "e" * 40
+        self._to_push(1)
+        self.adopted_merge = adopted
+        url, _head_unused, _branch = self._pull_request(1, merge_sha=adopted)
+        head = format(1, "x") * 40
+        self._push(1, url, head)
+        self.adopted_merge = None
+        self._finish_ordinary(2)
+
+        before = sorted(self.fake_prs)
+        self.run_ctl("done", "merge-step", "--step", "1", "--merge-commit", adopted)
+        self.assertEqual(sorted(self.fake_prs), before)
+        record = self.state()["integrate"]["merges"]["1"]
+        self.assertEqual(record["pull_request"]["url"], url)
+        self.assertEqual(record["merge_commit"], adopted)
+
+
 def run_elenchus_report(argv):
     """Run this focused module and write through the suite's secure reporter."""
     if len(argv) != 2 or argv[0] != "--elenchus-report":
