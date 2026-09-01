@@ -1151,10 +1151,172 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
             pass
 
 
+@lru_cache(maxsize=1)
+def _source_mode() -> str:
+    """Use the pinned Git object when present, or its bound checkout snapshot."""
+    try:
+        _git(["cat-file", "-e", f"{SOURCE_REF}^{{commit}}"], 0)
+    except Refusal as source_error:
+        try:
+            shallow = _git(["rev-parse", "--is-shallow-repository"], 16)
+        except Refusal:
+            raise source_error
+        if shallow != b"true\n":
+            raise source_error
+        return "inventory"
+    return "git"
+
+
+def _collect_snapshot_evidence(
+    value: Any,
+    digests: dict[str, tuple[int | None, str]],
+    spans: list[tuple[str, int, int, str]],
+) -> None:
+    """Collect only source-bound evidence records from inventory-bound JSON."""
+    if isinstance(value, list):
+        for item in value:
+            _collect_snapshot_evidence(item, digests, spans)
+        return
+    if not isinstance(value, dict):
+        return
+    if {
+        "path",
+        "source_sha256",
+        "span_sha256",
+        "start",
+        "end",
+    } <= set(value):
+        path = value["path"]
+        source_sha256 = value["source_sha256"]
+        span_sha256 = value["span_sha256"]
+        start = value["start"]
+        end = value["end"]
+        if (
+            not isinstance(path, str)
+            or not isinstance(source_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", source_sha256) is None
+            or not isinstance(span_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", span_sha256) is None
+            or type(start) is not int
+            or type(end) is not int
+            or start < 0
+            or end <= start
+        ):
+            raise Refusal("inventory snapshot evidence is malformed")
+        _safe_relative(path)
+        existing = digests.get(path)
+        if existing is not None and existing[1] != source_sha256:
+            raise Refusal(f"inventory snapshot has conflicting source digests: {path}")
+        digests[path] = (existing[0] if existing is not None else None, source_sha256)
+        spans.append((path, start, end, span_sha256))
+    for item in value.values():
+        _collect_snapshot_evidence(item, digests, spans)
+
+
+@lru_cache(maxsize=1)
+def _inventory_source_snapshot() -> dict[str, Any]:
+    """Recover frozen source bytes from a signed shallow checkout.
+
+    The artifact inventory is the publication commit point. It binds the
+    manifest, profiles, and graph whose source digests admit checkout bytes.
+    This path is available only when Git reports a shallow repository and the
+    pinned commit object is absent.
+    """
+    requested = {
+        name: ROOT / Path(*BASELINE_FIXTURE_ROOT.parts) / name
+        for name in BASELINE_RECORD_NAMES
+    }
+    records = _load_committed_baseline(requested)
+    manifest = records["corpus-manifest.json"][0]
+    profiles = records["invocation-profiles.json"][0]
+    graph = records["loader-graph.json"][0]
+    if (
+        not isinstance(manifest, dict)
+        or set(manifest) != {"counts", "documents", "schema", "source", "totals"}
+        or manifest.get("schema") != f"{SCHEMA_PREFIX}-corpus-manifest/v1"
+        or not isinstance(manifest.get("source"), dict)
+        or manifest["source"].get("ref") != SOURCE_REF
+        or not isinstance(manifest.get("documents"), list)
+    ):
+        raise Refusal("inventory snapshot manifest is malformed")
+
+    digests: dict[str, tuple[int | None, str]] = {}
+    corpus_paths: list[str] = []
+    tree_paths: set[str] = set()
+    for document in manifest["documents"]:
+        if not isinstance(document, dict):
+            raise Refusal("inventory snapshot document is malformed")
+        path = document.get("path")
+        size = document.get("bytes")
+        digest = document.get("sha256")
+        if (
+            not isinstance(path, str)
+            or type(size) is not int
+            or size < 1
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            raise Refusal("inventory snapshot document identity is malformed")
+        _safe_relative(path)
+        if path in digests:
+            raise Refusal("inventory snapshot document paths are duplicated")
+        digests[path] = (size, digest)
+        corpus_paths.append(path)
+        tree_paths.add(path)
+    if corpus_paths != sorted(corpus_paths):
+        raise Refusal("inventory snapshot document paths are not canonical")
+    if len(corpus_paths) != EXPECTED_TOTALS["physical_files"]:
+        raise Refusal("inventory snapshot document count drift")
+    tree_rows = [
+        f"{path}\0{digests[path][0]}\0{digests[path][1]}\n"
+        for path in corpus_paths
+    ]
+    if _sha256("".join(tree_rows).encode("utf-8")) != manifest["source"].get(
+        "tree_sha256"
+    ):
+        raise Refusal("inventory snapshot source tree digest mismatch")
+
+    spans: list[tuple[str, int, int, str]] = []
+    for record in (manifest, profiles, graph):
+        _collect_snapshot_evidence(record, digests, spans)
+    excluded_links = graph.get("excluded_links")
+    if not isinstance(excluded_links, list):
+        raise Refusal("inventory snapshot excluded-link set is malformed")
+    for record in excluded_links:
+        if not isinstance(record, dict) or not isinstance(record.get("path"), str):
+            raise Refusal("inventory snapshot excluded link is malformed")
+        tree_paths.add(str(_safe_relative(record["path"])))
+    tree_paths.update(digests)
+
+    sources: dict[str, bytes] = {}
+    for path, (expected_size, expected_digest) in sorted(digests.items()):
+        data = _read_regular(ROOT / Path(*PurePosixPath(path).parts), MAX_SOURCE_BYTES)
+        if (
+            (expected_size is not None and len(data) != expected_size)
+            or _sha256(data) != expected_digest
+        ):
+            raise Refusal(f"inventory snapshot source drift: {path}")
+        sources[path] = data
+    for path, start, end, span_sha256 in spans:
+        data = sources[path]
+        if end > len(data) or _sha256(data[start:end]) != span_sha256:
+            raise Refusal(f"inventory snapshot span drift: {path}")
+    return {
+        "corpus_paths": tuple(corpus_paths),
+        "sources": sources,
+        "tree_paths": tuple(sorted(tree_paths)),
+    }
+
+
 @lru_cache(maxsize=256)
 def _source_object(path: str) -> bytes:
     _safe_relative(path)
-    return _git(["cat-file", "blob", f"{SOURCE_REF}:{path}"], MAX_SOURCE_BYTES)
+    if _source_mode() == "git":
+        return _git(["cat-file", "blob", f"{SOURCE_REF}:{path}"], MAX_SOURCE_BYTES)
+    source = _inventory_source_snapshot()["sources"].get(path)
+    if source is None:
+        raise Refusal(f"source is absent from the inventory snapshot: {path}")
+    return source
 
 
 def _source_blob(path: str) -> bytes:
@@ -1167,6 +1329,8 @@ def _source_blob(path: str) -> bytes:
 
 @lru_cache(maxsize=1)
 def _frozen_tree_paths() -> tuple[str, ...]:
+    if _source_mode() == "inventory":
+        return _inventory_source_snapshot()["tree_paths"]
     raw = _git(["ls-tree", "-r", "-z", "--name-only", SOURCE_REF])
     try:
         names = [

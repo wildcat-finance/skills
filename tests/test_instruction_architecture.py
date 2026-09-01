@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from functools import lru_cache
 import hashlib
 import importlib.util
 import itertools
@@ -159,8 +160,18 @@ def sha256(path: Path) -> str:
 
 
 def clear_source_cache() -> None:
-    cached = getattr(AI, "_source_object", AI._source_blob)
-    cached.cache_clear()
+    for name in (
+        "_source_mode",
+        "_inventory_source_snapshot",
+        "_source_object",
+        "_frozen_tree_paths",
+    ):
+        cached = getattr(AI, name, None)
+        if cached is not None:
+            cached.cache_clear()
+    oracle_source_mode.cache_clear()
+    oracle_inventory_sources.cache_clear()
+    ORACLE_SOURCE_CACHE.clear()
 
 
 def scratch_directory(prefix: str = "instruction-architecture-"):
@@ -264,20 +275,15 @@ ORACLE_GIT_ENV = {
 ORACLE_SOURCE_CACHE: dict[str, bytes] = {}
 
 
-def oracle_source(path: str) -> bytes:
-    """Read the frozen blob without importing the production source reader."""
-    if path in ORACLE_SOURCE_CACHE:
-        return ORACLE_SOURCE_CACHE[path]
-    process = subprocess.run(
+def oracle_git(*arguments: str) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
         [
             "/usr/bin/git",
             "--no-lazy-fetch",
             "--no-optional-locks",
             "-C",
             str(ROOT),
-            "cat-file",
-            "blob",
-            f"{ORACLE_SOURCE_REF}:{path}",
+            *arguments,
         ],
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -285,13 +291,148 @@ def oracle_source(path: str) -> bytes:
         timeout=20,
         env=ORACLE_GIT_ENV,
     )
-    if process.returncode != 0:
-        raise AssertionError(f"independent oracle could not read {path}")
+
+
+@lru_cache(maxsize=1)
+def oracle_source_mode() -> str:
+    probe = oracle_git("cat-file", "-e", f"{ORACLE_SOURCE_REF}^{{commit}}")
+    if probe.returncode == 0:
+        return "git"
+    shallow = oracle_git("rev-parse", "--is-shallow-repository")
+    if shallow.returncode != 0 or shallow.stdout != b"true\n":
+        raise AssertionError("independent oracle could not resolve the frozen source")
+    return "inventory"
+
+
+@lru_cache(maxsize=1)
+def oracle_inventory_sources() -> dict[str, bytes]:
+    """Rebuild the shallow-checkout source map without production helpers."""
+    inventory_raw = INVENTORY.read_bytes()
+    inventory = json.loads(inventory_raw)
+    if canonical(inventory) != inventory_raw:
+        raise AssertionError("independent inventory snapshot is not canonical")
+    if (
+        inventory.get("schema")
+        != "wildcat-instruction-architecture-artifact-inventory/v1"
+        or inventory.get("source_ref") != ORACLE_SOURCE_REF
+    ):
+        raise AssertionError("independent inventory snapshot identity mismatch")
+
+    bound: dict[str, dict] = {}
+    for name, path in (
+        ("corpus-manifest.json", MANIFEST),
+        ("invocation-profiles.json", PROFILES),
+        ("loader-graph.json", GRAPH),
+    ):
+        raw = path.read_bytes()
+        identity = inventory.get("artifacts", {}).get(name)
+        if (
+            not isinstance(identity, dict)
+            or identity.get("bytes") != len(raw)
+            or identity.get("sha256") != hashlib.sha256(raw).hexdigest()
+        ):
+            raise AssertionError(f"independent inventory binding mismatch: {name}")
+        value = json.loads(raw)
+        if canonical(value) != raw:
+            raise AssertionError(f"independent inventory record is not canonical: {name}")
+        bound[name] = value
+
+    manifest = bound["corpus-manifest.json"]
+    if manifest.get("source", {}).get("ref") != ORACLE_SOURCE_REF:
+        raise AssertionError("independent manifest source ref mismatch")
+    digests: dict[str, tuple[int | None, str]] = {}
+    spans: list[tuple[str, int, int, str]] = []
+    for document in manifest.get("documents", []):
+        path = document.get("path")
+        size = document.get("bytes")
+        digest = document.get("sha256")
+        if (
+            not isinstance(path, str)
+            or type(size) is not int
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            or path in digests
+        ):
+            raise AssertionError("independent manifest source identity is malformed")
+        digests[path] = (size, digest)
+
+    def collect(value: object) -> None:
+        if isinstance(value, list):
+            for item in value:
+                collect(item)
+            return
+        if not isinstance(value, dict):
+            return
+        if {
+            "path",
+            "source_sha256",
+            "span_sha256",
+            "start",
+            "end",
+        } <= set(value):
+            path = value["path"]
+            digest = value["source_sha256"]
+            span_digest = value["span_sha256"]
+            start = value["start"]
+            end = value["end"]
+            if (
+                not isinstance(path, str)
+                or not isinstance(digest, str)
+                or not isinstance(span_digest, str)
+                or type(start) is not int
+                or type(end) is not int
+                or start < 0
+                or end <= start
+            ):
+                raise AssertionError("independent source evidence is malformed")
+            existing = digests.get(path)
+            if existing is not None and existing[1] != digest:
+                raise AssertionError("independent source evidence conflicts")
+            digests[path] = (existing[0] if existing is not None else None, digest)
+            spans.append((path, start, end, span_digest))
+        for item in value.values():
+            collect(item)
+
+    for value in bound.values():
+        collect(value)
+    sources: dict[str, bytes] = {}
+    for path, (size, digest) in sorted(digests.items()):
+        source_path = ROOT / path
+        if source_path.is_symlink() or not source_path.is_file():
+            raise AssertionError(f"independent snapshot source is unsafe: {path}")
+        data = source_path.read_bytes()
+        if (
+            len(data) > AI.MAX_SOURCE_BYTES
+            or (size is not None and len(data) != size)
+            or hashlib.sha256(data).hexdigest() != digest
+        ):
+            raise AssertionError(f"independent snapshot source drift: {path}")
+        sources[path] = data
+    for path, start, end, digest in spans:
+        data = sources[path]
+        if end > len(data) or hashlib.sha256(data[start:end]).hexdigest() != digest:
+            raise AssertionError(f"independent snapshot span drift: {path}")
+    return sources
+
+
+def oracle_source(path: str) -> bytes:
+    """Read the frozen blob without importing the production source reader."""
+    if path in ORACLE_SOURCE_CACHE:
+        return ORACLE_SOURCE_CACHE[path]
+    if oracle_source_mode() == "git":
+        process = oracle_git("cat-file", "blob", f"{ORACLE_SOURCE_REF}:{path}")
+        if process.returncode != 0:
+            raise AssertionError(f"independent oracle could not read {path}")
+        expected = process.stdout
+    else:
+        expected = oracle_inventory_sources().get(path)
+        if expected is None:
+            raise AssertionError(f"independent oracle has no snapshot source: {path}")
     live = (ROOT / path).read_bytes()
-    if live != process.stdout:
+    if live != expected:
         raise AssertionError(f"independent oracle observed source drift: {path}")
-    ORACLE_SOURCE_CACHE[path] = process.stdout
-    return process.stdout
+    ORACLE_SOURCE_CACHE[path] = expected
+    return expected
 
 
 def oracle_evidence(obligation: str, path: str, needle: str) -> dict:
@@ -1548,6 +1689,139 @@ class CorpusManifestTests(unittest.TestCase):
         paths = [item["path"] for item in self.manifest["documents"]]
         self.assertEqual(paths, sorted(paths))
         self.assertEqual(len(paths), len(set(paths)))
+
+    def test_shallow_checkout_rebuilds_from_inventory_bound_sources(self):
+        if not hasattr(AI, "_source_mode"):
+            self.skipTest("the parent has no inventory-bound source mode")
+        clear_source_cache()
+        try:
+            with mock.patch.object(AI, "_source_mode", return_value="inventory"):
+                rebuilt = AI.build_manifest(AI.build_invocation_profiles())
+            self.assertEqual(rebuilt, self.manifest)
+        finally:
+            clear_source_cache()
+
+    def test_shallow_checkout_refuses_source_drift(self):
+        if not hasattr(AI, "_inventory_source_snapshot"):
+            self.skipTest("the parent has no inventory-bound source snapshot")
+        clear_source_cache()
+        original_read = AI._read_regular
+
+        def changed_source(path: Path, limit: int) -> bytes:
+            data = original_read(path, limit)
+            if path == ROOT / "AGENTS.md":
+                return data + b"\n"
+            return data
+
+        try:
+            with (
+                mock.patch.object(AI, "_source_mode", return_value="inventory"),
+                mock.patch.object(AI, "_read_regular", side_effect=changed_source),
+                self.assertRaisesRegex(AI.Refusal, "inventory snapshot source drift"),
+            ):
+                AI._source_blob("AGENTS.md")
+        finally:
+            clear_source_cache()
+
+    def test_depth_one_checkout_replays_the_frozen_source(self):
+        with scratch_directory("depth-one-checkout-") as temporary:
+            checkout = Path(temporary) / "checkout"
+            head = subprocess.run(
+                ["/usr/bin/git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                capture_output=True,
+                check=True,
+                text=True,
+                timeout=20,
+            ).stdout.strip()
+            subprocess.run(
+                ["/usr/bin/git", "init", "--quiet", str(checkout)],
+                capture_output=True,
+                check=True,
+                timeout=20,
+            )
+            subprocess.run(
+                [
+                    "/usr/bin/git",
+                    "-C",
+                    str(checkout),
+                    "fetch",
+                    "--quiet",
+                    "--depth",
+                    "1",
+                    "--no-tags",
+                    ROOT.as_uri(),
+                    head,
+                ],
+                capture_output=True,
+                check=True,
+                timeout=30,
+            )
+            subprocess.run(
+                [
+                    "/usr/bin/git",
+                    "-C",
+                    str(checkout),
+                    "checkout",
+                    "--quiet",
+                    "--detach",
+                    "FETCH_HEAD",
+                ],
+                capture_output=True,
+                check=True,
+                timeout=30,
+            )
+            self.assertEqual(
+                subprocess.run(
+                    [
+                        "/usr/bin/git",
+                        "-C",
+                        str(checkout),
+                        "rev-parse",
+                        "--is-shallow-repository",
+                    ],
+                    capture_output=True,
+                    check=True,
+                    timeout=20,
+                ).stdout,
+                b"true\n",
+            )
+            verify = subprocess.run(
+                [
+                    sys.executable,
+                    str(checkout / "research/instruction-architecture/benchmark.py"),
+                    "verify-loader",
+                    "--profiles",
+                    str(checkout / "tests/fixtures/instruction-architecture/invocation-profiles.json"),
+                    "--manifest",
+                    str(checkout / "tests/fixtures/instruction-architecture/corpus-manifest.json"),
+                    "--graph",
+                    str(checkout / "tests/fixtures/instruction-architecture/loader-graph.json"),
+                ],
+                cwd=checkout,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=90,
+            )
+            oracle = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "tests.test_instruction_architecture.LoaderGraphTests.test_independent_runtime_semantic_evidence_coverage_is_closed",
+                    "-v",
+                ],
+                cwd=checkout,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=90,
+            )
+            self.assertEqual(
+                (verify.returncode, oracle.returncode),
+                (0, 0),
+                f"verify-loader:\n{verify.stderr}\nindependent oracle:\n{oracle.stderr}",
+            )
 
     def test_source_directed_admission_is_exact_and_anchored(self):
         documents = {item["path"]: item for item in self.manifest["documents"]}
@@ -3491,6 +3765,16 @@ class LoaderGraphTests(unittest.TestCase):
             ),
             (19, 324, 2_595, 329, 12),
         )
+
+    def test_independent_oracle_accepts_inventory_bound_shallow_sources(self):
+        clear_source_cache()
+        try:
+            with mock.patch.object(
+                sys.modules[__name__], "oracle_source_mode", return_value="inventory"
+            ):
+                oracle_validate_runtime_edges(self.profiles, self.graph)
+        finally:
+            clear_source_cache()
 
     def test_profile_constraints_are_explicit(self):
         constraints = self.graph["constraints"]
