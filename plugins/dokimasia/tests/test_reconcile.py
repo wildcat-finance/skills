@@ -13,6 +13,7 @@ PLUGIN = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from dokimasia_lib import reconcile  # noqa: E402
+from dokimasia_lib import schema  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location(
     "disposition_build", PLUGIN / "tests" / "fixtures" / "dispositions" / "build.py"
@@ -252,6 +253,63 @@ class Refusals(ReconcileCase):
         with self.assertRaises(reconcile.ReconcileError) as caught:
             reconcile.reconcile(self.inventory, self.workbook, declared)
         self.assertIn("declares schema", str(caught.exception))
+
+
+class Confirmation(ReconcileCase):
+    """Only a person's mark admits an entry. See ADR-002."""
+
+    def test_an_all_unconfirmed_set_closes_at_zero(self):
+        made = self.run_with("all-unconfirmed.json")
+        self.assertEqual(made["closure_ratio"]["numerator"], 0)
+        self.assertFalse(made["closure_ratio"]["closed"])
+        self.assertEqual(made["closure_ratio"]["denominator"], made["counts"]["scoped"])
+
+    def test_an_all_unconfirmed_set_names_every_entry_it_refused(self):
+        made = self.run_with("all-unconfirmed.json")
+        self.assertEqual(len(made["unconfirmed"]), made["counts"]["scoped"])
+        self.assertEqual(made["counts"]["unconfirmed"], len(made["unconfirmed"]))
+        for entry in made["unconfirmed"]:
+            self.assertIn(entry["disposition"], reconcile.DISPOSITIONS)
+
+    def test_an_unconfirmed_entry_leaves_its_item_undisposed(self):
+        made = self.run_with("all-unconfirmed.json")
+        self.assertEqual(made["counts"]["undisposed"], made["counts"]["scoped"])
+        self.assertEqual(len(made["undisposed"]), made["counts"]["scoped"])
+        self.assertEqual(made["dispositions"], [])
+
+    def test_a_mixed_set_closes_at_exactly_the_confirmed_count(self):
+        made = self.run_with("mixed-confirmation.json")
+        counts = made["counts"]
+        self.assertGreater(counts["disposed"], 0)
+        self.assertGreater(counts["unconfirmed"], 0)
+        self.assertEqual(counts["disposed"] + counts["unconfirmed"], counts["scoped"])
+        self.assertEqual(counts["undisposed"], counts["unconfirmed"])
+        self.assertEqual(made["closure_ratio"]["numerator"], counts["disposed"])
+
+    def test_the_three_figures_stay_distinct(self):
+        made = self.run_with("mixed-confirmation.json")
+        counts = made["counts"]
+        self.assertEqual(
+            sum(counts["by_disposition"].values()), counts["disposed"],
+            "by_disposition counts drafts as well as decisions",
+        )
+
+    def test_an_entry_with_no_confirmed_field_refuses(self):
+        self.assertIn("carries no 'confirmed'", self.refusal_from("missing-confirmed.json"))
+
+    def test_a_non_boolean_confirmation_refuses(self):
+        self.assertIn("not a boolean", self.refusal_from("non-boolean-confirmed.json"))
+
+    def test_an_unconfirmed_entry_is_still_checked_in_full(self):
+        """Being a draft excuses nothing; it decides admission, not validity."""
+        self.assertIn(
+            "cannot be covered",
+            self.refusal_from("unconfirmed-case-covered-by-itself.json"),
+        )
+
+    def test_a_confirmed_record_still_validates_against_its_schema(self):
+        made = self.run_with("mixed-confirmation.json")
+        self.assertEqual(schema.check(made), [])
 
 
 class NoPathMarksAnythingCovered(ReconcileCase):
