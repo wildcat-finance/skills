@@ -6,6 +6,19 @@ name: plugins
 # declared scope runs the committed graph for that scope, so the graph remains
 # the only definition of a check and no command is copied into this file. The
 # `plugins` job below aggregates every shard and is the stable required context.
+#
+# The budget is explicit because the automatic one is wrong here. On a four-core
+# runner `run_checks.py` derives budget 2, `_allocation_for` grants a nested
+# coordinator `max(2, budget // 2)` slots, and the coordinator keeps one, so the
+# Hexaemeron suite ran at `--jobs 1`. At that width it stopped finishing: it was
+# killed on the 1800-second per-check timeout at 2131 tests. An explicit budget
+# sets no reserve and is taken as given, and 14 grants the suite six workers.
+#
+# Seven arms measured on this runner, in runs 33438750597 and 33442383478, gave
+# suite times of 1800.3s timed out at one worker, then 1083.1s, 953.8s, 830.3s,
+# 680.4s, 647.6s and 854.2s at two through seven. Six is the knee; seven regresses
+# because four cores run out. Re-measure before changing this number, and re-measure
+# it on any larger runner, where the knee will sit elsewhere.
 
 on:
   push:
@@ -82,6 +95,7 @@ jobs:
         run: >-
           python3 scripts/run_checks.py
           --scope ${{ matrix.scope }}
+          --jobs 14
           --report tmp/checks/${{ matrix.scope }}.json
       - name: Preserve the bounded check report
         if: always()
