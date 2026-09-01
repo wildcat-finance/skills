@@ -29,6 +29,7 @@ KEPT_PROMISES = (
     "dokimasia-scaffold-identity",
     "dokimasia-source-inventory",
     "dokimasia-workbook-lineage",
+    "dokimasia-drafted-dispositions",
     "dokimasia-disposition-closure",
     "dokimasia-pinned-scrutiny",
 )

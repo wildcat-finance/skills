@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
 from dokimasia_lib import paths as paths_lib  # noqa: E402
+from dokimasia_lib import propose as propose_lib  # noqa: E402
 from dokimasia_lib import demonstrate as demonstrate_lib
 from dokimasia_lib import reconcile as reconcile_lib
 from dokimasia_lib import workbook as workbook_lib  # noqa: E402
@@ -366,14 +367,100 @@ def reconcile_command(
         return REFUSED
 
 
-DEMONSTRATE_CRITERION = "pinned-demonstration"
-
 EVIDENCE = PLUGIN / "docs" / "evidence"
 
 # One path segment. A label becomes a file name under the declared evidence
 # root, and a segment carrying a separator or a parent reference leaves it.
 SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
+
+PROPOSE_CRITERION = "regeneration-preserves-edits"
+
+
+def propose_command(
+    inventory: str | None,
+    workbook: str | None,
+    label: str | None,
+    report: str | None,
+    check: bool,
+    candidate: str | None = None,
+    criterion: str | None = None,
+) -> int:
+    """Draft a disposition set for a person to edit.
+
+    Every entry it writes is unconfirmed, so a drafted set closes the ratio at
+    zero exactly as no set at all would. `covered` is never drafted and no
+    branch here constructs it.
+    """
+    try:
+        if check:
+            failures = propose_lib.check()
+            if failures:
+                sys.stderr.write(
+                    "dokimasia propose --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in failures)
+                )
+                return REFUSED
+            if report is not None:
+                write_report(
+                    safe_report_path(report),
+                    criterion or PROPOSE_CRITERION,
+                    "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+                    candidate,
+                )
+            sys.stdout.write(
+                "dokimasia propose: check clean; a drafted set covers every "
+                "scoped item, closes at zero, and a reviewer's edits survive "
+                "a regeneration\n"
+            )
+            return 0
+        missing = [
+            name for name, value in (
+                ("--inventory", inventory), ("--workbook", workbook),
+            ) if value is None
+        ]
+        if missing:
+            raise SelfTestError("propose needs " + ", ".join(missing) + ", or --check")
+        target = None
+        if label is not None:
+            # The same control the scrutiny evidence takes, for the same
+            # reason: `--label ../../../../tmp/pwned` wrote outside the
+            # declared root once already, recorded as S5-R2-01.
+            if not SAFE_LABEL.match(label) or label in (".", ".."):
+                raise SelfTestError(
+                    f"the label {label!r} is not one safe path segment, and a "
+                    "label names a file under the declared evidence root"
+                )
+            target = EVIDENCE / f"{label}.dispositions.json"
+            if target.is_symlink():
+                raise SelfTestError(f"{target} is a symlink")
+        existing = None
+        if target is not None and target.is_file():
+            existing = reconcile_lib.read_json(target)
+        record, counts = propose_lib.propose(
+            reconcile_lib.read_json(Path(inventory)),
+            reconcile_lib.read_json(Path(workbook)),
+            existing,
+            VERSION,
+        )
+        body = json.dumps(record, indent=2, sort_keys=True) + "\n"
+        if target is not None:
+            propose_lib.write_set(record, target)
+            sys.stderr.write(
+                f"dokimasia propose: {counts['scoped']} scoped; "
+                f"{counts['preserved']} preserved, {counts['replaced']} replaced, "
+                f"{counts['added']} added, {counts['dropped']} dropped\n"
+            )
+        else:
+            sys.stdout.write(body)
+        return 0
+    except (SelfTestError, propose_lib.ProposeError,
+            reconcile_lib.ReconcileError, OSError, ValueError) as error:
+        sys.stderr.write(f"dokimasia propose refused: {error}\n")
+        return REFUSED
+
+
+DEMONSTRATE_CRITERION = "pinned-demonstration"
 
 def demonstrate_command(
     app: str | None,
@@ -590,6 +677,18 @@ def build_parser() -> argparse.ArgumentParser:
     reconcile_parser.add_argument("--candidate", default=None)
     reconcile_parser.add_argument("--criterion", default=None)
     reconcile_parser.add_argument("--check", action="store_true")
+    propose_parser = subparsers.add_parser(
+        "propose",
+        help="Draft a disposition set a reviewer edits rather than authors.",
+    )
+    propose_parser.add_argument("--inventory", default=None)
+    propose_parser.add_argument("--workbook", default=None)
+    propose_parser.add_argument("--label", default=None)
+    propose_parser.add_argument("--report", default=None)
+    propose_parser.add_argument("--candidate", default=None)
+    propose_parser.add_argument("--criterion", default=None)
+    propose_parser.add_argument("--check", action="store_true")
+
     demonstrate_parser = subparsers.add_parser(
         "demonstrate",
         help="Run one complete scrutiny and emit its record.",
@@ -630,6 +729,11 @@ def main(argv: list[str] | None = None) -> int:
         return reconcile_command(
             args.inventory, args.workbook, args.dispositions,
             args.report, args.check, args.candidate, args.criterion,
+        )
+    if args.verb == "propose":
+        return propose_command(
+            args.inventory, args.workbook, args.label, args.report,
+            args.check, args.candidate, args.criterion,
         )
     if args.verb == "demonstrate":
         return demonstrate_command(
