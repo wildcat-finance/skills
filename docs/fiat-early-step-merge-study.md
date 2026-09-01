@@ -337,3 +337,21 @@ row this run owes.
 bypass a merge gate. Commit key material or an RPC credential. Edit a vendored
 directory. Delete a failing test to make a suite pass. Claim a command ran when
 it did not. Change the held `Next Fiat job` or its acceptance condition.
+
+### Amendment -- 2026-09-01
+
+**What changed.** Item 2's pull-request citation. The last two merged pull
+requests that changed the Fiat skill are 1040, landed as `c148ab9a` and merged
+2026-08-31T13:02:49Z, and 1017, landed as `08a1024c` and merged
+2026-08-31T05:42:09Z. The commits first named there, `028dcdc8`, `8cc85686` and
+`0949a2e5`, are base-sync merge commits rather than pull-request merges.
+**Why.** This repository mostly squash-merges, so a pull request that changed
+the skill arrives as a direct commit and never appears in `git log --merges`.
+Reading merge commits answered a different question from the one Protasis asks,
+and it omitted the most relevant read of the two: 1017 is the pull request whose
+early merge into step 1's branch produced issue 1021.
+**Steps touched.** None. The correction is to item 2's evidence citation, and no
+step's entry, exit, files, tests or disciplines change.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
