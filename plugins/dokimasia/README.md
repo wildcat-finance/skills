@@ -3,11 +3,11 @@
 <!-- marketplace-context:start -->
 ## In one line
 
-Dokimasia defines the boundary for compiling a frontend's routes, actions and guards into a coverage denominator and reconciling a reviewed UAT workbook against it; its current scaffold compiles nothing.
+Dokimasia compiles a frontend's routes, actions and guards into a coverage denominator and reconciles a reviewed UAT workbook against it, so every scoped item carries exactly one disposition.
 
-**Current frontier.** Dokimasia ships its contracts, packaging and a self-test. No inventory is compiled, no workbook is imported and no disposition is recorded, so nothing yet establishes what a release left unexamined.
+**Current frontier.** Dokimasia compiles a pinned checkout, imports a reviewed workbook, reconciles both into dispositions, and has run one scrutiny of `wildcat-app-v2` at `bb9685fb`: 261 scoped items, none carrying a disposition. No code path helps a reviewer write one, and 261 entries by hand is the whole cost of using this.
 
-**Next Fiat job.** Use /hexaemeron:fiat to compile one pinned application checkout into a closed, digest-bound inventory of routes, API handlers, actions and access guards, refusing every cap breach, symlink and parent-directory path by name and spawning no subprocess. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to propose a disposition set a reviewer can edit rather than author from nothing: draft `manual` and `excluded` entries with reasons for every scoped item, and never propose `covered`, which ADR-001 reserves to a person holding an item to a reviewed oracle. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## Start here
@@ -50,7 +50,7 @@ skill may propose one and can never mark an item covered on its own.
 | `inventory` | built: compiles a pinned checkout into a digest-bound inventory |
 | `workbook` | built: imports a reviewed spreadsheet without losing a row |
 | `reconcile` | built: gives every scoped item exactly one disposition |
-| `demonstrate` | refuses; step 5 owes it |
+| `demonstrate` | built: runs one scrutiny and names why a number moved |
 
 ```bash
 python3 plugins/dokimasia/scripts/dokimasia.py selftest
@@ -62,6 +62,11 @@ python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check
 python3 plugins/dokimasia/scripts/dokimasia.py reconcile \
   --inventory <inventory.json> --workbook <workbook.json> \
   --dispositions <a-reviewed-disposition-set.json>
+python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check
+python3 plugins/dokimasia/scripts/dokimasia.py demonstrate \
+  --app <a-pinned-checkout> --workbook <a-reviewed-workbook> \
+  --commit <the-40-character-commit> --label <name> \
+  --write-evidence --report-timing
 ```
 
 ## What is committed here

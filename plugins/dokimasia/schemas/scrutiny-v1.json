@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wildcat.finance/schemas/dokimasia/scrutiny/v1.json",
+  "title": "Dokimasia scrutiny record",
+  "description": "One scrutiny of one pinned application commit against one reviewed workbook. Carries the three identities whose movement can explain a moved result, the digests of everything examined, and the closure figures as separate fields. Closed, so an unknown key is a refusal. The committed form drops the timing, because a measured duration would mean no two runs of the same inputs agreed on a digest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "skill_version", "subject", "examined", "closure_ratio", "counts", "gaps", "undisposed"],
+  "properties": {
+    "schema": { "const": "dokimasia-scrutiny/v1" },
+    "skill_version": {
+      "type": "string",
+      "description": "One of the three identities. A result that moved because this changed is the skill changing, not the product.",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application", "workbook"],
+      "properties": {
+        "application": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["label", "commit"],
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "commit": {
+              "type": "string",
+              "description": "A full object name. An abbreviated one does not pin what was examined.",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          }
+        },
+        "workbook": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["label"],
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        }
+      }
+    },
+    "examined": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventory_sha256", "workbook_sha256", "coverage_sha256", "scoped", "inventory_items", "workbook_cases"],
+      "properties": {
+        "inventory_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "workbook_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "coverage_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "scoped": { "type": "integer", "minimum": 0 },
+        "inventory_items": { "type": "integer", "minimum": 0 },
+        "workbook_cases": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "closure_ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numerator", "denominator", "value", "closed"],
+      "properties": {
+        "numerator": { "type": "integer", "minimum": 0 },
+        "denominator": { "type": "integer", "minimum": 0 },
+        "value": { "type": "number", "minimum": 0, "maximum": 1 },
+        "closed": { "type": "boolean" }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": { "type": ["integer", "object"] }
+    },
+    "gaps": {
+      "type": "integer",
+      "description": "How many items carry manual or excluded. The reasons themselves live in the coverage record beside this one.",
+      "minimum": 0
+    },
+    "undisposed": { "type": "integer", "minimum": 0 },
+    "timing": {
+      "type": "object",
+      "description": "Present on an emitted scrutiny and absent from a committed one. A measured duration cannot be part of a record two runs must agree on.",
+      "additionalProperties": false,
+      "required": ["observed_ms", "budget_ms", "within_budget"],
+      "properties": {
+        "observed_ms": { "type": "integer", "minimum": 0 },
+        "budget_ms": { "type": "integer", "minimum": 1 },
+        "within_budget": { "type": "boolean" }
+      }
+    },
+    "scrutiny_sha256": {
+      "type": "string",
+      "description": "The digest over everything but the subject and the timing. Present on a committed scrutiny.",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

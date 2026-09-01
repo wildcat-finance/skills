@@ -230,3 +230,101 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the five accepted items stand unchanged. Confirmed sound this round: all four built verbs exit zero on their check paths and `demonstrate` refuses with the not-built status, the design checker admits step:5 and refuses integration for the report step 5 owes, and the working tree is clean at the recorded head. One apparent finding this round was the auditor's own error rather than the code's: an exit-status sweep reported every check verb refusing, which was the shell passing each verb and its flag as one argument for argparse to reject, and each verb exits zero when invoked correctly. Carried forward and owed elsewhere: no emitted record is validated against its committed schema at runtime, which is a property of all three schemas this plugin ships rather than of this step; `read_json` tests only the supplied path for a symlink and not its parents; an empty scoped set reports zero over zero as not closed, which is deliberate; the ledger frontier and the README frontier prose still record the step 1 state, which step 5's Files clause owns; and the RS-40 regrade is owed, with the corpus digest and the deciding sentence both verified unchanged by this step.
+
+## Step 5, round 1 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: no disposition set exists for the pinned release, so nothing establishes the reconciler behaves correctly against a real reviewed set rather than an empty one; the 288 millisecond observation is one run on one machine and establishes nothing about another; the scrutiny establishes what the declared rules recognised at one commit and nothing about the application's behaviour; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R1-01 | medium | plugins/dokimasia/scripts/dokimasia.py | `_committed_evidence_failures` ended with a condition computed and discarded: it tested the inventory digest against `prose[:4000] + prose` and then executed `pass`. A reader would take that for a check that the committed prose names the digests its record carries, and it was not one. Dead code shaped like a guard is worse than an absent guard, because nobody reads it twice. Fixed by making it a real check against the twelve-character prefix the renderer actually writes, for the inventory and the workbook digest both. Guarded by a test asserting the committed prose names each. | fixed in b7ef681c |
+| S5-R1-02 | medium | plugins/dokimasia/scripts/dokimasia_lib/demonstrate.py | `causes` raised `KeyError` on a record missing `skill_version`, `subject` or `examined`, and on an application entry with no commit. Comparing two scrutinies means reading at least one off disk, which is the entire purpose of comparing an earlier run to a later one, so a truncated or hand-edited record is an ordinary mistake rather than an attack. This is the class repaired as S4-R3-01, reappearing in the module that reads records rather than the one that reads inputs. Fixed by checking both records' shape and naming which of the two was malformed and what it lacked. Guarded by four tests, including one requiring that a blank identity in both records still degrades to `unattributed` rather than reporting no cause. | fixed in b7ef681c |
+
+Leads not pursued: the pinned regeneration test reads its inputs from two environment variables and skips when they are absent, so the byte-for-byte claim is unproven in a checkout that lacks them; it was run with both supplied and the evidence regenerates, and committing either input is what the phylax boundary forbids for the workbook and impractical for the application, so this is accepted and stated rather than repaired. The scrutiny record's own digest is not committed anywhere, only the coverage record's, so a reader cannot tell whether two committed scrutinies of different releases were produced by the same code path. `render` recomputes each item's kind prefix twice per row, which is accepted at this scale. The RS-40 regrade remains owed from step 4 and needs an isolated context this session cannot open.
+
+## Step 5, round 2 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as round 1; no disposition set exists for the pinned release, the 288 millisecond observation is one run on one machine, the scrutiny establishes what the declared rules recognised at one commit and nothing about behaviour, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R2-01 | high | plugins/dokimasia/scripts/dokimasia.py | The committed coverage record named the two digests it was built from and nothing about what built it: no application commit, no skill version. Only the rendered prose carried those. Study question 4 exists so a moved coverage figure has a named cause, and the thing that compares one release to the next is a program reading these files rather than a person reading the Markdown, so the attribution was absent from every artefact a comparison could actually use. The step's central signal was therefore unbuilt while appearing built. Fixed by committing the scrutiny record as `<label>.scrutiny.json` with the timing dropped so it stays deterministic and its own digest recorded, and by extending `--check` to verify it is well formed, that its coverage digest is the digest of the record beside it, that the two agree on scope, and that the prose names all three identities. Guarded by three tests, one of which drives the committed record as the earlier side of a real comparison and requires a moved commit to return as its own named cause. | fixed in 15990177 |
+| S5-R2-02 | medium | plugins/dokimasia/scripts/dokimasia.py | `--label` became a file name under the declared evidence root with no check on its shape, so `--label ../../../../tmp/pwned` wrote both evidence files outside that root. Probed and confirmed before the fix. The study's boundary table states output writing is bounded by a declared root, and this was the one output path that was not. Fixed by requiring one safe path segment. Guarded by two tests, for a parent reference and for a separator, the first also asserting nothing was written outside the root. | fixed in 15990177 |
+
+Leads not pursued: the first version of the new identity check compared each value against the prose in full, and the renderer abbreviates a digest to twelve characters, so it reported the workbook identity as absent when it was present; the check caught its own error before the commit and both comparisons now use the prefix the renderer writes, which is recorded here rather than as a separate finding because it never reached a commit. The pinned regeneration test still reads its inputs from two environment variables and skips without them, and was run with both supplied. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4.
+
+## Step 5, round 3 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as the earlier rounds; no disposition set exists for the pinned release, the timing observation is one run on one machine, the scrutiny establishes what the declared rules recognised at one commit and nothing about behaviour, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R3-01 | medium | plugins/dokimasia/schemas/ | `dokimasia-scrutiny/v1` was declared as a schema identifier on a record round 2 had just begun committing, and no schema stated its shape, while its three siblings each ship one. A record described as closed with nothing saying what closed means is closed only in prose, and the reader who most needs that shape is the program comparing next release's scrutiny against this one. Fixed by committing `schemas/scrutiny-v1.json`, which requires a full forty-character commit, sixty-four hex characters for each digest, the closure figures as separate fields, and documents the timing as present on an emitted record and absent from a committed one. The runtime binding for `dokimasia-pinned-scrutiny` moves with it: it named one instance of the committed evidence where the other three promises each name the schema of their result surface, which would have made every regenerated scrutiny a digest change in the promise machine. Guarded by a test that reads the schema identifier every library module declares and requires a committed schema to publish each one. | fixed in 208b40bf |
+
+Leads not pursued: still no code path validates an emitted record against its committed schema at runtime, now across four schemas rather than three; this round added the missing schema and the test that a schema exists, not a validator, and repairing it properly means one validator used by all four verbs. The pinned regeneration test still reads its inputs from two environment variables. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4.
+
+## Step 5, round 4 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as the earlier rounds; no disposition set exists for the pinned release, the timing observation is one run on one machine, the scrutiny establishes what the declared rules recognised at one commit and nothing about behaviour, and the Pashov pair still did not run under the recorded security-suite waiver. The checker covers the keywords these four schemas use and nothing establishes it would check a fifth schema correctly, which is why an unsupported keyword refuses rather than passing.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R4-01 | high | plugins/dokimasia/scripts/dokimasia_lib/ | Every record this plugin emits declares a schema, and every committed schema states that an unknown key is a refusal. Nothing checked any of it. The four schemas were documentation, and the `--check` verbs asserted behaviour rather than shape, so a record breaching a pattern, a numeric bound, a string length or its own closure would have shipped and been believed by anyone reading the schema. This lead was recorded and deferred three times, in rounds 2 and 3 of step 4 and round 1 of step 5, each time on the ground that it belonged to all four schemas rather than to one step. This round is the release, which is the point at which the guarantee reaches somebody who will rely on it, so deferring again would have shipped a documented guarantee that was never implemented. Fixed by `schema.py`, a bounded draft-07 subset covering exactly the keywords these schemas use, with an unsupported keyword refusing by name rather than being skipped, `$ref` through `definitions` followed so a closed definition is enforced where it is used, and a boolean rejected where an integer is declared. All four check paths now validate a real emitted record. Guarded by ten tests driving one breach class each, four asserting every emitted and committed record validates clean, six requiring an unsupported keyword or malformed schema to refuse, and one requiring that no committed schema uses a keyword the checker would refuse. | fixed in a0045d72 |
+
+Leads not pursued: the checker is a subset by design and a fifth schema using a keyword outside it refuses rather than being partially checked, which is the intended direction but means adding a keyword to a schema is a change to this module too. The pinned regeneration test still reads its inputs from two environment variables and was run with both supplied. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4 and needs an isolated context this session cannot open.
+
+## Step 5, round 5 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as the earlier rounds; no disposition set exists for the pinned release, the timing observation is one run on one machine, the scrutiny establishes what the declared rules recognised at one commit and nothing about behaviour, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R5-01 | low | .horos/boundary.json | Three commits in this step shipped a stale reading boundary. The one committed in a0045d72 recorded 2,377 files walked while the two files that same commit added bring the tree to 2,379. The cause is the auditor's, not the code's: each of those commits piped the scan's output to /dev/null and took its success on trust. Two false leads were followed before the real cause: that the scan counts the controller's own gitignored directory, disproved by adding and removing a file under it and observing no change; and that the two test runners disagree, disproved by running the boundary tests under each and finding both fail on the committed value and pass on a fresh one. Fixed by regenerating with the count read back, the two boundary-currency tests asserted, and the root suite run under both runners before committing. | fixed in a5408048 |
+
+Leads not pursued: the durable version of this is a check that refuses a commit whose boundary a fresh scan would move, which belongs to Horos or to the commit path rather than to a dokimasia step. The schema checker remains a bounded subset, so a fifth schema using a keyword outside it refuses rather than being partially checked. The pinned regeneration test still reads its inputs from two environment variables and was run with both supplied. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4 and needs an isolated context this session cannot open.
+
+## Step 5, round 6 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as the earlier rounds; no disposition set exists for the pinned release, so nothing establishes the reconciler behaves correctly against a real reviewed set rather than an empty one; the 288 millisecond observation is one run on one machine; the scrutiny establishes what the declared rules recognised at one commit and nothing about the application's behaviour; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the ten accepted items across the run stand unchanged. Confirmed sound this round, each with its output read rather than discarded, which is the correction round 5 recorded: the working tree is clean at the recorded head; a fresh scan reproduces the committed boundary at 2,379 files; all five verbs exit zero on their check paths; the design checker admits design-lock, step:5 and integration; the root suite passes 1110/1110 under the parallel runner and cleanly under `unittest discover`; the plugin suite passes 226/226 both with the pinned inputs supplied and with the pinned regeneration test skipped; and both committed evidence records validate against the schemas they declare with no findings. Owed elsewhere and named so neither is lost: a check that refuses a commit whose boundary a fresh scan would move, which belongs to Horos rather than to a dokimasia step; and the RS-40 regrade from step 4, which needs one isolated context per request and cannot be opened from this session.

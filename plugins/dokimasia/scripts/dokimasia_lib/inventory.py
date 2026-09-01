@@ -16,6 +16,7 @@ import json
 from pathlib import Path, PurePosixPath
 
 from . import lexer, paths
+from . import schema as schema_lib
 
 RULES = "dokimasia-inventory-rules/v1"
 SCHEMA = "dokimasia-inventory/v1"
@@ -270,4 +271,10 @@ def check(fixture_root: Path) -> list[str]:
 
     if any("decoy" in item["source"] for item in first):
         failures.append("a commented or quoted decoy reached the inventory")
+
+    # The schema says the record is closed. Enforce it rather than stating it.
+    failures.extend(
+        f"the inventory record breaches its schema: {line}"
+        for line in schema_lib.check(record(first, {"label": "tests/fixtures/app"}))
+    )
     return failures

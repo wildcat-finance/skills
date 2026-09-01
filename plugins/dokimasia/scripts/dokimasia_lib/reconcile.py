@@ -18,6 +18,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from . import schema as schema_lib
+
 SCHEMA = "dokimasia-coverage/v1"
 CLOSURE = "dokimasia-disposition-closure/v1"
 DISPOSITIONS_SCHEMA = "dokimasia-dispositions/v1"
@@ -414,4 +416,9 @@ def check() -> list[str]:
     twice = reconcile(inventory, workbook, read_json(root / "closed.json"))
     if coverage_digest(twice) != coverage_digest(closed):
         failures.append("two reconciles of the same inputs disagreed on the digest")
+    # The schema says the record is closed. Enforce it rather than stating it.
+    failures.extend(
+        f"the coverage record breaches its schema: {line}"
+        for line in schema_lib.check(closed)
+    )
     return failures

@@ -4,12 +4,12 @@ description: >
   Inspect or build the scaffold that compiles a frontend's routes, actions and
   access guards into a coverage denominator and reconciles a reviewed UAT
   workbook against it, so every scoped item carries exactly one disposition.
-  Compiling, importing and reconciling have shipped; the pinned demonstration
-  has not, so never report a scrutiny of a real application. A closure ratio
-  states that nothing is unaccounted for, never that anything passed. Horos decides what an agent does not read; Hexaemeron Fizz
+  A closure ratio states that nothing is unaccounted for, never that anything
+  passed, and no item may be reported as covered without a reviewed oracle a
+  person named. Horos decides what an agent does not read; Hexaemeron Fizz
   fuzzes contracts. Neither compiles a frontend inventory or holds an oracle.
 metadata:
-  version: "0.1.0"
+  version: "1.1.0"
 ---
 
 # Dokimasia
@@ -24,9 +24,9 @@ frontier pass after that ledger becomes mature.
 <!-- marketplace-context:start -->
 ## Where this sits
 
-Dokimasia defines the boundary for compiling a frontend's routes, actions and guards into a coverage denominator and reconciling a reviewed UAT workbook against it. Its current scaffold compiles nothing.
+Dokimasia compiles a frontend's routes, actions and guards into a coverage denominator and reconciles a reviewed UAT workbook against it, so every scoped item carries exactly one disposition.
 
-**Current frontier.** Dokimasia ships its contracts, packaging and a self-test. No inventory is compiled, no workbook is imported and no disposition is recorded, so nothing yet establishes what a release left unexamined.
+**Current frontier.** Dokimasia compiles a pinned checkout, imports a reviewed workbook, reconciles both into dispositions, and has run one scrutiny of `wildcat-app-v2` at `bb9685fb`: 261 scoped items, none carrying a disposition. No code path helps a reviewer write one, and 261 entries by hand is the whole cost of using this.
 <!-- marketplace-context:end -->
 
 Never report an item as covered without a reviewed oracle.
@@ -72,8 +72,7 @@ space, which is unbounded and which no static compile enumerates.
 | demonstrate | runs one complete scrutiny and emits its digest-bound record |
 | selftest | proves the packaging and the contract agree, and emits its report |
 
-`selftest`, `inventory`, `workbook` and `reconcile` are built. Every other
-verb refuses with the step that owes it.
+Every declared verb is built.
 
 ## Boundaries
 
@@ -89,31 +88,31 @@ symlink.
 A person owns every disposition. The skill may propose one and may never mark
 an item covered on its own.
 
-## Promises, and why one of them is not here
+## Promises
 
 `dokimasia-scaffold-identity`, `dokimasia-source-inventory`,
-`dokimasia-workbook-lineage` and `dokimasia-disposition-closure` below are the
-promises this version keeps. A promise with no case that could support it is
-the overclaim the root law refuses, so nothing else is declared.
+`dokimasia-workbook-lineage`, `dokimasia-disposition-closure` and
+`dokimasia-pinned-scrutiny` below are the promises this version keeps. A
+promise with no case that could support it is the overclaim the root law
+refuses, so nothing else is declared.
 
-One transition remains unbuilt, and is named here so the runbook has a real
-interface to build against and so a reader can tell an unbuilt transition from
-one nobody thought of. A pinned demonstration will run one complete scrutiny
-against a pinned application checkout and a reviewed workbook, and record what
-it found; step 5 owes it. It is not declared as a contract section, because
-this version does not establish it.
+Every declared verb is built and every declared promise is kept. What this
+version does not have is a way to help a reviewer author a disposition set:
+the first scrutiny of a real release scoped 261 items and found none carrying
+a disposition, because writing them is 261 entries by hand. The ledger holds
+that as the next frontier.
 
 ## Promise Machine contract
 
 ### dokimasia-scaffold-identity
 
-- Promise: A successful `dokimasia selftest` establishes that both host manifests, the canonical contract, the ledger and the command surface declare one version, that this plugin's installed law copy is byte-identical to the root law, and that every unbuilt verb refuses with the step that owes it.
-- Evidence: Bounded reads of both `plugin.json` files, the canonical `SKILL.md` and its `EVOLUTION.md`, a byte comparison against the root `PROMISE_MACHINE.md`, the declared verb table, the observed exit status of each unbuilt verb, and the emitted `protasis-design-report/v1` report.
+- Promise: A successful `dokimasia selftest` establishes that both host manifests, the canonical contract, the ledger and the command surface declare one version, that this plugin's installed law copy is byte-identical to the root law, and that the declared verb table matches the verbs the command surface answers on.
+- Evidence: Bounded reads of both `plugin.json` files, the canonical `SKILL.md` and its `EVOLUTION.md`, a byte comparison against the root `PROMISE_MACHINE.md`, the declared verb table, and the emitted `protasis-design-report/v1` report.
 - Evidence classes: checked, recorded
-- Boundary: The report establishes that the packaging, the contract and the refusals agree. It does not establish that any inventory, workbook or disposition operation works, because none of them is built.
-- Authorises: Recording that the scaffold is installed and consistent, and opening the runbook step that compiles the first inventory.
+- Boundary: The report establishes that the packaging, the contract and the command surface agree on one version and one verb table. It does not establish that any inventory, workbook, disposition or scrutiny operation is correct; each of those has its own promise and its own evidence.
+- Authorises: Recording that the plugin is installed and internally consistent at the version it declares.
 - Consequence: 1
-- Refuses: A version that differs between any two declarations, a drifted installed law copy, an undeclared verb, a verb that answers instead of refusing, an unsafe or oversized report path, and a report the design checker cannot consume.
+- Refuses: A version that differs between any two declarations, a drifted installed law copy, an undeclared verb, an unsafe or oversized report path, and a report the design checker cannot consume.
 - Recovery: Read the named disagreement, restore the exact bytes or the declared version, and rerun `dokimasia selftest`.
 - Exceptions: none
 
@@ -151,4 +150,16 @@ this version does not establish it.
 - Consequence: 2
 - Refuses: A disposition set declaring the wrong schema or no digest, a set naming an inventory or workbook digest that has moved, two dispositions on one item, a disposition naming an item outside the scoped set, a state outside the closed vocabulary, a covered item naming no oracle, a covered item naming an oracle the workbook does not hold, a covered item naming an oracle nobody has acted on, a manual or excluded item with an empty reason, a reason over the byte cap, a symlink or oversized input, and a scoped set over the item cap.
 - Recovery: Read the refusal, which names the item and the condition it breached, correct the disposition set or recompile the record whose digest moved, and rerun `dokimasia reconcile`.
+- Exceptions: none
+
+### dokimasia-pinned-scrutiny
+
+- Promise: A successful `dokimasia demonstrate` establishes that one scrutiny of one pinned application commit and one reviewed workbook produced a digest-bound coverage record with its closure ratio, scoped count and gap count stated as separate fields, that two scrutinies of the same inputs agree, and that a result differing from an earlier scrutiny names which of the application commit, the workbook digest or the skill version moved.
+- Evidence: The pinned application commit, the workbook label and sha256, the inventory, workbook and coverage digests, the scoped count and its two sides, the separately stated numerator and denominator, the gap and undisposed counts, the measured duration beside its declared budget, and the canonical digest over everything but the subject and the timing.
+- Evidence classes: checked, recorded, measured
+- Boundary: The record establishes what was examined and what carries no disposition. It does not establish that the application works, that any item was tested, or that a closure ratio of one would mean anything passed. The duration is one observation on one machine and is not a benchmark. A cause names which identity moved, not why somebody moved it.
+- Authorises: Publishing a scrutiny of a named commit and workbook pair, and comparing it against a later scrutiny with each difference attributed.
+- Consequence: 2
+- Refuses: An application commit that is not a full forty-character object name, a workbook or checkout that any earlier promise refuses, a disposition set the reconciler refuses, and a comparison whose result moved with no identity moved, which is reported as unattributed rather than as a change.
+- Recovery: Read the refusal or the named cause, repin the input that moved, and rerun `dokimasia demonstrate`.
 - Exceptions: none

@@ -1745,8 +1745,8 @@
     },
     "dokimasia-scaffold-r": {
       "path": "plugins/dokimasia/tests/test_scaffold.py",
-      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
-      "claim": "Recovery evidence requires the refusal to name its version, the runbook and the step that carries the behaviour, so the caller is told where to go."
+      "selector": "test_the_ledger_declares_the_version_every_other_surface_declares",
+      "claim": "Recovery evidence requires the ledger to declare the same version every other surface declares, so a version disagreement names the file to restore rather than leaving the caller to search."
     },
     "dokimasia-inventory-p": {
       "path": "plugins/dokimasia/tests/test_inventory.py",
@@ -1777,6 +1777,31 @@
       "path": "plugins/dokimasia/tests/test_workbook.py",
       "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone",
       "claim": "Positive evidence rebuilds every source row from the imported cases alone and requires each to match the row it came from."
+    },
+    "dokimasia-scrutiny-m": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_a_result_that_moved_with_nothing_moved_is_reported_not_hidden",
+      "claim": "A coverage digest is moved with all three identities held fixed, and the comparison must report the move as unattributed rather than returning no cause."
+    },
+    "dokimasia-scrutiny-o": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_the_record_states_a_measured_duration_and_not_the_budget",
+      "claim": "The nearest overclaim is a target reported as an observation: the recorded duration must be measured and must not equal the declared budget."
+    },
+    "dokimasia-scrutiny-p": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_two_scrutinies_of_the_same_inputs_agree",
+      "claim": "Positive evidence runs two scrutinies of the same pinned inputs and requires one digest and no reported cause."
+    },
+    "dokimasia-scrutiny-r": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_an_application_commit_that_is_not_pinned_refuses",
+      "claim": "Recovery evidence requires an abbreviated commit to refuse by naming the full object name a scrutiny must pin, so the caller can repin rather than guess."
+    },
+    "dokimasia-scrutiny-s": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_a_moved_application_commit_is_reported_as_its_own_cause",
+      "claim": "A moved application commit is reported as exactly one named cause with its before and after values, so a moved number is never left unexplained."
     },
     "dokimasia-closure-m": {
       "path": "plugins/dokimasia/tests/test_reconcile.py",
@@ -2365,6 +2390,22 @@
         "S": "dokimasia-workbook-s",
         "O": "dokimasia-workbook-o",
         "R": "dokimasia-workbook-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-pinned-scrutiny",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-scrutiny-p",
+        "M": "dokimasia-scrutiny-m",
+        "S": "dokimasia-scrutiny-s",
+        "O": "dokimasia-scrutiny-o",
+        "R": "dokimasia-scrutiny-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
@@ -3879,6 +3920,20 @@
       },
       "sha256": "da92d7ae5231871131c375a0b074d0d8063c4da3b883c2e8a5541b8bd3e3fc2b",
       "source": "plugins/dokimasia/schemas/inventory-v1.json"
+    },
+    "dokimasia-pinned-scrutiny": {
+      "bindings": {
+        "evidence_classes": "checked for the pinned commit and the deterministic digest, recorded for the closure figures and the gap counts, measured for the observed duration, joined to the canonical Evidence classes field",
+        "evidence_references": "the inventory, workbook and coverage digests, and the committed coverage record and scrutiny prose the run wrote",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the scoped count with its two sides, the separately stated numerator and denominator, and the observed duration beside its declared budget",
+        "subject": "the pinned application commit and the workbook label and sha256",
+        "transition": "a scrutiny whose result either matches an earlier one or names the identity that moved, joined to the canonical Authorises field",
+        "unknowns": "items carrying no disposition, and a moved result no identity explains, which is reported as unattributed"
+      },
+      "sha256": "0baceaf58dd6f1a24acfcca9c3c3d91d53636d113026e0d9d2c8dfb1fc62b577",
+      "source": "plugins/dokimasia/schemas/scrutiny-v1.json"
     },
     "dokimasia-disposition-closure": {
       "bindings": {
