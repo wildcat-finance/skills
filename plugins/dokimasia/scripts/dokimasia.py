@@ -23,6 +23,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
 from dokimasia_lib import paths as paths_lib  # noqa: E402
+from dokimasia_lib import workbook as workbook_lib  # noqa: E402
+from dokimasia_lib import xlsx as xlsx_lib  # noqa: E402
 
 PLUGIN = Path(__file__).resolve().parents[1]
 REPOSITORY = PLUGIN.parents[1]
@@ -41,7 +43,6 @@ REPORT_COMMAND = (
 
 # Every verb the completed design owes, and the runbook step that owes it.
 UNBUILT_VERBS = {
-    "workbook": (3, "Import a reviewed spreadsheet into a closed record."),
     "reconcile": (4, "Assign exactly one disposition to every scoped item."),
     "demonstrate": (5, "Run one complete scrutiny and emit its record."),
 }
@@ -226,6 +227,56 @@ def inventory_command(root: str | None, report: str | None, check: bool) -> int:
         return REFUSED
 
 
+WORKBOOK_CRITERION = "workbook-roundtrip"
+
+
+def workbook_command(source: str | None, report: str | None, check: bool) -> int:
+    """Import a workbook, or prove the importer holds its own contract."""
+    try:
+        if check:
+            failures = workbook_lib.check()
+            if failures:
+                sys.stderr.write(
+                    "dokimasia workbook --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in failures)
+                )
+                return REFUSED
+            if report is not None:
+                write_report(
+                    safe_report_path(report),
+                    WORKBOOK_CRITERION,
+                    "python3 plugins/dokimasia/scripts/dokimasia.py workbook --check",
+                )
+            sys.stdout.write(
+                "dokimasia workbook: check clean; the round trip holds and every "
+                "hostile archive refused\n"
+            )
+            return 0
+        if source is None:
+            raise SelfTestError("workbook needs --source <spreadsheet> or --check")
+        import hashlib
+
+        path = Path(source)
+        seen_sheets: list[dict] = []
+        cases = workbook_lib.read_cases(path, sheet_log=seen_sheets)
+        body = json.dumps(
+            workbook_lib.record(cases, {
+                "label": path.name,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }, seen_sheets),
+            indent=2, sort_keys=True,
+        ) + "\n"
+        if report is not None:
+            write_report_bytes(safe_report_path(report), body)
+        else:
+            sys.stdout.write(body)
+        return 0
+    except (SelfTestError, xlsx_lib.XlsxRefusal, workbook_lib.WorkbookError,
+            OSError, ValueError) as error:
+        sys.stderr.write(f"dokimasia workbook refused: {error}\n")
+        return REFUSED
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dokimasia",
@@ -251,6 +302,13 @@ def build_parser() -> argparse.ArgumentParser:
     inventory_parser.add_argument("--root", default=None)
     inventory_parser.add_argument("--report", default=None)
     inventory_parser.add_argument("--check", action="store_true")
+    workbook_parser = subparsers.add_parser(
+        "workbook",
+        help="Import a reviewed spreadsheet into a closed, lineage-preserving record.",
+    )
+    workbook_parser.add_argument("--source", default=None)
+    workbook_parser.add_argument("--report", default=None)
+    workbook_parser.add_argument("--check", action="store_true")
     for verb, (step, description) in UNBUILT_VERBS.items():
         subparsers.add_parser(verb, help=f"{description} Not built; step {step} owes it.")
     return parser
@@ -266,6 +324,8 @@ def main(argv: list[str] | None = None) -> int:
         return selftest(args.report)
     if args.verb == "inventory":
         return inventory_command(args.root, args.report, args.check)
+    if args.verb == "workbook":
+        return workbook_command(args.source, args.report, args.check)
     return refuse(args.verb)
 
 

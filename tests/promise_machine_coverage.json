@@ -1772,6 +1772,31 @@
       "path": "plugins/dokimasia/tests/test_paths.py",
       "selector": "test_an_oversized_file_refuses_by_name",
       "claim": "Recovery evidence requires the refusal to name the cap and the path that breached it, so the caller can correct the input rather than guess."
+    },
+    "dokimasia-workbook-p": {
+      "path": "plugins/dokimasia/tests/test_workbook.py",
+      "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone",
+      "claim": "Positive evidence rebuilds every source row from the imported cases alone and requires each to match the row it came from."
+    },
+    "dokimasia-workbook-m": {
+      "path": "plugins/dokimasia/tests/test_workbook.py",
+      "selector": "test_halves_that_disagree_about_their_row_refuse",
+      "claim": "The round-trip check is driven against cases that disagree about their source row and must refuse, so a passing round trip is not a trivial pass."
+    },
+    "dokimasia-workbook-s": {
+      "path": "plugins/dokimasia/tests/test_workbook.py",
+      "selector": "test_an_identifier_used_twice_refuses",
+      "claim": "An identifier appearing twice is refused, so a disposition can never be attached to two rows at once."
+    },
+    "dokimasia-workbook-o": {
+      "path": "plugins/dokimasia/tests/test_xlsx.py",
+      "selector": "test_a_cached_formula_value_is_read_and_nothing_is_evaluated",
+      "claim": "The nearest overclaim is a computed value presented as a recorded one: a formula whose cached value differs from its evaluation must read as cached, and never as evaluated."
+    },
+    "dokimasia-workbook-r": {
+      "path": "plugins/dokimasia/tests/test_xlsx.py",
+      "selector": "test_a_traversal_member_name_refuses_by_name",
+      "claim": "Recovery evidence requires the refusal to name the member that breached the boundary, so the caller can correct the archive rather than guess."
     }
   },
   "handoffs": [
@@ -2299,6 +2324,22 @@
         "S": "dokimasia-inventory-s",
         "O": "dokimasia-inventory-o",
         "R": "dokimasia-inventory-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-workbook-lineage",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-workbook-p",
+        "M": "dokimasia-workbook-m",
+        "S": "dokimasia-workbook-s",
+        "O": "dokimasia-workbook-o",
+        "R": "dokimasia-workbook-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
@@ -3797,6 +3838,20 @@
       },
       "sha256": "da92d7ae5231871131c375a0b074d0d8063c4da3b883c2e8a5541b8bd3e3fc2b",
       "source": "plugins/dokimasia/schemas/inventory-v1.json"
+    },
+    "dokimasia-workbook-lineage": {
+      "bindings": {
+        "evidence_classes": "checked for the archive caps and the round trip, recorded for the digest, joined to the canonical Evidence classes field",
+        "evidence_references": "cases, each naming the sheet, row and identifier it was read from",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "counts, caps, the lineage identifier, and what every sheet contributed including the ones that contributed nothing and why",
+        "subject": "subject label and workbook sha256",
+        "transition": "an import whose source rows rebuild, joined to the canonical Authorises field",
+        "unknowns": "statuses kept as written because no declared value matches, and rows no reviewer declared a split for"
+      },
+      "sha256": "96916b226f910156a8fc3954ceb2187fc075286af0fdf66b3dbe804265b11b9c",
+      "source": "plugins/dokimasia/schemas/workbook-v1.json"
     },
     "elenchus-fixed-and-guarded": {
       "bindings": {
