@@ -1,11 +1,12 @@
 # instruction architecture workbench
 
-this directory is a research boundary, not a production loader. agent-facing
-Markdown and immutable structured references at
-`a2b634d8e039af988bf30c8316defccf70071d8d` remain authoritative. the Step 1
-commands inventory that source, prove agent/prompt and mandatory-executable
-loader edges, preserve reference-only authority without invented reachability,
-classify every physical byte and seal disjoint development and holdout cohorts.
+this directory is a research boundary, not a production loader. agent-facing Markdown and immutable
+structured references at `a2b634d8e039af988bf30c8316defccf70071d8d` remain authoritative. the Step 1
+commands inventory that source, prove agent/prompt and mandatory-executable loader edges, preserve
+reference-only authority without invented reachability, classify every physical byte and seal disjoint
+development and holdout cohorts.
+
+## commands
 
 generate the baseline:
 
@@ -22,6 +23,8 @@ python3 research/instruction-architecture/benchmark.py verify-loader --profiles 
 python3 research/instruction-architecture/benchmark.py verify-partition --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
 python3 research/instruction-architecture/benchmark.py verify-seal --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
 ```
+
+## source and publication boundary
 
 every accepted JSON record is canonical UTF-8 with duplicate keys and
 non-finite numbers refused. object fields are closed by the validator and the
@@ -42,6 +45,8 @@ byte identities, rereads the unchanged inventory and consumes only the bytes it
 already checked, so interruption or concurrent publication refuses instead of
 accepting a mixed generation.
 
+## corpus and loader graph
+
 the source-owned ledger expands 519 bounded invocation profiles across all 31
 selectable canonical skills. each profile has two repository roots, two
 isolated Agent Skills roots and one standalone-plugin root: 1,038 + 1,038 +
@@ -56,6 +61,8 @@ oracle reconstructs the full profile and route grammar without calling the
 production builder or validator. six schemas and six human-reference Markdown
 files have zero production reachability. X-Ray and Solidity Auditor's local
 `VERSION` files are fixed agent inputs, never executed structured data.
+
+## holdout
 
 the holdout seal names membership and case-slot classes, but contains no task,
 answer, scorer key or model output. do not add those fields before the frozen
