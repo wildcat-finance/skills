@@ -182,6 +182,9 @@ def scratch_directory(prefix: str = "instruction-architecture-"):
 
 
 ORACLE_SOURCE_REF = "a2b634d8e039af988bf30c8316defccf70071d8d"
+ORACLE_BASELINE_INVENTORY_SHA256 = (
+    "260c5600d9fd10c0cdf72abd29c62ea984ab9f96ea47796e05ad53b7327e7a7a"
+)
 ORACLE_SKILL_PATHS = {
     "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
     "anamnesis": "plugins/anamnesis/skills/anamnesis/SKILL.md",
@@ -275,7 +278,9 @@ ORACLE_GIT_ENV = {
 ORACLE_SOURCE_CACHE: dict[str, bytes] = {}
 
 
-def oracle_git(*arguments: str) -> subprocess.CompletedProcess[bytes]:
+def oracle_git(
+    *arguments: str, input_data: bytes | None = None
+) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(
         [
             "/usr/bin/git",
@@ -285,7 +290,8 @@ def oracle_git(*arguments: str) -> subprocess.CompletedProcess[bytes]:
             str(ROOT),
             *arguments,
         ],
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL if input_data is None else None,
+        input=input_data,
         capture_output=True,
         check=False,
         timeout=20,
@@ -295,9 +301,18 @@ def oracle_git(*arguments: str) -> subprocess.CompletedProcess[bytes]:
 
 @lru_cache(maxsize=1)
 def oracle_source_mode() -> str:
-    probe = oracle_git("cat-file", "-e", f"{ORACLE_SOURCE_REF}^{{commit}}")
-    if probe.returncode == 0:
+    expression = f"{ORACLE_SOURCE_REF}^{{commit}}"
+    probe = oracle_git(
+        "cat-file",
+        "--batch-check=%(objectname) %(objecttype)",
+        input_data=f"{expression}\n".encode("ascii"),
+    )
+    if probe.returncode != 0:
+        raise AssertionError("independent oracle source probe failed")
+    if probe.stdout == f"{ORACLE_SOURCE_REF} commit\n".encode("ascii"):
         return "git"
+    if probe.stdout != f"{expression} missing\n".encode("ascii"):
+        raise AssertionError("independent oracle source probe was ambiguous")
     shallow = oracle_git("rev-parse", "--is-shallow-repository")
     if shallow.returncode != 0 or shallow.stdout != b"true\n":
         raise AssertionError("independent oracle could not resolve the frozen source")
@@ -308,6 +323,11 @@ def oracle_source_mode() -> str:
 def oracle_inventory_sources() -> dict[str, bytes]:
     """Rebuild the shallow-checkout source map without production helpers."""
     inventory_raw = INVENTORY.read_bytes()
+    if (
+        hashlib.sha256(inventory_raw).hexdigest()
+        != ORACLE_BASELINE_INVENTORY_SHA256
+    ):
+        raise AssertionError("independent inventory differs from its source anchor")
     inventory = json.loads(inventory_raw)
     if canonical(inventory) != inventory_raw:
         raise AssertionError("independent inventory snapshot is not canonical")
@@ -1723,6 +1743,49 @@ class CorpusManifestTests(unittest.TestCase):
         finally:
             clear_source_cache()
 
+    def test_shallow_checkout_does_not_hide_source_probe_failure(self):
+        if not hasattr(AI, "_source_mode"):
+            self.skipTest("the parent has no inventory-bound source mode")
+
+        def failed_probe(arguments, limit=AI.MAX_GIT_OUTPUT, **kwargs):
+            if arguments[0] == "cat-file":
+                raise AI.Refusal("bounded Git read timed out")
+            if arguments == ["rev-parse", "--is-shallow-repository"]:
+                return b"true\n"
+            raise AssertionError(f"unexpected Git probe: {arguments}")
+
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_git", side_effect=failed_probe),
+                self.assertRaisesRegex(AI.Refusal, "bounded Git read timed out"),
+            ):
+                AI._source_mode()
+        finally:
+            clear_source_cache()
+
+    def test_independent_shallow_oracle_does_not_hide_source_probe_failure(self):
+        def failed_probe(*arguments, **kwargs):
+            if arguments[0] == "cat-file":
+                return subprocess.CompletedProcess(arguments, 128, b"", b"failed")
+            if arguments == ("rev-parse", "--is-shallow-repository"):
+                return subprocess.CompletedProcess(arguments, 0, b"true\n", b"")
+            raise AssertionError(f"unexpected Git probe: {arguments}")
+
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(
+                    sys.modules[__name__], "oracle_git", side_effect=failed_probe
+                ),
+                self.assertRaisesRegex(
+                    AssertionError, "independent oracle source probe failed"
+                ),
+            ):
+                oracle_source_mode()
+        finally:
+            clear_source_cache()
+
     def test_depth_one_checkout_replays_the_frozen_source(self):
         with scratch_directory("depth-one-checkout-") as temporary:
             checkout = Path(temporary) / "checkout"
@@ -2283,6 +2346,69 @@ class CorpusManifestTests(unittest.TestCase):
             },
         )
 
+    def test_committed_reader_refuses_coherently_resealed_generation(self):
+        original_read = AI._read_regular
+        graph = load(GRAPH)
+        graph["unbound_reseal"] = True
+        graph_raw = canonical(graph)
+        inventory = load(INVENTORY)
+        inventory["artifacts"]["loader-graph.json"] = {
+            "bytes": len(graph_raw),
+            "sha256": hashlib.sha256(graph_raw).hexdigest(),
+        }
+        inventory_raw = canonical(inventory)
+
+        def resealed_generation(path: Path, limit: int) -> bytes:
+            if path == INVENTORY:
+                return inventory_raw
+            if path == GRAPH:
+                return graph_raw
+            return original_read(path, limit)
+
+        with mock.patch.object(
+            AI, "_read_regular", side_effect=resealed_generation
+        ):
+            with self.assertRaisesRegex(
+                AI.Refusal, "artifact inventory differs from its frozen source anchor"
+            ):
+                AI._load_committed_baseline(
+                    {"invocation-profiles.json": PROFILES}
+                )
+
+    def test_independent_oracle_refuses_coherently_resealed_generation(self):
+        original_read = Path.read_bytes
+        graph = load(GRAPH)
+        graph["unbound_reseal"] = True
+        graph_raw = canonical(graph)
+        inventory = load(INVENTORY)
+        inventory["artifacts"]["loader-graph.json"] = {
+            "bytes": len(graph_raw),
+            "sha256": hashlib.sha256(graph_raw).hexdigest(),
+        }
+        inventory_raw = canonical(inventory)
+
+        def resealed_generation(path: Path) -> bytes:
+            if path == INVENTORY:
+                return inventory_raw
+            if path == GRAPH:
+                return graph_raw
+            return original_read(path)
+
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(
+                    Path, "read_bytes", new=resealed_generation
+                ),
+                self.assertRaisesRegex(
+                    AssertionError,
+                    "independent inventory differs from its source anchor",
+                ),
+            ):
+                oracle_inventory_sources()
+        finally:
+            clear_source_cache()
+
     def test_committed_reader_refuses_changed_unrequested_payload(self):
         original_read = AI._read_regular
 
@@ -2544,6 +2670,7 @@ class CorpusManifestTests(unittest.TestCase):
         clear_source_cache()
         self.addCleanup(clear_source_cache)
         with (
+            mock.patch.object(AI, "_source_mode", return_value="git"),
             mock.patch.object(AI, "_git", return_value=b"pinned"),
             mock.patch.object(
                 AI, "_read_regular", side_effect=[b"pinned", b"drifted"]

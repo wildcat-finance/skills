@@ -26,10 +26,12 @@ python3 research/instruction-architecture/benchmark.py verify-seal --profiles te
 every accepted JSON record is canonical UTF-8 with duplicate keys and
 non-finite numbers refused. object fields are closed by the validator and the
 companion schema. source reads are bounded regular-file reads matched against
-the fixed Git blob. when a shallow checkout does not contain that commit, the
-reader accepts only checkout bytes whose size, source digest and evidence spans
-match the inventory-bound manifest, profile ledger and loader graph. this
-fallback is unavailable in a non-shallow repository and does not fetch.
+the fixed Git blob. when an exact object probe reports that a shallow checkout
+does not contain that commit, the reader accepts only checkout bytes whose
+size, source digest and evidence spans match the manifest, profile ledger and
+loader graph bound by the one fixed inventory digest. a probe failure or any
+coherent replacement of that generation refuses. this fallback is unavailable
+in a non-shallow repository and does not fetch.
 Git runs from a closed set of absolute system-owned paths, with lazy fetch,
 global and system configuration, prompts and ambient environment disabled.
 writes use a same-directory temporary file, `fsync`, atomic replacement and a

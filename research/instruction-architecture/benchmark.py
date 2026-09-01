@@ -85,6 +85,9 @@ BASELINE_RECORD_NAMES = (
     "cohorts.json",
     "holdout-seal.json",
 )
+EXPECTED_BASELINE_INVENTORY_SHA256 = (
+    "260c5600d9fd10c0cdf72abd29c62ea984ab9f96ea47796e05ad53b7327e7a7a"
+)
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
     "research/instruction-architecture/schemas/invocation-profile-v1.schema.json"
@@ -1043,7 +1046,14 @@ def _git_executable() -> str:
     raise Refusal("bounded Git executable is unavailable or unsafe")
 
 
-def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
+def _git(
+    arguments: list[str],
+    limit: int = MAX_GIT_OUTPUT,
+    *,
+    input_data: bytes | None = None,
+) -> bytes:
+    if input_data is not None and len(input_data) > 4_096:
+        raise Refusal("bounded Git input exceeded its limit")
     environment = {
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_CONFIG_NOSYSTEM": "1",
@@ -1065,7 +1075,9 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
                 str(ROOT),
                 *arguments,
             ],
-            stdin=subprocess.DEVNULL,
+            stdin=(
+                subprocess.PIPE if input_data is not None else subprocess.DEVNULL
+            ),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=environment,
@@ -1080,6 +1092,13 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
     deadline = time.monotonic() + 20
     leader_reaped = False
     try:
+        if input_data is not None:
+            assert process.stdin is not None
+            try:
+                process.stdin.write(input_data)
+                process.stdin.close()
+            except OSError as exc:
+                raise Refusal("bounded Git input failed") from exc
         selector.register(process.stdout, selectors.EVENT_READ, (stdout, limit))
         selector.register(process.stderr, selectors.EVENT_READ, (stderr, 65_536))
         while selector.get_map():
@@ -1149,22 +1168,30 @@ def _git(arguments: list[str], limit: int = MAX_GIT_OUTPUT) -> bytes:
             process.stderr.close()
         except OSError:
             pass
+        if process.stdin is not None and not process.stdin.closed:
+            try:
+                process.stdin.close()
+            except OSError:
+                pass
 
 
 @lru_cache(maxsize=1)
 def _source_mode() -> str:
     """Use the pinned Git object when present, or its bound checkout snapshot."""
-    try:
-        _git(["cat-file", "-e", f"{SOURCE_REF}^{{commit}}"], 0)
-    except Refusal as source_error:
-        try:
-            shallow = _git(["rev-parse", "--is-shallow-repository"], 16)
-        except Refusal:
-            raise source_error
-        if shallow != b"true\n":
-            raise source_error
-        return "inventory"
-    return "git"
+    expression = f"{SOURCE_REF}^{{commit}}"
+    probe = _git(
+        ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        128,
+        input_data=f"{expression}\n".encode("ascii"),
+    )
+    if probe == f"{SOURCE_REF} commit\n".encode("ascii"):
+        return "git"
+    if probe != f"{expression} missing\n".encode("ascii"):
+        raise Refusal("bounded Git read returned an unexpected source identity")
+    shallow = _git(["rev-parse", "--is-shallow-repository"], 16)
+    if shallow != b"true\n":
+        raise Refusal("pinned source commit is absent from a non-shallow repository")
+    return "inventory"
 
 
 def _collect_snapshot_evidence(
@@ -5017,7 +5044,13 @@ def _load_committed_baseline(
         _repository_relative(reconciliation, "reconciliation input")
 
     inventory_path = ROOT / Path(*directory.parts) / "artifact-inventory.json"
-    inventory, inventory_raw = _load_record(inventory_path)
+    inventory_raw = _read_regular(inventory_path, MAX_JSON_BYTES)
+    if (
+        directory == BASELINE_FIXTURE_ROOT
+        and _sha256(inventory_raw) != EXPECTED_BASELINE_INVENTORY_SHA256
+    ):
+        raise Refusal("artifact inventory differs from its frozen source anchor")
+    inventory = _decode_record(inventory_raw)
     _validate_artifact_inventory(inventory)
     loaded: dict[str, tuple[dict[str, Any], bytes]] = {}
     for name in BASELINE_RECORD_NAMES:
@@ -5643,6 +5676,11 @@ def build_baseline(args: argparse.Namespace) -> bytes:
         },
     }
     inventory_bytes = _canonical_json(inventory)
+    if (
+        _repository_relative(output, "baseline output") == BASELINE_FIXTURE_ROOT
+        and _sha256(inventory_bytes) != EXPECTED_BASELINE_INVENTORY_SHA256
+    ):
+        raise Refusal("artifact inventory differs from its frozen source anchor")
     for name, data in record_bytes.items():
         _atomic_write(output / name, data)
     _atomic_write(reconciliation, reconciliation_bytes)
