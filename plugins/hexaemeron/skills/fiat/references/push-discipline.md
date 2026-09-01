@@ -70,16 +70,27 @@ no later command reparses the issue or renames a branch.
 
 Take the merge from the directive, not from a number you read out of it. The
 `merge-step` directive carries the exact invocation for the pull request it
-names, beside the receipt command:
+names, beside the branch it goes into and the receipt command:
 
 ```text
-"merge": "gh pr merge https://github.com/<owner>/<repo>/pull/<n> --merge",
+"into":  "<run branch>",
+"merge": "gh pr edit <url> --base <run branch> && gh pr merge <url> --merge",
 "then":  "hexctl done merge-step --step <n> --merge-commit <sha>"
 ```
 
+Run the whole `merge` value, not the second half of it. A step's pull request
+is opened against the step below it, because that is the diff a reviewer needs
+to read, and `gh pr merge` merges a pull request into its own base and takes no
+target. Merging without the retarget therefore lands every step above the first
+on its parent step branch rather than on the run branch, which is what `into`
+names. Only step 1 is already based on the run branch, so only step 1 survives
+the omission, and that first success is what makes the next one look safe.
+Issue 1085.
+
 One at a time, in the order the directive gives them. `gh pr merge` with a
-missing argument does not fail: it falls through to the current branch's pull
-request, and on a chained stack that is the one holding every commit in the run.
+missing argument does not fail either: it falls through to the current branch's
+pull request, and on a chained stack that is the one holding every commit in
+the run.
 
 Two things refuse if the branch stops being where the loop left it. A waiting
 step refuses at the next merge-step when its current tip no longer contains the
