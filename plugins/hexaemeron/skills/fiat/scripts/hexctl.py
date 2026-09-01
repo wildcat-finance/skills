@@ -4510,6 +4510,15 @@ def status_block_span(
             f"{label} opens a status block that is never closed, so the rest of "
             f"the body would be read as its content"
         ]
+    # The record puts the block above the filing prose, so a reader coming top to
+    # bottom meets the current statement before the original one. Blank lines are
+    # not prose; anything else is.
+    for physical in lines[:opened - 1]:
+        if physical.strip():
+            return None, [
+                f"{label} opens its status block below the filing prose, so a "
+                f"reader meets the original requirement before the correction"
+            ]
     content = lines[opened:closed - 1]
     for offset, physical in enumerate(content, start=opened + 1):
         if _contains_nonprinting_character(physical.rstrip("\r\n")):

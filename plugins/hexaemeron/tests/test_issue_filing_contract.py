@@ -117,6 +117,26 @@ class StatusBlockTests(unittest.TestCase):
         self.assertIsNone(span)
         self.assertTrue(any("closed before it opened" in fault for fault in faults), faults)
 
+    def test_a_block_below_the_filing_prose_is_refused(self):
+        """The record puts the block at the top so the current statement is met first.
+
+        A block buried under the filing prose still parses, and a reader coming
+        top to bottom meets the stale requirement before the correction. That is
+        the failure #837 records inside documents, and the position rule is the
+        part of this contract that prevents it.
+        """
+        span, faults = self.span(
+            "An issue filed a while ago.\n\nFiling prose.\n\n"
+            "<!-- status:start -->\nSuperseded by #1030.\n<!-- status:end -->\n")
+        self.assertIsNone(span)
+        self.assertTrue(any("below the filing prose" in fault for fault in faults), faults)
+
+    def test_blank_lines_above_the_block_are_not_prose(self):
+        span, faults = self.span(
+            "\n\n<!-- status:start -->\nOne.\n<!-- status:end -->\n\nProse.\n")
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(span, (3, 5))
+
     def test_a_control_character_in_the_block_is_refused(self):
         """Matching the carryover row reader, which refuses them by name."""
         span, faults = self.span(with_status(
