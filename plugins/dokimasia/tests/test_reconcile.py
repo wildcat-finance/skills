@@ -312,6 +312,40 @@ class RecordShape(ReconcileCase):
             reconcile.coverage_digest(first), reconcile.coverage_digest(moved)
         )
 
+    def test_every_enforced_bound_appears_in_the_caps_block(self):
+        """A bound enforced but unpublished cannot be audited from the record."""
+        made = self.run_with("closed.json")
+        self.assertEqual(
+            made["caps"],
+            {
+                "dispositions": reconcile.MAX_DISPOSITIONS,
+                "reason_bytes": reconcile.MAX_REASON_BYTES,
+                "input_bytes": reconcile.MAX_FILE_BYTES,
+            },
+        )
+
+    def test_the_record_is_the_same_however_the_dispositions_are_ordered(self):
+        first = self.run_with("closed.json")
+        declared = reconcile.read_json(self.made["closed.json"])
+        declared["dispositions"] = list(reversed(declared["dispositions"]))
+        second = reconcile.reconcile(self.inventory, self.workbook, declared)
+        self.assertEqual(
+            reconcile.coverage_digest(first), reconcile.coverage_digest(second)
+        )
+
+    def test_the_counts_add_up_three_ways(self):
+        made = self.run_with("no-disposition.json")
+        counts = made["counts"]
+        self.assertEqual(
+            sum(counts["by_disposition"].values()), counts["disposed"]
+        )
+        self.assertEqual(
+            counts["inventory_items"] + counts["workbook_cases"], counts["scoped"]
+        )
+        self.assertEqual(
+            counts["disposed"] + counts["undisposed"], counts["scoped"]
+        )
+
     def test_the_vocabulary_is_recorded_so_a_reader_knows_which_one_applied(self):
         made = self.run_with("closed.json")
         self.assertEqual(made["vocabulary"], list(reconcile.DISPOSITIONS))

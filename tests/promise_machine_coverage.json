@@ -3891,7 +3891,7 @@
         "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
         "unknowns": "scoped items no disposition answered for, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
       },
-      "sha256": "bb6899481ffa01929783b0b3099fd984f205ae46bbfaa730cd01989f1e0ed0cd",
+      "sha256": "7cc745472b06002e4af57ea8418b9c9c7760979b95290036c7bb50a9251f5618",
       "source": "plugins/dokimasia/schemas/coverage-v1.json"
     },
     "dokimasia-workbook-lineage": {

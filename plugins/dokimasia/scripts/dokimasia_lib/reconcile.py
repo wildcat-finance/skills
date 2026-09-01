@@ -160,19 +160,6 @@ def _check_currency(declared: dict, inventory: dict, workbook: dict) -> None:
             )
 
 
-def _matched(inventory: dict, workbook: dict) -> tuple[list[str], list[str]]:
-    """Which side of the join found nothing on the other.
-
-    Matching is by oracle only. A case names the item it exercises through a
-    disposition, so an unmatched entry here means no reviewer joined them, not
-    that this module tried to and failed.
-    """
-    return (
-        sorted(item_id(item) for item in inventory.get("items", [])),
-        sorted(case_id(case) for case in workbook.get("cases", [])),
-    )
-
-
 def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
     """The closed coverage record, or a named refusal.
 
@@ -299,7 +286,11 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
         (assigned[key] for key in assigned if assigned[key]["disposition"] in NEEDS_REASON),
         key=lambda entry: entry["item"],
     )
-    inventory_ids, case_ids = _matched(inventory, workbook)
+    # Both sides in full. The join itself is made by the reviewer through the
+    # oracle field, so what is unmatched is worked out below from what the
+    # dispositions cite, never inferred here.
+    inventory_ids = sorted(item_id(item) for item in inventory.get("items", []))
+    case_ids = sorted(case_id(case) for case in workbook.get("cases", []))
     oracles = {a["oracle"] for a in assigned.values() if a["oracle"]}
     cited = {f"case:{name}" for name in oracles}
 
@@ -313,6 +304,7 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
         "caps": {
             "dispositions": MAX_DISPOSITIONS,
             "reason_bytes": MAX_REASON_BYTES,
+            "input_bytes": MAX_FILE_BYTES,
         },
         "vocabulary": list(DISPOSITIONS),
         "counts": {

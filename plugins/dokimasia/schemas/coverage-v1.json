@@ -21,10 +21,12 @@
     "caps": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["dispositions", "reason_bytes"],
+      "description": "Every bound the reconciler enforces, so a reader auditing what limits applied does not have to read the source to find one.",
+      "required": ["dispositions", "reason_bytes", "input_bytes"],
       "properties": {
         "dispositions": { "type": "integer", "minimum": 1 },
-        "reason_bytes": { "type": "integer", "minimum": 1 }
+        "reason_bytes": { "type": "integer", "minimum": 1 },
+        "input_bytes": { "type": "integer", "minimum": 1 }
       }
     },
     "vocabulary": {
