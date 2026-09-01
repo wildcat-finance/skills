@@ -75,7 +75,7 @@ def entry_digest(entry: dict) -> str:
     ).hexdigest()
 
 
-def _reason_for(scoped: dict, case_fields: dict) -> str:
+def _reason_for(scoped: dict) -> str:
     """The drafted reason for one scoped item, from what its record says."""
     if scoped["side"] == "workbook":
         sheet, _, row = scoped["source"].rpartition(":")
@@ -118,7 +118,7 @@ def draft_entry(scoped: dict) -> dict:
     entry = {
         "item": scoped["id"],
         "disposition": state,
-        "reason": _reason_for(scoped, {}),
+        "reason": _reason_for(scoped),
         "oracle": "",
         "confirmed": False,
     }
@@ -197,6 +197,11 @@ def propose(
     proposed: list[dict] = []
     replaced = 0
     added = 0
+    # `seen` already holds every item the existing set answered for, so the
+    # replaced-or-added decision is a set membership rather than a walk of
+    # that list once per scoped item. The declared cap admits 40,000 entries
+    # on each side, which is the same shape S2-R1-01 recorded in the
+    # reconciler and is worth not reintroducing here.
     for scoped_entry in scoped:
         target = scoped_entry["id"]
         if target in kept:
@@ -205,7 +210,7 @@ def propose(
         proposed.append(draft_entry(scoped_entry))
         if existing is None:
             added += 1
-        elif any(e.get("item") == target for e in existing.get("dispositions", [])):
+        elif target in seen:
             replaced += 1
         else:
             added += 1
