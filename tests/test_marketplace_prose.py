@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import re
+import tempfile
 import unittest
 
 from repo_contract import (
@@ -152,6 +153,23 @@ def repository_markdown(root):
         if relative.parts[: len(PORTABLE_RUNTIME)] == PORTABLE_RUNTIME:
             continue
         if not _inside_nested_checkout(relative, root):
+            yield path
+
+
+def plugin_marketplace_surfaces(plugin_root, root):
+    """Every first-party Markdown surface of one plugin, skipping checkouts.
+
+    The nested-checkout test is made against the path relative to the
+    repository root, never against its absolute parts. A clone living under a
+    directory this function would otherwise skip, which is where Claude Code
+    worktrees put one, has that name in every absolute path it contains: an
+    absolute test excludes the whole tree, the loop below runs zero times and
+    the assertion passes while checking nothing.
+    """
+    for path in sorted(plugin_root.rglob("*.md")):
+        if _inside_nested_checkout(path.relative_to(root), root):
+            continue
+        if mutable_marketplace_surface(plugin_root, path):
             yield path
 
 
@@ -414,12 +432,8 @@ class MarketplaceProseTests(unittest.TestCase):
             expected = landing_frontiers[0]
 
             plugin_root = ROOT / "plugins" / name
-            surfaces = [
-                path
-                for path in plugin_root.rglob("*.md")
-                if ".claude" not in path.parts
-                and mutable_marketplace_surface(plugin_root, path)
-            ]
+            surfaces = list(plugin_marketplace_surfaces(plugin_root, ROOT))
+            self.assertTrue(surfaces, plugin_root)
             portable = ROOT / ".agents" / "skills" / name / "SKILL.md"
             if portable.is_file():
                 surfaces.append(portable)
@@ -485,3 +499,66 @@ class MarketplaceProseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SurfaceEnumerationTests(unittest.TestCase):
+    """The sweep must not go quiet because of where the clone happens to sit.
+
+    A filter that tests a path's absolute parts answers a question about the
+    machine rather than the repository. Claude Code puts worktrees under
+    `.claude/worktrees/`, so every absolute path in such a clone carries the
+    name a nested-checkout filter skips, and the enumeration returns nothing.
+    Nothing fails: the loop that consumes it runs zero times and its
+    assertions never execute.
+    """
+
+    def _plugin(self, root):
+        plugin_root = root / "plugins" / "example"
+        (plugin_root / "skills" / "example").mkdir(parents=True)
+        (plugin_root / "README.md").write_text("landing\n", encoding="utf-8")
+        (plugin_root / "AGENTS.md").write_text("agents\n", encoding="utf-8")
+        (plugin_root / "skills" / "example" / "SKILL.md").write_text(
+            "skill\n", encoding="utf-8"
+        )
+        return plugin_root
+
+    def test_surfaces_are_found_when_the_root_sits_under_a_skipped_name(self):
+        for holder in sorted(NESTED_CHECKOUT_NAMES):
+            with self.subTest(holder=holder):
+                with tempfile.TemporaryDirectory() as raw:
+                    root = Path(raw) / holder / "worktrees" / "repository"
+                    root.mkdir(parents=True)
+                    plugin_root = self._plugin(root)
+                    found = {
+                        path.relative_to(root).as_posix()
+                        for path in plugin_marketplace_surfaces(plugin_root, root)
+                    }
+                self.assertEqual(found, {
+                    "plugins/example/README.md",
+                    "plugins/example/AGENTS.md",
+                    "plugins/example/skills/example/SKILL.md",
+                })
+
+    def test_a_checkout_nested_inside_the_plugin_is_still_skipped(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw) / ".claude" / "worktrees" / "repository"
+            root.mkdir(parents=True)
+            plugin_root = self._plugin(root)
+            nested = plugin_root / "vendor" / "clone"
+            (nested / ".git").mkdir(parents=True)
+            (nested / "README.md").write_text("copy\n", encoding="utf-8")
+            found = {
+                path.relative_to(root).as_posix()
+                for path in plugin_marketplace_surfaces(plugin_root, root)
+            }
+        self.assertNotIn("plugins/example/vendor/clone/README.md", found)
+        self.assertIn("plugins/example/README.md", found)
+
+    def test_every_shipped_plugin_offers_at_least_one_surface(self):
+        """The guard that would have caught this in the suite it belongs to."""
+        for name in PLUGINS:
+            with self.subTest(plugin=name):
+                surfaces = list(
+                    plugin_marketplace_surfaces(ROOT / "plugins" / name, ROOT)
+                )
+                self.assertTrue(surfaces)
