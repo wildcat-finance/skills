@@ -895,8 +895,7 @@ def _preflight_json(raw: bytes) -> None:
             raise Refusal("record exceeds JSON token limit")
 
 
-def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
-    raw = _read_regular(path, MAX_JSON_BYTES)
+def _decode_record(raw: bytes) -> dict[str, Any]:
     _preflight_json(raw)
     try:
         value = json.loads(
@@ -914,6 +913,12 @@ def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
         raise Refusal("record root must be an object")
     if _canonical_json(value) != raw:
         raise Refusal("record is not canonical JSON")
+    return value
+
+
+def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
+    raw = _read_regular(path, MAX_JSON_BYTES)
+    value = _decode_record(raw)
     return value, raw
 
 
@@ -4048,10 +4053,130 @@ def _validate_partition_closure(partition: dict[str, Any]) -> None:
             raise Refusal("partition does not close over its source")
 
 
-def _verify_exact(
-    path: Path, expected: dict[str, Any], label: str
+def _validate_artifact_inventory(inventory: dict[str, Any]) -> None:
+    _require_fields(
+        inventory,
+        (
+            "artifacts",
+            "reconciliation",
+            "schema",
+            "source_ref",
+            "source_tree_sha256",
+        ),
+        (
+            "artifacts",
+            "reconciliation",
+            "schema",
+            "source_ref",
+            "source_tree_sha256",
+        ),
+        "artifact inventory",
+    )
+    if inventory["schema"] != f"{SCHEMA_PREFIX}-artifact-inventory/v1":
+        raise Refusal("artifact inventory schema mismatch")
+    if inventory["source_ref"] != SOURCE_REF:
+        raise Refusal("artifact inventory source ref mismatch")
+    if not isinstance(inventory["source_tree_sha256"], str) or re.fullmatch(
+        r"[0-9a-f]{64}", inventory["source_tree_sha256"]
+    ) is None:
+        raise Refusal("artifact inventory source tree digest is invalid")
+    artifacts = inventory["artifacts"]
+    if not isinstance(artifacts, dict) or set(artifacts) != set(
+        BASELINE_RECORD_NAMES
+    ):
+        raise Refusal("artifact inventory record set mismatch")
+    for name in BASELINE_RECORD_NAMES:
+        record = artifacts[name]
+        if not isinstance(record, dict):
+            raise Refusal("artifact inventory record is not an object")
+        _require_fields(
+            record,
+            ("bytes", "sha256"),
+            ("bytes", "sha256"),
+            "artifact inventory record",
+        )
+        if type(record["bytes"]) is not int or record["bytes"] < 1:
+            raise Refusal("artifact inventory byte count is invalid")
+        if not isinstance(record["sha256"], str) or re.fullmatch(
+            r"[0-9a-f]{64}", record["sha256"]
+        ) is None:
+            raise Refusal("artifact inventory digest is invalid")
+    reconciliation = inventory["reconciliation"]
+    if not isinstance(reconciliation, dict):
+        raise Refusal("reconciliation inventory record is not an object")
+    _require_fields(
+        reconciliation,
+        ("bytes", "sha256"),
+        ("bytes", "sha256"),
+        "reconciliation inventory record",
+    )
+    if type(reconciliation["bytes"]) is not int or reconciliation["bytes"] < 1:
+        raise Refusal("reconciliation inventory byte count is invalid")
+    if not isinstance(reconciliation["sha256"], str) or re.fullmatch(
+        r"[0-9a-f]{64}", reconciliation["sha256"]
+    ) is None:
+        raise Refusal("reconciliation inventory digest is invalid")
+
+
+def _load_committed_baseline(
+    requested: dict[str, Path],
+    reconciliation: Path | None = None,
+) -> dict[str, tuple[dict[str, Any], bytes]]:
+    if not requested or not set(requested) <= set(BASELINE_RECORD_NAMES):
+        raise Refusal("baseline verifier requested an unknown record")
+    directory: PurePosixPath | None = None
+    for name, path in requested.items():
+        relative = _repository_relative(path, "baseline artifact")
+        if relative.name != name:
+            raise Refusal("baseline artifact filename mismatch")
+        if directory is None:
+            directory = relative.parent
+        elif relative.parent != directory:
+            raise Refusal("baseline artifacts do not share one inventory")
+    if directory is None:
+        raise Refusal("baseline verifier has no inventory directory")
+    if reconciliation is None:
+        if directory != BASELINE_FIXTURE_ROOT:
+            raise Refusal("scratch baseline requires a reconciliation path")
+        reconciliation = ROOT / Path(*BASELINE_RECONCILIATION.parts)
+    else:
+        _repository_relative(reconciliation, "reconciliation input")
+
+    inventory_path = ROOT / Path(*directory.parts) / "artifact-inventory.json"
+    inventory, inventory_raw = _load_record(inventory_path)
+    _validate_artifact_inventory(inventory)
+    loaded: dict[str, tuple[dict[str, Any], bytes]] = {}
+    for name in BASELINE_RECORD_NAMES:
+        path = ROOT / Path(*directory.parts) / name
+        raw = _read_regular(path, MAX_JSON_BYTES)
+        identity = inventory["artifacts"][name]
+        if len(raw) != identity["bytes"] or _sha256(raw) != identity["sha256"]:
+            raise Refusal(f"artifact inventory identity mismatch: {name}")
+        loaded[name] = (_decode_record(raw), raw)
+
+    reconciliation_raw = _read_regular(reconciliation, MAX_JSON_BYTES)
+    reconciliation_identity = inventory["reconciliation"]
+    if (
+        len(reconciliation_raw) != reconciliation_identity["bytes"]
+        or _sha256(reconciliation_raw) != reconciliation_identity["sha256"]
+    ):
+        raise Refusal("reconciliation inventory identity mismatch")
+    if _read_regular(inventory_path, MAX_JSON_BYTES) != inventory_raw:
+        raise Refusal("artifact inventory changed during generation read")
+
+    manifest = loaded["corpus-manifest.json"][0]
+    source = manifest.get("source")
+    if not isinstance(source, dict) or (
+        source.get("ref") != inventory["source_ref"]
+        or source.get("tree_sha256") != inventory["source_tree_sha256"]
+    ):
+        raise Refusal("artifact inventory source identity mismatch")
+    return loaded
+
+
+def _verify_loaded(
+    actual: dict[str, Any], raw: bytes, expected: dict[str, Any], label: str
 ) -> tuple[dict[str, Any], bytes]:
-    actual, raw = _load_record(path)
     if actual != expected:
         raise Refusal(f"{label} differs from its source-bound derivation")
     return actual, raw
@@ -4075,27 +4200,46 @@ def _result(command: str, artifact: bytes, metrics: dict[str, Any]) -> bytes:
 
 
 def verify_corpus(args: argparse.Namespace) -> bytes:
-    profiles, _ = _load_record(args.profiles)
+    records = _load_committed_baseline(
+        {
+            "corpus-manifest.json": args.manifest,
+            "invocation-profiles.json": args.profiles,
+        },
+        args.reconciliation,
+    )
+    profiles, _ = records["invocation-profiles.json"]
     _validate_invocation_profiles(profiles)
     if profiles != build_invocation_profiles():
         raise Refusal("invocation profile fixture is stale")
     expected = build_manifest(profiles)
-    manifest, raw = _verify_exact(args.manifest, expected, "corpus manifest")
+    manifest, raw = _verify_loaded(
+        *records["corpus-manifest.json"], expected, "corpus manifest"
+    )
     _validate_manifest_shape(manifest)
     return _result("verify-corpus", raw, manifest["totals"])
 
 
 def verify_loader(args: argparse.Namespace) -> bytes:
-    profiles, _ = _load_record(args.profiles)
+    records = _load_committed_baseline(
+        {
+            "corpus-manifest.json": args.manifest,
+            "invocation-profiles.json": args.profiles,
+            "loader-graph.json": args.graph,
+        },
+        args.reconciliation,
+    )
+    profiles, _ = records["invocation-profiles.json"]
     _validate_invocation_profiles(profiles)
     if profiles != build_invocation_profiles():
         raise Refusal("invocation profile fixture is stale")
-    manifest, _ = _load_record(args.manifest)
+    manifest, _ = records["corpus-manifest.json"]
     _validate_manifest_shape(manifest)
     if manifest != build_manifest(profiles):
         raise Refusal("loader manifest is stale")
     expected = build_loader_graph(manifest, profiles)
-    graph, raw = _verify_exact(args.graph, expected, "loader graph")
+    graph, raw = _verify_loaded(
+        *records["loader-graph.json"], expected, "loader graph"
+    )
     paths = {item["path"] for item in manifest["documents"]}
     for edge in [*graph["edges"], *graph["scenario_edges"]]:
         if edge["source"] not in paths or edge["target"] not in paths:
@@ -4139,13 +4283,17 @@ def verify_loader(args: argparse.Namespace) -> bytes:
 
 
 def verify_profiles(args: argparse.Namespace) -> bytes:
+    requested = {"invocation-profiles.json": args.profiles}
+    if args.manifest is not None:
+        requested["corpus-manifest.json"] = args.manifest
+    records = _load_committed_baseline(requested, args.reconciliation)
     expected = build_invocation_profiles()
-    profiles, raw = _verify_exact(
-        args.profiles, expected, "invocation profiles"
+    profiles, raw = _verify_loaded(
+        *records["invocation-profiles.json"], expected, "invocation profiles"
     )
     _validate_invocation_profiles(profiles)
     if args.manifest is not None:
-        manifest, _ = _load_record(args.manifest)
+        manifest, _ = records["corpus-manifest.json"]
         _validate_manifest_shape(manifest)
         if manifest != build_manifest(profiles):
             raise Refusal("profile manifest is stale")
@@ -4153,14 +4301,24 @@ def verify_profiles(args: argparse.Namespace) -> bytes:
 
 
 def verify_partition(args: argparse.Namespace) -> bytes:
-    profiles, _ = _load_record(args.profiles)
+    records = _load_committed_baseline(
+        {
+            "byte-partition.json": args.partition,
+            "corpus-manifest.json": args.manifest,
+            "invocation-profiles.json": args.profiles,
+        },
+        args.reconciliation,
+    )
+    profiles, _ = records["invocation-profiles.json"]
     _validate_invocation_profiles(profiles)
-    manifest, _ = _load_record(args.manifest)
+    manifest, _ = records["corpus-manifest.json"]
     _validate_manifest_shape(manifest)
     if manifest != build_manifest(profiles):
         raise Refusal("partition manifest is stale")
     expected = build_partition(manifest)
-    partition, raw = _verify_exact(args.partition, expected, "byte partition")
+    partition, raw = _verify_loaded(
+        *records["byte-partition.json"], expected, "byte partition"
+    )
     _validate_partition_closure(partition)
     if partition["unsupported_operative_bytes"] != 0:
         raise Refusal("unsupported operative bytes block selection")
@@ -4168,17 +4326,33 @@ def verify_partition(args: argparse.Namespace) -> bytes:
 
 
 def verify_seal(args: argparse.Namespace) -> bytes:
-    profiles, _ = _load_record(args.profiles)
+    records = _load_committed_baseline(
+        {
+            "cohorts.json": args.cohorts,
+            "corpus-manifest.json": args.manifest,
+            "holdout-seal.json": args.seal,
+            "invocation-profiles.json": args.profiles,
+        },
+        args.reconciliation,
+    )
+    profiles, _ = records["invocation-profiles.json"]
     _validate_invocation_profiles(profiles)
-    manifest, _ = _load_record(args.manifest)
+    manifest, _ = records["corpus-manifest.json"]
     _validate_manifest_shape(manifest)
     if manifest != build_manifest(profiles):
         raise Refusal("seal manifest is stale")
     expected_cohorts = build_cohorts(manifest)
-    cohorts, _ = _verify_exact(args.cohorts, expected_cohorts, "cohorts")
+    cohorts, _ = _verify_loaded(
+        *records["cohorts.json"], expected_cohorts, "cohorts"
+    )
     graph = build_loader_graph(manifest, profiles)
+    _verify_loaded(
+        *records["loader-graph.json"], graph, "loader graph"
+    )
     expected_seal = build_holdout_seal(manifest, cohorts, profiles, graph)
-    seal, raw = _verify_exact(args.seal, expected_seal, "holdout seal")
+    seal, raw = _verify_loaded(
+        *records["holdout-seal.json"], expected_seal, "holdout seal"
+    )
     _validate_holdout_seal(seal, manifest, cohorts, profiles, graph)
     return _result(
         "verify-seal",
@@ -4520,11 +4694,16 @@ live source bytes before accepting an artefact. Git runs by one absolute
 system-owned executable with lazy fetch, global and system configuration,
 prompts and ambient environment disabled. a path, byte, digest, loader span,
 partition range, cohort member or commitment that drifts refuses with the
-failed predicate. paths are canonical printable-ASCII POSIX relatives no longer
-than 1,024 bytes; aliases, traversal, empty segments, backslashes, controls and
-non-ASCII input refuse in both runtime and schema. current prompt and
-scenario-reachable denominators remain
-unmeasured until the later arm and case builders exist.
+failed predicate. the six JSON records and this reconciliation are payloads;
+`artifact-inventory.json` binds all seven byte identities and is published last
+as their logical commit point. a verifier reads that inventory, snapshots and
+checks every bound payload, then rereads the same inventory before consuming
+the cached bytes. an interrupted or concurrent build therefore leaves either
+one intact generation or a refusal, never an accepted mixture. paths are
+canonical printable-ASCII POSIX relatives no longer than 1,024 bytes; aliases,
+traversal, empty segments, backslashes, controls and non-ASCII input refuse in
+both runtime and schema. current prompt and scenario-reachable denominators
+remain unmeasured until the later arm and case builders exist.
 """
     return text.encode("utf-8")
 
@@ -4537,24 +4716,28 @@ def build_baseline(args: argparse.Namespace) -> bytes:
         roots=(SCRATCH_ROOT,),
     )
     reconciliation = args.reconciliation
-    if reconciliation is not None:
-        reconciliation = _confined_output(
-            reconciliation,
-            "reconciliation output",
-            exact=(BASELINE_RECONCILIATION,),
-            roots=(SCRATCH_ROOT,),
-        )
-        artifact_targets = {
-            output / name
-            for name in (*BASELINE_RECORD_NAMES, "artifact-inventory.json")
-        }
-        if (
-            reconciliation == output
-            or reconciliation in output.parents
-            or reconciliation in artifact_targets
-            or any(target in reconciliation.parents for target in artifact_targets)
-        ):
-            raise Refusal("reconciliation output overlaps baseline artifacts")
+    if reconciliation is None:
+        raise Refusal("reconciliation output is required for baseline publication")
+    reconciliation = _confined_output(
+        reconciliation,
+        "reconciliation output",
+        exact=(BASELINE_RECONCILIATION,),
+        roots=(SCRATCH_ROOT,),
+    )
+    artifact_targets = {
+        output / name
+        for name in (*BASELINE_RECORD_NAMES, "artifact-inventory.json")
+    }
+    if (
+        reconciliation == output
+        or reconciliation in output.parents
+        or reconciliation in artifact_targets
+        or any(target in reconciliation.parents for target in artifact_targets)
+    ):
+        raise Refusal("reconciliation output overlaps baseline artifacts")
+    for target in (*sorted(artifact_targets), reconciliation):
+        _safe_output(target)
+
     profiles = build_invocation_profiles()
     _validate_invocation_profiles(profiles)
     manifest = build_manifest(profiles)
@@ -4566,26 +4749,33 @@ def build_baseline(args: argparse.Namespace) -> bytes:
     if len(values) != len(BASELINE_RECORD_NAMES):
         raise Refusal("baseline artifact inventory cardinality drift")
     records = dict(zip(BASELINE_RECORD_NAMES, values))
+    record_bytes = {
+        name: _canonical_json(value) for name, value in records.items()
+    }
+    reconciliation_bytes = _reconciliation_markdown(
+        manifest, profiles, graph, partition, cohorts
+    )
     digests: dict[str, dict[str, Any]] = {}
-    for name, value in records.items():
-        data = _canonical_json(value)
-        _atomic_write(output / name, data)
+    for name, data in record_bytes.items():
         digests[name] = {"bytes": len(data), "sha256": _sha256(data)}
     inventory = {
         "schema": f"{SCHEMA_PREFIX}-artifact-inventory/v1",
         "source_ref": SOURCE_REF,
         "source_tree_sha256": manifest["source"]["tree_sha256"],
         "artifacts": digests,
+        "reconciliation": {
+            "bytes": len(reconciliation_bytes),
+            "sha256": _sha256(reconciliation_bytes),
+        },
     }
-    _atomic_write(output / "artifact-inventory.json", _canonical_json(inventory))
-    if reconciliation is not None:
-        _atomic_write(
-            reconciliation,
-            _reconciliation_markdown(manifest, profiles, graph, partition, cohorts),
-        )
+    inventory_bytes = _canonical_json(inventory)
+    for name, data in record_bytes.items():
+        _atomic_write(output / name, data)
+    _atomic_write(reconciliation, reconciliation_bytes)
+    _atomic_write(output / "artifact-inventory.json", inventory_bytes)
     return _result(
         "build-baseline",
-        _canonical_json(inventory),
+        inventory_bytes,
         {
             **manifest["totals"],
             "loader_edges": len(graph["edges"]),
@@ -4661,6 +4851,15 @@ def parser() -> argparse.ArgumentParser:
     seal.add_argument("--cohorts", type=_path, required=True)
     seal.add_argument("--seal", type=_path, required=True)
     seal.set_defaults(handler=verify_seal)
+    for verifier in (corpus, profile_check, loader, partition, seal):
+        verifier.add_argument(
+            "--reconciliation",
+            type=_path,
+            help=(
+                "bound reconciliation path; required for a scratch baseline and "
+                "implicit for the committed fixture"
+            ),
+        )
     return result
 
 

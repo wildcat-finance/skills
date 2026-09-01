@@ -459,9 +459,10 @@
     "artifactInventory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["artifacts", "schema", "source_ref", "source_tree_sha256"],
+      "required": ["artifacts", "reconciliation", "schema", "source_ref", "source_tree_sha256"],
       "properties": {
         "artifacts": {"$ref": "#/$defs/artifactInventoryEntries"},
+        "reconciliation": {"$ref": "#/$defs/artifactRecord"},
         "schema": {"const": "wildcat-instruction-architecture-artifact-inventory/v1"},
         "source_ref": {"$ref": "#/$defs/gitOid"},
         "source_tree_sha256": {"$ref": "#/$defs/sha256"}

@@ -1324,6 +1324,50 @@ class CorpusManifestTests(unittest.TestCase):
             self.assertEqual(
                 record, {"bytes": path.stat().st_size, "sha256": sha256(path)}
             )
+        reconciliation = ROOT / "docs/instruction-architecture/corpus-reconciliation.md"
+        self.assertEqual(
+            inventory["reconciliation"],
+            {
+                "bytes": reconciliation.stat().st_size,
+                "sha256": sha256(reconciliation),
+            },
+        )
+
+    def test_committed_reader_refuses_changed_unrequested_payload(self):
+        original_read = AI._read_regular
+
+        def changed_graph(path: Path, limit: int) -> bytes:
+            raw = original_read(path, limit)
+            return raw + b" " if path == GRAPH else raw
+
+        with mock.patch.object(AI, "_read_regular", side_effect=changed_graph):
+            with self.assertRaisesRegex(
+                AI.Refusal, "artifact inventory identity mismatch: loader-graph.json"
+            ):
+                AI._load_committed_baseline(
+                    {"invocation-profiles.json": PROFILES}
+                )
+
+    def test_committed_reader_refuses_inventory_swap_during_snapshot(self):
+        original_read = AI._read_regular
+        inventory_reads = 0
+
+        def changed_inventory(path: Path, limit: int) -> bytes:
+            nonlocal inventory_reads
+            raw = original_read(path, limit)
+            if path == INVENTORY:
+                inventory_reads += 1
+                if inventory_reads == 2:
+                    return raw + b" "
+            return raw
+
+        with mock.patch.object(AI, "_read_regular", side_effect=changed_inventory):
+            with self.assertRaisesRegex(
+                AI.Refusal, "artifact inventory changed during generation read"
+            ):
+                AI._load_committed_baseline(
+                    {"invocation-profiles.json": PROFILES}
+                )
 
     def test_build_baseline_reproduces_all_committed_outputs(self):
         with scratch_directory("instruction-architecture-rebuild-") as inside:
@@ -1338,6 +1382,180 @@ class CorpusManifestTests(unittest.TestCase):
                 reconciliation.read_bytes(),
                 (ROOT / "docs/instruction-architecture/corpus-reconciliation.md").read_bytes(),
             )
+
+    def test_build_baseline_commits_all_eight_outputs_as_one_generation(self):
+        profiles: dict = {}
+        manifest = {
+            "source": {"ref": AI.SOURCE_REF, "tree_sha256": "a" * 64},
+            "totals": {},
+        }
+        graph = {"edges": []}
+        partition: dict = {}
+        cohorts = {"holdout": {"logical_skills": []}}
+        seal: dict = {}
+        new_records = dict(
+            zip(
+                AI.BASELINE_RECORD_NAMES,
+                map(canonical, (manifest, profiles, graph, partition, cohorts, seal)),
+            )
+        )
+        new_reconciliation = b"new reconciliation\n"
+
+        def seed_old_generation(output: Path, reconciliation: Path) -> None:
+            output.mkdir(parents=True)
+            artifacts = {}
+            for name in AI.BASELINE_RECORD_NAMES:
+                raw = canonical({"generation": "old", "name": name})
+                (output / name).write_bytes(raw)
+                artifacts[name] = {
+                    "bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                }
+            old_reconciliation = b"old reconciliation\n"
+            reconciliation.write_bytes(old_reconciliation)
+            inventory = {
+                "schema": f"{AI.SCHEMA_PREFIX}-artifact-inventory/v1",
+                "source_ref": AI.SOURCE_REF,
+                "source_tree_sha256": "a" * 64,
+                "artifacts": artifacts,
+                "reconciliation": {
+                    "bytes": len(old_reconciliation),
+                    "sha256": hashlib.sha256(old_reconciliation).hexdigest(),
+                },
+            }
+            (output / "artifact-inventory.json").write_bytes(canonical(inventory))
+
+        def independently_committed(
+            output: Path, reconciliation: Path
+        ) -> tuple[bool, str | None]:
+            try:
+                inventory = load(output / "artifact-inventory.json")
+                if set(inventory) != {
+                    "schema",
+                    "source_ref",
+                    "source_tree_sha256",
+                    "artifacts",
+                    "reconciliation",
+                }:
+                    return False, None
+                if set(inventory["artifacts"]) != set(AI.BASELINE_RECORD_NAMES):
+                    return False, None
+                generations = set()
+                for name, record in inventory["artifacts"].items():
+                    raw = (output / name).read_bytes()
+                    if record != {
+                        "bytes": len(raw),
+                        "sha256": hashlib.sha256(raw).hexdigest(),
+                    }:
+                        return False, None
+                    value = json.loads(raw)
+                    generations.add(value.get("generation", "new"))
+                reconciliation_record = inventory["reconciliation"]
+                raw = reconciliation.read_bytes()
+                if {
+                    "bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                } != {
+                    "bytes": reconciliation_record["bytes"],
+                    "sha256": reconciliation_record["sha256"],
+                }:
+                    return False, None
+                generations.add("old" if raw.startswith(b"old ") else "new")
+                if len(generations) != 1:
+                    return False, None
+                return True, next(iter(generations))
+            except (KeyError, OSError, TypeError, ValueError):
+                return False, None
+
+        derivations = (
+            mock.patch.object(AI, "build_invocation_profiles", return_value=profiles),
+            mock.patch.object(AI, "_validate_invocation_profiles"),
+            mock.patch.object(AI, "build_manifest", return_value=manifest),
+            mock.patch.object(AI, "build_loader_graph", return_value=graph),
+            mock.patch.object(AI, "build_partition", return_value=partition),
+            mock.patch.object(AI, "build_cohorts", return_value=cohorts),
+            mock.patch.object(AI, "build_holdout_seal", return_value=seal),
+            mock.patch.object(
+                AI, "_reconciliation_markdown", return_value=new_reconciliation
+            ),
+        )
+        with scratch_directory("instruction-architecture-transaction-") as inside:
+            root = Path(inside)
+            with (
+                derivations[0],
+                derivations[1],
+                derivations[2],
+                derivations[3],
+                derivations[4],
+                derivations[5],
+                derivations[6],
+                derivations[7],
+            ):
+                for boundary in range(1, 9):
+                    output = root / f"records-{boundary}"
+                    reconciliation = root / f"reconciliation-{boundary}.md"
+                    seed_old_generation(output, reconciliation)
+                    original_write = AI._atomic_write
+                    calls = 0
+
+                    def inject(path: Path, data: bytes) -> None:
+                        nonlocal calls
+                        calls += 1
+                        if calls == boundary:
+                            raise RuntimeError(f"injected refusal before write {boundary}")
+                        original_write(path, data)
+
+                    with mock.patch.object(AI, "_atomic_write", side_effect=inject):
+                        with self.assertRaisesRegex(
+                            RuntimeError, f"injected refusal before write {boundary}"
+                        ):
+                            AI.build_baseline(
+                                mock.Mock(
+                                    output=output,
+                                    reconciliation=reconciliation,
+                                )
+                            )
+                    accepted, generation = independently_committed(
+                        output, reconciliation
+                    )
+                    self.assertFalse(
+                        accepted and generation not in {"old", "new"},
+                        f"mixed generation accepted after write boundary {boundary}",
+                    )
+                    self.assertEqual(
+                        (accepted, generation),
+                        (True, "old") if boundary == 1 else (False, None),
+                    )
+
+                output = root / "records-complete"
+                reconciliation = root / "reconciliation-complete.md"
+                seed_old_generation(output, reconciliation)
+                writes = []
+                original_write = AI._atomic_write
+
+                def observe(path: Path, data: bytes) -> None:
+                    writes.append(path.name)
+                    original_write(path, data)
+
+                with mock.patch.object(AI, "_atomic_write", side_effect=observe):
+                    AI.build_baseline(
+                        mock.Mock(output=output, reconciliation=reconciliation)
+                    )
+                self.assertEqual(len(writes), 8)
+                self.assertEqual(writes[-1], "artifact-inventory.json")
+                self.assertEqual(
+                    {name: (output / name).read_bytes() for name in AI.BASELINE_RECORD_NAMES},
+                    new_records,
+                )
+                self.assertEqual(reconciliation.read_bytes(), new_reconciliation)
+                self.assertEqual(
+                    independently_committed(output, reconciliation),
+                    (True, "new"),
+                )
+                AI._load_committed_baseline(
+                    {"invocation-profiles.json": output / "invocation-profiles.json"},
+                    reconciliation,
+                )
 
     def test_moved_runtime_and_fixtures_are_excluded(self):
         paths = [item["path"] for item in self.manifest["documents"]]

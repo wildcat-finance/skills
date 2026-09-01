@@ -29,7 +29,12 @@ companion schema. source reads are bounded regular-file reads matched against
 the fixed Git blob. Git runs from a closed set of absolute system-owned paths,
 with lazy fetch, global and system configuration, prompts and ambient
 environment disabled. writes use a same-directory temporary file, `fsync`,
-atomic replacement and a complete reread.
+atomic replacement and a complete reread. the six JSON records and
+reconciliation are published before `artifact-inventory.json`; that last write
+is the logical generation commit. every verifier checks the inventory's seven
+byte identities, rereads the unchanged inventory and consumes only the bytes it
+already checked, so interruption or concurrent publication refuses instead of
+accepting a mixed generation.
 
 the source-owned ledger expands 519 bounded invocation profiles across all 31
 selectable canonical skills. each profile has two repository roots, two

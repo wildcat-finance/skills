@@ -256,8 +256,13 @@ live source bytes before accepting an artefact. Git runs by one absolute
 system-owned executable with lazy fetch, global and system configuration,
 prompts and ambient environment disabled. a path, byte, digest, loader span,
 partition range, cohort member or commitment that drifts refuses with the
-failed predicate. paths are canonical printable-ASCII POSIX relatives no longer
-than 1,024 bytes; aliases, traversal, empty segments, backslashes, controls and
-non-ASCII input refuse in both runtime and schema. current prompt and
-scenario-reachable denominators remain
-unmeasured until the later arm and case builders exist.
+failed predicate. the six JSON records and this reconciliation are payloads;
+`artifact-inventory.json` binds all seven byte identities and is published last
+as their logical commit point. a verifier reads that inventory, snapshots and
+checks every bound payload, then rereads the same inventory before consuming
+the cached bytes. an interrupted or concurrent build therefore leaves either
+one intact generation or a refusal, never an accepted mixture. paths are
+canonical printable-ASCII POSIX relatives no longer than 1,024 bytes; aliases,
+traversal, empty segments, backslashes, controls and non-ASCII input refuse in
+both runtime and schema. current prompt and scenario-reachable denominators
+remain unmeasured until the later arm and case builders exist.
