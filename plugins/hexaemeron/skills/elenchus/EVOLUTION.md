@@ -7,7 +7,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `observed-failure-root-cause`
 - Current frontier: A check overlays a fix's changed tests onto the parent and classifies unittest, Forge and Node guards from fresh runner-owned reports, while diagnostics remain inert evidence.
 - Next Fiat job: None -- mature
-- Venues: [../../../../VENUES.json](../../../../VENUES.json)
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

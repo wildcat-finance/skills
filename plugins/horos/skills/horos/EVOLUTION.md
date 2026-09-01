@@ -7,7 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `content-addressed-objects`
 - Current frontier: The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
 - Next Fiat job: Ship the content-addressed object rule whose evidence is the digest a file's own bytes produce.
-- Venues: [../../../../VENUES.json](../../../../VENUES.json)
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

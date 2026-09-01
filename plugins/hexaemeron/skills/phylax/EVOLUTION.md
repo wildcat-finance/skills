@@ -12,7 +12,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `off-chain-boundary-controls`
 - Current frontier: Phylax mechanically checks its established Python boundaries and source-local TypeScript controls for raw HTML ordering, persisted session credentials and runtime-selected absolute fetch hosts.
 - Next Fiat job: None -- mature
-- Venues: [../../../../VENUES.json](../../../../VENUES.json)
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

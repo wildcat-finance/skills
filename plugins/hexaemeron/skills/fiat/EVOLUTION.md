@@ -11,7 +11,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `state-shape-validation`
 - Current frontier: load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
 - Next Fiat job: Complete [skills#363](https://github.com/wildcat-finance/skills/issues/363): bind every Fiat delegation task identity to the current issue or topic, step number and role, refusing or replacing a stale reused handle. Accepted when a task for issue N cannot retain issue M in its visible name, Surveyor, Mason, Warden and Scribe expose current deterministic identities, resume and post-compaction reconstruction preserve them, and an executable regression rejects stale reuse.
-- Venues: [../../../../VENUES.json](../../../../VENUES.json)
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 
