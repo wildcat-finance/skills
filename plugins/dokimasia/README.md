@@ -5,7 +5,7 @@
 
 Dokimasia compiles a frontend's routes, actions and guards into a coverage denominator and reconciles a reviewed UAT workbook against it, so every scoped item carries exactly one disposition.
 
-**Current frontier.** Dokimasia compiles a pinned checkout, imports a reviewed workbook, reconciles both into dispositions, and has run one scrutiny of `wildcat-app-v2` at `bb9685fb`: 261 scoped items, none carrying a disposition. No code path helps a reviewer write one, and 261 entries by hand is the whole cost of using this.
+**Current frontier.** Dokimasia drafts a complete disposition set a reviewer edits rather than authors, and admits only the entries a person confirmed. The pinned scrutiny of `wildcat-app-v2` at `bb9685fb` closes at 202 over 261, drawn entirely from confirmed entries, with `covered` at zero. What the record cannot say is who confirmed those 202 or under what rule.
 
 **Next Fiat job.** Use /hexaemeron:fiat to propose a disposition set a reviewer can edit rather than author from nothing: draft `manual` and `excluded` entries with reasons for every scoped item, and never propose `covered`, which ADR-001 reserves to a person holding an item to a reviewed oracle. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->

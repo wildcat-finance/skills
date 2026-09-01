@@ -9,7 +9,7 @@ description: >
   person named. Horos decides what an agent does not read; Hexaemeron Fizz
   fuzzes contracts. Neither compiles a frontend inventory or holds an oracle.
 metadata:
-  version: "1.1.0"
+  version: "2.1.0"
 ---
 
 # Dokimasia
@@ -26,7 +26,7 @@ frontier pass after that ledger becomes mature.
 
 Dokimasia compiles a frontend's routes, actions and guards into a coverage denominator and reconciles a reviewed UAT workbook against it, so every scoped item carries exactly one disposition.
 
-**Current frontier.** Dokimasia compiles a pinned checkout, imports a reviewed workbook, reconciles both into dispositions, and has run one scrutiny of `wildcat-app-v2` at `bb9685fb`: 261 scoped items, none carrying a disposition. No code path helps a reviewer write one, and 261 entries by hand is the whole cost of using this.
+**Current frontier.** Dokimasia drafts a complete disposition set a reviewer edits rather than authors, and admits only the entries a person confirmed. The pinned scrutiny of `wildcat-app-v2` at `bb9685fb` closes at 202 over 261, drawn entirely from confirmed entries, with `covered` at zero. What the record cannot say is who confirmed those 202 or under what rule.
 <!-- marketplace-context:end -->
 
 Never report an item as covered without a reviewed oracle.

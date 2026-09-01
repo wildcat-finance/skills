@@ -95,3 +95,35 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the items from round 1 stand unchanged. Confirmed sound this round against the fixed tree, each with its output read: the three lints exit zero over the step's five changed paths; `run_checks --scope dokimasia` is green; all six check verbs exit zero from the repository root; the suite passes 264/264 with both pinned inputs supplied; the committed synopsis matches a fresh render; and the working tree is clean at the recorded head. Four properties were driven rather than read and are recorded so a later round need not rediscover them: a label carrying a separator or a parent reference refuses with exit 2 and writes nothing outside the declared evidence root, checked against `/tmp` afterwards; the executable source of the proposal module carries no `covered` literal once docstrings and comments are stripped, and `DRAFTABLE` holds exactly the two draftable states; a real write followed by two hand edits and a regeneration preserved both edited entries byte for byte and replaced the other thirteen; and two drafts of the same records serialise identically.
+
+## Step 4, round 1 -- 2026-09-01T23:00:51Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; proposal-covered-path=reviewed; confirmation-forgery=reviewed; regeneration-clobber=reviewed; evidence-digest-binding=reviewed; reason-overclaim=reviewed; emitted-set-unvalidated=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed
+
+Not checked: whether the 202 confirmations are correct judgements about wildcat-app-v2 is the reviewer's claim and nothing here establishes it; the 59 compiled items carry drafted exclusions nobody has decided on, so the record states they are undecided and not that they are out of scope; the 288ms class of timing observation remains one run on one machine; the scrutiny establishes what the declared rules recognised at one commit and nothing about the application's behaviour; the RS-40 router-selection regrade is still owed and needs an isolated context this session cannot open; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | medium | plugins/dokimasia/docs/evidence/wildcat-app-v2.dispositions.json | The committed set recorded `generated_by: 1.1.0`. The draft was written before the ledger moved, and version 1.1.0 has no `propose` verb, so the field named a version that could not have produced the file. Provenance that is merely stale reads the same as provenance that is wrong, and this is committed evidence a later comparison reads. Fixed by regenerating against the same two records, which also exercised the preservation rule against the real release rather than a fixture: 202 preserved, 59 replaced, 0 added, 0 dropped, every confirmed entry byte-identical and the ratio unchanged at 202 over 261. | fixed in 8758fafa |
+
+Leads not pursued: the committed set carries workbook sheet names, row numbers and case identifiers such as `1 Admin:6, identifier ADM-01`. That is metadata about the reviewed workbook rather than its content, and the coverage record and scrutiny prose already commit the same identifiers, so this ships no more than the previous release did; the workbook's bytes remain uncommitted as the phylax boundary requires. The 202 confirmations were applied mechanically under a rule a person stated rather than entry by entry, and the record cannot distinguish the two, which is exactly the gap the next frontier job names and the reason this run halted to ask rather than deciding on its own. `generated_by` is an operator-supplied provenance field with no signature behind it, so it records what the writing process claimed and not what a reader can verify; making it checkable needs a key this skill deliberately does not hold. The step's receipted exit named `run_checks --full`, which cannot pass from this branch because `tabularium-suite` fails on the base commit over the `VENUES.json` ownership question pull request #1094 raised; the amendment replaces it with the scope-selected form and the failure is carried into the integration pull request rather than fixed here, because moving that file is a reviewer's decision about another plugin.
+
+## Step 4, round 2 -- 2026-09-01T23:07:56Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; proposal-covered-path=reviewed; confirmation-forgery=reviewed; regeneration-clobber=reviewed; evidence-digest-binding=reviewed; reason-overclaim=reviewed; emitted-set-unvalidated=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed
+
+Not checked: the same negative space as round 1; whether the 202 confirmations are correct judgements stays the reviewer's claim, the 59 drafted exclusions remain undecided rather than out of scope, the timing observation is one run on one machine, the RS-40 regrade is still owed, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the items from round 1 stand unchanged. Confirmed sound this round against the fixed tree, each with its output read: the three lints exit zero over the step's changed paths; `run_checks --base fiat/dokimasia-proposed-dispositions` is green across nine checks including the root suite at 1110 tests and the dokimasia suite at 264; the committed synopsis matches a fresh render; a fresh Horos scan reproduces the committed boundary; and the working tree is clean at the recorded head. Four properties of the committed evidence were driven rather than read: the confirmed set is exactly the 202 workbook cases and every one is `manual`; no entry anywhere carries `covered` and none names an oracle; the counts add three ways, with disposed plus unconfirmed reaching the scoped total, undisposed equalling unconfirmed, and `by_disposition` summing to disposed; and the design checker admits `integration` on the record this run locked.
