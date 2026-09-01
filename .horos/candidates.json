@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16516719,
+    "bytes_blob": 16520702,
     "bytes_generated": 98
   },
   "entries": [
@@ -14,7 +14,7 @@
       "path": "audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 21812,
+      "bytes": 25795,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
