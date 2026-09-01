@@ -155,8 +155,9 @@
     "loaderConstraints": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["conditional_references_require_source_span", "file_presence_creates_edge", "fixtures_excluded", "manifest_reachability_is_graph_derived", "recursive_required_loads_closed", "same_repository_urls_require_exact_match", "skills_runtime_excluded"],
+      "required": ["complete_scenario_routes", "conditional_references_require_source_span", "file_presence_creates_edge", "fixtures_excluded", "manifest_reachability_is_graph_derived", "recursive_required_loads_closed", "same_repository_urls_require_exact_match", "skills_runtime_excluded"],
       "properties": {
+        "complete_scenario_routes": {"const": true},
         "conditional_references_require_source_span": {"const": true},
         "file_presence_creates_edge": {"const": false},
         "fixtures_excluded": {"const": true},

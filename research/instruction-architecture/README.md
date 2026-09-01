@@ -23,8 +23,15 @@ python3 research/instruction-architecture/benchmark.py verify-seal --manifest te
 every accepted JSON record is canonical UTF-8 with duplicate keys and
 non-finite numbers refused. object fields are closed by the validator and the
 companion schema. source reads are bounded regular-file reads matched against
-the fixed Git blob. writes use a same-directory temporary file, `fsync`, atomic
-replacement and a complete reread.
+the fixed Git blob. Git runs from a closed set of absolute system-owned paths,
+with lazy fetch, global and system configuration, prompts and ambient
+environment disabled. writes use a same-directory temporary file, `fsync`,
+atomic replacement and a complete reread.
+
+the 93 declared scenarios are 31 selectable canonical skills across three
+actual host routes: repository checkout, isolated Agent Skills and standalone
+plugin. each closure starts at that route's entry, binds one selected plugin
+runtime and skill, and follows only source-directed workflow edges.
 
 the holdout seal names membership and case-slot classes, but contains no task,
 answer, scorer key or model output. do not add those fields before the frozen

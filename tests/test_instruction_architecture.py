@@ -276,10 +276,10 @@ class CorpusManifestTests(unittest.TestCase):
                 "for _ in range(8):\n"
                 "    os.write(1, b'x' * 512)\n"
                 "    time.sleep(0.1)\n"
-                "Path(os.environ['INSTRUCTION_ARCHITECTURE_TEST_MARKER']).write_text('done')\n"
+                f"Path({str(marker)!r}).write_text('done')\n"
             )
             fake_git.write_text(
-                "#!/usr/bin/env python3\n"
+                f"#!{sys.executable}\n"
                 "import subprocess\n"
                 "import sys\n"
                 f"subprocess.Popen([sys.executable, '-c', {producer!r}])\n",
@@ -287,14 +287,92 @@ class CorpusManifestTests(unittest.TestCase):
             )
             fake_git.chmod(0o755)
             environment = {
-                "PATH": f"{binary}{os.pathsep}{os.environ.get('PATH', '')}",
-                "INSTRUCTION_ARCHITECTURE_TEST_MARKER": str(marker),
+                "PATH": f"{binary}{os.pathsep}{os.environ.get('PATH', '')}"
             }
-            with mock.patch.dict(AI.os.environ, environment, clear=False):
+            with (
+                mock.patch.object(
+                    AI,
+                    "_git_executable",
+                    return_value=str(fake_git.resolve()),
+                    create=True,
+                ),
+                mock.patch.dict(AI.os.environ, environment, clear=False),
+            ):
                 with self.assertRaisesRegex(AI.Refusal, "output exceeded"):
                     AI._git(["ignored"], limit=1_024)
             time.sleep(1)
             self.assertFalse(marker.exists())
+
+    def test_git_child_is_absolute_closed_and_network_inert(self):
+        with scratch_directory() as inside:
+            fake_git = Path(inside) / "git"
+            fake_git.write_text(
+                f"#!{sys.executable}\n"
+                "import json\n"
+                "import os\n"
+                "import sys\n"
+                "print(json.dumps({'argv': sys.argv, 'env': dict(os.environ)}, sort_keys=True))\n",
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            spawned: dict[str, str] = {}
+            real_popen = AI.subprocess.Popen
+
+            def capture_environment(*arguments, **keywords):
+                spawned.update(keywords["env"])
+                return real_popen(*arguments, **keywords)
+
+            with (
+                mock.patch.object(
+                    AI,
+                    "_git_executable",
+                    return_value=str(fake_git.resolve()),
+                    create=True,
+                ),
+                mock.patch.object(
+                    AI.subprocess, "Popen", side_effect=capture_environment
+                ),
+                mock.patch.dict(
+                    AI.os.environ,
+                    {
+                        "INSTRUCTION_ARCHITECTURE_SECRET": "do-not-copy",
+                        "PATH": f"{inside}{os.pathsep}{os.environ.get('PATH', '')}",
+                    },
+                    clear=False,
+                ),
+            ):
+                observed = json.loads(AI._git(["version"]))
+        self.assertEqual(observed["argv"][0], str(fake_git.resolve()))
+        self.assertIn("--no-lazy-fetch", observed["argv"])
+        expected_environment = {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_LITERAL_PATHSPECS": "1",
+            "GIT_NO_LAZY_FETCH": "1",
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+        }
+        self.assertEqual(spawned, expected_environment)
+        self.assertEqual(
+            {key: observed["env"].get(key) for key in expected_environment},
+            expected_environment,
+        )
+        self.assertNotIn("INSTRUCTION_ARCHITECTURE_SECRET", observed["env"])
+        self.assertNotIn("HOME", observed["env"])
+        self.assertNotIn("PATH", observed["env"])
+
+    def test_git_executable_ignores_ambient_path(self):
+        with scratch_directory() as inside:
+            fake_git = Path(inside) / "git"
+            fake_git.write_text("not executable by the workbench\n", encoding="utf-8")
+            fake_git.chmod(0o755)
+            with mock.patch.dict(AI.os.environ, {"PATH": str(inside)}, clear=False):
+                resolver = getattr(AI, "_git_executable", lambda: "git")
+                executable = Path(resolver())
+        self.assertTrue(executable.is_absolute())
+        self.assertNotEqual(executable, fake_git)
 
     def test_nonzero_git_exit_never_signals_a_reaped_process_group(self):
         with mock.patch.object(AI.os, "killpg") as killpg:
@@ -709,8 +787,9 @@ class LoaderGraphTests(unittest.TestCase):
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
         self.assertEqual(len(self.graph["edges"]), 205)
-        self.assertEqual(len(self.graph["scenario_roots"]), 50)
-        self.assertEqual(len(self.graph["scenario_edges"]), 193)
+        self.assertEqual(len(self.graph["scenario_roots"]), 93)
+        self.assertEqual(len(self.graph["scenario_edges"]), 244)
+        self.assertTrue(self.graph["constraints"]["complete_scenario_routes"])
         for relation in [
             *self.graph["roots"],
             *self.graph["edges"],
@@ -768,6 +847,79 @@ class LoaderGraphTests(unittest.TestCase):
             self.assertEqual(
                 set(item["scenario_reachability"]), observed[item["path"]]
             )
+
+    def test_declared_scenarios_are_complete_host_routes(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        reached = {
+            identifier: {
+                path for path, scenarios in observed.items() if identifier in scenarios
+            }
+            for identifier in (
+                "agent-skills:skill:fiat",
+                "repository:skill:fiat",
+                "standalone:hexaemeron:skill:fiat",
+            )
+        }
+        shared = {
+            "AGENTS.md",
+            "SHOGGOTH.md",
+            "PROMISE_MACHINE.md",
+            ".agents/skills/promise-machine/SKILL.md",
+            "plugins/hexaemeron/AGENTS.md",
+            "plugins/hexaemeron/PROMISE_MACHINE.md",
+            "plugins/hexaemeron/skills/fiat/SKILL.md",
+        }
+        self.assertLessEqual(shared, reached["repository:skill:fiat"])
+        self.assertNotIn(
+            ".agents/skills/promise-machine/PORTABLE.md",
+            reached["repository:skill:fiat"],
+        )
+        self.assertLessEqual(
+            shared | {".agents/skills/promise-machine/PORTABLE.md"},
+            reached["agent-skills:skill:fiat"],
+        )
+        standalone = reached["standalone:hexaemeron:skill:fiat"]
+        self.assertLessEqual(
+            {
+                "plugins/hexaemeron/AGENTS.md",
+                "plugins/hexaemeron/PROMISE_MACHINE.md",
+                "plugins/hexaemeron/skills/fiat/SKILL.md",
+            },
+            standalone,
+        )
+        self.assertFalse(
+            standalone
+            & {
+                "AGENTS.md",
+                "SHOGGOTH.md",
+                "PROMISE_MACHINE.md",
+                ".agents/skills/promise-machine/SKILL.md",
+                ".agents/skills/promise-machine/PORTABLE.md",
+            }
+        )
+        for paths in reached.values():
+            self.assertNotIn("plugins/alexandria/AGENTS.md", paths)
+
+    def test_fragment_scenario_root_refuses(self):
+        changed = copy.deepcopy(self.graph)
+        identifier = "repository:skill:fiat"
+        self.assertIn(identifier, {item["id"] for item in changed["scenario_roots"]})
+        root = next(item for item in changed["scenario_roots"] if item["id"] == identifier)
+        root["node"] = "plugins/hexaemeron/skills/fiat/SKILL.md"
+        router = ".agents/skills/promise-machine/SKILL.md"
+        skill_paths = {
+            AI._skill_name(item["path"]): item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "skill_contract" and item["path"] != router
+        }
+        validator = getattr(AI, "_validate_complete_scenarios", None)
+        self.assertIsNotNone(validator)
+        with self.assertRaisesRegex(AI.Refusal, "wrong host route"):
+            validator(changed, skill_paths)
 
     def test_graph_refuses_fabricated_manifest_reachability(self):
         for field, message in (

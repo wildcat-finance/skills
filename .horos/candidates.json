@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16945936,
+    "bytes_blob": 17053055,
     "bytes_generated": 98
   },
   "entries": [
@@ -14,7 +14,7 @@
       "path": "audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 22986,
+      "bytes": 29928,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -589,16 +589,16 @@
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },
     {
-      "bytes": 109481,
+      "bytes": 153133,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 109481 bytes",
+      "evidence": "no newline in the first 4096 bytes of 153133 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 225186,
+      "bytes": 281711,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 225186 bytes",
+      "evidence": "no newline in the first 4096 bytes of 281711 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }

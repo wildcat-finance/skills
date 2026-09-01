@@ -124,12 +124,16 @@ source-bound rather than inferred from a file's presence.
 ## loader evidence
 
 `loader-graph.json` records 19 roots and 205
-host edges, plus 50 scenario roots and
-193 scenario edges. every edge cites a source path,
-exact byte range, source digest and span digest. unconditional runtime loads,
-installed routes, identity checks, overlays, frontier gates, worker dispatches
-and operation branches remain distinct. manifest reachability is recomputed
-from those edges. a file's presence creates no edge. fixtures and
+host edges, plus 93 scenario roots and
+244 scenario edges. the scenario roots are the exact
+product of 31 selectable canonical skills and the repository, isolated Agent
+Skills and standalone-plugin host routes. each starts at its real host entry,
+loads only the selected plugin runtime and skill, and includes that workflow's
+source-directed descendants. every edge cites a source path, exact byte range,
+source digest and span digest. unconditional runtime loads, installed routes,
+identity checks, overlays, frontier gates, worker dispatches and operation
+branches remain distinct. manifest reachability is recomputed from those
+edges. a file's presence creates no edge. fixtures and
 `distribution/skills-runtime/` are outside this corpus.
 
 ## byte classes
@@ -158,7 +162,9 @@ output. later work may open that envelope once; Step 1 does not score it.
 ## refusal boundary
 
 all four verification commands rebuild from the fixed Git ref and compare the
-live source bytes before accepting an artefact. a path, byte, digest, loader
-span, partition range, cohort member or commitment that drifts refuses with
-the failed predicate. current prompt and scenario-reachable denominators remain
+live source bytes before accepting an artefact. Git runs by one absolute
+system-owned executable with lazy fetch, global and system configuration,
+prompts and ambient environment disabled. a path, byte, digest, loader span,
+partition range, cohort member or commitment that drifts refuses with the
+failed predicate. current prompt and scenario-reachable denominators remain
 unmeasured until the later arm and case builders exist.
