@@ -9,6 +9,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `design-bridge-check`
 - Current frontier: The point-or-write bridge requires a shipped study’s chosen design and rejected alternatives to reach one standing record, but the pre-receipt review remains judgement: no mechanical check binds that design to exactly one ADR or governed-skill ledger row.
 - Next Fiat job: Ship the evidenced design-bridge check carried forward by skills#314: prove that a shipped study’s chosen design points to exactly one standing record in the repository’s established home without copying the decision into both an ADR and a skill ledger. Accepted when fixtures catch an absent bridge, a dangling target and duplicate homes, accept valid ADR and governed-skill-ledger bridges, and both suites pass.
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 

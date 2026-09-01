@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `synkrisis-producer-admission`
 - Current frontier: The whole seed path ships. Two fresh builds of the pilot agree on the release id, the file set and every component byte; the Elenchus view has no field a verdict could occupy; the Synkrisis view carries its cohort, denominators, policy, exclusions and unknowns; and restricted material reaches neither adapter.
 - Next Fiat job: Get the Synkrisis producer contract to admit anamnesis-synkrisis-observation/v1, or record why it should not. Synkrisis gates its manifest on the single producer identity promise-machine-run-observation/v1, so the corpus cohort Anamnesis emits is produced and not consumed. Accepted when a Synkrisis cohort can be built from an Anamnesis observation with its denominators and exclusions intact, or when a decision record states that corpus projections belong outside the cohort boundary and names what reads them instead.
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 
