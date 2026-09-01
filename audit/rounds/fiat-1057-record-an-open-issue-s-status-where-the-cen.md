@@ -45,3 +45,19 @@ Elenchus verdict: guarded
 | S2-R1-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | `status_block_span` refused a closer with no opener only before the first block. After one closed, a further `<!-- status:end -->` was ignored: the reader returned span `(1, 3)` with no faults and `issue-check` reported a body carrying an unmatched delimiter as clean. The decision record's rule that a closer with no opener refuses was therefore enforced on one side of the block only. | fixed in 956c9e2ef28f5e0bb36192f0b956e1f718b204d3 |
 
 Leads not pursued: the controller digest reconciliation ran twice inside this one step, eleven bindings each time, because the implement commit and this audit fix both changed `hexctl.py`. Issue #892 owns the mechanism; what this round adds is that the cost is per-commit rather than per-step, so an audit loop multiplies it by the number of rounds touching the controller. Recorded rather than built, because collapsing it needs a derived digest at check time, which is a change to the Promise Machine rather than to this step. The committed-copy comparison lead from step 1 also stands, untouched here.
+
+## Step 2, round 2 -- 2026-09-01T11:49:03Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: fenced-decoy=reviewed; unclosed-block=reviewed; duplicate-block=reviewed; control-characters=reviewed; body-size=reviewed; digest-drift=reviewed; extractor-collision=reviewed
+
+Not checked: whether the Atlas dependency extractor skips the block, unchanged from round 1 and delivered in the Atlas repository. No body was fetched from GitHub over REST in this round. No measurement was taken of the reader, so neither the single-read change nor the added position scan carries a performance claim. Whether "top of the body" should also permit an HTML comment or a title line above the block was not explored; the rule implemented is the strict reading of the record.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | The record states at `docs/decisions/draft-fix-the-issue-status-block-markers.md:51` that the block sits at the top of the body, before the filing prose. The reader did not check position, so a block opened below the prose parsed to a valid span and `issue-check` reported the body clean. A reader coming top to bottom would meet the stale requirement and never reach the correction, which is the failure #837 records inside documents and the half-enforced-contract shape #427 records. | fixed in 0170a68e057e0d553980a7b16a98599a184d1333 |
+
+Leads not pursued: this step's implement phase wrote eight parser cases where the runbook's Tests field named four, one per reachable risk-register concern. The extra four cover the well-formed span, absence, a closer with no opener, and the block reaching the contract record. More coverage than specified is not a defect, and it is recorded here rather than amended into the runbook because the count in that field is an estimate and the concerns it enumerates are all covered. The digest reconciliation ran three times across this step, eleven bindings each time, once for the implement commit and once for each audit fix; #892 owns the mechanism and the per-commit multiplier is recorded in round 1. The committed-copy comparison lead from step 1 stands.
