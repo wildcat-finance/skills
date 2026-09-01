@@ -19,10 +19,10 @@
       "oracle": "ADM-04"
     },
     {
-      "confirmed": true,
-      "disposition": "manual",
+      "confirmed": false,
+      "disposition": "covered",
       "item": "case:ADM-01",
-      "reason": "the row is owned by the reviewer who wrote it"
+      "oracle": "ADM-01"
     },
     {
       "confirmed": true,
@@ -89,12 +89,6 @@
       "disposition": "covered",
       "item": "route:src/app/page.tsx",
       "oracle": "ADM-04"
-    },
-    {
-      "confirmed": true,
-      "disposition": "excluded",
-      "item": "route:src/app/nowhere/page.tsx",
-      "reason": "this item is not in the inventory"
     }
   ],
   "inventory_sha256": "130675b93b92e29657b6564faf53d54d07ed9c0f65b2a56b12181f89492cac6a",

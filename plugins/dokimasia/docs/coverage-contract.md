@@ -60,6 +60,31 @@ No code path proposes a disposition. The reconciler reads the set, checks it,
 and reports. An agent may draft a disposition set for a person to review, and
 it cannot mark anything covered by running this tool.
 
+## Confirmation
+
+Every entry carries a `confirmed` boolean, and only a confirmed entry is
+admitted as a disposition. A generator writes it false and has no path that
+writes it true, so drafting cannot move a coverage figure. See
+[ADR-002](decisions/ADR-002-confirmation-is-not-a-disposition.md).
+
+An entry is checked in full whatever its confirmation says, so a draft that
+could never be valid refuses now rather than when somebody confirms it. Only
+then is it admitted or set aside. An unconfirmed entry is refused as a
+disposition, named in the record's `unconfirmed` list with its drafted state
+and reason intact, and leaves its item in `undisposed` exactly as an item with
+no entry at all would.
+
+The entry is refused, not the set. A set holding unconfirmed entries still
+reconciles and reports a ratio drawn from whatever was confirmed, because a
+reviewer working through a few hundred items needs to see the number move
+before the last one is decided.
+
+An entry carrying no `confirmed` field refuses by name. Defaulting it false
+would silently discard a set written before the field existed; defaulting it
+true would admit every draft. The counts state confirmed dispositions,
+unconfirmed entries and undisposed items as three separate figures, so how much
+was drafted is never mistaken for how much was decided.
+
 ## Staleness
 
 A disposition set declares the inventory digest and the workbook digest it was
@@ -83,9 +108,13 @@ reader who has to derive a list by subtraction will eventually derive it wrong.
 
 ## The ratio
 
-The closure ratio is scoped items carrying one valid disposition, over scoped
-items. Its numerator and denominator are emitted as separate fields beside the
-value, so neither can move without the other being visible.
+The closure ratio is scoped items carrying one valid confirmed disposition,
+over scoped items. Its numerator and denominator are emitted as separate fields
+beside the value, so neither can move without the other being visible.
+
+A freshly drafted set therefore closes at zero, which is the figure a reviewer
+would have seen with no set at all. Running a generator changes what the work
+looks like, never what the number says.
 
 One is the only passing value, and it means nothing is unaccounted for. It does
 not mean anything passed, and no arrangement of this record can be read as

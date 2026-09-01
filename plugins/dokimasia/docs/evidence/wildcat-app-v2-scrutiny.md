@@ -10,7 +10,7 @@ state that anything passed.
 - Workbook: `wildcat_v25_uat_v2-jack.xlsx`, sha256 `9da2f2e8bbdb`
 - Inventory digest: `88325a449814`
 - Workbook digest: `21493992f97e`
-- Coverage digest: `70af3e184999`
+- Coverage digest: `2b8d7370ed77`
 - Skill version: `dokimasia-v1.1.0`
 
 ## The denominator

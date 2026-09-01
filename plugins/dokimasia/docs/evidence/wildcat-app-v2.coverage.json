@@ -20,6 +20,7 @@
     "disposed": 0,
     "inventory_items": 59,
     "scoped": 261,
+    "unconfirmed": 0,
     "undisposed": 261,
     "workbook_cases": 202
   },
@@ -30,6 +31,7 @@
     "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
     "workbook_sha256": "21493992f97e97124ccd0f8170cc447c44f204c09c3b29f2953a9bb938dd2eba"
   },
+  "unconfirmed": [],
   "undisposed": [
     "api:src/app/api/auth/login/route.ts",
     "api:src/app/api/auth/refresh/route.ts",
