@@ -800,3 +800,112 @@ evaluation exists.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. The committed corpus manifest binds exactly 188 agent-facing instruction
+   and reference files and 2,290,439 physical bytes at the entry ref. It
+   retains the prior 176 Markdown documents and adds exactly 12
+   `structured_reference` JSON documents: all nine non-Markdown files under
+   admitted canonical `references/` directories and Imprimatur's three named,
+   mandatory lexicons. Their path, size, SHA-256, owner, admission rule and
+   source/runtime anchors match the frozen inventory; no script, output
+   template, test/eval, example/specimen, generated output or caller/project
+   input enters. Exact whole-file deduplication yields 171 files and 1,818,995
+   bytes. An independent extension-agnostic fixed-point pass reproduces the
+   inventory and a second pass adds nothing.
+2. Every physical byte belongs to one ordered, gapless, digest-bound partition
+   range. The totals are exactly 1,473,399 governed operative, 345,596 exact
+   literal or evidence, 471,444 generated duplicate, zero human-only and zero
+   unsupported bytes. All 218,576 new bytes are exact literal or evidence; all
+   are unique; the existing Promise Machine family remains the only duplicate
+   family.
+3. The loader graph proves each actual read from frozen source and runtime
+   spans and labels it as agent/prompt, mandatory executable or reference-only.
+   Hermes's corpus and schema are immutable beside-script inputs on every
+   Hermes run; Synkrisis's committed rules are read only by realizable
+   `diagnose` and `verify` invocations; Imprimatur reads all three lexicons on
+   every lint invocation. The six Homologia/Synkrisis schemas remain
+   reference-only with empty loader roots and scenario reachability. Validation
+   refuses an omitted qualifying input, an invented schema edge, an executable
+   edge without both canonical-skill and runtime-read anchors, a reference-only
+   document with claimed reachability, and any manifest/graph/scenario
+   disagreement. Every prior route, condition-vector, branch-exclusivity and
+   canonical-path guard remains.
+4. The unchanged seed and selection method produce exactly `alexandria`,
+   `fizz`, `phylax`, `probitas` and `sapheneia`: 31 unique paths and 363,804
+   bytes (`0.200003`). Development is the disjoint remaining 140 paths and
+   1,455,191 bytes (`0.799997`) and covers every shared contract, class,
+   authority tier, construct and size decile. The replacement seal binds the
+   corrected source and membership plus the closed 16-slot envelope, has
+   `opened` false, and contains no prompt, answer, scorer key or model output.
+5. `build-baseline` atomically reproduces all five records, their inventory and
+   reconciliation byte for byte. `verify-corpus`, `verify-loader`,
+   `verify-partition` and `verify-seal` each emit one bounded correlated JSON
+   result and repeat byte-identically. Draft 2020-12 schemas and runtime
+   validators remain equivalent; the amended study/runbook receipt, focused
+   and root suites, parent-attributable selected checks, Elenchus evidence,
+   Phylax, Ephoros, Hypomnema, Protasis, Imprimatur, Horos, synopsis and diff
+   gates pass. No live instruction, loader, router, marketplace or production
+   path changes.
+
+Complete replacement Tests: Extend `CorpusManifestTests`,
+`BytePartitionTests`, `LoaderGraphTests` and `HoldoutSealTests` to bind the
+exact 188-path inventory, 13 document-class counts, four denominators, all 12
+added paths, sizes, SHA-256s, owners and anchors, the 12-file 218,576-byte
+subtotal, the exact five partition totals, unique/duplicate closure, and a
+second fixed-point pass with no addition. Mutate a reference suffix away from
+`.md`, omit each JSON reference, move or omit each Imprimatur lexicon, change a
+mandatory runtime read, and add a decoy script, template, fixture, example or
+caller input; require the first five classes to fail closed and the decoys to
+remain excluded.
+
+Add source/runtime-equivalence cases for Hermes's fixed corpus/schema
+resolution and reads, Synkrisis `diagnose`/`verify` rule reads, and Imprimatur's
+three fixed lexicon reads. Require the six reference-only schemas to have empty
+runtime roots and scenario reachability; reject invented edges, missing
+executable edges, false all-operation reachability and manifest/graph
+disagreement. Retain every prior Git/source, strict-JSON, schema/runtime path,
+process, output-alias, resource, atomic-write, race, route, scenario,
+branch-exclusivity and seal guard. Bind the exact replacement holdout, 31 held
+paths, byte floor, disjoint 140-path development cohort, unchanged seed/method,
+unopened seal and forbidden answer fields.
+
+Run these exact commands from the repository root under the pinned runtime:
+
+```text
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py build-baseline
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-corpus --manifest tests/fixtures/instruction-architecture/corpus-manifest.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-loader --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --graph tests/fixtures/instruction-architecture/loader-graph.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-partition --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-seal --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
+uv run --no-project --python 3.14.6 python -m unittest tests.test_instruction_architecture.CorpusManifestTests tests.test_instruction_architecture.BytePartitionTests tests.test_instruction_architecture.LoaderGraphTests tests.test_instruction_architecture.HoldoutSealTests -v
+uv run --no-project --python 3.14.6 python tests/run_tests.py --elenchus-report .elenchus/fiat-1046-step-1.json
+uv run --no-project --python 3.14.6 python scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+cmp -s .hexaemeron/runbook.md docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/instruction-architecture/study.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/instruction-architecture/study.md docs/instruction-architecture/runbook.md docs/instruction-architecture/corpus-reconciliation.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+uv run --no-project --python 3.14.6 python plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Run the four verifiers twice and require byte-identical stdout. Rebuild once
+into a fresh `tmp/` destination with `--output` and `--reconciliation`; require
+all five records, artifact inventory and reconciliation to equal the committed
+bytes. Require Elenchus schema `elenchus.unittest.v1`; an
+infrastructure-failed fixture overlay remains inconclusive.
+
+**Why.** Audit round 7 found a content-authority bug: extension filtering
+excluded 218,576 bytes of exact rules and reference evidence while every
+current verifier passed, invalidating the source, partition and sealed sampling
+denominators before evaluation. The replacement fixes the admission predicate
+and preserves honest zero reachability for schemas that production does not
+load.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.

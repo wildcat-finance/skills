@@ -1,9 +1,11 @@
 # instruction architecture workbench
 
-this directory is a research boundary, not a production loader. Markdown at
-`a2b634d8e039af988bf30c8316defccf70071d8d` remains authoritative. the Step 1
-commands inventory that source, prove its loader edges, classify every physical
-byte and seal disjoint development and holdout cohorts.
+this directory is a research boundary, not a production loader. agent-facing
+Markdown and immutable structured references at
+`a2b634d8e039af988bf30c8316defccf70071d8d` remain authoritative. the Step 1
+commands inventory that source, prove agent/prompt and mandatory-executable
+loader edges, preserve reference-only authority without invented reachability,
+classify every physical byte and seal disjoint development and holdout cohorts.
 
 generate the baseline:
 
@@ -28,13 +30,16 @@ with lazy fetch, global and system configuration, prompts and ambient
 environment disabled. writes use a same-directory temporary file, `fsync`,
 atomic replacement and a complete reread.
 
-the 231 declared scenarios cover the 93 base combinations of 31 selectable
+the 233 declared scenarios cover the 93 base combinations of 31 selectable
 canonical skills and three actual host routes: repository checkout, isolated
 Agent Skills and standalone plugin. each closure starts at that route's entry,
 binds one selected plugin runtime and skill plus a closed condition vector, and
 follows only matching source-directed workflow edges. every Ariadne scenario
 chooses one operation; every Kronos scenario chooses one target and dispatches
-it through Fiat.
+it through Fiat; Synkrisis rule reads occur only in mutually exclusive
+`diagnose` or `verify` vectors. Hermes's corpus and schema and Imprimatur's
+three lexicons have runtime-proved mandatory edges. six admitted schemas stay
+reference-only with empty loader and scenario reachability.
 
 the holdout seal names membership and case-slot classes, but contains no task,
 answer, scorer key or model output. do not add those fields before the frozen

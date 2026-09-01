@@ -40,6 +40,7 @@ MAX_JSON_TOKENS = 100_000
 MAX_JSON_NUMBER_CHARS = 640
 EXPECTED_COUNTS = {
     "skill_contract": 32,
+    "structured_reference": 12,
     "runtime_contract": 18,
     "promise_machine_contract": 18,
     "markdown_reference": 38,
@@ -53,10 +54,10 @@ EXPECTED_COUNTS = {
     "operation_reference": 25,
 }
 EXPECTED_TOTALS = {
-    "physical_files": 176,
-    "physical_bytes": 2_071_863,
-    "unique_files": 159,
-    "unique_bytes": 1_600_419,
+    "physical_files": 188,
+    "physical_bytes": 2_290_439,
+    "unique_files": 171,
+    "unique_bytes": 1_818_995,
 }
 PARTITION_CLASSES = (
     "governed_operative_semantics",
@@ -220,6 +221,206 @@ CONTRIBUTORS_CANONICAL_URL = (
 SAME_REPOSITORY_MARKDOWN_URLS = {
     CONTRIBUTORS_CANONICAL_URL: "CONTRIBUTORS.md",
 }
+
+
+# path, owner, admission kind, load semantics, source path, source needle,
+# runtime path, runtime needle. A reference-only row has no production read.
+STRUCTURED_REFERENCES = (
+    (
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+        "plugins/hermes/skills/hermes/SKILL.md",
+        "structured-reference",
+        "mandatory-executable",
+        "plugins/hermes/skills/hermes/SKILL.md",
+        "Every candidate names a rule from "
+        "[references/gas-rule-corpus.json](references/gas-rule-corpus.json)",
+        "plugins/hermes/skills/hermes/scripts/hermes.py",
+        "raw = corpus_path.read_bytes()",
+    ),
+    (
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
+        "plugins/hermes/skills/hermes/SKILL.md",
+        "structured-reference",
+        "mandatory-executable",
+        "plugins/hermes/skills/hermes/SKILL.md",
+        "A corpus that fails its own schema",
+        "plugins/hermes/skills/hermes/scripts/hermes.py",
+        'schema = json.loads(schema_path.read_text(encoding="utf-8"))',
+    ),
+    (
+        "plugins/homologia/references/manifest-v1.schema.json",
+        "plugins/homologia/skills/homologia/SKILL.md",
+        "structured-reference",
+        "reference-only",
+        "plugins/homologia/docs/checked-inputs/runbook.md",
+        "plugins/homologia/references/manifest-v1.schema.json",
+        None,
+        None,
+    ),
+    (
+        "plugins/homologia/references/vectors-v1.schema.json",
+        "plugins/homologia/skills/homologia/SKILL.md",
+        "structured-reference",
+        "reference-only",
+        "plugins/homologia/docs/checked-inputs/runbook.md",
+        "plugins/homologia/references/vectors-v1.schema.json",
+        None,
+        None,
+    ),
+    (
+        "plugins/synkrisis/references/cohort-v1.schema.json",
+        "plugins/synkrisis/skills/synkrisis/SKILL.md",
+        "structured-reference",
+        "reference-only",
+        "plugins/synkrisis/references/cohort-v1.schema.json",
+        '"$id": "https://github.com/wildcat-finance/skills/plugins/synkrisis/references/cohort-v1.schema.json"',
+        None,
+        None,
+    ),
+    (
+        "plugins/synkrisis/references/findings-v1.schema.json",
+        "plugins/synkrisis/skills/synkrisis/SKILL.md",
+        "structured-reference",
+        "reference-only",
+        "plugins/synkrisis/references/findings-v1.schema.json",
+        '"$id": "https://github.com/wildcat-finance/skills/plugins/synkrisis/references/findings-v1.schema.json"',
+        None,
+        None,
+    ),
+    (
+        "plugins/synkrisis/references/policy-v1.schema.json",
+        "plugins/synkrisis/skills/synkrisis/SKILL.md",
+        "structured-reference",
+        "reference-only",
+        "plugins/synkrisis/references/policy-v1.schema.json",
+        '"$id": "https://github.com/wildcat-finance/skills/plugins/synkrisis/references/policy-v1.schema.json"',
+        None,
+        None,
+    ),
+    (
+        "plugins/synkrisis/references/rule-v1.schema.json",
+        "plugins/synkrisis/skills/synkrisis/SKILL.md",
+        "structured-reference",
+        "reference-only",
+        "plugins/synkrisis/references/rule-v1.schema.json",
+        '"$id": "https://github.com/wildcat-finance/skills/plugins/synkrisis/references/rule-v1.schema.json"',
+        None,
+        None,
+    ),
+    (
+        "plugins/synkrisis/references/rules-v1.json",
+        "plugins/synkrisis/skills/synkrisis/SKILL.md",
+        "structured-reference",
+        "mandatory-executable",
+        "plugins/synkrisis/skills/synkrisis/SKILL.md",
+        "python3 plugins/synkrisis/scripts/synkrisis.py diagnose \\\n"
+        "  --cohort build/synkrisis/cohort.json \\\n"
+        "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+        "  --out build/synkrisis/findings.json",
+        "plugins/synkrisis/scripts/synkrisis.py",
+        "def load_rules(root: Path, raw_path: str, budget: InputBudget):\n"
+        '    target = confined_relative(raw_path, root, label="rules")\n'
+        "    shown = shown_path(raw_path)\n"
+        "    payload = bounded_read(target, shown, MAX_FILE_BYTES)",
+    ),
+    (
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "mandatory-rule-data",
+        "mandatory-executable",
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "`gated.json`",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        'return rd("hard.json"), rd("gated.json"), rd("structural.json")',
+    ),
+    (
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "mandatory-rule-data",
+        "mandatory-executable",
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "`hard.json`",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        'return rd("hard.json"), rd("gated.json"), rd("structural.json")',
+    ),
+    (
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "mandatory-rule-data",
+        "mandatory-executable",
+        "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+        "`structural.json`",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        'return rd("hard.json"), rd("gated.json"), rd("structural.json")',
+    ),
+)
+
+SYNKRISIS_RULE_OPERATIONS = (
+    "operation:synkrisis:diagnose",
+    "operation:synkrisis:verify",
+)
+SYNKRISIS_RULE_RUNTIME_NEEDLES = {
+    "operation:synkrisis:diagnose": (
+        "def command_diagnose(root: Path, arguments):\n"
+        "    budget = InputBudget()\n"
+        "    cohort = load_cohort(root, arguments.cohort, budget)\n"
+        "    rules_document, _ = load_rules(root, arguments.rules, budget)"
+    ),
+    "operation:synkrisis:verify": (
+        '            "rebuild the cohort with the cohort command from the original inputs",\n'
+        "        )\n"
+        "    rules_document, _ = load_rules(root, arguments.rules, budget)"
+    ),
+}
+SYNKRISIS_RULE_SOURCE_NEEDLES = {
+    "operation:synkrisis:diagnose": (
+        "python3 plugins/synkrisis/scripts/synkrisis.py diagnose \\\n"
+        "  --cohort build/synkrisis/cohort.json \\\n"
+        "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+        "  --out build/synkrisis/findings.json"
+    ),
+    "operation:synkrisis:verify": (
+        "python3 plugins/synkrisis/scripts/synkrisis.py verify \\\n"
+        "  --manifest plugins/synkrisis/examples/cross-run-v0/manifest.json \\\n"
+        "  --policy plugins/synkrisis/examples/cross-run-v0/policy.json \\\n"
+        "  --cohort build/synkrisis/cohort.json \\\n"
+        "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+        "  --findings build/synkrisis/findings.json"
+    ),
+}
+
+
+@lru_cache(maxsize=1)
+def _structured_metadata() -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for (
+        path,
+        owner,
+        admission_kind,
+        load_semantics,
+        source_path,
+        source_needle,
+        runtime_path,
+        runtime_needle,
+    ) in STRUCTURED_REFERENCES:
+        if path in result:
+            raise Refusal(f"duplicate structured reference: {path}")
+        if (runtime_path is None) != (runtime_needle is None):
+            raise Refusal(f"incomplete runtime anchor: {path}")
+        if (load_semantics == "reference-only") != (runtime_path is None):
+            raise Refusal(f"structured reference load semantics drift: {path}")
+        result[path] = {
+            "canonical_owner": owner,
+            "admission_kind": admission_kind,
+            "load_semantics": load_semantics,
+            "source_path": source_path,
+            "source_needle": source_needle,
+            "runtime_path": runtime_path,
+            "runtime_needle": runtime_needle,
+        }
+    if len(result) != 12:
+        raise Refusal(f"structured reference inventory drift: {len(result)}")
+    return result
 
 
 @lru_cache(maxsize=1)
@@ -759,8 +960,30 @@ def _corpus_paths() -> list[str]:
             and "/tests/" not in name
         ):
             selected.append(name)
-        elif re.fullmatch(r"plugins/[^/]+/skills/.+/references/.+\.md", name):
+        elif re.fullmatch(
+            r"plugins/[^/]+/(?:skills/.+/)?references/.+", name
+        ):
             selected.append(name)
+    structured = _structured_metadata()
+    missing_structured = set(structured) - set(names)
+    if missing_structured:
+        raise Refusal(f"structured reference missing: {min(missing_structured)}")
+    selected_structured = {
+        path for path in selected if not path.lower().endswith(".md")
+    }
+    reference_structured = {
+        path
+        for path in structured
+        if "/references/" in path
+    }
+    if selected_structured != reference_structured:
+        missing = sorted(reference_structured - selected_structured)
+        extra = sorted(selected_structured - reference_structured)
+        detail = missing[0] if missing else extra[0]
+        raise Refusal(f"structured reference topology drift: {detail}")
+    selected.extend(
+        sorted(path for path in structured if path not in reference_structured)
+    )
     admitted = set(_additional_metadata())
     missing = admitted - set(names)
     if missing:
@@ -775,6 +998,8 @@ def _corpus_paths() -> list[str]:
 
 
 def _document_class(path: str) -> str:
+    if path in _structured_metadata():
+        return "structured_reference"
     admission = _additional_metadata().get(path)
     if admission is not None:
         return admission["document_class"]
@@ -873,6 +1098,80 @@ def _derive_operative_markdown_targets(
     }
 
 
+def _derive_corpus_fixed_point(
+    documents: list[dict[str, Any]],
+    *,
+    source_overrides: dict[str, bytes] | None = None,
+    tree_paths: set[str] | None = None,
+) -> dict[str, Any]:
+    """Derive operative Markdown plus extension-agnostic structured inputs."""
+    overrides = source_overrides or {}
+    frozen_tree = set(_frozen_tree_paths()) if tree_paths is None else set(tree_paths)
+    for path in frozen_tree:
+        _safe_relative(path)
+    anchor_paths = {
+        path
+        for metadata in _structured_metadata().values()
+        for path in (metadata["source_path"], metadata["runtime_path"])
+        if path is not None
+    }
+    document_paths = {item["path"] for item in documents}
+    if not set(overrides) <= document_paths | anchor_paths:
+        raise Refusal("fixed-point source inventory is invalid")
+    markdown = _derive_operative_markdown_targets(
+        documents,
+        source_overrides={
+            path: data for path, data in overrides.items() if path in document_paths
+        },
+        tree_paths=frozen_tree,
+    )
+    reference_structured = {
+        path
+        for path in frozen_tree
+        if re.fullmatch(r"plugins/[^/]+/(?:skills/.+/)?references/.+", path)
+        and not path.lower().endswith(".md")
+    }
+    mandatory_executable: set[str] = set()
+    for path, metadata in _structured_metadata().items():
+        if metadata["load_semantics"] != "mandatory-executable":
+            continue
+        source_path = metadata["source_path"]
+        runtime_path = metadata["runtime_path"]
+        runtime_needle = metadata["runtime_needle"]
+        if runtime_path is None or runtime_needle is None:
+            raise Refusal(f"mandatory data lacks a runtime anchor: {path}")
+        source_data = (
+            overrides[source_path]
+            if source_path in overrides
+            else _source_blob(source_path)
+        )
+        runtime_data = (
+            overrides[runtime_path]
+            if runtime_path in overrides
+            else _source_blob(runtime_path)
+        )
+        if (
+            path in frozen_tree
+            and metadata["source_needle"].encode("utf-8") in source_data
+            and runtime_needle.encode("utf-8") in runtime_data
+        ):
+            mandatory_executable.add(path)
+    mandatory_data = {
+        path
+        for path in mandatory_executable
+        if _structured_metadata()[path]["admission_kind"] == "mandatory-rule-data"
+    }
+    structured = reference_structured | mandatory_data
+    return {
+        "occurrences": markdown["occurrences"],
+        "markdown_targets": markdown["targets"],
+        "structured_targets": sorted(structured),
+        "mandatory_executable_targets": sorted(mandatory_executable),
+        "targets": sorted(set(markdown["targets"]) | structured),
+        "excluded": markdown["excluded"],
+    }
+
+
 def _plugin(path: str) -> str | None:
     parts = PurePosixPath(path).parts
     return parts[1] if len(parts) > 1 and parts[0] == "plugins" else None
@@ -911,6 +1210,9 @@ def _logical_document(path: str, document_class: str) -> str:
         return f"skill:{_skill_name(owner)}"
     if document_class == "markdown_reference":
         return f"skill:{_skill_name(_reference_owner(path))}"
+    if document_class == "structured_reference":
+        owner = _structured_metadata()[path]["canonical_owner"]
+        return f"skill:{_skill_name(owner)}"
     return f"skill:{_skill_name(path)}"
 
 
@@ -927,6 +1229,8 @@ def _authority_tier(path: str, document_class: str) -> str:
         return "plugin_runtime"
     if document_class == "skill_contract":
         return "canonical_skill"
+    if document_class == "structured_reference":
+        return "conditional_reference"
     additional = {
         "identity_contract": "suite_identity",
         "identity_roster": "identity_roster",
@@ -954,6 +1258,8 @@ def _same_repository_markdown_url(value: str) -> str | None:
 
 
 def _canonical_owner(path: str, document_class: str) -> str:
+    if document_class == "structured_reference":
+        return _structured_metadata()[path]["canonical_owner"]
     admission = _additional_metadata().get(path)
     if admission is not None:
         return admission["canonical_owner"]
@@ -975,15 +1281,20 @@ def build_manifest() -> dict[str, Any]:
         document_class = _document_class(path)
         owner = _canonical_owner(path, document_class)
         admission = _additional_metadata().get(path)
+        structured = _structured_metadata().get(path)
         provisional.append(
             {
                 "path": path,
                 "logical_document": _logical_document(path, document_class),
                 "document_class": document_class,
                 "admission_kind": (
-                    "issue-census"
-                    if admission is None
-                    else admission["admission_kind"]
+                    structured["admission_kind"]
+                    if structured is not None
+                    else (
+                        "issue-census"
+                        if admission is None
+                        else admission["admission_kind"]
+                    )
                 ),
                 "bytes": len(blob),
                 "sha256": digest,
@@ -991,11 +1302,43 @@ def build_manifest() -> dict[str, Any]:
                 "canonical_content_path": None,
                 "canonical_owner": owner,
                 "authority_tier": _authority_tier(path, document_class),
+                "load_semantics": (
+                    structured["load_semantics"]
+                    if structured is not None
+                    else "agent-or-prompt"
+                ),
                 "loader_roots": [],
                 "scenario_reachability": [],
+                "source_evidence": (
+                    _evidence(
+                        structured["source_path"], structured["source_needle"]
+                    )
+                    if structured is not None
+                    else None
+                ),
+                "runtime_evidence": (
+                    _evidence(
+                        structured["runtime_path"], structured["runtime_needle"]
+                    )
+                    if structured is not None
+                    and structured["runtime_path"] is not None
+                    else None
+                ),
                 "external_runtime_owner": _external_owner(path),
             }
         )
+    closure = _derive_corpus_fixed_point(provisional)
+    missing_closure = set(closure["targets"]) - set(paths)
+    if missing_closure:
+        raise Refusal(f"corpus fixed point omits {min(missing_closure)}")
+    if set(closure["structured_targets"]) != set(_structured_metadata()):
+        raise Refusal("structured fixed-point inventory disagrees with its anchors")
+    if set(closure["mandatory_executable_targets"]) != {
+        path
+        for path, metadata in _structured_metadata().items()
+        if metadata["load_semantics"] == "mandatory-executable"
+    }:
+        raise Refusal("mandatory executable semantics disagree with live anchors")
     topology = _build_topology(provisional)
     loader_reachability = _reachability_by_root(
         topology["roots"], topology["edges"], "active_roots"
@@ -1006,11 +1349,18 @@ def build_manifest() -> dict[str, Any]:
         "active_scenarios",
     )
     for record in provisional:
-        record["loader_roots"] = sorted(loader_reachability[record["path"]])
-        record["scenario_reachability"] = sorted(
-            scenario_reachability[record["path"]]
+        record["loader_roots"] = sorted(
+            loader_reachability.get(record["path"], set())
         )
-        if not record["loader_roots"] or not record["scenario_reachability"]:
+        record["scenario_reachability"] = sorted(
+            scenario_reachability.get(record["path"], set())
+        )
+        if record["load_semantics"] == "reference-only":
+            if record["loader_roots"] or record["scenario_reachability"]:
+                raise Refusal(
+                    f"reference-only document became reachable: {record['path']}"
+                )
+        elif not record["loader_roots"] or not record["scenario_reachability"]:
             raise Refusal(f"unreachable admitted document: {record['path']}")
     canonical_by_digest: dict[str, str] = {}
     for digest, members in by_digest.items():
@@ -1220,6 +1570,47 @@ def _validate_complete_scenarios(
         identifier: {path for path, scopes in observed.items() if identifier in scopes}
         for identifier in roots
     }
+    synkrisis_rules = "plugins/synkrisis/references/rules-v1.json"
+    synkrisis_edges = [
+        edge
+        for edge in topology["scenario_edges"]
+        if edge["target"] == synkrisis_rules
+    ]
+    if {
+        edge["condition"] for edge in synkrisis_edges
+    } != set(SYNKRISIS_RULE_OPERATIONS) or any(
+        edge["kind"] != "mandatory-executable"
+        or edge["load_type"] != "mandatory-executable"
+        for edge in synkrisis_edges
+    ):
+        raise Refusal("Synkrisis rule operations are not exact and exclusive")
+    for identifier, root in roots.items():
+        operations = set(root["conditions"]) & set(SYNKRISIS_RULE_OPERATIONS)
+        if len(operations) > 1 or (
+            operations and root["selected_skill"] != "synkrisis"
+        ):
+            raise Refusal(f"Synkrisis scenario unions rule operations: {identifier}")
+        expected_rules = (
+            root["selected_skill"] == "synkrisis" and len(operations) == 1
+        )
+        if (synkrisis_rules in reached[identifier]) != expected_rules:
+            raise Refusal(f"Synkrisis rule reachability is inexact: {identifier}")
+    for operation in SYNKRISIS_RULE_OPERATIONS:
+        if not any(
+            root["selected_skill"] == "synkrisis"
+            and operation in root["conditions"]
+            for root in roots.values()
+        ):
+            raise Refusal(f"Synkrisis rule operation has no scenario: {operation}")
+    for target, metadata in _structured_metadata().items():
+        if metadata["load_semantics"] != "mandatory-executable" or target == synkrisis_rules:
+            continue
+        owner = metadata["canonical_owner"]
+        for identifier in roots:
+            if (target in reached[identifier]) != (owner in reached[identifier]):
+                raise Refusal(
+                    f"mandatory executable reachability is incomplete: {identifier}: {target}"
+                )
     runtimes = {
         f"plugins/{plugin}/AGENTS.md"
         for plugin in {
@@ -1430,9 +1821,16 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         *,
         evidence_path: str | None = None,
         active_roots: tuple[str, ...] = ("*",),
+        load_type: str = "agent-or-prompt",
+        runtime_path: str | None = None,
+        runtime_needle: str | None = None,
     ) -> None:
         if source not in document_paths or target not in document_paths:
             raise Refusal("loader edge leaves the frozen corpus")
+        if (runtime_path is None) != (runtime_needle is None):
+            raise Refusal(f"incomplete loader runtime evidence: {source} -> {target}")
+        if (load_type == "mandatory-executable") != (runtime_path is not None):
+            raise Refusal(f"loader edge type disagrees with runtime: {source} -> {target}")
         if any(
             item["source"] == source and item["target"] == target for item in edges
         ):
@@ -1443,9 +1841,15 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
                 "source": source,
                 "target": target,
                 "kind": kind,
+                "load_type": load_type,
                 "reason": reason,
                 "active_roots": list(active_roots),
                 "evidence": _evidence(evidence_path or source, needle),
+                "runtime_evidence": (
+                    _evidence(runtime_path, runtime_needle)
+                    if runtime_path is not None and runtime_needle is not None
+                    else None
+                ),
             }
         )
 
@@ -1613,6 +2017,38 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
                 break
             if not progress:
                 raise Refusal(f"unproved reference loader edge: {sorted(pending)[0]}")
+    reference_only: list[dict[str, Any]] = []
+    for target, metadata in sorted(_structured_metadata().items()):
+        if metadata["load_semantics"] == "reference-only":
+            reference_only.append(
+                {
+                    "path": target,
+                    "canonical_owner": metadata["canonical_owner"],
+                    "reason": (
+                        "the immutable schema is admitted as structured authority "
+                        "but no mandatory default executable loads it"
+                    ),
+                    "source_evidence": _evidence(
+                        metadata["source_path"], metadata["source_needle"]
+                    ),
+                }
+            )
+            continue
+        runtime_path = metadata["runtime_path"]
+        runtime_needle = metadata["runtime_needle"]
+        if runtime_path is None or runtime_needle is None:
+            raise Refusal(f"mandatory executable lacks runtime evidence: {target}")
+        add_edge(
+            metadata["canonical_owner"],
+            target,
+            "mandatory-executable",
+            "the selected skill's mandatory default executable reads this frozen input",
+            metadata["source_needle"],
+            evidence_path=metadata["source_path"],
+            load_type="mandatory-executable",
+            runtime_path=runtime_path,
+            runtime_needle=runtime_needle,
+        )
     skill_paths: dict[str, str] = {}
     for item in documents:
         if item["document_class"] != "skill_contract":
@@ -1696,14 +2132,16 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         active_scenarios: Iterable[str] = ("*",),
         conditioned: bool = True,
         condition_name: str | None = None,
+        load_type: str = "agent-or-prompt",
+        runtime_path: str | None = None,
+        runtime_needle: str | None = None,
     ) -> None:
         if source not in document_paths or target not in document_paths:
             raise Refusal("scenario edge leaves the frozen corpus")
-        if any(
-            item["source"] == source and item["target"] == target
-            for item in scenario_edges
-        ):
-            raise Refusal(f"duplicate scenario edge: {source} -> {target}")
+        if (runtime_path is None) != (runtime_needle is None):
+            raise Refusal(f"incomplete scenario runtime evidence: {source} -> {target}")
+        if (load_type == "mandatory-executable") != (runtime_path is not None):
+            raise Refusal(f"scenario edge type disagrees with runtime: {source} -> {target}")
         scope = sorted(set(active_scenarios))
         if not scope or ("*" in scope and scope != ["*"]):
             raise Refusal("scenario edge has an invalid scope")
@@ -1715,16 +2153,31 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         condition = None
         if conditioned:
             condition = condition_name or f"{kind}:{edge_id}:{target}"
+        if any(
+            item["source"] == source
+            and item["target"] == target
+            and item["condition"] == condition
+            for item in scenario_edges
+        ):
+            raise Refusal(
+                f"duplicate scenario edge: {source} -> {target}: {condition}"
+            )
         scenario_edges.append(
             {
                 "id": edge_id,
                 "source": source,
                 "target": target,
                 "kind": kind,
+                "load_type": load_type,
                 "reason": reason,
                 "condition": condition,
                 "_base_scenarios": scope,
                 "evidence": _evidence(evidence_path or source, needle),
+                "runtime_evidence": (
+                    _evidence(runtime_path, runtime_needle)
+                    if runtime_path is not None and runtime_needle is not None
+                    else None
+                ),
             }
         )
 
@@ -1874,6 +2327,43 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
                 raise Refusal(
                     f"unproved scenario reference edge: {sorted(pending)[0]}"
                 )
+
+    for target, metadata in sorted(_structured_metadata().items()):
+        if metadata["load_semantics"] == "reference-only":
+            continue
+        runtime_path = metadata["runtime_path"]
+        runtime_needle = metadata["runtime_needle"]
+        if runtime_path is None or runtime_needle is None:
+            raise Refusal(f"mandatory executable lacks runtime evidence: {target}")
+        conditions: tuple[str | None, ...] = (
+            SYNKRISIS_RULE_OPERATIONS
+            if target == "plugins/synkrisis/references/rules-v1.json"
+            else (None,)
+        )
+        for condition in conditions:
+            scenario_runtime_needle = (
+                SYNKRISIS_RULE_RUNTIME_NEEDLES[condition]
+                if condition is not None
+                else runtime_needle
+            )
+            scenario_source_needle = (
+                SYNKRISIS_RULE_SOURCE_NEEDLES[condition]
+                if condition is not None
+                else metadata["source_needle"]
+            )
+            add_scenario_edge(
+                metadata["canonical_owner"],
+                target,
+                "mandatory-executable",
+                "the applicable operation's mandatory executable reads this frozen input",
+                scenario_source_needle,
+                evidence_path=metadata["source_path"],
+                conditioned=condition is not None,
+                condition_name=condition,
+                load_type="mandatory-executable",
+                runtime_path=runtime_path,
+                runtime_needle=scenario_runtime_needle,
+            )
 
     fiat = "plugins/hexaemeron/skills/fiat/SKILL.md"
     for name in ("protasis", "phylax", "ephoros", "metron", "elenchus", "hypomnema"):
@@ -2106,6 +2596,7 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         "edges": edges,
         "scenario_roots": scenario_roots,
         "scenario_edges": scenario_edges,
+        "reference_only": reference_only,
     }
     _validate_complete_scenarios(topology, selectable_skills)
     return topology
@@ -2124,14 +2615,73 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "active_scenarios",
     )
     for document in documents:
-        if set(document["loader_roots"]) != observed_roots[document["path"]]:
+        if set(document["loader_roots"]) != observed_roots.get(
+            document["path"], set()
+        ):
             raise Refusal(f"loader roots disagree with graph: {document['path']}")
-        if set(document["scenario_reachability"]) != observed_scenarios[
-            document["path"]
-        ]:
+        if set(document["scenario_reachability"]) != observed_scenarios.get(
+            document["path"], set()
+        ):
             raise Refusal(
                 f"scenario reachability disagrees with graph: {document['path']}"
             )
+    by_path = {item["path"]: item for item in documents}
+    reference_only_paths = {item["path"] for item in topology["reference_only"]}
+    if reference_only_paths != {
+        path
+        for path, metadata in _structured_metadata().items()
+        if metadata["load_semantics"] == "reference-only"
+    }:
+        raise Refusal("reference-only graph ledger is incomplete")
+    for path, metadata in _structured_metadata().items():
+        document = by_path[path]
+        host_edges = [edge for edge in topology["edges"] if edge["target"] == path]
+        scenario_edges = [
+            edge for edge in topology["scenario_edges"] if edge["target"] == path
+        ]
+        if metadata["load_semantics"] == "reference-only":
+            if host_edges or scenario_edges or document["loader_roots"] or document[
+                "scenario_reachability"
+            ]:
+                raise Refusal(f"reference-only graph reachability is nonzero: {path}")
+            continue
+        expected_scenarios = (
+            2 if path == "plugins/synkrisis/references/rules-v1.json" else 1
+        )
+        if len(host_edges) != 1 or len(scenario_edges) != expected_scenarios:
+            raise Refusal(f"mandatory executable graph is incomplete: {path}")
+        for edge in host_edges:
+            if (
+                edge["source"] != metadata["canonical_owner"]
+                or edge["kind"] != "mandatory-executable"
+                or edge["load_type"] != "mandatory-executable"
+                or edge["evidence"] != document["source_evidence"]
+                or edge["runtime_evidence"] != document["runtime_evidence"]
+            ):
+                raise Refusal(f"mandatory executable evidence drift: {path}")
+        for edge in scenario_edges:
+            expected_runtime = document["runtime_evidence"]
+            expected_source = document["source_evidence"]
+            if path == "plugins/synkrisis/references/rules-v1.json":
+                condition = edge["condition"]
+                if condition not in SYNKRISIS_RULE_RUNTIME_NEEDLES:
+                    raise Refusal("Synkrisis scenario lacks operation runtime proof")
+                expected_runtime = _evidence(
+                    metadata["runtime_path"],
+                    SYNKRISIS_RULE_RUNTIME_NEEDLES[condition],
+                )
+                expected_source = _evidence(
+                    metadata["source_path"],
+                    SYNKRISIS_RULE_SOURCE_NEEDLES[condition],
+                )
+            if (
+                edge["source"] != metadata["canonical_owner"]
+                or edge["kind"] != "mandatory-executable"
+                or edge["load_type"] != "mandatory-executable"
+                or edge["evidence"] != expected_source
+                or edge["runtime_evidence"] != expected_runtime
+            ):
+                raise Refusal(f"mandatory scenario evidence drift: {path}")
     exclusions = [
         {
             "class": class_name,
@@ -2149,6 +2699,7 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "edges": topology["edges"],
         "scenario_roots": topology["scenario_roots"],
         "scenario_edges": topology["scenario_edges"],
+        "reference_only": topology["reference_only"],
         "excluded_links": exclusions,
         "constraints": {
             "complete_scenario_routes": True,
@@ -2163,11 +2714,16 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
             "potential_edges_have_scenario_witnesses": True,
             "sibling_branches_are_exclusive": True,
             "wildcard_scenario_conditions_forbidden": True,
+            "mandatory_executable_edges_have_runtime_evidence": True,
+            "reference_only_records_have_zero_reachability": True,
+            "synkrisis_rule_operations_are_exclusive": True,
         },
     }
 
 
-def _partition_ranges(path: str, generated: bool) -> list[dict[str, Any]]:
+def _partition_ranges(
+    path: str, generated: bool, *, exact_literal: bool = False
+) -> list[dict[str, Any]]:
     data = _source_blob(path)
     if generated:
         return [
@@ -2175,6 +2731,15 @@ def _partition_ranges(path: str, generated: bool) -> list[dict[str, Any]]:
                 "start": 0,
                 "end": len(data),
                 "classification": "generated_duplicate",
+                "span_sha256": _sha256(data),
+            }
+        ]
+    if exact_literal:
+        return [
+            {
+                "start": 0,
+                "end": len(data),
+                "classification": "exact_literal_or_evidence",
                 "span_sha256": _sha256(data),
             }
         ]
@@ -2281,7 +2846,11 @@ def build_partition(manifest: dict[str, Any]) -> dict[str, Any]:
             document["document_class"] == "promise_machine_contract"
             and document["path"] != "PROMISE_MACHINE.md"
         )
-        ranges = _partition_ranges(document["path"], generated)
+        ranges = _partition_ranges(
+            document["path"],
+            generated,
+            exact_literal=document["document_class"] == "structured_reference",
+        )
         for item in ranges:
             totals[item["classification"]] += item["end"] - item["start"]
         files.append(
@@ -2549,14 +3118,53 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
         "canonical_content_path",
         "canonical_owner",
         "authority_tier",
+        "load_semantics",
         "loader_roots",
         "scenario_reachability",
+        "source_evidence",
+        "runtime_evidence",
         "external_runtime_owner",
     }
     for index, item in enumerate(manifest["documents"]):
         if not isinstance(item, dict) or set(item) != fields:
             raise Refusal(f"manifest document {index} has a non-closed field set")
         _safe_relative(item["path"])
+        structured = _structured_metadata().get(item["path"])
+        if structured is None:
+            if (
+                item["load_semantics"] != "agent-or-prompt"
+                or item["source_evidence"] is not None
+                or item["runtime_evidence"] is not None
+                or not item["loader_roots"]
+                or not item["scenario_reachability"]
+            ):
+                raise Refusal(f"ordinary manifest semantics drift: {item['path']}")
+            continue
+        if (
+            item["load_semantics"] != structured["load_semantics"]
+            or item["source_evidence"]
+            != _evidence(structured["source_path"], structured["source_needle"])
+        ):
+            raise Refusal(f"structured manifest semantics drift: {item['path']}")
+        if item["load_semantics"] == "reference-only":
+            if (
+                item["runtime_evidence"] is not None
+                or item["loader_roots"]
+                or item["scenario_reachability"]
+            ):
+                raise Refusal(f"reference-only manifest reachability drift: {item['path']}")
+        else:
+            runtime_path = structured["runtime_path"]
+            runtime_needle = structured["runtime_needle"]
+            if (
+                runtime_path is None
+                or runtime_needle is None
+                or item["runtime_evidence"]
+                != _evidence(runtime_path, runtime_needle)
+                or not item["loader_roots"]
+                or not item["scenario_reachability"]
+            ):
+                raise Refusal(f"mandatory manifest reachability drift: {item['path']}")
 
 
 def _validate_partition_closure(partition: dict[str, Any]) -> None:
@@ -2621,14 +3229,25 @@ def verify_loader(args: argparse.Namespace) -> bytes:
     for edge in [*graph["edges"], *graph["scenario_edges"]]:
         if edge["source"] not in paths or edge["target"] not in paths:
             raise Refusal("loader graph escapes the manifest")
-    for relation in [
-        *graph["roots"],
-        *graph["edges"],
-        *graph["scenario_roots"],
-        *graph["scenario_edges"],
-        *graph["excluded_links"],
-    ]:
-        evidence = relation["evidence"]
+    evidence_records = [
+        relation["evidence"]
+        for relation in [
+            *graph["roots"],
+            *graph["edges"],
+            *graph["scenario_roots"],
+            *graph["scenario_edges"],
+            *graph["excluded_links"],
+        ]
+    ]
+    evidence_records.extend(
+        relation["source_evidence"] for relation in graph["reference_only"]
+    )
+    evidence_records.extend(
+        relation["runtime_evidence"]
+        for relation in [*graph["edges"], *graph["scenario_edges"]]
+        if relation["runtime_evidence"] is not None
+    )
+    for evidence in evidence_records:
         data = _source_blob(evidence["path"])
         span = data[evidence["start"] : evidence["end"]]
         if (
@@ -2832,7 +3451,28 @@ def _reconciliation_markdown(
             f"| `{class_name}` | `{path}` | "
             f"`{source}:{evidence['start']}-{evidence['end']}` |"
         )
-    fixed_point = _derive_operative_markdown_targets(manifest["documents"])
+    structured_rows: list[str] = []
+    for path, metadata in sorted(_structured_metadata().items()):
+        source = _evidence(metadata["source_path"], metadata["source_needle"])
+        runtime = (
+            _evidence(metadata["runtime_path"], metadata["runtime_needle"])
+            if metadata["runtime_path"] is not None
+            and metadata["runtime_needle"] is not None
+            else None
+        )
+        runtime_anchor = (
+            "-"
+            if runtime is None
+            else f"`{runtime['path']}:{runtime['start']}-{runtime['end']}`"
+        )
+        structured_rows.append(
+            f"| `{path}` | {documents[path]['bytes']} | `{documents[path]['sha256']}` | "
+            f"`{metadata['canonical_owner']}` | `{metadata['admission_kind']}` | "
+            f"`{metadata['load_semantics']}` | "
+            f"`{source['path']}:{source['start']}-{source['end']}` | "
+            f"{runtime_anchor} |"
+        )
+    fixed_point = _derive_corpus_fixed_point(manifest["documents"])
     fixed_point_additions = sorted(set(fixed_point["targets"]) - set(documents))
     if fixed_point_additions:
         raise Refusal(f"corpus fixed point is open: {fixed_point_additions[0]}")
@@ -2873,6 +3513,24 @@ reader-background and delivery-provenance occurrences, it adds
 {len(fixed_point_additions)} paths. the admitted Anamnesis demo's only local
 descendant is specimen evidence, so the operative closure stops there.
 
+## structured references
+
+the extension-agnostic pass adds exactly 12 unique structured inputs totalling
+218,576 bytes. nine are every regular non-Markdown file under an admitted
+canonical `references/` directory. the other three are Imprimatur's named
+lexicons, whose canonical skill and mandatory runtime reads jointly prove
+admission. scripts, templates, fixtures, examples, generated output and caller
+or project input remain excluded.
+
+| path | bytes | sha256 | owner | admission | load semantics | source anchor | runtime anchor |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+{chr(10).join(structured_rows)}
+
+the six `reference-only` schema rows have no loader edge, loader root or
+scenario reachability. Hermes's corpus and schema and Imprimatur's three
+lexicons load whenever their owner is selected. Synkrisis's rule catalogue has
+separate, mutually exclusive `diagnose` and `verify` source and runtime spans.
+
 ## excluded links
 
 these representative links do not create loader edges. the classification is
@@ -2886,19 +3544,22 @@ source-bound rather than inferred from a file's presence.
 
 `loader-graph.json` records {len(graph["roots"])} roots and {len(graph["edges"])}
 host edges, plus {len(graph["scenario_roots"])} scenario roots and
-{len(graph["scenario_edges"])} scenario edges. the scenarios cover the exact 93
+{len(graph["scenario_edges"])} scenario edges and {len(graph["reference_only"])}
+reference-only records. the scenarios cover the exact 93
 base combinations of 31 selectable canonical skills and the repository,
 isolated Agent Skills and standalone-plugin host routes. 87 bases admit a
 zero-condition invocation; Ariadne and Kronos instead require an operation or
-target-plus-Fiat vector on all three routes. conditional roots carry one closed,
+target-plus-Fiat vector on all three routes. Synkrisis adds exclusive
+`diagnose` and `verify` vectors. conditional roots carry one closed,
 sorted invocation vector. each starts at its real host entry, loads
 only the selected plugin runtime and skill, and includes only descendants whose
 conditions fire. no scenario edge uses a wildcard, every potential edge has a
 realizable witness, and sibling Kronos targets or Ariadne operations do not
 co-occur. every edge cites a source path, exact byte range,
 source digest and span digest. unconditional runtime loads, installed routes,
-identity checks, overlays, frontier gates, worker dispatches and operation
-branches remain distinct. manifest reachability is recomputed from those
+identity checks, overlays, frontier gates, worker dispatches, operation
+branches and mandatory executable reads remain distinct. every mandatory read
+also cites a runtime span. manifest reachability is recomputed from those
 edges. a file's presence creates no edge. fixtures and
 `distribution/skills-runtime/` are outside this corpus.
 
@@ -2906,7 +3567,8 @@ edges. a file's presence creates no edge. fixtures and
 
 the partition is gapless over every physical source byte. generated Promise
 Machine copies are `generated_duplicate`; fenced command and data blocks are
-`exact_literal_or_evidence`; all remaining canonical Markdown stays in the
+`exact_literal_or_evidence`; every structured input is one whole-file exact
+range; all remaining canonical Markdown stays in the
 conservative `governed_operative_semantics` class. no prose is discarded as
 human-only and no byte is treated as a saving through uncertainty.
 

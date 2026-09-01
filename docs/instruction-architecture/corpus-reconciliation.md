@@ -2,9 +2,9 @@
 
 source: `a2b634d8e039af988bf30c8316defccf70071d8d`
 
-the framework-74 corpus contains 176 physical files and
-2,071,863 physical bytes. exact whole-file deduplication leaves
-159 files and 1,600,419 bytes. these are
+the framework-74 corpus contains 188 physical files and
+2,290,439 physical bytes. exact whole-file deduplication leaves
+171 files and 1,818,995 bytes. these are
 repository denominators, not prompt-size or semantic-compression claims.
 
 ## inventory
@@ -22,6 +22,7 @@ repository denominators, not prompt-size or semantic-compression claims.
 | `router_install_contract` | 1 |
 | `runtime_contract` | 18 |
 | `skill_contract` | 32 |
+| `structured_reference` | 12 |
 | `worker_prompt` | 14 |
 
 the sole exact duplicate family is the root Promise Machine contract and its
@@ -115,6 +116,35 @@ reader-background and delivery-provenance occurrences, it adds
 0 paths. the admitted Anamnesis demo's only local
 descendant is specimen evidence, so the operative closure stops there.
 
+## structured references
+
+the extension-agnostic pass adds exactly 12 unique structured inputs totalling
+218,576 bytes. nine are every regular non-Markdown file under an admitted
+canonical `references/` directory. the other three are Imprimatur's named
+lexicons, whose canonical skill and mandatory runtime reads jointly prove
+admission. scripts, templates, fixtures, examples, generated output and caller
+or project input remain excluded.
+
+| path | bytes | sha256 | owner | admission | load semantics | source anchor | runtime anchor |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+| `plugins/hermes/skills/hermes/references/gas-rule-corpus.json` | 177562 | `5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac` | `plugins/hermes/skills/hermes/SKILL.md` | `structured-reference` | `mandatory-executable` | `plugins/hermes/skills/hermes/SKILL.md:2236-2336` | `plugins/hermes/skills/hermes/scripts/hermes.py:48010-48040` |
+| `plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json` | 3779 | `d2ecc41b3da60df47d5a7ce86f338dbadf7beb18080957dee21881dae4503d1d` | `plugins/hermes/skills/hermes/SKILL.md` | `structured-reference` | `mandatory-executable` | `plugins/hermes/skills/hermes/SKILL.md:5599-5633` | `plugins/hermes/skills/hermes/scripts/hermes.py:48107-48167` |
+| `plugins/hexaemeron/skills/imprimatur/lexicon/gated.json` | 3716 | `e554ab6f9661d88095f285c6651983c980bd672b854287f74daa288b1dabc34c` | `plugins/hexaemeron/skills/imprimatur/SKILL.md` | `mandatory-rule-data` | `mandatory-executable` | `plugins/hexaemeron/skills/imprimatur/SKILL.md:8401-8413` | `plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py:2130-2193` |
+| `plugins/hexaemeron/skills/imprimatur/lexicon/hard.json` | 7842 | `a6ad7adbc6c8e06512032cf460c92749a49a6c139b4f2aee101de8bdc95df844` | `plugins/hexaemeron/skills/imprimatur/SKILL.md` | `mandatory-rule-data` | `mandatory-executable` | `plugins/hexaemeron/skills/imprimatur/SKILL.md:8232-8243` | `plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py:2130-2193` |
+| `plugins/hexaemeron/skills/imprimatur/lexicon/structural.json` | 3843 | `908e20c6319b587e95fa21de5949a10c0088ed698d546b0a1048686211826240` | `plugins/hexaemeron/skills/imprimatur/SKILL.md` | `mandatory-rule-data` | `mandatory-executable` | `plugins/hexaemeron/skills/imprimatur/SKILL.md:8549-8566` | `plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py:2130-2193` |
+| `plugins/homologia/references/manifest-v1.schema.json` | 3554 | `b60b46a65def47e11347fe408709c137b17accdd6fe2b39872c102c7c7db7413` | `plugins/homologia/skills/homologia/SKILL.md` | `structured-reference` | `reference-only` | `plugins/homologia/docs/checked-inputs/runbook.md:3113-3165` | - |
+| `plugins/homologia/references/vectors-v1.schema.json` | 3494 | `1031838d2405c949a2ad7fcb9c693119499f1f8183286fe2019e02fa6680b056` | `plugins/homologia/skills/homologia/SKILL.md` | `structured-reference` | `reference-only` | `plugins/homologia/docs/checked-inputs/runbook.md:3169-3220` | - |
+| `plugins/synkrisis/references/cohort-v1.schema.json` | 3204 | `5e71420816444af4582e0380b9d6e7ff845e4b3686126233c24a9d1ab5335b0d` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | `structured-reference` | `reference-only` | `plugins/synkrisis/references/cohort-v1.schema.json:65-166` | - |
+| `plugins/synkrisis/references/findings-v1.schema.json` | 4152 | `52cf6589e57a93fa82eef75520be44f10636d2469eafe2dae9c91e1d457627c8` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | `structured-reference` | `reference-only` | `plugins/synkrisis/references/findings-v1.schema.json:65-168` | - |
+| `plugins/synkrisis/references/policy-v1.schema.json` | 1982 | `04d440bdbd96fcff165d4b0badc029a79634bf17b1a7ac380baee85630c873bb` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | `structured-reference` | `reference-only` | `plugins/synkrisis/references/policy-v1.schema.json:65-166` | - |
+| `plugins/synkrisis/references/rule-v1.schema.json` | 3087 | `c8b45c1b6e2b9de010d7ce17109a6f7d49a4797d5a79b07186eabdfa1ed44698` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | `structured-reference` | `reference-only` | `plugins/synkrisis/references/rule-v1.schema.json:65-164` | - |
+| `plugins/synkrisis/references/rules-v1.json` | 2361 | `e754bb72235103290ec4ea58b2c71b851782573c3e27eb16a08fe762c3f3a4af` | `plugins/synkrisis/skills/synkrisis/SKILL.md` | `structured-reference` | `mandatory-executable` | `plugins/synkrisis/skills/synkrisis/SKILL.md:7131-7322` | `plugins/synkrisis/scripts/synkrisis.py:33476-33692` |
+
+the six `reference-only` schema rows have no loader edge, loader root or
+scenario reachability. Hermes's corpus and schema and Imprimatur's three
+lexicons load whenever their owner is selected. Synkrisis's rule catalogue has
+separate, mutually exclusive `diagnose` and `verify` source and runtime spans.
+
 ## excluded links
 
 these representative links do not create loader edges. the classification is
@@ -131,21 +161,24 @@ source-bound rather than inferred from a file's presence.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 206
-host edges, plus 231 scenario roots and
-245 scenario edges. the scenarios cover the exact 93
+`loader-graph.json` records 19 roots and 212
+host edges, plus 233 scenario roots and
+252 scenario edges and 6
+reference-only records. the scenarios cover the exact 93
 base combinations of 31 selectable canonical skills and the repository,
 isolated Agent Skills and standalone-plugin host routes. 87 bases admit a
 zero-condition invocation; Ariadne and Kronos instead require an operation or
-target-plus-Fiat vector on all three routes. conditional roots carry one closed,
+target-plus-Fiat vector on all three routes. Synkrisis adds exclusive
+`diagnose` and `verify` vectors. conditional roots carry one closed,
 sorted invocation vector. each starts at its real host entry, loads
 only the selected plugin runtime and skill, and includes only descendants whose
 conditions fire. no scenario edge uses a wildcard, every potential edge has a
 realizable witness, and sibling Kronos targets or Ariadne operations do not
 co-occur. every edge cites a source path, exact byte range,
 source digest and span digest. unconditional runtime loads, installed routes,
-identity checks, overlays, frontier gates, worker dispatches and operation
-branches remain distinct. manifest reachability is recomputed from those
+identity checks, overlays, frontier gates, worker dispatches, operation
+branches and mandatory executable reads remain distinct. every mandatory read
+also cites a runtime span. manifest reachability is recomputed from those
 edges. a file's presence creates no edge. fixtures and
 `distribution/skills-runtime/` are outside this corpus.
 
@@ -153,17 +186,18 @@ edges. a file's presence creates no edge. fixtures and
 
 the partition is gapless over every physical source byte. generated Promise
 Machine copies are `generated_duplicate`; fenced command and data blocks are
-`exact_literal_or_evidence`; all remaining canonical Markdown stays in the
+`exact_literal_or_evidence`; every structured input is one whole-file exact
+range; all remaining canonical Markdown stays in the
 conservative `governed_operative_semantics` class. no prose is discarded as
 human-only and no byte is treated as a saving through uncertainty.
 
 ## cohorts
 
 the development cohort holds 27
-logical skills and 1,280,333 exact-unique
-bytes (0.799999). the sealed holdout holds
-five logical skills and 320,086 exact-unique
-bytes (0.200001). memberships are disjoint.
+logical skills and 1,455,191 exact-unique
+bytes (0.799997). the sealed holdout holds
+five logical skills and 363,804 exact-unique
+bytes (0.200003). memberships are disjoint.
 the development set covers every shared root and runtime contract, all ten
 file-size deciles, authority tier, admitted document class and construct class
 recorded in `cohorts.json`.

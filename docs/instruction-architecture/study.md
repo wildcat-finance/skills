@@ -560,3 +560,68 @@ replacement.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** The preceding Markdown-only closure is not the full
+authoritative instruction and reference corpus. The issue's current audit
+evidence names the excluded operational JSON references:
+https://github.com/wildcat-finance/skills/issues/1046#issuecomment-5484775668.
+A bounded pass over all 32 canonical skill contracts finds the same defect in
+Imprimatur's three immutable rule sources. Replace the extension-based boundary
+with this closed rule: admit every regular non-Markdown file under an admitted
+canonical `references/` directory; also admit an immutable non-Markdown rule or
+data source outside `references/` only when the canonical skill explicitly
+names it and its mandatory default executable resolves and reads it on every
+applicable run. Scripts, output templates, tests and evals, examples and
+specimens, generated outputs, and caller- or target-project-supplied inputs
+remain outside the compression denominator.
+
+At `a2b634d8e039af988bf30c8316defccf70071d8d`, this adds exactly nine JSON
+references owned by Hermes, Homologia and Synkrisis and the three JSON lexicons
+owned by Imprimatur: 12 physical and exact-unique files totalling 218,576
+bytes. The closed corpus is therefore 188 physical files and 2,290,439 bytes,
+reducing by exact whole-file digest to 171 unique files and 1,818,995 bytes.
+Add one 12-document `structured_reference` class; every prior document-class
+count is unchanged. Classify all 218,576 added bytes as
+`exact_literal_or_evidence`. The complete partition is 1,473,399 governed
+operative bytes, 345,596 exact-literal-or-evidence bytes, 471,444
+generated-duplicate bytes, and zero human-only or unsupported bytes. The root
+Promise Machine contract and its generated copies remain the only duplicate
+family.
+
+The loader graph must distinguish prompt or agent reads, mandatory-executable
+inputs and reference-only evidence. Hermes's corpus and schema, Synkrisis's
+committed rule catalogue on `diagnose` and `verify`, and Imprimatur's three
+lexicons receive source- and runtime-proved executable-input edges and only
+realizable scenario reachability. The two Homologia and four Synkrisis schemas
+are reference-only exact evidence: they have no production loader edge, loader
+root or scenario reachability, and the graph must not invent one. A manifest
+document may have empty runtime reachability only in that declared
+reference-only class. Fixed-point verification independently enumerates all
+files under admitted `references/` directories, resolves the explicit immutable
+mandatory-data declarations, and proves a second pass adds nothing.
+
+The 218,576-byte correction invalidates the unopened cohort and seal. Rerun
+the unchanged seed and deterministic five-skill selection method before any
+candidate, case or model output exists. The replacement holdout is exactly
+`alexandria`, `fizz`, `phylax`, `probitas` and `sapheneia`: 31 exact-unique
+paths and 363,804 bytes (`0.200003`). Development contains the disjoint
+remaining 140 paths and 1,455,191 bytes (`0.799997`) and retains every shared
+contract, document class, authority tier, construct and size decile. Replace
+the old source-bound cohort and seal atomically; keep the 16-slot envelope
+closed and `opened` false.
+
+**Why.** Audit round 7 proved that the `.md` suffix is acting as an authority
+decision. It drops Hermes's 177,562-byte rule corpus even though Hermes names
+it and its mandatory executable reads and validates it every run, drops every
+other JSON reference surface, and drops Imprimatur's three executable rule
+sources. `verify-corpus` still passes, so the current fixed-point, partition
+and seal checks certify an incomplete denominator. A nine-reference-only
+repair would preserve the same root cause outside `references/`.
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected corpus,
+partition, loader, cohort and seal identities; only Step 1's exit and tests
+require replacement.
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.

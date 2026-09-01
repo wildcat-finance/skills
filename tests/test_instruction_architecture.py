@@ -30,11 +30,26 @@ SCHEMA = ROOT / "research/instruction-architecture/schemas/source-bound-v1.schem
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "7b909896fcef2b9732e2a1bc057c2a44403e880122db16284586bc7ab8e94b30"
+    "39b7b730fc520e58f3e69cc6a8559d0adeec6fd60b94df1f04101c12344dde56"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "ca37cc1dae5c33a7ddc89065e749aec0fe835053c6cdeb39487f2fe60a22d82f"
+    "1de22e55a4409ca35e615104fec8d4435a001f4c26fc50a5cd90d58712e905bb"
 )
+
+EXPECTED_STRUCTURED_REFERENCES = {
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": (177_562, "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"),
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": (3_779, "d2ecc41b3da60df47d5a7ce86f338dbadf7beb18080957dee21881dae4503d1d"),
+    "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": (3_716, "e554ab6f9661d88095f285c6651983c980bd672b854287f74daa288b1dabc34c"),
+    "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": (7_842, "a6ad7adbc6c8e06512032cf460c92749a49a6c139b4f2aee101de8bdc95df844"),
+    "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": (3_843, "908e20c6319b587e95fa21de5949a10c0088ed698d546b0a1048686211826240"),
+    "plugins/homologia/references/manifest-v1.schema.json": (3_554, "b60b46a65def47e11347fe408709c137b17accdd6fe2b39872c102c7c7db7413"),
+    "plugins/homologia/references/vectors-v1.schema.json": (3_494, "1031838d2405c949a2ad7fcb9c693119499f1f8183286fe2019e02fa6680b056"),
+    "plugins/synkrisis/references/cohort-v1.schema.json": (3_204, "5e71420816444af4582e0380b9d6e7ff845e4b3686126233c24a9d1ab5335b0d"),
+    "plugins/synkrisis/references/findings-v1.schema.json": (4_152, "52cf6589e57a93fa82eef75520be44f10636d2469eafe2dae9c91e1d457627c8"),
+    "plugins/synkrisis/references/policy-v1.schema.json": (1_982, "04d440bdbd96fcff165d4b0badc029a79634bf17b1a7ac380baee85630c873bb"),
+    "plugins/synkrisis/references/rule-v1.schema.json": (3_087, "c8b45c1b6e2b9de010d7ce17109a6f7d49a4797d5a79b07186eabdfa1ed44698"),
+    "plugins/synkrisis/references/rules-v1.json": (2_361, "e754bb72235103290ec4ea58b2c71b851782573c3e27eb16a08fe762c3f3a4af"),
+}
 
 EXPECTED_OPERATION_REFERENCES = {
     "docs/fiat-run-observation-binding-v1.md",
@@ -158,7 +173,7 @@ class CorpusManifestTests(unittest.TestCase):
                 for item in self.manifest["documents"]
                 if item["admission_kind"] != "issue-census"
             },
-            set(admissions),
+            set(admissions) | set(AI._structured_metadata()),
         )
         self.assertEqual(sum(documents[path]["bytes"] for path in admissions), 526_326)
         self.assertEqual(
@@ -192,6 +207,43 @@ class CorpusManifestTests(unittest.TestCase):
                     metadata["source_path"], metadata["source_needle"]
                 )
                 self.assertGreater(evidence["end"], evidence["start"])
+
+    def test_structured_reference_inventory_and_evidence_are_exact(self):
+        documents = {
+            item["path"]: item
+            for item in self.manifest["documents"]
+            if item["document_class"] == "structured_reference"
+        }
+        self.assertEqual(
+            {
+                path: (item["bytes"], item["sha256"])
+                for path, item in documents.items()
+            },
+            EXPECTED_STRUCTURED_REFERENCES,
+        )
+        metadata = AI._structured_metadata()
+        self.assertEqual(set(documents), set(metadata))
+        self.assertEqual(sum(item["bytes"] for item in documents.values()), 218_576)
+        for path, item in documents.items():
+            with self.subTest(path=path):
+                row = metadata[path]
+                self.assertEqual(item["canonical_owner"], row["canonical_owner"])
+                self.assertEqual(item["load_semantics"], row["load_semantics"])
+                self.assertEqual(
+                    item["source_evidence"],
+                    AI._evidence(row["source_path"], row["source_needle"]),
+                )
+                if row["runtime_path"] is None:
+                    self.assertIsNone(item["runtime_evidence"])
+                    self.assertEqual(item["loader_roots"], [])
+                    self.assertEqual(item["scenario_reachability"], [])
+                else:
+                    self.assertEqual(
+                        item["runtime_evidence"],
+                        AI._evidence(row["runtime_path"], row["runtime_needle"]),
+                    )
+                    self.assertTrue(item["loader_roots"])
+                    self.assertTrue(item["scenario_reachability"])
 
     def test_operation_reference_closure_and_anamnesis_anchor_are_independent(self):
         operations = {
@@ -273,6 +325,87 @@ class CorpusManifestTests(unittest.TestCase):
         self.assertTrue(
             callable(getattr(AI, "_derive_operative_markdown_targets", None))
         )
+
+    def test_extension_agnostic_fixed_point_and_runtime_anchor_mutations(self):
+        derived = AI._derive_corpus_fixed_point(self.manifest["documents"])
+        self.assertEqual(
+            set(derived["structured_targets"]), set(EXPECTED_STRUCTURED_REFERENCES)
+        )
+        mandatory = {
+            path
+            for path, row in AI._structured_metadata().items()
+            if row["load_semantics"] == "mandatory-executable"
+        }
+        self.assertEqual(set(derived["mandatory_executable_targets"]), mandatory)
+
+        synthetic = "plugins/hermes/skills/hermes/references/new-rules.data"
+        decoys = {
+            "plugins/hermes/skills/hermes/scripts/generated-rules.json",
+            "plugins/hexaemeron/skills/fizz/templates/output.json",
+            "plugins/hermes/tests/fixtures/rules.json",
+            "plugins/synkrisis/examples/specimens/rules.json",
+            "project-inputs/rules.json",
+        }
+        with_synthetic = AI._derive_corpus_fixed_point(
+            self.manifest["documents"],
+            tree_paths={*AI._frozen_tree_paths(), synthetic, *decoys},
+        )
+        self.assertIn(synthetic, with_synthetic["structured_targets"])
+        self.assertFalse(decoys & set(with_synthetic["structured_targets"]))
+
+        for path in sorted(mandatory):
+            row = AI._structured_metadata()[path]
+            runtime_path = row["runtime_path"]
+            self.assertIsNotNone(runtime_path)
+            runtime = AI._source_blob(runtime_path)
+            needle = row["runtime_needle"].encode()
+            self.assertIn(needle, runtime)
+            changed = AI._derive_corpus_fixed_point(
+                self.manifest["documents"],
+                source_overrides={runtime_path: runtime.replace(needle, b"", 1)},
+            )
+            self.assertNotIn(path, changed["mandatory_executable_targets"])
+            source_path = row["source_path"]
+            source = AI._source_blob(source_path)
+            source_needle = row["source_needle"].encode()
+            self.assertIn(source_needle, source)
+            changed = AI._derive_corpus_fixed_point(
+                self.manifest["documents"],
+                source_overrides={
+                    source_path: source.replace(source_needle, b"", 1)
+                },
+            )
+            self.assertNotIn(path, changed["mandatory_executable_targets"])
+
+    def test_every_structured_input_omission_and_move_refuses(self):
+        tree = set(AI._frozen_tree_paths())
+        for path in sorted(EXPECTED_STRUCTURED_REFERENCES):
+            changed = tuple(sorted(tree - {path}))
+            with self.subTest(path=path):
+                with mock.patch.object(AI, "_frozen_tree_paths", return_value=changed):
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "structured reference missing|topology drift"
+                    ):
+                        AI._corpus_paths()
+        lexicon = "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json"
+        moved = "plugins/hexaemeron/skills/imprimatur/templates/hard.json"
+        with mock.patch.object(
+            AI,
+            "_frozen_tree_paths",
+            return_value=tuple(sorted((tree - {lexicon}) | {moved})),
+        ):
+            with self.assertRaisesRegex(AI.Refusal, "structured reference missing"):
+                AI._corpus_paths()
+
+    def test_reference_suffix_does_not_control_non_markdown_admission(self):
+        original = "plugins/hermes/skills/hermes/references/gas-rule-corpus.json"
+        renamed = original.removesuffix(".json") + ".bin"
+        tree = (set(AI._frozen_tree_paths()) - {original}) | {renamed}
+        changed = AI._derive_corpus_fixed_point(
+            self.manifest["documents"], tree_paths=tree
+        )
+        self.assertNotIn(original, changed["structured_targets"])
+        self.assertIn(renamed, changed["structured_targets"])
 
     def test_same_repository_url_requires_exact_repository_ref_and_path(self):
         self.assertEqual(
@@ -840,7 +973,7 @@ class BytePartitionTests(unittest.TestCase):
         cls.sources = {item["path"]: item for item in cls.manifest["documents"]}
 
     def test_every_range_is_ordered_gapless_and_digest_bound(self):
-        self.assertEqual(len(self.partition["files"]), 176)
+        self.assertEqual(len(self.partition["files"]), 188)
         for file_record in self.partition["files"]:
             source = AI._source_blob(file_record["path"])
             cursor = 0
@@ -859,13 +992,13 @@ class BytePartitionTests(unittest.TestCase):
             )
 
     def test_partition_totals_reconcile(self):
-        self.assertEqual(sum(self.partition["totals"].values()), 2_071_863)
+        self.assertEqual(sum(self.partition["totals"].values()), 2_290_439)
         self.assertEqual(self.partition["unsupported_operative_bytes"], 0)
         self.assertEqual(self.partition["totals"]["generated_duplicate"], 471_444)
         self.assertEqual(
             self.partition["totals"],
             {
-                "exact_literal_or_evidence": 127_020,
+                "exact_literal_or_evidence": 345_596,
                 "generated_duplicate": 471_444,
                 "governed_operative_semantics": 1_473_399,
                 "human_only_explanation_or_rationale": 0,
@@ -883,6 +1016,20 @@ class BytePartitionTests(unittest.TestCase):
         self.assertEqual(len(generated), 17)
         self.assertNotIn("PROMISE_MACHINE.md", generated)
         self.assertTrue(all(path.endswith("/PROMISE_MACHINE.md") for path in generated))
+
+    def test_structured_references_are_whole_file_exact_evidence(self):
+        by_path = {item["path"]: item for item in self.partition["files"]}
+        for path, (size, digest) in EXPECTED_STRUCTURED_REFERENCES.items():
+            with self.subTest(path=path):
+                self.assertEqual(
+                    by_path[path]["ranges"],
+                    [{
+                        "start": 0,
+                        "end": size,
+                        "classification": "exact_literal_or_evidence",
+                        "span_sha256": digest,
+                    }],
+                )
 
     def test_nested_fences_remain_exact_literal_evidence(self):
         specimens = {
@@ -969,9 +1116,10 @@ class LoaderGraphTests(unittest.TestCase):
 
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
-        self.assertEqual(len(self.graph["edges"]), 206)
-        self.assertEqual(len(self.graph["scenario_roots"]), 231)
-        self.assertEqual(len(self.graph["scenario_edges"]), 245)
+        self.assertEqual(len(self.graph["edges"]), 212)
+        self.assertEqual(len(self.graph["scenario_roots"]), 233)
+        self.assertEqual(len(self.graph["scenario_edges"]), 252)
+        self.assertEqual(len(self.graph["reference_only"]), 6)
         self.assertTrue(self.graph["constraints"]["complete_scenario_routes"])
         self.assertTrue(self.graph["constraints"]["condition_vectors_closed"])
         self.assertTrue(
@@ -989,6 +1137,22 @@ class LoaderGraphTests(unittest.TestCase):
             *self.graph["excluded_links"],
         ]:
             evidence = relation["evidence"]
+            source = AI._source_blob(evidence["path"])
+            self.assertEqual(
+                hashlib.sha256(source).hexdigest(), evidence["source_sha256"]
+            )
+            self.assertEqual(
+                hashlib.sha256(source[evidence["start"] : evidence["end"]]).hexdigest(),
+                evidence["span_sha256"],
+            )
+        extra_evidence = [
+            item["source_evidence"] for item in self.graph["reference_only"]
+        ] + [
+            item["runtime_evidence"]
+            for item in [*self.graph["edges"], *self.graph["scenario_edges"]]
+            if item["runtime_evidence"] is not None
+        ]
+        for evidence in extra_evidence:
             source = AI._source_blob(evidence["path"])
             self.assertEqual(
                 hashlib.sha256(source).hexdigest(), evidence["source_sha256"]
@@ -1026,7 +1190,9 @@ class LoaderGraphTests(unittest.TestCase):
             self.graph["roots"], self.graph["edges"], "active_roots"
         )
         for item in self.manifest["documents"]:
-            self.assertEqual(set(item["loader_roots"]), observed[item["path"]])
+            self.assertEqual(
+                set(item["loader_roots"]), observed.get(item["path"], set())
+            )
 
     def test_manifest_scenarios_equal_graph_reachability(self):
         observed = AI._reachability_by_root(
@@ -1036,7 +1202,8 @@ class LoaderGraphTests(unittest.TestCase):
         )
         for item in self.manifest["documents"]:
             self.assertEqual(
-                set(item["scenario_reachability"]), observed[item["path"]]
+                set(item["scenario_reachability"]),
+                observed.get(item["path"], set()),
             )
 
     def test_declared_scenarios_are_complete_host_routes(self):
@@ -1122,6 +1289,92 @@ class LoaderGraphTests(unittest.TestCase):
             with self.subTest(field=field):
                 with self.assertRaisesRegex(AI.Refusal, message):
                     AI.build_loader_graph(changed)
+
+    def test_reference_only_requires_both_reachability_sets_empty(self):
+        for field in ("loader_roots", "scenario_reachability"):
+            changed = copy.deepcopy(self.manifest)
+            record = next(
+                item
+                for item in changed["documents"]
+                if item["load_semantics"] == "reference-only"
+            )
+            record[field] = ["fabricated"]
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(
+                    AI.Refusal, "reference-only manifest reachability drift"
+                ):
+                    AI._validate_manifest_shape(changed)
+
+    def test_structured_loader_semantics_are_exact(self):
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        host = {}
+        for edge in self.graph["edges"]:
+            host.setdefault(edge["target"], []).append(edge)
+        scenarios = {}
+        for edge in self.graph["scenario_edges"]:
+            scenarios.setdefault(edge["target"], []).append(edge)
+        ledger = {item["path"]: item for item in self.graph["reference_only"]}
+        for path, row in AI._structured_metadata().items():
+            with self.subTest(path=path):
+                document = documents[path]
+                if row["load_semantics"] == "reference-only":
+                    self.assertIn(path, ledger)
+                    self.assertNotIn(path, host)
+                    self.assertNotIn(path, scenarios)
+                    self.assertEqual(document["loader_roots"], [])
+                    self.assertEqual(document["scenario_reachability"], [])
+                    continue
+                self.assertEqual(len(host[path]), 1)
+                expected = 2 if path.endswith("synkrisis/references/rules-v1.json") else 1
+                self.assertEqual(len(scenarios[path]), expected)
+                for edge in host[path]:
+                    self.assertEqual(edge["source"], row["canonical_owner"])
+                    self.assertEqual(edge["kind"], "mandatory-executable")
+                    self.assertEqual(edge["load_type"], "mandatory-executable")
+                    self.assertEqual(edge["evidence"], document["source_evidence"])
+                    self.assertEqual(
+                        edge["runtime_evidence"], document["runtime_evidence"]
+                    )
+                for edge in scenarios[path]:
+                    self.assertEqual(edge["source"], row["canonical_owner"])
+                    self.assertEqual(edge["kind"], "mandatory-executable")
+                    self.assertEqual(edge["load_type"], "mandatory-executable")
+                    expected_source = document["source_evidence"]
+                    expected_runtime = document["runtime_evidence"]
+                    if path.endswith("synkrisis/references/rules-v1.json"):
+                        expected_source = AI._evidence(
+                            row["source_path"],
+                            AI.SYNKRISIS_RULE_SOURCE_NEEDLES[edge["condition"]],
+                        )
+                        expected_runtime = AI._evidence(
+                            row["runtime_path"],
+                            AI.SYNKRISIS_RULE_RUNTIME_NEEDLES[edge["condition"]],
+                        )
+                    self.assertEqual(edge["evidence"], expected_source)
+                    self.assertEqual(edge["runtime_evidence"], expected_runtime)
+
+    def test_synkrisis_rules_are_diagnose_verify_exclusive(self):
+        target = "plugins/synkrisis/references/rules-v1.json"
+        edges = [
+            edge for edge in self.graph["scenario_edges"] if edge["target"] == target
+        ]
+        self.assertEqual(
+            {edge["condition"] for edge in edges}, set(AI.SYNKRISIS_RULE_OPERATIONS)
+        )
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        for root in self.graph["scenario_roots"]:
+            operations = set(root["conditions"]) & set(AI.SYNKRISIS_RULE_OPERATIONS)
+            self.assertLessEqual(len(operations), 1)
+            if operations:
+                self.assertEqual(root["selected_skill"], "synkrisis")
+            self.assertEqual(
+                root["id"] in observed.get(target, set()),
+                root["selected_skill"] == "synkrisis" and len(operations) == 1,
+            )
 
     def test_every_reference_has_a_conditional_inbound_edge(self):
         references = {
@@ -1376,6 +1629,7 @@ class LoaderGraphTests(unittest.TestCase):
                 "credential-identity",
                 "frontier-gate",
                 "installed-route",
+                "mandatory-executable",
                 "operation-branch",
                 "unconditional",
                 "vendored-overlay",
@@ -1385,6 +1639,24 @@ class LoaderGraphTests(unittest.TestCase):
         self.assertFalse(self.graph["constraints"]["file_presence_creates_edge"])
         self.assertTrue(self.graph["constraints"]["fixtures_excluded"])
         self.assertTrue(self.graph["constraints"]["skills_runtime_excluded"])
+        self.assertTrue(
+            self.graph["constraints"][
+                "mandatory_executable_edges_have_runtime_evidence"
+            ]
+        )
+        self.assertTrue(
+            self.graph["constraints"]["reference_only_records_have_zero_reachability"]
+        )
+        self.assertTrue(
+            self.graph["constraints"]["synkrisis_rule_operations_are_exclusive"]
+        )
+        for edge in [*self.graph["edges"], *self.graph["scenario_edges"]]:
+            if edge["load_type"] == "mandatory-executable":
+                self.assertEqual(edge["kind"], "mandatory-executable")
+                self.assertIsNotNone(edge["runtime_evidence"])
+            else:
+                self.assertEqual(edge["load_type"], "agent-or-prompt")
+                self.assertIsNone(edge["runtime_evidence"])
 
     def test_graph_rebuild_and_command_are_exact(self):
         self.assertEqual(self.graph, AI.build_loader_graph(self.manifest))
@@ -1418,14 +1690,14 @@ class HoldoutSealTests(unittest.TestCase):
         self.assertGreaterEqual(len(self.cohorts["development"]["logical_skills"]), 12)
         self.assertEqual(
             self.cohorts["holdout"]["logical_skills"],
-            ["ariadne", "fizz", "fizz-sync", "hermes", "kronos"],
+            ["alexandria", "fizz", "phylax", "probitas", "sapheneia"],
         )
-        self.assertEqual(len(self.cohorts["holdout"]["paths"]), 33)
-        self.assertEqual(self.cohorts["holdout"]["unique_bytes"], 320_086)
-        self.assertEqual(self.cohorts["holdout"]["unique_byte_ratio"], "0.200001")
-        self.assertEqual(self.cohorts["development"]["unique_bytes"], 1_280_333)
+        self.assertEqual(len(self.cohorts["holdout"]["paths"]), 31)
+        self.assertEqual(self.cohorts["holdout"]["unique_bytes"], 363_804)
+        self.assertEqual(self.cohorts["holdout"]["unique_byte_ratio"], "0.200003")
+        self.assertEqual(self.cohorts["development"]["unique_bytes"], 1_455_191)
         self.assertEqual(
-            self.cohorts["development"]["unique_byte_ratio"], "0.799999"
+            self.cohorts["development"]["unique_byte_ratio"], "0.799997"
         )
         self.assertEqual(self.cohorts["selection"]["seed"], AI.SELECTION_SEED)
 
