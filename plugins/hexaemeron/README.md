@@ -187,7 +187,11 @@ recorded; every round records the exact checked operator declaration
 `--audit-filter sapheneia:sapheneia`, which is not semantic proof of the pass;
 a prose receipt missing either configured skill is rejected; and a push receipt
 requires the final head and a pull request aimed at the step below it in the
-stack, and refuses a merge commit outright. Merges are the integrate phase's
+stack, and refuses a merge commit outright. It does adopt one it observes: a
+pull request already merged into that base is receipted when the recorded head
+still matches and the merge is reachable from the base, and the step is then
+completed from that record instead of merging again, provided the run branch
+carries the work. Merges the run performs are the integrate phase's
 business: the controller hands them out one step at a time, in order, and the
 run is not done until the run branch has landed on the base and any recorded
 task issue is closed. Its closing comment follows Sapheneia, Imprimatur,

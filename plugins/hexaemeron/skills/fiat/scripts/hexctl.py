@@ -378,6 +378,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.46.1",
         "fiat-v5.47.1",
         "fiat-v5.48.1",
+        "fiat-v5.49.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -6779,7 +6780,22 @@ def done_push(args, state: dict) -> None:
         expected_head_sha=verified_commits[-1],
         expected_merge_sha=args.merge_commit,
         expected_closing_issue=(expected_issue if not stacked else None),
+        adopt_early_merge=stacked,
     )
+    # A step pull request merged before integrate. The head already matched the
+    # verified range above, so what remains is whether the merge is still in the
+    # base it targeted, and whether GitHub verifies it like any other commit the
+    # run receipts. Recorded explicitly, so a reader is never left inferring an
+    # early merge from which fields happen to be populated.
+    early_merge = None
+    if pr_record.get("early_merge"):
+        adopted = require_full_sha(pr_record["merge_sha"], "adopted merge")
+        early_merge = {
+            "merge_commit": adopted,
+            "reachable_from": args.pr_base,
+            "base_tip": adopted_merge_base_tip(args.dir, adopted, args.pr_base),
+            "github_verified": verify_github_commits(args.dir, [adopted]),
+        }
     github_verified, attribution = verified_github_attribution(
         args.dir, verified_commits
     )
@@ -6796,7 +6812,14 @@ def done_push(args, state: dict) -> None:
         # steps phase, and the ledger is append-only.
         "head_commit": supplied_head,
         "pr_base": args.pr_base,
+        # These two record what the arguments carried, which for a stacked step
+        # is nothing: `done push` refuses `--merge-commit` there. An adopted
+        # merge is an observation rather than an argument, so it and its own
+        # GitHub verification live in `early_merge` and are not folded in here.
+        # Reading `github_merge_verified` as "no merge was verified" is
+        # therefore wrong whenever `early_merge` is present.
         "merge_commit": args.merge_commit,
+        "early_merge": early_merge,
         "closed_issue_url": args.closed_issue_url,
         "verified_commits": verified_commits,
         "github_verified": github_verified,
@@ -6855,20 +6878,37 @@ def _integrate_directive(
     for step in state["steps"]:
         if step["n"] in merged:
             continue
-        pr_url = as_dict(step["receipts"].get("push")).get("pr_url")
-        return {
+        push_receipt = as_dict(step["receipts"].get("push"))
+        pr_url = push_receipt.get("pr_url")
+        # A step adopted at push has already merged, so the directive names the
+        # commit that carried it instead of a merge command. Saying so here is
+        # what stops the integrate phase's silence about that step reading as an
+        # omission, and it saves the caller looking the SHA up.
+        adopted = as_dict(push_receipt.get("early_merge")).get("merge_commit")
+        adopted = adopted if isinstance(adopted, str) else None
+        directive = {
             "do": "merge-step",
             "step": step["n"],
             "title": step["title"],
             "branch": step_branch_name(state, step),
             "pr_url": pr_url,
             "into": run_branch,
-            "merge": step_merge_command(pr_url),
+            "merge": (
+                step_merge_command(pr_url)
+                if adopted is None
+                else (
+                    f"already merged early as {adopted}; adopted at push and "
+                    "not merged again"
+                )
+            ),
             "then": (
                 f"hexctl done merge-step --step {step['n']} "
-                "--merge-commit <sha>"
+                f"--merge-commit {adopted if adopted else '<sha>'}"
             ),
         }
+        if adopted is not None:
+            directive["adopted_merge"] = adopted
+        return directive
     then = "hexctl done integrate --pr-url <url> --merge-commit <sha>"
     task_issue = expected_task_issue(state)
     if task_issue:
@@ -8282,11 +8322,54 @@ def done_merge_step(args, state: dict) -> None:
     refuse_rewritten_stack(args.dir, state, args.step)
     step = state["steps"][args.step - 1]
     push_receipt = as_dict(step["receipts"].get("push"))
+    # A step whose pull request merged before integrate was adopted at push,
+    # with its merge already reachable from the base it targeted and already
+    # GitHub-verified. Merging again is not available and not needed: the
+    # expectation here is that GitHub still reports that same merge, into the
+    # base the pull request actually had, rather than the run branch the
+    # directive names for a step that has yet to merge.
+    adoption = recorded_adoption(push_receipt)
+    if adoption is None:
+        expected_merge_base = pending["into"]
+    else:
+        if args.merge_commit != adoption["merge_commit"]:
+            die(
+                f"step {args.step} was adopted at push with merge "
+                f"{adoption['merge_commit']}; --merge-commit must name that "
+                "exact commit, because this step does not merge again"
+            )
+        # An early merge landed in the base the pull request targeted, which for
+        # a step above the bottom of the stack is the step below it rather than
+        # the run branch. Whether the run branch carries this step's work then
+        # depends on an order nobody chose: it does when the lower step merged
+        # after this one, and does not when it merged before. Only reachability
+        # answers that, and a step whose work is not on the run branch is not
+        # satisfied, however completely its adoption was recorded.
+        run_tip = remote_branch_tip(
+            args.dir, pending["into"], f"run branch '{pending['into']}' tip"
+        )
+        if not commit_is_ancestor(
+            args.dir,
+            adoption["merge_commit"],
+            run_tip,
+            f"adopted merge for step {args.step} on '{pending['into']}'",
+        ):
+            die(
+                f"adopted merge {adoption['merge_commit']} for step {args.step} "
+                f"is not reachable from '{pending['into']}' at {run_tip}. The "
+                f"early merge landed in '{adoption['reachable_from']}', and the "
+                "run branch does not carry this step's work, so the step is not "
+                "satisfied by that record. Its own pull request is closed and "
+                "cannot supply the merge: bring the work onto the run branch "
+                "through a replacement pull request, then halt and finish by "
+                "hand rather than receipting a landing that did not happen"
+            )
+        expected_merge_base = adoption["reachable_from"]
     pr_record = inspect_pull_request(
         args.dir,
         pending["pr_url"],
         expected_head=pending["branch"],
-        expected_base=pending["into"],
+        expected_base=expected_merge_base,
         expected_head_sha=None,
         expected_merge_sha=args.merge_commit,
     )
@@ -8350,6 +8433,8 @@ def done_merge_step(args, state: dict) -> None:
         "github_verified": github_verified,
         "pull_request": pr_record,
         "effective_push": effective_push,
+        "satisfied_by": ("adopted-early-merge" if adoption else "merge"),
+        "adopted_merge": adoption,
     }
     _append_design_transition(state, design_transition)
     event = {
@@ -8360,6 +8445,8 @@ def done_merge_step(args, state: dict) -> None:
         "github_verified": github_verified,
         "pull_request": pr_record,
         "effective_push": effective_push,
+        "satisfied_by": ("adopted-early-merge" if adoption else "merge"),
+        "adopted_merge": adoption,
     }
     if design_transition is not None:
         event["design_transition"] = design_transition
@@ -10953,6 +11040,98 @@ def commit_is_ancestor(
     return status == 0
 
 
+def _ancestry_answer(base_dir: str, candidate: str, descendant: str) -> bool | None:
+    """Git's ancestry answer, or ``None`` when it gave none.
+
+    `merge-base --is-ancestor` answers 0 for yes and 1 for no. Any other status
+    means the question was not answered: a missing object, an unreadable
+    repository, a killed process. Reading one of those as a no would turn a
+    broken call into a finding about a person.
+    """
+    status = bounded_tool_status(
+        base_dir, "git", ["merge-base", "--is-ancestor", candidate, descendant]
+    )
+    return None if status not in (0, 1) else status == 0
+
+
+def recorded_adoption(push_receipt: dict) -> dict | None:
+    """One complete adopted-merge record, or ``None`` when the step has none.
+
+    A recorded fact is about to stand in for an action, so a partial record is
+    refused rather than read around: the merge commit, the ref it was reachable
+    from, that ref's observed tip and GitHub's verification of the merge all
+    have to be present, and the verification has to name the merge itself.
+    Anything less means the adoption was never completed, and the step still
+    owes a merge.
+    """
+    early = as_dict(push_receipt.get("early_merge"))
+    if not early:
+        return None
+    merge_sha = early.get("merge_commit")
+    base_ref = early.get("reachable_from")
+    base_tip = early.get("base_tip")
+    verified = early.get("github_verified")
+    if (
+        not isinstance(merge_sha, str)
+        or COMMIT_RE.fullmatch(merge_sha) is None
+        or not isinstance(base_ref, str)
+        or not base_ref
+        or not isinstance(base_tip, str)
+        or COMMIT_RE.fullmatch(base_tip) is None
+        or not isinstance(verified, list)
+        or merge_sha not in verified
+    ):
+        die(
+            "recorded early merge is incomplete; a step is satisfied from an "
+            "adoption only when its merge commit, base ref, base tip and "
+            "GitHub verification of that merge are all recorded"
+        )
+    return {
+        "merge_commit": merge_sha,
+        "reachable_from": base_ref,
+        "base_tip": base_tip,
+        "github_verified": verified,
+    }
+
+
+def adopted_merge_base_tip(base_dir: str, merge_sha: str, base_ref: str) -> str:
+    """The recorded base's remote tip, once an early merge is proven to be in it.
+
+    The distinction this protects is the whole point of the gate. A merge still
+    in its base is an early merge, which the run did not perform and can adopt.
+    A merge no longer in its base means the base was rewritten under it, which
+    is the case the original refusal exists for, and it stays refused.
+
+    A merge somebody else performed is created on the remote, so the local
+    object graph may not hold it. One bounded fetch of the recorded base is the
+    only thing that can turn an unanswerable question into an answered one, and
+    it runs only after the question has actually come back unanswered. A second
+    silence is a refusal rather than another retry.
+    """
+    merge_sha = require_full_sha(merge_sha, "adopted merge")
+    tip = remote_branch_tip(base_dir, base_ref, f"recorded base '{base_ref}' tip")
+    answer = _ancestry_answer(base_dir, merge_sha, tip)
+    if answer is None:
+        bounded_git(
+            base_dir,
+            ["fetch", "--no-tags", "--quiet", "origin", f"refs/heads/{base_ref}"],
+            f"recorded base '{base_ref}' could not be read to answer reachability",
+        )
+        answer = _ancestry_answer(base_dir, merge_sha, tip)
+    if answer is None:
+        die(
+            f"reachability of adopted merge {merge_sha} in '{base_ref}' could "
+            "not be determined"
+        )
+    if not answer:
+        die(
+            f"adopted merge {merge_sha} is not reachable from the recorded base "
+            f"'{base_ref}' at {tip}; a merge that has left its base is a "
+            "rewritten ref, not an early merge"
+        )
+    return tip
+
+
 def signing_key(base_dir: str, commit_sha: str) -> str:
     """The long key id a commit was signed with, or the empty string.
 
@@ -11249,6 +11428,7 @@ def inspect_pull_request(
     expected_merge_sha: str | None,
     expected_head_label: str = "verified pushed branch tip",
     expected_closing_issue: str | None = None,
+    adopt_early_merge: bool = False,
 ) -> dict:
     head_sha = (
         require_full_sha(expected_head_sha, "pull request head")
@@ -11324,11 +11504,19 @@ def inspect_pull_request(
     # commit, so an open one records none.
     merge_commit = payload.get("merge_commit_sha")
     returned_merge = merge_commit if merged and isinstance(merge_commit, str) else None
+    early_merge = False
     if merge_sha is not None:
         if not merged or returned_merge != merge_sha:
             die("pull request is not the expected merged topology")
     elif merged:
-        die("step pull request was already merged before integrate")
+        if not adopt_early_merge:
+            die("step pull request was already merged before integrate")
+        # Adoption is offered, so the merge is a value the caller has to check
+        # rather than a reason to stop. It still has to be a nameable commit:
+        # `merged` without a full merge SHA is an answer we cannot receipt.
+        if returned_merge is None or not COMMIT_RE.fullmatch(returned_merge):
+            die("early-merged pull request did not return a full merge SHA")
+        early_merge = True
     record = {
         "url": url,
         "head": expected_head,
@@ -11338,6 +11526,8 @@ def inspect_pull_request(
         "merge_sha": returned_merge,
         "author_login": author_login,
     }
+    if early_merge:
+        record["early_merge"] = True
     if closing_issue is not None:
         record["closing_issue"] = closing_issue
     return record
