@@ -3965,7 +3965,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "50367019e444db2991d2f2ed8ebdc33b0eb9af44169ec5ce2441c9bf311e3d66",
+      "sha256": "3026fcd1afcf4eeab9b5b4105fd442b0052b3ec6a13a98df8a4afa31859b8ea5",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
