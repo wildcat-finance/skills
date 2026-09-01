@@ -98,6 +98,15 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
 
+# The status block ADR-014's amendment authorises: one span at the top of an open
+# issue's body recording its current status, supersession, or changed
+# requirement. The census reads bodies, so a correction that lands only in the
+# comment thread is a correction nobody compiling the queue will see. Absence is
+# ordinary and not a fault; a body that opens two blocks, or opens one and never
+# closes it, has made no statement and refuses.
+STATUS_BLOCK_START = "<!-- status:start -->"
+STATUS_BLOCK_END = "<!-- status:end -->"
+
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
 STEP_PHASES = ["issue", "implement", "audit", "prose", "push"]
@@ -4460,6 +4469,55 @@ def carryover_triage(text: str, label: str) -> tuple[list[dict], list[str]]:
     return parsed, [f"{label}: {fault}" for fault in faults]
 
 
+def status_block_span(
+    text: str, label: str
+) -> tuple[tuple[int, int] | None, list[str]]:
+    """The status block one issue body carries, and every fault in it.
+
+    Read outside fenced code, so a body quoting the delimiters as an example
+    carries no block. That is the rule which lets the decision record show its
+    own markers. Line numbers count the unfenced stream, because that is the
+    only sequence both this reader and a downstream consumer can agree on.
+
+    Absence returns ``(None, [])``. Most bodies carry no block, and a refusal
+    there would make the ordinary case the loud one.
+    """
+    opened = closed = None
+    faults: list[str] = []
+    for number, physical in enumerate(_unfenced_markdown_lines(text), start=1):
+        line = physical.rstrip("\r\n").strip()
+        if line == STATUS_BLOCK_START:
+            if opened is not None:
+                return None, [
+                    f"{label} opens more than one status block, so no statement "
+                    f"in it is authoritative"
+                ]
+            opened = number
+        elif line == STATUS_BLOCK_END:
+            if opened is None:
+                return None, [
+                    f"{label} has a status block closed before it opened"
+                ]
+            if closed is None:
+                closed = number
+    if opened is None:
+        return None, []
+    if closed is None:
+        return None, [
+            f"{label} opens a status block that is never closed, so the rest of "
+            f"the body would be read as its content"
+        ]
+    content = _unfenced_markdown_lines(text)[opened:closed - 1]
+    for offset, physical in enumerate(content, start=opened + 1):
+        if _contains_nonprinting_character(physical.rstrip("\r\n")):
+            faults.append(
+                f"{label} status block line {offset} contains a control character"
+            )
+    if faults:
+        return None, faults
+    return (opened, closed), []
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -4500,12 +4558,14 @@ def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
     """
     value, value_faults = fiat_required_value(text, label)
     carryover, carryover_faults = carryover_triage(text, label)
+    status, status_faults = status_block_span(text, label)
     record = {
         "fiat_required": None if value is None else int(value),
         "carryover": carryover,
+        "status_block": None if status is None else [status[0], status[1]],
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
     }
-    return record, [*value_faults, *carryover_faults]
+    return record, [*value_faults, *carryover_faults, *status_faults]
 
 
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:

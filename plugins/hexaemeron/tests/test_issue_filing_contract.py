@@ -45,6 +45,82 @@ def body(decision="Fiat-Required: 1", rows="none | none | nothing is carried\n",
     return text
 
 
+def with_status(block, rest="An issue.\n\nFiat-Required: 1\n"):
+    """One candidate body carrying the given status-block text above its prose."""
+    return block + "\n" + rest
+
+
+class StatusBlockTests(unittest.TestCase):
+    """The status block ADR-014's amendment authorises, read directly.
+
+    The block records an open issue's current status where a census reads it.
+    Its shape is checked and its content is not: a block claiming the issue is
+    superseded when it is not passes here, exactly as a `none` carryover row
+    nobody should have accepted passes. What cannot happen is a body that opens
+    a block and never closes it, opens two, or is judged to carry one because it
+    quoted the markers as an example.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.hexctl = hexctl_module()
+
+    def span(self, text):
+        return self.hexctl.status_block_span(text, "candidate")
+
+    def test_a_well_formed_block_reports_its_span(self):
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nSuperseded in part by #1030.\n<!-- status:end -->\n"))
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(span, (1, 3))
+
+    def test_a_body_with_no_block_is_not_a_fault(self):
+        """Most bodies carry none, so absence is ordinary rather than a refusal."""
+        span, faults = self.span("An issue.\n\nFiat-Required: 1\n")
+        self.assertEqual(faults, [])
+        self.assertIsNone(span)
+
+    def test_markers_inside_a_fence_carry_no_block(self):
+        """A body quoting the delimiters as an example decides nothing."""
+        span, faults = self.span(
+            "An issue.\n\n```text\n<!-- status:start -->\n<!-- status:end -->\n```\n")
+        self.assertEqual(faults, [])
+        self.assertIsNone(span)
+
+    def test_an_unterminated_block_is_refused(self):
+        """It must not consume the rest of the body in silence."""
+        span, faults = self.span(with_status("<!-- status:start -->\nStill open.\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("never closed" in fault for fault in faults), faults)
+
+    def test_two_opened_blocks_are_no_statement(self):
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nOne.\n<!-- status:end -->\n"
+            "<!-- status:start -->\nTwo.\n<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("more than one" in fault for fault in faults), faults)
+
+    def test_a_closer_without_an_opener_is_refused(self):
+        span, faults = self.span(with_status("<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("closed before it opened" in fault for fault in faults), faults)
+
+    def test_a_control_character_in_the_block_is_refused(self):
+        """Matching the carryover row reader, which refuses them by name."""
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nSuperseded\x07 by #1030.\n<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("control character" in fault for fault in faults), faults)
+
+    def test_the_block_reaches_the_contract_record(self):
+        record, faults = self.hexctl.issue_contract_faults(with_status(
+            "<!-- status:start -->\nSuperseded in part by #1030.\n<!-- status:end -->\n",
+            rest=body(),
+        ), "candidate")
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(record["status_block"], [1, 3])
+
+
 class ContractParserTests(unittest.TestCase):
     """The grammar, read directly. No network, no state, no run."""
 
