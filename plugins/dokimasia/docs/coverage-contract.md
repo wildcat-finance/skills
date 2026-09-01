@@ -99,3 +99,15 @@ the inventory rules found everything a framework can express, which is the
 inventory's own boundary. It does not establish that an `excluded` item was
 correctly excluded; it establishes that somebody said so and wrote down why,
 which is what makes the exclusion list reviewable.
+
+## Closed is enforced, not only declared
+
+Each record this plugin emits declares a schema, and each committed schema says
+an unknown key is a refusal. Until the release that shipped this section,
+nothing checked any of it: the schemas were documentation and the `--check`
+verbs asserted behaviour rather than shape.
+
+Every `--check` now validates a real emitted record against the committed
+schema it declares. The checker covers exactly the keywords these four schemas
+use and refuses an unsupported one rather than skipping it, because a schema
+quietly half-checked is worse than one nobody claimed to check.

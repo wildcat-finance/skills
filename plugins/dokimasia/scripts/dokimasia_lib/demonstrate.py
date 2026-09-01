@@ -23,6 +23,7 @@ from pathlib import Path
 
 from . import inventory as inventory_lib
 from . import reconcile as reconcile_lib
+from . import schema as schema_lib
 from . import workbook as workbook_lib
 
 SCHEMA = "dokimasia-scrutiny/v1"
@@ -410,6 +411,15 @@ def check() -> list[str]:
         if named != ["unattributed"]:
             failures.append(
                 f"an unexplained move reported {named}, not ['unattributed']"
+            )
+
+        for label, made in (
+            ("scrutiny", committed_scrutiny(first)),
+            ("coverage", coverage),
+        ):
+            failures.extend(
+                f"the {label} record breaches its schema: {line}"
+                for line in schema_lib.check(made)
             )
 
         prose = render(first, coverage)

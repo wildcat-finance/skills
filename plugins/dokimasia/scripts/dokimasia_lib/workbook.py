@@ -17,6 +17,7 @@ import re
 from pathlib import Path
 
 from . import xlsx
+from . import schema as schema_lib
 
 SCHEMA = "dokimasia-workbook/v1"
 LINEAGE = "dokimasia-workbook-lineage/v1"
@@ -285,4 +286,11 @@ def check() -> list[str]:
                     failures.append(f"{name} refused with {refusal!r}, not for {expected!r}")
             else:
                 failures.append(f"{name} was accepted; it must refuse")
+
+        # The schema says the record is closed. Enforce it rather than stating it.
+        emitted = record(benign, {"label": "benign.xlsx", "sha256": "0" * 64}, log)
+        failures.extend(
+            f"the workbook record breaches its schema: {line}"
+            for line in schema_lib.check(emitted)
+        )
     return failures
