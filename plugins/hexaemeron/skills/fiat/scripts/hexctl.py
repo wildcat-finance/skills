@@ -6810,6 +6810,12 @@ def done_push(args, state: dict) -> None:
         # steps phase, and the ledger is append-only.
         "head_commit": supplied_head,
         "pr_base": args.pr_base,
+        # These two record what the arguments carried, which for a stacked step
+        # is nothing: `done push` refuses `--merge-commit` there. An adopted
+        # merge is an observation rather than an argument, so it and its own
+        # GitHub verification live in `early_merge` and are not folded in here.
+        # Reading `github_merge_verified` as "no merge was verified" is
+        # therefore wrong whenever `early_merge` is present.
         "merge_commit": args.merge_commit,
         "early_merge": early_merge,
         "closed_issue_url": args.closed_issue_url,
