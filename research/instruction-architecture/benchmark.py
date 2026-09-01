@@ -4450,6 +4450,19 @@ def build_loader_graph(
     }
 
 
+def _validate_loader_graph(
+    graph: dict[str, Any],
+    manifest: dict[str, Any],
+    profiles: dict[str, Any],
+) -> None:
+    """Validate the complete graph, not only its scenario subgraph."""
+    if not isinstance(graph, dict):
+        raise Refusal("loader graph must be an object")
+    if graph != build_loader_graph(manifest, profiles):
+        raise Refusal("loader graph differs from its source-bound derivation")
+    _validate_complete_scenarios(graph, profiles)
+
+
 def _partition_ranges(
     path: str, generated: bool, *, exact_literal: bool = False
 ) -> list[dict[str, Any]]:
@@ -4890,6 +4903,7 @@ def _validate_holdout_seal(
     }
     if any(seal.get(field) != digest for field, digest in expected_fields.items()):
         raise Refusal("holdout seal input identity drift")
+    _validate_cohorts(cohorts, manifest)
 
     expected_membership = {
         "logical_skills": cohorts["holdout"]["logical_skills"],
@@ -4926,7 +4940,11 @@ def _validate_holdout_seal(
             raise Refusal("sealed slot contains answer-bearing material")
 
 
-def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
+def _validate_manifest_shape(
+    manifest: dict[str, Any], profiles: dict[str, Any] | None = None
+) -> None:
+    if not isinstance(manifest, dict):
+        raise Refusal("manifest must be an object")
     _require_fields(
         manifest,
         ("schema", "source", "counts", "totals", "documents"),
@@ -5096,15 +5114,79 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
     ):
         raise Refusal("manifest semantic runtime evidence coverage drift")
 
+    if profiles is None:
+        profiles = build_invocation_profiles()
+    else:
+        _validate_invocation_profiles(profiles)
+    if manifest != build_manifest(profiles):
+        raise Refusal("manifest differs from its source-bound derivation")
 
-def _validate_partition_closure(partition: dict[str, Any]) -> None:
+
+def _validate_partition_closure(
+    partition: dict[str, Any], manifest: dict[str, Any]
+) -> None:
+    if not isinstance(partition, dict):
+        raise Refusal("partition must be an object")
+    _require_fields(
+        partition,
+        (
+            "classifications",
+            "files",
+            "manifest_sha256",
+            "schema",
+            "source_ref",
+            "totals",
+            "unsupported_operative_bytes",
+        ),
+        (
+            "classifications",
+            "files",
+            "manifest_sha256",
+            "schema",
+            "source_ref",
+            "totals",
+            "unsupported_operative_bytes",
+        ),
+        "partition",
+    )
+    if (
+        partition["schema"] != f"{SCHEMA_PREFIX}-byte-partition/v1"
+        or partition["source_ref"] != SOURCE_REF
+        or partition["classifications"] != list(PARTITION_CLASSES)
+        or not isinstance(partition["files"], list)
+        or not partition["files"]
+    ):
+        raise Refusal("partition identity or structure drift")
     for file_record in partition["files"]:
+        if not isinstance(file_record, dict):
+            raise Refusal("partition file record must be an object")
+        _require_fields(
+            file_record,
+            ("bytes", "path", "ranges", "source_sha256"),
+            ("bytes", "path", "ranges", "source_sha256"),
+            "partition file record",
+        )
+        if not isinstance(file_record["path"], str):
+            raise Refusal("partition file path is malformed")
+        _safe_relative(file_record["path"])
+        if not isinstance(file_record["ranges"], list) or not file_record["ranges"]:
+            raise Refusal("partition file ranges are malformed")
         cursor = 0
         data = _source_blob(file_record["path"])
         for item in file_record["ranges"]:
-            if set(item) != {"start", "end", "classification", "span_sha256"}:
+            if not isinstance(item, dict) or set(item) != {
+                "start",
+                "end",
+                "classification",
+                "span_sha256",
+            }:
                 raise Refusal("partition range has a non-closed field set")
-            if item["start"] != cursor or item["end"] <= item["start"]:
+            if (
+                type(item["start"]) is not int
+                or type(item["end"]) is not int
+                or item["start"] != cursor
+                or item["end"] <= item["start"]
+            ):
                 raise Refusal("partition ranges overlap, gap, or are unordered")
             if item["classification"] not in PARTITION_CLASSES:
                 raise Refusal("partition range has an unknown class")
@@ -5113,6 +5195,19 @@ def _validate_partition_closure(partition: dict[str, Any]) -> None:
             cursor = item["end"]
         if cursor != len(data) or cursor != file_record["bytes"]:
             raise Refusal("partition does not close over its source")
+
+    if partition["manifest_sha256"] != _artifact_digest(manifest):
+        raise Refusal("partition manifest identity drift")
+    if partition != build_partition(manifest):
+        raise Refusal("partition differs from its source-bound derivation")
+
+
+def _validate_cohorts(cohorts: dict[str, Any], manifest: dict[str, Any]) -> None:
+    """Refuse cohort bytes not produced by the fixed source-bound selection."""
+    if not isinstance(cohorts, dict):
+        raise Refusal("cohorts must be an object")
+    if cohorts != build_cohorts(manifest):
+        raise Refusal("cohorts differ from their source-bound derivation")
 
 
 def _validate_artifact_inventory(inventory: dict[str, Any]) -> None:
@@ -5283,7 +5378,7 @@ def verify_corpus(args: argparse.Namespace) -> bytes:
     manifest, raw = _verify_loaded(
         *records["corpus-manifest.json"], expected, "corpus manifest"
     )
-    _validate_manifest_shape(manifest)
+    _validate_manifest_shape(manifest, profiles)
     return _result("verify-corpus", raw, manifest["totals"])
 
 
@@ -5301,13 +5396,14 @@ def verify_loader(args: argparse.Namespace) -> bytes:
     if profiles != build_invocation_profiles():
         raise Refusal("invocation profile fixture is stale")
     manifest, _ = records["corpus-manifest.json"]
-    _validate_manifest_shape(manifest)
+    _validate_manifest_shape(manifest, profiles)
     if manifest != build_manifest(profiles):
         raise Refusal("loader manifest is stale")
     expected = build_loader_graph(manifest, profiles)
     graph, raw = _verify_loaded(
         *records["loader-graph.json"], expected, "loader graph"
     )
+    _validate_loader_graph(graph, manifest, profiles)
     paths = {item["path"] for item in manifest["documents"]}
     for edge in [*graph["edges"], *graph["scenario_edges"]]:
         if edge["source"] not in paths or edge["target"] not in paths:
@@ -5362,7 +5458,7 @@ def verify_profiles(args: argparse.Namespace) -> bytes:
     _validate_invocation_profiles(profiles)
     if args.manifest is not None:
         manifest, _ = records["corpus-manifest.json"]
-        _validate_manifest_shape(manifest)
+        _validate_manifest_shape(manifest, profiles)
         if manifest != build_manifest(profiles):
             raise Refusal("profile manifest is stale")
     return _result("verify-profiles", raw, profiles["totals"])
@@ -5380,14 +5476,14 @@ def verify_partition(args: argparse.Namespace) -> bytes:
     profiles, _ = records["invocation-profiles.json"]
     _validate_invocation_profiles(profiles)
     manifest, _ = records["corpus-manifest.json"]
-    _validate_manifest_shape(manifest)
+    _validate_manifest_shape(manifest, profiles)
     if manifest != build_manifest(profiles):
         raise Refusal("partition manifest is stale")
     expected = build_partition(manifest)
     partition, raw = _verify_loaded(
         *records["byte-partition.json"], expected, "byte partition"
     )
-    _validate_partition_closure(partition)
+    _validate_partition_closure(partition, manifest)
     if partition["unsupported_operative_bytes"] != 0:
         raise Refusal("unsupported operative bytes block selection")
     return _result("verify-partition", raw, partition["totals"])
@@ -5406,7 +5502,7 @@ def verify_seal(args: argparse.Namespace) -> bytes:
     profiles, _ = records["invocation-profiles.json"]
     _validate_invocation_profiles(profiles)
     manifest, _ = records["corpus-manifest.json"]
-    _validate_manifest_shape(manifest)
+    _validate_manifest_shape(manifest, profiles)
     if manifest != build_manifest(profiles):
         raise Refusal("seal manifest is stale")
     expected_cohorts = build_cohorts(manifest)

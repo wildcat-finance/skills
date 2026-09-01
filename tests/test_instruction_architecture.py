@@ -1971,6 +1971,49 @@ class CorpusManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "manifest source topology drift"):
             AI._validate_manifest_shape(changed)
 
+    def test_manifest_validator_refuses_derivation_drift_without_command_rebuild(self):
+        mutations = {
+            "document-bytes": lambda value: value["documents"][0].__setitem__(
+                "bytes", 1
+            ),
+            "document-sha256": lambda value: value["documents"][0].__setitem__(
+                "sha256", "0" * 64
+            ),
+            "class-count": lambda value: value["counts"].__setitem__(
+                "skill_contract", 0
+            ),
+            "physical-total": lambda value: value["totals"].__setitem__(
+                "physical_bytes", 1
+            ),
+            "missing-ordinary-document": lambda value: value["documents"].pop(
+                next(
+                    index
+                    for index, item in enumerate(value["documents"])
+                    if item["source_evidence"] is None
+                    and item["runtime_evidence"] is None
+                )
+            ),
+            "host-reachability": lambda value: value["documents"][0].__setitem__(
+                "loader_roots", ["repository"]
+            ),
+            "scenario-reachability": lambda value: value["documents"][0].__setitem__(
+                "scenario_reachability",
+                [
+                    value["documents"][0]["scenario_reachability"][0].replace(
+                        "agent-skills:", "repository:", 1
+                    )
+                ],
+            ),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label=label):
+                changed = copy.deepcopy(self.manifest)
+                mutate(changed)
+                with self.assertRaisesRegex(
+                    AI.Refusal, "manifest differs from its source-bound derivation"
+                ):
+                    AI._validate_manifest_shape(changed)
+
     def test_independent_oracle_tree_paths_share_the_anchored_snapshot(self):
         clear_source_cache()
         changed = copy.deepcopy(self.manifest)
@@ -4425,7 +4468,40 @@ class BytePartitionTests(unittest.TestCase):
         changed = copy.deepcopy(self.partition)
         changed["files"][0]["ranges"][0]["start"] = 1
         with self.assertRaisesRegex(AI.Refusal, "overlap, gap, or are unordered"):
-            AI._validate_partition_closure(changed)
+            AI._validate_partition_closure(changed, self.manifest)
+
+    def test_partition_validator_refuses_derivation_drift_without_command_rebuild(self):
+        mutations = {
+            "source-sha256": lambda value: value["files"][0].__setitem__(
+                "source_sha256", "0" * 64
+            ),
+            "class-total": lambda value: value["totals"].__setitem__(
+                "governed_operative_semantics", 0
+            ),
+            "missing-file": lambda value: value["files"].pop(),
+            "duplicate-file": lambda value: value["files"].append(
+                copy.deepcopy(value["files"][0])
+            ),
+            "coherent-reclassification": lambda value: value["files"][0][
+                "ranges"
+            ][0].__setitem__(
+                "classification", "human_only_explanation_or_rationale"
+            ),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label=label):
+                changed = copy.deepcopy(self.partition)
+                mutate(changed)
+                with self.assertRaisesRegex(
+                    AI.Refusal, "partition differs from its source-bound derivation"
+                ):
+                    try:
+                        AI._validate_partition_closure(changed, self.manifest)
+                    except TypeError:
+                        # Exact parent accepted these mutations through the
+                        # one-argument boundary. Keep that parent-red path
+                        # executable while exercising the repaired join.
+                        AI._validate_partition_closure(changed)
 
 
 class LoaderGraphTests(unittest.TestCase):
@@ -4837,6 +4913,34 @@ class LoaderGraphTests(unittest.TestCase):
             AI.build_loader_graph(self.manifest, self.profiles),
         )
 
+    def test_graph_validator_refuses_derivation_drift_without_command_rebuild(self):
+        mutations = {
+            "host-scope": lambda value: value["edges"][0].__setitem__(
+                "active_roots", []
+            ),
+            "constraint": lambda value: value["constraints"].__setitem__(
+                "profile_route_product_is_exact", False
+            ),
+            "excluded-link": lambda value: value["excluded_links"].pop(),
+            "manifest-identity": lambda value: value.__setitem__(
+                "manifest_sha256", "0" * 64
+            ),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label=label):
+                changed = copy.deepcopy(self.graph)
+                mutate(changed)
+                with self.assertRaisesRegex(
+                    AI.Refusal, "loader graph differs from its source-bound derivation"
+                ):
+                    validator = getattr(AI, "_validate_loader_graph", None)
+                    if validator is None:
+                        # Exact parent exposed only the scenario-fragment
+                        # validator, which accepted these whole-graph drifts.
+                        AI._validate_complete_scenarios(changed, self.profiles)
+                    else:
+                        validator(changed, self.manifest, self.profiles)
+
     def test_verify_loader_is_read_only_and_repeatable(self):
         arguments = (
             "verify-loader",
@@ -5005,6 +5109,50 @@ class HoldoutSealTests(unittest.TestCase):
         self.reseal(changed)
         with self.assertRaisesRegex(AI.Refusal, "membership drift"):
             self.validate_changed_seal(changed)
+
+    def test_coherently_resealed_upstream_cohort_drift_refuses(self):
+        cohorts = copy.deepcopy(self.cohorts)
+        cohorts["holdout"]["logical_skills"] = cohorts["holdout"][
+            "logical_skills"
+        ][1:]
+        cohorts["holdout"]["paths"] = cohorts["holdout"]["paths"][1:]
+        replacement_skill = cohorts["holdout"]["logical_skills"][0]
+        for slot in cohorts["holdout"]["case_slots"]:
+            slot["logical_skill"] = replacement_skill
+
+        changed = copy.deepcopy(self.seal)
+        changed["cohorts_sha256"] = hashlib.sha256(canonical(cohorts)).hexdigest()
+        changed["membership"] = {
+            "logical_skills": cohorts["holdout"]["logical_skills"],
+            "paths": cohorts["holdout"]["paths"],
+        }
+        changed["membership_sha256"] = hashlib.sha256(
+            canonical(changed["membership"])
+        ).hexdigest()
+        changed["closed_future_case_envelope"] = {
+            "slots": cohorts["holdout"]["case_slots"],
+            "forbidden_until_open": [
+                "prompt",
+                "expected_answer",
+                "scorer_key",
+                "model_output",
+            ],
+        }
+        changed["case_envelope_sha256"] = hashlib.sha256(
+            canonical(changed["closed_future_case_envelope"])
+        ).hexdigest()
+        self.reseal(changed)
+
+        with self.assertRaisesRegex(
+            AI.Refusal, "cohorts differ from their source-bound derivation"
+        ):
+            AI._validate_holdout_seal(
+                changed,
+                self.manifest,
+                cohorts,
+                self.profiles,
+                self.graph,
+            )
 
     def test_stale_membership_digest_refuses_after_outer_reseal(self):
         changed = copy.deepcopy(self.seal)
