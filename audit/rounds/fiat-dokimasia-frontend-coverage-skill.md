@@ -146,3 +146,87 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the four accepted items stand unchanged. Two carry forward to later steps and are named here so neither is lost. The skill's `EVOLUTION.md` ledger still records the step 1 frontier and names the step 2 inventory compile as its next Fiat job, and `README.md` mirrors both; step 5 owns those files by its runbook Files clause and owes the update when the version ships, so this is not a step 3 defect. The status and source vocabularies observed in the reviewed workbook remain unpinned, so a renamed status would import cleanly and reconcile differently; that belongs to the step that reconciles. The canonical digest still covers the cases and not the per-sheet accounting, which the schema description states and the design lock pins.
+
+## Step 4, round 1 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; evidence-digest-binding=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; router-corpus-drift=reviewed; inventory-fidelity=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable
+
+Not checked: no demonstration exists, so nothing was audited against a real application checkout or the reviewed workbook; the reconciler was exercised against the committed fixtures only, and nothing establishes that a disposition set a person actually writes has the shape these fixtures assume; whether a recorded status was the right judgement is outside what any of this can establish; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | high | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | The reviewed-oracle check compared the oracle's status against the unreviewed value and nothing else, so a workbook carrying no status column passed every oracle: absence never equals `Not Run`. Probed against the reconciler with the column stripped and the digest recomputed, all eight covered dispositions were accepted and the ratio closed at one. This is the single control the step exists for, failing open in the direction that widens coverage, and it would have done so silently on any workbook whose status column was renamed. Fixed by refusing an oracle that carries no status field and one whose status is blank. Guarded by two tests that strip and blank the column and require the refusal by name. | fixed in 59dd13b8 |
+| S4-R1-02 | medium | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | A `manual` or `excluded` entry naming an oracle was accepted and stored with the oracle intact, producing a record row that reads as decided by a person and held to a case at the same time. Those are two different claims about one item, and a reader resolving the ambiguity either way would be reading something the reviewer did not say. Fixed by refusing an oracle on any disposition other than `covered`. Guarded by a fixture and a test. | fixed in 59dd13b8 |
+| S4-R1-03 | medium | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | The declared reason cap was enforced only on the two states required to carry a reason, so a `covered` entry could carry a reason of any length; a 5,000-byte one was accepted against a declared cap of 512. The record publishes `caps.reason_bytes` as though it bound every reason. Fixed by applying the cap before the per-state checks. Guarded by a fixture and a test. | fixed in 59dd13b8 |
+| S4-R1-04 | medium | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | The runbook names an inventory item with no matching row among the cases the step must cover, and the record emitted only the opposite direction of the join. The missing list is the uncovered application surface, which is the question the whole tool exists to answer, and leaving a reader to derive it by subtracting the covered set is work somebody eventually gets wrong. Fixed by emitting `items_no_oracle_cites` beside `cases_no_item_cites`, requiring both in the schema. Guarded by a test per direction. | fixed in 59dd13b8 |
+
+Leads not pursued: `read_json` tests the supplied path for a symlink and does not walk its parents, so a path reached through a symlinked directory is read; the inputs are operator-supplied record paths rather than untrusted archive members, and the CLI applies the same rule to its report path, so this is accepted and stated rather than repaired. An empty scoped set yields a ratio of zero over zero, reported as not closed, which is the conservative reading and is deliberate. The step changed dokimasia's marketplace description and the router row that names it, and RS-40's deciding sentence lives in `AGENTS.md`, which this step did not touch; the corpus digest is unchanged and the recorded run block still binds, but the selection has not been regraded against the new description and round 2 owes that check.
+
+## Step 4, round 2 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; evidence-digest-binding=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; router-corpus-drift=reviewed; inventory-fidelity=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable
+
+Not checked: the same negative space as round 1; no demonstration exists, the reconciler was exercised against the committed fixtures only, and the Pashov pair still did not run under the recorded security-suite waiver. RS-40 was not regraded: the check requires one isolated context per request and this session cannot open one, so the claim recorded here is the narrower one below rather than a selection result.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R2-01 | high | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | A workbook case could be marked `covered` naming itself as its own oracle. Probed against the reconciler: `case:ADM-01` covered by oracle `ADM-01` was accepted, stored with both fields intact, and closed the ratio at one. Naming a different case is circular in the same way, so refusing only the identity form would have been a half-fix that read as complete. An oracle is a workbook case and `covered` asserts that something is held to one, so a case cannot be covered at all: the case is the oracle. Fixed by restricting `covered` to the inventory side. The committed fixture already assumed this and nothing enforced it. Guarded by a fixture naming a case as its own oracle and a test that also drives the other-case form. | fixed in 22e1e1a0 |
+
+Leads not pursued: no code path validates an emitted record against its committed schema at runtime; the tests compare top-level keys and the `--check` verbs assert behaviour, so a record breaching a `maxLength` or `pattern` would pass unnoticed. This is a property of all three schemas this plugin ships, not something step 4 introduced, and repairing it means adding a validator to the inventory and workbook records too; it is recorded here rather than repaired inside this step. On RS-40, what was checked is that the corpus file and `AGENTS.md` are both untouched by this step, so the recorded run block still binds its stated corpus digest and the deciding sentence the case names is unchanged; what was not checked is whether a fresh router still selects Dokimasia given the rewritten marketplace description, and that regrade is owed. `read_json` still tests only the supplied path for a symlink, as recorded in round 1. An empty scoped set still reports zero over zero as not closed.
+
+## Step 4, round 3 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; evidence-digest-binding=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; router-corpus-drift=reviewed; inventory-fidelity=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable
+
+Not checked: the same negative space as the earlier rounds; no demonstration exists, the reconciler was exercised against the committed fixtures only, the Pashov pair still did not run under the recorded security-suite waiver, and RS-40 still has not been regraded for the reason round 2 records.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R3-01 | medium | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | The verb takes three operator-supplied paths, and a file that parsed as JSON but was not the record it was passed as reached a `KeyError` on the first item. Probed through the real command: an inventory item missing `source` produced a Python stack trace and exit 1, where every other refusal in this plugin is named and exits 2. A truncated or mistyped record is an ordinary mistake rather than an attack, and this was the single place in the plugin where making one returned a traceback. Fixed by checking both input records' shape on entry and requiring the disposition list to be a list of objects, with the refusal naming the record, the index and the missing field. Guarded by five library tests and one that drives the command and requires no traceback, exit 2 and a named refusal. | fixed in c1d01437 |
+
+Leads not pursued: the three accepted items stand. No emitted record is validated against its committed schema at runtime, which is a property of all three schemas this plugin ships rather than something step 4 introduced. `read_json` still tests only the supplied path for a symlink and not its parents. An empty scoped set still reports zero over zero as not closed, which is the conservative reading and deliberate. The RS-40 regrade remains owed, with the corpus digest and the deciding sentence both verified unchanged by this step.
+
+## Step 4, round 4 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; evidence-digest-binding=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; router-corpus-drift=reviewed; inventory-fidelity=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable
+
+Not checked: the same negative space as the earlier rounds; no demonstration exists, the reconciler was exercised against the committed fixtures only, the Pashov pair still did not run under the recorded security-suite waiver, and RS-40 still has not been regraded for the reason round 2 records.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R4-01 | low | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | `_matched` was named for work it did not do. Its docstring stated it reported which side of the join found nothing on the other; it returned both sides in full, filtered nothing, and the unmatched sets were computed by its caller. A wrong docstring on a helper whose name asserts a behaviour is worse than no docstring, because a reader has no prompt to check. Fixed by removing the helper and building the two lists where they are used, under a comment stating that the join is made by the reviewer through the oracle field and never inferred here. | fixed in 55feed8a |
+| S4-R4-02 | low | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | The `caps` block published two of the three bounds the reconciler enforces. The input byte cap applied to every record read and did not appear in the record, so a reader auditing which limits applied had to read the source to find one of them. The block is the record's own statement of its bounds, and a partial one invites the reader to treat it as complete. Fixed by publishing it and requiring it in the schema. Guarded by a test asserting the block equals the enforced set exactly rather than containing it. | fixed in 55feed8a |
+
+Leads not pursued: the three accepted items stand unchanged. Confirmed sound this round and recorded so a later round need not rediscover it: the coverage digest is unchanged by reordering the declared dispositions, and the counts add up three ways, with `by_disposition` summing to `disposed`, the two sides summing to `scoped`, and `disposed` plus `undisposed` summing to `scoped`. No emitted record is validated against its committed schema at runtime, which is a property of all three schemas this plugin ships. `read_json` still tests only the supplied path for a symlink and not its parents. An empty scoped set still reports zero over zero as not closed. The RS-40 regrade remains owed.
+
+## Step 4, round 5 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; evidence-digest-binding=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; router-corpus-drift=reviewed; inventory-fidelity=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable
+
+Not checked: the same negative space as the earlier rounds; no demonstration exists, the reconciler was exercised against the committed fixtures only, the Pashov pair still did not run under the recorded security-suite waiver, and RS-40 still has not been regraded for the reason round 2 records.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the five accepted items stand unchanged. Confirmed sound this round: all four built verbs exit zero on their check paths and `demonstrate` refuses with the not-built status, the design checker admits step:5 and refuses integration for the report step 5 owes, and the working tree is clean at the recorded head. One apparent finding this round was the auditor's own error rather than the code's: an exit-status sweep reported every check verb refusing, which was the shell passing each verb and its flag as one argument for argparse to reject, and each verb exits zero when invoked correctly. Carried forward and owed elsewhere: no emitted record is validated against its committed schema at runtime, which is a property of all three schemas this plugin ships rather than of this step; `read_json` tests only the supplied path for a symlink and not its parents; an empty scoped set reports zero over zero as not closed, which is deliberate; the ledger frontier and the README frontier prose still record the step 1 state, which step 5's Files clause owns; and the RS-40 regrade is owed, with the corpus digest and the deciding sentence both verified unchanged by this step.

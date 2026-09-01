@@ -24,13 +24,18 @@ SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
 VERSION = "0.1.0"
-UNBUILT = ("reconcile", "demonstrate")
+UNBUILT = ("demonstrate",)
 KEPT_PROMISES = (
     "dokimasia-scaffold-identity",
     "dokimasia-source-inventory",
     "dokimasia-workbook-lineage",
+    "dokimasia-disposition-closure",
 )
-UNKEPT_PROMISES = ("dokimasia-disposition-closure",)
+# Every declared promise is now kept. What remains unbuilt is a transition, not
+# a promise, so the contract must name the step it arrives with rather than
+# declaring a section for it.
+UNKEPT_PROMISES = ()
+UNBUILT_TRANSITION_STEP = "step 5"
 
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
@@ -95,13 +100,22 @@ class ContractTests(unittest.TestCase):
             with self.subTest(promise=promise):
                 self.assertNotIn(promise, declared)
 
-    def test_the_contract_names_the_step_each_unkept_promise_arrives_with(self):
+    def test_the_contract_names_the_step_the_unbuilt_transition_arrives_with(self):
         # Collapse wrapping: the contract is prose and reflows, the claim does not.
         text = " ".join(SKILL.read_text(encoding="utf-8").split())
-        for promise, step in zip(UNKEPT_PROMISES, ("step 4",)):
+        self.assertIn(f"{UNBUILT_TRANSITION_STEP} owes it", text)
+        for promise in UNKEPT_PROMISES:
             with self.subTest(promise=promise):
                 self.assertIn(f"`{promise}`", text)
-                self.assertIn(f"{step} owes it", text)
+
+    def test_every_declared_promise_names_a_built_verb(self):
+        """A declared promise whose verb still refuses is the overclaim the law bars."""
+        text = " ".join(SKILL.read_text(encoding="utf-8").split())
+        for verb in UNBUILT:
+            self.assertNotIn(
+                f"A successful `dokimasia {verb}`", text,
+                f"{verb} still refuses, so no promise may be declared for it",
+            )
 
     def test_the_contract_refuses_to_call_closure_a_pass(self):
         # Collapse wrapping: the contract is prose and reflows, the claim does not.
@@ -171,10 +185,10 @@ class IdentityTests(unittest.TestCase):
                 self.assertEqual(run(verb).stdout, "")
 
     def test_a_refusal_names_where_the_behaviour_will_come_from(self):
-        stderr = run("reconcile").stderr
+        stderr = run("demonstrate").stderr
         self.assertIn("dokimasia-v0.1.0", stderr)
         self.assertIn("dokimasia-runbook.md", stderr)
-        self.assertIn("Step 4", stderr)
+        self.assertIn("Step 5", stderr)
 
 
 class SelfTestTests(unittest.TestCase):
@@ -264,6 +278,11 @@ class CommandTests(unittest.TestCase):
 
     def test_the_workbook_verb_is_built_and_self_checks(self):
         result = run("workbook", "--check")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("check clean", result.stdout)
+
+    def test_the_reconcile_verb_is_built_and_self_checks(self):
+        result = run("reconcile", "--check")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("check clean", result.stdout)
 

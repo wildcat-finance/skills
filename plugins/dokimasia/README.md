@@ -49,7 +49,7 @@ skill may propose one and can never mark an item covered on its own.
 | `selftest` | built: proves the packaging, contract and ledger agree on one version |
 | `inventory` | built: compiles a pinned checkout into a digest-bound inventory |
 | `workbook` | built: imports a reviewed spreadsheet without losing a row |
-| `reconcile` | refuses; step 4 owes it |
+| `reconcile` | built: gives every scoped item exactly one disposition |
 | `demonstrate` | refuses; step 5 owes it |
 
 ```bash
@@ -58,6 +58,10 @@ python3 plugins/dokimasia/scripts/dokimasia.py inventory --check
 python3 plugins/dokimasia/scripts/dokimasia.py inventory --root <a-pinned-checkout>
 python3 plugins/dokimasia/scripts/dokimasia.py workbook --check
 python3 plugins/dokimasia/scripts/dokimasia.py workbook --source <a-reviewed-workbook>
+python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check
+python3 plugins/dokimasia/scripts/dokimasia.py reconcile \
+  --inventory <inventory.json> --workbook <workbook.json> \
+  --dispositions <a-reviewed-disposition-set.json>
 ```
 
 ## What is committed here

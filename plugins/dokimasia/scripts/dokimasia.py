@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
 from dokimasia_lib import paths as paths_lib  # noqa: E402
+from dokimasia_lib import reconcile as reconcile_lib
 from dokimasia_lib import workbook as workbook_lib  # noqa: E402
 from dokimasia_lib import xlsx as xlsx_lib  # noqa: E402
 
@@ -43,7 +44,6 @@ REPORT_COMMAND = (
 
 # Every verb the completed design owes, and the runbook step that owes it.
 UNBUILT_VERBS = {
-    "reconcile": (4, "Assign exactly one disposition to every scoped item."),
     "demonstrate": (5, "Run one complete scrutiny and emit its record."),
 }
 
@@ -277,6 +277,71 @@ def workbook_command(source: str | None, report: str | None, check: bool) -> int
         return REFUSED
 
 
+RECONCILE_CRITERION = "disposition-closure"
+
+
+def reconcile_command(
+    inventory: str | None,
+    workbook: str | None,
+    dispositions: str | None,
+    report: str | None,
+    check: bool,
+) -> int:
+    """Join both records against a human-owned disposition set.
+
+    Nothing here proposes a disposition. The verb reads one, checks it accounts
+    for the scoped set exactly once against the records in front of it, and
+    reports what is still unanswered.
+    """
+    try:
+        if check:
+            failures = reconcile_lib.check()
+            if failures:
+                sys.stderr.write(
+                    "dokimasia reconcile --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in failures)
+                )
+                return REFUSED
+            if report is not None:
+                write_report(
+                    safe_report_path(report),
+                    RECONCILE_CRITERION,
+                    "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+                )
+            sys.stdout.write(
+                "dokimasia reconcile: check clean; the closed fixture reaches a "
+                "ratio of one and every ambiguous or stale set refused\n"
+            )
+            return 0
+        missing = [
+            name for name, value in (
+                ("--inventory", inventory),
+                ("--workbook", workbook),
+                ("--dispositions", dispositions),
+            ) if value is None
+        ]
+        if missing:
+            raise SelfTestError(
+                "reconcile needs " + ", ".join(missing) + ", or --check"
+            )
+        made = reconcile_lib.reconcile(
+            reconcile_lib.read_json(Path(inventory)),
+            reconcile_lib.read_json(Path(workbook)),
+            reconcile_lib.read_json(Path(dispositions)),
+        )
+        body = json.dumps(made, indent=2, sort_keys=True) + "\n"
+        if report is not None:
+            write_report_bytes(safe_report_path(report), body)
+        else:
+            sys.stdout.write(body)
+        # An open ratio is a true answer, not a failure of the command.
+        return 0
+    except (SelfTestError, reconcile_lib.ReconcileError,
+            OSError, ValueError) as error:
+        sys.stderr.write(f"dokimasia reconcile refused: {error}\n")
+        return REFUSED
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dokimasia",
@@ -309,6 +374,15 @@ def build_parser() -> argparse.ArgumentParser:
     workbook_parser.add_argument("--source", default=None)
     workbook_parser.add_argument("--report", default=None)
     workbook_parser.add_argument("--check", action="store_true")
+    reconcile_parser = subparsers.add_parser(
+        "reconcile",
+        help="Assign exactly one disposition to every scoped item.",
+    )
+    reconcile_parser.add_argument("--inventory", default=None)
+    reconcile_parser.add_argument("--workbook", default=None)
+    reconcile_parser.add_argument("--dispositions", default=None)
+    reconcile_parser.add_argument("--report", default=None)
+    reconcile_parser.add_argument("--check", action="store_true")
     for verb, (step, description) in UNBUILT_VERBS.items():
         subparsers.add_parser(verb, help=f"{description} Not built; step {step} owes it.")
     return parser
@@ -326,6 +400,11 @@ def main(argv: list[str] | None = None) -> int:
         return inventory_command(args.root, args.report, args.check)
     if args.verb == "workbook":
         return workbook_command(args.source, args.report, args.check)
+    if args.verb == "reconcile":
+        return reconcile_command(
+            args.inventory, args.workbook, args.dispositions,
+            args.report, args.check,
+        )
     return refuse(args.verb)
 
 

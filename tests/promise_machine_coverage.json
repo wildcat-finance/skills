@@ -1778,6 +1778,31 @@
       "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone",
       "claim": "Positive evidence rebuilds every source row from the imported cases alone and requires each to match the row it came from."
     },
+    "dokimasia-closure-m": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_an_unreviewed_oracle_refuses",
+      "claim": "The covered state is driven against an oracle nobody has acted on and must refuse, so a closure ratio cannot be reached by citing cases that were never run."
+    },
+    "dokimasia-closure-o": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_an_empty_set_covers_nothing_rather_than_inferring_a_match",
+      "claim": "The nearest overclaim is inferred coverage: with no disposition declared, the reconciler must report none covered rather than matching the two sides itself."
+    },
+    "dokimasia-closure-p": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_one_is_reached_only_when_nothing_is_unanswered",
+      "claim": "Positive evidence reaches a closure ratio of one over a fully answered scoped set, with the numerator and denominator asserted as separate fields."
+    },
+    "dokimasia-closure-r": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_a_moved_inventory_digest_refuses_as_stale",
+      "claim": "Recovery evidence requires a stale refusal to name the digest field that moved, so the caller can recompile the record rather than guess which side drifted."
+    },
+    "dokimasia-closure-s": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_two_dispositions_on_one_item_refuse",
+      "claim": "Two dispositions on one item are refused, so nothing can be recorded as both decided and undecided."
+    },
     "dokimasia-workbook-m": {
       "path": "plugins/dokimasia/tests/test_workbook.py",
       "selector": "test_halves_that_disagree_about_their_row_refuse",
@@ -2340,6 +2365,22 @@
         "S": "dokimasia-workbook-s",
         "O": "dokimasia-workbook-o",
         "R": "dokimasia-workbook-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-disposition-closure",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-closure-p",
+        "M": "dokimasia-closure-m",
+        "S": "dokimasia-closure-s",
+        "O": "dokimasia-closure-o",
+        "R": "dokimasia-closure-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
@@ -3838,6 +3879,20 @@
       },
       "sha256": "da92d7ae5231871131c375a0b074d0d8063c4da3b883c2e8a5541b8bd3e3fc2b",
       "source": "plugins/dokimasia/schemas/inventory-v1.json"
+    },
+    "dokimasia-disposition-closure": {
+      "bindings": {
+        "evidence_classes": "checked for the vocabulary, the oracles and the digest currency, recorded for the ratio and the gap list, joined to the canonical Evidence classes field",
+        "evidence_references": "dispositions, each naming the scoped item it answers for and the oracle or reason it carries",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio",
+        "subject": "the inventory and workbook sha256 pair the set was written against",
+        "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
+        "unknowns": "scoped items no disposition answered for, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
+      },
+      "sha256": "7cc745472b06002e4af57ea8418b9c9c7760979b95290036c7bb50a9251f5618",
+      "source": "plugins/dokimasia/schemas/coverage-v1.json"
     },
     "dokimasia-workbook-lineage": {
       "bindings": {
