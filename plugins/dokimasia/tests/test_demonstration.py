@@ -116,6 +116,54 @@ class MovedIdentityNamesItsCause(ScrutinyCase):
         self.assertEqual([entry["cause"] for entry in found], ["unattributed"])
 
 
+class MalformedRecords(ScrutinyCase):
+    """Comparing scrutinies means reading one off disk, so it can be malformed.
+
+    Every other refusal in this plugin is named. A `KeyError` here would be the
+    one that is not.
+    """
+
+    def test_a_record_missing_a_field_refuses_by_name(self):
+        first, _ = self.run_one()
+        for field in ("skill_version", "subject", "examined"):
+            with self.subTest(field=field):
+                broken = json.loads(json.dumps(first))
+                broken.pop(field)
+                with self.assertRaises(demonstrate.DemonstrationError) as caught:
+                    demonstrate.causes(first, broken)
+                self.assertIn(field, str(caught.exception))
+                self.assertIn("later", str(caught.exception))
+
+    def test_a_record_with_no_application_commit_refuses_by_name(self):
+        first, _ = self.run_one()
+        broken = json.loads(json.dumps(first))
+        broken["subject"]["application"].pop("commit")
+        with self.assertRaises(demonstrate.DemonstrationError) as caught:
+            demonstrate.causes(broken, first)
+        self.assertIn("no commit", str(caught.exception))
+        self.assertIn("earlier", str(caught.exception))
+
+    def test_a_record_with_no_coverage_digest_refuses_by_name(self):
+        first, _ = self.run_one()
+        broken = json.loads(json.dumps(first))
+        broken["examined"].pop("coverage_sha256")
+        with self.assertRaises(demonstrate.DemonstrationError) as caught:
+            demonstrate.causes(first, broken)
+        self.assertIn("no coverage digest", str(caught.exception))
+
+    def test_a_blank_identity_in_both_records_still_reports_the_move(self):
+        """Degrading to unattributed is the safe direction, and is required."""
+        first, _ = self.run_one()
+        a = json.loads(json.dumps(first))
+        b = json.loads(json.dumps(first))
+        a["subject"]["workbook"]["sha256"] = ""
+        b["subject"]["workbook"]["sha256"] = ""
+        b["examined"]["coverage_sha256"] = "f" * 64
+        self.assertEqual(
+            [entry["cause"] for entry in demonstrate.causes(a, b)], ["unattributed"]
+        )
+
+
 class Timing(ScrutinyCase):
     def test_the_record_states_a_measured_duration_and_not_the_budget(self):
         first, _ = self.run_one()
@@ -208,6 +256,15 @@ class CommittedEvidence(unittest.TestCase):
         self.assertIn(str(record["counts"]["inventory_items"]), prose)
         self.assertIn(str(record["counts"]["workbook_cases"]), prose)
         self.assertIn(PINNED_COMMIT, prose)
+
+    def test_the_committed_prose_names_every_digest_its_record_carries(self):
+        """The renderer abbreviates each digest, so compare the same prefix."""
+        record = reconcile.read_json(self.coverage_path)
+        prose = self.prose_path.read_text(encoding="utf-8")
+        for field in ("inventory_sha256", "workbook_sha256"):
+            short = record["subject"][field][:12]
+            self.assertTrue(short)
+            self.assertIn(short, prose, f"the prose does not name the {field}")
 
     def test_the_committed_record_carries_no_workbook_prose(self):
         """The phylax boundary: identifiers may be committed, rows may not."""

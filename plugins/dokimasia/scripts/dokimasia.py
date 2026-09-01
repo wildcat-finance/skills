@@ -464,8 +464,15 @@ def _committed_evidence_failures() -> list[str]:
     for figure in (str(ratio["denominator"]), str(ratio["numerator"])):
         if figure not in prose:
             failures.append(f"the committed scrutiny prose does not state {figure}")
-    if record["subject"]["inventory_sha256"] not in prose[:4000] + prose:
-        pass
+    # The prose abbreviates each digest, so compare against the same prefix the
+    # renderer writes rather than the whole value.
+    for field in ("inventory_sha256", "workbook_sha256"):
+        short = record["subject"][field][:12]
+        if short and short not in prose:
+            failures.append(
+                f"the committed scrutiny prose does not name the {field} "
+                f"{short} its record carries"
+            )
     return failures
 
 

@@ -120,8 +120,39 @@ def scrutinise(
     return scrutiny, coverage
 
 
+def _require_scrutiny(scrutiny: dict, label: str) -> None:
+    """Refuse a record that is not a scrutiny record.
+
+    Comparing two scrutinies means reading at least one of them off disk, so a
+    truncated or hand-edited record is an ordinary mistake. Every other refusal
+    in this plugin is named, and a `KeyError` here would be the one that is not.
+    """
+    for field in ("skill_version", "subject", "examined"):
+        if field not in scrutiny:
+            raise DemonstrationError(
+                f"the {label} scrutiny record has no {field!r}, so it is not "
+                "a scrutiny record"
+            )
+    subject = scrutiny["subject"]
+    if not isinstance(subject, dict) or "application" not in subject:
+        raise DemonstrationError(
+            f"the {label} scrutiny record names no application"
+        )
+    if "commit" not in subject["application"]:
+        raise DemonstrationError(
+            f"the {label} scrutiny record's application has no commit, so a "
+            "move could not be attributed to it"
+        )
+    if "coverage_sha256" not in scrutiny["examined"]:
+        raise DemonstrationError(
+            f"the {label} scrutiny record records no coverage digest, so "
+            "nothing could be compared"
+        )
+
+
 def identity(scrutiny: dict) -> dict:
     """The three things whose movement can explain a moved result."""
+    _require_scrutiny(scrutiny, "given")
     return {
         "application": scrutiny["subject"]["application"]["commit"],
         "workbook": scrutiny["subject"]["workbook"].get("sha256", ""),
@@ -136,6 +167,8 @@ def causes(before: dict, after: dict) -> list[dict]:
     identities moved is reported as unattributed, because a number nobody can
     explain is the thing this record exists to prevent.
     """
+    _require_scrutiny(before, "earlier")
+    _require_scrutiny(after, "later")
     was, now = identity(before), identity(after)
     found = [
         {
