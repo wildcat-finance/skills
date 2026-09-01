@@ -77,3 +77,19 @@ Elenchus verdict: guarded
 | S2-R3-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | Round 2's position rule refused the arrangement 92 of the 137 open issues would produce, because those bodies begin with the invisible `wildcat-origin` HTML comment. The diagnostic asserted that a reader meets the original requirement before the correction, which an HTML comment cannot cause, so the rule was wrong about its own justification. The record was silent on whether a comment counts as filing prose, so a second consumer matching these bytes could have read it either way. | fixed in 7287f7fb886b32881e19a0ee199f8dd58bc40355, in the code and the record together |
 
 Leads not pursued: the fourth digest reconciliation across this step, eleven bindings each time. Recorded in rounds 1 and 2; nothing new is claimed here beyond the count. The committed-copy comparison lead from step 1 stands. The eight-versus-four test count recorded in round 2 stands, now eleven cases in total, and the three added by audit fixes are the loop's own guards rather than a further deviation from the Tests field.
+
+## Step 2, round 4 -- 2026-09-01T11:58:16Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: fenced-decoy=reviewed; unclosed-block=reviewed; duplicate-block=reviewed; control-characters=reviewed; body-size=reviewed; digest-drift=reviewed; extractor-collision=reviewed
+
+Not checked: whether the Atlas dependency extractor applies the comment exemption, carried unchanged from round 3 and delivered in the Atlas repository. The reader was never handed a body fetched by its own REST path in any round of this step; that path keeps the tests it already had. No measurement was taken of the reader in any round, so no change in this step carries a performance claim. This round's lint scope was checked for emptiness before the lints ran, after two earlier attempts in this round reported a result over zero paths.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: two shell builtins this host lacks, `mapfile` and `xargs -a`, each produced a lint result over the wrong input inside this round: the first reported clean over zero paths and the second failed with a usage error. Both were caught by printing the argument count rather than by the exit status, which is the same shape `push-discipline.md` records for a failed GitHub query. Recorded rather than built, because a guard belongs in whatever runs the lints rather than in this step's product. The committed-copy comparison lead from step 1, the test-count deviation from round 2, and the four digest reconciliations across this step all stand.
