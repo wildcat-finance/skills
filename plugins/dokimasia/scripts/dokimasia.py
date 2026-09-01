@@ -257,12 +257,13 @@ def workbook_command(source: str | None, report: str | None, check: bool) -> int
         import hashlib
 
         path = Path(source)
-        cases = workbook_lib.read_cases(path)
+        seen_sheets: list[dict] = []
+        cases = workbook_lib.read_cases(path, sheet_log=seen_sheets)
         body = json.dumps(
             workbook_lib.record(cases, {
                 "label": path.name,
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-            }),
+            }, seen_sheets),
             indent=2, sort_keys=True,
         ) + "\n"
         if report is not None:

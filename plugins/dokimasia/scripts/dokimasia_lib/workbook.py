@@ -57,12 +57,20 @@ def _fields(row: list[str], columns: dict[str, int]) -> dict[str, str]:
     }
 
 
-def read_cases(path: Path, splits: dict[str, list[str]] | None = None) -> list[dict]:
+def read_cases(
+    path: Path,
+    splits: dict[str, list[str]] | None = None,
+    sheet_log: list[dict] | None = None,
+) -> list[dict]:
     """Every case row in the workbook, in sheet and row order.
 
     `splits` maps one source identifier to the atomic identifiers a reviewer
     decided it describes. Each atomic case carries the whole source row and the
     identifier it came from, so nothing about the split is lossy.
+
+    `sheet_log`, when given, is filled with one entry per sheet recording what
+    that sheet contributed and why, so a sheet that contributes nothing is a
+    visible decision rather than an absence.
     """
     declared = splits or {}
     sheets = xlsx.read_sheets(path)
@@ -70,8 +78,16 @@ def read_cases(path: Path, splits: dict[str, list[str]] | None = None) -> list[d
     seen: set[str] = set()
     matched: set[str] = set()
     for sheet_name, rows in sheets.items():
+        before = len(cases)
         header_index = _header_row(rows)
         if header_index is None:
+            if sheet_log is not None:
+                sheet_log.append({
+                    "sheet": sheet_name,
+                    "rows": len(rows),
+                    "cases": 0,
+                    "reason": f"no row begins with {HEADER_KEY!r}",
+                })
             continue
         columns = _columns(rows[header_index])
         for offset, row in enumerate(rows[header_index + 1:], start=header_index + 2):
@@ -103,6 +119,19 @@ def read_cases(path: Path, splits: dict[str, list[str]] | None = None) -> list[d
                 raise WorkbookError(
                     f"the workbook holds more than the {MAX_CASES}-case cap"
                 )
+        if sheet_log is not None:
+            produced = len(cases) - before
+            body = len(rows) - header_index - 1
+            sheet_log.append({
+                "sheet": sheet_name,
+                "rows": body,
+                "cases": produced,
+                "reason": (
+                    "" if produced
+                    else f"no row below the header carries an identifier "
+                         f"shaped like {CASE_ID.pattern}"
+                ),
+            })
     unmatched = sorted(set(declared) - matched)
     if unmatched:
         # A split names a row a reviewer read. If no such row is here, either the
@@ -144,8 +173,15 @@ def workbook_digest(cases: list[dict]) -> str:
     return hashlib.sha256(canonical_bytes(cases)).hexdigest()
 
 
-def record(cases: list[dict], subject: dict) -> dict:
-    """The closed record, with counts a reviewer can check against the source."""
+def record(
+    cases: list[dict], subject: dict, sheets: list[dict] | None = None
+) -> dict:
+    """The closed record, with counts a reviewer can check against the source.
+
+    `sheets` reports what every sheet contributed, including the ones that
+    contributed nothing and why. Without it, a sheet excluded correctly and a
+    sheet excluded by a renamed header look identical in the record.
+    """
     statuses: dict[str, int] = {}
     labels: dict[str, int] = {}
     for case in cases:
@@ -169,6 +205,7 @@ def record(cases: list[dict], subject: dict) -> dict:
             "by_status": dict(sorted(statuses.items())),
             "by_source": dict(sorted(labels.items())),
         },
+        "sheets": sheets if sheets is not None else [],
         "workbook_sha256": workbook_digest(cases),
         "cases": cases,
     }
@@ -226,6 +263,15 @@ def check() -> list[str]:
             failures.append("a declared split lost the row its halves came from")
         elif len(source_rows(split)) != len(source_rows(benign)):
             failures.append("a declared split changed how many source rows exist")
+
+        log: list[dict] = []
+        logged = read_cases(made["benign.xlsx"], sheet_log=log)
+        if [entry["sheet"] for entry in log] != list(xlsx.read_sheets(made["benign.xlsx"])):
+            failures.append("the sheet log did not name every sheet the reader saw")
+        elif sum(entry["cases"] for entry in log) != len(logged):
+            failures.append("the sheet log's case counts did not add up to the import")
+        elif any(not e["reason"] for e in log if e["cases"] == 0):
+            failures.append("a sheet yielding no case was passed over with no reason")
 
         unknown = [c for c in benign if c["fields"].get("Status") == "Weird"]
         if not unknown:

@@ -32,6 +32,16 @@ the atomic identifiers a reviewer decided it holds.
 
 Each atomic case carries the whole source row and the identifier it came from,
 so nothing about the split is lossy and the round trip still rebuilds the row.
+The record accounts for every sheet, not only the ones that produced cases.
+A sheet contributes nothing when no row begins with the header key, or when no
+row below the header carries an identifier of the expected shape, and the record
+says which of those it was. Without that, a sheet excluded correctly and a sheet
+excluded because somebody renamed its header column look identical: both are
+simply absent, and the case count looks as healthy in either event. In the
+reviewed workbook four of fourteen sheets contribute nothing — two prose sheets,
+a defect log, and a sheet defining scenario markets whose identifiers are market
+names rather than case identifiers — and each says so in the record.
+
 A declared split names a row a reviewer read. If no row in the workbook carries
 that identifier, the import refuses: either the declaration is mistyped or this
 is not the workbook it was written against, and importing anyway would report a

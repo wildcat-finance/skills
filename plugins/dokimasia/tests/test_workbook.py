@@ -189,5 +189,51 @@ class DeclaredSplits(unittest.TestCase):
         self.assertEqual(halves[0]["fields"], halves[1]["fields"])
 
 
+class SheetAccounting(unittest.TestCase):
+    """Every sheet must be accounted for, including the ones that yield nothing.
+
+    Without this, a sheet excluded correctly and a sheet excluded because its
+    header was renamed look identical in the record: both are simply absent.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.made = build.build_all(Path(self.tmp.name))
+
+    def test_every_sheet_appears_in_the_log_with_its_case_count(self):
+        log = []
+        cases = workbook.read_cases(self.made["benign.xlsx"], sheet_log=log)
+        sheets = xlsx.read_sheets(self.made["benign.xlsx"])
+        self.assertEqual(
+            [entry["sheet"] for entry in log], list(sheets),
+            "the log must name every sheet the reader saw, in order",
+        )
+        self.assertEqual(sum(entry["cases"] for entry in log), len(cases))
+
+    def test_a_sheet_that_yields_nothing_says_why(self):
+        log = []
+        workbook.read_cases(self.made["benign.xlsx"], sheet_log=log)
+        for entry in log:
+            if entry["cases"] == 0:
+                self.assertTrue(
+                    entry["reason"],
+                    f"sheet {entry['sheet']!r} was passed over with no reason given",
+                )
+            else:
+                self.assertEqual(entry["reason"], "")
+
+    def test_the_record_carries_the_accounting(self):
+        log = []
+        cases = workbook.read_cases(self.made["benign.xlsx"], sheet_log=log)
+        made = workbook.record(cases, {"label": "x", "sha256": "0" * 64}, log)
+        self.assertEqual(made["sheets"], log)
+        self.assertEqual(
+            sum(entry["cases"] for entry in made["sheets"]),
+            made["counts"]["cases"],
+            "the per-sheet counts must add up to the case count",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

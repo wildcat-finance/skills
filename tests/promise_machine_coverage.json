@@ -3845,12 +3845,12 @@
         "evidence_references": "cases, each naming the sheet, row and identifier it was read from",
         "exception": "canonical Exceptions field, which declares none",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "counts, caps and the lineage identifier",
+        "scope": "counts, caps, the lineage identifier, and what every sheet contributed including the ones that contributed nothing and why",
         "subject": "subject label and workbook sha256",
         "transition": "an import whose source rows rebuild, joined to the canonical Authorises field",
         "unknowns": "statuses kept as written because no declared value matches, and rows no reviewer declared a split for"
       },
-      "sha256": "bb53186350d30bd4d066df7ce0485851497f59ec6929b0c4bdd8f92830ff57d1",
+      "sha256": "96916b226f910156a8fc3954ceb2187fc075286af0fdf66b3dbe804265b11b9c",
       "source": "plugins/dokimasia/schemas/workbook-v1.json"
     },
     "elenchus-fixed-and-guarded": {
