@@ -80,9 +80,10 @@
     "evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["end", "path", "source_sha256", "span_sha256", "start"],
+      "required": ["end", "obligation", "path", "source_sha256", "span_sha256", "start"],
       "properties": {
         "end": {"type": "integer", "minimum": 1},
+        "obligation": {"$ref": "#/$defs/path"},
         "path": {"$ref": "#/$defs/path"},
         "source_sha256": {"$ref": "#/$defs/sha256"},
         "span_sha256": {"$ref": "#/$defs/sha256"},

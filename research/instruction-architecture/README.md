@@ -39,10 +39,12 @@ GitHub-contributor credentials; standalone has no suite credential lookup.
 each closure starts at its actual route, binds one profile, and must equal the
 profile's full required-document union plus the route contract. source spans,
 worker bundles, fixed inputs and mutually exclusive branch products are
-validated independently of graph construction. six schemas and six
-human-reference Markdown files have zero production reachability. X-Ray and
-Solidity Auditor's local `VERSION` files are fixed agent inputs, never
-executed structured data.
+validated independently of graph construction. all 5,049 required-document
+obligations carry their own path, byte span and digests, and a test-owned
+oracle reconstructs the full profile and route grammar without calling the
+production builder or validator. six schemas and six human-reference Markdown
+files have zero production reachability. X-Ray and Solidity Auditor's local
+`VERSION` files are fixed agent inputs, never executed structured data.
 
 the holdout seal names membership and case-slot classes, but contains no task,
 answer, scorer key or model output. do not add those fields before the frozen

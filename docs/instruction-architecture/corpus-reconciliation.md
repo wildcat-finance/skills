@@ -210,10 +210,12 @@ two repository roots, two Agent Skills roots and one standalone root:
 route/skill bases while preserving every source-required worker, nested skill,
 fixed input and executable input in the applicable phase. each reached union
 must equal the profile ledger plus its route contract; no shortest-path or
-singleton-edge witness can satisfy that oracle. no scenario edge uses a
-wildcard, every edge has a realizable witness, and exclusive profiles cannot
-co-occur. every edge cites a source path, exact byte range,
-source digest and span digest. unconditional runtime loads, installed routes,
+singleton-edge witness can satisfy that oracle. every required-document
+obligation has an explicit identity and its own frozen source path, exact byte
+range, source digest and span digest. no scenario edge uses a wildcard, every
+edge has a realizable witness, and exclusive profiles cannot co-occur. every
+edge carries the corresponding obligation witness. unconditional runtime
+loads, installed routes,
 identity checks, overlays, frontier gates, worker dispatches, operation
 branches and mandatory executable reads remain distinct. every mandatory read
 also cites a runtime span. manifest reachability is recomputed from those

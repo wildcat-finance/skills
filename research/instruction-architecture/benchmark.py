@@ -123,7 +123,7 @@ EXPECTED_PROFILE_COUNTS = {
     "x-ray": 1,
 }
 EXPECTED_PROFILE_PROJECTION_SHA256 = (
-    "82a352d00f210ceb91dfae12b9060fbcd284e20739f891e1908625546a7a8814"
+    "8029f1ea22f6ea995712b2e177e81843cfd2983c410790455873bad9d8e0664d"
 )
 
 FRONTIER_SKILLS = (
@@ -1613,25 +1613,62 @@ def _evidence(path: str, needle: str) -> dict[str, Any]:
     }
 
 
-def _profile_source_evidence(
-    selected_skill: str, required_documents: tuple[str, ...]
-) -> list[dict[str, Any]]:
-    """Bind each profile to frozen source spans without using loader edges."""
-    anchors: dict[tuple[str, int, int], dict[str, Any]] = {}
-    skill_path = SELECTABLE_SKILL_PATHS[selected_skill]
-    evidence = _evidence(skill_path, f"name: {selected_skill}")
-    anchors[(evidence["path"], evidence["start"], evidence["end"])] = evidence
-    for path in required_documents:
+def _profile_obligation_evidence(
+    selected_skill: str,
+    branch_state: tuple[str, ...],
+    required_documents: tuple[str, ...],
+    obligation: str,
+) -> dict[str, Any]:
+    """Bind one required document to the frozen bytes that require it."""
+    selected = SELECTABLE_SKILL_PATHS[selected_skill]
+    if obligation == selected:
+        evidence = _evidence(selected, f"name: {selected_skill}")
+    else:
         metadata = (
-            _additional_metadata().get(path)
-            or _structured_metadata().get(path)
-            or _fixed_agent_metadata().get(path)
+            _additional_metadata().get(obligation)
+            or _structured_metadata().get(obligation)
+            or _fixed_agent_metadata().get(obligation)
         )
-        if metadata is None:
-            continue
-        evidence = _evidence(metadata["source_path"], metadata["source_needle"])
-        anchors[(evidence["path"], evidence["start"], evidence["end"])] = evidence
-    return [anchors[key] for key in sorted(anchors)]
+        if metadata is not None:
+            needle = metadata["source_needle"]
+            if obligation == "plugins/synkrisis/references/rules-v1.json":
+                operation = f"operation:synkrisis:{branch_state[-1]}"
+                needle = SYNKRISIS_RULE_SOURCE_NEEDLES.get(operation, needle)
+            evidence = _evidence(metadata["source_path"], needle)
+        elif (
+            selected_skill == "ephoros"
+            and obligation == SELECTABLE_SKILL_PATHS["phylax"]
+        ):
+            evidence = _evidence(
+                selected,
+                "`phylax` sets this rule and this skill inherits it",
+            )
+        else:
+            reachable = set(required_documents) - {obligation}
+            link = _reference_link(selected, obligation, reachable)
+            if link is None:
+                raise Refusal(
+                    f"profile obligation has no source witness: "
+                    f"{selected_skill}: {obligation}"
+                )
+            else:
+                source, needle = link
+                evidence = _evidence(source, needle)
+    return {"obligation": obligation, **evidence}
+
+
+def _profile_source_evidence(
+    selected_skill: str,
+    branch_state: tuple[str, ...],
+    required_documents: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    """Bind every profile obligation to one attributable frozen source span."""
+    return [
+        _profile_obligation_evidence(
+            selected_skill, branch_state, required_documents, obligation
+        )
+        for obligation in required_documents
+    ]
 
 
 def _profile_fixed_inputs(required_documents: tuple[str, ...]) -> list[dict[str, str]]:
@@ -1674,6 +1711,7 @@ def build_invocation_profiles() -> dict[str, Any]:
             sorted(dict.fromkeys((SELECTABLE_SKILL_PATHS[skill],) + documents))
         )
         worker_prompts = tuple(sorted(dict.fromkeys(workers)))
+        branch_state = tuple(local_id.split("__"))
         if not set(worker_prompts) <= set(required):
             raise Refusal(f"profile worker leaves required documents: {skill}:{local_id}")
         profile_id = f"{skill}:{local_id}"
@@ -1683,12 +1721,14 @@ def build_invocation_profiles() -> dict[str, Any]:
                 "selected_skill": skill,
                 "phase": phase,
                 "applicability": f"bounded-operation:{skill}:{phase}",
-                "branch_state": local_id.split("__"),
+                "branch_state": list(branch_state),
                 "exclusive_group": f"{skill}:{phase}",
                 "required_documents": list(required),
                 "worker_prompts": list(worker_prompts),
                 "fixed_inputs": _profile_fixed_inputs(required),
-                "source_evidence": _profile_source_evidence(skill, required),
+                "source_evidence": _profile_source_evidence(
+                    skill, branch_state, required
+                ),
             }
         )
 
@@ -2384,21 +2424,50 @@ def _validate_invocation_profiles(record: dict[str, Any]) -> None:
         expected_fixed = _profile_fixed_inputs(tuple(documents))
         if profile["fixed_inputs"] != expected_fixed:
             raise Refusal("invocation profile fixed input semantics drift")
-        if not isinstance(profile["source_evidence"], list) or not profile["source_evidence"]:
+        if not isinstance(profile["source_evidence"], list):
             raise Refusal("invocation profile lacks source evidence")
+        evidence_obligations = [
+            evidence.get("obligation")
+            if isinstance(evidence, dict)
+            else None
+            for evidence in profile["source_evidence"]
+        ]
+        if (
+            evidence_obligations != documents
+            or len(evidence_obligations) != len(set(evidence_obligations))
+        ):
+            raise Refusal("invocation profile evidence obligation coverage drift")
         for evidence in profile["source_evidence"]:
             _require_fields(
                 evidence,
-                ("path", "start", "end", "source_sha256", "span_sha256"),
-                ("path", "start", "end", "source_sha256", "span_sha256"),
+                (
+                    "obligation",
+                    "path",
+                    "start",
+                    "end",
+                    "source_sha256",
+                    "span_sha256",
+                ),
+                (
+                    "obligation",
+                    "path",
+                    "start",
+                    "end",
+                    "source_sha256",
+                    "span_sha256",
+                ),
                 "invocation profile evidence",
             )
+            _safe_relative(evidence["obligation"])
+            _safe_relative(evidence["path"])
             data = _source_blob(evidence["path"])
             start = evidence["start"]
             end = evidence["end"]
             if (
                 not isinstance(start, int)
+                or isinstance(start, bool)
                 or not isinstance(end, int)
+                or isinstance(end, bool)
                 or start < 0
                 or end <= start
                 or end > len(data)
@@ -2576,28 +2645,18 @@ def _validate_source_evidence(evidence: dict[str, Any], label: str) -> None:
 
 
 def _bundle_evidence(profile: dict[str, Any], target: str) -> dict[str, Any]:
-    selected = SELECTABLE_SKILL_PATHS[profile["selected_skill"]]
-    metadata = (
-        _additional_metadata().get(target)
-        or _structured_metadata().get(target)
-        or _fixed_agent_metadata().get(target)
-    )
-    if metadata is not None:
-        if target == "plugins/synkrisis/references/rules-v1.json":
-            operation = f"operation:synkrisis:{profile['branch_state'][-1]}"
-            needle = SYNKRISIS_RULE_SOURCE_NEEDLES.get(operation)
-            if needle is not None:
-                return _evidence(metadata["source_path"], needle)
-        return _evidence(metadata["source_path"], metadata["source_needle"])
-    reachable = set(profile["required_documents"]) - {target}
-    link = _reference_link(selected, target, reachable)
-    if link is not None:
-        source, needle = link
-        return _evidence(source, needle)
-    for evidence in profile["source_evidence"]:
-        if evidence["path"] == selected:
-            return evidence
-    raise Refusal(f"profile target has no source witness: {profile['id']}: {target}")
+    matches = [
+        evidence
+        for evidence in profile["source_evidence"]
+        if evidence["obligation"] == target
+    ]
+    if len(matches) != 1:
+        raise Refusal(
+            f"profile target has no unique source witness: {profile['id']}: {target}"
+        )
+    return {
+        key: value for key, value in matches[0].items() if key != "obligation"
+    }
 
 
 def _bundle_relation(
@@ -4242,10 +4301,12 @@ two repository roots, two Agent Skills roots and one standalone root:
 route/skill bases while preserving every source-required worker, nested skill,
 fixed input and executable input in the applicable phase. each reached union
 must equal the profile ledger plus its route contract; no shortest-path or
-singleton-edge witness can satisfy that oracle. no scenario edge uses a
-wildcard, every edge has a realizable witness, and exclusive profiles cannot
-co-occur. every edge cites a source path, exact byte range,
-source digest and span digest. unconditional runtime loads, installed routes,
+singleton-edge witness can satisfy that oracle. every required-document
+obligation has an explicit identity and its own frozen source path, exact byte
+range, source digest and span digest. no scenario edge uses a wildcard, every
+edge has a realizable witness, and exclusive profiles cannot co-occur. every
+edge carries the corresponding obligation witness. unconditional runtime
+loads, installed routes,
 identity checks, overlays, frontier gates, worker dispatches, operation
 branches and mandatory executable reads remain distinct. every mandatory read
 also cites a runtime span. manifest reachability is recomputed from those

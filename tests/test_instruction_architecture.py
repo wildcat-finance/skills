@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
+import itertools
 import json
 import os
 from pathlib import Path
@@ -166,6 +167,625 @@ def scratch_directory(prefix: str = "instruction-architecture-"):
     scratch = ROOT / "tmp"
     scratch.mkdir(exist_ok=True)
     return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
+
+ORACLE_SOURCE_REF = "a2b634d8e039af988bf30c8316defccf70071d8d"
+ORACLE_SKILL_PATHS = {
+    "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
+    "anamnesis": "plugins/anamnesis/skills/anamnesis/SKILL.md",
+    "ariadne": "plugins/ariadne/skills/ariadne/SKILL.md",
+    "berean": "plugins/berean/skills/berean/SKILL.md",
+    "brevitas": "plugins/brevitas/skills/brevitas/SKILL.md",
+    "elenchus": "plugins/hexaemeron/skills/elenchus/SKILL.md",
+    "ephoros": "plugins/hexaemeron/skills/ephoros/SKILL.md",
+    "fiat": "plugins/hexaemeron/skills/fiat/SKILL.md",
+    "fizz": "plugins/hexaemeron/skills/fizz/SKILL.md",
+    "fizz-convert": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md",
+    "fizz-sync": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+    "hermes": "plugins/hermes/skills/hermes/SKILL.md",
+    "homologia": "plugins/homologia/skills/homologia/SKILL.md",
+    "horos": "plugins/horos/skills/horos/SKILL.md",
+    "hypomnema": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+    "imprimatur": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+    "janus": "plugins/janus/skills/janus/SKILL.md",
+    "kronos": "plugins/hexaemeron/skills/kronos/SKILL.md",
+    "lazarus": "plugins/lazarus/skills/lazarus/SKILL.md",
+    "lemma": "plugins/lemma/skills/lemma/SKILL.md",
+    "metron": "plugins/hexaemeron/skills/metron/SKILL.md",
+    "pandects": "plugins/pandects/skills/pandects/SKILL.md",
+    "phylax": "plugins/hexaemeron/skills/phylax/SKILL.md",
+    "probitas": "plugins/probitas/skills/probitas/SKILL.md",
+    "protasis": "plugins/hexaemeron/skills/protasis/SKILL.md",
+    "sapheneia": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+    "solidity-auditor": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
+    "synkrisis": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+    "tabularium": "plugins/tabularium/skills/tabularium/SKILL.md",
+    "vulgate": "plugins/hexaemeron/skills/vulgate/SKILL.md",
+    "x-ray": "plugins/hexaemeron/skills/x-ray/SKILL.md",
+}
+ORACLE_FIXED_INPUTS = {
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": "mandatory-executable",
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": "mandatory-executable",
+    "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": "mandatory-executable",
+    "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": "mandatory-executable",
+    "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": "mandatory-executable",
+    "plugins/hexaemeron/skills/solidity-auditor/VERSION": "agent-or-prompt",
+    "plugins/hexaemeron/skills/x-ray/VERSION": "agent-or-prompt",
+    "plugins/synkrisis/references/rules-v1.json": "mandatory-executable",
+}
+ORACLE_EVIDENCE_PROJECTION_SHA256 = (
+    "2524257eb4997ce554c44b64acf5ea17c41ccd2335b3cd184f44d8497301e30a"
+)
+ORACLE_GIT_ENV = {
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_LITERAL_PATHSPECS": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+}
+ORACLE_SOURCE_CACHE: dict[str, bytes] = {}
+
+
+def oracle_source(path: str) -> bytes:
+    """Read the frozen blob without importing the production source reader."""
+    if path in ORACLE_SOURCE_CACHE:
+        return ORACLE_SOURCE_CACHE[path]
+    process = subprocess.run(
+        [
+            "/usr/bin/git",
+            "--no-lazy-fetch",
+            "--no-optional-locks",
+            "-C",
+            str(ROOT),
+            "cat-file",
+            "blob",
+            f"{ORACLE_SOURCE_REF}:{path}",
+        ],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        check=False,
+        timeout=20,
+        env=ORACLE_GIT_ENV,
+    )
+    if process.returncode != 0:
+        raise AssertionError(f"independent oracle could not read {path}")
+    live = (ROOT / path).read_bytes()
+    if live != process.stdout:
+        raise AssertionError(f"independent oracle observed source drift: {path}")
+    ORACLE_SOURCE_CACHE[path] = process.stdout
+    return process.stdout
+
+
+def oracle_add_profile(
+    profiles: list[dict],
+    skill: str,
+    local_id: str,
+    phase: str,
+    documents: tuple[str, ...] = (),
+    workers: tuple[str, ...] = (),
+) -> None:
+    required = sorted({ORACLE_SKILL_PATHS[skill], *documents})
+    worker_prompts = sorted(set(workers))
+    profiles.append(
+        {
+            "id": f"{skill}:{local_id}",
+            "selected_skill": skill,
+            "phase": phase,
+            "applicability": f"bounded-operation:{skill}:{phase}",
+            "branch_state": local_id.split("__"),
+            "exclusive_group": f"{skill}:{phase}",
+            "required_documents": required,
+            "worker_prompts": worker_prompts,
+            "fixed_inputs": [
+                {"path": path, "load_semantics": ORACLE_FIXED_INPUTS[path]}
+                for path in required
+                if path in ORACLE_FIXED_INPUTS
+            ],
+        }
+    )
+
+
+def oracle_profiles() -> list[dict]:
+    """Reconstruct the frozen bounded-operation grammar without production code."""
+    rows: list[dict] = []
+    evolution = {
+        name: str(Path(path).with_name("EVOLUTION.md")).replace(os.sep, "/")
+        for name, path in ORACLE_SKILL_PATHS.items()
+        if name
+        not in {"fizz", "fizz-convert", "fizz-sync", "solidity-auditor", "x-ray"}
+    }
+    versioning = "plugins/hexaemeron/skills/VERSIONING.md"
+    promises = "plugins/hexaemeron/PROMISES.md"
+    xray_version = "plugins/hexaemeron/skills/x-ray/VERSION"
+    sol_aud_version = "plugins/hexaemeron/skills/solidity-auditor/VERSION"
+
+    def add(
+        skill: str,
+        local_id: str,
+        phase: str,
+        documents: tuple[str, ...] = (),
+        workers: tuple[str, ...] = (),
+    ) -> None:
+        oracle_add_profile(rows, skill, local_id, phase, documents, workers)
+
+    def frontier(skill: str) -> None:
+        add(skill, "frontier-gate", "gate-only frontier admission", (evolution[skill], versioning))
+
+    add("alexandria", "ordinary", "capture/query/release")
+    add(
+        "alexandria",
+        "ethereum-usdc-interval",
+        "Ethereum USDC interval capture",
+        (
+            "plugins/alexandria/docs/usdc-interval-collector.md",
+            "plugins/alexandria/docs/study.md",
+            "plugins/alexandria/docs/runbook.md",
+        ),
+    )
+    frontier("alexandria")
+    add("anamnesis", "ordinary", "capture/verify/release")
+    add("anamnesis", "demo-or-rebuild", "demo or verify-rebuild", ("plugins/anamnesis/docs/demo.md",))
+    frontier("anamnesis")
+    add("ariadne", "ordinary", "inspect/verify/replay")
+    for local_id, phase, documents in (
+        ("capture-release", "capture release", ("plugins/ariadne/docs/capturing-a-release.md", "plugins/ariadne/docs/solidity-release.md")),
+        ("capture-dataset", "capture dataset", ("plugins/ariadne/docs/capturing-a-dataset.md", "plugins/ariadne/docs/dataset.md")),
+        ("capture-state-fixture", "capture state fixture", ("plugins/ariadne/docs/capturing-a-state-fixture.md", "plugins/ariadne/docs/state-fixture.md")),
+        ("capture-grounded-agent", "capture grounded agent", ("plugins/ariadne/docs/capturing-a-grounded-agent.md", "plugins/ariadne/docs/grounded-agent.md")),
+        ("conformance", "conformance", ("plugins/ariadne/docs/conformance.md",)),
+    ):
+        add("ariadne", local_id, phase, documents)
+    frontier("ariadne")
+    for skill in ("berean", "brevitas", "homologia", "horos", "hypomnema", "janus", "sapheneia", "vulgate"):
+        add(skill, "ordinary", "ordinary operation")
+        frontier(skill)
+
+    hermes_runtime = (
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
+        "plugins/hermes/skills/hermes/references/optimisation-catalogue.md",
+    )
+    add("hermes", "gas-operation", "gas analysis", hermes_runtime)
+    frontier("hermes")
+    add("elenchus", "ordinary", "ordinary failure analysis")
+    add("elenchus", "contract-fix", "contract failure", (ORACLE_SKILL_PATHS["fizz-sync"], promises))
+    frontier("elenchus")
+    add("ephoros", "ordinary", "telemetry operation", (ORACLE_SKILL_PATHS["phylax"],))
+    frontier("ephoros")
+
+    fizz_common = tuple(
+        f"plugins/hexaemeron/skills/fizz/references/{name}.md"
+        for name in ("template-map", "selection-policy", "setup-playbook", "handler-patterns")
+    )
+    fizz_report = ("plugins/hexaemeron/skills/fizz/agents/report-writer.md",)
+    fizz_workers = (
+        "plugins/hexaemeron/skills/fizz/agents/implementers/global-property-implementer.md",
+        "plugins/hexaemeron/skills/fizz/agents/implementers/specific-property-implementer.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/adversarial-profit-maximizer.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/conservation-auditor.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/protocol-type-specialist.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/roundtrip-rounding-analyst.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/state-transition-mapper.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/synthesizer.md",
+        "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md",
+        fizz_report[0],
+    )
+    fizz_invariant = (
+        "plugins/hexaemeron/skills/fizz/references/property-generation.md",
+        *tuple(path for path in fizz_workers if path not in {fizz_report[0], "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md"}),
+    )
+    xray_full = (
+        ORACLE_SKILL_PATHS["x-ray"],
+        xray_version,
+        promises,
+        "plugins/hexaemeron/skills/x-ray/references/threats.md",
+        "plugins/hexaemeron/skills/x-ray/references/templates.md",
+    )
+    for xray_state, invariant_state in itertools.product(("existing", "acquire", "fallback"), ("off", "on")):
+        documents = fizz_common + fizz_report + (promises,)
+        workers = fizz_report
+        if xray_state in {"acquire", "fallback"}:
+            documents += xray_full
+        if xray_state == "fallback":
+            analyzer = "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md"
+            documents += (analyzer,)
+            workers += (analyzer,)
+        if invariant_state == "on":
+            documents += fizz_invariant
+            workers += tuple(path for path in fizz_invariant if "/agents/" in path)
+        add("fizz", f"xray-{xray_state}__invariants-{invariant_state}", "fuzz-suite generation", documents, workers)
+    add("fizz-convert", "convert", "property conversion", (promises,))
+    add("fizz-sync", "sync", "harness reconciliation", (promises,))
+
+    lexicons = (
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+    )
+    add("imprimatur", "lint", "production lint", lexicons)
+    frontier("imprimatur")
+    add("metron", "ordinary", "measurement")
+    add("metron", "budget-check", "budget check", ("plugins/hexaemeron/skills/metron/references/budget-check.md",))
+    frontier("metron")
+    add("phylax", "ordinary", "off-chain review")
+    add("phylax", "model-proxy", "model proxy review", ("plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",))
+    frontier("phylax")
+    disciplines = tuple(ORACLE_SKILL_PATHS[name] for name in ("ephoros", "phylax", "metron", "elenchus", "hypomnema"))
+    add("protasis", "runbook", "runbook validation")
+    add("protasis", "study", "study validation", disciplines)
+    frontier("protasis")
+
+    sol_general = tuple(
+        f"plugins/hexaemeron/skills/solidity-auditor/references/{name}.md"
+        for name in ("report-formatting", "judging", "senior-auditor-sop")
+    )
+    agent_tree = subprocess.run(
+        [
+            "/usr/bin/git",
+            "--no-lazy-fetch",
+            "--no-optional-locks",
+            "-C",
+            str(ROOT),
+            "ls-tree",
+            "-r",
+            "--name-only",
+            ORACLE_SOURCE_REF,
+        ],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=20,
+        env=ORACLE_GIT_ENV,
+    )
+    if agent_tree.returncode != 0:
+        raise AssertionError("independent oracle could not enumerate agent prompts")
+    sol_agents = tuple(
+        path
+        for path in agent_tree.stdout.splitlines()
+        if path.startswith(
+            "plugins/hexaemeron/skills/solidity-auditor/"
+            "references/hacking-agents/"
+        )
+        and path.endswith("-agent.md")
+    )
+    sol_shared = ("plugins/hexaemeron/skills/solidity-auditor/references/hacking-agents/shared-rules.md",)
+    add("solidity-auditor", "audit", "Solidity audit", (sol_aud_version, promises) + sol_general + sol_shared + sol_agents, sol_agents)
+    add("x-ray", "audit", "pre-audit analysis", xray_full[1:])
+
+    add("lazarus", "ordinary", "capture/verify/replay")
+    add("lazarus", "anchored-capture", "anchored capture", ("plugins/lazarus/docs/chain-anchors.md",))
+    add("lazarus", "preservation-release", "preservation release", ("plugins/lazarus/docs/preservation-release.md",))
+    add("lazarus", "maintenance", "maintenance", ("plugins/lazarus/docs/study.md", "plugins/lazarus/docs/runbook.md"))
+    frontier("lazarus")
+    add("lemma", "ordinary", "generate/verify")
+    add("lemma", "changed-or-unexpected", "change/judge/unexpected-output", ("plugins/lemma/INVARIANTS.md",))
+    frontier("lemma")
+    add("pandects", "ordinary", "law operation")
+    frontier("pandects")
+    probitas = ("plugins/probitas/skills/probitas/references/gates.md", "plugins/probitas/skills/probitas/references/venues.md")
+    add("probitas", "dossier", "dossier operation", probitas)
+    add("probitas", "add-venue", "add venue", probitas + ("plugins/probitas/docs/adding-a-venue.md",))
+    frontier("probitas")
+    rules = ("plugins/synkrisis/references/rules-v1.json",)
+    add("synkrisis", "cohort-or-render", "cohort or render")
+    add("synkrisis", "diagnose", "diagnose", rules)
+    add("synkrisis", "verify", "verify", rules)
+    frontier("synkrisis")
+    add("tabularium", "ordinary", "capture/verify")
+    add("tabularium", "add-adapter", "add adapter", ("plugins/tabularium/docs/adding-an-adapter.md",))
+    add("tabularium", "mapping-or-release", "correct mapping or release-policy", ("plugins/tabularium/docs/release-policy.md",))
+    frontier("tabularium")
+
+    full_ledgers = tuple(sorted(path for name, path in evolution.items() if name != "kronos"))
+    open_full = (
+        "alexandria", "anamnesis", "berean", "brevitas", "hermes", "ephoros",
+        "fiat", "hypomnema", "imprimatur", "metron", "vulgate", "homologia",
+        "horos", "janus", "lazarus", "lemma", "pandects", "probitas",
+        "sapheneia", "synkrisis", "tabularium",
+    )
+    phase_scope = ("protasis", "phylax", "ephoros", "metron", "elenchus", "hypomnema")
+
+    def kronos(scope: str, targets: tuple[str, ...], ledgers: tuple[str, ...]) -> None:
+        common = (evolution["kronos"],) + ledgers
+        add("kronos", f"{scope}__rank-only", f"{scope} rank-only pass", common)
+        for target in targets:
+            add(
+                "kronos",
+                f"{scope}__dispatch-{target}",
+                f"{scope} rank plus one target dispatch",
+                common + (ORACLE_SKILL_PATHS["fiat"], ORACLE_SKILL_PATHS[target]),
+            )
+
+    kronos("full", open_full, full_ledgers)
+    kronos(
+        "phase",
+        ("ephoros", "metron", "hypomnema"),
+        tuple(evolution[name] for name in phase_scope),
+    )
+
+    phylax_states = {
+        "none": (),
+        "phylax": (ORACLE_SKILL_PATHS["phylax"],),
+        "phylax-proxy": (ORACLE_SKILL_PATHS["phylax"], "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"),
+        "ephoros-phylax": (ORACLE_SKILL_PATHS["ephoros"], ORACLE_SKILL_PATHS["phylax"]),
+        "ephoros-phylax-proxy": (ORACLE_SKILL_PATHS["ephoros"], ORACLE_SKILL_PATHS["phylax"], "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"),
+    }
+    metron_states = {
+        "none": (),
+        "metron": (ORACLE_SKILL_PATHS["metron"],),
+        "metron-budget": (ORACLE_SKILL_PATHS["metron"], "plugins/hexaemeron/skills/metron/references/budget-check.md"),
+    }
+    elenchus_states = {
+        "none": (),
+        "elenchus": (ORACLE_SKILL_PATHS["elenchus"],),
+        "elenchus-contract": (ORACLE_SKILL_PATHS["elenchus"], ORACLE_SKILL_PATHS["fizz-sync"], promises),
+    }
+    hypomnema_states = {"none": (), "hypomnema": (ORACLE_SKILL_PATHS["hypomnema"],)}
+    hermes_states = {"none": (), "hermes": (ORACLE_SKILL_PATHS["hermes"],) + hermes_runtime}
+    for worker, phylax, metron, elenchus, hypomnema, hermes in itertools.product(
+        ("inline", "mason"), phylax_states, metron_states, elenchus_states, hypomnema_states, hermes_states
+    ):
+        documents = (
+            (ORACLE_SKILL_PATHS["protasis"],)
+            + phylax_states[phylax]
+            + metron_states[metron]
+            + elenchus_states[elenchus]
+            + hypomnema_states[hypomnema]
+            + hermes_states[hermes]
+        )
+        workers: tuple[str, ...] = ()
+        if worker == "mason":
+            workers = ("plugins/hexaemeron/agents/mason.md",)
+            documents += workers
+        add(
+            "fiat",
+            f"implement__{worker}__{phylax}__{metron}__{elenchus}__{hypomnema}__{hermes}",
+            "implement directive",
+            documents,
+            workers,
+        )
+
+    audit_loop = "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
+    sapheneia = ORACLE_SKILL_PATHS["sapheneia"]
+    for worker, phylax, fix in itertools.product(
+        ("inline", "warden"), ("phylax", "phylax-proxy"), ("none", "elenchus")
+    ):
+        documents = (
+            audit_loop,
+            sapheneia,
+            ORACLE_SKILL_PATHS["phylax"],
+            ORACLE_SKILL_PATHS["ephoros"],
+            ORACLE_SKILL_PATHS["hypomnema"],
+        )
+        if phylax == "phylax-proxy":
+            documents += ("plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",)
+        if fix == "elenchus":
+            documents += (ORACLE_SKILL_PATHS["elenchus"],)
+        workers = ()
+        if worker == "warden":
+            workers = ("plugins/hexaemeron/agents/warden.md",)
+            documents += workers
+        add("fiat", f"audit-nonsol__{worker}__{phylax}__fix-{fix}", "non-Solidity audit round", documents, workers)
+
+    sol_full = (ORACLE_SKILL_PATHS["solidity-auditor"], sol_aud_version, promises) + sol_general + sol_shared + sol_agents
+    fizz_audit = {
+        "absent": (),
+        "later-campaign": (ORACLE_SKILL_PATHS["fizz"], promises),
+        "full-generation": (ORACLE_SKILL_PATHS["fizz"], promises) + fizz_common + fizz_report + fizz_invariant,
+    }
+    for worker, fizz_state, fix in itertools.product(
+        ("inline", "warden"), fizz_audit, ("none", "elenchus", "elenchus-contract")
+    ):
+        documents = (audit_loop, "plugins/hexaemeron/skills/fiat/references/xray-reuse.md", sapheneia) + xray_full + sol_full + fizz_audit[fizz_state]
+        if fix == "elenchus":
+            documents += (ORACLE_SKILL_PATHS["elenchus"],)
+        elif fix == "elenchus-contract":
+            documents += (ORACLE_SKILL_PATHS["elenchus"], ORACLE_SKILL_PATHS["fizz-sync"], promises)
+        workers = sol_agents
+        if fizz_state == "full-generation":
+            workers += fizz_report + tuple(path for path in fizz_invariant if "/agents/" in path)
+        if worker == "warden":
+            workers += ("plugins/hexaemeron/agents/warden.md",)
+            documents += ("plugins/hexaemeron/agents/warden.md",)
+        add("fiat", f"audit-solidity__{worker}__fizz-{fizz_state}__fix-{fix}", "Solidity audit round", documents, workers)
+
+    prose_base = (
+        "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+        ORACLE_SKILL_PATHS["hypomnema"],
+        ORACLE_SKILL_PATHS["imprimatur"],
+        *lexicons,
+        ORACLE_SKILL_PATHS["vulgate"],
+    )
+    for worker, brevitas, task_issue, last_step in itertools.product(
+        ("inline", "scribe"), (False, True), (False, True), (False, True)
+    ):
+        documents = prose_base
+        workers = ()
+        if worker == "scribe":
+            workers = ("plugins/hexaemeron/agents/scribe.md",)
+            documents += workers
+        if brevitas:
+            documents += (ORACLE_SKILL_PATHS["brevitas"],)
+        if task_issue:
+            documents += (sapheneia,)
+        if last_step:
+            documents += ("plugins/hexaemeron/skills/fiat/references/push-discipline.md",)
+        add("fiat", f"prose__{worker}__brevitas-{int(brevitas)}__issue-{int(task_issue)}__last-{int(last_step)}", "prose directive", documents, workers)
+
+    for worker in ("inline", "surveyor"):
+        documents = (ORACLE_SKILL_PATHS["protasis"],) + disciplines + (ORACLE_SKILL_PATHS["imprimatur"],) + lexicons
+        workers = ()
+        if worker == "surveyor":
+            workers = ("plugins/hexaemeron/agents/surveyor.md",)
+            documents += workers
+        add("fiat", f"study__{worker}", "study directive", documents, workers)
+
+    fiat_other = {
+        "controller-basic": (),
+        "frontier-gate": (evolution["fiat"], versioning),
+        "marketplace-day1": ("plugins/hexaemeron/skills/fiat/references/wildcat-marketplace.md",),
+        "marketplace-post-spec": ("plugins/hexaemeron/skills/fiat/references/wildcat-marketplace.md", "plugins/hexaemeron/skills/fiat/references/plugin-currency.md"),
+        "currency-remediation": ("plugins/hexaemeron/skills/fiat/references/plugin-currency.md",),
+        "checkpoint-transfer": ("plugins/hexaemeron/skills/fiat/references/push-discipline.md", "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md"),
+        "observation-receipt": ("docs/fiat-run-observation-binding-v1.md",),
+        "runbook": (ORACLE_SKILL_PATHS["protasis"], ORACLE_SKILL_PATHS["imprimatur"], *lexicons),
+        "close-audit": (audit_loop,),
+        "delivery": ("plugins/hexaemeron/skills/fiat/references/push-discipline.md",),
+        "integrate-task-issue": ("plugins/hexaemeron/skills/fiat/references/push-discipline.md", sapheneia, ORACLE_SKILL_PATHS["imprimatur"], *lexicons, ORACLE_SKILL_PATHS["vulgate"]),
+    }
+    for local_id, documents in fiat_other.items():
+        add("fiat", local_id, "bounded controller operation", documents)
+
+    return sorted(rows, key=lambda row: row["id"])
+
+
+def oracle_validate_profiles_and_routes(record: dict, graph: dict) -> None:
+    """Check profiles, frozen spans, and 5N reachability without production helpers."""
+    expected = oracle_profiles()
+    observed = record.get("profiles")
+    if not isinstance(observed, list):
+        raise TypeError("oracle profile ledger is not an array")
+    stripped = [
+        {key: value for key, value in row.items() if key != "source_evidence"}
+        for row in observed
+    ]
+    if stripped != expected:
+        raise AssertionError("independent profile grammar mismatch")
+
+    expected_counts = {
+        skill: sum(row["selected_skill"] == skill for row in expected)
+        for skill in sorted(ORACLE_SKILL_PATHS)
+    }
+    count = len(expected)
+    expected_totals = {
+        "normalized_profiles": count,
+        "repository_roots": count * 2,
+        "agent_skills_roots": count * 2,
+        "standalone_roots": count,
+        "scenario_roots": count * 5,
+    }
+    if record.get("counts") != expected_counts or record.get("totals") != expected_totals:
+        raise AssertionError("independent profile denominator mismatch")
+
+    evidence_projection = [
+        {"id": row["id"], "source_evidence": row["source_evidence"]}
+        for row in observed
+    ]
+    if hashlib.sha256(canonical(evidence_projection)).hexdigest() != ORACLE_EVIDENCE_PROJECTION_SHA256:
+        raise AssertionError("independent obligation evidence projection mismatch")
+    for row in observed:
+        evidence_rows = row["source_evidence"]
+        if [item.get("obligation") for item in evidence_rows] != row["required_documents"]:
+            raise AssertionError(f"independent obligation coverage mismatch: {row['id']}")
+        for evidence in evidence_rows:
+            if set(evidence) != {
+                "obligation", "path", "start", "end", "source_sha256", "span_sha256"
+            }:
+                raise AssertionError("independent evidence field mismatch")
+            data = oracle_source(evidence["path"])
+            start = evidence["start"]
+            end = evidence["end"]
+            if (
+                not isinstance(start, int)
+                or isinstance(start, bool)
+                or not isinstance(end, int)
+                or isinstance(end, bool)
+                or start < 0
+                or end <= start
+                or end > len(data)
+                or hashlib.sha256(data).hexdigest() != evidence["source_sha256"]
+                or hashlib.sha256(data[start:end]).hexdigest() != evidence["span_sha256"]
+            ):
+                raise AssertionError(f"independent frozen span mismatch: {row['id']}")
+
+    expected_roots: dict[str, dict] = {}
+    profiles = {row["id"]: row for row in observed}
+    for row in observed:
+        skill = row["selected_skill"]
+        plugin = ORACLE_SKILL_PATHS[skill].split("/")[1]
+        for route, credentials in (
+            ("repository", ("absent", "github-contributor")),
+            ("agent-skills", ("absent", "github-contributor")),
+            ("standalone", ("absent",)),
+        ):
+            base = (
+                f"standalone:{plugin}:skill:{skill}"
+                if route == "standalone"
+                else f"{route}:skill:{skill}"
+            )
+            node = {
+                "repository": "AGENTS.md",
+                "agent-skills": ".agents/skills/promise-machine/SKILL.md",
+                "standalone": f"plugins/{plugin}/AGENTS.md",
+            }[route]
+            for credential in credentials:
+                identifier = f"{base}:profile:{row['id']}:credential:{credential}"
+                conditions = [f"profile:{row['id']}"]
+                if credential == "github-contributor":
+                    conditions.append("credential:github-contributor")
+                expected_roots[identifier] = {
+                    "node": node,
+                    "base_scenario": base,
+                    "route": route,
+                    "selected_skill": skill,
+                    "profile_id": row["id"],
+                    "credential": credential,
+                    "conditions": sorted(conditions),
+                }
+    roots = {row["id"]: row for row in graph.get("scenario_roots", [])}
+    if set(roots) != set(expected_roots):
+        raise AssertionError("independent 5N route identity mismatch")
+    for identifier, expected_root in expected_roots.items():
+        root = roots[identifier]
+        for field, value in expected_root.items():
+            if root.get(field) != value:
+                raise AssertionError(f"independent route binding mismatch: {identifier}")
+
+    adjacency: dict[str, dict[str, set[str]]] = {
+        identifier: {} for identifier in roots
+    }
+    for edge in graph.get("scenario_edges", []):
+        for identifier in edge.get("active_scenarios", []):
+            if identifier not in adjacency:
+                raise AssertionError("independent edge scope escapes 5N roots")
+            adjacency[identifier].setdefault(edge["source"], set()).add(edge["target"])
+    for identifier, root in roots.items():
+        profile = profiles[root["profile_id"]]
+        skill = profile["selected_skill"]
+        plugin = ORACLE_SKILL_PATHS[skill].split("/")[1]
+        selected = ORACLE_SKILL_PATHS[skill]
+        expected_documents = set(profile["required_documents"])
+        expected_documents.update(
+            {f"plugins/{plugin}/AGENTS.md", f"plugins/{plugin}/PROMISE_MACHINE.md", selected}
+        )
+        if root["route"] == "repository":
+            expected_documents.update(
+                {"AGENTS.md", "SHOGGOTH.md", "PROMISE_MACHINE.md", ".agents/skills/promise-machine/SKILL.md"}
+            )
+        elif root["route"] == "agent-skills":
+            expected_documents.update(
+                {
+                    "AGENTS.md", "SHOGGOTH.md", "PROMISE_MACHINE.md",
+                    ".agents/skills/promise-machine/SKILL.md",
+                    ".agents/skills/promise-machine/PORTABLE.md",
+                }
+            )
+        if root["credential"] == "github-contributor":
+            expected_documents.add("CONTRIBUTORS.md")
+        pending = [root["node"]]
+        reached: set[str] = set()
+        while pending:
+            node = pending.pop()
+            if node in reached:
+                continue
+            reached.add(node)
+            pending.extend(adjacency[identifier].get(node, ()))
+        if reached != expected_documents:
+            raise AssertionError(f"independent route union mismatch: {identifier}")
 
 
 def command(*arguments: str) -> subprocess.CompletedProcess[str]:
@@ -1090,7 +1710,7 @@ class InvocationProfileTests(unittest.TestCase):
         changed["projection_sha256"] = digest
         return digest
 
-    def validate_past_projection_oracle(self, changed: dict) -> None:
+    def validate_synchronized_production_projection(self, changed: dict) -> None:
         digest = self.reseal(changed)
         with mock.patch.object(AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest):
             AI._validate_invocation_profiles(changed)
@@ -1100,9 +1720,28 @@ class InvocationProfileTests(unittest.TestCase):
         AI._validate_invocation_profiles(self.profiles)
         self.assertEqual(
             self.profiles["projection_sha256"],
-            "82a352d00f210ceb91dfae12b9060fbcd284e20739f891e1908625546a7a8814",
+            "8029f1ea22f6ea995712b2e177e81843cfd2983c410790455873bad9d8e0664d",
         )
         self.assertEqual(self.profiles["counts"], AI.EXPECTED_PROFILE_COUNTS)
+
+    def test_independent_source_owned_profile_and_route_oracle(self):
+        oracle_validate_profiles_and_routes(self.profiles, self.graph)
+
+    def test_every_required_document_has_one_named_source_witness(self):
+        evidence_rows = 0
+        required_documents = 0
+        for profile in self.profiles["profiles"]:
+            with self.subTest(profile=profile["id"]):
+                obligations = [
+                    evidence.get("obligation")
+                    for evidence in profile["source_evidence"]
+                ]
+                self.assertEqual(obligations, profile["required_documents"])
+                self.assertEqual(len(obligations), len(set(obligations)))
+                evidence_rows += len(obligations)
+                required_documents += len(profile["required_documents"])
+        self.assertEqual(evidence_rows, 5_049)
+        self.assertEqual(required_documents, 5_049)
 
     def test_profile_route_denominators_are_exact(self):
         self.assertEqual(
@@ -1173,20 +1812,20 @@ class InvocationProfileTests(unittest.TestCase):
         changed = copy.deepcopy(self.profiles)
         changed["profiles"].pop()
         with self.assertRaisesRegex(AI.Refusal, "denominator"):
-            self.validate_past_projection_oracle(changed)
+            self.validate_synchronized_production_projection(changed)
 
     def test_duplicate_profile_id_refuses(self):
         changed = copy.deepcopy(self.profiles)
         changed["profiles"][1]["id"] = changed["profiles"][0]["id"]
         with self.assertRaisesRegex(AI.Refusal, "id product"):
-            self.validate_past_projection_oracle(changed)
+            self.validate_synchronized_production_projection(changed)
 
     def test_worker_outside_required_union_refuses(self):
         changed = copy.deepcopy(self.profiles)
         profile = next(item for item in changed["profiles"] if item["worker_prompts"])
         profile["required_documents"].remove(profile["worker_prompts"][0])
         with self.assertRaisesRegex(AI.Refusal, "document or worker union"):
-            self.validate_past_projection_oracle(changed)
+            self.validate_synchronized_production_projection(changed)
 
     def test_reference_only_document_in_profile_refuses(self):
         changed = copy.deepcopy(self.profiles)
@@ -1194,7 +1833,7 @@ class InvocationProfileTests(unittest.TestCase):
         profile["required_documents"].append(sorted(AI.REFERENCE_ONLY_MARKDOWN)[0])
         profile["required_documents"].sort()
         with self.assertRaisesRegex(AI.Refusal, "human reference"):
-            self.validate_past_projection_oracle(changed)
+            self.validate_synchronized_production_projection(changed)
 
     def test_fixed_input_execution_fiction_refuses(self):
         changed = copy.deepcopy(self.profiles)
@@ -1208,13 +1847,91 @@ class InvocationProfileTests(unittest.TestCase):
         )
         version["load_semantics"] = "mandatory-executable"
         with self.assertRaisesRegex(AI.Refusal, "fixed input semantics"):
-            self.validate_past_projection_oracle(changed)
+            self.validate_synchronized_production_projection(changed)
 
     def test_source_span_drift_refuses(self):
         changed = copy.deepcopy(self.profiles)
         changed["profiles"][0]["source_evidence"][0]["span_sha256"] = "0" * 64
         with self.assertRaisesRegex(AI.Refusal, "source span"):
-            self.validate_past_projection_oracle(changed)
+            self.validate_synchronized_production_projection(changed)
+
+    def test_synchronized_obligation_fiction_refuses_independent_oracle(self):
+        changed = copy.deepcopy(self.profiles)
+        profile = next(
+            item for item in changed["profiles"] if item["id"] == "alexandria:ordinary"
+        )
+        invented = ORACLE_SKILL_PATHS["phylax"]
+        profile["required_documents"].append(invented)
+        profile["required_documents"].sort()
+        evidence = copy.deepcopy(profile["source_evidence"][0])
+        evidence["obligation"] = invented
+        profile["source_evidence"].append(evidence)
+        profile["source_evidence"].sort(key=lambda row: row["obligation"])
+
+        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AssertionError, "independent profile grammar"):
+            oracle_validate_profiles_and_routes(changed, self.graph)
+
+    def test_synchronized_evidence_rebinding_refuses_independent_oracle(self):
+        changed = copy.deepcopy(self.profiles)
+        profile = next(
+            item
+            for item in changed["profiles"]
+            if len(item["source_evidence"]) > 1
+        )
+        obligation = profile["source_evidence"][0]["obligation"]
+        replacement = copy.deepcopy(profile["source_evidence"][1])
+        replacement["obligation"] = obligation
+        profile["source_evidence"][0] = replacement
+
+        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AssertionError, "evidence projection"):
+            oracle_validate_profiles_and_routes(changed, self.graph)
+
+    def test_synchronized_profile_and_routes_refuse_independent_oracle(self):
+        changed_profiles = copy.deepcopy(self.profiles)
+        changed_graph = copy.deepcopy(self.graph)
+        old_profile_id = "alexandria:ordinary"
+        new_profile_id = "alexandria:invented"
+        profile = next(
+            item
+            for item in changed_profiles["profiles"]
+            if item["id"] == old_profile_id
+        )
+        profile["id"] = new_profile_id
+
+        root_ids: dict[str, str] = {}
+        for root in changed_graph["scenario_roots"]:
+            if root["profile_id"] != old_profile_id:
+                continue
+            old_root_id = root["id"]
+            new_root_id = old_root_id.replace(
+                f":profile:{old_profile_id}:",
+                f":profile:{new_profile_id}:",
+            )
+            root_ids[old_root_id] = new_root_id
+            root["id"] = new_root_id
+            root["profile_id"] = new_profile_id
+            root["conditions"] = [
+                f"profile:{new_profile_id}"
+                if condition == f"profile:{old_profile_id}"
+                else condition
+                for condition in root["conditions"]
+            ]
+        changed_graph["scenario_roots"].sort(key=lambda row: row["id"])
+        self.assertEqual(len(root_ids), 5)
+        for edge in changed_graph["scenario_edges"]:
+            edge["active_scenarios"] = sorted(
+                root_ids.get(identifier, identifier)
+                for identifier in edge["active_scenarios"]
+            )
+
+        digest = self.reseal(changed_profiles)
+        with mock.patch.object(AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest):
+            AI._validate_invocation_profiles(changed_profiles)
+            AI._validate_complete_scenarios(changed_graph, changed_profiles)
+        with self.assertRaisesRegex(AssertionError, "independent profile grammar"):
+            oracle_validate_profiles_and_routes(changed_profiles, changed_graph)
 
     def test_missing_bundle_edge_refuses_against_profile_union(self):
         changed = copy.deepcopy(self.graph)

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 29606096,
+    "bytes_blob": 30645741,
     "bytes_generated": 98
   },
   "entries": [
@@ -596,16 +596,16 @@
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 1053297,
+      "bytes": 2092932,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 1053297 bytes",
+      "evidence": "no newline in the first 4096 bytes of 2092932 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/invocation-profiles.json"
     },
     {
-      "bytes": 6868462,
+      "bytes": 6868472,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 6868462 bytes",
+      "evidence": "no newline in the first 4096 bytes of 6868472 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }
