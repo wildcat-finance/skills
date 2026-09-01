@@ -59,6 +59,13 @@
       "kind": "suite",
       "script": "plugins/brevitas/tests"
     },
+    "dokimasia-suite": {
+      "title": "Dokimasia suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/dokimasia/tests", "-t", "plugins/dokimasia"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/dokimasia/tests"
+    },
     "hermes-suite": {
       "title": "Hermes suite",
       "argv": ["python3", "plugins/hermes/skills/hermes/scripts/test_hermes.py"],
@@ -242,6 +249,7 @@
     "ariadne": {"title": "Ariadne plugin", "checks": ["ariadne-suite"]},
     "berean": {"title": "Berean plugin", "checks": ["berean-suite"]},
     "brevitas": {"title": "Brevitas plugin", "checks": ["brevitas-suite"]},
+    "dokimasia": {"title": "Dokimasia plugin", "checks": ["dokimasia-suite"]},
     "hermes": {"title": "Hermes plugin", "checks": ["hermes-suite"]},
     "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite"]},
     "homologia": {"title": "Homologia plugin", "checks": ["homologia-suite"]},
@@ -268,6 +276,7 @@
     "ariadne": ["repo-lints"],
     "berean": ["repo-lints"],
     "brevitas": ["repo-lints", "root"],
+    "dokimasia": ["repo-lints"],
     "hermes": ["repo-lints"],
     "hexaemeron": ["repo-lints", "root"],
     "homologia": ["repo-lints"],
@@ -302,6 +311,7 @@
     {"path": "pyproject.toml", "scope": "root"},
     {"path": "skills.sh.json", "scope": "root"},
     {"path": "SHOGGOTH.md", "scope": "root"},
+    {"path": "VENUES.json", "scope": "root"},
     {"path": "assets", "scope": "root"},
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
@@ -331,6 +341,7 @@
     {"path": "plugins/ariadne", "scope": "ariadne"},
     {"path": "plugins/berean", "scope": "berean"},
     {"path": "plugins/brevitas", "scope": "brevitas"},
+    {"path": "plugins/dokimasia", "scope": "dokimasia"},
     {"path": "plugins/hermes", "scope": "hermes"},
     {"path": "plugins/hexaemeron", "scope": "hexaemeron"},
     {"path": "plugins/homologia", "scope": "homologia"},

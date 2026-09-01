@@ -166,7 +166,7 @@ class MarketplaceProseTests(unittest.TestCase):
         self.assertIn("## What can it do today?", readme)
         self.assertIn("## How the collective works", readme)
         self.assertIn("[Promise Machine contract](./PROMISE_MACHINE.md)", readme)
-        self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
+        self.assertIn("26 members: 17 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
         self.assertIn("Wildcat Labs Skills", marketplace["description"])
@@ -279,7 +279,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 26)
+        self.assertEqual(len(governed), 27)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin

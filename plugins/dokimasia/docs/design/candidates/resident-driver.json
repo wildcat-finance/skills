@@ -1,0 +1,23 @@
+{
+  "id": "resident-driver",
+  "summary": "The skill drives the browser, the wallet extension and the Safe lanes itself from this repository.",
+  "checkable_without_a_browser": false,
+  "no_signer_authority": false,
+  "closes_the_coverage_question": true,
+  "resumable_after_a_kill": false,
+  "steps": [
+    "land the plugin scaffold and its router row",
+    "vendor the browser and extension boundary",
+    "drive the disconnected lane",
+    "drive the wallet lane",
+    "drive the Safe lane",
+    "join the effects into evidence",
+    "demonstrate against a live deployment"
+  ],
+  "runtime_dependencies": [
+    "playwright",
+    "chromium",
+    "a pinned wallet extension",
+    "a local chain"
+  ]
+}

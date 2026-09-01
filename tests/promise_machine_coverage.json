@@ -1747,6 +1747,131 @@
       "evidence_class": "inferred",
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
+    },
+    "dokimasia-scaffold-p": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
+    },
+    "dokimasia-scaffold-m": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
+    },
+    "dokimasia-scaffold-s": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_the_canonical_skill_states_the_declared_version",
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
+    },
+    "dokimasia-scaffold-o": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_no_unbuilt_verb_prints_anything_on_standard_output",
+      "claim": "The nearest overclaim is a verb that answers with coverage: every unbuilt verb is required to leave standard output empty, so no caller can read a closure ratio off this version."
+    },
+    "dokimasia-scaffold-r": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_the_ledger_declares_the_version_every_other_surface_declares",
+      "claim": "Recovery evidence requires the ledger to declare the same version every other surface declares, so a version disagreement names the file to restore rather than leaving the caller to search."
+    },
+    "dokimasia-inventory-p": {
+      "path": "plugins/dokimasia/tests/test_inventory.py",
+      "selector": "test_the_record_carries_exactly_the_declared_keys",
+      "claim": "Positive evidence compiles the committed fixture and requires the record to carry exactly the keys the inventory schema declares."
+    },
+    "dokimasia-inventory-m": {
+      "path": "plugins/dokimasia/tests/test_inventory.py",
+      "selector": "test_every_declared_rule_and_cap_refuses_by_name",
+      "claim": "Each declared path rule and cap is driven against a tree that breaches it and must refuse by name, so a cap that never fires cannot pass as a guarantee."
+    },
+    "dokimasia-inventory-s": {
+      "path": "plugins/dokimasia/tests/test_inventory.py",
+      "selector": "test_two_compiles_agree_byte_for_byte",
+      "claim": "A compile whose two runs disagree is refused, so a digest cannot be recorded against a tree that does not reproduce."
+    },
+    "dokimasia-inventory-o": {
+      "path": "plugins/dokimasia/tests/test_inventory.py",
+      "selector": "test_a_commented_or_quoted_method_is_not_recorded",
+      "claim": "The nearest overclaim is an item that does not exist: a commented or quoted export must never reach the inventory, because it would inflate the denominator every disposition is measured against."
+    },
+    "dokimasia-inventory-r": {
+      "path": "plugins/dokimasia/tests/test_paths.py",
+      "selector": "test_an_oversized_file_refuses_by_name",
+      "claim": "Recovery evidence requires the refusal to name the cap and the path that breached it, so the caller can correct the input rather than guess."
+    },
+    "dokimasia-workbook-p": {
+      "path": "plugins/dokimasia/tests/test_workbook.py",
+      "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone",
+      "claim": "Positive evidence rebuilds every source row from the imported cases alone and requires each to match the row it came from."
+    },
+    "dokimasia-scrutiny-m": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_a_result_that_moved_with_nothing_moved_is_reported_not_hidden",
+      "claim": "A coverage digest is moved with all three identities held fixed, and the comparison must report the move as unattributed rather than returning no cause."
+    },
+    "dokimasia-scrutiny-o": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_the_record_states_a_measured_duration_and_not_the_budget",
+      "claim": "The nearest overclaim is a target reported as an observation: the recorded duration must be measured and must not equal the declared budget."
+    },
+    "dokimasia-scrutiny-p": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_two_scrutinies_of_the_same_inputs_agree",
+      "claim": "Positive evidence runs two scrutinies of the same pinned inputs and requires one digest and no reported cause."
+    },
+    "dokimasia-scrutiny-r": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_an_application_commit_that_is_not_pinned_refuses",
+      "claim": "Recovery evidence requires an abbreviated commit to refuse by naming the full object name a scrutiny must pin, so the caller can repin rather than guess."
+    },
+    "dokimasia-scrutiny-s": {
+      "path": "plugins/dokimasia/tests/test_demonstration.py",
+      "selector": "test_a_moved_application_commit_is_reported_as_its_own_cause",
+      "claim": "A moved application commit is reported as exactly one named cause with its before and after values, so a moved number is never left unexplained."
+    },
+    "dokimasia-closure-m": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_an_unreviewed_oracle_refuses",
+      "claim": "The covered state is driven against an oracle nobody has acted on and must refuse, so a closure ratio cannot be reached by citing cases that were never run."
+    },
+    "dokimasia-closure-o": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_an_empty_set_covers_nothing_rather_than_inferring_a_match",
+      "claim": "The nearest overclaim is inferred coverage: with no disposition declared, the reconciler must report none covered rather than matching the two sides itself."
+    },
+    "dokimasia-closure-p": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_one_is_reached_only_when_nothing_is_unanswered",
+      "claim": "Positive evidence reaches a closure ratio of one over a fully answered scoped set, with the numerator and denominator asserted as separate fields."
+    },
+    "dokimasia-closure-r": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_a_moved_inventory_digest_refuses_as_stale",
+      "claim": "Recovery evidence requires a stale refusal to name the digest field that moved, so the caller can recompile the record rather than guess which side drifted."
+    },
+    "dokimasia-closure-s": {
+      "path": "plugins/dokimasia/tests/test_reconcile.py",
+      "selector": "test_two_dispositions_on_one_item_refuse",
+      "claim": "Two dispositions on one item are refused, so nothing can be recorded as both decided and undecided."
+    },
+    "dokimasia-workbook-m": {
+      "path": "plugins/dokimasia/tests/test_workbook.py",
+      "selector": "test_halves_that_disagree_about_their_row_refuse",
+      "claim": "The round-trip check is driven against cases that disagree about their source row and must refuse, so a passing round trip is not a trivial pass."
+    },
+    "dokimasia-workbook-s": {
+      "path": "plugins/dokimasia/tests/test_workbook.py",
+      "selector": "test_an_identifier_used_twice_refuses",
+      "claim": "An identifier appearing twice is refused, so a disposition can never be attached to two rows at once."
+    },
+    "dokimasia-workbook-o": {
+      "path": "plugins/dokimasia/tests/test_xlsx.py",
+      "selector": "test_a_cached_formula_value_is_read_and_nothing_is_evaluated",
+      "claim": "The nearest overclaim is a computed value presented as a recorded one: a formula whose cached value differs from its evaluation must read as cached, and never as evaluated."
+    },
+    "dokimasia-workbook-r": {
+      "path": "plugins/dokimasia/tests/test_xlsx.py",
+      "selector": "test_a_traversal_member_name_refuses_by_name",
+      "claim": "Recovery evidence requires the refusal to name the member that breached the boundary, so the caller can correct the archive rather than guess."
     }
   },
   "handoffs": [
@@ -1784,7 +1909,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "83a33a3658a96fc7fff7b035c09165fc456c24612cd181b98dccdb4652b14dea"
+        "sha256": "06d44e9dd6c03a53f5c9a6ba5ae2e954772015786f7a6a8cf341eae5970217e3"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1792,7 +1917,7 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "e7df230c98de794a754862a9aeeeb3c0d17be5bb366d349852d099f65c96fd71"
+        "sha256": "e2b2ad10cc15a3c7a23dd099cf752649102ccefe44f748d5b7aa3d8f50e60845"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
@@ -2247,6 +2372,86 @@
       "group": "executable",
       "promise_id": "fiat-version-resolution",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "promise_id": "dokimasia-scaffold-identity",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-scaffold-p",
+        "M": "dokimasia-scaffold-m",
+        "S": "dokimasia-scaffold-s",
+        "O": "dokimasia-scaffold-o",
+        "R": "dokimasia-scaffold-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-source-inventory",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-inventory-p",
+        "M": "dokimasia-inventory-m",
+        "S": "dokimasia-inventory-s",
+        "O": "dokimasia-inventory-o",
+        "R": "dokimasia-inventory-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-workbook-lineage",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-workbook-p",
+        "M": "dokimasia-workbook-m",
+        "S": "dokimasia-workbook-s",
+        "O": "dokimasia-workbook-o",
+        "R": "dokimasia-workbook-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-pinned-scrutiny",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-scrutiny-p",
+        "M": "dokimasia-scrutiny-m",
+        "S": "dokimasia-scrutiny-s",
+        "O": "dokimasia-scrutiny-o",
+        "R": "dokimasia-scrutiny-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-disposition-closure",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-closure-p",
+        "M": "dokimasia-closure-m",
+        "S": "dokimasia-closure-s",
+        "O": "dokimasia-closure-o",
+        "R": "dokimasia-closure-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
     },
     {
       "cases": {
@@ -3742,6 +3947,62 @@
       },
       "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7",
       "source": "plugins/berean/schemas/promotion-record-v1.json"
+    },
+    "dokimasia-source-inventory": {
+      "bindings": {
+        "evidence_classes": "checked for the compile and its exercised refusals, recorded for the digest, joined to the canonical Evidence classes field",
+        "evidence_references": "items, each naming the source file the rule recognised it from",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "counts, scoped_items, rules and caps",
+        "subject": "subject label and commit",
+        "transition": "a compile whose two runs agree, joined to the canonical Authorises field",
+        "unknowns": "conventions the declared rules do not name, and client-side gates outside the declared name list"
+      },
+      "sha256": "da92d7ae5231871131c375a0b074d0d8063c4da3b883c2e8a5541b8bd3e3fc2b",
+      "source": "plugins/dokimasia/schemas/inventory-v1.json"
+    },
+    "dokimasia-pinned-scrutiny": {
+      "bindings": {
+        "evidence_classes": "checked for the pinned commit and the deterministic digest, recorded for the closure figures and the gap counts, measured for the observed duration, joined to the canonical Evidence classes field",
+        "evidence_references": "the inventory, workbook and coverage digests, and the committed coverage record and scrutiny prose the run wrote",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the scoped count with its two sides, the separately stated numerator and denominator, and the observed duration beside its declared budget",
+        "subject": "the pinned application commit and the workbook label and sha256",
+        "transition": "a scrutiny whose result either matches an earlier one or names the identity that moved, joined to the canonical Authorises field",
+        "unknowns": "items carrying no disposition, and a moved result no identity explains, which is reported as unattributed"
+      },
+      "sha256": "0baceaf58dd6f1a24acfcca9c3c3d91d53636d113026e0d9d2c8dfb1fc62b577",
+      "source": "plugins/dokimasia/schemas/scrutiny-v1.json"
+    },
+    "dokimasia-disposition-closure": {
+      "bindings": {
+        "evidence_classes": "checked for the vocabulary, the oracles and the digest currency, recorded for the ratio and the gap list, joined to the canonical Evidence classes field",
+        "evidence_references": "dispositions, each naming the scoped item it answers for and the oracle or reason it carries",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio",
+        "subject": "the inventory and workbook sha256 pair the set was written against",
+        "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
+        "unknowns": "scoped items no disposition answered for, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
+      },
+      "sha256": "7cc745472b06002e4af57ea8418b9c9c7760979b95290036c7bb50a9251f5618",
+      "source": "plugins/dokimasia/schemas/coverage-v1.json"
+    },
+    "dokimasia-workbook-lineage": {
+      "bindings": {
+        "evidence_classes": "checked for the archive caps and the round trip, recorded for the digest, joined to the canonical Evidence classes field",
+        "evidence_references": "cases, each naming the sheet, row and identifier it was read from",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "counts, caps, the lineage identifier, and what every sheet contributed including the ones that contributed nothing and why",
+        "subject": "subject label and workbook sha256",
+        "transition": "an import whose source rows rebuild, joined to the canonical Authorises field",
+        "unknowns": "statuses kept as written because no declared value matches, and rows no reviewer declared a split for"
+      },
+      "sha256": "96916b226f910156a8fc3954ceb2187fc075286af0fdf66b3dbe804265b11b9c",
+      "source": "plugins/dokimasia/schemas/workbook-v1.json"
     },
     "elenchus-fixed-and-guarded": {
       "bindings": {

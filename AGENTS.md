@@ -67,7 +67,12 @@ basis, preserves the producer's bytes unchanged, and hands Elenchus a
 historical analogue and Synkrisis a checked cohort projection. The analogue is
 a hypothesis, so Elenchus still reproduces the present failure and still earns
 its own guard, and Synkrisis takes no custody of the source. Warden still
-produces a round's record; Anamnesis does not produce one. Sapheneia
+produces a round's record; Anamnesis does not produce one. Dokimasia compiles a frontend's routes, actions and guards into a coverage
+denominator and reconciles a reviewed workbook against it, so every scoped item
+carries one disposition; it executes nothing, the harness that runs a release
+belongs to the application's own repository, and where Anamnesis keeps custody
+of findings and their remedies, Dokimasia records only which behaviour has no
+reviewed oracle. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose

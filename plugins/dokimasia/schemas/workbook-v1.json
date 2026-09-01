@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wildcat.finance/schemas/dokimasia/workbook/v1.json",
+  "title": "Dokimasia workbook import",
+  "description": "Every reviewed case a spreadsheet holds, with the sheet and row it came from, the identifier it was filed under, and every column the header named. Closed, so an unknown key is a refusal. The digest covers the cases and never the subject, so two imports of the same bytes agree.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "lineage", "subject", "caps", "counts", "sheets", "workbook_sha256", "cases"],
+  "properties": {
+    "schema": { "const": "dokimasia-workbook/v1" },
+    "lineage": { "const": "dokimasia-workbook-lineage/v1" },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cases", "members", "member_bytes", "expansion_ratio"],
+      "properties": {
+        "cases": { "type": "integer", "minimum": 1 },
+        "members": { "type": "integer", "minimum": 1 },
+        "member_bytes": { "type": "integer", "minimum": 1 },
+        "expansion_ratio": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cases", "source_rows", "by_status", "by_source"],
+      "properties": {
+        "cases": { "type": "integer", "minimum": 0 },
+        "source_rows": { "type": "integer", "minimum": 0 },
+        "by_status": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "by_source": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "sheets": {
+      "type": "array",
+      "maxItems": 512,
+      "description": "What every sheet contributed, including the ones that contributed nothing and why, so a sheet excluded correctly and a sheet excluded by a renamed header are told apart.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sheet", "rows", "cases", "reason"],
+        "properties": {
+          "sheet": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "rows": { "type": "integer", "minimum": 0 },
+          "cases": { "type": "integer", "minimum": 0 },
+          "reason": { "type": "string", "maxLength": 512 }
+        }
+      }
+    },
+    "workbook_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "cases": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source_id", "sheet", "row", "split", "fields"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]+[a-z]?$" },
+          "source_id": { "type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]+[a-z]?$" },
+          "sheet": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "row": { "type": "integer", "minimum": 1 },
+          "split": { "type": "boolean" },
+          "fields": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

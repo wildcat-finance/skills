@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16494907,
+    "bytes_blob": 16548672,
     "bytes_generated": 98
   },
   "entries": [
@@ -285,6 +285,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md"
+    },
+    {
+      "bytes": 53765,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-dokimasia-frontend-coverage-skill.synopsis.md"
     },
     {
       "bytes": 59394,
