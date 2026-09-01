@@ -249,6 +249,62 @@ class ShapeTests(unittest.TestCase):
             )
         self.assertIn("D050", str(caught.exception))
 
+    def test_an_absent_record_cannot_hold_a_mature_demo_frontier(self):
+        record = copy.deepcopy(self.valid)
+        record["status"] = "absent"
+        record["sources"] = []
+        record["commands"] = []
+        record["observations"] = []
+        frontier = dict(record["frontier"], status="mature", next="None -- mature")
+        frontier["sha256"] = demonstrations.frontier_digest(
+            "mature", frontier["revision"], frontier["current"], frontier["next"]
+        )
+        record["frontier"] = frontier
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            check(record)
+        self.assertIn("D045", str(caught.exception))
+
+    def test_a_not_applicable_record_may_hold_a_mature_demo_frontier(self):
+        record = copy.deepcopy(self.valid)
+        record["status"] = "not-applicable"
+        record["sources"] = []
+        record["commands"] = []
+        record["observations"] = []
+        frontier = dict(record["frontier"], status="mature", next="None -- mature")
+        frontier["sha256"] = demonstrations.frontier_digest(
+            "mature", frontier["revision"], frontier["current"], frontier["next"]
+        )
+        record["frontier"] = frontier
+        self.assertEqual(check(record)["status"], "not-applicable")
+
+    def test_the_run_source_budget_bounds_every_read_together(self):
+        budget = demonstrations._Budget(maximum=16)
+        record = copy.deepcopy(self.valid)
+        record["status"] = "constructed"
+        record["sources"] = [
+            {
+                "id": "corpus",
+                "class": "fixture",
+                "path": "tests/fixtures/demonstrations/valid-ledger.md",
+                "sha256": "0" * 64,
+            }
+        ]
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            demonstrations.check_record(
+                ROOT, SPECIMEN, record, verify_bytes=True, budget=budget
+            )
+        self.assertIn("D028", str(caught.exception))
+
+    def test_the_default_budget_covers_the_whole_live_check(self):
+        self.assertGreater(
+            demonstrations.MAX_RUN_SOURCE_BYTES, demonstrations.MAX_SOURCE_BYTES
+        )
+        budget = demonstrations._Budget()
+        budget.spend(demonstrations.MAX_RUN_SOURCE_BYTES, where="whole budget")
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            budget.spend(1, where="one byte past it")
+        self.assertIn("D028", str(caught.exception))
+
     def test_an_allowlisted_endpoint_never_records_a_secret_value(self):
         record = copy.deepcopy(self.valid)
         record["network"] = {

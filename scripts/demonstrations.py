@@ -29,6 +29,10 @@ FENCE_CLOSE = "```"
 SCHEMA = "shoggoth-demonstration/v1"
 MAX_LEDGER_BYTES = 262_144
 MAX_SOURCE_BYTES = 33_554_432
+# Per-source caps bound one read. A whole check reads every declared source in
+# all 26 records, so the run needs its own ceiling or 26 records of 32 sources
+# each can ask for gigabytes before anything refuses.
+MAX_RUN_SOURCE_BYTES = 268_435_456
 MAX_SOURCES = 32
 MAX_COMMANDS = 16
 MAX_ARGV = 32
@@ -176,7 +180,25 @@ def _check_network(value: Any, *, where: str) -> None:
         )
 
 
-def _check_source(root: Path | None, source: Any, *, where: str) -> str:
+class _Budget:
+    """A mutable byte budget shared by every source read in one check."""
+
+    def __init__(self, maximum: int = MAX_RUN_SOURCE_BYTES) -> None:
+        self.remaining = maximum
+        self.maximum = maximum
+
+    def spend(self, size: int, *, where: str) -> None:
+        self.remaining -= size
+        if self.remaining < 0:
+            _fail(
+                "D028",
+                f"{where} takes the run past its {self.maximum}-byte source budget",
+            )
+
+
+def _check_source(
+    root: Path | None, source: Any, *, where: str, budget: "_Budget | None" = None
+) -> str:
     entry = _closed_object(source, SOURCE_KEYS, code="D020", where=where)
     identifier = _text(entry.get("id"), code="D020", where=f"{where}.id")
     _require(
@@ -235,6 +257,12 @@ def _check_source(root: Path | None, source: Any, *, where: str) -> str:
     )
     if root is None:
         return source_class
+    if budget is not None:
+        try:
+            size = os.stat(os.path.join(root, relative)).st_size
+        except OSError as exc:
+            _fail("D025", f"{where}.path cannot be read: {exc}")
+        budget.spend(size, where=where)
     try:
         payload = _read_regular_file(root, relative, maximum=MAX_SOURCE_BYTES)
     except TopologyError as exc:
@@ -323,7 +351,12 @@ def _check_frontier(record: dict, *, where: str) -> dict:
 
 
 def check_record(
-    root: Path | None, skill: GovernedSkill, record: dict, *, verify_bytes: bool = True
+    root: Path | None,
+    skill: GovernedSkill,
+    record: dict,
+    *,
+    verify_bytes: bool = True,
+    budget: "_Budget | None" = None,
 ) -> dict:
     """Validate one record against the closed contract and return it.
 
@@ -382,7 +415,10 @@ def check_record(
     classes: list[str] = []
     for index, source in enumerate(sources):
         source_class = _check_source(
-            root if verify_bytes else None, source, where=f"{where} sources[{index}]"
+            root if verify_bytes else None,
+            source,
+            where=f"{where} sources[{index}]",
+            budget=budget,
         )
         identifier = source["id"]
         _require(
@@ -437,7 +473,12 @@ def check_record(
             f"{where} claims constructed with preserved {sorted(set(preserved))} source(s)",
         )
 
-    _check_frontier(record, where=where)
+    frontier = _check_frontier(record, where=where)
+    # A mature demo frontier says nothing worth doing remains. An absent record
+    # says nothing exists yet. Together they retire a demonstration that was
+    # never built, which is the one combination the status set must not admit.
+    if status == "absent" and frontier["status"] == "mature":
+        _fail("D045", f"{where} has no demonstration yet holds a mature demo frontier")
     return record
 
 
@@ -448,10 +489,11 @@ def load_records(root: str | os.PathLike[str] = ".") -> dict[str, dict]:
     topology = discover_topology(repository)
     records: dict[str, dict] = {}
     claim_ids: dict[str, str] = {}
+    budget = _Budget()
     for skill in topology.governed_skills:
         text = read_ledger(repository, skill.directory)
         record = extract_record(text, where=f"{skill.directory}/{LEDGER_NAME}")
-        checked = check_record(repository, skill, record)
+        checked = check_record(repository, skill, record, budget=budget)
         claim_id = checked["claim_id"]
         owner = claim_ids.get(claim_id)
         _require(
