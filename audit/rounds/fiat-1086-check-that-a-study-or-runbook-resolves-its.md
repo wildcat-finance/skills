@@ -14,3 +14,19 @@ Elenchus verdict: null
 | S1-R1-02 | low | plugins/hexaemeron/docs/link-gate/reports/require-location-independent-check-latency-ms.json | check-latency-ms runs the identical link check for lint-in-place and require-location-independent and records the result as two candidate values; the resolver reads its candidate argument only to special-case declare-only. Both report 63 milliseconds because both measured the same command, not because the candidates cost the same. The metric cannot distinguish the two candidates it compares | recorded, not fixed: the design record is immutable after the study receipt |
 
 Leads not pursued: both findings are bounded by the same fact and it is worth stating rather than leaving implied. Neither metric affected the selection. The four hard gates removed declare-only on catches-observed-defect, verdict-location-independent and enforces-result-not-declaration, and removed lint-in-place on verdict-location-independent, leaving one survivor before any comparative metric was read. The record's selection rule is unique-frontier, which is a statement about the gates. So the two weak metrics are a defect in what the record claims, not in what it decided. They are recorded here rather than repaired because the design record is immutable after done study and its reports are digest-pinned inside it; changing either would require a design-amendment transition that does not exist. Separately, the same gap the previous run carried as resolver-not-committed stands here unchanged: the eighteen reports name `python3 .hexaemeron/reports/resolve.py <criterion>` as the command that produced them, and that path is controller state which is never committed. The resolver is not under the committed reports directory. A first draft of this record claimed it was; the claim was checked before the record was committed and was false, which is the same defect class this run exists to close.
+
+## Step 1, round 2 -- 2026-09-01T12:41:55Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: frozen-artefact=reviewed; reviewed-span-drift=reviewed; self-application=reviewed; derived-digest-chain=not-applicable; frontier-drift=not-applicable; false-refusal=not-applicable
+
+Not checked: unchanged from round 1. The VENUES.json check-map failure is still red on the base and still not this step's. Round 2 re-ran the three lints, the root suite and the evidence check over round 1's record, and then looked at the one thing round 1 asserted without testing: whether the committed guard actually refuses what it claims to. It does. A file-relative link appended to the committed study makes test_no_committed_document_links_relative_to_its_own_file fail, and removing it makes the test pass, with the study byte-identical to the receipted copy afterwards.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the two round 1 findings stand and cannot be repaired in this run, because the design record is immutable after the study receipt and its reports are digest-pinned inside it. Their boundary is unchanged: neither metric affected the selection, which the four gates settled before any metric was read. One observation is added rather than fixed. Round 1's own record first claimed that the resolver was committed under the reports directory, which was false; the claim was checked before the record was committed and corrected in place. That the check happened at all was a choice rather than a gate, and the gate this run is building would not have caught it either, because a false statement about a file is not an unresolvable link. What catches it is reading the tree instead of trusting the sentence.
