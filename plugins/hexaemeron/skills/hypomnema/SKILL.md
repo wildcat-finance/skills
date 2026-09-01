@@ -42,7 +42,8 @@ Its version, held frontier, next job, and maturity state live in
 **Current state.** The ordinary walk checks recognised record and runbook
 pointers and shapes. An explicit study mode now binds one selected Protasis
 candidate to exactly one ADR or governed-skill ledger through a closed design
-bridge. No evidenced unchecked mechanical frontier remains.
+bridge. It refuses a duplicate the study declares; it does not discover the same
+decision standing in a second established home when the study declares one.
 
 ## Match what is already there
 
