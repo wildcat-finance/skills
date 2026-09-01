@@ -14,9 +14,13 @@ insufficient evidence blocks that dependent transition while leaving recovery
 available.
 
 Dokimasia contains one Agent Skill. Select `dokimasia` to inspect or implement
-the declared coverage boundary. Read `skills/dokimasia/SKILL.md` in full and do
-not report coverage: only `selftest` is built, and every other verb must refuse
-with the runbook step that owes it.
+the declared coverage boundary. Read `skills/dokimasia/SKILL.md` in full.
+`selftest`, `inventory`, `workbook` and `reconcile` are built; every other verb
+must refuse with the runbook step that owes it. Report a closure ratio only for
+an inventory and workbook pair whose digests the disposition set names, and
+never report a scrutiny of a real application, which the pinned demonstration
+has not shipped. A closure ratio states that nothing is unaccounted for, never
+that anything passed.
 
 `skills/dokimasia/SKILL.md` is the only canonical instruction document. Do not
 add a sibling browsing README.

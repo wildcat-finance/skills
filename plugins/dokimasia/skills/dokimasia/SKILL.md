@@ -4,9 +4,9 @@ description: >
   Inspect or build the scaffold that compiles a frontend's routes, actions and
   access guards into a coverage denominator and reconciles a reviewed UAT
   workbook against it, so every scoped item carries exactly one disposition.
-  The substantive operations have not shipped: the current surface self-tests
-  and every other verb refuses, so never report coverage, a gap list or a
-  closure ratio. Horos decides what an agent does not read; Hexaemeron Fizz
+  Compiling, importing and reconciling have shipped; the pinned demonstration
+  has not, so never report a scrutiny of a real application. A closure ratio
+  states that nothing is unaccounted for, never that anything passed. Horos decides what an agent does not read; Hexaemeron Fizz
   fuzzes contracts. Neither compiles a frontend inventory or holds an oracle.
 metadata:
   version: "0.1.0"
@@ -72,8 +72,8 @@ space, which is unbounded and which no static compile enumerates.
 | demonstrate | runs one complete scrutiny and emits its digest-bound record |
 | selftest | proves the packaging and the contract agree, and emits its report |
 
-`selftest`, `inventory` and `workbook` are built. Every other verb refuses
-with the step that owes it.
+`selftest`, `inventory`, `workbook` and `reconcile` are built. Every other
+verb refuses with the step that owes it.
 
 ## Boundaries
 
@@ -91,17 +91,17 @@ an item covered on its own.
 
 ## Promises, and why one of them is not here
 
-`dokimasia-scaffold-identity`, `dokimasia-source-inventory` and
-`dokimasia-workbook-lineage` below are the promises this version keeps. A
-promise with no case that could support it is the overclaim the root law
-refuses, so nothing else is declared.
+`dokimasia-scaffold-identity`, `dokimasia-source-inventory`,
+`dokimasia-workbook-lineage` and `dokimasia-disposition-closure` below are the
+promises this version keeps. A promise with no case that could support it is
+the overclaim the root law refuses, so nothing else is declared.
 
-One more is named here so the runbook has a real interface to build against,
-and so a reader can tell an unbuilt transition from one nobody thought of.
-`dokimasia-disposition-closure` will establish that every scoped item
-carried exactly one disposition against an exact inventory and workbook digest
-pair; step 4 owes it. It is not declared as a contract section, because this
-version does not establish it.
+One transition remains unbuilt, and is named here so the runbook has a real
+interface to build against and so a reader can tell an unbuilt transition from
+one nobody thought of. A pinned demonstration will run one complete scrutiny
+against a pinned application checkout and a reviewed workbook, and record what
+it found; step 5 owes it. It is not declared as a contract section, because
+this version does not establish it.
 
 ## Promise Machine contract
 
@@ -139,4 +139,16 @@ version does not establish it.
 - Consequence: 2
 - Refuses: An archive over the member, total or expansion caps, a member delivering more bytes than the cap allows whatever size it declares, a member carrying a document type or entity declaration, a member name that is absolute or holds a parent-directory segment, a file that is not a zip archive, a sheet naming a missing or absent part, a cell reference past the column cap, a cell reference naming no column, a shared string index the table does not hold, an identifier appearing twice, a workbook over the case cap, a declared split matching no row in the workbook, and a split whose atomic cases disagree about the row they came from.
 - Recovery: Read the refusal, which names the cap, member or identifier that caused it, correct the workbook or the declared split, and rerun `dokimasia workbook`.
+- Exceptions: none
+
+### dokimasia-disposition-closure
+
+- Promise: A successful `dokimasia reconcile` establishes that every scoped item, drawn from both the inventory and the workbook, carried exactly one disposition from the closed set, that each covered item named an oracle the workbook holds and that a person has acted on, that each manual and excluded item carried a reason, and that the disposition set was written against the exact inventory and workbook digests in front of it.
+- Evidence: The two bounded record reads, the declared inventory and workbook digests compared against the records, the scoped set built from both sides, each declared disposition with its reason or oracle, the resolved oracle status, the separately stated numerator and denominator of the closure ratio, the gap list, the undisposed list, and the canonical digest over everything but the subject.
+- Evidence classes: checked, recorded
+- Boundary: The record establishes that the deciding was done and by whom it was declared. It does not establish that a covered item works, that its oracle was a good oracle, that a recorded status was right, or that an excluded item was correctly excluded; it establishes that somebody said so and wrote down why. A closure ratio of one means nothing is unaccounted for, never that anything passed.
+- Authorises: Reporting the closure ratio and the gap list for a named inventory and workbook pair, and opening the runbook step that demonstrates against a pinned application.
+- Consequence: 2
+- Refuses: A disposition set declaring the wrong schema or no digest, a set naming an inventory or workbook digest that has moved, two dispositions on one item, a disposition naming an item outside the scoped set, a state outside the closed vocabulary, a covered item naming no oracle, a covered item naming an oracle the workbook does not hold, a covered item naming an oracle nobody has acted on, a manual or excluded item with an empty reason, a reason over the byte cap, a symlink or oversized input, and a scoped set over the item cap.
+- Recovery: Read the refusal, which names the item and the condition it breached, correct the disposition set or recompile the record whose digest moved, and rerun `dokimasia reconcile`.
 - Exceptions: none
