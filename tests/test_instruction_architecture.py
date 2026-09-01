@@ -4980,6 +4980,91 @@ class HoldoutSealTests(unittest.TestCase):
                         self.graph,
                     )
 
+    def reseal(self, changed):
+        body = dict(changed)
+        body.pop("commitment_sha256", None)
+        changed["commitment_sha256"] = hashlib.sha256(
+            canonical(body)
+        ).hexdigest()
+
+    def validate_changed_seal(self, changed):
+        AI._validate_holdout_seal(
+            changed,
+            self.manifest,
+            self.cohorts,
+            self.profiles,
+            self.graph,
+        )
+
+    def test_coherently_resealed_membership_drift_refuses(self):
+        changed = copy.deepcopy(self.seal)
+        changed["membership"]["paths"] = changed["membership"]["paths"][1:]
+        changed["membership_sha256"] = hashlib.sha256(
+            canonical(changed["membership"])
+        ).hexdigest()
+        self.reseal(changed)
+        with self.assertRaisesRegex(AI.Refusal, "membership drift"):
+            self.validate_changed_seal(changed)
+
+    def test_stale_membership_digest_refuses_after_outer_reseal(self):
+        changed = copy.deepcopy(self.seal)
+        changed["membership_sha256"] = "0" * 64
+        self.reseal(changed)
+        with self.assertRaisesRegex(AI.Refusal, "membership digest drift"):
+            self.validate_changed_seal(changed)
+
+    def test_coherently_resealed_case_envelope_drift_refuses(self):
+        for mutation in ("slot", "forbidden"):
+            with self.subTest(mutation=mutation):
+                changed = copy.deepcopy(self.seal)
+                envelope = changed["closed_future_case_envelope"]
+                if mutation == "slot":
+                    envelope["slots"][0]["logical_skill"] = "sapheneia"
+                else:
+                    envelope["forbidden_until_open"].remove("expected_answer")
+                changed["case_envelope_sha256"] = hashlib.sha256(
+                    canonical(envelope)
+                ).hexdigest()
+                self.reseal(changed)
+                with self.assertRaisesRegex(AI.Refusal, "case envelope drift"):
+                    self.validate_changed_seal(changed)
+
+    def test_stale_case_envelope_digest_refuses_after_outer_reseal(self):
+        changed = copy.deepcopy(self.seal)
+        changed["case_envelope_sha256"] = "0" * 64
+        self.reseal(changed)
+        with self.assertRaisesRegex(AI.Refusal, "case envelope digest drift"):
+            self.validate_changed_seal(changed)
+
+    def test_resealed_source_identity_drift_refuses(self):
+        for field, value in (
+            ("schema", "wildcat-instruction-architecture-holdout-seal/v2"),
+            ("source_ref", "0" * 40),
+            ("selection_seed", "attacker-seed"),
+        ):
+            with self.subTest(field=field):
+                changed = copy.deepcopy(self.seal)
+                changed[field] = value
+                self.reseal(changed)
+                with self.assertRaisesRegex(AI.Refusal, "source identity drift"):
+                    self.validate_changed_seal(changed)
+
+    def test_resealed_outer_field_set_drift_refuses(self):
+        for mutation in ("missing", "extra"):
+            with self.subTest(mutation=mutation):
+                changed = copy.deepcopy(self.seal)
+                if mutation == "missing":
+                    changed.pop("membership_sha256")
+                else:
+                    changed["unbound_extension"] = "accepted by the exact parent"
+                self.reseal(changed)
+                with self.assertRaisesRegex(AI.Refusal, "non-closed field set"):
+                    self.validate_changed_seal(changed)
+
+    def test_non_object_seal_refuses(self):
+        with self.assertRaisesRegex(AI.Refusal, "must be an object"):
+            self.validate_changed_seal([])
+
     def test_seed_replay_and_command_are_exact(self):
         rebuilt = AI.build_cohorts(self.manifest)
         self.assertEqual(rebuilt, self.cohorts)

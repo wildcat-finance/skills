@@ -4839,6 +4839,49 @@ def _validate_holdout_seal(
     graph: dict[str, Any],
 ) -> None:
     """Recompute every sealed identity without trusting its commitment body."""
+    if not isinstance(seal, dict):
+        raise Refusal("holdout seal must be an object")
+    _require_fields(
+        seal,
+        (
+            "case_envelope_sha256",
+            "closed_future_case_envelope",
+            "cohorts_sha256",
+            "commitment_sha256",
+            "invocation_profiles_sha256",
+            "loader_graph_sha256",
+            "manifest_sha256",
+            "membership",
+            "membership_sha256",
+            "opened",
+            "schema",
+            "selection_seed",
+            "source_ref",
+        ),
+        (
+            "case_envelope_sha256",
+            "closed_future_case_envelope",
+            "cohorts_sha256",
+            "commitment_sha256",
+            "invocation_profiles_sha256",
+            "loader_graph_sha256",
+            "manifest_sha256",
+            "membership",
+            "membership_sha256",
+            "opened",
+            "schema",
+            "selection_seed",
+            "source_ref",
+        ),
+        "holdout seal",
+    )
+    if (
+        seal["schema"] != f"{SCHEMA_PREFIX}-holdout-seal/v1"
+        or seal["source_ref"] != SOURCE_REF
+        or seal["selection_seed"] != SELECTION_SEED
+        or seal["opened"] is not False
+    ):
+        raise Refusal("holdout seal source identity drift")
     expected_fields = {
         "manifest_sha256": _artifact_digest(manifest),
         "cohorts_sha256": _artifact_digest(cohorts),
@@ -4847,15 +4890,38 @@ def _validate_holdout_seal(
     }
     if any(seal.get(field) != digest for field, digest in expected_fields.items()):
         raise Refusal("holdout seal input identity drift")
+
+    expected_membership = {
+        "logical_skills": cohorts["holdout"]["logical_skills"],
+        "paths": cohorts["holdout"]["paths"],
+    }
+    membership = seal["membership"]
+    if membership != expected_membership:
+        raise Refusal("holdout seal membership drift")
+    if seal["membership_sha256"] != _sha256(_canonical_json(membership)):
+        raise Refusal("holdout seal membership digest drift")
+
+    expected_envelope = {
+        "slots": cohorts["holdout"]["case_slots"],
+        "forbidden_until_open": [
+            "prompt",
+            "expected_answer",
+            "scorer_key",
+            "model_output",
+        ],
+    }
+    envelope = seal["closed_future_case_envelope"]
+    if envelope != expected_envelope:
+        raise Refusal("holdout seal case envelope drift")
+    if seal["case_envelope_sha256"] != _sha256(_canonical_json(envelope)):
+        raise Refusal("holdout seal case envelope digest drift")
+
     body = dict(seal)
     commitment = body.pop("commitment_sha256", None)
-    if (
-        commitment != _sha256(_canonical_json(body))
-        or seal.get("opened") is not False
-    ):
+    if commitment != _sha256(_canonical_json(body)):
         raise Refusal("holdout commitment is open or inconsistent")
-    forbidden = set(seal["closed_future_case_envelope"]["forbidden_until_open"])
-    for slot in seal["closed_future_case_envelope"]["slots"]:
+    forbidden = set(envelope["forbidden_until_open"])
+    for slot in envelope["slots"]:
         if forbidden & set(slot):
             raise Refusal("sealed slot contains answer-bearing material")
 
