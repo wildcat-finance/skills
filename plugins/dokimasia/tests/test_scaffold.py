@@ -23,7 +23,7 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
-VERSION = "1.1.0"
+VERSION = "2.1.0"
 UNBUILT: tuple[str, ...] = ()
 KEPT_PROMISES = (
     "dokimasia-scaffold-identity",

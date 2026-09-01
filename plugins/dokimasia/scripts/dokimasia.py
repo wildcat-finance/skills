@@ -36,7 +36,7 @@ LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 INSTALLED_LAW = PLUGIN / "PROMISE_MACHINE.md"
 ROOT_LAW = REPOSITORY / "PROMISE_MACHINE.md"
 
-VERSION = "1.1.0"
+VERSION = "2.1.0"
 CANDIDATE = "inventory-first"
 CRITERION = "scaffold-contract-check"
 REPORT_SCHEMA = "protasis-design-report/v1"

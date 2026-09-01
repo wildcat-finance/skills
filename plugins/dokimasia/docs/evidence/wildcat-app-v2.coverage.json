@@ -8,30 +8,2811 @@
   "closure_ratio": {
     "closed": false,
     "denominator": 261,
-    "numerator": 0,
-    "value": 0.0
+    "numerator": 202,
+    "value": 0.7739463601532567
   },
   "counts": {
     "by_disposition": {
       "covered": 0,
       "excluded": 0,
-      "manual": 0
+      "manual": 202
     },
-    "disposed": 0,
+    "disposed": 202,
     "inventory_items": 59,
     "scoped": 261,
-    "unconfirmed": 0,
-    "undisposed": 261,
+    "unconfirmed": 59,
+    "undisposed": 59,
     "workbook_cases": 202
   },
-  "dispositions": [],
-  "gaps": [],
+  "dispositions": [
+    {
+      "disposition": "manual",
+      "item": "case:ADM-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:6, identifier ADM-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:7, identifier ADM-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:8, identifier ADM-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:9, identifier ADM-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:10, identifier ADM-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:12, identifier ADM-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:13, identifier ADM-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:14, identifier ADM-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:15, identifier ADM-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:17, identifier ADM-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:18, identifier ADM-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:19, identifier ADM-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:20, identifier ADM-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:6, identifier BON-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:7, identifier BON-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:8, identifier BON-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:10, identifier BON-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:11, identifier BON-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:12, identifier BON-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:13, identifier BON-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:15, identifier BON-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:16, identifier BON-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:17, identifier BON-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:6, identifier BOP-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:7, identifier BOP-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:8, identifier BOP-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:9, identifier BOP-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:10, identifier BOP-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:12, identifier BOP-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:13, identifier BOP-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:14, identifier BOP-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:15, identifier BOP-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:16, identifier BOP-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:17, identifier BOP-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:19, identifier BOP-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:20, identifier BOP-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:21, identifier BOP-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:22, identifier BOP-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-16",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:23, identifier BOP-16; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-17",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:24, identifier BOP-17; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-18",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:25, identifier BOP-18; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-19",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:26, identifier BOP-19; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-20",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:27, identifier BOP-20; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-21",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:28, identifier BOP-21; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-22",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:30, identifier BOP-22; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-23",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:31, identifier BOP-23; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-24",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:32, identifier BOP-24; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-25",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:33, identifier BOP-25; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-26",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:35, identifier BOP-26; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-27",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:36, identifier BOP-27; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-28",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:37, identifier BOP-28; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-29",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:38, identifier BOP-29; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-30",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:39, identifier BOP-30; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-31",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:41, identifier BOP-31; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-32",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:42, identifier BOP-32; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-33",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:43, identifier BOP-33; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:5, identifier EDG-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:6, identifier EDG-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:7, identifier EDG-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:8, identifier EDG-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:9, identifier EDG-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:10, identifier EDG-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:12, identifier EDG-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:13, identifier EDG-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:14, identifier EDG-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:15, identifier EDG-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:16, identifier EDG-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:17, identifier EDG-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:18, identifier EDG-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:20, identifier EDG-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:21, identifier EDG-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:6, identifier LEN-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:7, identifier LEN-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:8, identifier LEN-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:9, identifier LEN-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:11, identifier LEN-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:12, identifier LEN-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:13, identifier LEN-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:14, identifier LEN-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:15, identifier LEN-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:16, identifier LEN-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:17, identifier LEN-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:18, identifier LEN-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:20, identifier LEN-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:21, identifier LEN-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:23, identifier LEN-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-16",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:24, identifier LEN-16; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-17",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:25, identifier LEN-17; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-18",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:26, identifier LEN-18; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-19",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:27, identifier LEN-19; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-20",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:28, identifier LEN-20; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-21",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:29, identifier LEN-21; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-22",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:30, identifier LEN-22; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-23",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:32, identifier LEN-23; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-24",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:33, identifier LEN-24; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-25",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:34, identifier LEN-25; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-26",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:35, identifier LEN-26; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-27",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:36, identifier LEN-27; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-28",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:38, identifier LEN-28; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-29",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:39, identifier LEN-29; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-30",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:40, identifier LEN-30; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-31",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:41, identifier LEN-31; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-32",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:43, identifier LEN-32; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-33",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:44, identifier LEN-33; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-34",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:45, identifier LEN-34; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-35",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:46, identifier LEN-35; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:6, identifier M1-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:7, identifier M1-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:8, identifier M1-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:9, identifier M1-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:10, identifier M1-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:11, identifier M1-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:12, identifier M1-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:13, identifier M1-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:15, identifier M2-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:16, identifier M2-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:17, identifier M2-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:18, identifier M2-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:19, identifier M2-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:20, identifier M2-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:22, identifier M3-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:23, identifier M3-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:24, identifier M3-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:25, identifier M3-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:27, identifier M4-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:28, identifier M4-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:29, identifier M4-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:30, identifier M4-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:32, identifier M5-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:33, identifier M5-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:34, identifier M5-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:35, identifier M5-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:36, identifier M5-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:37, identifier M5-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:38, identifier M5-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:40, identifier M6-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:41, identifier M6-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:42, identifier M6-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:43, identifier M6-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:44, identifier M6-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:45, identifier M6-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:47, identifier M7-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:48, identifier M7-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:49, identifier M7-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:50, identifier M7-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:51, identifier M7-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:53, identifier M8-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:54, identifier M8-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:55, identifier M8-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:56, identifier M8-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:58, identifier M9-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:59, identifier M9-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:60, identifier M9-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:61, identifier M9-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:62, identifier M9-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:63, identifier M9-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:64, identifier M9-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:65, identifier M9-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:6, identifier MKT-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:7, identifier MKT-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:8, identifier MKT-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:9, identifier MKT-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:10, identifier MKT-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:11, identifier MKT-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:12, identifier MKT-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:14, identifier MKT-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:15, identifier MKT-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:16, identifier MKT-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:17, identifier MKT-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:19, identifier MKT-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:20, identifier MKT-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:21, identifier MKT-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:22, identifier MKT-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-16",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:24, identifier MKT-16; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-17",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:25, identifier MKT-17; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-18",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:26, identifier MKT-18; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-19",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:28, identifier MKT-19; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-20",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:29, identifier MKT-20; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-21",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:30, identifier MKT-21; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-22",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:32, identifier MKT-22; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-23",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:33, identifier MKT-23; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-24",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:34, identifier MKT-24; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:6, identifier SET-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:7, identifier SET-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:8, identifier SET-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:9, identifier SET-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:10, identifier SET-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:11, identifier SET-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:6, identifier WAL-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:7, identifier WAL-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:8, identifier WAL-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:10, identifier WAL-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:12, identifier WAL-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:13, identifier WAL-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:14, identifier WAL-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:5, identifier WRP-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:6, identifier WRP-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:7, identifier WRP-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:8, identifier WRP-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:9, identifier WRP-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:10, identifier WRP-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:11, identifier WRP-07; a reviewer owns this row"
+    }
+  ],
+  "gaps": [
+    {
+      "disposition": "manual",
+      "item": "case:ADM-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:6, identifier ADM-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:7, identifier ADM-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:8, identifier ADM-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:9, identifier ADM-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:10, identifier ADM-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:12, identifier ADM-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:13, identifier ADM-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:14, identifier ADM-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:15, identifier ADM-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:17, identifier ADM-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:18, identifier ADM-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:19, identifier ADM-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:ADM-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 1 Admin:20, identifier ADM-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:6, identifier BON-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:7, identifier BON-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:8, identifier BON-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:10, identifier BON-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:11, identifier BON-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:12, identifier BON-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:13, identifier BON-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:15, identifier BON-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:16, identifier BON-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BON-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 2 Borrower Onboarding:17, identifier BON-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:6, identifier BOP-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:7, identifier BOP-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:8, identifier BOP-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:9, identifier BOP-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:10, identifier BOP-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:12, identifier BOP-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:13, identifier BOP-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:14, identifier BOP-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:15, identifier BOP-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:16, identifier BOP-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:17, identifier BOP-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:19, identifier BOP-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:20, identifier BOP-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:21, identifier BOP-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:22, identifier BOP-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-16",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:23, identifier BOP-16; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-17",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:24, identifier BOP-17; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-18",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:25, identifier BOP-18; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-19",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:26, identifier BOP-19; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-20",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:27, identifier BOP-20; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-21",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:28, identifier BOP-21; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-22",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:30, identifier BOP-22; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-23",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:31, identifier BOP-23; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-24",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:32, identifier BOP-24; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-25",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:33, identifier BOP-25; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-26",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:35, identifier BOP-26; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-27",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:36, identifier BOP-27; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-28",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:37, identifier BOP-28; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-29",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:38, identifier BOP-29; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-30",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:39, identifier BOP-30; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-31",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:41, identifier BOP-31; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-32",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:42, identifier BOP-32; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:BOP-33",
+      "oracle": "",
+      "reason": "drafted from workbook row 4 Borrower Ops:43, identifier BOP-33; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:5, identifier EDG-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:6, identifier EDG-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:7, identifier EDG-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:8, identifier EDG-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:9, identifier EDG-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:10, identifier EDG-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:12, identifier EDG-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:13, identifier EDG-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:14, identifier EDG-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:15, identifier EDG-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:16, identifier EDG-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:17, identifier EDG-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:18, identifier EDG-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:20, identifier EDG-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:EDG-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 10 Edge & Regression:21, identifier EDG-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:6, identifier LEN-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:7, identifier LEN-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:8, identifier LEN-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:9, identifier LEN-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:11, identifier LEN-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:12, identifier LEN-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:13, identifier LEN-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:14, identifier LEN-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:15, identifier LEN-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:16, identifier LEN-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:17, identifier LEN-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:18, identifier LEN-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:20, identifier LEN-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:21, identifier LEN-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:23, identifier LEN-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-16",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:24, identifier LEN-16; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-17",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:25, identifier LEN-17; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-18",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:26, identifier LEN-18; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-19",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:27, identifier LEN-19; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-20",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:28, identifier LEN-20; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-21",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:29, identifier LEN-21; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-22",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:30, identifier LEN-22; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-23",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:32, identifier LEN-23; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-24",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:33, identifier LEN-24; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-25",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:34, identifier LEN-25; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-26",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:35, identifier LEN-26; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-27",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:36, identifier LEN-27; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-28",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:38, identifier LEN-28; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-29",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:39, identifier LEN-29; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-30",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:40, identifier LEN-30; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-31",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:41, identifier LEN-31; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-32",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:43, identifier LEN-32; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-33",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:44, identifier LEN-33; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-34",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:45, identifier LEN-34; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:LEN-35",
+      "oracle": "",
+      "reason": "drafted from workbook row 5 Lender Flows:46, identifier LEN-35; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:6, identifier M1-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:7, identifier M1-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:8, identifier M1-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:9, identifier M1-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:10, identifier M1-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:11, identifier M1-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:12, identifier M1-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M1-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:13, identifier M1-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:15, identifier M2-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:16, identifier M2-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:17, identifier M2-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:18, identifier M2-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:19, identifier M2-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M2-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:20, identifier M2-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:22, identifier M3-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:23, identifier M3-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:24, identifier M3-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M3-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:25, identifier M3-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:27, identifier M4-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:28, identifier M4-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:29, identifier M4-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M4-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:30, identifier M4-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:32, identifier M5-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:33, identifier M5-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:34, identifier M5-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:35, identifier M5-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:36, identifier M5-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:37, identifier M5-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M5-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:38, identifier M5-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:40, identifier M6-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:41, identifier M6-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:42, identifier M6-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:43, identifier M6-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:44, identifier M6-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M6-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:45, identifier M6-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:47, identifier M7-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:48, identifier M7-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:49, identifier M7-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:50, identifier M7-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M7-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:51, identifier M7-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:53, identifier M8-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:54, identifier M8-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:55, identifier M8-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M8-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:56, identifier M8-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:58, identifier M9-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:59, identifier M9-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:60, identifier M9-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:61, identifier M9-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:62, identifier M9-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:63, identifier M9-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:64, identifier M9-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:M9-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 9 Scenario Scripts:65, identifier M9-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:6, identifier MKT-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:7, identifier MKT-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:8, identifier MKT-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:9, identifier MKT-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:10, identifier MKT-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:11, identifier MKT-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:12, identifier MKT-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-08",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:14, identifier MKT-08; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-09",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:15, identifier MKT-09; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-10",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:16, identifier MKT-10; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-11",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:17, identifier MKT-11; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-12",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:19, identifier MKT-12; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-13",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:20, identifier MKT-13; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-14",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:21, identifier MKT-14; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-15",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:22, identifier MKT-15; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-16",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:24, identifier MKT-16; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-17",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:25, identifier MKT-17; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-18",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:26, identifier MKT-18; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-19",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:28, identifier MKT-19; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-20",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:29, identifier MKT-20; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-21",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:30, identifier MKT-21; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-22",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:32, identifier MKT-22; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-23",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:33, identifier MKT-23; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:MKT-24",
+      "oracle": "",
+      "reason": "drafted from workbook row 3 Market Creation:34, identifier MKT-24; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:6, identifier SET-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:7, identifier SET-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:8, identifier SET-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:9, identifier SET-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:10, identifier SET-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:SET-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 0 Setup:11, identifier SET-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:6, identifier WAL-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:7, identifier WAL-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:8, identifier WAL-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:10, identifier WAL-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:12, identifier WAL-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:13, identifier WAL-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WAL-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 7 Wallet Matrix:14, identifier WAL-07; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-01",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:5, identifier WRP-01; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-02",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:6, identifier WRP-02; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-03",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:7, identifier WRP-03; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-04",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:8, identifier WRP-04; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-05",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:9, identifier WRP-05; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-06",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:10, identifier WRP-06; a reviewer owns this row"
+    },
+    {
+      "disposition": "manual",
+      "item": "case:WRP-07",
+      "oracle": "",
+      "reason": "drafted from workbook row 6 Wrappers:11, identifier WRP-07; a reviewer owns this row"
+    }
+  ],
   "schema": "dokimasia-coverage/v1",
   "subject": {
     "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
     "workbook_sha256": "21493992f97e97124ccd0f8170cc447c44f204c09c3b29f2953a9bb938dd2eba"
   },
-  "unconfirmed": [],
+  "unconfirmed": [
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/auth/login/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/auth/login/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/auth/refresh/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/auth/refresh/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/borrower-names/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/borrower-names/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/csp-report/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/csp-report/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/invite/[address]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/invite/[address]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/invite/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/invite/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/market-summary/[market]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/market-summary/[market]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/market/get/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/market/get/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/[lender]/html/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/[lender]/html/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/[lender]/pdf/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/[lender]/pdf/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/[lender]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/[lender]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/[lender]/signed/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/[lender]/signed/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/acknowledgement/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/acknowledgement/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/decline/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/decline/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/html/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/html/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/lenders/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/lenders/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/pdf/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/pdf/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/[market]/signed/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/[market]/signed/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/lender-signature/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/lender-signature/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/templates/[id]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/templates/[id]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/mla/templates/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/mla/templates/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/profiles/[address]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/profiles/[address]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/profiles/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/profiles/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/profiles/updates/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/profiles/updates/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/[address]/certificate/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/[address]/certificate/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/[address]/status/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/[address]/status/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/accept/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/accept/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/current/download/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/current/download/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/current/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/current/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/decline/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/decline/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/service-agreement/reacceptance/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/service-agreement/reacceptance/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/sla/[address]/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/sla/[address]/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/sla/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/sla/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "api:src/app/api/tokens-list/route.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled API handler at src/app/api/tokens-list/route.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "guard:src/middleware.ts",
+      "oracle": "",
+      "reason": "drafted from the compiled guard at src/middleware.ts; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/admin/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/admin/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/agreement/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/agreement/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/agreement/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/agreement/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/create-market/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/create-market/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/create-policy/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/create-policy/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/edit-lenders-list/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/edit-lenders-list/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/edit-policy/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/edit-policy/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/invitation/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/invitation/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/market/[address]/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/market/[address]/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/notifications/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/notifications/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/policy/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/policy/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/profile/[address]/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/profile/[address]/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/profile/edit/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/profile/edit/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/borrower/profile/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/borrower/profile/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/agreement/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/agreement/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/all-markets/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/all-markets/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/market/[address]/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/market/[address]/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/my-markets/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/my-markets/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/profile/[address]/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/profile/[address]/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/lender/profile/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/lender/profile/page.tsx; no reviewed case cites it"
+    },
+    {
+      "disposition": "excluded",
+      "item": "route:src/app/[locale]/profile/borrower/[address]/page.tsx",
+      "oracle": "",
+      "reason": "drafted from the compiled page route at src/app/[locale]/profile/borrower/[address]/page.tsx; no reviewed case cites it"
+    }
+  ],
   "undisposed": [
     "api:src/app/api/auth/login/route.ts",
     "api:src/app/api/auth/refresh/route.ts",
@@ -68,208 +2849,6 @@
     "api:src/app/api/sla/[address]/route.ts",
     "api:src/app/api/sla/route.ts",
     "api:src/app/api/tokens-list/route.ts",
-    "case:ADM-01",
-    "case:ADM-02",
-    "case:ADM-03",
-    "case:ADM-04",
-    "case:ADM-05",
-    "case:ADM-06",
-    "case:ADM-07",
-    "case:ADM-08",
-    "case:ADM-09",
-    "case:ADM-10",
-    "case:ADM-11",
-    "case:ADM-12",
-    "case:ADM-13",
-    "case:BON-01",
-    "case:BON-02",
-    "case:BON-03",
-    "case:BON-04",
-    "case:BON-05",
-    "case:BON-06",
-    "case:BON-07",
-    "case:BON-08",
-    "case:BON-09",
-    "case:BON-10",
-    "case:BOP-01",
-    "case:BOP-02",
-    "case:BOP-03",
-    "case:BOP-04",
-    "case:BOP-05",
-    "case:BOP-06",
-    "case:BOP-07",
-    "case:BOP-08",
-    "case:BOP-09",
-    "case:BOP-10",
-    "case:BOP-11",
-    "case:BOP-12",
-    "case:BOP-13",
-    "case:BOP-14",
-    "case:BOP-15",
-    "case:BOP-16",
-    "case:BOP-17",
-    "case:BOP-18",
-    "case:BOP-19",
-    "case:BOP-20",
-    "case:BOP-21",
-    "case:BOP-22",
-    "case:BOP-23",
-    "case:BOP-24",
-    "case:BOP-25",
-    "case:BOP-26",
-    "case:BOP-27",
-    "case:BOP-28",
-    "case:BOP-29",
-    "case:BOP-30",
-    "case:BOP-31",
-    "case:BOP-32",
-    "case:BOP-33",
-    "case:EDG-01",
-    "case:EDG-02",
-    "case:EDG-03",
-    "case:EDG-04",
-    "case:EDG-05",
-    "case:EDG-06",
-    "case:EDG-07",
-    "case:EDG-08",
-    "case:EDG-09",
-    "case:EDG-10",
-    "case:EDG-11",
-    "case:EDG-12",
-    "case:EDG-13",
-    "case:EDG-14",
-    "case:EDG-15",
-    "case:LEN-01",
-    "case:LEN-02",
-    "case:LEN-03",
-    "case:LEN-04",
-    "case:LEN-05",
-    "case:LEN-06",
-    "case:LEN-07",
-    "case:LEN-08",
-    "case:LEN-09",
-    "case:LEN-10",
-    "case:LEN-11",
-    "case:LEN-12",
-    "case:LEN-13",
-    "case:LEN-14",
-    "case:LEN-15",
-    "case:LEN-16",
-    "case:LEN-17",
-    "case:LEN-18",
-    "case:LEN-19",
-    "case:LEN-20",
-    "case:LEN-21",
-    "case:LEN-22",
-    "case:LEN-23",
-    "case:LEN-24",
-    "case:LEN-25",
-    "case:LEN-26",
-    "case:LEN-27",
-    "case:LEN-28",
-    "case:LEN-29",
-    "case:LEN-30",
-    "case:LEN-31",
-    "case:LEN-32",
-    "case:LEN-33",
-    "case:LEN-34",
-    "case:LEN-35",
-    "case:M1-01",
-    "case:M1-02",
-    "case:M1-03",
-    "case:M1-04",
-    "case:M1-05",
-    "case:M1-06",
-    "case:M1-07",
-    "case:M1-08",
-    "case:M2-01",
-    "case:M2-02",
-    "case:M2-03",
-    "case:M2-04",
-    "case:M2-05",
-    "case:M2-06",
-    "case:M3-01",
-    "case:M3-02",
-    "case:M3-03",
-    "case:M3-04",
-    "case:M4-01",
-    "case:M4-02",
-    "case:M4-03",
-    "case:M4-04",
-    "case:M5-01",
-    "case:M5-02",
-    "case:M5-03",
-    "case:M5-04",
-    "case:M5-05",
-    "case:M5-06",
-    "case:M5-07",
-    "case:M6-01",
-    "case:M6-02",
-    "case:M6-03",
-    "case:M6-04",
-    "case:M6-05",
-    "case:M6-06",
-    "case:M7-01",
-    "case:M7-02",
-    "case:M7-03",
-    "case:M7-04",
-    "case:M7-05",
-    "case:M8-01",
-    "case:M8-02",
-    "case:M8-03",
-    "case:M8-04",
-    "case:M9-01",
-    "case:M9-02",
-    "case:M9-03",
-    "case:M9-04",
-    "case:M9-05",
-    "case:M9-06",
-    "case:M9-07",
-    "case:M9-08",
-    "case:MKT-01",
-    "case:MKT-02",
-    "case:MKT-03",
-    "case:MKT-04",
-    "case:MKT-05",
-    "case:MKT-06",
-    "case:MKT-07",
-    "case:MKT-08",
-    "case:MKT-09",
-    "case:MKT-10",
-    "case:MKT-11",
-    "case:MKT-12",
-    "case:MKT-13",
-    "case:MKT-14",
-    "case:MKT-15",
-    "case:MKT-16",
-    "case:MKT-17",
-    "case:MKT-18",
-    "case:MKT-19",
-    "case:MKT-20",
-    "case:MKT-21",
-    "case:MKT-22",
-    "case:MKT-23",
-    "case:MKT-24",
-    "case:SET-01",
-    "case:SET-02",
-    "case:SET-03",
-    "case:SET-04",
-    "case:SET-05",
-    "case:SET-06",
-    "case:WAL-01",
-    "case:WAL-02",
-    "case:WAL-03",
-    "case:WAL-04",
-    "case:WAL-05",
-    "case:WAL-06",
-    "case:WAL-07",
-    "case:WRP-01",
-    "case:WRP-02",
-    "case:WRP-03",
-    "case:WRP-04",
-    "case:WRP-05",
-    "case:WRP-06",
-    "case:WRP-07",
     "guard:src/middleware.ts",
     "route:src/app/[locale]/admin/page.tsx",
     "route:src/app/[locale]/agreement/page.tsx",
