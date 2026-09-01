@@ -693,3 +693,110 @@ design or any production source.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. The committed corpus manifest binds exactly 176 agent-facing Markdown files
+   and 2,071,863 physical bytes at the entry ref. It retains every class from
+   the prior 175-path closure and adds
+   `plugins/anamnesis/docs/demo.md` as a 2,605-byte unique
+   `operation_reference`, source-directed by the exact
+   `../../docs/demo.md` span in Anamnesis's canonical skill. The corpus now has
+   25 operation references, 70 source-directed additions totalling 526,326
+   bytes, 159 exact-unique files and 1,600,419 exact-unique bytes. The
+   reconciliation enumerates the new path, digest and anchor and proves that
+   recursively resolving every admitted document adds no second path.
+2. Every physical byte remains in one ordered, gapless, digest-bound partition
+   range. Unsupported operative bytes remain zero. Exact duplicates remain
+   limited to the root Promise Machine contract and its generated copies; the
+   Anamnesis document is unique governed instruction rather than evidence or a
+   generated duplicate.
+3. The loader graph retains the complete source-proved potential edge
+   inventory, but each declared scenario is one realizable invocation. A
+   scenario binds one host route, one selected canonical skill and a closed,
+   sorted condition vector for credential identity, operation choice, frontier
+   gates, worker dispatch and nested selection. Scenario reachability includes
+   only matching edges. Every potential conditional edge appears in at least
+   one scenario, while mutually exclusive siblings never co-occur: a Kronos
+   invocation chooses one target skill before exact Fiat dispatch; an Ariadne
+   invocation chooses one supported operation; repository checkout never loads
+   the isolated `PORTABLE.md`; standalone mode never loads the repository
+   prelude. Production validation refuses fragment roots, incomplete route or
+   selection scope, an unknown condition, an uncovered potential edge, a
+   sibling-branch union and any manifest reachability claim the graph does not
+   reproduce.
+4. Because the old unopened holdout is only 319,564 of 1,600,419 unique bytes,
+   rerun the unchanged seed and selection method before any candidate or case
+   construction. The replacement holdout is exactly `ariadne`, `fizz`,
+   `fizz-sync`, `hermes` and `kronos`: 33 unique paths and 320,086 bytes
+   (0.200001). Development is the disjoint remaining 1,280,333 bytes
+   (0.799999) and still covers every shared contract, document class,
+   authority tier, construct and size decile. The replacement seal binds the
+   corrected source, membership and closed 16-slot envelope with `opened` false
+   and no prompt, answer, scorer key or model output.
+5. Every source-bound path field is a canonical non-empty printable-ASCII POSIX
+   relative path of at most 1,024 bytes, with no empty, `.` or `..` segment,
+   backslash, control byte or trailing slash. Runtime and Draft 2020-12 schema
+   accept the same structural language. `build-baseline` reproduces all five
+   records, their inventory and reconciliation byte for byte; all four
+   verifiers repeat byte-identically; the amended study and runbook receipts,
+   focused/root tests and parent-attributable selected checks pass; no live
+   instruction or production path changes.
+
+Complete replacement Tests: Extend `CorpusManifestTests`,
+`LoaderGraphTests`, `BytePartitionTests` and `HoldoutSealTests` to cover the
+exact 176-path inventory, twelve class counts, four denominators, 70 admissions
+and 25 operation references; the Anamnesis demo's exact path, size, digest,
+owner and source span; a second fixed-point pass with no addition; exact
+duplicate and partition closure; source-span and manifest reachability
+equality; and the exact replacement cohort, 33 holdout paths, byte floors,
+disjointness, unchanged seed, unopened seal and forbidden answer fields.
+
+Add scenario guards that independently reconstruct each route and condition
+vector; require complete repository, isolated Agent Skills and standalone
+preludes; prove one Kronos target and one Ariadne operation per invocation;
+reject sibling target or operation unions, unknown conditions, wildcard
+conditional leakage, fragment roots, cross-runtime selection and a potential
+edge with no witnessing scenario. Add runtime and schema cases for empty paths,
+`.`, `..`, `a/.`, `a/..`, `a//b`, `a/`, absolute paths, backslashes, controls,
+non-ASCII input and 1,024/1,025-byte bounds, while retaining every prior JSON,
+Git, process, output-alias, stale-source and race guard. Run these exact
+commands from the repository root under the pinned runtime:
+
+```text
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py build-baseline
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-corpus --manifest tests/fixtures/instruction-architecture/corpus-manifest.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-loader --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --graph tests/fixtures/instruction-architecture/loader-graph.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-partition --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-seal --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
+uv run --no-project --python 3.14.6 python -m unittest tests.test_instruction_architecture.CorpusManifestTests tests.test_instruction_architecture.BytePartitionTests tests.test_instruction_architecture.LoaderGraphTests tests.test_instruction_architecture.HoldoutSealTests -v
+uv run --no-project --python 3.14.6 python scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+cmp -s .hexaemeron/runbook.md docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/instruction-architecture/study.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/instruction-architecture/study.md docs/instruction-architecture/runbook.md docs/instruction-architecture/corpus-reconciliation.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+uv run --no-project --python 3.14.6 python plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Run the four verifiers twice and require byte-identical stdout. After
+`build-baseline`, require the five records, artifact inventory and
+reconciliation to match the committed bytes. For an audit repair, run
+`uv run --no-project --python 3.14.6 python tests/run_tests.py --elenchus-report .elenchus/fiat-1046-step-1.json`;
+require schema `elenchus.unittest.v1`, and report an infrastructure-failed
+fixture overlay as inconclusive rather than relabelling a supplementary guard
+run.
+**Why.** Audit round 6 found one operative Anamnesis document outside the
+receipted fixed point, which made the unopened holdout miss its byte floor. It
+also proved that route-by-skill scenarios still activated impossible branch
+unions and that schema/runtime path handling admitted non-canonical aliases or
+disagreed on terminal traversal and Unicode length. The replacement repairs
+those source, sampling and identity predicates before any candidate or paid
+evaluation exists.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.

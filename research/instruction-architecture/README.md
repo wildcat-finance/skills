@@ -28,10 +28,13 @@ with lazy fetch, global and system configuration, prompts and ambient
 environment disabled. writes use a same-directory temporary file, `fsync`,
 atomic replacement and a complete reread.
 
-the 93 declared scenarios are 31 selectable canonical skills across three
-actual host routes: repository checkout, isolated Agent Skills and standalone
-plugin. each closure starts at that route's entry, binds one selected plugin
-runtime and skill, and follows only source-directed workflow edges.
+the 231 declared scenarios cover the 93 base combinations of 31 selectable
+canonical skills and three actual host routes: repository checkout, isolated
+Agent Skills and standalone plugin. each closure starts at that route's entry,
+binds one selected plugin runtime and skill plus a closed condition vector, and
+follows only matching source-directed workflow edges. every Ariadne scenario
+chooses one operation; every Kronos scenario chooses one target and dispatches
+it through Fiat.
 
 the holdout seal names membership and case-slot classes, but contains no task,
 answer, scorer key or model output. do not add those fields before the frozen

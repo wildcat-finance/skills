@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -29,11 +30,59 @@ SCHEMA = ROOT / "research/instruction-architecture/schemas/source-bound-v1.schem
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "9edd0a06ae72dd1b9108ee47c0514ae70edc577e0d62a0603585a99455d96e7d"
+    "7b909896fcef2b9732e2a1bc057c2a44403e880122db16284586bc7ab8e94b30"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "9c6144a1b819b6ce04289722836a38d694770a10638af59afd6d147970e635f9"
+    "ca37cc1dae5c33a7ddc89065e749aec0fe835053c6cdeb39487f2fe60a22d82f"
 )
+
+EXPECTED_OPERATION_REFERENCES = {
+    "docs/fiat-run-observation-binding-v1.md",
+    "plugins/alexandria/docs/runbook.md",
+    "plugins/alexandria/docs/study.md",
+    "plugins/alexandria/docs/usdc-interval-collector.md",
+    "plugins/anamnesis/docs/demo.md",
+    "plugins/ariadne/docs/capturing-a-dataset.md",
+    "plugins/ariadne/docs/capturing-a-grounded-agent.md",
+    "plugins/ariadne/docs/capturing-a-release.md",
+    "plugins/ariadne/docs/capturing-a-state-fixture.md",
+    "plugins/ariadne/docs/conformance.md",
+    "plugins/ariadne/docs/dataset.md",
+    "plugins/ariadne/docs/grounded-agent.md",
+    "plugins/ariadne/docs/solidity-release.md",
+    "plugins/ariadne/docs/state-fixture.md",
+    "plugins/lazarus/docs/chain-anchors.md",
+    "plugins/lazarus/docs/preservation-release.md",
+    "plugins/lazarus/docs/runbook.md",
+    "plugins/lazarus/docs/study.md",
+    "plugins/lemma/INVARIANTS.md",
+    "plugins/pandects/docs/applicability.md",
+    "plugins/pandects/docs/writing-a-law.md",
+    "plugins/pandects/integrations/wildcat/APPLICABILITY.md",
+    "plugins/probitas/docs/adding-a-venue.md",
+    "plugins/tabularium/docs/adding-an-adapter.md",
+    "plugins/tabularium/docs/release-policy.md",
+}
+
+EXPECTED_ARIADNE_OPERATIONS = {
+    "operation:ariadne:capture-dataset": {
+        "plugins/ariadne/docs/capturing-a-dataset.md",
+        "plugins/ariadne/docs/dataset.md",
+    },
+    "operation:ariadne:capture-grounded-agent": {
+        "plugins/ariadne/docs/capturing-a-grounded-agent.md",
+        "plugins/ariadne/docs/grounded-agent.md",
+    },
+    "operation:ariadne:capture-release": {
+        "plugins/ariadne/docs/capturing-a-release.md",
+        "plugins/ariadne/docs/solidity-release.md",
+    },
+    "operation:ariadne:capture-state-fixture": {
+        "plugins/ariadne/docs/capturing-a-state-fixture.md",
+        "plugins/ariadne/docs/state-fixture.md",
+    },
+    "operation:ariadne:conformance": {"plugins/ariadne/docs/conformance.md"},
+}
 
 
 def load_module():
@@ -102,7 +151,7 @@ class CorpusManifestTests(unittest.TestCase):
     def test_source_directed_admission_is_exact_and_anchored(self):
         documents = {item["path"]: item for item in self.manifest["documents"]}
         admissions = AI._additional_metadata()
-        self.assertEqual(len(admissions), 69)
+        self.assertEqual(len(admissions), 70)
         self.assertEqual(
             {
                 item["path"]
@@ -111,7 +160,7 @@ class CorpusManifestTests(unittest.TestCase):
             },
             set(admissions),
         )
-        self.assertEqual(sum(documents[path]["bytes"] for path in admissions), 523_721)
+        self.assertEqual(sum(documents[path]["bytes"] for path in admissions), 526_326)
         self.assertEqual(
             {
                 class_name: sum(
@@ -128,7 +177,7 @@ class CorpusManifestTests(unittest.TestCase):
                 "frontier_policy": 1,
                 "identity_contract": 1,
                 "identity_roster": 1,
-                "operation_reference": 24,
+                "operation_reference": 25,
                 "overlay_contract": 1,
                 "router_install_contract": 1,
                 "worker_prompt": 14,
@@ -143,6 +192,87 @@ class CorpusManifestTests(unittest.TestCase):
                     metadata["source_path"], metadata["source_needle"]
                 )
                 self.assertGreater(evidence["end"], evidence["start"])
+
+    def test_operation_reference_closure_and_anamnesis_anchor_are_independent(self):
+        operations = {
+            item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "operation_reference"
+        }
+        self.assertEqual(operations, EXPECTED_OPERATION_REFERENCES)
+        demo = next(
+            item
+            for item in self.manifest["documents"]
+            if item["path"] == "plugins/anamnesis/docs/demo.md"
+        )
+        self.assertEqual(demo["bytes"], 2_605)
+        self.assertEqual(
+            demo["sha256"],
+            "b523e14fc000502dfc4aafc8732a77091803ab25b7e9ab990ff234f9702673cb",
+        )
+        self.assertEqual(
+            demo["canonical_owner"],
+            "plugins/anamnesis/skills/anamnesis/SKILL.md",
+        )
+        evidence = AI._evidence(
+            "plugins/anamnesis/skills/anamnesis/SKILL.md", "../../docs/demo.md"
+        )
+        self.assertEqual((evidence["start"], evidence["end"]), (7_636, 7_654))
+        self.assertEqual(
+            evidence["span_sha256"],
+            "9dfc4f04bae4c35cad57e454454283642f1676e2bb1e75178e1d83da81b793bc",
+        )
+
+    def test_independent_markdown_fixed_point_detects_an_unclassified_directive(self):
+        derived = AI._derive_operative_markdown_targets(self.manifest["documents"])
+        manifest_paths = {item["path"] for item in self.manifest["documents"]}
+        self.assertEqual(derived["occurrences"], 298)
+        self.assertEqual(len(derived["targets"]), 112)
+        self.assertEqual(len(derived["excluded"]), 127)
+        self.assertIn("plugins/anamnesis/docs/demo.md", derived["targets"])
+        self.assertFalse(set(derived["targets"]) - manifest_paths)
+
+        without_demo = [
+            item
+            for item in self.manifest["documents"]
+            if item["path"] != "plugins/anamnesis/docs/demo.md"
+        ]
+        second_pass = AI._derive_operative_markdown_targets(without_demo)
+        self.assertIn(
+            "plugins/anamnesis/docs/demo.md",
+            set(second_pass["targets"]) - {item["path"] for item in without_demo},
+        )
+
+        source = "plugins/anamnesis/skills/anamnesis/SKILL.md"
+        synthetic = {
+            "plugins/anamnesis/docs/new-operation.md",
+            "plugins/anamnesis/docs/new-runbook.md",
+        }
+        repurposed = "plugins/pandects/docs/catalogue.md"
+        changed_source = AI._source_blob(source) + (
+            b"\nRead [the new operation](../../docs/new-operation.md) before acting.\n"
+            b"Read [the new runbook](../../docs/new-runbook.md) before acting.\n"
+            b"Read [the catalogue](../../../pandects/docs/catalogue.md) before acting.\n"
+        )
+        changed = AI._derive_operative_markdown_targets(
+            self.manifest["documents"],
+            source_overrides={source: changed_source},
+            tree_paths={*AI._frozen_tree_paths(), *synthetic},
+        )
+        self.assertLessEqual(
+            synthetic | {repurposed}, set(changed["targets"]) - manifest_paths
+        )
+        self.assertFalse(
+            any(
+                item["target"] in synthetic | {repurposed}
+                for item in changed["excluded"]
+            )
+        )
+
+    def test_independent_fixed_point_deriver_is_required(self):
+        self.assertTrue(
+            callable(getattr(AI, "_derive_operative_markdown_targets", None))
+        )
 
     def test_same_repository_url_requires_exact_repository_ref_and_path(self):
         self.assertEqual(
@@ -651,6 +781,49 @@ class CorpusManifestTests(unittest.TestCase):
             )
         )
 
+    def test_runtime_and_schema_share_the_canonical_path_language(self):
+        schema = load(SCHEMA)["$defs"]["path"]
+        pattern = re.compile(schema["pattern"])
+
+        def schema_accepts(value: str) -> bool:
+            return (
+                schema["minLength"] <= len(value) <= schema["maxLength"]
+                and pattern.search(value) is not None
+            )
+
+        accepted = ("a", "a b", "a/b", "a" * 1_024)
+        refused = (
+            "",
+            ".",
+            "..",
+            "a/.",
+            "a/..",
+            "a//b",
+            "a/",
+            "/a",
+            "a\\b",
+            "a\x00b",
+            "a\x1fb",
+            "a\n",
+            "a\r",
+            "a\x7fb",
+            "é",
+            "a" * 1_025,
+        )
+        for specimen in accepted:
+            with self.subTest(accepted=repr(specimen[:32])):
+                self.assertEqual(AI._safe_relative(specimen).as_posix(), specimen)
+                self.assertTrue(schema_accepts(specimen))
+        for specimen in refused:
+            with self.subTest(refused=repr(specimen[:32])):
+                with self.assertRaises(AI.Refusal):
+                    AI._safe_relative(specimen)
+                self.assertFalse(schema_accepts(specimen))
+
+    def test_runtime_refuses_a_noncanonical_path_before_normalisation(self):
+        with self.assertRaises(AI.Refusal):
+            AI._safe_relative("a//b")
+
     def test_study_copy_changes_only_relative_link_depth(self):
         shipped = STUDY.read_bytes()
         self.assertEqual(shipped.count(b"](../../plugins/"), 10)
@@ -667,7 +840,7 @@ class BytePartitionTests(unittest.TestCase):
         cls.sources = {item["path"]: item for item in cls.manifest["documents"]}
 
     def test_every_range_is_ordered_gapless_and_digest_bound(self):
-        self.assertEqual(len(self.partition["files"]), 175)
+        self.assertEqual(len(self.partition["files"]), 176)
         for file_record in self.partition["files"]:
             source = AI._source_blob(file_record["path"])
             cursor = 0
@@ -686,9 +859,19 @@ class BytePartitionTests(unittest.TestCase):
             )
 
     def test_partition_totals_reconcile(self):
-        self.assertEqual(sum(self.partition["totals"].values()), 2_069_258)
+        self.assertEqual(sum(self.partition["totals"].values()), 2_071_863)
         self.assertEqual(self.partition["unsupported_operative_bytes"], 0)
         self.assertEqual(self.partition["totals"]["generated_duplicate"], 471_444)
+        self.assertEqual(
+            self.partition["totals"],
+            {
+                "exact_literal_or_evidence": 127_020,
+                "generated_duplicate": 471_444,
+                "governed_operative_semantics": 1_473_399,
+                "human_only_explanation_or_rationale": 0,
+                "unsupported_or_unknown": 0,
+            },
+        )
 
     def test_only_generated_promise_copies_use_duplicate_class(self):
         generated = {
@@ -786,10 +969,18 @@ class LoaderGraphTests(unittest.TestCase):
 
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
-        self.assertEqual(len(self.graph["edges"]), 205)
-        self.assertEqual(len(self.graph["scenario_roots"]), 93)
-        self.assertEqual(len(self.graph["scenario_edges"]), 244)
+        self.assertEqual(len(self.graph["edges"]), 206)
+        self.assertEqual(len(self.graph["scenario_roots"]), 231)
+        self.assertEqual(len(self.graph["scenario_edges"]), 245)
         self.assertTrue(self.graph["constraints"]["complete_scenario_routes"])
+        self.assertTrue(self.graph["constraints"]["condition_vectors_closed"])
+        self.assertTrue(
+            self.graph["constraints"]["potential_edges_have_scenario_witnesses"]
+        )
+        self.assertTrue(self.graph["constraints"]["sibling_branches_are_exclusive"])
+        self.assertTrue(
+            self.graph["constraints"]["wildcard_scenario_conditions_forbidden"]
+        )
         for relation in [
             *self.graph["roots"],
             *self.graph["edges"],
@@ -918,7 +1109,7 @@ class LoaderGraphTests(unittest.TestCase):
         }
         validator = getattr(AI, "_validate_complete_scenarios", None)
         self.assertIsNotNone(validator)
-        with self.assertRaisesRegex(AI.Refusal, "wrong host route"):
+        with self.assertRaisesRegex(AI.Refusal, "invalid base binding|wrong host route"):
             validator(changed, skill_paths)
 
     def test_graph_refuses_fabricated_manifest_reachability(self):
@@ -945,7 +1136,7 @@ class LoaderGraphTests(unittest.TestCase):
         }
         self.assertLessEqual(references, inbound)
 
-    def test_all_69_admissions_have_exact_inbound_source_edges(self):
+    def test_all_70_admissions_have_exact_inbound_source_edges(self):
         edges = {
             (item["source"], item["target"]): item for item in self.graph["edges"]
         }
@@ -957,6 +1148,191 @@ class LoaderGraphTests(unittest.TestCase):
                     edge["evidence"],
                     AI._evidence(metadata["source_path"], metadata["source_needle"]),
                 )
+
+    def test_scenarios_bind_closed_conditions_without_wildcards(self):
+        roots = {item["id"]: item for item in self.graph["scenario_roots"]}
+        conditions = {
+            item["condition"]
+            for item in self.graph["scenario_edges"]
+            if item["condition"] is not None
+        }
+        self.assertEqual(
+            sum(not item["conditions"] for item in roots.values()), 87
+        )
+        self.assertTrue(
+            all(
+                item["conditions"]
+                for item in roots.values()
+                if item["selected_skill"] in {"ariadne", "kronos"}
+            )
+        )
+        for root in roots.values():
+            self.assertEqual(root["conditions"], sorted(set(root["conditions"])))
+            self.assertLessEqual(set(root["conditions"]), conditions)
+            self.assertIn(root["route"], {"agent-skills", "repository", "standalone"})
+        for edge in self.graph["scenario_edges"]:
+            self.assertNotIn("*", edge["active_scenarios"])
+            expected_scope = {
+                identifier
+                for identifier, root in roots.items()
+                if root["base_scenario"] in edge["eligible_base_scenarios"]
+                and (
+                    edge["condition"] is None
+                    or edge["condition"] in root["conditions"]
+                )
+            }
+            self.assertEqual(set(edge["active_scenarios"]), expected_scope)
+            if edge["condition"] is not None:
+                self.assertTrue(
+                    all(
+                        edge["condition"] in roots[identifier]["conditions"]
+                        for identifier in edge["active_scenarios"]
+                    )
+                )
+
+    def test_every_potential_edge_has_a_realizable_scenario_witness(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        for edge in self.graph["scenario_edges"]:
+            with self.subTest(edge=edge["id"]):
+                self.assertTrue(
+                    set(edge["active_scenarios"])
+                    & observed[edge["source"]]
+                    & observed[edge["target"]]
+                )
+
+    def test_kronos_and_ariadne_never_union_sibling_branches(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        reached = {
+            root["id"]: {
+                path
+                for path, scenarios in observed.items()
+                if root["id"] in scenarios
+            }
+            for root in self.graph["scenario_roots"]
+        }
+        kronos = "plugins/hexaemeron/skills/kronos/SKILL.md"
+        fiat = "plugins/hexaemeron/skills/fiat/SKILL.md"
+        targets = {
+            edge["target"]
+            for edge in self.graph["scenario_edges"]
+            if edge["source"] == kronos and edge["kind"] == "operation-branch"
+        }
+        ariadne_documents = set().union(*EXPECTED_ARIADNE_OPERATIONS.values())
+        ariadne_conditions = set(EXPECTED_ARIADNE_OPERATIONS)
+        for root in self.graph["scenario_roots"]:
+            paths = reached[root["id"]]
+            selected_targets = (paths & targets) - {fiat}
+            selected_operations = set(root["conditions"]) & ariadne_conditions
+            self.assertLessEqual(len(selected_operations), 1)
+            if root["selected_skill"] == "kronos":
+                self.assertEqual(len(selected_targets), 1)
+                self.assertIn(fiat, paths)
+            if root["selected_skill"] == "ariadne":
+                self.assertEqual(len(selected_operations), 1)
+                operation = next(iter(selected_operations))
+                self.assertEqual(
+                    paths & ariadne_documents,
+                    EXPECTED_ARIADNE_OPERATIONS[operation],
+                )
+        for selected in ("ariadne", "kronos"):
+            self.assertEqual(
+                {
+                    root["route"]
+                    for root in self.graph["scenario_roots"]
+                    if root["selected_skill"] == selected
+                },
+                {"agent-skills", "repository", "standalone"},
+            )
+
+    def test_scenario_validator_refuses_unknown_wildcard_uncovered_and_union(self):
+        router = ".agents/skills/promise-machine/SKILL.md"
+        skill_paths = {
+            AI._skill_name(item["path"]): item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "skill_contract" and item["path"] != router
+        }
+
+        unknown = copy.deepcopy(self.graph)
+        root = next(item for item in unknown["scenario_roots"] if item["conditions"])
+        root["conditions"].append("unknown")
+        root["conditions"].sort()
+        with self.assertRaisesRegex(AI.Refusal, "unknown condition"):
+            AI._validate_complete_scenarios(unknown, skill_paths)
+
+        wildcard = copy.deepcopy(self.graph)
+        wildcard["scenario_edges"][0]["active_scenarios"] = ["*"]
+        with self.assertRaisesRegex(AI.Refusal, "wildcard or unknown scope"):
+            AI._validate_complete_scenarios(wildcard, skill_paths)
+
+        uncovered = copy.deepcopy(self.graph)
+        edge = next(
+            item
+            for item in uncovered["scenario_edges"]
+            if item["source"] == "plugins/hexaemeron/agents/scribe.md"
+            and item["condition"] is None
+        )
+        unreachable_root = next(
+            item
+            for item in uncovered["scenario_roots"]
+            if item["selected_skill"] == "ariadne"
+        )
+        edge["eligible_base_scenarios"] = [unreachable_root["base_scenario"]]
+        edge["active_scenarios"] = [unreachable_root["id"]]
+        with self.assertRaisesRegex(AI.Refusal, "no realizable witness"):
+            AI._validate_complete_scenarios(uncovered, skill_paths)
+
+        union = copy.deepcopy(self.graph)
+        kronos = "plugins/hexaemeron/skills/kronos/SKILL.md"
+        branches = [
+            item
+            for item in union["scenario_edges"]
+            if item["source"] == kronos
+            and item["kind"] == "operation-branch"
+            and item["target"].endswith("/SKILL.md")
+            and item["target"]
+            not in {"plugins/hexaemeron/skills/fiat/SKILL.md"}
+            and item["condition"] is not None
+        ]
+        first, second = branches[:2]
+        identifier = first["active_scenarios"][0]
+        union_root = next(
+            item for item in union["scenario_roots"] if item["id"] == identifier
+        )
+        union_root["conditions"] = sorted(
+            {*union_root["conditions"], second["condition"]}
+        )
+        second["active_scenarios"] = sorted(
+            {*second["active_scenarios"], identifier}
+        )
+        with self.assertRaisesRegex(AI.Refusal, "not one dispatched target"):
+            AI._validate_complete_scenarios(union, skill_paths)
+
+        ariadne_union = copy.deepcopy(self.graph)
+        ariadne_root = next(
+            item
+            for item in ariadne_union["scenario_roots"]
+            if item["selected_skill"] == "ariadne"
+        )
+        current = set(ariadne_root["conditions"]) & set(EXPECTED_ARIADNE_OPERATIONS)
+        second_operation = min(set(EXPECTED_ARIADNE_OPERATIONS) - current)
+        ariadne_root["conditions"] = sorted(
+            {*ariadne_root["conditions"], second_operation}
+        )
+        for ariadne_edge in ariadne_union["scenario_edges"]:
+            if ariadne_edge["condition"] == second_operation:
+                ariadne_edge["active_scenarios"] = sorted(
+                    {*ariadne_edge["active_scenarios"], ariadne_root["id"]}
+                )
+        with self.assertRaisesRegex(AI.Refusal, "does not select one operation"):
+            AI._validate_complete_scenarios(ariadne_union, skill_paths)
 
     def test_recursive_frontier_and_workflow_closure_is_explicit(self):
         host_pairs = {
@@ -1040,7 +1416,18 @@ class HoldoutSealTests(unittest.TestCase):
             float(self.cohorts["holdout"]["unique_byte_ratio"]), 0.20
         )
         self.assertGreaterEqual(len(self.cohorts["development"]["logical_skills"]), 12)
-        self.assertEqual(len(self.cohorts["holdout"]["logical_skills"]), 5)
+        self.assertEqual(
+            self.cohorts["holdout"]["logical_skills"],
+            ["ariadne", "fizz", "fizz-sync", "hermes", "kronos"],
+        )
+        self.assertEqual(len(self.cohorts["holdout"]["paths"]), 33)
+        self.assertEqual(self.cohorts["holdout"]["unique_bytes"], 320_086)
+        self.assertEqual(self.cohorts["holdout"]["unique_byte_ratio"], "0.200001")
+        self.assertEqual(self.cohorts["development"]["unique_bytes"], 1_280_333)
+        self.assertEqual(
+            self.cohorts["development"]["unique_byte_ratio"], "0.799999"
+        )
+        self.assertEqual(self.cohorts["selection"]["seed"], AI.SELECTION_SEED)
 
     def test_development_covers_roots_tiers_constructs_and_deciles(self):
         development = set(self.cohorts["development"]["paths"])

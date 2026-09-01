@@ -2,9 +2,9 @@
 
 source: `a2b634d8e039af988bf30c8316defccf70071d8d`
 
-the framework-74 corpus contains 175 physical files and
-2,069,258 physical bytes. exact whole-file deduplication leaves
-158 files and 1,597,814 bytes. these are
+the framework-74 corpus contains 176 physical files and
+2,071,863 physical bytes. exact whole-file deduplication leaves
+159 files and 1,600,419 bytes. these are
 repository denominators, not prompt-size or semantic-compression claims.
 
 ## inventory
@@ -16,7 +16,7 @@ repository denominators, not prompt-size or semantic-compression claims.
 | `identity_contract` | 1 |
 | `identity_roster` | 1 |
 | `markdown_reference` | 38 |
-| `operation_reference` | 24 |
+| `operation_reference` | 25 |
 | `overlay_contract` | 1 |
 | `promise_machine_contract` | 18 |
 | `router_install_contract` | 1 |
@@ -31,7 +31,7 @@ deduplication. similar prose is not deduplicated.
 
 ## source-directed admissions
 
-the 69 paths below close the imperative and conditional agent-load directives
+the 70 paths below close the imperative and conditional agent-load directives
 that the original issue census omitted. each row binds the admitted class,
 condition, exact source bytes and source anchor at the frozen ref.
 
@@ -70,6 +70,7 @@ condition, exact source bytes and source anchor at the frozen ref.
 | `operation_reference` | `operation-branch` | `plugins/alexandria/docs/runbook.md` | 10440 | `plugins/alexandria/skills/alexandria/SKILL.md:12097-12118` |
 | `operation_reference` | `operation-branch` | `plugins/alexandria/docs/study.md` | 36040 | `plugins/alexandria/skills/alexandria/SKILL.md:12028-12047` |
 | `operation_reference` | `operation-branch` | `plugins/alexandria/docs/usdc-interval-collector.md` | 9008 | `plugins/alexandria/skills/alexandria/SKILL.md:11397-11434` |
+| `operation_reference` | `operation-branch` | `plugins/anamnesis/docs/demo.md` | 2605 | `plugins/anamnesis/skills/anamnesis/SKILL.md:7636-7654` |
 | `operation_reference` | `operation-branch` | `plugins/ariadne/docs/capturing-a-dataset.md` | 6549 | `plugins/ariadne/skills/ariadne/SKILL.md:6506-6539` |
 | `operation_reference` | `operation-branch` | `plugins/ariadne/docs/capturing-a-grounded-agent.md` | 5457 | `plugins/ariadne/skills/ariadne/SKILL.md:7865-7905` |
 | `operation_reference` | `operation-branch` | `plugins/ariadne/docs/capturing-a-release.md` | 5122 | `plugins/ariadne/skills/ariadne/SKILL.md:5707-5740` |
@@ -107,6 +108,13 @@ condition, exact source bytes and source anchor at the frozen ref.
 | `worker_prompt` | `worker-dispatch` | `plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md` | 5600 | `plugins/hexaemeron/skills/fizz/SKILL.md:13158-13185` |
 | `worker_prompt` | `worker-dispatch` | `plugins/hexaemeron/skills/fizz/agents/report-writer.md` | 8781 | `plugins/hexaemeron/skills/fizz/SKILL.md:42958-42981` |
 
+an independent second pass parses 298 existing local
+inline Markdown-link occurrences from every admitted source. after classifying
+127 historical-ledger, decision, example, evidence,
+reader-background and delivery-provenance occurrences, it adds
+0 paths. the admitted Anamnesis demo's only local
+descendant is specimen evidence, so the operative closure stops there.
+
 ## excluded links
 
 these representative links do not create loader edges. the classification is
@@ -123,13 +131,18 @@ source-bound rather than inferred from a file's presence.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 205
-host edges, plus 93 scenario roots and
-244 scenario edges. the scenario roots are the exact
-product of 31 selectable canonical skills and the repository, isolated Agent
-Skills and standalone-plugin host routes. each starts at its real host entry,
-loads only the selected plugin runtime and skill, and includes that workflow's
-source-directed descendants. every edge cites a source path, exact byte range,
+`loader-graph.json` records 19 roots and 206
+host edges, plus 231 scenario roots and
+245 scenario edges. the scenarios cover the exact 93
+base combinations of 31 selectable canonical skills and the repository,
+isolated Agent Skills and standalone-plugin host routes. 87 bases admit a
+zero-condition invocation; Ariadne and Kronos instead require an operation or
+target-plus-Fiat vector on all three routes. conditional roots carry one closed,
+sorted invocation vector. each starts at its real host entry, loads
+only the selected plugin runtime and skill, and includes only descendants whose
+conditions fire. no scenario edge uses a wildcard, every potential edge has a
+realizable witness, and sibling Kronos targets or Ariadne operations do not
+co-occur. every edge cites a source path, exact byte range,
 source digest and span digest. unconditional runtime loads, installed routes,
 identity checks, overlays, frontier gates, worker dispatches and operation
 branches remain distinct. manifest reachability is recomputed from those
@@ -147,9 +160,9 @@ human-only and no byte is treated as a saving through uncertainty.
 ## cohorts
 
 the development cohort holds 27
-logical skills and 1,278,250 exact-unique
+logical skills and 1,280,333 exact-unique
 bytes (0.799999). the sealed holdout holds
-five logical skills and 319,564 exact-unique
+five logical skills and 320,086 exact-unique
 bytes (0.200001). memberships are disjoint.
 the development set covers every shared root and runtime contract, all ten
 file-size deciles, authority tier, admitted document class and construct class
@@ -166,5 +179,8 @@ live source bytes before accepting an artefact. Git runs by one absolute
 system-owned executable with lazy fetch, global and system configuration,
 prompts and ambient environment disabled. a path, byte, digest, loader span,
 partition range, cohort member or commitment that drifts refuses with the
-failed predicate. current prompt and scenario-reachable denominators remain
+failed predicate. paths are canonical printable-ASCII POSIX relatives no longer
+than 1,024 bytes; aliases, traversal, empty segments, backslashes, controls and
+non-ASCII input refuse in both runtime and schema. current prompt and
+scenario-reachable denominators remain
 unmeasured until the later arm and case builders exist.

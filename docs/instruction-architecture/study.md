@@ -494,3 +494,69 @@ and denominators; only Step 1's exit and tests require replacement.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** The least fixed point established by the preceding amendment
+admits one more current operation contract. Anamnesis's supported `demo` and
+`verify-rebuild` path directs the agent to
+`plugins/anamnesis/docs/demo.md`; that document defines five refusal gates and
+the exact conformance commands, so it is operative instruction rather than an
+example, generated view, historical record or unavailable operation. It is a
+2,605-byte unique `operation_reference`, admitted through the exact
+`../../docs/demo.md` source span in Anamnesis's canonical skill contract. Its
+only local link is to excluded specimen evidence, so recursion stops there.
+
+The corrected closure is therefore 176 physical files and 2,071,863 bytes,
+with 159 exact-unique files and 1,600,419 bytes. It contains 25 operation
+references and 70 source-directed additions totalling 526,326 bytes; every
+other class count from the preceding amendment is unchanged. The reconciliation
+must enumerate the added Anamnesis path, its digest
+`b523e14fc000502dfc4aafc8732a77091803ab25b7e9ab990ff234f9702673cb`
+and source anchor, then prove that another fixed-point pass adds nothing.
+
+The source change invalidates the unopened holdout's byte gate: 319,564 of
+1,600,419 unique bytes is 0.199675, below the preregistered 20 percent floor.
+No holdout prompt, answer, scorer key or model output has been opened or
+created, so the same seed and unchanged deterministic selection method must be
+rerun before construction continues. It selects exactly `ariadne`, `fizz`,
+`fizz-sync`, `hermes` and `kronos`: 33 unique paths and 320,086 bytes
+(0.200001). Development contains the remaining 1,280,333 bytes (0.799999).
+The old cohort and seal are invalid source-bound artefacts, not observations;
+replace and reseal them atomically without reading or carrying answer-bearing
+material forward.
+
+Scenario reachability now means one realizable declared invocation, not a
+maximal union of every conditional edge a selected skill might ever traverse.
+Each scenario binds its host route, selected skill and the credential,
+operation, frontier, worker and nested-selection conditions that actually fire.
+Mutually exclusive operation or Kronos target branches cannot share one
+scenario merely because each is possible in isolation. The graph may retain
+the complete potential edge inventory, but a scenario's reachable-byte union
+and later complete-prompt denominator include only edges whose declared
+condition vector matches that invocation.
+
+All source-bound path strings use one canonical grammar: a non-empty printable
+ASCII POSIX relative path, at most 1,024 bytes, with no empty, `.` or `..`
+segment, backslash, control byte or trailing slash. The runtime and Draft
+2020-12 schema enforce the same structural language; aliases such as `.`,
+`a/.`, `a//b` and `a/`, traversal forms and non-ASCII overlength specimens
+refuse. This intentionally source-binds the grammar to the frozen all-ASCII
+corpus rather than leaving schema character counts looser than runtime UTF-8
+byte counts.
+
+The selected neutral workbench, immutable WAI1 and Noema controls, seven-model
+panel, model/provider gates, gross reservation cap and prohibition on
+production integration do not change.
+**Why.** Audit round 6 found one supported-operation document outside the
+receipted closure, proved that its bytes invalidate the sealed cohort floor,
+showed that route-by-skill scenarios still combined impossible conditional
+branches, and found non-canonical path aliases accepted by the runtime and
+schema. Keeping the prior corpus, seal or scenario denominator would make every
+later comparison source-incomplete or statistically mislabelled.
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected corpus, cohort,
+seal, scenario and path identities; only Step 1's exit and tests require
+replacement.
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
