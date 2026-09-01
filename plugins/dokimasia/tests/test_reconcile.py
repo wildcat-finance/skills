@@ -340,6 +340,74 @@ class BoundedReads(ReconcileCase):
         self.assertIn("not one JSON object", str(caught.exception))
 
 
+class MalformedRecords(ReconcileCase):
+    """A mistyped record is an ordinary mistake and must refuse by name.
+
+    Every other refusal in this plugin is named. Reaching a `KeyError` would
+    make this the one place a caller got a stack trace instead.
+    """
+
+    def test_an_inventory_item_missing_a_field_refuses_by_name(self):
+        broken = {"inventory_sha256": self.inventory["inventory_sha256"],
+                  "items": [{"kind": "route"}]}
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(
+                broken, self.workbook, reconcile.read_json(self.made["closed.json"])
+            )
+        self.assertIn("missing 'source'", str(caught.exception))
+
+    def test_a_workbook_case_missing_a_field_refuses_by_name(self):
+        broken = {"workbook_sha256": self.workbook["workbook_sha256"],
+                  "cases": [{"id": "ADM-01"}]}
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(
+                self.inventory, broken, reconcile.read_json(self.made["closed.json"])
+            )
+        self.assertIn("missing", str(caught.exception))
+
+    def test_a_record_with_no_collection_refuses_by_name(self):
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(
+                {"inventory_sha256": self.inventory["inventory_sha256"]},
+                self.workbook,
+                reconcile.read_json(self.made["closed.json"]),
+            )
+        self.assertIn("holds no items list", str(caught.exception))
+
+    def test_a_disposition_list_that_is_not_a_list_refuses_by_name(self):
+        declared = reconcile.read_json(self.made["closed.json"])
+        declared["dispositions"] = "nope"
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, self.workbook, declared)
+        self.assertIn("holds no dispositions list", str(caught.exception))
+
+    def test_a_disposition_entry_that_is_not_an_object_refuses_by_name(self):
+        declared = reconcile.read_json(self.made["closed.json"])
+        declared["dispositions"] = ["a string"]
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, self.workbook, declared)
+        self.assertIn("is not an object", str(caught.exception))
+
+    def test_the_command_refuses_rather_than_tracing_back(self):
+        import json as json_module
+        import subprocess
+
+        root = Path(self.tmp.name)
+        (root / "broken.json").write_text(json_module.dumps({
+            "inventory_sha256": "a" * 64, "items": [{"kind": "route"}],
+        }))
+        result = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "dokimasia.py"), "reconcile",
+             "--inventory", str(root / "broken.json"),
+             "--workbook", str(self.made["workbook.json"]),
+             "--dispositions", str(self.made["closed.json"])],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("refused", result.stderr)
+
+
 class ContractCheck(unittest.TestCase):
     def test_the_bundled_check_passes(self):
         self.assertEqual(reconcile.check(), [])

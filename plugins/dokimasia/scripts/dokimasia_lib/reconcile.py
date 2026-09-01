@@ -71,6 +71,33 @@ def read_json(path: Path, max_bytes: int = MAX_FILE_BYTES) -> dict:
     return loaded
 
 
+def _require_shape(record: dict, label: str, collection: str, fields: tuple) -> None:
+    """Refuse a record that is not the kind of record it was passed as.
+
+    The verb takes operator-supplied paths, so a mistyped or truncated file is
+    an ordinary mistake rather than an attack. Every other refusal in this
+    plugin is named, and reaching a `KeyError` here would be the one place a
+    caller got a stack trace instead.
+    """
+    entries = record.get(collection)
+    if not isinstance(entries, list):
+        raise ReconcileError(
+            f"the {label} record holds no {collection} list, so it is not "
+            f"a {label} record"
+        )
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            raise ReconcileError(
+                f"{label} {collection}[{index}] is not an object"
+            )
+        missing = [name for name in fields if name not in entry]
+        if missing:
+            raise ReconcileError(
+                f"{label} {collection}[{index}] is missing "
+                + ", ".join(repr(name) for name in missing)
+            )
+
+
 def scoped_set(inventory: dict, workbook: dict) -> list[dict]:
     """Every item a disposition is owed for, from both sides, in a fixed order.
 
@@ -78,6 +105,8 @@ def scoped_set(inventory: dict, workbook: dict) -> list[dict]:
     exists to find, and a case matching no item is work spent on something the
     inventory does not know about; neither can be answered by leaving it out.
     """
+    _require_shape(inventory, "inventory", "items", ("kind", "source"))
+    _require_shape(workbook, "workbook", "cases", ("id", "sheet", "row", "fields"))
     scoped: list[dict] = []
     for item in inventory.get("items", []):
         scoped.append({
@@ -165,6 +194,11 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
 
     assigned: dict[str, dict] = {}
     entries = declared.get("dispositions", [])
+    if not isinstance(entries, list):
+        raise ReconcileError("the disposition set holds no dispositions list")
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            raise ReconcileError(f"dispositions[{index}] is not an object")
     if len(entries) > MAX_DISPOSITIONS:
         raise ReconcileError(
             f"the disposition set holds more than the {MAX_DISPOSITIONS}-item cap"
