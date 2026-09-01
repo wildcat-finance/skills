@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.47.1"
+  version: "5.48.1"
 ---
 
 <p align="center">
@@ -600,6 +600,19 @@ but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
 the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base.
+If the pull request comes back already merged into `pr_base`, the step is
+adopted rather than refused. Two checks admit it: the recorded head has to
+still equal the pull request head, which the ordinary head check already
+settles first, and the merge commit has to be reachable from the recorded
+base. A merge still in its base is one this run did not perform; a merge that
+has left it means the base was rewritten underneath, which stays refused, and
+an unanswered graph query refuses as unknown rather than as a denial. The
+receipt carries an `early_merge` block naming the merge, the ref it was
+reachable from and that ref's observed tip, and the merge earns GitHub
+verification like any other commit the run receipts. Adoption is detected, not
+requested: a stacked step still refuses `--merge-commit`, so there is no flag
+to know about.
+
 Then, before packaging or acting on the next directive, save the complete step
 checkpoint in the fixed local checkpoint store exactly as the `Step checkpoint`
 section of [push-discipline.md](references/push-discipline.md) requires. This is
@@ -620,6 +633,16 @@ Before the run is recorded as integrated, every primary author its push
 receipts recorded has to remain attributable from the recorded merge, and the
 receipt records which mechanism carried it. The separately recorded committer
 is publication evidence, not an authorship identity in this merge check.
+A step adopted at push does not merge again. It is completed from its recorded
+adoption, and only when that adopted merge is reachable from the run branch: an
+early merge lands in the base the pull request targeted, which above the bottom
+of the stack is the step below, so a complete record is not evidence that the
+run branch carries the work. Whether it does depends on which of the two merges
+happened first. A step whose work is not there refuses, names where its merge
+did land, and says a replacement pull request is required; the closed pull
+request cannot supply the missing merge. `--merge-commit` must name the exact
+adopted merge, and the receipt records which mechanism satisfied the step.
+
 Retarget the next step's pull request onto the run branch, then merge this
 step's, and delete no branch here; receipt each merge before starting the next.
 Deleting a merged step's branch closes the pull request stacked on it, and a

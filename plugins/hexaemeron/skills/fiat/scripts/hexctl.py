@@ -377,6 +377,8 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.45.1",
         "fiat-v5.46.1",
         "fiat-v5.47.1",
+        "fiat-v5.48.1",
+        "fiat-v5.47.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
