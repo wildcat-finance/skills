@@ -1,0 +1,9 @@
+{
+  "candidate": "lint-in-place",
+  "command": "python3 .hexaemeron/reports/resolve.py verdict-location-independent",
+  "criterion": "verdict-location-independent",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

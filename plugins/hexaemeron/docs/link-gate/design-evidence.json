@@ -1,0 +1,254 @@
+{
+  "candidates": [
+    {
+      "id": "lint-in-place",
+      "summary": "Run the bundled Hypomnema link check on the candidate where it sits, before the digest is pinned."
+    },
+    {
+      "id": "require-location-independent",
+      "summary": "Refuse any link that is neither an absolute URL nor repository-relative, then resolve; the verdict reads the link rather than the artefact's path."
+    },
+    {
+      "id": "declare-only",
+      "summary": "Require the configured link-lint id in the receipt's --skills list, exactly as done_prose already requires its two ids."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "catches-observed-defect",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 1,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "verdict-location-independent",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 1,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "reviewed-span-bytes-touched",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "enforces-result-not-declaration",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 1,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "controller-surface-bytes",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "check-latency-ms",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "lint-in-place",
+      "criterion": "catches-observed-defect",
+      "report": {
+        "path": "reports/lint-in-place-catches-observed-defect.json",
+        "sha256": "bfb1638eb6f3e597a0b8da39d0c1139e24c52a713bd5f0d3a5fc001c3687e24e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "lint-in-place",
+      "criterion": "verdict-location-independent",
+      "report": {
+        "path": "reports/lint-in-place-verdict-location-independent.json",
+        "sha256": "bd300490bef217e009831682919b10f615e5a87da4b84dbd28bc6547986445dd"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "lint-in-place",
+      "criterion": "reviewed-span-bytes-touched",
+      "report": {
+        "path": "reports/lint-in-place-reviewed-span-bytes-touched.json",
+        "sha256": "b66de45f7c679bc1c75e78c41e7060e900235962e1dc132d9cc08cdffc5e47cc"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "lint-in-place",
+      "criterion": "enforces-result-not-declaration",
+      "report": {
+        "path": "reports/lint-in-place-enforces-result-not-declaration.json",
+        "sha256": "3fc0b86e4c518803414477c13df298de7849f04cffd56820bb16ac8247007e1a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "lint-in-place",
+      "criterion": "controller-surface-bytes",
+      "report": {
+        "path": "reports/lint-in-place-controller-surface-bytes.json",
+        "sha256": "725ebe90d8a073006161c568722edc27d3b872e3a2b4a4dc79d04ebcef108913"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "lint-in-place",
+      "criterion": "check-latency-ms",
+      "report": {
+        "path": "reports/lint-in-place-check-latency-ms.json",
+        "sha256": "99eb4366ca1682f3a6a5488b724cb1426d7a8caec4a625446cb959b69eccf4dd"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "require-location-independent",
+      "criterion": "catches-observed-defect",
+      "report": {
+        "path": "reports/require-location-independent-catches-observed-defect.json",
+        "sha256": "785b6f029b24395ba821d4854d65675de469b648031b23e708d361a638961070"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "require-location-independent",
+      "criterion": "verdict-location-independent",
+      "report": {
+        "path": "reports/require-location-independent-verdict-location-independent.json",
+        "sha256": "08ab70b4fd68f6abab662e5f19d7474c8ce3551271124d49173c78c4dc159db3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "require-location-independent",
+      "criterion": "reviewed-span-bytes-touched",
+      "report": {
+        "path": "reports/require-location-independent-reviewed-span-bytes-touched.json",
+        "sha256": "2f36c837f082e25eb597288e889ecbd125a6aace70a9ed7c54263150307d7663"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "require-location-independent",
+      "criterion": "enforces-result-not-declaration",
+      "report": {
+        "path": "reports/require-location-independent-enforces-result-not-declaration.json",
+        "sha256": "0a5ce2042beec482a56ff025bb1f51b2bba11af73e24bf17b847ac3ed48d863c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "require-location-independent",
+      "criterion": "controller-surface-bytes",
+      "report": {
+        "path": "reports/require-location-independent-controller-surface-bytes.json",
+        "sha256": "7340cf0ae9a3b4eb9e1e619dfd46404b113fe468ee41d1a880d04431b645308a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "require-location-independent",
+      "criterion": "check-latency-ms",
+      "report": {
+        "path": "reports/require-location-independent-check-latency-ms.json",
+        "sha256": "4515cb8f97110baeac83d78a9a28b11ca2a2004ec2c1525534168a5e26b75d61"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declare-only",
+      "criterion": "catches-observed-defect",
+      "report": {
+        "path": "reports/declare-only-catches-observed-defect.json",
+        "sha256": "0cca19227fa8cf2aea313a5353dce078f8056abab51002f41f17427db05ed042"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "declare-only",
+      "criterion": "verdict-location-independent",
+      "report": {
+        "path": "reports/declare-only-verdict-location-independent.json",
+        "sha256": "be4ef4b0608508e0ee9e68f5473cc9433928ff96022d02789074e1c1eb51e7aa"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "declare-only",
+      "criterion": "reviewed-span-bytes-touched",
+      "report": {
+        "path": "reports/declare-only-reviewed-span-bytes-touched.json",
+        "sha256": "9d94eca96d79a6f44f0e68a49ad87ee3592b48621504800a1198aced95688f70"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declare-only",
+      "criterion": "enforces-result-not-declaration",
+      "report": {
+        "path": "reports/declare-only-enforces-result-not-declaration.json",
+        "sha256": "802a35798313cc6b194c656eb0f43d6b3f6a0bfec4adcbaf701b088a1bf0f0af"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "declare-only",
+      "criterion": "controller-surface-bytes",
+      "report": {
+        "path": "reports/declare-only-controller-surface-bytes.json",
+        "sha256": "4349425e080d9ea4a9cc95ca414c06ee0a29f5e9cb1702b6559ec56bc613c685"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declare-only",
+      "criterion": "check-latency-ms",
+      "report": {
+        "path": "reports/declare-only-check-latency-ms.json",
+        "sha256": "8da65295833fa1842c3b0130fc194f1ecd9f338146d7fd8ea95d31dbd2e8b2ac"
+      },
+      "state": "pass"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "require-location-independent",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
