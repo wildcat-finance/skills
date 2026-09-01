@@ -2089,7 +2089,7 @@
       "reason": "drafted from the compiled page route at src/app/[locale]/profile/borrower/[address]/page.tsx; no reviewed case cites it"
     }
   ],
-  "generated_by": "1.1.0",
+  "generated_by": "2.1.0",
   "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
   "schema": "dokimasia-dispositions/v1",
   "workbook_sha256": "21493992f97e97124ccd0f8170cc447c44f204c09c3b29f2953a9bb938dd2eba"
