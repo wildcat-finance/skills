@@ -105,6 +105,18 @@ class StatusBlockTests(unittest.TestCase):
         self.assertIsNone(span)
         self.assertTrue(any("closed before it opened" in fault for fault in faults), faults)
 
+    def test_a_stray_closer_after_a_closed_block_is_refused(self):
+        """The rule holds past the first block, not only before it.
+
+        An unmatched delimiter left in a body is the shape a half-finished edit
+        leaves behind, and reporting it clean tells the editor the opposite.
+        """
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nOne.\n<!-- status:end -->\n\nProse.\n"
+            "<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("closed before it opened" in fault for fault in faults), faults)
+
     def test_a_control_character_in_the_block_is_refused(self):
         """Matching the carryover row reader, which refuses them by name."""
         span, faults = self.span(with_status(

@@ -4484,7 +4484,8 @@ def status_block_span(
     """
     opened = closed = None
     faults: list[str] = []
-    for number, physical in enumerate(_unfenced_markdown_lines(text), start=1):
+    lines = _unfenced_markdown_lines(text)
+    for number, physical in enumerate(lines, start=1):
         line = physical.rstrip("\r\n").strip()
         if line == STATUS_BLOCK_START:
             if opened is not None:
@@ -4494,12 +4495,14 @@ def status_block_span(
                 ]
             opened = number
         elif line == STATUS_BLOCK_END:
-            if opened is None:
+            # An unmatched closer is refused wherever it sits, including after a
+            # block that already closed. A body carrying one is mid-edit, and
+            # reporting it clean tells the editor the opposite.
+            if opened is None or closed is not None:
                 return None, [
                     f"{label} has a status block closed before it opened"
                 ]
-            if closed is None:
-                closed = number
+            closed = number
     if opened is None:
         return None, []
     if closed is None:
@@ -4507,7 +4510,7 @@ def status_block_span(
             f"{label} opens a status block that is never closed, so the rest of "
             f"the body would be read as its content"
         ]
-    content = _unfenced_markdown_lines(text)[opened:closed - 1]
+    content = lines[opened:closed - 1]
     for offset, physical in enumerate(content, start=opened + 1):
         if _contains_nonprinting_character(physical.rstrip("\r\n")):
             faults.append(
