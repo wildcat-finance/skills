@@ -130,3 +130,19 @@ Elenchus verdict: guarded
 | S3-R4-01 | medium | plugins/dokimasia/skills/dokimasia/SKILL.md | Rounds 1 to 3 added five refusals to the reader and left the promise that declares them untouched, so the `Refuses` clause named nine conditions while the code enforced fourteen. Drift in this direction reads as harmless because nothing fails: the code is stricter than its contract. It is not harmless, because the clause is what a reader consults to learn which inputs the skill turns away, and once it is known to be incomplete it stops being the thing the code can be checked against. Fixed by naming all five, and by moving the Promise, Evidence and Boundary clauses with them so the promise states the per-sheet accounting, the evidence records that the caps measure bytes delivered rather than bytes declared, and the boundary states that the accounting does not establish a sheet met the right condition. | fixed in d3dbc12c |
 
 Leads not pursued: the canonical digest covers the cases and not the per-sheet accounting, so two records with identical cases and different exclusion reasons carry the same digest. The digest's scope is stated in the schema description and pinned by the design lock, so narrowing or widening it is not this step's to do; the accounting is committed with the record and moves under the record's own review. A shared-string table larger than the case count is still read in full before any row resolves, bounded by the member cap. The status and source vocabularies remain unpinned, which belongs to the step that reconciles.
+
+## Step 3, round 5 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: workbook-bytes=reviewed; workbook-lineage=reviewed; cap-exhaustion=reviewed; path-traversal=reviewed; partial-write=reviewed; evidence-digest-binding=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; inventory-fidelity=not-applicable; router-corpus-drift=not-applicable; disposition-closure=not-applicable
+
+Not checked: the same negative space as the earlier rounds; no reconciliation code exists, the reader was exercised against one producing application's output, the status and source vocabularies are still counted as written rather than validated, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the four accepted items stand unchanged. Two carry forward to later steps and are named here so neither is lost. The skill's `EVOLUTION.md` ledger still records the step 1 frontier and names the step 2 inventory compile as its next Fiat job, and `README.md` mirrors both; step 5 owns those files by its runbook Files clause and owes the update when the version ships, so this is not a step 3 defect. The status and source vocabularies observed in the reviewed workbook remain unpinned, so a renamed status would import cleanly and reconcile differently; that belongs to the step that reconciles. The canonical digest still covers the cases and not the per-sheet accounting, which the schema description states and the design lock pins.
