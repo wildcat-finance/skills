@@ -198,7 +198,7 @@ source-bound rather than inferred from a file's presence.
 
 `loader-graph.json` records 19 roots and 324
 host edges, plus 2595 scenario roots and
-325 scenario edges and 12
+329 scenario edges and 12
 reference-only records. `invocation-profiles.json` contains exactly
 519 normalized, source-owned bounded
 operation profiles across all 31 selectable skills. each profile expands to
@@ -242,9 +242,12 @@ the development set covers every shared root and runtime contract, all ten
 file-size deciles, authority tier, admitted document class and construct class
 recorded in `cohorts.json`.
 
-`holdout-seal.json` commits the selection method, seed, membership and 16-slot
-case envelope. it contains no prompt, expected answer, scorer key or model
-output. later work may open that envelope once; Step 1 does not score it.
+`holdout-seal.json` commits the selection method, seed, membership, 16-slot
+case envelope, invocation-profile identity
+`8bfb56c6aa0b440ed6f072f6468844b750f176b0ad24b68be3b5e1134afb1501` and loader-graph identity
+`e28717bb28bb50630369ca2dc9fe161d603e0b33f32b1bf2e37a3c5af2409f9c`. it contains no prompt, expected answer, scorer key
+or model output. later work may open that envelope once; Step 1 does not score
+it.
 
 ## refusal boundary
 

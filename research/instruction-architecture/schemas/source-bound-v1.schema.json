@@ -417,12 +417,14 @@
     "holdoutSeal": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["case_envelope_sha256", "closed_future_case_envelope", "cohorts_sha256", "commitment_sha256", "manifest_sha256", "membership", "membership_sha256", "opened", "schema", "selection_seed", "source_ref"],
+      "required": ["case_envelope_sha256", "closed_future_case_envelope", "cohorts_sha256", "commitment_sha256", "invocation_profiles_sha256", "loader_graph_sha256", "manifest_sha256", "membership", "membership_sha256", "opened", "schema", "selection_seed", "source_ref"],
       "properties": {
         "case_envelope_sha256": {"$ref": "#/$defs/sha256"},
         "closed_future_case_envelope": {"$ref": "#/$defs/caseEnvelope"},
         "cohorts_sha256": {"$ref": "#/$defs/sha256"},
         "commitment_sha256": {"$ref": "#/$defs/sha256"},
+        "invocation_profiles_sha256": {"$ref": "#/$defs/sha256"},
+        "loader_graph_sha256": {"$ref": "#/$defs/sha256"},
         "manifest_sha256": {"$ref": "#/$defs/sha256"},
         "membership": {"$ref": "#/$defs/membership"},
         "membership_sha256": {"$ref": "#/$defs/sha256"},

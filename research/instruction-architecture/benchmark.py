@@ -123,7 +123,7 @@ EXPECTED_PROFILE_COUNTS = {
     "x-ray": 1,
 }
 EXPECTED_PROFILE_PROJECTION_SHA256 = (
-    "8029f1ea22f6ea995712b2e177e81843cfd2983c410790455873bad9d8e0664d"
+    "b61e5c270f9e5eede8d966d857888a24623f014f47584e7ec42df36ca1bdb31e"
 )
 
 FRONTIER_SKILLS = (
@@ -1613,6 +1613,144 @@ def _evidence(path: str, needle: str) -> dict[str, Any]:
     }
 
 
+def _profile_semantic_anchor(
+    selected_skill: str, branch_state: tuple[str, ...], obligation: str
+) -> tuple[str, str]:
+    """Resolve generic-path obligations to a source sentence naming the relation."""
+    selected = SELECTABLE_SKILL_PATHS[selected_skill]
+    skill_by_path = {path: skill for skill, path in SELECTABLE_SKILL_PATHS.items()}
+
+    if obligation.endswith("/EVOLUTION.md"):
+        selected_evolution = str(PurePosixPath(selected).with_name("EVOLUTION.md"))
+        if obligation == selected_evolution:
+            return selected, "[EVOLUTION.md](EVOLUTION.md)"
+        if selected_skill != "kronos":
+            raise Refusal("profile frontier relation escapes Kronos")
+        return (
+            selected,
+            "Walk the whole scope and find every `EVOLUTION.md` beneath it, descending\n"
+            "   into each plugin's own skills directory.",
+        )
+
+    if not obligation.endswith("/SKILL.md") or obligation not in skill_by_path:
+        raise Refusal("profile semantic anchor received a non-skill path")
+    target_skill = skill_by_path[obligation]
+
+    if selected_skill == "kronos":
+        dispatch = branch_state[-1]
+        if not dispatch.startswith("dispatch-"):
+            raise Refusal("profile Kronos relation escapes dispatch")
+        if target_skill not in {"fiat", dispatch.removeprefix("dispatch-")}:
+            raise Refusal("profile Kronos dispatch target drift")
+        return (
+            selected,
+            "Read the selected skill's canonical instructions, its ledger, and Fiat's\n"
+            "   `SKILL.md`.",
+        )
+
+    if selected_skill == "fiat":
+        direct = {
+            name: f"[{name}](../{name}/SKILL.md)"
+            for name in (
+                "protasis",
+                "phylax",
+                "ephoros",
+                "metron",
+                "elenchus",
+                "hypomnema",
+            )
+        }
+        if target_skill in direct:
+            return selected, direct[target_skill]
+        if target_skill == "brevitas":
+            return (
+                "plugins/hexaemeron/agents/scribe.md",
+                "Where an artefact is engineering review, audit, gas, protocol-property, or\n"
+                "specification commentary, apply Brevitas after the vocabulary and register\n"
+                "passes without deleting evidence.",
+            )
+        if target_skill == "hermes":
+            return (
+                "plugins/hexaemeron/agents/mason.md",
+                "Hermes owns Solidity gas. Do not silently import a sibling's job into the step.",
+            )
+        if target_skill == "fizz-sync":
+            return (
+                SELECTABLE_SKILL_PATHS["elenchus"],
+                "When the fix touched contracts, run `fizz-sync` first.",
+            )
+        if target_skill == "fizz":
+            return (
+                "plugins/hexaemeron/agents/warden.md",
+                "`fizz`\nis in the suite, follow `<plugin-root>/skills/fizz/SKILL.md`",
+            )
+        if target_skill in {"x-ray", "solidity-auditor"}:
+            return (
+                "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+                "`x-ray` pass first, then `solidity-auditor`. Both are vendored under\n"
+                "   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read\n"
+                "   each SKILL.md and follow\n"
+                "   it.",
+            )
+        if target_skill == "imprimatur":
+            if branch_state[0] == "prose":
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                    '`python3 "$PLUGIN_ROOT/skills/imprimatur/scripts/imprimatur.py" <file>`',
+                )
+            if branch_state[0] == "integrate-task-issue":
+                return (
+                    selected,
+                    "under the repository's Sapheneia,\n"
+                    "Imprimatur, Vulgate, Imprimatur publication order.",
+                )
+            return selected, "Run the `imprimatur` lint on each artefact before receipting it"
+        if target_skill == "vulgate":
+            return (
+                "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                "$PLUGIN_ROOT/skills/vulgate/SKILL.md",
+            )
+        if target_skill == "sapheneia":
+            if branch_state[0].startswith("audit-"):
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+                    "apply Sapheneia's bounded audit-record operation",
+                )
+            if branch_state[0] == "prose":
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                    "Sapheneia -> Imprimatur -> Vulgate -> Imprimatur",
+                )
+            return (
+                selected,
+                "under the repository's Sapheneia,\n"
+                "Imprimatur, Vulgate, Imprimatur publication order.",
+            )
+        raise Refusal(f"profile Fiat skill relation is unowned: {target_skill}")
+
+    if selected_skill == "fizz" and target_skill == "x-ray":
+        return (
+            selected,
+            "Resolve `{SKILL_PATH}/../x-ray/SKILL.md`, read it completely, and execute "
+            "its instructions against `{PROJECT_ROOT}`.",
+        )
+    if selected_skill == "elenchus" and target_skill == "fizz-sync":
+        return selected, "When the fix touched contracts, run `fizz-sync` first."
+    if selected_skill == "ephoros" and target_skill == "phylax":
+        return selected, "`phylax` sets this rule and this skill inherits it"
+    if selected_skill == "protasis" and target_skill in {
+        "ephoros",
+        "phylax",
+        "metron",
+        "elenchus",
+        "hypomnema",
+    }:
+        return selected, f"[{target_skill}](../{target_skill}/SKILL.md)"
+    raise Refusal(
+        f"profile skill relation is unowned: {selected_skill} -> {target_skill}"
+    )
+
+
 def _profile_obligation_evidence(
     selected_skill: str,
     branch_state: tuple[str, ...],
@@ -1623,6 +1761,11 @@ def _profile_obligation_evidence(
     selected = SELECTABLE_SKILL_PATHS[selected_skill]
     if obligation == selected:
         evidence = _evidence(selected, f"name: {selected_skill}")
+    elif obligation.endswith(("/SKILL.md", "/EVOLUTION.md")):
+        source, needle = _profile_semantic_anchor(
+            selected_skill, branch_state, obligation
+        )
+        evidence = _evidence(source, needle)
     else:
         metadata = (
             _additional_metadata().get(obligation)
@@ -2492,6 +2635,8 @@ def _reference_link(
     owner: str, target: str, reachable: set[str]
 ) -> tuple[str, str] | None:
     target_path = PurePosixPath(target)
+    if target_path.name in {"SKILL.md", "EVOLUTION.md"}:
+        raise Refusal("generic path basename cannot prove a profile obligation")
     candidates: list[tuple[int, str, str]] = []
     for source in sorted(reachable):
         source_path = PurePosixPath(source)
@@ -3723,7 +3868,10 @@ def build_cohorts(manifest: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_holdout_seal(
-    manifest: dict[str, Any], cohorts: dict[str, Any]
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    profiles: dict[str, Any],
+    graph: dict[str, Any],
 ) -> dict[str, Any]:
     membership = {
         "logical_skills": cohorts["holdout"]["logical_skills"],
@@ -3743,6 +3891,8 @@ def build_holdout_seal(
         "source_ref": SOURCE_REF,
         "manifest_sha256": _artifact_digest(manifest),
         "cohorts_sha256": _artifact_digest(cohorts),
+        "invocation_profiles_sha256": _artifact_digest(profiles),
+        "loader_graph_sha256": _artifact_digest(graph),
         "selection_seed": SELECTION_SEED,
         "membership": membership,
         "membership_sha256": _sha256(_canonical_json(membership)),
@@ -3751,6 +3901,35 @@ def build_holdout_seal(
         "opened": False,
     }
     return {**body, "commitment_sha256": _sha256(_canonical_json(body))}
+
+
+def _validate_holdout_seal(
+    seal: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    profiles: dict[str, Any],
+    graph: dict[str, Any],
+) -> None:
+    """Recompute every sealed identity without trusting its commitment body."""
+    expected_fields = {
+        "manifest_sha256": _artifact_digest(manifest),
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "invocation_profiles_sha256": _artifact_digest(profiles),
+        "loader_graph_sha256": _artifact_digest(graph),
+    }
+    if any(seal.get(field) != digest for field, digest in expected_fields.items()):
+        raise Refusal("holdout seal input identity drift")
+    body = dict(seal)
+    commitment = body.pop("commitment_sha256", None)
+    if (
+        commitment != _sha256(_canonical_json(body))
+        or seal.get("opened") is not False
+    ):
+        raise Refusal("holdout commitment is open or inconsistent")
+    forbidden = set(seal["closed_future_case_envelope"]["forbidden_until_open"])
+    for slot in seal["closed_future_case_envelope"]["slots"]:
+        if forbidden & set(slot):
+            raise Refusal("sealed slot contains answer-bearing material")
 
 
 def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
@@ -3997,16 +4176,10 @@ def verify_seal(args: argparse.Namespace) -> bytes:
         raise Refusal("seal manifest is stale")
     expected_cohorts = build_cohorts(manifest)
     cohorts, _ = _verify_exact(args.cohorts, expected_cohorts, "cohorts")
-    expected_seal = build_holdout_seal(manifest, cohorts)
+    graph = build_loader_graph(manifest, profiles)
+    expected_seal = build_holdout_seal(manifest, cohorts, profiles, graph)
     seal, raw = _verify_exact(args.seal, expected_seal, "holdout seal")
-    body = dict(seal)
-    commitment = body.pop("commitment_sha256")
-    if _sha256(_canonical_json(body)) != commitment or seal["opened"] is not False:
-        raise Refusal("holdout commitment is open or inconsistent")
-    forbidden = set(seal["closed_future_case_envelope"]["forbidden_until_open"])
-    for slot in seal["closed_future_case_envelope"]["slots"]:
-        if forbidden & set(slot):
-            raise Refusal("sealed slot contains answer-bearing material")
+    _validate_holdout_seal(seal, manifest, cohorts, profiles, graph)
     return _result(
         "verify-seal",
         raw,
@@ -4333,9 +4506,12 @@ the development set covers every shared root and runtime contract, all ten
 file-size deciles, authority tier, admitted document class and construct class
 recorded in `cohorts.json`.
 
-`holdout-seal.json` commits the selection method, seed, membership and 16-slot
-case envelope. it contains no prompt, expected answer, scorer key or model
-output. later work may open that envelope once; Step 1 does not score it.
+`holdout-seal.json` commits the selection method, seed, membership, 16-slot
+case envelope, invocation-profile identity
+`{_artifact_digest(profiles)}` and loader-graph identity
+`{_artifact_digest(graph)}`. it contains no prompt, expected answer, scorer key
+or model output. later work may open that envelope once; Step 1 does not score
+it.
 
 ## refusal boundary
 
@@ -4385,7 +4561,7 @@ def build_baseline(args: argparse.Namespace) -> bytes:
     graph = build_loader_graph(manifest, profiles)
     partition = build_partition(manifest)
     cohorts = build_cohorts(manifest)
-    seal = build_holdout_seal(manifest, cohorts)
+    seal = build_holdout_seal(manifest, cohorts, profiles, graph)
     values = (manifest, profiles, graph, partition, cohorts, seal)
     if len(values) != len(BASELINE_RECORD_NAMES):
         raise Refusal("baseline artifact inventory cardinality drift")

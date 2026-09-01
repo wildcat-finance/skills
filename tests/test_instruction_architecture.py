@@ -214,7 +214,7 @@ ORACLE_FIXED_INPUTS = {
     "plugins/synkrisis/references/rules-v1.json": "mandatory-executable",
 }
 ORACLE_EVIDENCE_PROJECTION_SHA256 = (
-    "2524257eb4997ce554c44b64acf5ea17c41ccd2335b3cd184f44d8497301e30a"
+    "7dc7da9b55456ac01cbbe1f3fd7d3c7f0462fabe0626b3583b6c85329ccd135c"
 )
 ORACLE_GIT_ENV = {
     "GIT_CONFIG_GLOBAL": os.devnull,
@@ -257,6 +257,180 @@ def oracle_source(path: str) -> bytes:
         raise AssertionError(f"independent oracle observed source drift: {path}")
     ORACLE_SOURCE_CACHE[path] = process.stdout
     return process.stdout
+
+
+def oracle_evidence(obligation: str, path: str, needle: str) -> dict:
+    """Build one test-owned frozen span without production evidence helpers."""
+    data = oracle_source(path)
+    encoded = needle.encode("utf-8")
+    start = data.find(encoded)
+    if start < 0:
+        raise AssertionError(f"independent semantic anchor is absent: {path}")
+    return {
+        "obligation": obligation,
+        "path": path,
+        "start": start,
+        "end": start + len(encoded),
+        "source_sha256": hashlib.sha256(data).hexdigest(),
+        "span_sha256": hashlib.sha256(encoded).hexdigest(),
+    }
+
+
+def oracle_semantic_anchor(profile: dict, obligation: str) -> tuple[str, str]:
+    """Name exact skill/frontier relations from the frozen source grammar."""
+    selected_skill = profile["selected_skill"]
+    selected = ORACLE_SKILL_PATHS[selected_skill]
+    skill_by_path = {path: skill for skill, path in ORACLE_SKILL_PATHS.items()}
+    if obligation == selected:
+        return selected, f"name: {selected_skill}"
+
+    if obligation.endswith("/EVOLUTION.md"):
+        selected_evolution = str(Path(selected).with_name("EVOLUTION.md")).replace(
+            os.sep, "/"
+        )
+        if obligation == selected_evolution:
+            return selected, "[EVOLUTION.md](EVOLUTION.md)"
+        if selected_skill != "kronos":
+            raise AssertionError("independent frontier relation escaped Kronos")
+        return (
+            selected,
+            "Walk the whole scope and find every `EVOLUTION.md` beneath it, descending\n"
+            "   into each plugin's own skills directory.",
+        )
+
+    if not obligation.endswith("/SKILL.md") or obligation not in skill_by_path:
+        raise AssertionError("independent semantic anchor received a non-skill path")
+    target_skill = skill_by_path[obligation]
+
+    if selected_skill == "kronos":
+        dispatch = profile["branch_state"][-1]
+        if not dispatch.startswith("dispatch-"):
+            raise AssertionError("independent Kronos relation escaped dispatch")
+        if target_skill not in {"fiat", dispatch.removeprefix("dispatch-")}:
+            raise AssertionError("independent Kronos dispatch target mismatch")
+        return (
+            selected,
+            "Read the selected skill's canonical instructions, its ledger, and Fiat's\n"
+            "   `SKILL.md`.",
+        )
+
+    if selected_skill == "fiat":
+        direct = {
+            name: f"[{name}](../{name}/SKILL.md)"
+            for name in (
+                "protasis",
+                "phylax",
+                "ephoros",
+                "metron",
+                "elenchus",
+                "hypomnema",
+            )
+        }
+        if target_skill in direct:
+            return selected, direct[target_skill]
+        if target_skill == "brevitas":
+            return (
+                "plugins/hexaemeron/agents/scribe.md",
+                "Where an artefact is engineering review, audit, gas, protocol-property, or\n"
+                "specification commentary, apply Brevitas after the vocabulary and register\n"
+                "passes without deleting evidence.",
+            )
+        if target_skill == "hermes":
+            return (
+                "plugins/hexaemeron/agents/mason.md",
+                "Hermes owns Solidity gas. Do not silently import a sibling's job into the step.",
+            )
+        if target_skill == "fizz-sync":
+            return (
+                ORACLE_SKILL_PATHS["elenchus"],
+                "When the fix touched contracts, run `fizz-sync` first.",
+            )
+        if target_skill == "fizz":
+            return (
+                "plugins/hexaemeron/agents/warden.md",
+                "`fizz`\nis in the suite, follow `<plugin-root>/skills/fizz/SKILL.md`",
+            )
+        if target_skill in {"x-ray", "solidity-auditor"}:
+            return (
+                "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+                "`x-ray` pass first, then `solidity-auditor`. Both are vendored under\n"
+                "   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read\n"
+                "   each SKILL.md and follow\n"
+                "   it.",
+            )
+        if target_skill == "imprimatur":
+            if profile["phase"] == "prose directive":
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                    '`python3 "$PLUGIN_ROOT/skills/imprimatur/scripts/imprimatur.py" <file>`',
+                )
+            if profile["id"] == "fiat:integrate-task-issue":
+                return (
+                    selected,
+                    "under the repository's Sapheneia,\n"
+                    "Imprimatur, Vulgate, Imprimatur publication order.",
+                )
+            return selected, "Run the `imprimatur` lint on each artefact before receipting it"
+        if target_skill == "vulgate":
+            return (
+                "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                "$PLUGIN_ROOT/skills/vulgate/SKILL.md",
+            )
+        if target_skill == "sapheneia":
+            if profile["phase"] in {"Solidity audit round", "non-Solidity audit round"}:
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+                    "apply Sapheneia's bounded audit-record operation",
+                )
+            if profile["phase"] == "prose directive":
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                    "Sapheneia -> Imprimatur -> Vulgate -> Imprimatur",
+                )
+            return (
+                selected,
+                "under the repository's Sapheneia,\n"
+                "Imprimatur, Vulgate, Imprimatur publication order.",
+            )
+        raise AssertionError(f"independent Fiat skill relation is unowned: {target_skill}")
+
+    if selected_skill == "fizz" and target_skill == "x-ray":
+        return (
+            selected,
+            "Resolve `{SKILL_PATH}/../x-ray/SKILL.md`, read it completely, and execute "
+            "its instructions against `{PROJECT_ROOT}`.",
+        )
+    if selected_skill == "elenchus" and target_skill == "fizz-sync":
+        return selected, "When the fix touched contracts, run `fizz-sync` first."
+    if selected_skill == "ephoros" and target_skill == "phylax":
+        return selected, "`phylax` sets this rule and this skill inherits it"
+    if selected_skill == "protasis" and target_skill in {
+        "ephoros",
+        "phylax",
+        "metron",
+        "elenchus",
+        "hypomnema",
+    }:
+        return selected, f"[{target_skill}](../{target_skill}/SKILL.md)"
+    raise AssertionError(
+        f"independent skill relation is unowned: {selected_skill} -> {target_skill}"
+    )
+
+
+def oracle_validate_semantic_anchors(profile: dict) -> None:
+    """Require every generic-path obligation to carry its exact named relation."""
+    evidence_by_obligation = {
+        row["obligation"]: row for row in profile["source_evidence"]
+    }
+    for obligation in profile["required_documents"]:
+        if not obligation.endswith(("/SKILL.md", "/EVOLUTION.md")):
+            continue
+        path, needle = oracle_semantic_anchor(profile, obligation)
+        expected = oracle_evidence(obligation, path, needle)
+        if evidence_by_obligation.get(obligation) != expected:
+            raise AssertionError(
+                f"independent semantic anchor mismatch: {profile['id']}: {obligation}"
+            )
 
 
 def oracle_add_profile(
@@ -670,6 +844,9 @@ def oracle_validate_profiles_and_routes(record: dict, graph: dict) -> None:
     }
     if record.get("counts") != expected_counts or record.get("totals") != expected_totals:
         raise AssertionError("independent profile denominator mismatch")
+
+    for row in observed:
+        oracle_validate_semantic_anchors(row)
 
     evidence_projection = [
         {"id": row["id"], "source_evidence": row["source_evidence"]}
@@ -1720,7 +1897,7 @@ class InvocationProfileTests(unittest.TestCase):
         AI._validate_invocation_profiles(self.profiles)
         self.assertEqual(
             self.profiles["projection_sha256"],
-            "8029f1ea22f6ea995712b2e177e81843cfd2983c410790455873bad9d8e0664d",
+            "b61e5c270f9e5eede8d966d857888a24623f014f47584e7ec42df36ca1bdb31e",
         )
         self.assertEqual(self.profiles["counts"], AI.EXPECTED_PROFILE_COUNTS)
 
@@ -1742,6 +1919,17 @@ class InvocationProfileTests(unittest.TestCase):
                 required_documents += len(profile["required_documents"])
         self.assertEqual(evidence_rows, 5_049)
         self.assertEqual(required_documents, 5_049)
+
+    def test_every_skill_and_frontier_witness_is_semantically_attributable(self):
+        checked = 0
+        for profile in self.profiles["profiles"]:
+            with self.subTest(profile=profile["id"]):
+                oracle_validate_semantic_anchors(profile)
+                checked += sum(
+                    path.endswith(("/SKILL.md", "/EVOLUTION.md"))
+                    for path in profile["required_documents"]
+                )
+        self.assertEqual(checked, 3_157)
 
     def test_profile_route_denominators_are_exact(self):
         self.assertEqual(
@@ -1872,20 +2060,61 @@ class InvocationProfileTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "independent profile grammar"):
             oracle_validate_profiles_and_routes(changed, self.graph)
 
-    def test_synchronized_evidence_rebinding_refuses_independent_oracle(self):
+    def test_synchronized_bare_basename_refuses_semantic_oracle(self):
         changed = copy.deepcopy(self.profiles)
         profile = next(
-            item
-            for item in changed["profiles"]
-            if len(item["source_evidence"]) > 1
+            item for item in changed["profiles"]
+            if item["selected_skill"] == "fiat"
+            and ORACLE_SKILL_PATHS["phylax"] in item["required_documents"]
         )
-        obligation = profile["source_evidence"][0]["obligation"]
-        replacement = copy.deepcopy(profile["source_evidence"][1])
-        replacement["obligation"] = obligation
-        profile["source_evidence"][0] = replacement
+        obligation = ORACLE_SKILL_PATHS["phylax"]
+        index = profile["required_documents"].index(obligation)
+        profile["source_evidence"][index] = oracle_evidence(
+            obligation, "plugins/hexaemeron/PROMISES.md", "SKILL.md"
+        )
 
         self.validate_synchronized_production_projection(changed)
-        with self.assertRaisesRegex(AssertionError, "evidence projection"):
+        with self.assertRaisesRegex(AssertionError, "semantic anchor"):
+            oracle_validate_profiles_and_routes(changed, self.graph)
+
+    def test_synchronized_first_occurrence_refuses_semantic_oracle(self):
+        changed = copy.deepcopy(self.profiles)
+        profile = next(
+            item for item in changed["profiles"]
+            if item["selected_skill"] == "fiat"
+            and ORACLE_SKILL_PATHS["phylax"] in item["required_documents"]
+        )
+        obligation = ORACLE_SKILL_PATHS["phylax"]
+        index = profile["required_documents"].index(obligation)
+        profile["source_evidence"][index] = oracle_evidence(
+            obligation, ORACLE_SKILL_PATHS["fiat"], "SKILL.md"
+        )
+
+        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AssertionError, "semantic anchor"):
+            oracle_validate_profiles_and_routes(changed, self.graph)
+
+    def test_synchronized_valid_span_rebinding_refuses_semantic_oracle(self):
+        changed = copy.deepcopy(self.profiles)
+        profile = next(
+            item for item in changed["profiles"]
+            if item["selected_skill"] == "fiat"
+            and ORACLE_SKILL_PATHS["phylax"] in item["required_documents"]
+            and ORACLE_SKILL_PATHS["ephoros"] in item["required_documents"]
+        )
+        obligation = ORACLE_SKILL_PATHS["phylax"]
+        replacement = copy.deepcopy(
+            next(
+                row for row in profile["source_evidence"]
+                if row["obligation"] == ORACLE_SKILL_PATHS["ephoros"]
+            )
+        )
+        replacement["obligation"] = obligation
+        index = profile["required_documents"].index(obligation)
+        profile["source_evidence"][index] = replacement
+
+        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AssertionError, "semantic anchor"):
             oracle_validate_profiles_and_routes(changed, self.graph)
 
     def test_synchronized_profile_and_routes_refuse_independent_oracle(self):
@@ -2205,7 +2434,7 @@ class LoaderGraphTests(unittest.TestCase):
                 len(self.graph["scenario_edges"]),
                 len(self.graph["reference_only"]),
             ),
-            (19, 324, 2_595, 325, 12),
+            (19, 324, 2_595, 329, 12),
         )
 
     def test_profile_constraints_are_explicit(self):
@@ -2511,6 +2740,8 @@ class HoldoutSealTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.manifest = load(MANIFEST)
+        cls.profiles = load(PROFILES)
+        cls.graph = load(GRAPH)
         cls.cohorts = load(COHORTS)
         cls.seal = load(SEAL)
 
@@ -2602,10 +2833,45 @@ class HoldoutSealTests(unittest.TestCase):
         commitment = body.pop("commitment_sha256")
         self.assertEqual(commitment, hashlib.sha256(canonical(body)).hexdigest())
 
+    def test_seal_binds_exact_profile_and_graph_identities(self):
+        expected = {
+            "invocation_profiles_sha256": hashlib.sha256(
+                canonical(self.profiles)
+            ).hexdigest(),
+            "loader_graph_sha256": hashlib.sha256(canonical(self.graph)).hexdigest(),
+        }
+        for field, digest in expected.items():
+            with self.subTest(field=field):
+                self.assertEqual(self.seal.get(field), digest)
+
+    def test_resealed_profile_or_graph_identity_mismatch_refuses(self):
+        for field in ("invocation_profiles_sha256", "loader_graph_sha256"):
+            with self.subTest(field=field):
+                changed = copy.deepcopy(self.seal)
+                changed[field] = "0" * 64
+                body = dict(changed)
+                body.pop("commitment_sha256")
+                changed["commitment_sha256"] = hashlib.sha256(
+                    canonical(body)
+                ).hexdigest()
+                with self.assertRaisesRegex(AI.Refusal, "input identity"):
+                    AI._validate_holdout_seal(
+                        changed,
+                        self.manifest,
+                        self.cohorts,
+                        self.profiles,
+                        self.graph,
+                    )
+
     def test_seed_replay_and_command_are_exact(self):
         rebuilt = AI.build_cohorts(self.manifest)
         self.assertEqual(rebuilt, self.cohorts)
-        self.assertEqual(AI.build_holdout_seal(self.manifest, rebuilt), self.seal)
+        self.assertEqual(
+            AI.build_holdout_seal(
+                self.manifest, rebuilt, self.profiles, self.graph
+            ),
+            self.seal,
+        )
         first = command(
             "verify-seal",
             "--profiles",
