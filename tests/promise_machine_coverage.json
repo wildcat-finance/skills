@@ -110,7 +110,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "bc731ed721f937917b02ad51e3e0ea439fbe1a722651b3aee02d873a46e144f3",
+      "sha256": "c74b1081ee9a0323121b90b752f708494129011159fccb9014abfeb0d6e111c8",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",

@@ -111,9 +111,9 @@ class AgentInstructionScaffoldTests(unittest.TestCase):
         self.assertEqual(entries, FIXTURE_IDS)
 
     def test_horos_boundary_is_current_for_the_scaffold(self):
-        from tests.test_boundary_currency import drifted_paths
+        from tests.test_boundary_currency import REFRESH, drifted_paths
 
-        self.assertEqual(drifted_paths(ROOT), [])
+        self.assertEqual(drifted_paths(ROOT), [], REFRESH)
 
     def test_existing_repository_licence_is_apache_2(self):
         text = (ROOT / "LICENSE").read_text(encoding="utf-8")
