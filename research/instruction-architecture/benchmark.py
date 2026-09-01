@@ -125,6 +125,99 @@ EXPECTED_PROFILE_COUNTS = {
 EXPECTED_PROFILE_PROJECTION_SHA256 = (
     "b61e5c270f9e5eede8d966d857888a24623f014f47584e7ec42df36ca1bdb31e"
 )
+EXPECTED_PROFILE_EVIDENCE_COUNTS = {
+    "document_reference": 939,
+    "fixed_input": 42,
+    "frontier_ledger": 625,
+    "frontier_policy": 25,
+    "operation_reference": 22,
+    "overlay_contract": 149,
+    "related_skill": 2_013,
+    "selected_skill": 519,
+    "structured_reference": 427,
+    "worker_prompt": 288,
+}
+EXPECTED_MANIFEST_SOURCE_EVIDENCE_COUNTS = {
+    "fixed_input": 2,
+    "markdown_reference": 3,
+    "operation_reference": 3,
+    "structured_reference": 12,
+}
+EXPECTED_GRAPH_RUNTIME_EVIDENCE_COUNTS = {
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": 4,
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": 4,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": 4,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": 4,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": 4,
+    "plugins/synkrisis/references/rules-v1.json": 3,
+}
+VALIDATION_OPERATION_REFERENCE_PATHS = frozenset(
+    {
+        "docs/fiat-run-observation-binding-v1.md",
+        "plugins/alexandria/docs/runbook.md",
+        "plugins/alexandria/docs/study.md",
+        "plugins/alexandria/docs/usdc-interval-collector.md",
+        "plugins/anamnesis/docs/demo.md",
+        "plugins/ariadne/docs/capturing-a-dataset.md",
+        "plugins/ariadne/docs/capturing-a-grounded-agent.md",
+        "plugins/ariadne/docs/capturing-a-release.md",
+        "plugins/ariadne/docs/capturing-a-state-fixture.md",
+        "plugins/ariadne/docs/conformance.md",
+        "plugins/ariadne/docs/dataset.md",
+        "plugins/ariadne/docs/grounded-agent.md",
+        "plugins/ariadne/docs/solidity-release.md",
+        "plugins/ariadne/docs/state-fixture.md",
+        "plugins/lazarus/docs/chain-anchors.md",
+        "plugins/lazarus/docs/preservation-release.md",
+        "plugins/lazarus/docs/runbook.md",
+        "plugins/lazarus/docs/study.md",
+        "plugins/lemma/INVARIANTS.md",
+        "plugins/pandects/docs/applicability.md",
+        "plugins/pandects/docs/writing-a-law.md",
+        "plugins/pandects/integrations/wildcat/APPLICABILITY.md",
+        "plugins/probitas/docs/adding-a-venue.md",
+        "plugins/tabularium/docs/adding-an-adapter.md",
+        "plugins/tabularium/docs/release-policy.md",
+    }
+)
+VALIDATION_FIAT_WORKER_PROMPTS = frozenset(
+    {
+        "plugins/hexaemeron/agents/mason.md",
+        "plugins/hexaemeron/agents/scribe.md",
+        "plugins/hexaemeron/agents/surveyor.md",
+        "plugins/hexaemeron/agents/warden.md",
+    }
+)
+VALIDATION_FIZZ_WORKER_PROMPTS = frozenset(
+    {
+        "plugins/hexaemeron/skills/fizz/agents/implementers/global-property-implementer.md",
+        "plugins/hexaemeron/skills/fizz/agents/implementers/specific-property-implementer.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/adversarial-profit-maximizer.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/conservation-auditor.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/protocol-type-specialist.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/roundtrip-rounding-analyst.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/state-transition-mapper.md",
+        "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/synthesizer.md",
+        "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md",
+        "plugins/hexaemeron/skills/fizz/agents/report-writer.md",
+    }
+)
+VALIDATION_STRUCTURED_REFERENCE_PATHS = frozenset(
+    {
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+        "plugins/synkrisis/references/rules-v1.json",
+    }
+)
+VALIDATION_FIXED_INPUT_PATHS = frozenset(
+    {
+        "plugins/hexaemeron/skills/solidity-auditor/VERSION",
+        "plugins/hexaemeron/skills/x-ray/VERSION",
+    }
+)
 
 FRONTIER_SKILLS = (
     "plugins/alexandria/skills/alexandria",
@@ -2482,6 +2575,488 @@ def build_invocation_profiles() -> dict[str, Any]:
     }
 
 
+def _validation_related_skill_anchor(
+    profile: dict[str, Any], obligation: str
+) -> tuple[str, str]:
+    """Resolve a nested skill without using the generator's relation helper."""
+    selected_skill = profile["selected_skill"]
+    selected = SELECTABLE_SKILL_PATHS[selected_skill]
+    skill_by_path = {path: skill for skill, path in SELECTABLE_SKILL_PATHS.items()}
+    target_skill = skill_by_path.get(obligation)
+    if target_skill is None:
+        raise Refusal("profile validator received an unknown related skill")
+
+    if selected_skill == "kronos":
+        dispatch = profile["branch_state"][-1]
+        if (
+            not dispatch.startswith("dispatch-")
+            or target_skill not in {"fiat", dispatch.removeprefix("dispatch-")}
+        ):
+            raise Refusal("profile validator Kronos relation drift")
+        return (
+            selected,
+            "Read the selected skill's canonical instructions, its ledger, and Fiat's\n"
+            "   `SKILL.md`.",
+        )
+
+    if selected_skill == "fiat":
+        direct = {
+            name: f"[{name}](../{name}/SKILL.md)"
+            for name in (
+                "protasis",
+                "phylax",
+                "ephoros",
+                "metron",
+                "elenchus",
+                "hypomnema",
+            )
+        }
+        if target_skill in direct:
+            return selected, direct[target_skill]
+        if target_skill == "brevitas":
+            return (
+                "plugins/hexaemeron/agents/scribe.md",
+                "Where an artefact is engineering review, audit, gas, protocol-property, or\n"
+                "specification commentary, apply Brevitas after the vocabulary and register\n"
+                "passes without deleting evidence.",
+            )
+        if target_skill == "hermes":
+            return (
+                "plugins/hexaemeron/agents/mason.md",
+                "Hermes owns Solidity gas. Do not silently import a sibling's job into the step.",
+            )
+        if target_skill == "fizz-sync":
+            return (
+                SELECTABLE_SKILL_PATHS["elenchus"],
+                "When the fix touched contracts, run `fizz-sync` first.",
+            )
+        if target_skill == "fizz":
+            return (
+                "plugins/hexaemeron/agents/warden.md",
+                "`fizz`\nis in the suite, follow `<plugin-root>/skills/fizz/SKILL.md`",
+            )
+        if target_skill in {"x-ray", "solidity-auditor"}:
+            return (
+                "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+                "`x-ray` pass first, then `solidity-auditor`. Both are vendored under\n"
+                "   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read\n"
+                "   each SKILL.md and follow\n"
+                "   it.",
+            )
+        if target_skill == "imprimatur":
+            if profile["phase"] == "prose directive":
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                    '`python3 "$PLUGIN_ROOT/skills/imprimatur/scripts/imprimatur.py" <file>`',
+                )
+            if profile["id"] == "fiat:integrate-task-issue":
+                return (
+                    selected,
+                    "under the repository's Sapheneia,\n"
+                    "Imprimatur, Vulgate, Imprimatur publication order.",
+                )
+            return selected, "Run the `imprimatur` lint on each artefact before receipting it"
+        if target_skill == "vulgate":
+            return (
+                "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                "$PLUGIN_ROOT/skills/vulgate/SKILL.md",
+            )
+        if target_skill == "sapheneia":
+            if profile["phase"] in {
+                "Solidity audit round",
+                "non-Solidity audit round",
+            }:
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+                    "apply Sapheneia's bounded audit-record operation",
+                )
+            if profile["phase"] == "prose directive":
+                return (
+                    "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+                    "Sapheneia -> Imprimatur -> Vulgate -> Imprimatur",
+                )
+            return (
+                selected,
+                "under the repository's Sapheneia,\n"
+                "Imprimatur, Vulgate, Imprimatur publication order.",
+            )
+        raise Refusal(f"profile validator Fiat relation is unowned: {target_skill}")
+
+    if selected_skill == "fizz" and target_skill == "x-ray":
+        return (
+            selected,
+            "Resolve `{SKILL_PATH}/../x-ray/SKILL.md`, read it completely, and execute "
+            "its instructions against `{PROJECT_ROOT}`.",
+        )
+    if selected_skill == "elenchus" and target_skill == "fizz-sync":
+        return selected, "When the fix touched contracts, run `fizz-sync` first."
+    if selected_skill == "ephoros" and target_skill == "phylax":
+        return selected, "`phylax` sets this rule and this skill inherits it"
+    if selected_skill == "protasis" and target_skill in {
+        "ephoros",
+        "phylax",
+        "metron",
+        "elenchus",
+        "hypomnema",
+    }:
+        return selected, f"[{target_skill}](../{target_skill}/SKILL.md)"
+    raise Refusal(
+        f"profile validator relation is unowned: {selected_skill} -> {target_skill}"
+    )
+
+
+def _validation_document_anchor(
+    selected_skill: str, obligation: str
+) -> tuple[str, str]:
+    """Resolve a reference relation from a closed, validator-owned grammar."""
+    fiat = SELECTABLE_SKILL_PATHS["fiat"]
+    fizz = SELECTABLE_SKILL_PATHS["fizz"]
+    solidity = SELECTABLE_SKILL_PATHS["solidity-auditor"]
+    xray = SELECTABLE_SKILL_PATHS["x-ray"]
+    name = PurePosixPath(obligation).name
+
+    if obligation.startswith("plugins/hexaemeron/skills/fiat/references/"):
+        source = fiat
+        if name == "xray-reuse.md":
+            source = "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
+        elif name == "controller-checkpoint.md":
+            source = "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
+        return source, name
+    if obligation == "plugins/hermes/skills/hermes/references/optimisation-catalogue.md":
+        return SELECTABLE_SKILL_PATHS["hermes"], "references/optimisation-catalogue.md"
+    if obligation == "plugins/hexaemeron/skills/metron/references/budget-check.md":
+        return SELECTABLE_SKILL_PATHS["metron"], "references/budget-check.md"
+    if obligation == "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md":
+        return SELECTABLE_SKILL_PATHS["phylax"], name
+    if obligation.startswith("plugins/hexaemeron/skills/fizz/references/"):
+        if name == "property-generation.md" and selected_skill == "fiat":
+            return (
+                "plugins/hexaemeron/skills/fizz/agents/implementers/"
+                "specific-property-implementer.md",
+                name,
+            )
+        return fizz, name
+    if obligation.startswith("plugins/hexaemeron/skills/solidity-auditor/references/"):
+        if name == "shared-rules.md":
+            if selected_skill == "solidity-auditor":
+                return solidity, "references/hacking-agents/shared-rules.md"
+            return (
+                "plugins/hexaemeron/skills/solidity-auditor/references/"
+                "senior-auditor-sop.md",
+                name,
+            )
+        if name == "senior-auditor-sop.md" and selected_skill != "solidity-auditor":
+            return (
+                "plugins/hexaemeron/skills/solidity-auditor/references/"
+                "hacking-agents/shared-rules.md",
+                name,
+            )
+        return solidity, name
+    if obligation == "plugins/hexaemeron/skills/x-ray/references/templates.md":
+        if selected_skill == "x-ray":
+            return xray, "references/templates.md"
+        return "plugins/hexaemeron/skills/x-ray/references/threats.md", name
+    if obligation == "plugins/hexaemeron/skills/x-ray/references/threats.md":
+        return xray, "references/threats.md"
+    if obligation in {
+        "plugins/probitas/skills/probitas/references/gates.md",
+        "plugins/probitas/skills/probitas/references/venues.md",
+    }:
+        return SELECTABLE_SKILL_PATHS["probitas"], f"references/{name}"
+    raise Refusal(f"profile validator document relation is unowned: {obligation}")
+
+
+def _validation_profile_anchor(
+    profile: dict[str, Any], obligation: str
+) -> tuple[str, str, str]:
+    """Classify and resolve every evidence obligation without a fallback."""
+    selected_skill = profile["selected_skill"]
+    selected = SELECTABLE_SKILL_PATHS[selected_skill]
+    if obligation == selected:
+        return "selected_skill", selected, f"name: {selected_skill}"
+    if obligation.endswith("/EVOLUTION.md"):
+        selected_evolution = str(PurePosixPath(selected).with_name("EVOLUTION.md"))
+        if obligation == selected_evolution:
+            return "frontier_ledger", selected, "[EVOLUTION.md](EVOLUTION.md)"
+        if selected_skill != "kronos":
+            raise Refusal("profile validator frontier relation escapes Kronos")
+        return (
+            "frontier_ledger",
+            selected,
+            "Walk the whole scope and find every `EVOLUTION.md` beneath it, descending\n"
+            "   into each plugin's own skills directory.",
+        )
+    if obligation.endswith("/SKILL.md"):
+        source, needle = _validation_related_skill_anchor(profile, obligation)
+        return "related_skill", source, needle
+
+    if obligation in VALIDATION_OPERATION_REFERENCE_PATHS:
+        source = selected
+        if obligation == "plugins/probitas/docs/adding-a-venue.md":
+            source = "plugins/probitas/skills/probitas/references/venues.md"
+        needle = posixpath.relpath(obligation, posixpath.dirname(source))
+        return "operation_reference", source, needle
+
+    if obligation in VALIDATION_FIAT_WORKER_PROMPTS:
+        return (
+            "worker_prompt",
+            SELECTABLE_SKILL_PATHS["fiat"],
+            f"`{PurePosixPath(obligation).stem}`",
+        )
+    if obligation in VALIDATION_FIZZ_WORKER_PROMPTS:
+        return (
+            "worker_prompt",
+            SELECTABLE_SKILL_PATHS["fizz"],
+            posixpath.relpath(
+                obligation, posixpath.dirname(SELECTABLE_SKILL_PATHS["fizz"])
+            ),
+        )
+    if obligation == "plugins/hexaemeron/PROMISES.md":
+        return (
+            "overlay_contract",
+            "plugins/hexaemeron/AGENTS.md",
+            "[PROMISES.md](PROMISES.md)",
+        )
+    if obligation == "plugins/hexaemeron/skills/VERSIONING.md":
+        return (
+            "frontier_policy",
+            "plugins/hexaemeron/AGENTS.md",
+            "`skills/VERSIONING.md`",
+        )
+
+    if obligation in VALIDATION_STRUCTURED_REFERENCE_PATHS:
+        if obligation == "plugins/hermes/skills/hermes/references/gas-rule-corpus.json":
+            return (
+                "structured_reference",
+                SELECTABLE_SKILL_PATHS["hermes"],
+                "Every candidate names a rule from "
+                "[references/gas-rule-corpus.json](references/gas-rule-corpus.json)",
+            )
+        if obligation == "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json":
+            return (
+                "structured_reference",
+                SELECTABLE_SKILL_PATHS["hermes"],
+                "A corpus that fails its own schema",
+            )
+        if obligation.startswith("plugins/hexaemeron/skills/imprimatur/lexicon/"):
+            return (
+                "structured_reference",
+                SELECTABLE_SKILL_PATHS["imprimatur"],
+                f"`{PurePosixPath(obligation).name}`",
+            )
+        if obligation == "plugins/synkrisis/references/rules-v1.json":
+            operation = profile["branch_state"][-1]
+            needles = {
+                "diagnose": (
+                    "python3 plugins/synkrisis/scripts/synkrisis.py diagnose \\\n"
+                    "  --cohort build/synkrisis/cohort.json \\\n"
+                    "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+                    "  --out build/synkrisis/findings.json"
+                ),
+                "verify": (
+                    "python3 plugins/synkrisis/scripts/synkrisis.py verify \\\n"
+                    "  --manifest plugins/synkrisis/examples/cross-run-v0/manifest.json \\\n"
+                    "  --policy plugins/synkrisis/examples/cross-run-v0/policy.json \\\n"
+                    "  --cohort build/synkrisis/cohort.json \\\n"
+                    "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+                    "  --findings build/synkrisis/findings.json"
+                ),
+            }
+            needle = needles.get(operation)
+            if needle is None:
+                raise Refusal("profile validator Synkrisis operation drift")
+            return "structured_reference", SELECTABLE_SKILL_PATHS["synkrisis"], needle
+        raise Refusal(f"profile validator structured relation is unowned: {obligation}")
+
+    if obligation in VALIDATION_FIXED_INPUT_PATHS:
+        anchors = {
+            "plugins/hexaemeron/skills/x-ray/VERSION": (
+                SELECTABLE_SKILL_PATHS["x-ray"],
+                "Read the local `VERSION` file from `$SKILL_DIR/VERSION`",
+            ),
+            "plugins/hexaemeron/skills/solidity-auditor/VERSION": (
+                SELECTABLE_SKILL_PATHS["solidity-auditor"],
+                "Read the local `VERSION` file from the same directory as this skill",
+            ),
+        }
+        source, needle = anchors[obligation]
+        return "fixed_input", source, needle
+
+    source, needle = _validation_document_anchor(selected_skill, obligation)
+    return "document_reference", source, needle
+
+
+def _validation_evidence(path: str, needle: str) -> dict[str, Any]:
+    """Build validator-owned evidence without calling the generator helper."""
+    data = _source_blob(path)
+    encoded = needle.encode("utf-8")
+    start = data.find(encoded)
+    if start < 0:
+        raise Refusal(f"validator semantic evidence is missing in {path}")
+    return {
+        "path": path,
+        "start": start,
+        "end": start + len(encoded),
+        "source_sha256": _sha256(data),
+        "span_sha256": _sha256(encoded),
+    }
+
+
+def _validation_manifest_source_anchor(path: str) -> tuple[str, str, str]:
+    """Resolve every manifest source-evidence row through a closed grammar."""
+    anchors = {
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": (
+            "structured_reference",
+            SELECTABLE_SKILL_PATHS["hermes"],
+            "Every candidate names a rule from "
+            "[references/gas-rule-corpus.json](references/gas-rule-corpus.json)",
+        ),
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": (
+            "structured_reference",
+            SELECTABLE_SKILL_PATHS["hermes"],
+            "A corpus that fails its own schema",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": (
+            "structured_reference",
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            "`gated.json`",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": (
+            "structured_reference",
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            "`hard.json`",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": (
+            "structured_reference",
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            "`structural.json`",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/references/agent-replies.md": (
+            "markdown_reference",
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            "references/agent-replies.md",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/references/lexicon-rationale.md": (
+            "markdown_reference",
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            "references/lexicon-rationale.md",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/references/rewriting.md": (
+            "markdown_reference",
+            SELECTABLE_SKILL_PATHS["imprimatur"],
+            "references/rewriting.md",
+        ),
+        "plugins/hexaemeron/skills/solidity-auditor/VERSION": (
+            "fixed_input",
+            SELECTABLE_SKILL_PATHS["solidity-auditor"],
+            "Read the local `VERSION` file from the same directory as this skill",
+        ),
+        "plugins/hexaemeron/skills/x-ray/VERSION": (
+            "fixed_input",
+            SELECTABLE_SKILL_PATHS["x-ray"],
+            "Read the local `VERSION` file from `$SKILL_DIR/VERSION`",
+        ),
+        "plugins/homologia/references/manifest-v1.schema.json": (
+            "structured_reference",
+            "plugins/homologia/docs/checked-inputs/runbook.md",
+            "plugins/homologia/references/manifest-v1.schema.json",
+        ),
+        "plugins/homologia/references/vectors-v1.schema.json": (
+            "structured_reference",
+            "plugins/homologia/docs/checked-inputs/runbook.md",
+            "plugins/homologia/references/vectors-v1.schema.json",
+        ),
+        "plugins/pandects/docs/applicability.md": (
+            "operation_reference",
+            SELECTABLE_SKILL_PATHS["pandects"],
+            "`docs/applicability.md` states the rules once",
+        ),
+        "plugins/pandects/docs/writing-a-law.md": (
+            "operation_reference",
+            SELECTABLE_SKILL_PATHS["pandects"],
+            "`docs/writing-a-law.md`",
+        ),
+        "plugins/pandects/integrations/wildcat/APPLICABILITY.md": (
+            "operation_reference",
+            SELECTABLE_SKILL_PATHS["pandects"],
+            "`integrations/wildcat/APPLICABILITY.md` carries all of them",
+        ),
+        "plugins/synkrisis/references/rules-v1.json": (
+            "structured_reference",
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "python3 plugins/synkrisis/scripts/synkrisis.py diagnose \\\n"
+            "  --cohort build/synkrisis/cohort.json \\\n"
+            "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+            "  --out build/synkrisis/findings.json",
+        ),
+    }
+    for name in (
+        "cohort-v1.schema.json",
+        "findings-v1.schema.json",
+        "policy-v1.schema.json",
+        "rule-v1.schema.json",
+    ):
+        candidate = f"plugins/synkrisis/references/{name}"
+        anchors[candidate] = (
+            "structured_reference",
+            candidate,
+            f'"$id": "https://github.com/wildcat-finance/skills/{candidate}"',
+        )
+    anchor = anchors.get(path)
+    if anchor is None:
+        raise Refusal(f"manifest semantic source relation is unowned: {path}")
+    return anchor
+
+
+def _validation_runtime_anchor(target: str, context: str) -> tuple[str, str]:
+    """Resolve one executable input through a validator-owned runtime grammar."""
+    hermes_runtime = "plugins/hermes/skills/hermes/scripts/hermes.py"
+    imprimatur_runtime = (
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py"
+    )
+    if target == "plugins/hermes/skills/hermes/references/gas-rule-corpus.json":
+        return hermes_runtime, "raw = corpus_path.read_bytes()"
+    if target == "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json":
+        return (
+            hermes_runtime,
+            'schema = json.loads(schema_path.read_text(encoding="utf-8"))',
+        )
+    if target in {
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+    }:
+        return (
+            imprimatur_runtime,
+            'return rd("hard.json"), rd("gated.json"), rd("structural.json")',
+        )
+    if target != "plugins/synkrisis/references/rules-v1.json":
+        raise Refusal(f"runtime semantic target is unowned: {target}")
+    needles = {
+        "manifest": (
+            "def load_rules(root: Path, raw_path: str, budget: InputBudget):\n"
+            '    target = confined_relative(raw_path, root, label="rules")\n'
+            "    shown = shown_path(raw_path)\n"
+            "    payload = bounded_read(target, shown, MAX_FILE_BYTES)"
+        ),
+        "diagnose": (
+            "def command_diagnose(root: Path, arguments):\n"
+            "    budget = InputBudget()\n"
+            "    cohort = load_cohort(root, arguments.cohort, budget)\n"
+            "    rules_document, _ = load_rules(root, arguments.rules, budget)"
+        ),
+        "verify": (
+            '            "rebuild the cohort with the cohort command from the original inputs",\n'
+            "        )\n"
+            "    rules_document, _ = load_rules(root, arguments.rules, budget)"
+        ),
+    }
+    needle = needles.get(context)
+    if needle is None:
+        raise Refusal(f"Synkrisis runtime context is unowned: {context}")
+    return "plugins/synkrisis/scripts/synkrisis.py", needle
+
+
 def _validate_invocation_profiles(record: dict[str, Any]) -> None:
     """Validate source spans and exact ledger identity without calling its builder."""
     _require_fields(
@@ -2514,6 +3089,7 @@ def _validate_invocation_profiles(record: dict[str, Any]) -> None:
         raise Refusal("invocation profile source oracle mismatch")
     ids: list[str] = []
     observed_counts = {skill: 0 for skill in EXPECTED_PROFILE_COUNTS}
+    evidence_counts = {name: 0 for name in EXPECTED_PROFILE_EVIDENCE_COUNTS}
     fiat_phases: dict[str, int] = {}
     for index, profile in enumerate(profiles):
         _require_fields(
@@ -2623,6 +3199,29 @@ def _validate_invocation_profiles(record: dict[str, Any]) -> None:
                 or _sha256(data[start:end]) != evidence["span_sha256"]
             ):
                 raise Refusal("invocation profile source span drift")
+            evidence_class, expected_path, expected_needle = _validation_profile_anchor(
+                profile, evidence["obligation"]
+            )
+            if evidence_class not in evidence_counts:
+                raise Refusal(
+                    f"invocation profile evidence class is unowned: {evidence_class}"
+                )
+            encoded = expected_needle.encode("utf-8")
+            expected_start = data.find(encoded) if evidence["path"] == expected_path else -1
+            expected = {
+                "obligation": evidence["obligation"],
+                "path": expected_path,
+                "start": expected_start,
+                "end": expected_start + len(encoded),
+                "source_sha256": _sha256(data),
+                "span_sha256": _sha256(encoded),
+            }
+            if expected_start < 0 or evidence != expected:
+                raise Refusal(
+                    "invocation profile semantic anchor drift: "
+                    f"{profile['id']}: {evidence['obligation']}"
+                )
+            evidence_counts[evidence_class] += 1
     if ids != sorted(set(ids)) or observed_counts != EXPECTED_PROFILE_COUNTS:
         raise Refusal("invocation profile id product drift")
     if fiat_phases != {
@@ -2634,6 +3233,10 @@ def _validate_invocation_profiles(record: dict[str, Any]) -> None:
         "bounded controller operation": 11,
     }:
         raise Refusal("Fiat invocation profile branch product drift")
+    if evidence_counts != EXPECTED_PROFILE_EVIDENCE_COUNTS or sum(
+        evidence_counts.values()
+    ) != sum(len(profile["required_documents"]) for profile in profiles):
+        raise Refusal("invocation profile semantic evidence coverage drift")
 
 
 def _reference_link(
@@ -2937,6 +3540,10 @@ def _validate_complete_scenarios(
         raise Refusal("scenario base product drift")
 
     scenario_ids = set(roots)
+    runtime_counts = {
+        target: 0 for target in EXPECTED_GRAPH_RUNTIME_EVIDENCE_COUNTS
+    }
+    scenario_runtime_rows = 0
     for edge in topology["scenario_edges"]:
         _require_fields(
             edge,
@@ -2986,6 +3593,66 @@ def _validate_complete_scenarios(
             _validate_source_evidence(
                 edge["runtime_evidence"], "scenario runtime evidence"
             )
+            context = "scenario"
+            if edge["target"] == "plugins/synkrisis/references/rules-v1.json":
+                operations = {
+                    profile_rows[roots[identifier]["profile_id"]]["branch_state"][-1]
+                    for identifier in scope
+                }
+                if len(operations) != 1 or not operations <= {"diagnose", "verify"}:
+                    raise Refusal(
+                        f"Synkrisis runtime scope mixes operations: {edge['id']}"
+                    )
+                context = next(iter(operations))
+            runtime_path, runtime_needle = _validation_runtime_anchor(
+                edge["target"], context
+            )
+            if edge["runtime_evidence"] != _validation_evidence(
+                runtime_path, runtime_needle
+            ):
+                raise Refusal(
+                    f"scenario runtime semantic anchor drift: {edge['id']}"
+                )
+            runtime_counts[edge["target"]] += 1
+            scenario_runtime_rows += 1
+
+    host_runtime_rows = 0
+    for edge in topology["edges"]:
+        runtime_evidence = edge["runtime_evidence"]
+        if edge["load_type"] == "mandatory-executable":
+            if runtime_evidence is None:
+                raise Refusal(f"mandatory host edge lacks runtime evidence: {edge['id']}")
+        elif runtime_evidence is not None:
+            raise Refusal(f"host agent input claims runtime evidence: {edge['id']}")
+        if runtime_evidence is None:
+            continue
+        _validate_source_evidence(runtime_evidence, "host runtime evidence")
+        matching = [
+            candidate["runtime_evidence"]
+            for candidate in topology["scenario_edges"]
+            if (
+                candidate["source"],
+                candidate["target"],
+                candidate["kind"],
+                candidate["load_type"],
+            )
+            == (
+                edge["source"],
+                edge["target"],
+                edge["kind"],
+                edge["load_type"],
+            )
+        ]
+        if runtime_evidence not in matching:
+            raise Refusal(f"host runtime semantic anchor drift: {edge['id']}")
+        runtime_counts[edge["target"]] += 1
+        host_runtime_rows += 1
+    if (
+        scenario_runtime_rows != 12
+        or host_runtime_rows != 11
+        or runtime_counts != EXPECTED_GRAPH_RUNTIME_EVIDENCE_COUNTS
+    ):
+        raise Refusal("graph semantic runtime evidence coverage drift")
 
     observed = _reachability_by_root(
         root_rows, topology["scenario_edges"], "active_scenarios"
@@ -4033,6 +4700,49 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
                 or not item["scenario_reachability"]
             ):
                 raise Refusal(f"mandatory manifest reachability drift: {item['path']}")
+
+    source_counts = {
+        name: 0 for name in EXPECTED_MANIFEST_SOURCE_EVIDENCE_COUNTS
+    }
+    runtime_counts = {
+        target: 0 for target in EXPECTED_GRAPH_RUNTIME_EVIDENCE_COUNTS
+    }
+    for item in manifest["documents"]:
+        source_evidence = item["source_evidence"]
+        if source_evidence is not None:
+            evidence_class, source, needle = _validation_manifest_source_anchor(
+                item["path"]
+            )
+            if evidence_class not in source_counts:
+                raise Refusal(
+                    f"manifest semantic source class is unowned: {evidence_class}"
+                )
+            if (
+                item["document_class"] != evidence_class
+                or source_evidence != _validation_evidence(source, needle)
+            ):
+                raise Refusal(f"manifest semantic source anchor drift: {item['path']}")
+            source_counts[evidence_class] += 1
+        runtime_evidence = item["runtime_evidence"]
+        if runtime_evidence is not None:
+            runtime_path, runtime_needle = _validation_runtime_anchor(
+                item["path"], "manifest"
+            )
+            if runtime_evidence != _validation_evidence(
+                runtime_path, runtime_needle
+            ):
+                raise Refusal(f"manifest semantic runtime anchor drift: {item['path']}")
+            runtime_counts[item["path"]] += 1
+    if source_counts != EXPECTED_MANIFEST_SOURCE_EVIDENCE_COUNTS or sum(
+        source_counts.values()
+    ) != sum(
+        item["source_evidence"] is not None for item in manifest["documents"]
+    ):
+        raise Refusal("manifest semantic source evidence coverage drift")
+    if set(runtime_counts.values()) != {1} or sum(runtime_counts.values()) != sum(
+        item["runtime_evidence"] is not None for item in manifest["documents"]
+    ):
+        raise Refusal("manifest semantic runtime evidence coverage drift")
 
 
 def _validate_partition_closure(partition: dict[str, Any]) -> None:

@@ -9,6 +9,7 @@ import itertools
 import json
 import os
 from pathlib import Path
+import posixpath
 import re
 import subprocess
 import sys
@@ -216,6 +217,40 @@ ORACLE_FIXED_INPUTS = {
 ORACLE_EVIDENCE_PROJECTION_SHA256 = (
     "7dc7da9b55456ac01cbbe1f3fd7d3c7f0462fabe0626b3583b6c85329ccd135c"
 )
+ORACLE_PROFILE_EVIDENCE_COUNTS = {
+    "document_reference": 939,
+    "fixed_input": 42,
+    "frontier_ledger": 625,
+    "frontier_policy": 25,
+    "operation_reference": 22,
+    "overlay_contract": 149,
+    "related_skill": 2_013,
+    "selected_skill": 519,
+    "structured_reference": 427,
+    "worker_prompt": 288,
+}
+ORACLE_MANIFEST_SOURCE_EVIDENCE_COUNTS = {
+    "fixed_input": 2,
+    "markdown_reference": 3,
+    "operation_reference": 3,
+    "structured_reference": 12,
+}
+ORACLE_MANIFEST_RUNTIME_EVIDENCE_COUNTS = {
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": 1,
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": 1,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": 1,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": 1,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": 1,
+    "plugins/synkrisis/references/rules-v1.json": 1,
+}
+ORACLE_GRAPH_RUNTIME_EVIDENCE_COUNTS = {
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": 4,
+    "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": 4,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": 4,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": 4,
+    "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": 4,
+    "plugins/synkrisis/references/rules-v1.json": 3,
+}
 ORACLE_GIT_ENV = {
     "GIT_CONFIG_GLOBAL": os.devnull,
     "GIT_CONFIG_NOSYSTEM": "1",
@@ -274,6 +309,344 @@ def oracle_evidence(obligation: str, path: str, needle: str) -> dict:
         "source_sha256": hashlib.sha256(data).hexdigest(),
         "span_sha256": hashlib.sha256(encoded).hexdigest(),
     }
+
+
+def oracle_span(path: str, needle: str) -> dict:
+    """Build test-owned evidence without an obligation projection field."""
+    evidence = oracle_evidence("", path, needle)
+    del evidence["obligation"]
+    return evidence
+
+
+def oracle_manifest_source_anchor(path: str) -> tuple[str, str, str]:
+    """Resolve all manifest source relations without production metadata."""
+    anchors = {
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": (
+            "structured_reference",
+            ORACLE_SKILL_PATHS["hermes"],
+            "Every candidate names a rule from "
+            "[references/gas-rule-corpus.json](references/gas-rule-corpus.json)",
+        ),
+        "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": (
+            "structured_reference",
+            ORACLE_SKILL_PATHS["hermes"],
+            "A corpus that fails its own schema",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": (
+            "structured_reference",
+            ORACLE_SKILL_PATHS["imprimatur"],
+            "`gated.json`",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json": (
+            "structured_reference",
+            ORACLE_SKILL_PATHS["imprimatur"],
+            "`hard.json`",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json": (
+            "structured_reference",
+            ORACLE_SKILL_PATHS["imprimatur"],
+            "`structural.json`",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/references/agent-replies.md": (
+            "markdown_reference",
+            ORACLE_SKILL_PATHS["imprimatur"],
+            "references/agent-replies.md",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/references/lexicon-rationale.md": (
+            "markdown_reference",
+            ORACLE_SKILL_PATHS["imprimatur"],
+            "references/lexicon-rationale.md",
+        ),
+        "plugins/hexaemeron/skills/imprimatur/references/rewriting.md": (
+            "markdown_reference",
+            ORACLE_SKILL_PATHS["imprimatur"],
+            "references/rewriting.md",
+        ),
+        "plugins/hexaemeron/skills/solidity-auditor/VERSION": (
+            "fixed_input",
+            ORACLE_SKILL_PATHS["solidity-auditor"],
+            "Read the local `VERSION` file from the same directory as this skill",
+        ),
+        "plugins/hexaemeron/skills/x-ray/VERSION": (
+            "fixed_input",
+            ORACLE_SKILL_PATHS["x-ray"],
+            "Read the local `VERSION` file from `$SKILL_DIR/VERSION`",
+        ),
+        "plugins/homologia/references/manifest-v1.schema.json": (
+            "structured_reference",
+            "plugins/homologia/docs/checked-inputs/runbook.md",
+            "plugins/homologia/references/manifest-v1.schema.json",
+        ),
+        "plugins/homologia/references/vectors-v1.schema.json": (
+            "structured_reference",
+            "plugins/homologia/docs/checked-inputs/runbook.md",
+            "plugins/homologia/references/vectors-v1.schema.json",
+        ),
+        "plugins/pandects/docs/applicability.md": (
+            "operation_reference",
+            ORACLE_SKILL_PATHS["pandects"],
+            "`docs/applicability.md` states the rules once",
+        ),
+        "plugins/pandects/docs/writing-a-law.md": (
+            "operation_reference",
+            ORACLE_SKILL_PATHS["pandects"],
+            "`docs/writing-a-law.md`",
+        ),
+        "plugins/pandects/integrations/wildcat/APPLICABILITY.md": (
+            "operation_reference",
+            ORACLE_SKILL_PATHS["pandects"],
+            "`integrations/wildcat/APPLICABILITY.md` carries all of them",
+        ),
+        "plugins/synkrisis/references/rules-v1.json": (
+            "structured_reference",
+            ORACLE_SKILL_PATHS["synkrisis"],
+            "python3 plugins/synkrisis/scripts/synkrisis.py diagnose \\\n"
+            "  --cohort build/synkrisis/cohort.json \\\n"
+            "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+            "  --out build/synkrisis/findings.json",
+        ),
+    }
+    for name in (
+        "cohort-v1.schema.json",
+        "findings-v1.schema.json",
+        "policy-v1.schema.json",
+        "rule-v1.schema.json",
+    ):
+        candidate = f"plugins/synkrisis/references/{name}"
+        anchors[candidate] = (
+            "structured_reference",
+            candidate,
+            f'"$id": "https://github.com/wildcat-finance/skills/{candidate}"',
+        )
+    try:
+        return anchors[path]
+    except KeyError as error:
+        raise AssertionError(
+            f"independent manifest source relation is unowned: {path}"
+        ) from error
+
+
+def oracle_runtime_anchor(target: str, context: str) -> tuple[str, str]:
+    """Resolve every executable input through a test-owned runtime grammar."""
+    if target == "plugins/hermes/skills/hermes/references/gas-rule-corpus.json":
+        return (
+            "plugins/hermes/skills/hermes/scripts/hermes.py",
+            "raw = corpus_path.read_bytes()",
+        )
+    if target == "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json":
+        return (
+            "plugins/hermes/skills/hermes/scripts/hermes.py",
+            'schema = json.loads(schema_path.read_text(encoding="utf-8"))',
+        )
+    if target in {
+        "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+        "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+    }:
+        return (
+            "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+            'return rd("hard.json"), rd("gated.json"), rd("structural.json")',
+        )
+    if target != "plugins/synkrisis/references/rules-v1.json":
+        raise AssertionError(
+            f"independent runtime target is unowned: {target}"
+        )
+    needles = {
+        "manifest": (
+            "def load_rules(root: Path, raw_path: str, budget: InputBudget):\n"
+            '    target = confined_relative(raw_path, root, label="rules")\n'
+            "    shown = shown_path(raw_path)\n"
+            "    payload = bounded_read(target, shown, MAX_FILE_BYTES)"
+        ),
+        "diagnose": (
+            "def command_diagnose(root: Path, arguments):\n"
+            "    budget = InputBudget()\n"
+            "    cohort = load_cohort(root, arguments.cohort, budget)\n"
+            "    rules_document, _ = load_rules(root, arguments.rules, budget)"
+        ),
+        "verify": (
+            '            "rebuild the cohort with the cohort command from the original inputs",\n'
+            "        )\n"
+            "    rules_document, _ = load_rules(root, arguments.rules, budget)"
+        ),
+    }
+    try:
+        return "plugins/synkrisis/scripts/synkrisis.py", needles[context]
+    except KeyError as error:
+        raise AssertionError(
+            f"independent Synkrisis runtime context is unowned: {context}"
+        ) from error
+
+
+def oracle_validate_manifest_semantic_anchors(manifest: dict) -> None:
+    """Close every manifest source/runtime row under test-owned anchors."""
+    source_counts = {
+        name: 0 for name in ORACLE_MANIFEST_SOURCE_EVIDENCE_COUNTS
+    }
+    runtime_counts = {
+        target: 0 for target in ORACLE_MANIFEST_RUNTIME_EVIDENCE_COUNTS
+    }
+    documents = manifest.get("documents")
+    if not isinstance(documents, list):
+        raise AssertionError("independent manifest document ledger is not an array")
+    for item in documents:
+        evidence = item.get("source_evidence")
+        if evidence is not None:
+            evidence_class, source, needle = oracle_manifest_source_anchor(
+                item["path"]
+            )
+            if (
+                item.get("document_class") != evidence_class
+                or evidence != oracle_span(source, needle)
+            ):
+                raise AssertionError(
+                    f"independent manifest source anchor mismatch: {item['path']}"
+                )
+            source_counts[evidence_class] += 1
+        runtime = item.get("runtime_evidence")
+        if runtime is not None:
+            runtime_path, runtime_needle = oracle_runtime_anchor(
+                item["path"], "manifest"
+            )
+            if runtime != oracle_span(runtime_path, runtime_needle):
+                raise AssertionError(
+                    f"independent manifest runtime anchor mismatch: {item['path']}"
+                )
+            runtime_counts[item["path"]] += 1
+    if source_counts != ORACLE_MANIFEST_SOURCE_EVIDENCE_COUNTS or sum(
+        source_counts.values()
+    ) != sum(item.get("source_evidence") is not None for item in documents):
+        raise AssertionError("independent manifest source coverage mismatch")
+    if runtime_counts != ORACLE_MANIFEST_RUNTIME_EVIDENCE_COUNTS or sum(
+        runtime_counts.values()
+    ) != sum(item.get("runtime_evidence") is not None for item in documents):
+        raise AssertionError("independent manifest runtime coverage mismatch")
+
+
+def oracle_validate_runtime_edges(record: dict, graph: dict) -> None:
+    """Close every host/scenario runtime row under test-owned anchors."""
+    profiles = {
+        row["id"]: row for row in record.get("profiles", [])
+    }
+    roots = {
+        row["id"]: row for row in graph.get("scenario_roots", [])
+    }
+    runtime_counts = {
+        target: 0 for target in ORACLE_GRAPH_RUNTIME_EVIDENCE_COUNTS
+    }
+    validated_scenario_relations: dict[
+        tuple[str, str, str, str], list[dict]
+    ] = {}
+    scenario_rows = 0
+    scenario_edges = graph.get("scenario_edges", [])
+    if not isinstance(scenario_edges, list):
+        raise AssertionError("independent scenario edge ledger is not an array")
+    for edge in scenario_edges:
+        runtime = edge.get("runtime_evidence")
+        mandatory = edge.get("load_type") == "mandatory-executable"
+        if (runtime is not None) != mandatory:
+            raise AssertionError(
+                f"independent scenario runtime presence mismatch: {edge.get('id')}"
+            )
+        if runtime is None:
+            continue
+        target = edge.get("target")
+        context = "scenario"
+        if target == "plugins/synkrisis/references/rules-v1.json":
+            operations = set()
+            for identifier in edge.get("active_scenarios", []):
+                root = roots.get(identifier)
+                if root is None or root.get("profile_id") not in profiles:
+                    raise AssertionError(
+                        "independent Synkrisis runtime scope escapes route roots"
+                    )
+                state = profiles[root["profile_id"]].get("branch_state")
+                if not isinstance(state, list) or not state:
+                    raise AssertionError(
+                        "independent Synkrisis runtime profile has no branch state"
+                    )
+                operations.add(state[-1])
+            if len(operations) != 1 or not operations <= {"diagnose", "verify"}:
+                raise AssertionError(
+                    "independent Synkrisis runtime scope mixes operations"
+                )
+            context = next(iter(operations))
+        runtime_path, runtime_needle = oracle_runtime_anchor(target, context)
+        if runtime != oracle_span(runtime_path, runtime_needle):
+            raise AssertionError(
+                f"independent scenario runtime anchor mismatch: {edge.get('id')}"
+            )
+        relation = (
+            edge.get("source"),
+            target,
+            edge.get("kind"),
+            edge.get("load_type"),
+        )
+        validated_scenario_relations.setdefault(relation, []).append(runtime)
+        runtime_counts[target] += 1
+        scenario_rows += 1
+
+    host_rows = 0
+    host_edges = graph.get("edges", [])
+    if not isinstance(host_edges, list):
+        raise AssertionError("independent host edge ledger is not an array")
+    for edge in host_edges:
+        runtime = edge.get("runtime_evidence")
+        mandatory = edge.get("load_type") == "mandatory-executable"
+        if (runtime is not None) != mandatory:
+            raise AssertionError(
+                f"independent host runtime presence mismatch: {edge.get('id')}"
+            )
+        if runtime is None:
+            continue
+        relation = (
+            edge.get("source"),
+            edge.get("target"),
+            edge.get("kind"),
+            edge.get("load_type"),
+        )
+        if runtime not in validated_scenario_relations.get(relation, []):
+            raise AssertionError(
+                f"independent host runtime anchor mismatch: {edge.get('id')}"
+            )
+        runtime_counts[edge["target"]] += 1
+        host_rows += 1
+    if (
+        scenario_rows != 12
+        or host_rows != 11
+        or runtime_counts != ORACLE_GRAPH_RUNTIME_EVIDENCE_COUNTS
+    ):
+        raise AssertionError("independent graph runtime coverage mismatch")
+
+
+def cross_target_runtime_specimens(
+    rows: list[dict], target_field: str
+) -> dict[str, tuple[int, str, dict]]:
+    """Choose one valid runtime span from a different implementation per target."""
+    specimens: dict[str, tuple[int, str, dict]] = {}
+    for index, row in enumerate(rows):
+        runtime = row.get("runtime_evidence")
+        target = row.get(target_field)
+        if runtime is None or target in specimens:
+            continue
+        for donor in rows:
+            donor_runtime = donor.get("runtime_evidence")
+            donor_target = donor.get(target_field)
+            if (
+                donor_runtime is not None
+                and donor_target != target
+                and donor_runtime["path"] != runtime["path"]
+                and donor_runtime != runtime
+            ):
+                specimens[target] = (
+                    index,
+                    donor_target,
+                    copy.deepcopy(donor_runtime),
+                )
+                break
+    if set(specimens) != set(ORACLE_GRAPH_RUNTIME_EVIDENCE_COUNTS):
+        raise AssertionError("runtime rebind specimens do not cover every target")
+    return specimens
 
 
 def oracle_semantic_anchor(profile: dict, obligation: str) -> tuple[str, str]:
@@ -417,20 +790,199 @@ def oracle_semantic_anchor(profile: dict, obligation: str) -> tuple[str, str]:
     )
 
 
-def oracle_validate_semantic_anchors(profile: dict) -> None:
-    """Require every generic-path obligation to carry its exact named relation."""
+def oracle_document_anchor(selected_skill: str, obligation: str) -> tuple[str, str]:
+    """Resolve document relations from a test-owned, closed source grammar."""
+    fiat = ORACLE_SKILL_PATHS["fiat"]
+    fizz = ORACLE_SKILL_PATHS["fizz"]
+    solidity = ORACLE_SKILL_PATHS["solidity-auditor"]
+    xray = ORACLE_SKILL_PATHS["x-ray"]
+    name = Path(obligation).name
+    if obligation.startswith("plugins/hexaemeron/skills/fiat/references/"):
+        source = fiat
+        if name == "xray-reuse.md":
+            source = "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
+        elif name == "controller-checkpoint.md":
+            source = "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
+        return source, name
+    if obligation == "plugins/hermes/skills/hermes/references/optimisation-catalogue.md":
+        return ORACLE_SKILL_PATHS["hermes"], "references/optimisation-catalogue.md"
+    if obligation == "plugins/hexaemeron/skills/metron/references/budget-check.md":
+        return ORACLE_SKILL_PATHS["metron"], "references/budget-check.md"
+    if obligation == "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md":
+        return ORACLE_SKILL_PATHS["phylax"], name
+    if obligation.startswith("plugins/hexaemeron/skills/fizz/references/"):
+        if name == "property-generation.md" and selected_skill == "fiat":
+            return (
+                "plugins/hexaemeron/skills/fizz/agents/implementers/"
+                "specific-property-implementer.md",
+                name,
+            )
+        return fizz, name
+    if obligation.startswith("plugins/hexaemeron/skills/solidity-auditor/references/"):
+        if name == "shared-rules.md":
+            if selected_skill == "solidity-auditor":
+                return solidity, "references/hacking-agents/shared-rules.md"
+            return (
+                "plugins/hexaemeron/skills/solidity-auditor/references/"
+                "senior-auditor-sop.md",
+                name,
+            )
+        if name == "senior-auditor-sop.md" and selected_skill != "solidity-auditor":
+            return (
+                "plugins/hexaemeron/skills/solidity-auditor/references/"
+                "hacking-agents/shared-rules.md",
+                name,
+            )
+        return solidity, name
+    if obligation == "plugins/hexaemeron/skills/x-ray/references/templates.md":
+        if selected_skill == "x-ray":
+            return xray, "references/templates.md"
+        return "plugins/hexaemeron/skills/x-ray/references/threats.md", name
+    if obligation == "plugins/hexaemeron/skills/x-ray/references/threats.md":
+        return xray, "references/threats.md"
+    if obligation in {
+        "plugins/probitas/skills/probitas/references/gates.md",
+        "plugins/probitas/skills/probitas/references/venues.md",
+    }:
+        return ORACLE_SKILL_PATHS["probitas"], f"references/{name}"
+    raise AssertionError(f"independent document relation is unowned: {obligation}")
+
+
+def oracle_full_semantic_anchor(
+    profile: dict, obligation: str
+) -> tuple[str, str, str]:
+    """Classify every obligation and derive one test-owned semantic anchor."""
+    selected_skill = profile["selected_skill"]
+    selected = ORACLE_SKILL_PATHS[selected_skill]
+    if obligation == selected:
+        source, needle = oracle_semantic_anchor(profile, obligation)
+        return "selected_skill", source, needle
+    if obligation.endswith("/EVOLUTION.md"):
+        source, needle = oracle_semantic_anchor(profile, obligation)
+        return "frontier_ledger", source, needle
+    if obligation.endswith("/SKILL.md"):
+        source, needle = oracle_semantic_anchor(profile, obligation)
+        return "related_skill", source, needle
+
+    if obligation in EXPECTED_OPERATION_REFERENCES:
+        source = selected
+        if obligation == "plugins/probitas/docs/adding-a-venue.md":
+            source = "plugins/probitas/skills/probitas/references/venues.md"
+        return (
+            "operation_reference",
+            source,
+            posixpath.relpath(obligation, posixpath.dirname(source)),
+        )
+
+    fiat_workers = {
+        "plugins/hexaemeron/agents/mason.md",
+        "plugins/hexaemeron/agents/scribe.md",
+        "plugins/hexaemeron/agents/surveyor.md",
+        "plugins/hexaemeron/agents/warden.md",
+    }
+    if obligation in fiat_workers:
+        return "worker_prompt", ORACLE_SKILL_PATHS["fiat"], f"`{Path(obligation).stem}`"
+    if obligation.startswith("plugins/hexaemeron/skills/fizz/agents/"):
+        return (
+            "worker_prompt",
+            ORACLE_SKILL_PATHS["fizz"],
+            posixpath.relpath(
+                obligation, posixpath.dirname(ORACLE_SKILL_PATHS["fizz"])
+            ),
+        )
+    if obligation == "plugins/hexaemeron/PROMISES.md":
+        return (
+            "overlay_contract",
+            "plugins/hexaemeron/AGENTS.md",
+            "[PROMISES.md](PROMISES.md)",
+        )
+    if obligation == "plugins/hexaemeron/skills/VERSIONING.md":
+        return (
+            "frontier_policy",
+            "plugins/hexaemeron/AGENTS.md",
+            "`skills/VERSIONING.md`",
+        )
+
+    if obligation in ORACLE_FIXED_INPUTS:
+        if obligation == "plugins/hexaemeron/skills/x-ray/VERSION":
+            return (
+                "fixed_input",
+                ORACLE_SKILL_PATHS["x-ray"],
+                "Read the local `VERSION` file from `$SKILL_DIR/VERSION`",
+            )
+        if obligation == "plugins/hexaemeron/skills/solidity-auditor/VERSION":
+            return (
+                "fixed_input",
+                ORACLE_SKILL_PATHS["solidity-auditor"],
+                "Read the local `VERSION` file from the same directory as this skill",
+            )
+        if obligation == "plugins/hermes/skills/hermes/references/gas-rule-corpus.json":
+            return (
+                "structured_reference",
+                ORACLE_SKILL_PATHS["hermes"],
+                "Every candidate names a rule from "
+                "[references/gas-rule-corpus.json](references/gas-rule-corpus.json)",
+            )
+        if obligation == "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json":
+            return (
+                "structured_reference",
+                ORACLE_SKILL_PATHS["hermes"],
+                "A corpus that fails its own schema",
+            )
+        if obligation.startswith("plugins/hexaemeron/skills/imprimatur/lexicon/"):
+            return (
+                "structured_reference",
+                ORACLE_SKILL_PATHS["imprimatur"],
+                f"`{Path(obligation).name}`",
+            )
+        if obligation == "plugins/synkrisis/references/rules-v1.json":
+            needles = {
+                "diagnose": (
+                    "python3 plugins/synkrisis/scripts/synkrisis.py diagnose \\\n"
+                    "  --cohort build/synkrisis/cohort.json \\\n"
+                    "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+                    "  --out build/synkrisis/findings.json"
+                ),
+                "verify": (
+                    "python3 plugins/synkrisis/scripts/synkrisis.py verify \\\n"
+                    "  --manifest plugins/synkrisis/examples/cross-run-v0/manifest.json \\\n"
+                    "  --policy plugins/synkrisis/examples/cross-run-v0/policy.json \\\n"
+                    "  --cohort build/synkrisis/cohort.json \\\n"
+                    "  --rules plugins/synkrisis/references/rules-v1.json \\\n"
+                    "  --findings build/synkrisis/findings.json"
+                ),
+            }
+            operation = profile["branch_state"][-1]
+            if operation not in needles:
+                raise AssertionError("independent Synkrisis operation drift")
+            return "structured_reference", ORACLE_SKILL_PATHS["synkrisis"], needles[operation]
+        raise AssertionError(f"independent fixed relation is unowned: {obligation}")
+
+    source, needle = oracle_document_anchor(selected_skill, obligation)
+    return "document_reference", source, needle
+
+
+def oracle_validate_semantic_anchors(profile: dict) -> dict[str, int]:
+    """Require all obligations to carry independently derived semantic anchors."""
     evidence_by_obligation = {
         row["obligation"]: row for row in profile["source_evidence"]
     }
+    counts = {name: 0 for name in ORACLE_PROFILE_EVIDENCE_COUNTS}
     for obligation in profile["required_documents"]:
-        if not obligation.endswith(("/SKILL.md", "/EVOLUTION.md")):
-            continue
-        path, needle = oracle_semantic_anchor(profile, obligation)
+        evidence_class, path, needle = oracle_full_semantic_anchor(profile, obligation)
+        if evidence_class not in counts:
+            raise AssertionError(
+                f"independent semantic class is unowned: {evidence_class}"
+            )
         expected = oracle_evidence(obligation, path, needle)
         if evidence_by_obligation.get(obligation) != expected:
             raise AssertionError(
                 f"independent semantic anchor mismatch: {profile['id']}: {obligation}"
             )
+        counts[evidence_class] += 1
+    if sum(counts.values()) != len(profile["required_documents"]):
+        raise AssertionError(f"independent semantic coverage gap: {profile['id']}")
+    return counts
 
 
 def oracle_add_profile(
@@ -845,8 +1397,15 @@ def oracle_validate_profiles_and_routes(record: dict, graph: dict) -> None:
     if record.get("counts") != expected_counts or record.get("totals") != expected_totals:
         raise AssertionError("independent profile denominator mismatch")
 
+    semantic_counts = {name: 0 for name in ORACLE_PROFILE_EVIDENCE_COUNTS}
     for row in observed:
-        oracle_validate_semantic_anchors(row)
+        row_counts = oracle_validate_semantic_anchors(row)
+        for name, count_for_row in row_counts.items():
+            semantic_counts[name] += count_for_row
+    if semantic_counts != ORACLE_PROFILE_EVIDENCE_COUNTS or sum(
+        semantic_counts.values()
+    ) != sum(len(row["required_documents"]) for row in observed):
+        raise AssertionError("independent semantic evidence denominator mismatch")
 
     evidence_projection = [
         {"id": row["id"], "source_evidence": row["source_evidence"]}
@@ -963,6 +1522,7 @@ def oracle_validate_profiles_and_routes(record: dict, graph: dict) -> None:
             pending.extend(adjacency[identifier].get(node, ()))
         if reached != expected_documents:
             raise AssertionError(f"independent route union mismatch: {identifier}")
+    oracle_validate_runtime_edges(record, graph)
 
 
 def command(*arguments: str) -> subprocess.CompletedProcess[str]:
@@ -1072,6 +1632,122 @@ class CorpusManifestTests(unittest.TestCase):
                     )
                     self.assertTrue(item["loader_roots"])
                     self.assertTrue(item["scenario_reachability"])
+
+    def manifest_source_rebinding_specimens(self):
+        rows = [
+            (index, item)
+            for index, item in enumerate(self.manifest["documents"])
+            if item["source_evidence"] is not None
+        ]
+        specimens = {}
+        for index, item in rows:
+            evidence_class = item["document_class"]
+            if evidence_class in specimens:
+                continue
+            for _, donor in rows:
+                if (
+                    donor["document_class"] != evidence_class
+                    and donor["path"] != item["path"]
+                    and donor["source_evidence"]["path"]
+                    != item["source_evidence"]["path"]
+                    and donor["source_evidence"] != item["source_evidence"]
+                ):
+                    specimens[evidence_class] = (
+                        index,
+                        donor["path"],
+                        copy.deepcopy(donor["source_evidence"]),
+                    )
+                    break
+        self.assertEqual(
+            set(specimens), set(ORACLE_MANIFEST_SOURCE_EVIDENCE_COUNTS)
+        )
+        return specimens
+
+    def test_independent_manifest_semantic_evidence_coverage_is_closed(self):
+        oracle_validate_manifest_semantic_anchors(self.manifest)
+        self.assertEqual(
+            sum(
+                item["source_evidence"] is not None
+                for item in self.manifest["documents"]
+            ),
+            sum(ORACLE_MANIFEST_SOURCE_EVIDENCE_COUNTS.values()),
+        )
+        self.assertEqual(
+            sum(
+                item["runtime_evidence"] is not None
+                for item in self.manifest["documents"]
+            ),
+            sum(ORACLE_MANIFEST_RUNTIME_EVIDENCE_COUNTS.values()),
+        )
+
+    def test_manifest_validator_does_not_trust_structured_source_metadata(self):
+        target = "plugins/hermes/skills/hermes/references/gas-rule-corpus.json"
+        donor = (
+            "plugins/hermes/skills/hermes/references/"
+            "gas-rule-corpus.schema.json"
+        )
+        metadata = copy.deepcopy(AI._structured_metadata())
+        metadata[target]["source_path"] = metadata[donor]["source_path"]
+        metadata[target]["source_needle"] = metadata[donor]["source_needle"]
+        changed = copy.deepcopy(self.manifest)
+        by_path = {item["path"]: item for item in changed["documents"]}
+        by_path[target]["source_evidence"] = copy.deepcopy(
+            by_path[donor]["source_evidence"]
+        )
+        with mock.patch.object(AI, "_structured_metadata", return_value=metadata):
+            with self.assertRaisesRegex(
+                AI.Refusal, "manifest semantic source anchor drift"
+            ):
+                AI._validate_manifest_shape(changed)
+
+    def test_manifest_validator_refuses_all_synchronised_runtime_rebindings(self):
+        specimens = cross_target_runtime_specimens(
+            self.manifest["documents"], "path"
+        )
+        original_metadata = AI._structured_metadata()
+        for target, (index, donor_target, donor_runtime) in specimens.items():
+            with self.subTest(target=target, donor=donor_target):
+                metadata = copy.deepcopy(original_metadata)
+                metadata[target]["runtime_path"] = original_metadata[donor_target][
+                    "runtime_path"
+                ]
+                metadata[target]["runtime_needle"] = original_metadata[donor_target][
+                    "runtime_needle"
+                ]
+                changed = copy.deepcopy(self.manifest)
+                changed["documents"][index]["runtime_evidence"] = donor_runtime
+                with mock.patch.object(
+                    AI, "_structured_metadata", return_value=metadata
+                ):
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "manifest semantic runtime anchor drift"
+                    ):
+                        AI._validate_manifest_shape(changed)
+
+    def test_independent_manifest_oracle_refuses_cross_class_source_rebindings(self):
+        for evidence_class, (index, donor_path, donor_evidence) in (
+            self.manifest_source_rebinding_specimens().items()
+        ):
+            with self.subTest(evidence_class=evidence_class, donor=donor_path):
+                changed = copy.deepcopy(self.manifest)
+                changed["documents"][index]["source_evidence"] = donor_evidence
+                with self.assertRaisesRegex(
+                    AssertionError, "independent manifest source anchor mismatch"
+                ):
+                    oracle_validate_manifest_semantic_anchors(changed)
+
+    def test_independent_manifest_oracle_refuses_all_runtime_target_rebindings(self):
+        specimens = cross_target_runtime_specimens(
+            self.manifest["documents"], "path"
+        )
+        for target, (index, donor_target, donor_runtime) in specimens.items():
+            with self.subTest(target=target, donor=donor_target):
+                changed = copy.deepcopy(self.manifest)
+                changed["documents"][index]["runtime_evidence"] = donor_runtime
+                with self.assertRaisesRegex(
+                    AssertionError, "independent manifest runtime anchor mismatch"
+                ):
+                    oracle_validate_manifest_semantic_anchors(changed)
 
     def test_fixed_agent_inputs_are_exact_and_never_executable(self):
         documents = {item["path"]: item for item in self.manifest["documents"]}
@@ -2094,6 +2770,75 @@ class FollowOnAudit2ParentGuardTests(unittest.TestCase):
             self.assertEqual(documents[path]["scenario_reachability"], [])
 
 
+class FollowOnAudit6ParentGuardTests(unittest.TestCase):
+    """Guards that stay assertion-red on exact parent 46572571528e."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest = load(MANIFEST)
+        cls.profiles = load(PROFILES)
+
+    def test_profile_validator_rejects_a_valid_non_skill_span_rebinding(self):
+        changed = copy.deepcopy(self.profiles)
+        profile = next(
+            row for row in changed["profiles"] if row["id"] == "fiat:close-audit"
+        )
+        selected = next(
+            row
+            for row in profile["source_evidence"]
+            if row["obligation"] == ORACLE_SKILL_PATHS["fiat"]
+        )
+        audit_loop = next(
+            row
+            for row in profile["source_evidence"]
+            if row["obligation"]
+            == "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
+        )
+        for key in ("path", "start", "end", "source_sha256", "span_sha256"):
+            audit_loop[key] = selected[key]
+        digest = hashlib.sha256(canonical(changed["profiles"])).hexdigest()
+        changed["projection_sha256"] = digest
+        with mock.patch.object(AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest):
+            with self.assertRaisesRegex(AI.Refusal, "semantic anchor drift"):
+                AI._validate_invocation_profiles(changed)
+
+    def test_manifest_validator_rejects_synchronised_source_metadata_drift(self):
+        target = "plugins/hermes/skills/hermes/references/gas-rule-corpus.json"
+        donor = (
+            "plugins/hermes/skills/hermes/references/"
+            "gas-rule-corpus.schema.json"
+        )
+        metadata = copy.deepcopy(AI._structured_metadata())
+        metadata[target]["source_path"] = metadata[donor]["source_path"]
+        metadata[target]["source_needle"] = metadata[donor]["source_needle"]
+        changed = copy.deepcopy(self.manifest)
+        by_path = {item["path"]: item for item in changed["documents"]}
+        by_path[target]["source_evidence"] = copy.deepcopy(
+            by_path[donor]["source_evidence"]
+        )
+        with mock.patch.object(AI, "_structured_metadata", return_value=metadata):
+            with self.assertRaisesRegex(
+                AI.Refusal, "manifest semantic source anchor drift"
+            ):
+                AI._validate_manifest_shape(changed)
+
+    def test_graph_builder_rejects_synchronised_runtime_metadata_drift(self):
+        target = "plugins/hermes/skills/hermes/references/gas-rule-corpus.json"
+        donor = (
+            "plugins/hermes/skills/hermes/references/"
+            "gas-rule-corpus.schema.json"
+        )
+        metadata = copy.deepcopy(AI._structured_metadata())
+        metadata[target]["runtime_path"] = metadata[donor]["runtime_path"]
+        metadata[target]["runtime_needle"] = metadata[donor]["runtime_needle"]
+        with mock.patch.object(AI, "_structured_metadata", return_value=metadata):
+            with self.assertRaisesRegex(
+                AI.Refusal, "scenario runtime semantic anchor drift"
+            ):
+                changed_manifest = AI.build_manifest(self.profiles)
+                AI.build_loader_graph(changed_manifest, self.profiles)
+
+
 class InvocationProfileTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -2121,6 +2866,94 @@ class InvocationProfileTests(unittest.TestCase):
 
     def test_independent_source_owned_profile_and_route_oracle(self):
         oracle_validate_profiles_and_routes(self.profiles, self.graph)
+
+    def semantic_cross_class_rebinding_specimens(self):
+        specimens = {}
+        for profile_index, profile in enumerate(self.profiles["profiles"]):
+            for evidence_index, evidence in enumerate(profile["source_evidence"]):
+                evidence_class, _, _ = oracle_full_semantic_anchor(
+                    profile, evidence["obligation"]
+                )
+                if evidence_class in specimens:
+                    continue
+                identity = {
+                    key: evidence[key]
+                    for key in ("path", "start", "end", "source_sha256", "span_sha256")
+                }
+                for donor_index, donor in enumerate(profile["source_evidence"]):
+                    donor_class, _, _ = oracle_full_semantic_anchor(
+                        profile, donor["obligation"]
+                    )
+                    donor_identity = {
+                        key: donor[key]
+                        for key in (
+                            "path",
+                            "start",
+                            "end",
+                            "source_sha256",
+                            "span_sha256",
+                        )
+                    }
+                    if (
+                        donor_index != evidence_index
+                        and donor_class != evidence_class
+                        and donor["path"] != evidence["path"]
+                        and donor_identity != identity
+                    ):
+                        specimens[evidence_class] = (
+                            profile_index,
+                            evidence_index,
+                            donor_identity,
+                        )
+                        break
+        self.assertEqual(set(specimens), set(ORACLE_PROFILE_EVIDENCE_COUNTS))
+        return specimens
+
+    def test_validator_refuses_valid_cross_class_cross_target_rebinding(self):
+        for evidence_class, (
+            profile_index,
+            evidence_index,
+            donor_identity,
+        ) in self.semantic_cross_class_rebinding_specimens().items():
+            with self.subTest(evidence_class=evidence_class):
+                changed = copy.deepcopy(self.profiles)
+                evidence = changed["profiles"][profile_index]["source_evidence"][
+                    evidence_index
+                ]
+                evidence.update(donor_identity)
+                digest = hashlib.sha256(canonical(changed["profiles"])).hexdigest()
+                changed["projection_sha256"] = digest
+                with mock.patch.object(AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest):
+                    with self.assertRaisesRegex(AI.Refusal, "semantic anchor drift"):
+                        AI._validate_invocation_profiles(changed)
+
+    def test_independent_oracle_refuses_cross_class_cross_target_rebinding(self):
+        for evidence_class, (
+            profile_index,
+            evidence_index,
+            donor_identity,
+        ) in self.semantic_cross_class_rebinding_specimens().items():
+            with self.subTest(evidence_class=evidence_class):
+                profile = copy.deepcopy(self.profiles["profiles"][profile_index])
+                profile["source_evidence"][evidence_index].update(donor_identity)
+                with self.assertRaisesRegex(
+                    AssertionError, "independent semantic anchor mismatch"
+                ):
+                    oracle_validate_semantic_anchors(profile)
+
+    def test_independent_semantic_anchor_coverage_is_closed(self):
+        observed = {name: 0 for name in ORACLE_PROFILE_EVIDENCE_COUNTS}
+        required = 0
+        evidence = 0
+        for profile in self.profiles["profiles"]:
+            counts = oracle_validate_semantic_anchors(profile)
+            for name, count_for_profile in counts.items():
+                observed[name] += count_for_profile
+            required += len(profile["required_documents"])
+            evidence += len(profile["source_evidence"])
+        self.assertEqual(observed, ORACLE_PROFILE_EVIDENCE_COUNTS)
+        self.assertEqual(required, 5_049)
+        self.assertEqual(evidence, required)
 
     def test_every_required_document_has_one_named_source_witness(self):
         evidence_rows = 0
@@ -2261,7 +3094,7 @@ class InvocationProfileTests(unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "source span"):
             self.validate_synchronized_production_projection(changed)
 
-    def test_synchronized_obligation_fiction_refuses_independent_oracle(self):
+    def test_synchronized_obligation_fiction_refuses_both_validators(self):
         changed = copy.deepcopy(self.profiles)
         profile = next(
             item for item in changed["profiles"] if item["id"] == "alexandria:ordinary"
@@ -2274,11 +3107,12 @@ class InvocationProfileTests(unittest.TestCase):
         profile["source_evidence"].append(evidence)
         profile["source_evidence"].sort(key=lambda row: row["obligation"])
 
-        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AI.Refusal, "relation is unowned"):
+            self.validate_synchronized_production_projection(changed)
         with self.assertRaisesRegex(AssertionError, "independent profile grammar"):
             oracle_validate_profiles_and_routes(changed, self.graph)
 
-    def test_synchronized_bare_basename_refuses_semantic_oracle(self):
+    def test_synchronized_bare_basename_refuses_both_semantic_validators(self):
         changed = copy.deepcopy(self.profiles)
         profile = next(
             item for item in changed["profiles"]
@@ -2291,11 +3125,12 @@ class InvocationProfileTests(unittest.TestCase):
             obligation, "plugins/hexaemeron/PROMISES.md", "SKILL.md"
         )
 
-        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AI.Refusal, "semantic anchor drift"):
+            self.validate_synchronized_production_projection(changed)
         with self.assertRaisesRegex(AssertionError, "semantic anchor"):
             oracle_validate_profiles_and_routes(changed, self.graph)
 
-    def test_synchronized_first_occurrence_refuses_semantic_oracle(self):
+    def test_synchronized_first_occurrence_refuses_both_semantic_validators(self):
         changed = copy.deepcopy(self.profiles)
         profile = next(
             item for item in changed["profiles"]
@@ -2308,11 +3143,12 @@ class InvocationProfileTests(unittest.TestCase):
             obligation, ORACLE_SKILL_PATHS["fiat"], "SKILL.md"
         )
 
-        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AI.Refusal, "semantic anchor drift"):
+            self.validate_synchronized_production_projection(changed)
         with self.assertRaisesRegex(AssertionError, "semantic anchor"):
             oracle_validate_profiles_and_routes(changed, self.graph)
 
-    def test_synchronized_valid_span_rebinding_refuses_semantic_oracle(self):
+    def test_synchronized_valid_span_rebinding_refuses_both_validators(self):
         changed = copy.deepcopy(self.profiles)
         profile = next(
             item for item in changed["profiles"]
@@ -2331,7 +3167,8 @@ class InvocationProfileTests(unittest.TestCase):
         index = profile["required_documents"].index(obligation)
         profile["source_evidence"][index] = replacement
 
-        self.validate_synchronized_production_projection(changed)
+        with self.assertRaisesRegex(AI.Refusal, "semantic anchor drift"):
+            self.validate_synchronized_production_projection(changed)
         with self.assertRaisesRegex(AssertionError, "semantic anchor"):
             oracle_validate_profiles_and_routes(changed, self.graph)
 
@@ -2689,6 +3526,89 @@ class LoaderGraphTests(unittest.TestCase):
                     edge["runtime_evidence"] is not None,
                     edge["load_type"] == "mandatory-executable",
                 )
+
+    def test_independent_runtime_semantic_evidence_coverage_is_closed(self):
+        oracle_validate_runtime_edges(self.profiles, self.graph)
+        self.assertEqual(
+            sum(
+                edge["runtime_evidence"] is not None
+                for edge in self.graph["scenario_edges"]
+            ),
+            12,
+        )
+        self.assertEqual(
+            sum(
+                edge["runtime_evidence"] is not None
+                for edge in self.graph["edges"]
+            ),
+            11,
+        )
+        self.assertEqual(
+            sum(ORACLE_GRAPH_RUNTIME_EVIDENCE_COUNTS.values()), 23
+        )
+
+    def test_graph_validator_does_not_trust_generator_runtime_metadata(self):
+        target = "plugins/hermes/skills/hermes/references/gas-rule-corpus.json"
+        donor = (
+            "plugins/hermes/skills/hermes/references/"
+            "gas-rule-corpus.schema.json"
+        )
+        metadata = copy.deepcopy(AI._structured_metadata())
+        metadata[target]["runtime_path"] = metadata[donor]["runtime_path"]
+        metadata[target]["runtime_needle"] = metadata[donor]["runtime_needle"]
+        with mock.patch.object(AI, "_structured_metadata", return_value=metadata):
+            with self.assertRaisesRegex(
+                AI.Refusal, "scenario runtime semantic anchor drift"
+            ):
+                AI.build_loader_graph(self.manifest, self.profiles)
+
+    def test_graph_validator_refuses_all_scenario_runtime_target_rebindings(self):
+        specimens = cross_target_runtime_specimens(
+            self.graph["scenario_edges"], "target"
+        )
+        for target, (index, donor_target, donor_runtime) in specimens.items():
+            with self.subTest(target=target, donor=donor_target):
+                changed = copy.deepcopy(self.graph)
+                changed["scenario_edges"][index]["runtime_evidence"] = donor_runtime
+                with self.assertRaisesRegex(
+                    AI.Refusal, "scenario runtime semantic anchor drift"
+                ):
+                    AI._validate_complete_scenarios(changed, self.profiles)
+
+    def test_graph_validator_refuses_all_host_runtime_target_rebindings(self):
+        specimens = cross_target_runtime_specimens(self.graph["edges"], "target")
+        for target, (index, donor_target, donor_runtime) in specimens.items():
+            with self.subTest(target=target, donor=donor_target):
+                changed = copy.deepcopy(self.graph)
+                changed["edges"][index]["runtime_evidence"] = donor_runtime
+                with self.assertRaisesRegex(
+                    AI.Refusal, "host runtime semantic anchor drift"
+                ):
+                    AI._validate_complete_scenarios(changed, self.profiles)
+
+    def test_independent_oracle_refuses_all_scenario_runtime_rebindings(self):
+        specimens = cross_target_runtime_specimens(
+            self.graph["scenario_edges"], "target"
+        )
+        for target, (index, donor_target, donor_runtime) in specimens.items():
+            with self.subTest(target=target, donor=donor_target):
+                changed = copy.deepcopy(self.graph)
+                changed["scenario_edges"][index]["runtime_evidence"] = donor_runtime
+                with self.assertRaisesRegex(
+                    AssertionError, "independent scenario runtime anchor mismatch"
+                ):
+                    oracle_validate_runtime_edges(self.profiles, changed)
+
+    def test_independent_oracle_refuses_all_host_runtime_rebindings(self):
+        specimens = cross_target_runtime_specimens(self.graph["edges"], "target")
+        for target, (index, donor_target, donor_runtime) in specimens.items():
+            with self.subTest(target=target, donor=donor_target):
+                changed = copy.deepcopy(self.graph)
+                changed["edges"][index]["runtime_evidence"] = donor_runtime
+                with self.assertRaisesRegex(
+                    AssertionError, "independent host runtime anchor mismatch"
+                ):
+                    oracle_validate_runtime_edges(self.profiles, changed)
 
     def test_host_root_identities_are_exact(self):
         self.assertEqual(
