@@ -3247,6 +3247,110 @@ class CorpusManifestTests(unittest.TestCase):
                 "final output identity check blocked on a FIFO replacement",
             )
 
+    def test_atomic_write_refuses_hardlinked_stage_before_publication(self):
+        with scratch_directory("hardlinked-output-stage-") as temporary:
+            target = Path(temporary) / "record.json"
+            original_open = os.open
+            original_fsync = os.fsync
+            stage: tuple[str, int] | None = None
+            linked = False
+
+            def observe_open(path, flags, *arguments, **keywords):
+                nonlocal stage
+                descriptor = original_open(path, flags, *arguments, **keywords)
+                if (
+                    stage is None
+                    and isinstance(path, str)
+                    and path.startswith(".record.json.")
+                    and flags & os.O_WRONLY
+                ):
+                    stage = (path, keywords["dir_fd"])
+                return descriptor
+
+            def racing_fsync(descriptor):
+                nonlocal linked
+                result = original_fsync(descriptor)
+                if not linked and stage is not None:
+                    linked = True
+                    os.link(
+                        stage[0],
+                        ".retained-stage-link",
+                        src_dir_fd=stage[1],
+                        dst_dir_fd=stage[1],
+                    )
+                return result
+
+            with (
+                mock.patch.object(AI.os, "open", side_effect=observe_open),
+                mock.patch.object(AI.os, "fsync", side_effect=racing_fsync),
+                self.assertRaisesRegex(
+                    AI.Refusal, "output stage is not a single-link regular file"
+                ),
+            ):
+                AI._atomic_write(target, b"{}\n")
+            self.assertFalse(target.exists())
+
+    def test_atomic_write_refuses_same_bytes_stage_replacement(self):
+        with scratch_directory("same-bytes-stage-replacement-") as temporary:
+            target = Path(temporary) / "record.json"
+            original_replace = os.replace
+
+            def racing_replace(source, destination, *arguments, **keywords):
+                os.unlink(source, dir_fd=keywords["src_dir_fd"])
+                descriptor = os.open(
+                    source,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    0o644,
+                    dir_fd=keywords["src_dir_fd"],
+                )
+                try:
+                    os.write(descriptor, b"{}\n")
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
+                return original_replace(
+                    source, destination, *arguments, **keywords
+                )
+
+            with (
+                mock.patch.object(AI.os, "replace", side_effect=racing_replace),
+                self.assertRaisesRegex(
+                    AI.Refusal, "published output does not match the verified stage"
+                ),
+            ):
+                AI._atomic_write(target, b"{}\n")
+
+    def test_atomic_write_refuses_same_bytes_published_replacement(self):
+        with scratch_directory("same-bytes-published-replacement-") as temporary:
+            target = Path(temporary) / "record.json"
+            original_replace = os.replace
+
+            def racing_replace(source, destination, *arguments, **keywords):
+                result = original_replace(
+                    source, destination, *arguments, **keywords
+                )
+                os.unlink(destination, dir_fd=keywords["dst_dir_fd"])
+                descriptor = os.open(
+                    destination,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    0o644,
+                    dir_fd=keywords["dst_dir_fd"],
+                )
+                try:
+                    os.write(descriptor, b"{}\n")
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
+                return result
+
+            with (
+                mock.patch.object(AI.os, "replace", side_effect=racing_replace),
+                self.assertRaisesRegex(
+                    AI.Refusal, "published output does not match the verified stage"
+                ),
+            ):
+                AI._atomic_write(target, b"{}\n")
+
     def test_regular_read_refuses_concurrent_parent_swap(self):
         with (
             scratch_directory() as inside,

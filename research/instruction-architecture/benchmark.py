@@ -843,6 +843,20 @@ def _directory_identity(item: os.stat_result) -> tuple[int, ...]:
     return (item.st_dev, item.st_ino, item.st_mode)
 
 
+def _rename_stable_identity(item: os.stat_result) -> tuple[int, ...]:
+    """Bind one file object across a same-directory atomic replacement."""
+    return (
+        item.st_dev,
+        item.st_ino,
+        item.st_mode,
+        item.st_nlink,
+        item.st_uid,
+        item.st_gid,
+        item.st_size,
+        item.st_mtime_ns,
+    )
+
+
 def _repository_relative(path: Path, label: str) -> PurePosixPath:
     try:
         relative = path.relative_to(ROOT).as_posix()
@@ -5395,6 +5409,8 @@ def _atomic_write(path: Path, data: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
             staged = os.fstat(handle.fileno())
+            if not stat.S_ISREG(staged.st_mode) or staged.st_nlink != 1:
+                raise Refusal("output stage is not a single-link regular file")
         try:
             named_stage = os.open(temporary, _regular_read_flags(), dir_fd=parent)
         except OSError as exc:
@@ -5428,6 +5444,8 @@ def _atomic_write(path: Path, data: bytes) -> None:
             )
         finally:
             os.close(published)
+        if _rename_stable_identity(published_stat) != _rename_stable_identity(staged):
+            raise Refusal("published output does not match the verified stage")
         if reread != data:
             raise Refusal("published output failed reread")
         _fresh_named_identity(relative, parent_identity, published_stat)
