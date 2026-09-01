@@ -114,7 +114,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.47.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.48.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,18 +122,27 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.47.1")
+        self.assertEqual(latest["version"], "fiat-v5.48.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("ADR-067", latest["evidence"])
-        self.assertIn("Fiat-Required", latest["change"])
-        self.assertIn("carryover", latest["change"])
-        self.assertIn("issue-check", latest["change"])
+        self.assertIn("skills#1021", latest["evidence"])
+        self.assertIn("ADR-068", latest["evidence"])
+        self.assertIn("early_merge", latest["change"])
+        self.assertIn("reachable from the run branch", latest["change"])
+        self.assertIn("replacement pull request", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
+        issue_contract = by_version["fiat-v5.47.1"]
+        self.assertEqual(issue_contract["axis"], "generation")
+        self.assertEqual(issue_contract["revision"], "state-shape-validation")
+        self.assertIn("ADR-067", issue_contract["evidence"])
+        self.assertIn("Fiat-Required", issue_contract["change"])
+        self.assertIn("carryover", issue_contract["change"])
+        self.assertIn("issue-check", issue_contract["change"])
+        self.assertIn("held target stay unchanged", issue_contract["change"])
         prose_packet = by_version["fiat-v5.46.1"]
         self.assertEqual(prose_packet["axis"], "generation")
         self.assertEqual(prose_packet["revision"], "state-shape-validation")
