@@ -1872,6 +1872,31 @@
       "path": "plugins/dokimasia/tests/test_xlsx.py",
       "selector": "test_a_traversal_member_name_refuses_by_name",
       "claim": "Recovery evidence requires the refusal to name the member that breached the boundary, so the caller can correct the archive rather than guess."
+    },
+    "dokimasia-propose-p": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_every_scoped_item_gets_exactly_one_entry",
+      "claim": "Positive evidence drafts an entry for every scoped item exactly once, so the reviewer is handed a complete set rather than a partial one they must finish by hand."
+    },
+    "dokimasia-propose-m": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_the_module_holds_no_covered_branch_at_all",
+      "claim": "The misuse driven is drafting the one state ADR-001 reserves to a person: the executable source is required to carry no covered literal and the draftable pair is asserted, so the absence is a property of the code rather than a filter that could be removed."
+    },
+    "dokimasia-propose-s": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_a_label_carrying_a_separator_refuses_and_writes_nothing",
+      "claim": "The declared write boundary is driven with a label carrying a separator and parent references, which must refuse and leave nothing outside the evidence root."
+    },
+    "dokimasia-propose-o": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_a_drafted_set_closes_the_ratio_at_zero",
+      "claim": "The boundary on what a draft establishes is asserted directly: a complete drafted set answers for nothing until a person confirms it, so drafting cannot move a coverage figure."
+    },
+    "dokimasia-propose-r": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_an_existing_set_answering_twice_refuses",
+      "claim": "Recovery evidence requires a set answering for one item twice to refuse by naming the item, so the caller repairs the duplicate rather than the generator picking a copy."
     }
   },
   "handoffs": [
@@ -2431,6 +2456,22 @@
         "S": "dokimasia-scrutiny-s",
         "O": "dokimasia-scrutiny-o",
         "R": "dokimasia-scrutiny-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-drafted-dispositions",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-propose-p",
+        "M": "dokimasia-propose-m",
+        "S": "dokimasia-propose-s",
+        "O": "dokimasia-propose-o",
+        "R": "dokimasia-propose-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
@@ -3982,12 +4023,12 @@
         "evidence_references": "dispositions, each naming the scoped item it answers for and the oracle or reason it carries",
         "exception": "canonical Exceptions field, which declares none",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio",
+        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio, with confirmed dispositions, unconfirmed entries and undisposed items counted apart",
         "subject": "the inventory and workbook sha256 pair the set was written against",
         "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
-        "unknowns": "scoped items no disposition answered for, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
+        "unknowns": "scoped items no disposition answered for, entries a person has not confirmed and which therefore answer for nothing, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
       },
-      "sha256": "7cc745472b06002e4af57ea8418b9c9c7760979b95290036c7bb50a9251f5618",
+      "sha256": "f8dad00c8c30cacdab0ad71f7d0a7feadb18a713969d7cc0d55c454dcc884ec8",
       "source": "plugins/dokimasia/schemas/coverage-v1.json"
     },
     "dokimasia-workbook-lineage": {
@@ -4437,6 +4478,20 @@
       },
       "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
       "source": "plugins/tabularium/scripts/tabularium.py"
+    },
+    "dokimasia-drafted-dispositions": {
+      "bindings": {
+        "evidence_classes": "checked for the completeness of the draft, the emitted vocabulary and the preserved entries, recorded for the per-entry draft digest, joined to the canonical Evidence classes field",
+        "evidence_references": "dispositions, each naming the scoped item it was drafted for and the record field its reason was quoted from",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the drafted entries, their two draftable states and the declared reason cap, with every entry unconfirmed",
+        "subject": "the inventory and workbook sha256 pair the draft was written against",
+        "transition": "a complete draft a reviewer may edit, joined to the canonical Authorises field",
+        "unknowns": "whether a drafted state is the right one for its item, whether a drafted reason is a good reason, and whether anybody has read the draft"
+      },
+      "sha256": "ace9997023fdf4c73813f1ef2cead473f5fee07edef54f214f2481112cf23e6d",
+      "source": "plugins/dokimasia/schemas/dispositions-v1.json"
     }
   },
   "schema": "promise-machine-coverage/v1"
