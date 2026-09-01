@@ -1,0 +1,9 @@
+{
+  "candidate": "require-location-independent",
+  "command": "python3 .hexaemeron/reports/resolve.py enforces-result-not-declaration",
+  "criterion": "enforces-result-not-declaration",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}
