@@ -7,6 +7,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `terminal-goal-loop`
 - Current frontier: Kronos ranks eligible held Next Fiat jobs, selects the highest-value one, sets one durable goal, runs Fiat, and repeats until none remain.
 - Next Fiat job: `None -- mature`
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 

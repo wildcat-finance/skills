@@ -1508,6 +1508,31 @@
       "path": "plugins/probitas/tests/test_gates.py",
       "selector": "test_an_invented_transaction_hash_fails"
     },
+    "probitas-statement-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_missing_evidence_case_refuses_without_output"
+    },
+    "probitas-statement-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_overclaim_case_keeps_ariadne_partial_boundary_visible"
+    },
+    "probitas-statement-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_positive_case_emits_bound_statement"
+    },
+    "probitas-statement-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_recovery_case_failed_verify_preserves_existing_statement"
+    },
+    "probitas-statement-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_stale_case_changes_only_the_mutated_input_digest"
+    },
     "protasis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/hexaemeron/tests/test_protasis_checker.py",
@@ -2721,6 +2746,22 @@
       },
       "group": "executable",
       "promise_id": "probitas-evidence-collection",
+      "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "probitas-statement-m",
+        "O": "probitas-statement-o",
+        "P": "probitas-statement-p",
+        "R": "probitas-statement-r",
+        "S": "probitas-statement-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "probitas-statement-emission",
       "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
@@ -3965,7 +4006,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "50367019e444db2991d2f2ed8ebdc33b0eb9af44169ec5ce2441c9bf311e3d66",
+      "sha256": "3026fcd1afcf4eeab9b5b4105fd442b0052b3ec6a13a98df8a4afa31859b8ea5",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
@@ -4105,7 +4146,7 @@
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "b865685b342b4e853a5084242b17945478e2d5069533cc79933f5970eab361c6",
+      "sha256": "9ada5e0cca35f8482796acbc24d3c1d93e6633ec5ca40c68d810610db5d75837",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {
