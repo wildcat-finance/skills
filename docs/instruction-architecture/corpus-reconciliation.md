@@ -196,9 +196,9 @@ source-bound rather than inferred from a file's presence.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 324
+`loader-graph.json` records 19 roots and 325
 host edges, plus 2595 scenario roots and
-329 scenario edges and 12
+330 scenario edges and 12
 reference-only records. `invocation-profiles.json` contains exactly
 519 normalized, source-owned bounded
 operation profiles across all 31 selectable skills. each profile expands to
@@ -244,8 +244,8 @@ recorded in `cohorts.json`.
 
 `holdout-seal.json` commits the selection method, seed, membership, 16-slot
 case envelope, invocation-profile identity
-`8bfb56c6aa0b440ed6f072f6468844b750f176b0ad24b68be3b5e1134afb1501` and loader-graph identity
-`f36f8224a1f2ddf007ab64f519f854b5fd14f0cd2c8aef673b74bdce447551fe`. it contains no prompt, expected answer, scorer key
+`2e72a66fc2eca6f0cb6ed560abec9df98b685327f71e4c0d4a3a2959e33347a8` and loader-graph identity
+`a4c7f2dfca7e554160fc0ecbba05112ac0f2db1d57e257d1c2b082e7e62c663e`. it contains no prompt, expected answer, scorer key
 or model output. later work may open that envelope once; Step 1 does not score
 it.
 

@@ -87,7 +87,7 @@ BASELINE_RECORD_NAMES = (
     "holdout-seal.json",
 )
 EXPECTED_BASELINE_INVENTORY_SHA256 = (
-    "67dfbfc52e0bb4c7a739d4cc2f4f23e8beac031921b40362ab24bc2eeecfc6c6"
+    "633297f86da3b5ad30b337258955df3fe155b19163f8c4050433686f3e89f2f6"
 )
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
@@ -127,10 +127,10 @@ EXPECTED_PROFILE_COUNTS = {
     "x-ray": 1,
 }
 EXPECTED_PROFILE_PROJECTION_SHA256 = (
-    "b61e5c270f9e5eede8d966d857888a24623f014f47584e7ec42df36ca1bdb31e"
+    "5a44321f787f046216f97c412055365e19d0b2371e45cb89410f39c707c8986a"
 )
 EXPECTED_PROFILE_EVIDENCE_COUNTS = {
-    "document_reference": 939,
+    "document_reference": 963,
     "fixed_input": 42,
     "frontier_ledger": 625,
     "frontier_policy": 25,
@@ -2094,6 +2094,16 @@ def _profile_obligation_evidence(
             selected_skill, branch_state, obligation
         )
         evidence = _evidence(source, needle)
+    elif (
+        selected_skill == "kronos"
+        and obligation
+        == "plugins/hexaemeron/skills/fiat/references/plugin-currency.md"
+    ):
+        evidence = _evidence(
+            selected,
+            "`../fiat/references/plugin-currency.md` names the host\n"
+            "   mechanism.",
+        )
     else:
         metadata = (
             _additional_metadata().get(obligation)
@@ -2489,6 +2499,9 @@ def build_invocation_profiles() -> dict[str, Any]:
     frontier("tabularium")
 
     kronos_own = (evolution["kronos"],)
+    kronos_currency = (
+        "plugins/hexaemeron/skills/fiat/references/plugin-currency.md",
+    )
     full_ledgers = tuple(
         sorted(path for name, path in evolution.items() if name != "kronos")
     )
@@ -2529,6 +2542,7 @@ def build_invocation_profiles() -> dict[str, Any]:
                 f"{scope}__dispatch-{target}",
                 f"{scope} rank plus one target dispatch",
                 documents=common
+                + kronos_currency
                 + (SELECTABLE_SKILL_PATHS["fiat"], SELECTABLE_SKILL_PATHS[target]),
             )
 
@@ -3019,6 +3033,18 @@ def _validation_profile_anchor(
     if obligation.endswith("/SKILL.md"):
         source, needle = _validation_related_skill_anchor(profile, obligation)
         return "related_skill", source, needle
+
+    if (
+        selected_skill == "kronos"
+        and obligation
+        == "plugins/hexaemeron/skills/fiat/references/plugin-currency.md"
+    ):
+        return (
+            "document_reference",
+            selected,
+            "`../fiat/references/plugin-currency.md` names the host\n"
+            "   mechanism.",
+        )
 
     if obligation in VALIDATION_OPERATION_REFERENCE_PATHS:
         source = selected

@@ -189,7 +189,7 @@ ORACLE_MAX_JSON_BYTES = 8 * 1024 * 1024
 ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_BASELINE_INVENTORY_SHA256 = (
-    "67dfbfc52e0bb4c7a739d4cc2f4f23e8beac031921b40362ab24bc2eeecfc6c6"
+    "633297f86da3b5ad30b337258955df3fe155b19163f8c4050433686f3e89f2f6"
 )
 ORACLE_SKILL_PATHS = {
     "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
@@ -235,10 +235,10 @@ ORACLE_FIXED_INPUTS = {
     "plugins/synkrisis/references/rules-v1.json": "mandatory-executable",
 }
 ORACLE_EVIDENCE_PROJECTION_SHA256 = (
-    "7dc7da9b55456ac01cbbe1f3fd7d3c7f0462fabe0626b3583b6c85329ccd135c"
+    "f0600b80578dd719b524b85092ba2261cd364a8cbe411db2dd2a75db863cbf61"
 )
 ORACLE_PROFILE_EVIDENCE_COUNTS = {
-    "document_reference": 939,
+    "document_reference": 963,
     "fixed_input": 42,
     "frontier_ledger": 625,
     "frontier_policy": 25,
@@ -1121,6 +1121,16 @@ def oracle_document_anchor(selected_skill: str, obligation: str) -> tuple[str, s
     solidity = ORACLE_SKILL_PATHS["solidity-auditor"]
     xray = ORACLE_SKILL_PATHS["x-ray"]
     name = Path(obligation).name
+    if (
+        selected_skill == "kronos"
+        and obligation
+        == "plugins/hexaemeron/skills/fiat/references/plugin-currency.md"
+    ):
+        return (
+            ORACLE_SKILL_PATHS["kronos"],
+            "`../fiat/references/plugin-currency.md` names the host\n"
+            "   mechanism.",
+        )
     if obligation.startswith("plugins/hexaemeron/skills/fiat/references/"):
         source = fiat
         if name == "xray-reuse.md":
@@ -1510,6 +1520,9 @@ def oracle_profiles() -> list[dict]:
     frontier("tabularium")
 
     full_ledgers = tuple(sorted(path for name, path in evolution.items() if name != "kronos"))
+    kronos_currency = (
+        "plugins/hexaemeron/skills/fiat/references/plugin-currency.md",
+    )
     open_full = (
         "alexandria", "anamnesis", "berean", "brevitas", "hermes", "ephoros",
         "fiat", "hypomnema", "imprimatur", "metron", "vulgate", "homologia",
@@ -1526,7 +1539,9 @@ def oracle_profiles() -> list[dict]:
                 "kronos",
                 f"{scope}__dispatch-{target}",
                 f"{scope} rank plus one target dispatch",
-                common + (ORACLE_SKILL_PATHS["fiat"], ORACLE_SKILL_PATHS[target]),
+                common
+                + kronos_currency
+                + (ORACLE_SKILL_PATHS["fiat"], ORACLE_SKILL_PATHS[target]),
             )
 
     kronos("full", open_full, full_ledgers)
@@ -3760,7 +3775,7 @@ class InvocationProfileTests(unittest.TestCase):
         AI._validate_invocation_profiles(self.profiles)
         self.assertEqual(
             self.profiles["projection_sha256"],
-            "b61e5c270f9e5eede8d966d857888a24623f014f47584e7ec42df36ca1bdb31e",
+            "5a44321f787f046216f97c412055365e19d0b2371e45cb89410f39c707c8986a",
         )
         self.assertEqual(self.profiles["counts"], AI.EXPECTED_PROFILE_COUNTS)
 
@@ -3852,7 +3867,7 @@ class InvocationProfileTests(unittest.TestCase):
             required += len(profile["required_documents"])
             evidence += len(profile["source_evidence"])
         self.assertEqual(observed, ORACLE_PROFILE_EVIDENCE_COUNTS)
-        self.assertEqual(required, 5_049)
+        self.assertEqual(required, 5_073)
         self.assertEqual(evidence, required)
 
     def test_every_required_document_has_one_named_source_witness(self):
@@ -3868,8 +3883,8 @@ class InvocationProfileTests(unittest.TestCase):
                 self.assertEqual(len(obligations), len(set(obligations)))
                 evidence_rows += len(obligations)
                 required_documents += len(profile["required_documents"])
-        self.assertEqual(evidence_rows, 5_049)
-        self.assertEqual(required_documents, 5_049)
+        self.assertEqual(evidence_rows, 5_073)
+        self.assertEqual(required_documents, 5_073)
 
     def test_every_skill_and_frontier_witness_is_semantically_attributable(self):
         checked = 0
@@ -3911,6 +3926,60 @@ class InvocationProfileTests(unittest.TestCase):
                 "bounded controller operation": 11,
             },
         )
+
+    def test_kronos_dispatch_profiles_load_the_repin_boundary(self):
+        currency = (
+            "plugins/hexaemeron/skills/fiat/references/plugin-currency.md"
+        )
+        source = ORACLE_SKILL_PATHS["kronos"]
+        needle = (
+            "`../fiat/references/plugin-currency.md` names the host\n"
+            "   mechanism."
+        )
+        self.assertIn("and the Kronos re-pin boundary.", oracle_source(currency).decode())
+        self.assertIn(needle, oracle_source(source).decode())
+
+        kronos = [
+            row
+            for row in self.profiles["profiles"]
+            if row["selected_skill"] == "kronos"
+        ]
+        dispatch = [row for row in kronos if "dispatch-" in row["id"]]
+        rank_only = [row for row in kronos if "rank-only" in row["id"]]
+        self.assertEqual((len(dispatch), len(rank_only)), (24, 2))
+        expected_evidence = oracle_evidence(currency, source, needle)
+        for profile in dispatch:
+            with self.subTest(profile=profile["id"]):
+                self.assertIn(currency, profile["required_documents"])
+                evidence = {
+                    row["obligation"]: row for row in profile["source_evidence"]
+                }
+                self.assertEqual(evidence[currency], expected_evidence)
+        self.assertTrue(
+            all(currency not in profile["required_documents"] for profile in rank_only)
+        )
+
+        currency_reach = {
+            root
+            for edge in self.graph["scenario_edges"]
+            if edge["target"] == currency
+            for root in edge["active_scenarios"]
+        }
+        dispatch_ids = {row["id"] for row in dispatch}
+        rank_only_ids = {row["id"] for row in rank_only}
+        dispatch_roots = {
+            row["id"]
+            for row in self.graph["scenario_roots"]
+            if row["profile_id"] in dispatch_ids
+        }
+        rank_only_roots = {
+            row["id"]
+            for row in self.graph["scenario_roots"]
+            if row["profile_id"] in rank_only_ids
+        }
+        self.assertEqual(len(dispatch_roots), 120)
+        self.assertLessEqual(dispatch_roots, currency_reach)
+        self.assertTrue(rank_only_roots.isdisjoint(currency_reach))
 
     def test_every_profile_document_union_and_worker_set_is_closed(self):
         for profile in self.profiles["profiles"]:
@@ -4389,7 +4458,7 @@ class LoaderGraphTests(unittest.TestCase):
                 len(self.graph["scenario_edges"]),
                 len(self.graph["reference_only"]),
             ),
-            (19, 324, 2_595, 329, 12),
+            (19, 325, 2_595, 330, 12),
         )
 
     def test_independent_oracle_accepts_inventory_bound_shallow_sources(self):
