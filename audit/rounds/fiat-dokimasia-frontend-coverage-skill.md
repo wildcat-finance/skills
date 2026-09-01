@@ -312,3 +312,19 @@ Elenchus verdict: guarded
 | S5-R5-01 | low | .horos/boundary.json | Three commits in this step shipped a stale reading boundary. The one committed in a0045d72 recorded 2,377 files walked while the two files that same commit added bring the tree to 2,379. The cause is the auditor's, not the code's: each of those commits piped the scan's output to /dev/null and took its success on trust. Two false leads were followed before the real cause: that the scan counts the controller's own gitignored directory, disproved by adding and removing a file under it and observing no change; and that the two test runners disagree, disproved by running the boundary tests under each and finding both fail on the committed value and pass on a fresh one. Fixed by regenerating with the count read back, the two boundary-currency tests asserted, and the root suite run under both runners before committing. | fixed in a5408048 |
 
 Leads not pursued: the durable version of this is a check that refuses a commit whose boundary a fresh scan would move, which belongs to Horos or to the commit path rather than to a dokimasia step. The schema checker remains a bounded subset, so a fifth schema using a keyword outside it refuses rather than being partially checked. The pinned regeneration test still reads its inputs from two environment variables and was run with both supplied. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4 and needs an isolated context this session cannot open.
+
+## Step 5, round 6 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as the earlier rounds; no disposition set exists for the pinned release, so nothing establishes the reconciler behaves correctly against a real reviewed set rather than an empty one; the 288 millisecond observation is one run on one machine; the scrutiny establishes what the declared rules recognised at one commit and nothing about the application's behaviour; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the ten accepted items across the run stand unchanged. Confirmed sound this round, each with its output read rather than discarded, which is the correction round 5 recorded: the working tree is clean at the recorded head; a fresh scan reproduces the committed boundary at 2,379 files; all five verbs exit zero on their check paths; the design checker admits design-lock, step:5 and integration; the root suite passes 1110/1110 under the parallel runner and cleanly under `unittest discover`; the plugin suite passes 226/226 both with the pinned inputs supplied and with the pinned regeneration test skipped; and both committed evidence records validate against the schemas they declare with no findings. Owed elsewhere and named so neither is lost: a check that refuses a commit whose boundary a fresh scan would move, which belongs to Horos rather than to a dokimasia step; and the RS-40 regrade from step 4, which needs one isolated context per request and cannot be opened from this session.
