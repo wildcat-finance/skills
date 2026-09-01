@@ -311,6 +311,25 @@ class Confirmation(ReconcileCase):
         made = self.run_with("mixed-confirmation.json")
         self.assertEqual(schema.check(made), [])
 
+    def test_one_item_cannot_be_answered_twice_across_the_two_lists(self):
+        """Splitting entries in two must not open a second way to answer once.
+
+        A confirmed entry and a drafted one for the same item state two
+        different things about it, and so do two drafts.
+        """
+        for name, second in (
+            ("closed.json", False),
+            ("all-unconfirmed.json", False),
+        ):
+            with self.subTest(fixture=name):
+                declared = reconcile.read_json(self.made[name])
+                duplicate = dict(declared["dispositions"][0])
+                duplicate["confirmed"] = second
+                declared["dispositions"] = declared["dispositions"] + [duplicate]
+                with self.assertRaises(reconcile.ReconcileError) as caught:
+                    reconcile.reconcile(self.inventory, self.workbook, declared)
+                self.assertIn("two dispositions", str(caught.exception))
+
 
 class NoPathMarksAnythingCovered(ReconcileCase):
     """The control this step exists for: an agent cannot widen coverage."""

@@ -204,13 +204,17 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
             f"the disposition set holds more than the {MAX_DISPOSITIONS}-item cap"
         )
     unconfirmed: list[dict] = []
+    # Every item any entry answered for, confirmed or not. Kept as a set
+    # beside the two lists because the duplicate check runs once per entry
+    # and the declared cap admits 40,000 of them.
+    answered: set[str] = set()
     for entry in entries:
         target = entry.get("item", "")
         if target not in known:
             raise ReconcileError(
                 f"disposition names {target!r}, which is not a scoped item"
             )
-        if target in assigned or any(e["item"] == target for e in unconfirmed):
+        if target in answered:
             raise ReconcileError(
                 f"scoped item {target!r} carries two dispositions, so nothing "
                 "states what was decided about it"
@@ -311,6 +315,7 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
             "reason": reason,
             "oracle": entry.get("oracle", ""),
         }
+        answered.add(target)
         if confirmed:
             assigned[target] = decided
         else:
