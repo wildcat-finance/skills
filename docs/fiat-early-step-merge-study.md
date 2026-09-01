@@ -355,3 +355,22 @@ step's entry, exit, files, tests or disciplines change.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-01
+
+**What changed.** Item 2's source count. The whole-set currency check covers 53
+sources, not 20: 47 under `audit/rounds/`, five plugin `audit/AUDIT.md` files and
+the root `audit/AUDIT.md`. All 53 report `committed=match`. One of the 47 is this
+run's own record, which did not exist when item 2 was first written.
+**Why.** The original number came from reading the tail of the command's output
+rather than counting its rows, so it reported the lines that happened to be
+visible instead of the checked set. A later attempt to recount with `ls
+audit/rounds/*.md | grep -v synopsis` returned 45 and was also wrong, because two
+round files carry the word synopsis inside their own topic slug; `find` and the
+check agree at 47. The substantive claim item 2 rests on is unchanged: the check
+exits 0, so a verified synopsis is the authoritative reading view.
+**Steps touched.** None. The correction is to item 2's evidence count, and no
+step's entry, exit, files, tests or disciplines change.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
