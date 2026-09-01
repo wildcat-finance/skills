@@ -36,10 +36,10 @@ PROFILE_SCHEMA = ROOT / "research/instruction-architecture/schemas/invocation-pr
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "566bbe3d7f6467d2d398cc25ea9ae4047d86aad0181f22402e1f0b558cb470fc"
+    "6960a5176eb2cebda819b3dfd220f7f877147d75f29b7acf32449a6495180e2b"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "9cea8c520b471e8b9975421b33c9fa345baa4d57fc930e74df75ffc90b715e92"
+    "7287c3f5288f5b0246c05aa5a53320b5e4d948c2cc6f787ed5a4972e7f44485c"
 )
 EXPECTED_KRONOS_RANKING_LEDGERS = {
     "plugins/alexandria/skills/alexandria/EVOLUTION.md",
@@ -189,7 +189,7 @@ ORACLE_MAX_JSON_BYTES = 8 * 1024 * 1024
 ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_BASELINE_INVENTORY_SHA256 = (
-    "633297f86da3b5ad30b337258955df3fe155b19163f8c4050433686f3e89f2f6"
+    "88420f4476f7311af54d381339ec9ccf58f95afa10b79f5913c761ef78119c90"
 )
 ORACLE_SKILL_PATHS = {
     "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
@@ -225,6 +225,7 @@ ORACLE_SKILL_PATHS = {
     "x-ray": "plugins/hexaemeron/skills/x-ray/SKILL.md",
 }
 ORACLE_FIXED_INPUTS = {
+    ".python-version": "agent-or-prompt",
     "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": "mandatory-executable",
     "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json": "mandatory-executable",
     "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json": "mandatory-executable",
@@ -235,11 +236,11 @@ ORACLE_FIXED_INPUTS = {
     "plugins/synkrisis/references/rules-v1.json": "mandatory-executable",
 }
 ORACLE_EVIDENCE_PROJECTION_SHA256 = (
-    "f0600b80578dd719b524b85092ba2261cd364a8cbe411db2dd2a75db863cbf61"
+    "a095623b489914a089d7d3c0233d8fdc7ba5a24a3d8dfaf63de7f3e656b98975"
 )
 ORACLE_PROFILE_EVIDENCE_COUNTS = {
     "document_reference": 963,
-    "fixed_input": 42,
+    "fixed_input": 53,
     "frontier_ledger": 625,
     "frontier_policy": 25,
     "operation_reference": 22,
@@ -250,7 +251,7 @@ ORACLE_PROFILE_EVIDENCE_COUNTS = {
     "worker_prompt": 288,
 }
 ORACLE_MANIFEST_SOURCE_EVIDENCE_COUNTS = {
-    "fixed_input": 2,
+    "fixed_input": 3,
     "markdown_reference": 3,
     "operation_reference": 3,
     "structured_reference": 12,
@@ -645,6 +646,12 @@ def oracle_span(path: str, needle: str) -> dict:
 def oracle_manifest_source_anchor(path: str) -> tuple[str, str, str]:
     """Resolve all manifest source relations without production metadata."""
     anchors = {
+        ".python-version": (
+            "fixed_input",
+            "AGENTS.md",
+            "Every `python3` command below means the exact interpreter recorded in\n"
+            "[`.python-version`](.python-version).",
+        ),
         "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": (
             "structured_reference",
             ORACLE_SKILL_PATHS["hermes"],
@@ -1182,6 +1189,73 @@ def oracle_document_anchor(selected_skill: str, obligation: str) -> tuple[str, s
     raise AssertionError(f"independent document relation is unowned: {obligation}")
 
 
+def oracle_python_pin_anchor(profile: dict) -> tuple[str, str]:
+    """Resolve the pin through a test-owned exact operation allowlist."""
+    anchors = {
+        "anamnesis:demo-or-rebuild": (
+            ORACLE_SKILL_PATHS["anamnesis"],
+            "- The interpreter is the exact version in the repository's "
+            "`.python-version`.",
+        ),
+        "anamnesis:ordinary": (
+            ORACLE_SKILL_PATHS["anamnesis"],
+            "- The interpreter is the exact version in the repository's "
+            "`.python-version`.",
+        ),
+        "berean:ordinary": (
+            ORACLE_SKILL_PATHS["berean"],
+            "Run everything from `$PLUGIN_ROOT` with the exact interpreter in the suite\n"
+            "[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version)",
+        ),
+        "brevitas:ordinary": (
+            "plugins/brevitas/AGENTS.md",
+            "- Run the checker with the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version)",
+        ),
+        "hermes:gas-operation": (
+            "plugins/hermes/AGENTS.md",
+            "Run the harness with\n  the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "lemma:changed-or-unexpected": (
+            "plugins/lemma/AGENTS.md",
+            "- Use the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "lemma:ordinary": (
+            "plugins/lemma/AGENTS.md",
+            "- Use the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "probitas:add-venue": (
+            "plugins/probitas/docs/adding-a-venue.md",
+            "Run this with the exact interpreter in the suite\n"
+            "[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "synkrisis:cohort-or-render": (
+            ORACLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+        "synkrisis:diagnose": (
+            ORACLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+        "synkrisis:verify": (
+            ORACLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+    }
+    try:
+        return anchors[profile["id"]]
+    except (KeyError, TypeError) as error:
+        raise AssertionError(
+            f"independent Python pin relation is unowned: {profile.get('id')}"
+        ) from error
+
+
 def oracle_full_semantic_anchor(
     profile: dict, obligation: str
 ) -> tuple[str, str, str]:
@@ -1236,6 +1310,10 @@ def oracle_full_semantic_anchor(
             "plugins/hexaemeron/AGENTS.md",
             "`skills/VERSIONING.md`",
         )
+
+    if obligation == ".python-version":
+        source, needle = oracle_python_pin_anchor(profile)
+        return "fixed_input", source, needle
 
     if obligation in ORACLE_FIXED_INPUTS:
         if obligation == "plugins/hexaemeron/skills/x-ray/VERSION":
@@ -1359,6 +1437,7 @@ def oracle_profiles() -> list[dict]:
     }
     versioning = "plugins/hexaemeron/skills/VERSIONING.md"
     promises = "plugins/hexaemeron/PROMISES.md"
+    python_pin = (".python-version",)
     xray_version = "plugins/hexaemeron/skills/x-ray/VERSION"
     sol_aud_version = "plugins/hexaemeron/skills/solidity-auditor/VERSION"
 
@@ -1386,8 +1465,13 @@ def oracle_profiles() -> list[dict]:
         ),
     )
     frontier("alexandria")
-    add("anamnesis", "ordinary", "capture/verify/release")
-    add("anamnesis", "demo-or-rebuild", "demo or verify-rebuild", ("plugins/anamnesis/docs/demo.md",))
+    add("anamnesis", "ordinary", "capture/verify/release", python_pin)
+    add(
+        "anamnesis",
+        "demo-or-rebuild",
+        "demo or verify-rebuild",
+        python_pin + ("plugins/anamnesis/docs/demo.md",),
+    )
     frontier("anamnesis")
     add("ariadne", "ordinary", "inspect/verify/replay")
     for local_id, phase, documents in (
@@ -1400,7 +1484,8 @@ def oracle_profiles() -> list[dict]:
         add("ariadne", local_id, phase, documents)
     frontier("ariadne")
     for skill in ("berean", "brevitas", "homologia", "horos", "hypomnema", "janus", "sapheneia", "vulgate"):
-        add(skill, "ordinary", "ordinary operation")
+        documents = python_pin if skill in {"berean", "brevitas"} else ()
+        add(skill, "ordinary", "ordinary operation", documents)
         frontier(skill)
 
     hermes_runtime = (
@@ -1408,7 +1493,7 @@ def oracle_profiles() -> list[dict]:
         "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
         "plugins/hermes/skills/hermes/references/optimisation-catalogue.md",
     )
-    add("hermes", "gas-operation", "gas analysis", hermes_runtime)
+    add("hermes", "gas-operation", "gas analysis", python_pin + hermes_runtime)
     frontier("hermes")
     add("elenchus", "ordinary", "ordinary failure analysis")
     add("elenchus", "contract-fix", "contract failure", (ORACLE_SKILL_PATHS["fizz-sync"], promises))
@@ -1500,19 +1585,29 @@ def oracle_profiles() -> list[dict]:
     add("lazarus", "preservation-release", "preservation release", ("plugins/lazarus/docs/preservation-release.md",))
     add("lazarus", "maintenance", "maintenance", ("plugins/lazarus/docs/study.md", "plugins/lazarus/docs/runbook.md"))
     frontier("lazarus")
-    add("lemma", "ordinary", "generate/verify")
-    add("lemma", "changed-or-unexpected", "change/judge/unexpected-output", ("plugins/lemma/INVARIANTS.md",))
+    add("lemma", "ordinary", "generate/verify", python_pin)
+    add(
+        "lemma",
+        "changed-or-unexpected",
+        "change/judge/unexpected-output",
+        python_pin + ("plugins/lemma/INVARIANTS.md",),
+    )
     frontier("lemma")
     add("pandects", "ordinary", "law operation")
     frontier("pandects")
     probitas = ("plugins/probitas/skills/probitas/references/gates.md", "plugins/probitas/skills/probitas/references/venues.md")
     add("probitas", "dossier", "dossier operation", probitas)
-    add("probitas", "add-venue", "add venue", probitas + ("plugins/probitas/docs/adding-a-venue.md",))
+    add(
+        "probitas",
+        "add-venue",
+        "add venue",
+        python_pin + probitas + ("plugins/probitas/docs/adding-a-venue.md",),
+    )
     frontier("probitas")
     rules = ("plugins/synkrisis/references/rules-v1.json",)
-    add("synkrisis", "cohort-or-render", "cohort or render")
-    add("synkrisis", "diagnose", "diagnose", rules)
-    add("synkrisis", "verify", "verify", rules)
+    add("synkrisis", "cohort-or-render", "cohort or render", python_pin)
+    add("synkrisis", "diagnose", "diagnose", python_pin + rules)
+    add("synkrisis", "verify", "verify", python_pin + rules)
     frontier("synkrisis")
     add("tabularium", "ordinary", "capture/verify")
     add("tabularium", "add-adapter", "add adapter", ("plugins/tabularium/docs/adding-an-adapter.md",))
@@ -2374,6 +2469,10 @@ class CorpusManifestTests(unittest.TestCase):
     def test_fixed_agent_inputs_are_exact_and_never_executable(self):
         documents = {item["path"]: item for item in self.manifest["documents"]}
         expected = {
+            ".python-version": (
+                7,
+                "3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab",
+            ),
             "plugins/hexaemeron/skills/x-ray/VERSION": (
                 2,
                 "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
@@ -3843,7 +3942,7 @@ class InvocationProfileTests(unittest.TestCase):
         AI._validate_invocation_profiles(self.profiles)
         self.assertEqual(
             self.profiles["projection_sha256"],
-            "5a44321f787f046216f97c412055365e19d0b2371e45cb89410f39c707c8986a",
+            "b09aeb1ba087dff0c34c3fad63a9096c4862aad71b14fe6c6a12a14819c94c07",
         )
         self.assertEqual(self.profiles["counts"], AI.EXPECTED_PROFILE_COUNTS)
 
@@ -3935,7 +4034,7 @@ class InvocationProfileTests(unittest.TestCase):
             required += len(profile["required_documents"])
             evidence += len(profile["source_evidence"])
         self.assertEqual(observed, ORACLE_PROFILE_EVIDENCE_COUNTS)
-        self.assertEqual(required, 5_073)
+        self.assertEqual(required, 5_084)
         self.assertEqual(evidence, required)
 
     def test_every_required_document_has_one_named_source_witness(self):
@@ -3951,8 +4050,8 @@ class InvocationProfileTests(unittest.TestCase):
                 self.assertEqual(len(obligations), len(set(obligations)))
                 evidence_rows += len(obligations)
                 required_documents += len(profile["required_documents"])
-        self.assertEqual(evidence_rows, 5_073)
-        self.assertEqual(required_documents, 5_073)
+        self.assertEqual(evidence_rows, 5_084)
+        self.assertEqual(required_documents, 5_084)
 
     def test_every_skill_and_frontier_witness_is_semantically_attributable(self):
         checked = 0
@@ -4357,7 +4456,7 @@ class BytePartitionTests(unittest.TestCase):
         cls.sources = {item["path"]: item for item in cls.manifest["documents"]}
 
     def test_every_range_is_ordered_gapless_and_digest_bound(self):
-        self.assertEqual(len(self.partition["files"]), 190)
+        self.assertEqual(len(self.partition["files"]), 191)
         for file_record in self.partition["files"]:
             source = AI._source_blob(file_record["path"])
             cursor = 0
@@ -4376,13 +4475,13 @@ class BytePartitionTests(unittest.TestCase):
             )
 
     def test_partition_totals_reconcile(self):
-        self.assertEqual(sum(self.partition["totals"].values()), 2_290_443)
+        self.assertEqual(sum(self.partition["totals"].values()), 2_290_450)
         self.assertEqual(self.partition["unsupported_operative_bytes"], 0)
         self.assertEqual(self.partition["totals"]["generated_duplicate"], 471_444)
         self.assertEqual(
             self.partition["totals"],
             {
-                "exact_literal_or_evidence": 345_600,
+                "exact_literal_or_evidence": 345_607,
                 "generated_duplicate": 471_444,
                 "governed_operative_semantics": 1_473_399,
                 "human_only_explanation_or_rationale": 0,
@@ -4559,7 +4658,7 @@ class LoaderGraphTests(unittest.TestCase):
                 len(self.graph["scenario_edges"]),
                 len(self.graph["reference_only"]),
             ),
-            (19, 325, 2_595, 330, 12),
+            (19, 332, 2_595, 337, 12),
         )
 
     def test_independent_oracle_accepts_inventory_bound_shallow_sources(self):
@@ -4982,6 +5081,388 @@ class LoaderGraphTests(unittest.TestCase):
         self.assertEqual(first.stdout, second.stdout)
 
 
+class FollowOnAudit18ParentGuardTests(unittest.TestCase):
+    """Guards that stay assertion-red on exact parent fa48ff7a5881."""
+
+    PIN = ".python-version"
+    PIN_SHA256 = "3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab"
+    EXPECTED_PROFILES = {
+        "anamnesis:demo-or-rebuild",
+        "anamnesis:ordinary",
+        "berean:ordinary",
+        "brevitas:ordinary",
+        "hermes:gas-operation",
+        "lemma:changed-or-unexpected",
+        "lemma:ordinary",
+        "probitas:add-venue",
+        "synkrisis:cohort-or-render",
+        "synkrisis:diagnose",
+        "synkrisis:verify",
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest = load(MANIFEST)
+        cls.profiles = load(PROFILES)
+        cls.graph = load(GRAPH)
+
+    @staticmethod
+    def reseal_profiles(record: dict) -> str:
+        digest = hashlib.sha256(canonical(record["profiles"])).hexdigest()
+        record["projection_sha256"] = digest
+        return digest
+
+    @classmethod
+    def independent_profile_scope(cls, profiles: list[dict]) -> None:
+        expected = {
+            row["id"]
+            for row in oracle_profiles()
+            if cls.PIN in row["required_documents"]
+        }
+        observed = {
+            row.get("id")
+            for row in profiles
+            if isinstance(row, dict)
+            and isinstance(row.get("required_documents"), list)
+            and cls.PIN in row["required_documents"]
+        }
+        if expected != cls.EXPECTED_PROFILES or observed != expected:
+            raise AssertionError("independent Python pin profile scope mismatch")
+
+    @classmethod
+    def independent_manifest_pin(cls, manifest: dict) -> None:
+        documents = manifest.get("documents")
+        if not isinstance(documents, list):
+            raise AssertionError("independent Python pin manifest is malformed")
+        matches = [row for row in documents if row.get("path") == cls.PIN]
+        if len(matches) != 1:
+            raise AssertionError("independent Python pin manifest identity mismatch")
+        pin = matches[0]
+        expected_evidence = oracle_span(
+            "AGENTS.md",
+            "Every `python3` command below means the exact interpreter recorded in\n"
+            "[`.python-version`](.python-version).",
+        )
+        expected = {
+            "admission_kind": "fixed-agent-input",
+            "authority_tier": "fixed_input",
+            "bytes": 7,
+            "canonical_content_path": cls.PIN,
+            "canonical_owner": "AGENTS.md",
+            "document_class": "fixed_input",
+            "external_runtime_owner": None,
+            "load_semantics": "agent-or-prompt",
+            "logical_document": "suite-runtime",
+            "path": cls.PIN,
+            "runtime_evidence": None,
+            "sha256": cls.PIN_SHA256,
+            "source_evidence": expected_evidence,
+        }
+        if any(pin.get(field) != value for field, value in expected.items()):
+            raise AssertionError("independent Python pin manifest identity mismatch")
+        if len(pin.get("scenario_reachability", [])) != 55:
+            raise AssertionError("independent Python pin manifest route scope mismatch")
+
+    @classmethod
+    def independent_route_scope(cls, graph: dict) -> None:
+        expected: set[str] = set()
+        for profile_id in cls.EXPECTED_PROFILES:
+            skill = profile_id.split(":", 1)[0]
+            plugin = ORACLE_SKILL_PATHS[skill].split("/")[1]
+            for route, credentials in (
+                ("repository", ("absent", "github-contributor")),
+                ("agent-skills", ("absent", "github-contributor")),
+                ("standalone", ("absent",)),
+            ):
+                base = (
+                    f"standalone:{plugin}:skill:{skill}"
+                    if route == "standalone"
+                    else f"{route}:skill:{skill}"
+                )
+                for credential in credentials:
+                    expected.add(
+                        f"{base}:profile:{profile_id}:credential:{credential}"
+                    )
+        roots = {
+            row.get("id")
+            for row in graph.get("scenario_roots", [])
+            if row.get("profile_id") in cls.EXPECTED_PROFILES
+        }
+        incoming = [
+            edge
+            for edge in graph.get("scenario_edges", [])
+            if edge.get("target") == cls.PIN
+        ]
+        active = {
+            identifier
+            for edge in incoming
+            for identifier in edge.get("active_scenarios", [])
+        }
+        if roots != expected or active != expected or len(expected) != 55:
+            raise AssertionError("independent Python pin route scope mismatch")
+        if not incoming or any(
+            edge.get("kind") != "fixed-agent-input"
+            or edge.get("load_type") != "agent-or-prompt"
+            or edge.get("runtime_evidence") is not None
+            for edge in incoming
+        ):
+            raise AssertionError("independent Python pin execution semantics mismatch")
+
+    def test_suite_runtime_pin_is_an_exact_nonexecuting_fixed_input(self):
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        pin = documents[self.PIN]
+        self.assertEqual(pin["document_class"], "fixed_input")
+        self.assertEqual(pin["admission_kind"], "fixed-agent-input")
+        self.assertEqual(pin["load_semantics"], "agent-or-prompt")
+        self.assertEqual((pin["bytes"], pin["sha256"]), (7, self.PIN_SHA256))
+        self.assertIsNone(pin["runtime_evidence"])
+        self.independent_manifest_pin(self.manifest)
+
+    def test_suite_runtime_pin_scope_is_exact_across_all_five_routes(self):
+        profiles = {
+            row["id"]
+            for row in self.profiles["profiles"]
+            if self.PIN in row["required_documents"]
+        }
+        self.assertEqual(profiles, self.EXPECTED_PROFILES)
+        roots = {
+            row["id"]
+            for row in self.graph["scenario_roots"]
+            if row["profile_id"] in profiles
+        }
+        self.assertEqual(len(roots), 55)
+        incoming = [
+            edge for edge in self.graph["scenario_edges"] if edge["target"] == self.PIN
+        ]
+        self.assertTrue(incoming)
+        self.assertEqual(
+            {root for edge in incoming for root in edge["active_scenarios"]}, roots
+        )
+        self.assertTrue(
+            all(
+                edge["kind"] == "fixed-agent-input"
+                and edge["load_type"] == "agent-or-prompt"
+                and edge["runtime_evidence"] is None
+                for edge in incoming
+            )
+        )
+        self.independent_profile_scope(self.profiles["profiles"])
+        self.independent_route_scope(self.graph)
+
+    def test_every_allowed_profile_refuses_pin_omission(self):
+        for profile_id in sorted(self.EXPECTED_PROFILES):
+            with self.subTest(profile_id=profile_id):
+                changed = copy.deepcopy(self.profiles)
+                profile = next(
+                    row for row in changed["profiles"] if row["id"] == profile_id
+                )
+                profile["required_documents"].remove(self.PIN)
+                profile["fixed_inputs"] = [
+                    row for row in profile["fixed_inputs"] if row["path"] != self.PIN
+                ]
+                profile["source_evidence"] = [
+                    row
+                    for row in profile["source_evidence"]
+                    if row["obligation"] != self.PIN
+                ]
+                digest = self.reseal_profiles(changed)
+                with mock.patch.object(
+                    AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest
+                ):
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "Python pin scope drift"
+                    ):
+                        AI._validate_invocation_profiles(changed)
+                with self.assertRaisesRegex(
+                    AssertionError, "independent Python pin profile scope mismatch"
+                ):
+                    self.independent_profile_scope(changed["profiles"])
+
+    def test_every_allowed_profile_refuses_pin_demotion(self):
+        for profile_id in sorted(self.EXPECTED_PROFILES):
+            with self.subTest(profile_id=profile_id):
+                changed = copy.deepcopy(self.profiles)
+                profile = next(
+                    row for row in changed["profiles"] if row["id"] == profile_id
+                )
+                fixed = next(
+                    row for row in profile["fixed_inputs"] if row["path"] == self.PIN
+                )
+                fixed["load_semantics"] = "reference-only"
+                digest = self.reseal_profiles(changed)
+                with mock.patch.object(
+                    AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest
+                ):
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "fixed input semantics drift"
+                    ):
+                        AI._validate_invocation_profiles(changed)
+                expected = next(
+                    row for row in oracle_profiles() if row["id"] == profile_id
+                )
+                observed = {
+                    key: value
+                    for key, value in profile.items()
+                    if key != "source_evidence"
+                }
+                self.assertNotEqual(observed, expected)
+
+    def test_every_excluded_profile_has_no_pin_semantic_anchor(self):
+        excluded = [
+            row
+            for row in self.profiles["profiles"]
+            if row["id"] not in self.EXPECTED_PROFILES
+        ]
+        self.assertEqual(len(excluded), 508)
+        for profile in excluded:
+            with self.subTest(profile_id=profile["id"]):
+                with self.assertRaisesRegex(AI.Refusal, "relation is unowned"):
+                    AI._python_pin_profile_anchor(
+                        profile["selected_skill"], tuple(profile["branch_state"])
+                    )
+                with self.assertRaisesRegex(AI.Refusal, "relation is unowned"):
+                    AI._validation_python_pin_anchor(profile)
+                with self.assertRaisesRegex(AssertionError, "relation is unowned"):
+                    oracle_python_pin_anchor(profile)
+
+    def test_synchronised_excluded_profile_pin_addition_refuses(self):
+        changed = copy.deepcopy(self.profiles)
+        profile = next(
+            row
+            for row in changed["profiles"]
+            if row["id"] == "anamnesis:frontier-gate"
+        )
+        donor = next(
+            row
+            for row in changed["profiles"]
+            if row["id"] == "anamnesis:ordinary"
+        )
+        profile["required_documents"].append(self.PIN)
+        profile["required_documents"].sort()
+        profile["fixed_inputs"].append(
+            {"path": self.PIN, "load_semantics": "agent-or-prompt"}
+        )
+        profile["fixed_inputs"].sort(key=lambda row: row["path"])
+        evidence = copy.deepcopy(
+            next(
+                row
+                for row in donor["source_evidence"]
+                if row["obligation"] == self.PIN
+            )
+        )
+        profile["source_evidence"].append(evidence)
+        profile["source_evidence"].sort(key=lambda row: row["obligation"])
+        digest = self.reseal_profiles(changed)
+        with mock.patch.object(AI, "EXPECTED_PROFILE_PROJECTION_SHA256", digest):
+            with self.assertRaisesRegex(AI.Refusal, "relation is unowned"):
+                AI._validate_invocation_profiles(changed)
+        with self.assertRaisesRegex(
+            AssertionError, "independent Python pin profile scope mismatch"
+        ):
+            self.independent_profile_scope(changed["profiles"])
+
+    def test_pin_manifest_bytes_digest_execution_and_source_weakening_refuse(self):
+        executable = next(
+            row["runtime_evidence"]
+            for row in self.manifest["documents"]
+            if row["runtime_evidence"] is not None
+        )
+
+        def pin_in(manifest: dict) -> dict:
+            return next(
+                row for row in manifest["documents"] if row["path"] == self.PIN
+            )
+
+        mutations = {
+            "bytes": lambda pin: pin.__setitem__("bytes", 6),
+            "digest": lambda pin: pin.__setitem__("sha256", "0" * 64),
+            "executable": lambda pin: pin.update(
+                {
+                    "load_semantics": "mandatory-executable",
+                    "runtime_evidence": copy.deepcopy(executable),
+                }
+            ),
+            "weak-source-span": lambda pin: pin.__setitem__(
+                "source_evidence", oracle_span("AGENTS.md", ".python-version")
+            ),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label=label):
+                changed = copy.deepcopy(self.manifest)
+                mutate(pin_in(changed))
+                with self.assertRaises(AI.Refusal):
+                    AI._validate_manifest_shape(changed, self.profiles)
+                with self.assertRaisesRegex(
+                    AssertionError, "independent Python pin manifest identity mismatch"
+                ):
+                    self.independent_manifest_pin(changed)
+                if label == "weak-source-span":
+                    with self.assertRaisesRegex(
+                        AssertionError, "independent manifest source anchor mismatch"
+                    ):
+                        oracle_validate_manifest_semantic_anchors(changed)
+
+    def test_pin_graph_refuses_executable_fiction(self):
+        changed = copy.deepcopy(self.graph)
+        pin_edge = next(
+            edge
+            for edge in changed["scenario_edges"]
+            if edge["target"] == self.PIN
+        )
+        runtime = next(
+            edge["runtime_evidence"]
+            for edge in changed["scenario_edges"]
+            if edge["runtime_evidence"] is not None
+        )
+        pin_edge["load_type"] = "mandatory-executable"
+        pin_edge["runtime_evidence"] = copy.deepcopy(runtime)
+        with self.assertRaises(AI.Refusal):
+            AI._validate_complete_scenarios(changed, self.profiles)
+        with self.assertRaisesRegex(
+            AssertionError, "independent Python pin execution semantics mismatch"
+        ):
+            self.independent_route_scope(changed)
+
+    def test_each_pin_route_variant_refuses_deletion(self):
+        roots = [
+            row
+            for row in self.graph["scenario_roots"]
+            if row["profile_id"] == "anamnesis:ordinary"
+        ]
+        self.assertEqual(
+            {(row["route"], row["credential"]) for row in roots},
+            {
+                ("repository", "absent"),
+                ("repository", "github-contributor"),
+                ("agent-skills", "absent"),
+                ("agent-skills", "github-contributor"),
+                ("standalone", "absent"),
+            },
+        )
+        for removed in roots:
+            with self.subTest(
+                route=removed["route"], credential=removed["credential"]
+            ):
+                changed = copy.deepcopy(self.graph)
+                identifier = removed["id"]
+                changed["scenario_roots"] = [
+                    row
+                    for row in changed["scenario_roots"]
+                    if row["id"] != identifier
+                ]
+                for edge in changed["scenario_edges"]:
+                    if identifier in edge["active_scenarios"]:
+                        edge["active_scenarios"].remove(identifier)
+                with self.assertRaisesRegex(
+                    AI.Refusal, "scenario root denominator or identity drift"
+                ):
+                    AI._validate_complete_scenarios(changed, self.profiles)
+                with self.assertRaisesRegex(
+                    AssertionError, "independent Python pin route scope mismatch"
+                ):
+                    self.independent_route_scope(changed)
+
+
 class HoldoutSealTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -5009,7 +5490,7 @@ class HoldoutSealTests(unittest.TestCase):
         self.assertEqual(len(self.cohorts["holdout"]["paths"]), 31)
         self.assertEqual(self.cohorts["holdout"]["unique_bytes"], 363_804)
         self.assertEqual(self.cohorts["holdout"]["unique_byte_ratio"], "0.200002")
-        self.assertEqual(self.cohorts["development"]["unique_bytes"], 1_455_195)
+        self.assertEqual(self.cohorts["development"]["unique_bytes"], 1_455_202)
         self.assertEqual(
             self.cohorts["development"]["unique_byte_ratio"], "0.799998"
         )

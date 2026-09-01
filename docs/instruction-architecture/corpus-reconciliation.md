@@ -2,16 +2,16 @@
 
 source: `a2b634d8e039af988bf30c8316defccf70071d8d`
 
-the framework-74 corpus contains 190 physical files and
-2,290,443 physical bytes. exact whole-file deduplication leaves
-173 files and 1,818,999 bytes. these are
+the framework-74 corpus contains 191 physical files and
+2,290,450 physical bytes. exact whole-file deduplication leaves
+174 files and 1,819,006 bytes. these are
 repository denominators, not prompt-size or semantic-compression claims.
 
 ## inventory
 
 | class | files |
 | --- | ---: |
-| `fixed_input` | 2 |
+| `fixed_input` | 3 |
 | `frontier_ledger` | 26 |
 | `frontier_policy` | 1 |
 | `identity_contract` | 1 |
@@ -156,6 +156,7 @@ semantics, not executable or parsed structured data.
 
 | path | bytes | sha256 | owner | source anchor |
 | --- | ---: | --- | --- | --- |
+| `.python-version` | 7 | `3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab` | `AGENTS.md` | `AGENTS.md:13509-13616` |
 | `plugins/hexaemeron/skills/solidity-auditor/VERSION` | 2 | `1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2` | `plugins/hexaemeron/skills/solidity-auditor/SKILL.md` | `plugins/hexaemeron/skills/solidity-auditor/SKILL.md:1179-1246` |
 | `plugins/hexaemeron/skills/x-ray/VERSION` | 2 | `53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3` | `plugins/hexaemeron/skills/x-ray/SKILL.md` | `plugins/hexaemeron/skills/x-ray/SKILL.md:2289-2344` |
 
@@ -196,9 +197,9 @@ source-bound rather than inferred from a file's presence.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 325
+`loader-graph.json` records 19 roots and 332
 host edges, plus 2595 scenario roots and
-330 scenario edges and 12
+337 scenario edges and 12
 reference-only records. `invocation-profiles.json` contains exactly
 519 normalized, source-owned bounded
 operation profiles across all 31 selectable skills. each profile expands to
@@ -234,7 +235,7 @@ human-only and no byte is treated as a saving through uncertainty.
 ## cohorts
 
 the development cohort holds 27
-logical skills and 1,455,195 exact-unique
+logical skills and 1,455,202 exact-unique
 bytes (0.799998). the sealed holdout holds
 five logical skills and 363,804 exact-unique
 bytes (0.200002). memberships are disjoint.
@@ -244,8 +245,8 @@ recorded in `cohorts.json`.
 
 `holdout-seal.json` commits the selection method, seed, membership, 16-slot
 case envelope, invocation-profile identity
-`2e72a66fc2eca6f0cb6ed560abec9df98b685327f71e4c0d4a3a2959e33347a8` and loader-graph identity
-`a4c7f2dfca7e554160fc0ecbba05112ac0f2db1d57e257d1c2b082e7e62c663e`. it contains no prompt, expected answer, scorer key
+`4666675ba8e6d70bc6465804123a4d88782b844ed46246aa5d9c1e98cc9eee3d` and loader-graph identity
+`140dc536472db687e7851b01ff01f72b88ff35be1aa5acffa7505189f40344ce`. it contains no prompt, expected answer, scorer key
 or model output. later work may open that envelope once; Step 1 does not score
 it.
 

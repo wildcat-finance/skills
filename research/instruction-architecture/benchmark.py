@@ -40,7 +40,7 @@ MAX_JSON_DEPTH = 64
 MAX_JSON_TOKENS = 1_000_000
 MAX_JSON_NUMBER_CHARS = 640
 EXPECTED_COUNTS = {
-    "fixed_input": 2,
+    "fixed_input": 3,
     "skill_contract": 32,
     "structured_reference": 12,
     "runtime_contract": 18,
@@ -56,10 +56,10 @@ EXPECTED_COUNTS = {
     "operation_reference": 25,
 }
 EXPECTED_TOTALS = {
-    "physical_files": 190,
-    "physical_bytes": 2_290_443,
-    "unique_files": 173,
-    "unique_bytes": 1_818_999,
+    "physical_files": 191,
+    "physical_bytes": 2_290_450,
+    "unique_files": 174,
+    "unique_bytes": 1_819_006,
 }
 PARTITION_CLASSES = (
     "governed_operative_semantics",
@@ -87,7 +87,7 @@ BASELINE_RECORD_NAMES = (
     "holdout-seal.json",
 )
 EXPECTED_BASELINE_INVENTORY_SHA256 = (
-    "633297f86da3b5ad30b337258955df3fe155b19163f8c4050433686f3e89f2f6"
+    "88420f4476f7311af54d381339ec9ccf58f95afa10b79f5913c761ef78119c90"
 )
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
@@ -127,11 +127,11 @@ EXPECTED_PROFILE_COUNTS = {
     "x-ray": 1,
 }
 EXPECTED_PROFILE_PROJECTION_SHA256 = (
-    "5a44321f787f046216f97c412055365e19d0b2371e45cb89410f39c707c8986a"
+    "b09aeb1ba087dff0c34c3fad63a9096c4862aad71b14fe6c6a12a14819c94c07"
 )
 EXPECTED_PROFILE_EVIDENCE_COUNTS = {
     "document_reference": 963,
-    "fixed_input": 42,
+    "fixed_input": 53,
     "frontier_ledger": 625,
     "frontier_policy": 25,
     "operation_reference": 22,
@@ -142,7 +142,7 @@ EXPECTED_PROFILE_EVIDENCE_COUNTS = {
     "worker_prompt": 288,
 }
 EXPECTED_MANIFEST_SOURCE_EVIDENCE_COUNTS = {
-    "fixed_input": 2,
+    "fixed_input": 3,
     "markdown_reference": 3,
     "operation_reference": 3,
     "structured_reference": 12,
@@ -218,8 +218,24 @@ VALIDATION_STRUCTURED_REFERENCE_PATHS = frozenset(
 )
 VALIDATION_FIXED_INPUT_PATHS = frozenset(
     {
+        ".python-version",
         "plugins/hexaemeron/skills/solidity-auditor/VERSION",
         "plugins/hexaemeron/skills/x-ray/VERSION",
+    }
+)
+VALIDATION_PYTHON_PIN_PROFILE_IDS = frozenset(
+    {
+        "anamnesis:demo-or-rebuild",
+        "anamnesis:ordinary",
+        "berean:ordinary",
+        "brevitas:ordinary",
+        "hermes:gas-operation",
+        "lemma:changed-or-unexpected",
+        "lemma:ordinary",
+        "probitas:add-venue",
+        "synkrisis:cohort-or-render",
+        "synkrisis:diagnose",
+        "synkrisis:verify",
     }
 )
 
@@ -307,6 +323,13 @@ SELECTABLE_SKILL_PATHS = {
 }
 
 FIXED_AGENT_INPUTS = (
+    (
+        ".python-version",
+        "AGENTS.md",
+        "AGENTS.md",
+        "Every `python3` command below means the exact interpreter recorded in\n"
+        "[`.python-version`](.python-version).",
+    ),
     (
         "plugins/hexaemeron/skills/x-ray/VERSION",
         "plugins/hexaemeron/skills/x-ray/SKILL.md",
@@ -658,7 +681,7 @@ def _fixed_agent_metadata() -> dict[str, dict[str, str]]:
             "source_path": source_path,
             "source_needle": source_needle,
         }
-    if len(result) != 2:
+    if len(result) != 3:
         raise Refusal(f"fixed agent input inventory drift: {len(result)}")
     return result
 
@@ -1703,6 +1726,8 @@ def _logical_document(path: str, document_class: str) -> str:
     if document_class == "markdown_reference":
         return f"skill:{_skill_name(_reference_owner(path))}"
     if document_class == "fixed_input":
+        if path == ".python-version":
+            return "suite-runtime"
         owner = _fixed_agent_metadata()[path]["canonical_owner"]
         return f"skill:{_skill_name(owner)}"
     if document_class == "structured_reference":
@@ -2079,6 +2104,74 @@ def _profile_semantic_anchor(
     )
 
 
+def _python_pin_profile_anchor(
+    selected_skill: str, branch_state: tuple[str, ...]
+) -> tuple[str, str]:
+    """Bind the suite pin only to operations that normatively require it."""
+    profile_id = f"{selected_skill}:{'__'.join(branch_state)}"
+    anchors = {
+        "anamnesis:demo-or-rebuild": (
+            SELECTABLE_SKILL_PATHS["anamnesis"],
+            "- The interpreter is the exact version in the repository's "
+            "`.python-version`.",
+        ),
+        "anamnesis:ordinary": (
+            SELECTABLE_SKILL_PATHS["anamnesis"],
+            "- The interpreter is the exact version in the repository's "
+            "`.python-version`.",
+        ),
+        "berean:ordinary": (
+            SELECTABLE_SKILL_PATHS["berean"],
+            "Run everything from `$PLUGIN_ROOT` with the exact interpreter in the suite\n"
+            "[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version)",
+        ),
+        "brevitas:ordinary": (
+            "plugins/brevitas/AGENTS.md",
+            "- Run the checker with the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version)",
+        ),
+        "hermes:gas-operation": (
+            "plugins/hermes/AGENTS.md",
+            "Run the harness with\n  the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "lemma:changed-or-unexpected": (
+            "plugins/lemma/AGENTS.md",
+            "- Use the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "lemma:ordinary": (
+            "plugins/lemma/AGENTS.md",
+            "- Use the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "probitas:add-venue": (
+            "plugins/probitas/docs/adding-a-venue.md",
+            "Run this with the exact interpreter in the suite\n"
+            "[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "synkrisis:cohort-or-render": (
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+        "synkrisis:diagnose": (
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+        "synkrisis:verify": (
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+    }
+    try:
+        return anchors[profile_id]
+    except KeyError as exc:
+        raise Refusal(f"profile Python pin relation is unowned: {profile_id}") from exc
+
+
 def _profile_obligation_evidence(
     selected_skill: str,
     branch_state: tuple[str, ...],
@@ -2104,6 +2197,9 @@ def _profile_obligation_evidence(
             "`../fiat/references/plugin-currency.md` names the host\n"
             "   mechanism.",
         )
+    elif obligation == ".python-version":
+        source, needle = _python_pin_profile_anchor(selected_skill, branch_state)
+        evidence = _evidence(source, needle)
     else:
         metadata = (
             _additional_metadata().get(obligation)
@@ -2177,6 +2273,7 @@ def build_invocation_profiles() -> dict[str, Any]:
     }
     versioning = "plugins/hexaemeron/skills/VERSIONING.md"
     promises = "plugins/hexaemeron/PROMISES.md"
+    python_pin = (".python-version",)
     xray_version = "plugins/hexaemeron/skills/x-ray/VERSION"
     sol_aud_version = "plugins/hexaemeron/skills/solidity-auditor/VERSION"
 
@@ -2234,12 +2331,17 @@ def build_invocation_profiles() -> dict[str, Any]:
     )
     frontier("alexandria")
 
-    add("anamnesis", "ordinary", "capture/verify/release")
+    add(
+        "anamnesis",
+        "ordinary",
+        "capture/verify/release",
+        documents=python_pin,
+    )
     add(
         "anamnesis",
         "demo-or-rebuild",
         "demo or verify-rebuild",
-        documents=("plugins/anamnesis/docs/demo.md",),
+        documents=python_pin + ("plugins/anamnesis/docs/demo.md",),
     )
     frontier("anamnesis")
 
@@ -2296,7 +2398,8 @@ def build_invocation_profiles() -> dict[str, Any]:
         "sapheneia",
         "vulgate",
     ):
-        add(name, "ordinary", "ordinary operation")
+        documents = python_pin if name in {"berean", "brevitas"} else ()
+        add(name, "ordinary", "ordinary operation", documents=documents)
         frontier(name)
 
     hermes_runtime = (
@@ -2304,7 +2407,12 @@ def build_invocation_profiles() -> dict[str, Any]:
         "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
         "plugins/hermes/skills/hermes/references/optimisation-catalogue.md",
     )
-    add("hermes", "gas-operation", "gas analysis", documents=hermes_runtime)
+    add(
+        "hermes",
+        "gas-operation",
+        "gas analysis",
+        documents=python_pin + hermes_runtime,
+    )
     frontier("hermes")
 
     add("elenchus", "ordinary", "ordinary failure analysis")
@@ -2452,12 +2560,12 @@ def build_invocation_profiles() -> dict[str, Any]:
     )
     frontier("lazarus")
 
-    add("lemma", "ordinary", "generate/verify")
+    add("lemma", "ordinary", "generate/verify", documents=python_pin)
     add(
         "lemma",
         "changed-or-unexpected",
         "change/judge/unexpected-output",
-        documents=("plugins/lemma/INVARIANTS.md",),
+        documents=python_pin + ("plugins/lemma/INVARIANTS.md",),
     )
     frontier("lemma")
 
@@ -2473,14 +2581,31 @@ def build_invocation_profiles() -> dict[str, Any]:
         "probitas",
         "add-venue",
         "add venue",
-        documents=probitas_base + ("plugins/probitas/docs/adding-a-venue.md",),
+        documents=python_pin
+        + probitas_base
+        + ("plugins/probitas/docs/adding-a-venue.md",),
     )
     frontier("probitas")
 
     synkrisis_rules = ("plugins/synkrisis/references/rules-v1.json",)
-    add("synkrisis", "cohort-or-render", "cohort or render")
-    add("synkrisis", "diagnose", "diagnose", documents=synkrisis_rules)
-    add("synkrisis", "verify", "verify", documents=synkrisis_rules)
+    add(
+        "synkrisis",
+        "cohort-or-render",
+        "cohort or render",
+        documents=python_pin,
+    )
+    add(
+        "synkrisis",
+        "diagnose",
+        "diagnose",
+        documents=python_pin + synkrisis_rules,
+    )
+    add(
+        "synkrisis",
+        "verify",
+        "verify",
+        documents=python_pin + synkrisis_rules,
+    )
     frontier("synkrisis")
 
     add("tabularium", "ordinary", "capture/verify")
@@ -3010,6 +3135,74 @@ def _validation_document_anchor(
     raise Refusal(f"profile validator document relation is unowned: {obligation}")
 
 
+def _validation_python_pin_anchor(profile: dict[str, Any]) -> tuple[str, str]:
+    """Resolve the pin through a validator-owned exact profile grammar."""
+    anchors = {
+        "anamnesis:demo-or-rebuild": (
+            SELECTABLE_SKILL_PATHS["anamnesis"],
+            "- The interpreter is the exact version in the repository's "
+            "`.python-version`.",
+        ),
+        "anamnesis:ordinary": (
+            SELECTABLE_SKILL_PATHS["anamnesis"],
+            "- The interpreter is the exact version in the repository's "
+            "`.python-version`.",
+        ),
+        "berean:ordinary": (
+            SELECTABLE_SKILL_PATHS["berean"],
+            "Run everything from `$PLUGIN_ROOT` with the exact interpreter in the suite\n"
+            "[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version)",
+        ),
+        "brevitas:ordinary": (
+            "plugins/brevitas/AGENTS.md",
+            "- Run the checker with the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version)",
+        ),
+        "hermes:gas-operation": (
+            "plugins/hermes/AGENTS.md",
+            "Run the harness with\n  the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "lemma:changed-or-unexpected": (
+            "plugins/lemma/AGENTS.md",
+            "- Use the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "lemma:ordinary": (
+            "plugins/lemma/AGENTS.md",
+            "- Use the exact interpreter in the suite\n"
+            "  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "probitas:add-venue": (
+            "plugins/probitas/docs/adding-a-venue.md",
+            "Run this with the exact interpreter in the suite\n"
+            "[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).",
+        ),
+        "synkrisis:cohort-or-render": (
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+        "synkrisis:diagnose": (
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+        "synkrisis:verify": (
+            SELECTABLE_SKILL_PATHS["synkrisis"],
+            "From a checkout, with the exact interpreter in the suite's\n"
+            "[`.python-version`](../../../../.python-version):",
+        ),
+    }
+    profile_id = profile.get("id")
+    try:
+        return anchors[profile_id]
+    except (KeyError, TypeError) as exc:
+        raise Refusal(
+            f"profile validator Python pin relation is unowned: {profile_id}"
+        ) from exc
+
+
 def _validation_profile_anchor(
     profile: dict[str, Any], obligation: str
 ) -> tuple[str, str, str]:
@@ -3079,6 +3272,10 @@ def _validation_profile_anchor(
             "plugins/hexaemeron/AGENTS.md",
             "`skills/VERSIONING.md`",
         )
+
+    if obligation == ".python-version":
+        source, needle = _validation_python_pin_anchor(profile)
+        return "fixed_input", source, needle
 
     if obligation in VALIDATION_STRUCTURED_REFERENCE_PATHS:
         if obligation == "plugins/hermes/skills/hermes/references/gas-rule-corpus.json":
@@ -3161,6 +3358,12 @@ def _validation_evidence(path: str, needle: str) -> dict[str, Any]:
 def _validation_manifest_source_anchor(path: str) -> tuple[str, str, str]:
     """Resolve every manifest source-evidence row through a closed grammar."""
     anchors = {
+        ".python-version": (
+            "fixed_input",
+            "AGENTS.md",
+            "Every `python3` command below means the exact interpreter recorded in\n"
+            "[`.python-version`](.python-version).",
+        ),
         "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": (
             "structured_reference",
             SELECTABLE_SKILL_PATHS["hermes"],
@@ -3311,6 +3514,19 @@ def _validation_runtime_anchor(target: str, context: str) -> tuple[str, str]:
     if needle is None:
         raise Refusal(f"Synkrisis runtime context is unowned: {context}")
     return "plugins/synkrisis/scripts/synkrisis.py", needle
+
+
+def _validate_python_pin_profile_scope(profiles: list[dict[str, Any]]) -> None:
+    """Refuse every omission from, or addition to, the exact pin allowlist."""
+    observed = {
+        profile.get("id")
+        for profile in profiles
+        if isinstance(profile, dict)
+        and isinstance(profile.get("required_documents"), list)
+        and ".python-version" in profile["required_documents"]
+    }
+    if observed != VALIDATION_PYTHON_PIN_PROFILE_IDS:
+        raise Refusal("invocation profile Python pin scope drift")
 
 
 def _validate_invocation_profiles(record: dict[str, Any]) -> None:
@@ -3480,6 +3696,7 @@ def _validate_invocation_profiles(record: dict[str, Any]) -> None:
             evidence_counts[evidence_class] += 1
     if ids != sorted(set(ids)) or observed_counts != EXPECTED_PROFILE_COUNTS:
         raise Refusal("invocation profile id product drift")
+    _validate_python_pin_profile_scope(profiles)
     if fiat_phases != {
         "implement directive": 360,
         "Solidity audit round": 18,
@@ -3949,6 +4166,8 @@ def _validate_complete_scenarios(
             for identifier, root in roots.items()
             if path in profile_rows[root["profile_id"]]["required_documents"]
         }
+        if path == ".python-version" and len(expected_scope) != 55:
+            raise Refusal("suite Python pin route scope drift")
         actual_scope = observed.get(path, set())
         incoming = [
             edge for edge in topology["scenario_edges"] if edge["target"] == path
