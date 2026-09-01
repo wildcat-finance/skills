@@ -346,3 +346,33 @@ row this run owes.
 bypass a merge gate. Commit key material or an RPC credential. Edit a vendored
 directory. Delete a failing test to make a suite pass. Claim a command ran when
 it did not. Change the held `Next Fiat job` or its acceptance condition.
+
+### Amendment -- 2026-09-01
+
+**What changed.** Item 2's first claim is withdrawn. `done push` is merge-blind
+for a step, and issue 1021 was right. `--merge-commit` is registered at
+`hexctl.py:14480` on the shared `done` parser and does reach `done_push` as
+`args.merge_commit`, but for a stacked step `done_push` refuses it at
+`hexctl.py:6722` with "a step pull request does not merge during the run", and
+that refusal sits inside `if stacked:` at line 6711, well before the call to
+`inspect_pull_request` at line 6773. `stacked` is true whenever
+`run_branch_of(state)` returns a branch, which is every run since 3.4, so the
+`merge_sha is not None` branch inside `inspect_pull_request` is unreachable from
+a step push and the refusal at line 11330 is the only outcome. Item 2's second
+claim stands unchanged: the head check at `hexctl.py:11317` is enforced before
+the merged state is consulted, so a mismatched head refuses first whatever the
+merged state. The `done merge-step` base mismatch stands unchanged as an
+independent gap.
+**Why.** The first claim was drawn from reading `inspect_pull_request` and the
+argument registration without reading `done_push`'s own guard clauses, so it
+described a code path that exists but cannot be entered for the only case this
+topic is about. Found while implementing step 2, which is where the code path
+had to be entered. The correction removes a flag from the design's vocabulary
+rather than changing the design: the selected candidate never named one, so
+adoption is detected from the merged state itself, which also removes the exact
+failure that trapped the 972 run, an operator who could not know a flag existed.
+**Steps touched.** None. Item 2's description of the current mechanism only. No
+step's entry, exit, files, tests or disciplines change, and the design record's
+candidates, criteria and selection are untouched.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

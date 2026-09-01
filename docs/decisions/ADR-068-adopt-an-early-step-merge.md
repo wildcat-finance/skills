@@ -19,31 +19,34 @@ had already recorded, so step 2 regained a diff and could open a replacement
 pull request. Rewriting a published ref to unstick a run is not a recovery an
 agent should need a human for.
 
-Two things about the mechanism were not what the issue's own cause section says,
-and the decision turns on both.
+One thing about the mechanism is not what the issue's own cause section says,
+and one thing the issue says is right in a way worth stating exactly.
 
-`done push` is not merge-blind. It passes `expected_merge_sha=args.merge_commit`
-into `inspect_pull_request`, and `--merge-commit` is registered on the shared
-`done` parser, so the argument reaches it. Supplied, it selects the branch that
-requires the pull request to be merged at exactly that commit, and the
-early-merge refusal is never reached. `done push` then verifies that merge
-commit through GitHub and stores it in the push receipt.
+`done push` is merge-blind for a step, as the issue claims. `--merge-commit` is
+registered on the shared `done` parser and does reach `done_push`, but for a
+stacked step `done_push` refuses it before it ever calls `inspect_pull_request`,
+with "a step pull request does not merge during the run". Every run since 3.4 is
+stacked, so the merge-aware branch inside `inspect_pull_request` cannot be
+entered from a step push and the early-merge refusal is the only outcome. That
+matters for the decision below: adoption cannot be gated on an operator flag,
+because the flag a step push would need is the one it refuses.
 
 The head evidence the issue argues survives an early merge is already enforced,
 one screen earlier, before the merged state is consulted at all. A pull request
 whose head is not the receipted head refuses first, merged or not.
 
-So the mechanism half exists. What it lacks is authority and a record. Nothing
-in `SKILL.md` mentions the flag on a push, so the operator in the 972 run had no
-reason to know it was there; and a push receipt whose `merge_commit` happens to
-be populated is not a statement that this step merged early, only a value a
-reader may infer one from.
+So a step has no reversal path at all, and no record it could leave. A push
+receipt whose `merge_commit` happened to be populated would not be a statement
+that this step merged early, only a value a reader may infer one from, and on the
+stacked path it cannot be populated in the first place.
 
-The real dead end sits one call frame further on. `done merge-step` takes its
-expected base from the integrate directive, whose `into` is always the run
-branch. A step pull request merged early merged into its stacked base, which for
-step N is step N-1's branch. The bases disagree, `inspect_pull_request` refuses,
-and a merged pull request's base cannot be retargeted.
+The dead end also has a second half, one call frame further on. `done merge-step`
+takes its expected base from the integrate directive, whose `into` is always the
+run branch. A step pull request that merged early landed in its stacked base,
+which for step N is step N-1's branch. The bases disagree,
+`inspect_pull_request` refuses, and a merged pull request's base cannot be
+retargeted. Relaxing the push alone would therefore move the refusal rather than
+remove it, which is why the decision below covers both halves.
 
 ## Decision
 

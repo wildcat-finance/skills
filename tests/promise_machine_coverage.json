@@ -1,15 +1,10 @@
 {
   "agent_instruction": {
-    "contract": "wildcat-agent-instruction/v1",
-    "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
       "sha256": "0cb16f881aa250ff830449c22dd98cb32d3f2cb432c7a62f74051f71dfc84759"
     },
-    "manifest": {
-      "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "563eda22e538ac6264f3a7e99599ec8f5fe026bbe2fff8a8d9f428c86af9a43e"
-    },
+    "contract": "wildcat-agent-instruction/v1",
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
@@ -18,6 +13,32 @@
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
         "sha256": "7cfd343c6d8fd498ea1084f8ed93e0dcf5fe1262afc1ee00fb8f4ac43b348c93"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/decoder-bootstrap.txt",
+        "sha256": "9a9a51494ab444727ec6982ab7f8cb846d073bb8d8023e40bffd211a7ba0fab0"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
+        "sha256": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
+        "sha256": "c433e05b95b42bbc76c49a2efc4c4f2c770fb4937dfb8e8c8d85c630d248396e"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
+        "sha256": "11bfeb4cc690fc845999d24ea689d70dff086b809452d90d3ed54e7e77551e87"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
+        "sha256": "b1cc11d442a6960938a2353eb7dfefe6c0327f578f8c534626d0fa94e6b31b93"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
+        "sha256": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd"
       }
     ],
     "fixtures": [
@@ -82,35 +103,13 @@
         "sha256": "db707fe6b63c87e4b6508b9e1c73a109b45df487457c74aeeca3e8998533678c"
       }
     ],
-    "evidence": [
-      {
-        "path": "tests/fixtures/agent-instruction-v1/evidence/decoder-bootstrap.txt",
-        "sha256": "9a9a51494ab444727ec6982ab7f8cb846d073bb8d8023e40bffd211a7ba0fab0"
-      },
-      {
-        "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
-        "sha256": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703"
-      },
-      {
-        "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "c433e05b95b42bbc76c49a2efc4c4f2c770fb4937dfb8e8c8d85c630d248396e"
-      },
-      {
-        "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
-        "sha256": "11bfeb4cc690fc845999d24ea689d70dff086b809452d90d3ed54e7e77551e87"
-      },
-      {
-        "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "b1cc11d442a6960938a2353eb7dfefe6c0327f578f8c534626d0fa94e6b31b93"
-      },
-      {
-        "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
-        "sha256": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd"
-      }
-    ],
+    "manifest": {
+      "path": "tests/fixtures/agent-instruction-v1/manifest.json",
+      "sha256": "563eda22e538ac6264f3a7e99599ec8f5fe026bbe2fff8a8d9f428c86af9a43e"
+    },
+    "promise_id": "promise-machine-agent-instruction-prototype",
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "bc731ed721f937917b02ad51e3e0ea439fbe1a722651b3aee02d873a46e144f3",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
@@ -125,7 +124,8 @@
         "test_portable_promise_machine_package_is_current",
         "test_stale_measurement_report_refuses",
         "test_stale_parity_report_refuses"
-      ]
+      ],
+      "sha256": "bc731ed721f937917b02ad51e3e0ea439fbe1a722651b3aee02d873a46e144f3"
     },
     "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
   },
@@ -1083,55 +1083,55 @@
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
     },
-    "homologia-scaffold-m": {
-      "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
-      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
-    },
-    "homologia-scaffold-o": {
-      "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_no_verb_prints_a_verdict_on_standard_output",
-      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version."
-    },
-    "homologia-scaffold-p": {
-      "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
-      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
-    },
-    "homologia-scaffold-r": {
-      "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
-      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go."
-    },
-    "homologia-scaffold-s": {
-      "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_the_canonical_skill_states_the_declared_version",
-      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
-    },
     "homologia-provenance-m": {
+      "claim": "A proved label with no Lazarus artefact reference refuses before a checked record is written.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_proved_answer_requires_a_lazarus_artefact",
-      "claim": "A proved label with no Lazarus artefact reference refuses before a checked record is written."
+      "selector": "test_proved_answer_requires_a_lazarus_artefact"
     },
     "homologia-provenance-o": {
+      "claim": "The checked record contains no verdict, agreement or correctness claim, preserving the nearest tempting overclaim as unavailable.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_checked_record_is_not_a_verdict",
-      "claim": "The checked record contains no verdict, agreement or correctness claim, preserving the nearest tempting overclaim as unavailable."
+      "selector": "test_checked_record_is_not_a_verdict"
     },
     "homologia-provenance-p": {
+      "claim": "A closed proved expected answer with one safe Lazarus artefact reference is admitted into the source-bound checked record.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_proved_answer_with_a_safe_lazarus_artefact_is_admitted",
-      "claim": "A closed proved expected answer with one safe Lazarus artefact reference is admitted into the source-bound checked record."
+      "selector": "test_proved_answer_with_a_safe_lazarus_artefact_is_admitted"
     },
     "homologia-provenance-r": {
+      "claim": "Repair and rerun remain available because a refused input leaves an existing checked-record destination byte-identical.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_refusal_preserves_existing_output",
-      "claim": "Repair and rerun remain available because a refused input leaves an existing checked-record destination byte-identical."
+      "selector": "test_refusal_preserves_existing_output"
     },
     "homologia-provenance-s": {
+      "claim": "A vector set for a different scale subject refuses rather than inheriting the mirror's scale identity.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_unequal_scale_id_refuses",
-      "claim": "A vector set for a different scale subject refuses rather than inheriting the mirror's scale identity."
+      "selector": "test_unequal_scale_id_refuses"
+    },
+    "homologia-scaffold-m": {
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially.",
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected"
+    },
+    "homologia-scaffold-o": {
+      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version.",
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_no_verb_prints_a_verdict_on_standard_output"
+    },
+    "homologia-scaffold-p": {
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value.",
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace"
+    },
+    "homologia-scaffold-r": {
+      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go.",
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from"
+    },
+    "homologia-scaffold-s": {
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest.",
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_the_canonical_skill_states_the_declared_version"
     },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -3284,36 +3284,36 @@
       "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
     },
     {
-      "promise_id": "homologia-scaffold-identity",
-      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
-      "group": "executable",
       "cases": {
-        "P": "homologia-scaffold-p",
         "M": "homologia-scaffold-m",
-        "S": "homologia-scaffold-s",
         "O": "homologia-scaffold-o",
+        "P": "homologia-scaffold-p",
         "R": "homologia-scaffold-r",
+        "S": "homologia-scaffold-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      }
+      },
+      "group": "executable",
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
     },
     {
-      "promise_id": "homologia-expected-answer-provenance",
-      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
-      "group": "executable",
       "cases": {
-        "P": "homologia-provenance-p",
         "M": "homologia-provenance-m",
-        "S": "homologia-provenance-s",
         "O": "homologia-provenance-o",
+        "P": "homologia-provenance-p",
         "R": "homologia-provenance-r",
+        "S": "homologia-provenance-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      }
+      },
+      "group": "executable",
+      "promise_id": "homologia-expected-answer-provenance",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
     },
     {
       "cases": {
@@ -3488,7 +3488,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d"
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3782,7 +3782,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-design-evidence": {
@@ -3796,7 +3796,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -3810,7 +3810,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work, disposed of row by row in the run pull request's `carryover` block, and any unrun external check"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3824,13 +3824,13 @@
         "transition": "local archive, checkpoint-store preservation, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
       "bindings": {
         "evidence_classes": "receipt kind joined to the canonical Evidence classes field",
-        "evidence_references": "ordered state-container check, the init receipt's read of the task issue's filed decision, append-only ledger receipt payload and previous hash",
+        "evidence_references": "ordered state-container check, the init receipt's read of the task issue's filed decision, append-only ledger receipt payload and previous hash, and the adopted early-merge record naming the merge commit, the ref it was reachable from and that ref's observed tip",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to controller phase and canonical promise heading",
         "scope": "required state-container spine, current step and phase",
@@ -3838,7 +3838,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3852,7 +3852,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3866,7 +3866,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -3880,7 +3880,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -3894,7 +3894,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "fa42a48f6aa5fafcd92607a3220438ecbdb7a2cb922932d77dac59f287fba21d",
+      "sha256": "a8b5193f58451b934ff5e6c05fd8b50ec2c722267dcd10422759d622cf48d93f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

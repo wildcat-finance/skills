@@ -6778,7 +6778,22 @@ def done_push(args, state: dict) -> None:
         expected_head_sha=verified_commits[-1],
         expected_merge_sha=args.merge_commit,
         expected_closing_issue=(expected_issue if not stacked else None),
+        adopt_early_merge=stacked,
     )
+    # A step pull request merged before integrate. The head already matched the
+    # verified range above, so what remains is whether the merge is still in the
+    # base it targeted, and whether GitHub verifies it like any other commit the
+    # run receipts. Recorded explicitly, so a reader is never left inferring an
+    # early merge from which fields happen to be populated.
+    early_merge = None
+    if pr_record.get("early_merge"):
+        adopted = require_full_sha(pr_record["merge_sha"], "adopted merge")
+        early_merge = {
+            "merge_commit": adopted,
+            "reachable_from": args.pr_base,
+            "base_tip": adopted_merge_base_tip(args.dir, adopted, args.pr_base),
+            "github_verified": verify_github_commits(args.dir, [adopted]),
+        }
     github_verified, attribution = verified_github_attribution(
         args.dir, verified_commits
     )
@@ -6796,6 +6811,7 @@ def done_push(args, state: dict) -> None:
         "head_commit": supplied_head,
         "pr_base": args.pr_base,
         "merge_commit": args.merge_commit,
+        "early_merge": early_merge,
         "closed_issue_url": args.closed_issue_url,
         "verified_commits": verified_commits,
         "github_verified": github_verified,
@@ -10952,6 +10968,58 @@ def commit_is_ancestor(
     return status == 0
 
 
+def _ancestry_answer(base_dir: str, candidate: str, descendant: str) -> bool | None:
+    """Git's ancestry answer, or ``None`` when it gave none.
+
+    `merge-base --is-ancestor` answers 0 for yes and 1 for no. Any other status
+    means the question was not answered: a missing object, an unreadable
+    repository, a killed process. Reading one of those as a no would turn a
+    broken call into a finding about a person.
+    """
+    status = bounded_tool_status(
+        base_dir, "git", ["merge-base", "--is-ancestor", candidate, descendant]
+    )
+    return None if status not in (0, 1) else status == 0
+
+
+def adopted_merge_base_tip(base_dir: str, merge_sha: str, base_ref: str) -> str:
+    """The recorded base's remote tip, once an early merge is proven to be in it.
+
+    The distinction this protects is the whole point of the gate. A merge still
+    in its base is an early merge, which the run did not perform and can adopt.
+    A merge no longer in its base means the base was rewritten under it, which
+    is the case the original refusal exists for, and it stays refused.
+
+    A merge somebody else performed is created on the remote, so the local
+    object graph may not hold it. One bounded fetch of the recorded base is the
+    only thing that can turn an unanswerable question into an answered one, and
+    it runs only after the question has actually come back unanswered. A second
+    silence is a refusal rather than another retry.
+    """
+    merge_sha = require_full_sha(merge_sha, "adopted merge")
+    tip = remote_branch_tip(base_dir, base_ref, f"recorded base '{base_ref}' tip")
+    answer = _ancestry_answer(base_dir, merge_sha, tip)
+    if answer is None:
+        bounded_git(
+            base_dir,
+            ["fetch", "--no-tags", "--quiet", "origin", f"refs/heads/{base_ref}"],
+            f"recorded base '{base_ref}' could not be read to answer reachability",
+        )
+        answer = _ancestry_answer(base_dir, merge_sha, tip)
+    if answer is None:
+        die(
+            f"reachability of adopted merge {merge_sha} in '{base_ref}' could "
+            "not be determined"
+        )
+    if not answer:
+        die(
+            f"adopted merge {merge_sha} is not reachable from the recorded base "
+            f"'{base_ref}' at {tip}; a merge that has left its base is a "
+            "rewritten ref, not an early merge"
+        )
+    return tip
+
+
 def signing_key(base_dir: str, commit_sha: str) -> str:
     """The long key id a commit was signed with, or the empty string.
 
@@ -11248,6 +11316,7 @@ def inspect_pull_request(
     expected_merge_sha: str | None,
     expected_head_label: str = "verified pushed branch tip",
     expected_closing_issue: str | None = None,
+    adopt_early_merge: bool = False,
 ) -> dict:
     head_sha = (
         require_full_sha(expected_head_sha, "pull request head")
@@ -11323,11 +11392,19 @@ def inspect_pull_request(
     # commit, so an open one records none.
     merge_commit = payload.get("merge_commit_sha")
     returned_merge = merge_commit if merged and isinstance(merge_commit, str) else None
+    early_merge = False
     if merge_sha is not None:
         if not merged or returned_merge != merge_sha:
             die("pull request is not the expected merged topology")
     elif merged:
-        die("step pull request was already merged before integrate")
+        if not adopt_early_merge:
+            die("step pull request was already merged before integrate")
+        # Adoption is offered, so the merge is a value the caller has to check
+        # rather than a reason to stop. It still has to be a nameable commit:
+        # `merged` without a full merge SHA is an answer we cannot receipt.
+        if returned_merge is None or not COMMIT_RE.fullmatch(returned_merge):
+            die("early-merged pull request did not return a full merge SHA")
+        early_merge = True
     record = {
         "url": url,
         "head": expected_head,
@@ -11337,6 +11414,8 @@ def inspect_pull_request(
         "merge_sha": returned_merge,
         "author_login": author_login,
     }
+    if early_merge:
+        record["early_merge"] = True
     if closing_issue is not None:
         record["closing_issue"] = closing_issue
     return record
