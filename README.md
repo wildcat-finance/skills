@@ -18,7 +18,7 @@ That makes the tools useful on their own and safer to compose into larger jobs.
 The current repository contains 16 plugins and 25 governed first-party skills,
 plus four tightly scoped delivery workers, one portable router, and five
 unchanged skills from the upstream Pashov security suite. The identity contract
-describes those 25 members as 16 domain agents and 9 phase agents.
+describes those 26 members as 17 domain agents and 9 phase agents.
 
 ## What can it do today?
 
@@ -91,6 +91,9 @@ person behind an address, or make an underwriting decision.
 Some members are mature within a narrow promise. Others are useful but have an
 obvious missing surface. A few are scaffolds for work that has not landed.
 
+- [Dokimasia](./plugins/dokimasia) is the future home for the question a
+  release spreadsheet cannot answer: which of an application's routes, actions
+  and guards has no reviewed oracle. Its compile path has not shipped.
 - [Homologia](./plugins/homologia) admits a closed manifest and evidence-classed
   expected integers into checked inputs. Mirror execution, integer comparison
   and a parity verdict still need to be built.
@@ -186,6 +189,9 @@ operations, examples, evidence contract, and current frontier.
   broken specimen it is proved to catch.
 - [Hermes](./plugins/hermes) measures one named Solidity gas-optimisation class
   at a time and rejects unsafe or unproved savings.
+- [Dokimasia](./plugins/dokimasia) compiles a frontend's routes, actions and
+  guards into a coverage denominator and reconciles a reviewed workbook against
+  it. Its compile path has not shipped.
 - [Homologia](./plugins/homologia) admits one pinned pair and its declared
   vectors into deterministic checked inputs. Its mirror-execution and
   comparison path has not shipped.
@@ -238,7 +244,7 @@ relicense those five skills.
 - [Brevitas](./plugins/brevitas) constrains engineering prose after the wording
   passes while preserving details that control a decision.
 
-The roster contains 25 members: 16 domain agents and
+The roster contains 26 members: 17 domain agents and
 9 phase agents. The four named Fiat workers are bounded execution roles rather
 than extra skills:
 

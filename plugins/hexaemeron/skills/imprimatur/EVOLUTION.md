@@ -7,7 +7,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `labelled-prose-v2`
 - Current frontier: Imprimatur has a provenance-bound 64-sample evaluation, but labelled-prose-v1 failed the pre-registered annotation-agreement and structural-holdout coverage gates; its holdout is spent and its provisional scores cannot support tuning.
 - Next Fiat job: Build labelled-prose-v2 by deterministically refilling structural holdout coverage, obtain two fresh blind annotations with sample-by-tier kappa and raw span F1 at least 0.80, then run calibration and one sealed holdout without tuning on v1 holdout.
-- Venues: [../../../../VENUES.json](../../../../VENUES.json)
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

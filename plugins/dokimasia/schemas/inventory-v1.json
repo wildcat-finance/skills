@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wildcat.finance/schemas/dokimasia/inventory/v1.json",
+  "title": "Dokimasia source inventory",
+  "description": "The denominator: every route, API handler, server action and access guard the declared rules recognise in one pinned checkout. Closed, so an unknown key is a refusal. The digest covers schema, rules, caps and items, and never the subject or the root, so two compiles of the same tree agree on any machine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "rules", "subject", "caps", "counts", "scoped_items", "inventory_sha256", "items"],
+  "definitions": {
+    "sourcePath": { "type": "string", "pattern": "^[^/][^\\u0000]*$", "maxLength": 1024 },
+    "url": { "type": "string", "pattern": "^/", "maxLength": 1024 }
+  },
+  "properties": {
+    "schema": { "const": "dokimasia-inventory/v1" },
+    "rules": { "const": "dokimasia-inventory-rules/v1" },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "file_bytes", "depth"],
+      "properties": {
+        "files": { "type": "integer", "minimum": 1 },
+        "file_bytes": { "type": "integer", "minimum": 1 },
+        "depth": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route", "api", "action", "guard"],
+      "properties": {
+        "route": { "type": "integer", "minimum": 0 },
+        "api": { "type": "integer", "minimum": 0 },
+        "action": { "type": "integer", "minimum": 0 },
+        "guard": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "scoped_items": { "type": "integer", "minimum": 0 },
+    "inventory_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "items": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "source"],
+        "properties": {
+          "kind": { "enum": ["route", "api", "action", "guard"] },
+          "source": { "$ref": "#/definitions/sourcePath" },
+          "url": { "$ref": "#/definitions/url" },
+          "dynamic_segments": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^\\[.*\\]$" }
+          },
+          "methods": {
+            "type": "array",
+            "items": { "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] }
+          },
+          "exports": { "type": "array", "items": { "type": "string" } },
+          "guard": { "enum": ["middleware", "named-gate"] },
+          "matchers": { "type": "array", "items": { "type": "string" } },
+          "names": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

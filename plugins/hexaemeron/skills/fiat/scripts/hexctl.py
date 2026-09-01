@@ -378,7 +378,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.46.1",
         "fiat-v5.47.1",
         "fiat-v5.48.1",
-        "fiat-v5.47.1",
+        "fiat-v5.49.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14000,6 +14000,69 @@ def cmd_next(args) -> None:
     print(json.dumps(out))
 
 
+CHECK_MAP_RELPATH = "tests/check-map-v1.json"
+"""Where a repository declares its own checks, when it declares any.
+
+The schema belongs to the wildcat-skills check graph (ADR-045); a repository
+that does not keep one simply has no discoverable suite here.
+"""
+
+CHECK_MAP_SCHEMA = "wildcat.check-map.v1"
+CHECK_MAP_ROOT_CHECK = "root-suite"
+CHECK_MAP_BYTES_MAX = 1024 * 1024
+
+
+def repository_check_command(base_dir: str | None) -> dict | None:
+    """The repository's own declared suite, when one is discoverable.
+
+    Reads the check map in the run worktree and returns its root check for
+    the audit-round directive to carry beside the log path and the lint
+    flags, so a round that owes the repository's suite hears about it from
+    the directive rather than from memory (issue 1067). Discovery is
+    informational and fail-open: no map, an oversized or unreadable file, a
+    foreign schema, or a root check without a usable argv all return None
+    without refusing the directive. Carriage does not assert the command
+    ran; the round's own record still owes that evidence.
+    """
+    if base_dir is None:
+        return None
+    path = os.path.join(base_dir, CHECK_MAP_RELPATH)
+    try:
+        if os.path.getsize(path) > CHECK_MAP_BYTES_MAX:
+            return None
+        with open(path, "rb") as handle:
+            document = json.loads(
+                handle.read().decode("utf-8", "strict"),
+                object_pairs_hook=_strict_json_object,
+            )
+    except (OSError, UnicodeDecodeError, ValueError):
+        return None
+    if not isinstance(document, dict):
+        return None
+    if document.get("schema") != CHECK_MAP_SCHEMA:
+        return None
+    checks = document.get("checks")
+    if not isinstance(checks, dict):
+        return None
+    check = checks.get(CHECK_MAP_ROOT_CHECK)
+    if not isinstance(check, dict):
+        return None
+    argv = check.get("argv")
+    if not isinstance(argv, list) or not argv:
+        return None
+    if not all(isinstance(part, str) and part for part in argv):
+        return None
+    cwd = check.get("cwd", ".")
+    if not isinstance(cwd, str) or not cwd:
+        return None
+    return {
+        "source": CHECK_MAP_RELPATH,
+        "check": CHECK_MAP_ROOT_CHECK,
+        "argv": list(argv),
+        "cwd": cwd,
+    }
+
+
 def _next_directive(state: dict, base_dir: str | None = None) -> dict:
     if state.get("halted"):
         return {"do": "halted", "reason": state["halted"]["reason"]}
@@ -14063,6 +14126,9 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
         }
         if lints_owed:
             owed["lints"] = [f"--{lint}-exit" for lint in LINTS]
+        repo_suite = repository_check_command(base_dir)
+        if repo_suite is not None:
+            owed["repo_suite"] = repo_suite
         if not rounds:
             return {**base, "do": "audit-round", "round": 1, **owed}
         last = rounds[-1]

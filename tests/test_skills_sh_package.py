@@ -81,7 +81,14 @@ CONTRACT = "promise-machine/v1"
 # `well-known` and `download` routes fit while the payload exceeds 1,000 files.
 # The byte cap is untouched and still binds. Do not trim shipped package content
 # merely to hold the old file count.
-MAX_FILES = 1_100
+#
+# An eighteenth plugin crossed 1,100 the same way, at 1,124 files, so the cap
+# moves again under the reasoning above rather than by trimming Dokimasia. What
+# has changed since that reasoning was written is the byte cap: the payload now
+# measures 23,160,342 bytes, 88.3% of the 25 MiB the CLI allows. That one is the
+# CLI's own default and cannot be raised here, so it, and not the file count,
+# is what a nineteenth plugin has to answer for.
+MAX_FILES = 1_200
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
