@@ -932,5 +932,154 @@ class DurableHomeTest(unittest.TestCase):
         self.assertIn("K021", err)
 
 
+DEMO_FRONTIER = {
+    "status": "open",
+    "revision": "a-preserved-source",
+    "current": "The registered offline path runs over checked-in inputs.",
+    "next": "Run the same path over one preserved real-world source.",
+}
+
+
+def demonstration_ledger(skill, frontier=None):
+    """Return one DEMONSTRATION.md whose fenced record carries a demo frontier."""
+    frontier = dict(frontier or DEMO_FRONTIER)
+    frontier.setdefault(
+        "sha256",
+        canonical_digest(
+            frontier["status"], frontier["revision"], frontier["current"], frontier["next"]
+        ),
+    )
+    frontier.setdefault("version", f"{skill}-demo-v0.1.0")
+    record = {
+        "schema": "shoggoth-demonstration/v1",
+        "skill": skill,
+        "plugin": skill,
+        "status": "constructed",
+        "claim_id": f"{skill}-example",
+        "claim": "The registered path exits zero over checked-in inputs.",
+        "non_claim": "It establishes nothing about real-world data.",
+        "network": {"policy": "denied"},
+        "timeout_seconds": 300,
+        "sources": [],
+        "commands": [],
+        "observations": [],
+        "frontier": frontier,
+    }
+    return (
+        f"# {skill} demonstration ledger\n\n"
+        "```shoggoth-demonstration\n" + json.dumps(record, indent=2) + "\n```\n"
+    )
+
+
+class DemoLaneTest(ScoreboardTest):
+    """The demo lane reads DEMONSTRATION.md, ranks, and dispatches nothing."""
+
+    def setUp(self):
+        super().setUp()
+        (self.root / "alpha" / "DEMONSTRATION.md").write_text(
+            demonstration_ledger("alpha"), encoding="utf-8"
+        )
+        (self.root / "beta" / "DEMONSTRATION.md").write_text(
+            demonstration_ledger("beta"), encoding="utf-8"
+        )
+
+    def demo_document(self, **overrides):
+        base = self.document(
+            candidates=[self.candidate(ledger="alpha/DEMONSTRATION.md")],
+            mode="demo",
+            rank_only=True,
+        )
+        base.update(overrides)
+        return base
+
+    def test_a_demo_pass_over_demonstration_ledgers_records(self):
+        code, out, err = self.run_record(self.demo_document())
+        self.assertEqual(code, 0, err)
+        self.assertIn("rank-only pass 1 recorded", out)
+        entry = json.loads(self.lines()[0])
+        self.assertEqual(entry["mode"], "demo")
+        self.assertEqual(entry["candidates"][0]["ledger"], "alpha/DEMONSTRATION.md")
+
+    def test_the_demo_hash_is_the_demo_frontier_digest(self):
+        self.run_record(self.demo_document())
+        entry = json.loads(self.lines()[0])
+        self.assertEqual(
+            entry["candidates"][0]["held_job"],
+            canonical_digest(
+                DEMO_FRONTIER["status"],
+                DEMO_FRONTIER["revision"],
+                DEMO_FRONTIER["current"],
+                DEMO_FRONTIER["next"],
+            ),
+        )
+
+    def test_the_demo_lane_refuses_an_evolution_ledger(self):
+        code, _, err = self.run_record(
+            self.demo_document(candidates=[self.candidate(ledger="alpha/EVOLUTION.md")])
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("K023", err)
+        self.assertIn("DEMONSTRATION.md", err)
+
+    def test_the_default_lane_refuses_a_demonstration_ledger(self):
+        code, _, err = self.run_record(
+            self.document(candidates=[self.candidate(ledger="alpha/DEMONSTRATION.md")])
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("K023", err)
+        self.assertIn("EVOLUTION.md", err)
+
+    def test_the_phase_only_lane_refuses_a_demonstration_ledger(self):
+        code, _, err = self.run_record(
+            self.document(
+                candidates=[self.candidate(ledger="alpha/DEMONSTRATION.md")], mode="phase-only"
+            )
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("K023", err)
+
+    def test_a_demo_pass_that_names_a_run_is_refused(self):
+        code, _, err = self.run_record(self.demo_document(rank_only=False, run="fiat/whatever"))
+        self.assertEqual(code, 1)
+        self.assertIn("K024", err)
+        self.assertIn("dispatches nothing", err)
+
+    def test_a_rank_only_demo_pass_that_names_a_run_keeps_the_older_refusal(self):
+        code, _, err = self.run_record(self.demo_document(run="fiat/whatever"))
+        self.assertEqual(code, 1)
+        self.assertIn("K016", err)
+
+    def test_a_demo_pass_that_is_not_rank_only_is_refused(self):
+        code, _, err = self.run_record(self.demo_document(rank_only=False))
+        self.assertEqual(code, 1)
+        self.assertIn("K024", err)
+
+    def test_a_tampered_demo_frontier_digest_is_refused(self):
+        (self.root / "alpha" / "DEMONSTRATION.md").write_text(
+            demonstration_ledger("alpha", dict(DEMO_FRONTIER, sha256="f" * 64)), encoding="utf-8"
+        )
+        code, _, err = self.run_record(self.demo_document())
+        self.assertEqual(code, 1)
+        self.assertIn("K022", err)
+
+    def test_a_ledger_without_a_record_fence_is_refused(self):
+        (self.root / "alpha" / "DEMONSTRATION.md").write_text("# nothing\n", encoding="utf-8")
+        code, _, err = self.run_record(self.demo_document())
+        self.assertEqual(code, 1)
+        self.assertIn("K022", err)
+
+    def test_a_demo_pass_writes_only_the_scoreboard_line(self):
+        before = sorted(path.name for path in self.root.iterdir())
+        self.run_record(self.demo_document())
+        after = sorted(path.name for path in self.root.iterdir())
+        self.assertEqual(sorted(before + [".kronos"]), after)
+        self.assertEqual(len(self.lines()), 1)
+        self.assertEqual(
+            (self.root / "alpha" / "DEMONSTRATION.md").read_text(encoding="utf-8"),
+            demonstration_ledger("alpha"),
+        )
+        self.assertEqual((self.root / "alpha" / "EVOLUTION.md").read_text(encoding="utf-8"), LEDGER)
+
+
 if __name__ == "__main__":
     unittest.main()

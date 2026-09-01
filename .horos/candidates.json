@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16448723,
+    "bytes_blob": 16467311,
     "bytes_generated": 98
   },
   "entries": [
@@ -278,6 +278,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md"
+    },
+    {
+      "bytes": 18588,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-restore-the-shoggoth-public-front-door-and-demo.synopsis.md"
     },
     {
       "bytes": 59394,

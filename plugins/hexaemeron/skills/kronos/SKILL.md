@@ -94,6 +94,40 @@ The scope rules are unchanged, so this composes with phase-only mode: a
 rank-only pass over the six phase skills records `mode` as `phase-only` and
 `rank_only` as true, which is why the two are separate fields.
 
+## Demo lane mode
+
+The behaviour lane and the demonstration lane are separate, and Kronos reads one
+at a time. Default and phase-only passes read `EVOLUTION.md` and nothing else.
+A demo pass reads `DEMONSTRATION.md` and nothing else. Mixing them is refused:
+the contract in
+[../DEMONSTRATIONS.md](../DEMONSTRATIONS.md) owns the demonstration record, and
+`docs/decisions/ADR-068-govern-real-data-demonstrations-separately.md`
+records why the two lanes do not share a ledger.
+
+Rank the demo lane with the read-only command that owns it:
+
+```text
+python3 scripts/demonstrations.py frontier --root . --lane demo --dry-run
+```
+
+It prints the lane, the record count, the eligible count, the selected skill,
+that record's demo frontier digest, and the held demo job. Then record the pass
+here with `mode` set to `demo` and `rank_only` true. The held-job hash Kronos
+writes for a demo candidate is that record's own demo frontier digest,
+recomputed from its `status`, `revision`, `current` and `next` fields.
+
+This mode ranks and prints. It does not file an issue, dispatch Fiat, advance
+either ledger, or write anything beyond the scoreboard line. `{skill}-demo` and
+`demo-frontier` are governed title and label conventions for a demo job, so a
+name in that shape is a convention and not evidence that an issue exists. Where
+one issue can satisfy a behaviour acceptance set and a demo acceptance set at
+once, both ledgers point at that issue; a second is not filed to make the queue
+symmetric, and a behaviour issue is not reused for a demo job whose acceptance
+it does not carry.
+
+Any of those actions needs the existing Kronos operation that owns it, and the
+user's authority for that operation, not this ranking.
+
 ## Loop
 
 1. Resolve the scope from the user's named directories or repositories. If no
@@ -269,7 +303,11 @@ else `origin`. A missing ref on `pull` is an empty start. An existing ref that
 cannot be read refuses with `K018`; stop, and do not treat that refusal as an
 empty lane. A non-fast-forward `push` refuses with `K019` and leaves local
 files. A URL or unknown remote name refuses with `K020`. Git that cannot start,
-times out, or exceeds the output cap refuses with `K021`. `record`, `park`,
+times out, or exceeds the output cap refuses with `K021`. A demonstration
+ledger with no single record fence, an unparsable record, an incomplete demo
+frontier, or a demo frontier digest that does not recompute refuses with `K022`.
+A candidate whose ledger is not the one its lane reads refuses with `K023`. A
+demo pass that is not rank-only, or that names a run, refuses with `K024`. `record`, `park`,
 `unpark`, `show` and `parked` still start no subprocess.
 
 `pull` prints the ref tip and whether the working copy was empty or replaced.

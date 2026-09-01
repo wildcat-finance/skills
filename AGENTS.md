@@ -156,8 +156,12 @@ comment for this repository, use this sequence on the complete candidate:
    clear every finding. The decision line and the `carryover` block are
    protected content, so a wording pass may not drop or reword either.
 
-The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
-`framework-N`. Keep every queue-specific body rule from the section above.
+The five frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`,
+`framework-N`, and `{skill}-demo`. A `{skill}-demo` issue carries a demonstration
+job from that skill's `DEMONSTRATION.md` and takes the `demo-frontier` label. Both
+are naming conventions: a title or label in that shape is not evidence that an
+issue exists, and a behaviour issue is not reused for a demo job whose acceptance
+it does not carry. Keep every queue-specific body rule from the section above.
 The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
 selectors, numbers, dates, links, quotations, severities, verdicts, status, the

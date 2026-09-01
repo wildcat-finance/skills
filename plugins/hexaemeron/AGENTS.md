@@ -66,6 +66,16 @@ skill's ledger before proposing a frontier run. A `mature` frontier is a hard
 stop unless a maintainer has recorded an evidenced epoch reopening. Kronos is
 terminal by design and excludes itself from its candidate set.
 
+Each of those directories also carries a `DEMONSTRATION.md` governed by
+`skills/DEMONSTRATIONS.md`. That is a separate lane with its own version, its
+own held job, and its own digest: it records what the skill can show over
+inputs a reader can check, never what the skill can do. Do not change an
+`EVOLUTION.md` because a demonstration improved, and do not change a
+`DEMONSTRATION.md` because behaviour advanced. One run may advance both, on
+each lane's own evidence. Check the lane with
+`python3 scripts/demonstrations.py check --root .`, and rank it read-only with
+`python3 scripts/demonstrations.py frontier --root . --lane demo --dry-run`.
+
 Surveyor, Mason, Warden, and Scribe are Fiat worker prompts under `agents/`,
 not separately selectable skills. They execute the exact source-bound packet
 Fiat supplies and return evidence to the controller without writing receipts.
