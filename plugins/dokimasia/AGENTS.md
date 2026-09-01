@@ -1,7 +1,7 @@
 # Dokimasia runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Dokimasia.** Dokimasia defines the boundary for compiling a frontend's routes, actions and access guards into a coverage denominator and reconciling a reviewed UAT workbook against it, so every scoped item carries exactly one disposition. The current scaffold is selectable so contributors can build that boundary, but every substantive operation refuses. Use Horos to decide what an agent does not read, Hexaemeron Fizz to fuzz a contract, and Synkrisis to compare agent runs. None of them compiles a frontend inventory or holds an oracle. **Current frontier:** Dokimasia ships its contracts, packaging and a self-test. No inventory is compiled, no workbook is imported and no disposition is recorded, so nothing yet establishes what a release left unexamined.
+> **Marketplace context: Dokimasia.** Dokimasia defines the boundary for compiling a frontend's routes, actions and access guards into a coverage denominator and reconciling a reviewed UAT workbook against it, so every scoped item carries exactly one disposition. Every declared verb is built. Use Horos to decide what an agent does not read, Hexaemeron Fizz to fuzz a contract, and Synkrisis to compare agent runs. None of them compiles a frontend inventory or holds an oracle. **Current frontier:** Dokimasia compiles a pinned checkout, imports a reviewed workbook, reconciles both into dispositions, and has run one scrutiny of `wildcat-app-v2` at `bb9685fb`: 261 scoped items, none carrying a disposition. No code path helps a reviewer write one, and 261 entries by hand is the whole cost of using this.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -15,12 +15,10 @@ available.
 
 Dokimasia contains one Agent Skill. Select `dokimasia` to inspect or implement
 the declared coverage boundary. Read `skills/dokimasia/SKILL.md` in full.
-`selftest`, `inventory`, `workbook` and `reconcile` are built; every other verb
-must refuse with the runbook step that owes it. Report a closure ratio only for
-an inventory and workbook pair whose digests the disposition set names, and
-never report a scrutiny of a real application, which the pinned demonstration
-has not shipped. A closure ratio states that nothing is unaccounted for, never
-that anything passed.
+Every declared verb is built. Report a closure ratio only for an inventory and
+workbook pair whose digests the disposition set names. A closure ratio states
+that nothing is unaccounted for, never that anything passed, and no item may be
+reported as covered without a reviewed oracle a person named.
 
 `skills/dokimasia/SKILL.md` is the only canonical instruction document. Do not
 add a sibling browsing README.

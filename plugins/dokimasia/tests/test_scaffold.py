@@ -23,19 +23,19 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
-VERSION = "0.1.0"
-UNBUILT = ("demonstrate",)
+VERSION = "1.1.0"
+UNBUILT: tuple[str, ...] = ()
 KEPT_PROMISES = (
     "dokimasia-scaffold-identity",
     "dokimasia-source-inventory",
     "dokimasia-workbook-lineage",
     "dokimasia-disposition-closure",
+    "dokimasia-pinned-scrutiny",
 )
-# Every declared promise is now kept. What remains unbuilt is a transition, not
-# a promise, so the contract must name the step it arrives with rather than
-# declaring a section for it.
+# Every declared promise is kept and every declared verb is built. Nothing
+# remains for the contract to name a step for.
 UNKEPT_PROMISES = ()
-UNBUILT_TRANSITION_STEP = "step 5"
+UNBUILT_TRANSITION_STEP = ""
 
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
@@ -100,13 +100,11 @@ class ContractTests(unittest.TestCase):
             with self.subTest(promise=promise):
                 self.assertNotIn(promise, declared)
 
-    def test_the_contract_names_the_step_the_unbuilt_transition_arrives_with(self):
+    def test_the_contract_claims_no_transition_it_has_not_built(self):
         # Collapse wrapping: the contract is prose and reflows, the claim does not.
         text = " ".join(SKILL.read_text(encoding="utf-8").split())
-        self.assertIn(f"{UNBUILT_TRANSITION_STEP} owes it", text)
-        for promise in UNKEPT_PROMISES:
-            with self.subTest(promise=promise):
-                self.assertIn(f"`{promise}`", text)
+        self.assertNotIn("owes it", text)
+        self.assertEqual(UNKEPT_PROMISES, ())
 
     def test_every_declared_promise_names_a_built_verb(self):
         """A declared promise whose verb still refuses is the overclaim the law bars."""
@@ -123,11 +121,21 @@ class ContractTests(unittest.TestCase):
         self.assertIn("Never report an item as covered without a reviewed oracle.", text)
         self.assertIn("It does not mean anything passed.", text)
 
-    def test_the_ledger_opens_the_first_frontier(self):
+    def test_the_ledger_declares_the_version_every_other_surface_declares(self):
         text = LEDGER.read_text(encoding="utf-8")
-        self.assertIn("Current version: `dokimasia-v0.1.0`", text)
+        self.assertIn(f"Current version: `dokimasia-v{VERSION}`", text)
         self.assertIn("Frontier status: `open`", text)
-        self.assertIn("Frontier revision: `first-scrutiny`", text)
+        self.assertIsNotNone(
+            re.search(r"^- Frontier revision: `[a-z0-9-]+`$", text, re.M),
+            "the ledger names no frontier revision",
+        )
+
+    def test_the_history_records_the_current_version_as_its_latest_row(self):
+        text = LEDGER.read_text(encoding="utf-8")
+        rows = re.findall(r"^\| `dokimasia-v([^`]+)` \| (\w+) \|", text, re.M)
+        self.assertTrue(rows, "the ledger records no history row")
+        self.assertEqual(rows[-1][0], VERSION)
+        self.assertEqual(rows[0][1], "baseline")
 
     def test_the_ledger_row_digest_matches_the_frontier_it_describes(self):
         text = LEDGER.read_text(encoding="utf-8")
@@ -145,7 +153,9 @@ class ContractTests(unittest.TestCase):
                 field("Next Fiat job"),
             )
         ) + "\n"
-        recorded = re.search(r"\| `([0-9a-f]{64})` \|", text).group(1)
+        # The current frontier is described by the latest row, not the first.
+        # Earlier rows keep the digest of the frontier they were written under.
+        recorded = re.findall(r"\| `([0-9a-f]{64})` \|", text)[-1]
         self.assertEqual(hashlib.sha256(line.encode("utf-8")).hexdigest(), recorded)
 
     def test_the_installed_promise_machine_copy_matches_the_suite_law(self):
@@ -184,11 +194,15 @@ class IdentityTests(unittest.TestCase):
             with self.subTest(verb=verb):
                 self.assertEqual(run(verb).stdout, "")
 
-    def test_a_refusal_names_where_the_behaviour_will_come_from(self):
-        stderr = run("demonstrate").stderr
-        self.assertIn("dokimasia-v0.1.0", stderr)
-        self.assertIn("dokimasia-runbook.md", stderr)
-        self.assertIn("Step 5", stderr)
+    def test_every_declared_verb_answers_rather_than_refusing(self):
+        """Nothing is owed to a later step, so nothing may refuse as unbuilt."""
+        for verb in ("selftest", "inventory", "workbook", "reconcile",
+                     "demonstrate"):
+            with self.subTest(verb=verb):
+                arguments = ("--check",) if verb != "selftest" else ()
+                result = run(verb, *arguments)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("not built yet", result.stderr)
 
 
 class SelfTestTests(unittest.TestCase):
@@ -286,11 +300,10 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("check clean", result.stdout)
 
-    def test_the_version_flag_reports_the_scaffold(self):
+    def test_the_version_flag_reports_the_declared_version(self):
         result = run("--version")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(VERSION, result.stdout)
-        self.assertIn("scaffold", result.stdout)
 
 
 if __name__ == "__main__":

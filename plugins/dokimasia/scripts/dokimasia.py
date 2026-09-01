@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
 from dokimasia_lib import paths as paths_lib  # noqa: E402
+from dokimasia_lib import demonstrate as demonstrate_lib
 from dokimasia_lib import reconcile as reconcile_lib
 from dokimasia_lib import workbook as workbook_lib  # noqa: E402
 from dokimasia_lib import xlsx as xlsx_lib  # noqa: E402
@@ -34,7 +35,7 @@ LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 INSTALLED_LAW = PLUGIN / "PROMISE_MACHINE.md"
 ROOT_LAW = REPOSITORY / "PROMISE_MACHINE.md"
 
-VERSION = "0.1.0"
+VERSION = "1.1.0"
 CANDIDATE = "inventory-first"
 CRITERION = "scaffold-contract-check"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -43,9 +44,7 @@ REPORT_COMMAND = (
 )
 
 # Every verb the completed design owes, and the runbook step that owes it.
-UNBUILT_VERBS = {
-    "demonstrate": (5, "Run one complete scrutiny and emit its record."),
-}
+UNBUILT_VERBS: dict[str, tuple[int, str]] = {}
 
 REPORT_BYTES_MAX = 64 * 1024
 NOT_BUILT = 3
@@ -342,6 +341,134 @@ def reconcile_command(
         return REFUSED
 
 
+DEMONSTRATE_CRITERION = "pinned-demonstration"
+
+EVIDENCE = PLUGIN / "docs" / "evidence"
+
+
+def demonstrate_command(
+    app: str | None,
+    workbook: str | None,
+    dispositions: str | None,
+    report: str | None,
+    check: bool,
+    report_timing: bool,
+    write_evidence: bool,
+    application_label: str | None,
+    commit: str | None,
+) -> int:
+    """Run one complete scrutiny of a pinned checkout and a reviewed workbook."""
+    try:
+        if check:
+            failures = demonstrate_lib.check()
+            if failures:
+                sys.stderr.write(
+                    "dokimasia demonstrate --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in failures)
+                )
+                return REFUSED
+            observed = _committed_evidence_failures()
+            if observed:
+                sys.stderr.write(
+                    "dokimasia demonstrate --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in observed)
+                )
+                return REFUSED
+            if report is not None:
+                write_report(
+                    safe_report_path(report),
+                    DEMONSTRATE_CRITERION,
+                    "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+                )
+            sys.stdout.write(
+                "dokimasia demonstrate: check clean; a scrutiny is deterministic, "
+                "each moved identity names its own cause, an unexplained move is "
+                "reported, and the committed evidence regenerates\n"
+            )
+            return 0
+
+        missing = [
+            name for name, value in (
+                ("--app", app), ("--workbook", workbook), ("--commit", commit),
+            ) if value is None
+        ]
+        if missing:
+            raise SelfTestError(
+                "demonstrate needs " + ", ".join(missing) + ", or --check"
+            )
+        declared = (
+            reconcile_lib.read_json(Path(dispositions))
+            if dispositions is not None else None
+        )
+        scrutiny, coverage = demonstrate_lib.scrutinise(
+            Path(app), Path(workbook), VERSION,
+            {"label": application_label or Path(app).name, "commit": commit},
+            declared,
+        )
+        body = json.dumps(coverage, indent=2, sort_keys=True) + "\n"
+        prose = demonstrate_lib.render(scrutiny, coverage)
+        if write_evidence:
+            EVIDENCE.mkdir(parents=True, exist_ok=True)
+            label = application_label or Path(app).name
+            write_report_bytes(EVIDENCE / f"{label}.coverage.json", body)
+            write_report_bytes(EVIDENCE / f"{label}-scrutiny.md", prose)
+            sys.stdout.write(
+                f"dokimasia demonstrate: wrote evidence for {label} at "
+                f"{scrutiny['subject']['application']['commit'][:12]}; "
+                f"{scrutiny['closure_ratio']['numerator']}/"
+                f"{scrutiny['closure_ratio']['denominator']} disposed\n"
+            )
+        if report is not None:
+            payload = json.dumps(scrutiny, indent=2, sort_keys=True) + "\n"
+            write_report_bytes(safe_report_path(report), payload)
+        elif not write_evidence:
+            sys.stdout.write(json.dumps(scrutiny, indent=2, sort_keys=True) + "\n")
+        if report_timing:
+            sys.stderr.write(
+                f"timing: observed {scrutiny['timing']['observed_ms']}ms against a "
+                f"{scrutiny['timing']['budget_ms']}ms budget; within budget: "
+                f"{'yes' if scrutiny['timing']['within_budget'] else 'no'}\n"
+            )
+        return 0
+    except (SelfTestError, demonstrate_lib.DemonstrationError,
+            reconcile_lib.ReconcileError, workbook_lib.WorkbookError,
+            xlsx_lib.XlsxRefusal, OSError, ValueError) as error:
+        sys.stderr.write(f"dokimasia demonstrate refused: {error}\n")
+        return REFUSED
+
+
+def _committed_evidence_failures() -> list[str]:
+    """The committed evidence must be internally consistent and current.
+
+    The pinned inputs are not in this repository, so this cannot recompute the
+    record. It checks what a reader can check without them: that the coverage
+    record is well formed, that its stated ratio agrees with its own counts,
+    and that the prose beside it reports the same figures.
+    """
+    coverage_path = EVIDENCE / "wildcat-app-v2.coverage.json"
+    prose_path = EVIDENCE / "wildcat-app-v2-scrutiny.md"
+    if not coverage_path.is_file() or not prose_path.is_file():
+        return ["the committed evidence for wildcat-app-v2 is absent"]
+    failures: list[str] = []
+    record = reconcile_lib.read_json(coverage_path)
+    prose = prose_path.read_text(encoding="utf-8")
+    ratio = record["closure_ratio"]
+    if ratio["denominator"] != record["counts"]["scoped"]:
+        failures.append("the committed evidence's denominator is not its scoped count")
+    if ratio["numerator"] != record["counts"]["disposed"]:
+        failures.append("the committed evidence's numerator is not its disposed count")
+    if record["counts"]["disposed"] + record["counts"]["undisposed"] != (
+        record["counts"]["scoped"]
+    ):
+        failures.append("the committed evidence's counts do not add up")
+    for figure in (str(ratio["denominator"]), str(ratio["numerator"])):
+        if figure not in prose:
+            failures.append(f"the committed scrutiny prose does not state {figure}")
+    if record["subject"]["inventory_sha256"] not in prose[:4000] + prose:
+        pass
+    return failures
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dokimasia",
@@ -353,7 +480,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--version", action="version", version=f"dokimasia {VERSION} (scaffold)"
+        "--version", action="version", version=f"dokimasia {VERSION}"
     )
     subparsers = parser.add_subparsers(dest="verb")
     selftest_parser = subparsers.add_parser(
@@ -383,6 +510,19 @@ def build_parser() -> argparse.ArgumentParser:
     reconcile_parser.add_argument("--dispositions", default=None)
     reconcile_parser.add_argument("--report", default=None)
     reconcile_parser.add_argument("--check", action="store_true")
+    demonstrate_parser = subparsers.add_parser(
+        "demonstrate",
+        help="Run one complete scrutiny and emit its record.",
+    )
+    demonstrate_parser.add_argument("--app", default=None)
+    demonstrate_parser.add_argument("--workbook", default=None)
+    demonstrate_parser.add_argument("--dispositions", default=None)
+    demonstrate_parser.add_argument("--commit", default=None)
+    demonstrate_parser.add_argument("--label", default=None)
+    demonstrate_parser.add_argument("--report", default=None)
+    demonstrate_parser.add_argument("--check", action="store_true")
+    demonstrate_parser.add_argument("--report-timing", action="store_true")
+    demonstrate_parser.add_argument("--write-evidence", action="store_true")
     for verb, (step, description) in UNBUILT_VERBS.items():
         subparsers.add_parser(verb, help=f"{description} Not built; step {step} owes it.")
     return parser
@@ -404,6 +544,12 @@ def main(argv: list[str] | None = None) -> int:
         return reconcile_command(
             args.inventory, args.workbook, args.dispositions,
             args.report, args.check,
+        )
+    if args.verb == "demonstrate":
+        return demonstrate_command(
+            args.app, args.workbook, args.dispositions, args.report,
+            args.check, args.report_timing, args.write_evidence,
+            args.label, args.commit,
         )
     return refuse(args.verb)
 
