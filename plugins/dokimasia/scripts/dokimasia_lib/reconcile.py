@@ -7,6 +7,12 @@ artefact accounts for the scoped set exactly once, that each disposition holds
 what it claims to hold, and that it was written against the records in front of
 it rather than earlier ones.
 
+Since a generator now drafts entries into that artefact, an entry alone no
+longer says a person decided anything. Only a confirmed entry is admitted as a
+disposition. Every entry is checked whatever its confirmation says, so an
+invalid draft refuses now rather than when somebody confirms it; an unconfirmed
+one is then set aside, named in the record and left holding its item undisposed.
+
 The closure ratio is the count of scoped items carrying one valid disposition
 over the count of scoped items. It reaches one when the deciding is finished.
 It never says anything passed. See ADR-001.
@@ -33,6 +39,11 @@ NEEDS_REASON = ("manual", "excluded")
 # held to a reviewed judgement, and a case sitting at this status carries none.
 STATUS_FIELD = "Status"
 UNREVIEWED_STATUS = "Not Run"
+
+# A person's mark, and the only thing that admits an entry as a disposition.
+# A generator writes it false and has no path that writes it true, so a drafted
+# entry holds the ratio down exactly as an absent one does. See ADR-002.
+CONFIRMED_FIELD = "confirmed"
 
 MAX_DISPOSITIONS = 40_000
 MAX_REASON_BYTES = 512
@@ -192,13 +203,14 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
         raise ReconcileError(
             f"the disposition set holds more than the {MAX_DISPOSITIONS}-item cap"
         )
+    unconfirmed: list[dict] = []
     for entry in entries:
         target = entry.get("item", "")
         if target not in known:
             raise ReconcileError(
                 f"disposition names {target!r}, which is not a scoped item"
             )
-        if target in assigned:
+        if target in assigned or any(e["item"] == target for e in unconfirmed):
             raise ReconcileError(
                 f"scoped item {target!r} carries two dispositions, so nothing "
                 "states what was decided about it"
@@ -274,13 +286,39 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
                     f"covered item {target!r} names oracle {oracle!r}, whose "
                     f"status is {status!r}; nothing is held to it"
                 )
-        assigned[target] = {
+        # Read last, so an entry that could never be valid refuses for the
+        # thing that is wrong with it rather than for its confirmation. Every
+        # entry is checked in full above; confirmation decides admission, not
+        # validity.
+        #
+        # Absence is refused rather than defaulted. Defaulting false would
+        # discard a set written before this field existed; defaulting true
+        # would admit every draft a generator wrote. See ADR-002.
+        if CONFIRMED_FIELD not in entry:
+            raise ReconcileError(
+                f"disposition on {target!r} carries no {CONFIRMED_FIELD!r} "
+                "field, so nothing states whether a person agreed to it"
+            )
+        confirmed = entry[CONFIRMED_FIELD]
+        if not isinstance(confirmed, bool):
+            raise ReconcileError(
+                f"the {CONFIRMED_FIELD!r} field on {target!r} is "
+                f"{type(confirmed).__name__}, not a boolean"
+            )
+        decided = {
             "item": target,
             "disposition": verdict,
             "reason": reason,
             "oracle": entry.get("oracle", ""),
         }
+        if confirmed:
+            assigned[target] = decided
+        else:
+            unconfirmed.append(decided)
 
+    unconfirmed.sort(key=lambda entry: entry["item"])
+    # An unconfirmed entry answers for nothing, so its item is undisposed
+    # exactly as an item with no entry at all is.
     undisposed = sorted(known - set(assigned))
     numerator = len(assigned)
     denominator = len(scoped)
@@ -312,6 +350,7 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
         "counts": {
             "scoped": denominator,
             "disposed": numerator,
+            "unconfirmed": len(unconfirmed),
             "undisposed": len(undisposed),
             "inventory_items": len(inventory_ids),
             "workbook_cases": len(case_ids),
@@ -329,6 +368,7 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
             "closed": numerator == denominator and denominator > 0,
         },
         "undisposed": undisposed,
+        "unconfirmed": unconfirmed,
         "gaps": gaps,
         "unmatched": {
             "cases_no_item_cites": sorted(set(case_ids) - cited),
@@ -382,7 +422,43 @@ def check() -> list[str]:
         if not gap["reason"]:
             failures.append(f"gap {gap['item']!r} carries no reason")
 
+    # A drafted set answers for nothing until a person confirms it, and the
+    # figures have to say so three ways: nothing disposed, every entry named
+    # as unconfirmed, and every item still undisposed.
+    try:
+        drafted = reconcile(inventory, workbook, read_json(root / "all-unconfirmed.json"))
+    except ReconcileError as error:
+        return [f"the all-unconfirmed fixture did not reconcile: {error}"]
+    if drafted["closure_ratio"]["numerator"] != 0:
+        failures.append("an all-unconfirmed set disposed of something")
+    if drafted["closure_ratio"]["closed"]:
+        failures.append("an all-unconfirmed set closed the ratio")
+    if drafted["counts"]["unconfirmed"] != len(drafted["unconfirmed"]):
+        failures.append("the unconfirmed count and list disagree")
+    if drafted["counts"]["unconfirmed"] != drafted["counts"]["scoped"]:
+        failures.append("an all-unconfirmed set did not name every entry as unconfirmed")
+    if drafted["counts"]["undisposed"] != drafted["counts"]["scoped"]:
+        failures.append("an unconfirmed entry left its item out of the undisposed list")
+    for entry in drafted["unconfirmed"]:
+        if not entry["disposition"]:
+            failures.append(f"unconfirmed {entry['item']!r} lost its drafted state")
+
+    try:
+        mixed = reconcile(inventory, workbook, read_json(root / "mixed-confirmation.json"))
+    except ReconcileError as error:
+        return [f"the mixed-confirmation fixture did not reconcile: {error}"]
+    counts = mixed["counts"]
+    if counts["disposed"] + counts["unconfirmed"] != counts["scoped"]:
+        failures.append("disposed and unconfirmed do not add to the scoped set")
+    if counts["disposed"] == 0 or counts["unconfirmed"] == 0:
+        failures.append("the mixed fixture exercises only one side of confirmation")
+    if counts["undisposed"] != counts["unconfirmed"]:
+        failures.append("an unconfirmed entry was counted as answering for its item")
+
     hostile = {
+        "missing-confirmed.json": "carries no 'confirmed'",
+        "non-boolean-confirmed.json": "not a boolean",
+        "unconfirmed-case-covered-by-itself.json": "cannot be covered",
         "no-disposition.json": "did not reach",
         "two-dispositions.json": "two dispositions",
         "absent-oracle.json": "the workbook does not hold",

@@ -1,100 +1,94 @@
 {
   "dispositions": [
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "excluded",
       "item": "action:src/actions/update-market.ts",
       "reason": "the action is exercised only through the routes above"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "api:src/app/api/health/route.ts",
       "oracle": "M2-03"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "api:src/app/api/markets/[marketId]/route.ts",
       "oracle": "ADM-04"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "manual",
       "item": "case:ADM-01",
       "reason": "the row is owned by the reviewer who wrote it"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "manual",
       "item": "case:ADM-02",
       "reason": "the row is owned by the reviewer who wrote it"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "manual",
       "item": "case:ADM-04",
       "reason": "the row is owned by the reviewer who wrote it"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "manual",
       "item": "case:M2-03",
       "reason": "the row is owned by the reviewer who wrote it"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "manual",
       "item": "guard:src/components/RequireAuth.tsx",
       "reason": "the gate is checked by a person against the access matrix"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "manual",
       "item": "guard:src/middleware.ts",
       "reason": "the gate is checked by a person against the access matrix"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "route:src/app/(marketing)/about/page.tsx",
       "oracle": "ADM-01"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "route:src/app/@modal/login/page.tsx",
       "oracle": "M2-03"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "route:src/app/docs/[...slug]/page.tsx",
       "oracle": "ADM-04"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "route:src/app/markets/[marketId]/lenders/page.tsx",
       "oracle": "ADM-01"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "route:src/app/markets/[marketId]/page.tsx",
       "oracle": "M2-03"
     },
     {
-      "confirmed": true,
+      "confirmed": false,
       "disposition": "covered",
       "item": "route:src/app/page.tsx",
       "oracle": "ADM-04"
-    },
-    {
-      "confirmed": true,
-      "disposition": "excluded",
-      "item": "route:src/app/nowhere/page.tsx",
-      "reason": "this item is not in the inventory"
     }
   ],
   "inventory_sha256": "130675b93b92e29657b6564faf53d54d07ed9c0f65b2a56b12181f89492cac6a",
