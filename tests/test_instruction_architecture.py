@@ -170,6 +170,7 @@ def clear_source_cache() -> None:
         if cached is not None:
             cached.cache_clear()
     oracle_source_mode.cache_clear()
+    oracle_inventory_snapshot.cache_clear()
     oracle_inventory_sources.cache_clear()
     oracle_tree_paths.cache_clear()
     ORACLE_SOURCE_CACHE.clear()
@@ -322,8 +323,8 @@ def oracle_source_mode() -> str:
 
 
 @lru_cache(maxsize=1)
-def oracle_inventory_sources() -> dict[str, bytes]:
-    """Rebuild the shallow-checkout source map without production helpers."""
+def oracle_inventory_snapshot() -> tuple[dict[str, bytes], tuple[str, ...]]:
+    """Bind shallow source bytes and tree paths in one independent snapshot."""
     inventory_raw = INVENTORY.read_bytes()
     if (
         hashlib.sha256(inventory_raw).hexdigest()
@@ -457,7 +458,13 @@ def oracle_inventory_sources() -> dict[str, bytes]:
         data = sources[path]
         if end > len(data) or hashlib.sha256(data[start:end]).hexdigest() != digest:
             raise AssertionError(f"independent snapshot span drift: {path}")
-    return sources
+    return sources, tuple(repository_paths)
+
+
+@lru_cache(maxsize=1)
+def oracle_inventory_sources() -> dict[str, bytes]:
+    """Return source bytes from the independently bound shallow snapshot."""
+    return oracle_inventory_snapshot()[0]
 
 
 @lru_cache(maxsize=1)
@@ -478,8 +485,7 @@ def oracle_tree_paths() -> tuple[str, ...]:
         except UnicodeDecodeError as exc:
             raise AssertionError("independent source path is not UTF-8") from exc
     else:
-        oracle_inventory_sources()
-        paths = tuple(load(MANIFEST)["source"]["repository_paths"])
+        _, paths = oracle_inventory_snapshot()
     if not paths or list(paths) != sorted(set(paths)):
         raise AssertionError("independent source path inventory is not canonical")
     return paths
@@ -1812,6 +1818,54 @@ class CorpusManifestTests(unittest.TestCase):
                 ),
             ):
                 oracle_source_mode()
+        finally:
+            clear_source_cache()
+
+    def test_manifest_source_topology_runtime_contract_is_closed(self):
+        mutations = {
+            "missing": lambda source: source.pop("repository_paths"),
+            "extra": lambda source: source.__setitem__("extra", True),
+            "duplicate": lambda source: source["repository_paths"].append(
+                source["repository_paths"][0]
+            ),
+            "over-cap": lambda source: source.__setitem__(
+                "repository_paths",
+                [f"synthetic/{index:05d}" for index in range(10_001)],
+            ),
+        }
+        for label, mutate in mutations.items():
+            changed = copy.deepcopy(self.manifest)
+            mutate(changed["source"])
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(
+                    AI.Refusal, "manifest source.*(field set|malformed)"
+                ):
+                    AI._validate_manifest_shape(changed)
+
+        changed = copy.deepcopy(self.manifest)
+        changed["source"]["repository_paths"] = changed["source"][
+            "repository_paths"
+        ][:-1]
+        with self.assertRaisesRegex(AI.Refusal, "manifest source topology drift"):
+            AI._validate_manifest_shape(changed)
+
+    def test_independent_oracle_tree_paths_share_the_anchored_snapshot(self):
+        clear_source_cache()
+        changed = copy.deepcopy(self.manifest)
+        unbound = "zz-unbound-topology.md"
+        changed["source"]["repository_paths"] = sorted(
+            [*changed["source"]["repository_paths"], unbound]
+        )
+        try:
+            with mock.patch.object(
+                sys.modules[__name__], "oracle_source_mode", return_value="inventory"
+            ):
+                oracle_inventory_snapshot()
+                with mock.patch.object(
+                    sys.modules[__name__], "load", return_value=changed
+                ):
+                    paths = oracle_tree_paths()
+            self.assertNotIn(unbound, paths)
         finally:
             clear_source_cache()
 

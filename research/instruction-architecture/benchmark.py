@@ -4825,6 +4825,31 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
     )
     if manifest["schema"] != f"{SCHEMA_PREFIX}-corpus-manifest/v1":
         raise Refusal("unsupported manifest schema")
+    source = manifest["source"]
+    if not isinstance(source, dict):
+        raise Refusal("manifest source must be an object")
+    _require_fields(
+        source,
+        ("ref", "repository_paths", "tree_sha256"),
+        ("ref", "repository_paths", "tree_sha256"),
+        "manifest source",
+    )
+    repository_paths = source["repository_paths"]
+    if (
+        source["ref"] != SOURCE_REF
+        or not isinstance(source["tree_sha256"], str)
+        or re.fullmatch(r"[0-9a-f]{64}", source["tree_sha256"]) is None
+        or not isinstance(repository_paths, list)
+        or not repository_paths
+        or len(repository_paths) > MAX_FROZEN_TREE_PATHS
+        or any(not isinstance(path, str) for path in repository_paths)
+        or repository_paths != sorted(set(repository_paths))
+    ):
+        raise Refusal("manifest source topology is malformed")
+    for path in repository_paths:
+        _safe_relative(path)
+    if tuple(repository_paths) != _frozen_tree_paths():
+        raise Refusal("manifest source topology drift")
     if not isinstance(manifest["documents"], list):
         raise Refusal("manifest documents must be an array")
     fields = {
@@ -4912,6 +4937,11 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
                 or not item["scenario_reachability"]
             ):
                 raise Refusal(f"mandatory manifest reachability drift: {item['path']}")
+
+    if not {item["path"] for item in manifest["documents"]} <= set(
+        repository_paths
+    ):
+        raise Refusal("manifest source topology omits a corpus path")
 
     source_counts = {
         name: 0 for name in EXPECTED_MANIFEST_SOURCE_EVIDENCE_COUNTS
