@@ -96,7 +96,15 @@ PASS_FIELDS = frozenset(
     {"scope", "mode", "candidates", "selected", "run", "rank_only", "ungoverned"}
 )
 PASS_REQUIRED = ("scope", "mode", "candidates", "selected")
-MODES = ("full", "phase-only")
+MODES = ("full", "phase-only", "demo")
+# Each mode reads exactly one lane. The behaviour lane is EVOLUTION.md and the
+# demonstration lane is DEMONSTRATION.md; a pass may not mix them.
+LANE_LEDGER = {
+    "full": "EVOLUTION.md",
+    "phase-only": "EVOLUTION.md",
+    "demo": "DEMONSTRATION.md",
+}
+DEMO_RECORD_FENCE = "```shoggoth-demonstration"
 
 # Documents somebody handed over. Bound every axis that a caller controls.
 MAX_STDIN_BYTES = 1024 * 1024
@@ -136,11 +144,40 @@ def ledger_field(text: str, name: str) -> str:
     return match.group(1).strip().strip("`")
 
 
-def held_job_hash(ledger: Path) -> str:
-    """SHA-256 of the canonical frontier line VERSIONING.md defines."""
+def held_job_hash(ledger: Path, lane: str = "full") -> str:
+    """SHA-256 of the canonical held-job line for the lane this pass reads."""
     text = read_capped(ledger, MAX_LEDGER_BYTES, "K007")
+    if lane == "demo":
+        return demo_frontier_digest(ledger, text)
     canonical = "|".join(ledger_field(text, name) for name in LEDGER_FIELDS) + "\n"
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def demo_frontier_digest(ledger: Path, text: str) -> str:
+    """Return the declared demo frontier digest, recomputed from its own line."""
+    lines = text.split("\n")
+    opens = [index for index, line in enumerate(lines) if line == DEMO_RECORD_FENCE]
+    if len(opens) != 1:
+        raise Refusal("K022", f"{ledger} does not hold exactly one demonstration record")
+    closes = [index for index in range(opens[0] + 1, len(lines)) if lines[index] == "```"]
+    if not closes:
+        raise Refusal("K022", f"{ledger} has an unterminated demonstration record")
+    try:
+        record = json.loads("\n".join(lines[opens[0] + 1:closes[0]]))
+    except json.JSONDecodeError as exc:
+        raise Refusal("K022", f"{ledger} record is not JSON: {exc}") from exc
+    if not isinstance(record, dict) or not isinstance(record.get("frontier"), dict):
+        raise Refusal("K022", f"{ledger} record holds no demo frontier")
+    frontier = record["frontier"]
+    fields = ("status", "revision", "current", "next")
+    if not all(isinstance(frontier.get(name), str) and frontier[name] for name in fields):
+        raise Refusal("K022", f"{ledger} demo frontier is incomplete")
+    canonical = "|".join(frontier[name] for name in fields) + "\n"
+    computed = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    declared = frontier.get("sha256")
+    if declared != computed:
+        raise Refusal("K022", f"{ledger} demo frontier digest is {declared!r}, recomputed {computed}")
+    return computed
 
 
 def read_capped(path: Path, cap: int, code: str) -> str:
@@ -175,7 +212,7 @@ def check_fields(obj: dict, allowed: frozenset, required: tuple, where: str) -> 
             raise Refusal("K003", f"{where} carries {name!r}, which the record does not hold")
 
 
-def score(candidate: dict, root: Path, where: str) -> dict:
+def score(candidate: dict, root: Path, where: str, lane: str = "full") -> dict:
     """Validate one candidate and return the line it contributes."""
     check_fields(candidate, CANDIDATE_FIELDS, CANDIDATE_REQUIRED, where)
     axes = {}
@@ -196,10 +233,20 @@ def score(candidate: dict, root: Path, where: str) -> dict:
     if not isinstance(candidate["ledger"], str) or not candidate["ledger"].strip():
         raise Refusal("K002", f"{where} ledger is empty")
     ledger = resolved_under(root, candidate["ledger"])
+    # Keep the existing unreadable-ledger refusal ahead of the lane check, so a
+    # missing file still says so rather than blaming the lane for its name.
+    if not ledger.is_file():
+        raise Refusal("K007", f"{ledger} is not a regular file")
+    expected = LANE_LEDGER[lane]
+    if ledger.name != expected:
+        raise Refusal(
+            "K023",
+            f"{where} ledger is {ledger.name}, but a {lane} pass reads {expected} only",
+        )
     return {
         "skill": candidate["skill"],
         "ledger": str(ledger.relative_to(root)),
-        "held_job": held_job_hash(ledger),
+        "held_job": held_job_hash(ledger, lane),
         **axes,
         "total": total,
         "basis": candidate["basis"],
@@ -618,7 +665,8 @@ def record(args: argparse.Namespace) -> int:
     if len(candidates) > MAX_CANDIDATES:
         raise Refusal("K009", f"{len(candidates)} candidates, over the {MAX_CANDIDATES} cap")
 
-    scored = [score(c, root, f"candidate {n}") for n, c in enumerate(candidates, start=1)]
+    lane = document["mode"]
+    scored = [score(c, root, f"candidate {n}", lane) for n, c in enumerate(candidates, start=1)]
     names = [c["skill"] for c in scored]
     if len(set(names)) != len(names):
         raise Refusal("K002", "two candidates name the same skill")
@@ -658,6 +706,14 @@ def record(args: argparse.Namespace) -> int:
     # Recording both would leave the file saying the ranking was and was not acted on.
     if rank_only and run is not None:
         raise Refusal("K016", f"a rank-only pass names run {run!r}, but it launched none")
+    # The demo lane ranks and prints. It does not file, dispatch, or advance
+    # either ledger, so a demo pass that names a run is recording work this
+    # generation of the contract does not authorise.
+    if lane == "demo":
+        if run is not None:
+            raise Refusal("K024", f"a demo pass names run {run!r}, but the demo lane dispatches nothing")
+        if not rank_only:
+            raise Refusal("K024", "a demo pass is rank-only; the demo lane dispatches nothing")
 
     ungoverned = document.get("ungoverned", [])
     if not isinstance(ungoverned, list):

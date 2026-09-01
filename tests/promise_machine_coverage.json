@@ -3988,12 +3988,12 @@
         "evidence_references": "ledgers, recomputed scores and append-only scoreboard",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "eligible candidate set, mode and score inputs",
+        "scope": "eligible candidate set, the lane its mode reads, and score inputs",
         "subject": "selected plugin, skill and held job hash",
         "transition": "explicit Fiat dispatch joined to the canonical Authorises field",
         "unknowns": "excluded, mature, parked and unevidenced candidates"
       },
-      "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
+      "sha256": "b8fea88c765be3526fec64597b5c1040f97c54368703c7d82279db9284c9d77f",
       "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py"
     },
     "kronos-parked-lane": {
@@ -4007,7 +4007,7 @@
         "transition": "park action joined to the canonical Authorises field",
         "unknowns": "unresolved blocker and future eligibility"
       },
-      "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
+      "sha256": "b8fea88c765be3526fec64597b5c1040f97c54368703c7d82279db9284c9d77f",
       "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py"
     },
     "lazarus-exact-replay": {
