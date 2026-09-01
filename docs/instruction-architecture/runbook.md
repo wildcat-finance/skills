@@ -1282,3 +1282,23 @@ tracked list content baseline.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-01
+
+**What changed.** Complete replacement Tests: The effective Step 1 Tests bound
+by the immediately preceding runbook amendment are incorporated here in full by
+reference, with only this exhaustive substitution. Replace the
+outer-fence-contained `protocol-type-specialist.md` range `2134:2946` with its
+frozen complete fence-pair range `2368:2975`, 607 bytes, SHA-256
+`39767496bce1f534a6d95caf0f9372f06949dd85843b6825c1d7fc2f166927cc`.
+Every other Tests sentence, value and command is unchanged.
+
+**Why.** The prior range began within V-06 prose and ended within the Solidity
+body. Frozen line and byte enumeration places the six-space opening fence at
+byte 2368 and the matching close end at byte 2975.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
