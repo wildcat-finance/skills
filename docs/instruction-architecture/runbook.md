@@ -1219,3 +1219,66 @@ prompt bytes from 11 profiles and 55 route roots while every prior check passed.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-01
+
+**What changed.** Complete replacement Exit: The effective Step 1 Exit bound
+by the immediately preceding runbook amendment is incorporated here in full by
+reference, including its exact command block, with only these exhaustive
+substitutions. In clause 2, require exactly 1,473,235 governed-operative bytes,
+345,771 exact-literal-or-evidence bytes and 471,444 generated-duplicate bytes,
+with human-only and unsupported bytes both zero. Require the partition scanner
+to track valid bullet and one-to-nine-digit ordered-list content indents and
+preserve a balanced backtick or tilde fence only at zero to three spaces from
+the root or an active list content baseline. Require an ordinary
+four-or-more-space indented backtick line and a marker indented four spaces past
+a valid list baseline not to open a fence. The frozen five-space-indented
+`solidity` block at
+`plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md:226-228` is exact range
+`11063:11227`, 164 bytes and SHA-256
+`38dd0275b08368da85ab3ecd47f8939a04b0112496af7fe97267462f36aad531`.
+Retain the existing nested-template, shorter-marker, mismatched-marker,
+gapless-range and post-close prose semantics. In clause 6, regenerate the
+partition and artifact inventory atomically. Require `byte-partition.json` to
+remain 145,533 bytes with SHA-256
+`906cc36f6f6626c49f31c7f2b942778f8fd05e52e4f18c9d30077624a0425035`
+and `artifact-inventory.json` to remain 1,020 bytes with SHA-256
+`7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9`.
+The manifest, profiles, graph, cohorts, holdout seal and reconciliation remain
+byte-identical to the immediately preceding generation. Every other Exit
+sentence and command is unchanged.
+
+Complete replacement Files: Retain every current Step 1 file. No path is added
+or removed.
+
+Complete replacement Tests: The effective Step 1 Tests bound by that same
+immediately preceding amendment are incorporated here in full by reference,
+with only these exhaustive substitutions. Replace the partition totals with
+1,473,235 governed-operative and 345,771 exact-literal-or-evidence bytes;
+retain 471,444 generated-duplicate and zero human-only or unsupported bytes.
+Add a test-owned corpus census for every space-indented, info-bearing fence
+paired with a same-prefix closing fence. It must find exactly the existing
+outer-fence-contained pair in `protocol-type-specialist.md` at `2134:2946` and
+the nested-list pair in `fizz-sync/SKILL.md` at `11063:11227`, and both complete
+ranges must be exact literal or evidence. Add an isolated nested ordered-list
+and bullet specimen proving its five-space-indented Solidity fence is exact and
+governed prose resumes after the close. Add hostile isolated specimens proving
+that an ordinary four-space indented pseudo-fence and a pseudo-fence four
+spaces past an active list content baseline remain governed rather than opening
+a fence. Retain every other hostile mutant, exact command, parent-attributable
+check, schema/runtime parity check, twice-repeated verifier, fresh eight-output
+rebuild, Elenchus report and discipline gate unchanged.
+
+**Why.** Follow-on audit 19 proved that the scanner's absolute zero-to-three-
+space matcher misses a valid fence after list-container indentation. The
+164-byte Solidity template at `fizz-sync/SKILL.md:226-228` was therefore
+assigned to governed prose while the structural and digest checks still
+passed. An unlimited-leading-space matcher would overcorrect and admit ordinary
+indented code as fenced syntax, so the replacement is relative only to a
+tracked list content baseline.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.

@@ -845,3 +845,52 @@ tests require replacement.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-01
+
+**What changed.** The Step 1 byte partition must preserve fenced literals
+nested under Markdown list containers without treating arbitrary indentation as
+a fence. Track the absolute content indentation introduced by each valid bullet
+or one-to-nine-digit ordered-list marker, including nested markers. Recognize a
+backtick or tilde fence only at zero to three spaces from the root or zero to
+three spaces after an active list content baseline; retain that baseline through
+the matching close. Keep an ordinary four-or-more-space indented backtick line,
+and a marker indented four spaces past a valid list baseline, outside the fence
+grammar. Retain the existing balanced-fence, nested-template and post-close
+prose rules.
+
+At frozen source ref `a2b634d8e039af988bf30c8316defccf70071d8d`,
+`plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md:226-228` contains one
+five-space-indented `solidity` fence nested below ordered item 3 and its bullet.
+Its exact byte range is `11063:11227`, 164 bytes, SHA-256
+`38dd0275b08368da85ab3ecd47f8939a04b0112496af7fe97267462f36aad531`.
+Reclassify that complete range from `governed_operative_semantics` to
+`exact_literal_or_evidence`.
+
+The corpus stays at 191 physical files and 2,290,450 bytes, 174 exact-unique
+files and 1,819,006 bytes. The corrected partition is 1,473,235
+governed-operative bytes, 345,771 exact-literal-or-evidence bytes and 471,444
+generated-duplicate bytes, with human-only and unsupported bytes both zero.
+Profiles, obligations, graph reachability, cohorts, holdout membership, case
+envelope and seal commitment are unchanged. Regenerate the partition and
+artifact inventory; all six source-bound records other than the partition
+remain byte-identical, and the reconciliation remains byte-identical because it
+names class semantics but not class totals.
+
+**Why.** The partition scanner recognized fences only after zero to three
+absolute leading spaces. CommonMark applies that allowance after a containing
+list's content indentation, so the valid nested fence at lines 226-228 was
+never opened. Its Solidity template was counted as governed instruction prose
+even though every unindented and already-enclosed fenced template is counted as
+exact literal or evidence. Gaplessness and digest closure still passed because
+they validate range shape, not the semantic class assigned to a range. Simply
+accepting arbitrary leading spaces would create the inverse defect by treating
+an indented-code line beginning with backticks as a fence, so the repair binds
+the extra allowance to a proved list container.
+
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected byte-class
+totals; only Step 1's exit and tests require replacement.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
