@@ -158,6 +158,27 @@ class ContractTests(unittest.TestCase):
         recorded = re.findall(r"\| `([0-9a-f]{64})` \|", text)[-1]
         self.assertEqual(hashlib.sha256(line.encode("utf-8")).hexdigest(), recorded)
 
+    def test_every_declared_record_schema_has_a_committed_schema_file(self):
+        """A closed record with no committed schema is closed only in prose."""
+        import json
+
+        declared = {}
+        for module in sorted((PLUGIN / "scripts" / "dokimasia_lib").glob("*.py")):
+            for line in module.read_text(encoding="utf-8").splitlines():
+                if line.startswith("SCHEMA = "):
+                    declared[module.stem] = line.split('"')[1]
+        self.assertTrue(declared, "no module declares a record schema")
+        published = {
+            json.loads(path.read_text(encoding="utf-8"))["properties"]["schema"]["const"]
+            for path in (PLUGIN / "schemas").glob("*.json")
+        }
+        for module, identifier in sorted(declared.items()):
+            with self.subTest(module=module):
+                self.assertIn(
+                    identifier, published,
+                    f"{module} declares {identifier} and no schema states its shape",
+                )
+
     def test_the_installed_promise_machine_copy_matches_the_suite_law(self):
         self.assertEqual(
             (PLUGIN / "PROMISE_MACHINE.md").read_bytes(),
