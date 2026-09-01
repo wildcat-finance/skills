@@ -33,7 +33,7 @@
     "entry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["item", "disposition", "reason", "oracle", "confirmed"],
+      "required": ["item", "disposition", "confirmed"],
       "properties": {
         "item": {
           "type": "string",
@@ -48,12 +48,12 @@
         "reason": {
           "type": "string",
           "maxLength": 512,
-          "description": "Required non-empty for `manual` and `excluded`, which the reconciler enforces. An unexplained exclusion is how a denominator shrinks quietly."
+          "description": "Why a `manual` or `excluded` item was decided that way. Optional here and required there: the reconciler reads an absent reason as the empty string and then refuses those two states for carrying none, which is a stronger check than presence, because it also catches a reason that is present and blank. An unexplained exclusion is how a denominator shrinks quietly."
         },
         "oracle": {
           "type": "string",
           "maxLength": 256,
-          "description": "The workbook case a covered item is held to. Refused on any other disposition, because an entry reading as both decided-by-a-person and held-to-a-case states two different things about one item."
+          "description": "The workbook case a covered item is held to. Optional here for the same reason, and refused by the reconciler on any disposition other than `covered`, because an entry reading as both decided-by-a-person and held-to-a-case states two different things about one item."
         },
         "confirmed": {
           "type": "boolean",

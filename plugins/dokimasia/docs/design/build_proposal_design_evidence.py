@@ -277,7 +277,12 @@ def main() -> int:
     parser.add_argument(
         "--record",
         type=Path,
-        default=Path(".hexaemeron/design-evidence.json"),
+        # The committed record, so the bare command each report names
+        # regenerates the artefact it documents. Defaulting to the
+        # controller's own state directory would have made the recorded
+        # command runnable and still useless to a reader, which is the
+        # other half of finding S1-R1-01.
+        default=Path("plugins/dokimasia/docs/proposal-design-evidence.json"),
         help="where to write the record; reports go below its directory",
     )
     args = parser.parse_args()
