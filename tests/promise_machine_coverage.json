@@ -4,11 +4,11 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "0cb16f881aa250ff830449c22dd98cb32d3f2cb432c7a62f74051f71dfc84759"
+      "sha256": "62b88c034915def8676556380674d63fe41ea048055ee50dc9c9f6e188cde289"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "563eda22e538ac6264f3a7e99599ec8f5fe026bbe2fff8a8d9f428c86af9a43e"
+      "sha256": "c7f0bea52aee68f3c561fd95f8648a74695cf25182b89d9f177ef4d5e3d71775"
     },
     "documentation": [
       {
@@ -23,11 +23,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "dad5b4534296c59d8646453b5bf2810fcd59560f3045bfaf7257e5b7944741cd"
+        "sha256": "beaf79abd92c011d7ecaed9a901e2a6c17c5b627e91b2551dcdefa45ee102b1b"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "15368c3a50b8cf3cb06c820c256b957c0767b8375f07f31330629069d2bf61a3"
+        "sha256": "d24b03f9679bc32798c46a80bb911be141a0c2c13df59e624aecbc036d823d82"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -39,7 +39,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "a5458df53ed13a5094233d6f142bdff921c3fda0430eedc8675a5bf31b2c81f2"
+        "sha256": "7105769c55ef6241d5f4fb1857726de36875163139e9255c5a0f292122a156dc"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -93,7 +93,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "c433e05b95b42bbc76c49a2efc4c4f2c770fb4937dfb8e8c8d85c630d248396e"
+        "sha256": "2af54575ac07eade7a81a2a39322e90d52cbce9e95ecc836395f2daee06c73b8"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -101,7 +101,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "b1cc11d442a6960938a2353eb7dfefe6c0327f578f8c534626d0fa94e6b31b93"
+        "sha256": "74ab855ceb19e7d033a981341db03ecf1d4d7bc4711831bf9c306ed17ef1b816"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
@@ -110,7 +110,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "c74b1081ee9a0323121b90b752f708494129011159fccb9014abfeb0d6e111c8",
+      "sha256": "483c9b119e8081f6937c607ac8ae89eb28d6cc717654a2d2e97456a05d504769",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
@@ -1872,6 +1872,31 @@
       "path": "plugins/dokimasia/tests/test_xlsx.py",
       "selector": "test_a_traversal_member_name_refuses_by_name",
       "claim": "Recovery evidence requires the refusal to name the member that breached the boundary, so the caller can correct the archive rather than guess."
+    },
+    "dokimasia-propose-p": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_every_scoped_item_gets_exactly_one_entry",
+      "claim": "Positive evidence drafts an entry for every scoped item exactly once, so the reviewer is handed a complete set rather than a partial one they must finish by hand."
+    },
+    "dokimasia-propose-m": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_the_module_holds_no_covered_branch_at_all",
+      "claim": "The misuse driven is drafting the one state ADR-001 reserves to a person: the executable source is required to carry no covered literal and the draftable pair is asserted, so the absence is a property of the code rather than a filter that could be removed."
+    },
+    "dokimasia-propose-s": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_a_label_carrying_a_separator_refuses_and_writes_nothing",
+      "claim": "The declared write boundary is driven with a label carrying a separator and parent references, which must refuse and leave nothing outside the evidence root."
+    },
+    "dokimasia-propose-o": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_a_drafted_set_closes_the_ratio_at_zero",
+      "claim": "The boundary on what a draft establishes is asserted directly: a complete drafted set answers for nothing until a person confirms it, so drafting cannot move a coverage figure."
+    },
+    "dokimasia-propose-r": {
+      "path": "plugins/dokimasia/tests/test_propose.py",
+      "selector": "test_an_existing_set_answering_twice_refuses",
+      "claim": "Recovery evidence requires a set answering for one item twice to refuse by naming the item, so the caller repairs the duplicate rather than the generator picking a copy."
     }
   },
   "handoffs": [
@@ -2431,6 +2456,22 @@
         "S": "dokimasia-scrutiny-s",
         "O": "dokimasia-scrutiny-o",
         "R": "dokimasia-scrutiny-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "dokimasia-drafted-dispositions",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-propose-p",
+        "M": "dokimasia-propose-m",
+        "S": "dokimasia-propose-s",
+        "O": "dokimasia-propose-o",
+        "R": "dokimasia-propose-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
@@ -3693,7 +3734,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02"
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3982,12 +4023,12 @@
         "evidence_references": "dispositions, each naming the scoped item it answers for and the oracle or reason it carries",
         "exception": "canonical Exceptions field, which declares none",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio",
+        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio, with confirmed dispositions, unconfirmed entries and undisposed items counted apart",
         "subject": "the inventory and workbook sha256 pair the set was written against",
         "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
-        "unknowns": "scoped items no disposition answered for, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
+        "unknowns": "scoped items no disposition answered for, entries a person has not confirmed and which therefore answer for nothing, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
       },
-      "sha256": "7cc745472b06002e4af57ea8418b9c9c7760979b95290036c7bb50a9251f5618",
+      "sha256": "f8dad00c8c30cacdab0ad71f7d0a7feadb18a713969d7cc0d55c454dcc884ec8",
       "source": "plugins/dokimasia/schemas/coverage-v1.json"
     },
     "dokimasia-workbook-lineage": {
@@ -4043,7 +4084,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-design-evidence": {
@@ -4057,7 +4098,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -4071,7 +4112,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work, disposed of row by row in the run pull request's `carryover` block, and any unrun external check"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4085,7 +4126,7 @@
         "transition": "local archive, checkpoint-store preservation, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -4099,7 +4140,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4113,7 +4154,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -4127,7 +4168,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -4141,7 +4182,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -4155,7 +4196,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "384e9b1390c89443e9d633b363577833adfb60ba0c1fd78ccabb0ff3c742fd02",
+      "sha256": "5299d3b653c718dcfc3cb418102a63676aa3dd78f88b4428c4e1f46a3363641c",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -4437,6 +4478,20 @@
       },
       "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
       "source": "plugins/tabularium/scripts/tabularium.py"
+    },
+    "dokimasia-drafted-dispositions": {
+      "bindings": {
+        "evidence_classes": "checked for the completeness of the draft, the emitted vocabulary and the preserved entries, recorded for the per-entry draft digest, joined to the canonical Evidence classes field",
+        "evidence_references": "dispositions, each naming the scoped item it was drafted for and the record field its reason was quoted from",
+        "exception": "canonical Exceptions field, which declares none",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the drafted entries, their two draftable states and the declared reason cap, with every entry unconfirmed",
+        "subject": "the inventory and workbook sha256 pair the draft was written against",
+        "transition": "a complete draft a reviewer may edit, joined to the canonical Authorises field",
+        "unknowns": "whether a drafted state is the right one for its item, whether a drafted reason is a good reason, and whether anybody has read the draft"
+      },
+      "sha256": "ace9997023fdf4c73813f1ef2cead473f5fee07edef54f214f2481112cf23e6d",
+      "source": "plugins/dokimasia/schemas/dispositions-v1.json"
     }
   },
   "schema": "promise-machine-coverage/v1"

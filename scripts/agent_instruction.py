@@ -208,14 +208,21 @@ EVIDENCE_CLASSES = (
 class CodecError(ValueError):
     """A bounded refusal carrying a stable code and model-node path."""
 
-    def __init__(self, code: str, node_path: str = "$") -> None:
+    def __init__(
+        self, code: str, node_path: str = "$", detail: str | None = None
+    ) -> None:
         super().__init__(code)
         self.code = code
         self.node_path = node_path[:512]
+        # Operator guidance for a refusal whose code and node path do not
+        # tell a reader what to do. It never enters an emitted record: the
+        # record stays byte-identical and `main` writes this to stderr,
+        # which these commands otherwise leave empty.
+        self.detail = detail[:1024] if detail is not None else None
 
 
-def refuse(code: str, path: str = "$") -> NoReturn:
-    raise CodecError(code, path)
+def refuse(code: str, path: str = "$", detail: str | None = None) -> NoReturn:
+    raise CodecError(code, path, detail)
 
 
 def _scalar(value: str, path: str) -> None:
@@ -1420,13 +1427,41 @@ def _run_bounded(
                 stream.close()
 
 
+def _adapter_identity_detail(profile: Mapping[str, Any], which: str) -> str:
+    """Name the tokenizer and the machine a pinned adapter needs.
+
+    `WAI-E-ADAPTER.EXECUTABLE_CHANGED` at a digest node tells a reader that a
+    hash differed, not that this profile is bound to one machine's build. The
+    codes stay bounded, so the sentence a contributor can act on rides on
+    stderr instead. See skills#1098.
+    """
+    return (
+        f"adapter refused: the recorded {which} is not the one on this machine. "
+        f"This profile pins tokenizer {profile.get('id', 'unrecorded')}, run as "
+        f"{profile.get('runtime_executable', 'an unrecorded runtime')} "
+        f"through {profile.get('executable', 'an unrecorded client')}. "
+        "measure and parity regenerate token counts through that exact build, "
+        "so they cannot run anywhere it is absent, including CI. Run them on "
+        "the machine that recorded the profile, or re-record the profile where "
+        "you are."
+    )
+
+
 def _verify_profile_identity(profile: Mapping[str, Any], path: str = "$.profile") -> None:
     executable = _absolute_executable(profile["executable"], f"{path}.executable")
     if _hash_executable(executable, f"{path}.executable") != profile["executable_sha256"]:
-        refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", f"{path}.executable_sha256")
+        refuse(
+            "WAI-E-ADAPTER.EXECUTABLE_CHANGED",
+            f"{path}.executable_sha256",
+            _adapter_identity_detail(profile, "client executable"),
+        )
     runtime = _absolute_executable(profile["runtime_executable"], f"{path}.runtime_executable")
     if _hash_executable(runtime, f"{path}.runtime_executable") != profile["runtime_executable_sha256"]:
-        refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", f"{path}.runtime_executable_sha256")
+        refuse(
+            "WAI-E-ADAPTER.EXECUTABLE_CHANGED",
+            f"{path}.runtime_executable_sha256",
+            _adapter_identity_detail(profile, "runtime executable"),
+        )
     environment = _adapter_environment(profile, path)
     timeout = _small_decimal(profile["timeout_seconds"], f"{path}.timeout_seconds", 600)
     stdout_cap = _small_decimal(profile["max_stdout_bytes"], f"{path}.max_stdout_bytes", MAX_ADAPTER_OUTPUT_BYTES)
@@ -1622,7 +1657,11 @@ def _ollama_generate(
     body = json.dumps(request, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     executable = _absolute_executable(profile["executable"], f"{path}.executable")
     if _hash_executable(executable, f"{path}.executable") != profile["executable_sha256"]:
-        refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", f"{path}.executable_sha256")
+        refuse(
+            "WAI-E-ADAPTER.EXECUTABLE_CHANGED",
+            f"{path}.executable_sha256",
+            _adapter_identity_detail(profile, "client executable"),
+        )
     stdout, _ = _run_bounded(
         executable,
         _adapter_argv(
@@ -3767,6 +3806,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         _emit(_result("accepted", "WAI-OK", "$", input_bytes, model_bytes, compact_bytes, event="roundtrip"))
         return 0
     except CodecError as error:
+        # The record on stdout is the contract and does not change. A
+        # refusal a reader cannot act on from its code alone also says so
+        # here, where nothing parses.
+        if error.detail is not None:
+            print(f"agent_instruction: {error.detail}", file=sys.stderr)
         if arguments.command in ("check", "measure", "parity"):
             record = {
                 "schema": CHECK_RECORD_SCHEMA,

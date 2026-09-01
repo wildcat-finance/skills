@@ -71,24 +71,28 @@ def _closed_entries(inventory: dict, workbook: dict) -> list[dict]:
                 "item": target,
                 "disposition": "covered",
                 "oracle": reviewed[index % len(reviewed)],
+                "confirmed": True,
             })
         elif entry["kind"] == "guard":
             entries.append({
                 "item": target,
                 "disposition": "manual",
                 "reason": "the gate is checked by a person against the access matrix",
+                "confirmed": True,
             })
         elif entry["kind"] == "action":
             entries.append({
                 "item": target,
                 "disposition": "excluded",
                 "reason": "the action is exercised only through the routes above",
+                "confirmed": True,
             })
         else:
             entries.append({
                 "item": target,
                 "disposition": "manual",
                 "reason": "the row is owned by the reviewer who wrote it",
+                "confirmed": True,
             })
     return entries
 
@@ -138,7 +142,7 @@ def build_all(directory: Path) -> dict[str, Path]:
 
     bare = [dict(e) for e in closed]
     bare[closed.index(covered)] = {
-        "item": covered["item"], "disposition": "covered",
+        "item": covered["item"], "disposition": "covered", "confirmed": True,
     }
     write("covered-without-oracle.json", _envelope(inventory, workbook, bare))
 
@@ -161,6 +165,7 @@ def build_all(directory: Path) -> dict[str, Path]:
             "item": "route:src/app/nowhere/page.tsx",
             "disposition": "excluded",
             "reason": "this item is not in the inventory",
+            "confirmed": True,
         }]),
     )
 
@@ -182,12 +187,47 @@ def build_all(directory: Path) -> dict[str, Path]:
         "item": case_entry["item"],
         "disposition": "covered",
         "oracle": case_entry["item"].split(":", 1)[1],
+        "confirmed": True,
     }
     write("case-covered-by-itself.json", _envelope(inventory, workbook, circular))
 
     wrong = [dict(e) for e in closed]
     wrong[0] = {**closed[0], "disposition": "partial"}
     write("bad-vocabulary.json", _envelope(inventory, workbook, wrong))
+
+    # Confirmation fixtures. ADR-002 makes `confirmed` the only thing that
+    # admits an entry, so these cover the four states a set can be in and the
+    # two ways the field itself can be wrong.
+    drafted = [{**e, "confirmed": False} for e in closed]
+    write("all-unconfirmed.json", _envelope(inventory, workbook, drafted))
+
+    half = len(closed) // 2
+    mixed = [
+        {**e, "confirmed": index < half} for index, e in enumerate(closed)
+    ]
+    write("mixed-confirmation.json", _envelope(inventory, workbook, mixed))
+
+    absent_field = [dict(e) for e in closed]
+    absent_field[0] = {k: v for k, v in closed[0].items() if k != "confirmed"}
+    write("missing-confirmed.json", _envelope(inventory, workbook, absent_field))
+
+    not_boolean = [dict(e) for e in closed]
+    not_boolean[0] = {**closed[0], "confirmed": "yes"}
+    write("non-boolean-confirmed.json", _envelope(inventory, workbook, not_boolean))
+
+    # A draft that could never be valid refuses now, not when somebody
+    # confirms it: an unconfirmed entry is still checked in full.
+    unconfirmed_circular = [dict(e) for e in closed]
+    unconfirmed_circular[closed.index(case_entry)] = {
+        "item": case_entry["item"],
+        "disposition": "covered",
+        "oracle": case_entry["item"].split(":", 1)[1],
+        "confirmed": False,
+    }
+    write(
+        "unconfirmed-case-covered-by-itself.json",
+        _envelope(inventory, workbook, unconfirmed_circular),
+    )
 
     return made
 
