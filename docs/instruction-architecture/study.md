@@ -798,3 +798,50 @@ replacement.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-01
+
+**What changed.** `.python-version` is the third fixed source-required agent
+input, not a descriptive toolchain pin, for the bounded operations whose loaded
+contracts require its exact value. Admit its frozen `3.14.6\n` bytes once as a
+`fixed_input` in class `fixed-agent-input` with `agent-or-prompt` semantics;
+never classify or execute it as structured input. Bind it to exactly 11
+normalized profiles: `anamnesis:ordinary`, `anamnesis:demo-or-rebuild`,
+`berean:ordinary`, `brevitas:ordinary`, `hermes:gas-operation`,
+`lemma:ordinary`, `lemma:changed-or-unexpected`, `probitas:add-venue`,
+`synkrisis:cohort-or-render`, `synkrisis:diagnose` and `synkrisis:verify`.
+Expand those profiles through their existing five route and credential
+variants, for exactly 55 reachable scenario roots. A standalone package that
+does not carry the same-repository pin must refuse at runtime; that availability
+condition does not erase the canonical required-byte union. Frontier gates,
+unrelated nested dispatch, Protasis's illustrative assumption, Elenchus's
+optional worked example, Phylax's stale hardcoded example, Fizz's unread
+`VERSION`, `pyproject.toml`, generated Horos data, remote responses and dynamic
+target inputs remain excluded.
+
+The corrected source corpus has 191 physical files and 2,290,450 bytes, with
+174 exact-unique files and 1,819,006 bytes. `fixed_input` contains three files;
+exact literal or evidence contains 345,607 bytes, while governed operative and
+generated duplicate totals remain 1,473,399 and 471,444 bytes. The ledger stays
+at 519 profiles and 2,595 scenario roots, but contains 5,084 document and fixed-
+input obligations. Source generation is expected to emit 19 host roots, 332
+host edges, 337 scenario edges and 12 reference-only records. Holdout membership
+and its 363,804 bytes remain fixed; development becomes 143 paths and 1,455,202
+bytes. Regenerate and reseal all eight Step 1 outputs atomically while retaining
+the unopened envelope and unchanged membership and case-envelope digests.
+
+**Why.** Frozen root `AGENTS.md` defines every listed `python3` as the exact
+local `.python-version` and forbids ambient substitution. Eleven source-bounded
+operations independently require that suite pin, Elenchus literally reads it,
+and portable repository packaging carries its seven bytes. The prior study and
+runbook nevertheless called it descriptive and required its admission to be
+rejected, so the manifest, profile ledger, route reachability, partition,
+development cohort and seals omitted a source-required prompt input.
+
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected corpus,
+profile, graph, partition, cohort and seal identities; only Step 1's exit and
+tests require replacement.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.

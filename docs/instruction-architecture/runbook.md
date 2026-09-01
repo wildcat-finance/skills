@@ -1147,3 +1147,75 @@ repaired definition.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-01
+
+**What changed.** Complete replacement Exit: The effective Step 1 Exit bound
+by the immediately preceding runbook amendment (amendment SHA-256
+`2dedc2f67e5a710a562a91fecf4b09412a1c9154ba391074c587c3c57d4ce1dd`)
+is incorporated here in full by reference, including its exact command block,
+with only these exhaustive substitutions. In clause 1, require exactly 191
+physical files and 2,290,450 bytes, 174 exact-unique files and 1,819,006 bytes,
+and 15 fixed non-Markdown inputs. The added input is repository
+`.python-version`, exact bytes `3.14.6\n`, seven bytes, SHA-256
+`3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab`,
+classified once as `fixed_input` / `fixed-agent-input` with
+`agent-or-prompt` semantics and never executable. Withdraw the descriptive-pin
+exclusion for this path only; every other exclusion remains unchanged. In
+clause 2, exact literal or evidence is 345,607 bytes; governed operative and
+generated duplicate totals remain 1,473,399 and 471,444 bytes. In clause 3,
+retain exactly 519 profiles and the existing per-skill counts, but require
+5,084 source-bound document and fixed-input obligations. Add `.python-version`
+to exactly `anamnesis:ordinary`, `anamnesis:demo-or-rebuild`,
+`berean:ordinary`, `brevitas:ordinary`, `hermes:gas-operation`,
+`lemma:ordinary`, `lemma:changed-or-unexpected`, `probitas:add-venue`,
+`synkrisis:cohort-or-render`, `synkrisis:diagnose` and `synkrisis:verify`.
+In clause 4, retain 19 host roots, 2,595 scenario roots, route totals
+1,038/1,038/519 and 12 reference-only records; require 332 host edges and 337
+scenario edges. The 11 named profiles expose the fixed input through their
+existing five route and credential variants, exactly 55 scenario roots. Exact
+same-repository source resolution binds all five variants to the frozen path;
+standalone absence is an availability refusal and cannot remove the canonical
+dependency. No frontier gate, nested dispatch, illustrative assumption,
+optional worked example, stale hardcoded example or unrelated profile reaches
+it. In clause 5, retain the same unopened five-skill holdout, 31 paths and
+363,804 bytes; development becomes the disjoint remaining 143 paths and
+1,455,202 bytes. The displayed holdout/development ratios remain `0.200002`
+and `0.799998`. Regenerate the profile, graph, manifest, partition, cohort,
+inventory, reconciliation and seal identities atomically while retaining the
+holdout membership digest, case-envelope digest and `opened: false`. Every
+other Exit sentence and command is unchanged.
+
+Complete replacement Tests: The effective Step 1 Tests bound by that same
+immediately preceding amendment are incorporated here in full by reference,
+with only these exhaustive substitutions. Replace the 190-path/173-unique
+physical inventory assertions with 191/174 and the corresponding
+2,290,450/1,819,006 byte totals. Bind 15 fixed non-Markdown inputs and three
+fixed agent inputs, including `.python-version`'s exact bytes, digest, root
+`AGENTS.md` source anchor, nonexecution semantics and the 11-profile allowlist.
+Require exactly 5,084 obligations, 332 host edges, 337 scenario edges and 55
+scenario roots reaching `.python-version`; retain 519 profiles, 2,595 total
+scenario roots, 19 host roots, route totals 1,038/1,038/519 and 12
+reference-only records. Add independent mutants that omit or demote the pin in
+any allowed profile, add it to any excluded profile, mark it executable, change
+its bytes or digest, weaken its source evidence, or delete one of its five
+route variants; each must refuse. Remove only the prior hostile case requiring
+all `.python-version` admission to refuse. Continue to refuse Fizz's unread
+`VERSION`, `pyproject.toml`, generated Horos data, remote version responses and
+dynamic target inputs. Retain every other hostile mutant, exact command,
+parent-attributable check, schema/runtime parity check, twice-repeated verifier,
+fresh eight-output rebuild, Elenchus report and discipline gate unchanged.
+
+**Why.** Follow-on audit 18 proved that the frozen root `AGENTS.md` makes the
+local `.python-version` value normative for every listed `python3`, eleven
+bounded operation contracts independently require the suite pin, Elenchus
+reads it literally, and portable repository packaging carries it. The prior
+effective Exit and Tests instead classified the file as descriptive and
+required its admission to fail. That contradiction omitted seven required
+prompt bytes from 11 profiles and 55 route roots while every prior check passed.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
