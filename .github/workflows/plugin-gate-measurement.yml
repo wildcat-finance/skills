@@ -1,0 +1,111 @@
+name: plugin-gate-measurement
+
+# Temporary. It measures what an explicit budget override buys on the standard
+# four-core runner, so wildcat-finance/skills#992 can decide about a paid larger
+# runner against a number rather than an estimate.
+#
+# The `plugins` gate runs the Hexaemeron suite at `--jobs 1`. Nothing chooses
+# that: `run_checks.py` derives budget 2 from four cores, `_allocation_for`
+# hands a nested coordinator `max(2, budget // 2)` slots when more than one
+# check runs, and the coordinator keeps one of them. Every arm below runs the
+# same `hexaemeron` scope on the same runner and differs only in that budget,
+# so the arm durations are the scaling curve on the hardware that actually
+# gates a pull request.
+#
+# Arm budgets map to suite workers as `max(2, budget // 2) - 1`.
+#
+# Run 33438750597 measured the first four arms and is not repeated here.
+# Control, at one worker, did not finish: `run_checks.py` killed it on its
+# 1800-second per-check timeout. The rest passed, at 1083s for two workers,
+# 954s for three and 830s for four. This round looks for the knee above four.
+#
+# Delete this file once #992 records the measurement.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/plugin-gate-measurement.yml"
+  pull_request:
+    paths:
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/plugin-gate-measurement.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arm:
+    strategy:
+      fail-fast: false
+      matrix:
+        budget:
+          - 12
+          - 14
+          - 16
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+          cache: pip
+          cache-dependency-path: plugins/lazarus/requirements.lock
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26.6.0"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+      - name: Install locked Lazarus dependencies
+        run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
+      - name: Import pinned historical verification key
+        env:
+          EXPECTED_GPG_FINGERPRINT: 636EC19DE45DF10F3CE6206F57742DA1ABED6F46
+        run: |
+          key_path=plugins/hexaemeron/tests/fixtures/signing-keys/shoggoth-636ec19d.asc
+          actual_fingerprint="$(
+            gpg --batch --with-colons --import-options show-only --import "$key_path" |
+              awk -F: '$1 == "fpr" {print $10; exit}'
+          )"
+          test "$actual_fingerprint" = "$EXPECTED_GPG_FINGERPRINT"
+          gpg --batch --import "$key_path"
+      - name: Report the runner's own capacity
+        run: nproc
+      - name: Hexaemeron scope at this budget
+        env:
+          BUDGET: ${{ matrix.budget }}
+        run: |
+          set -eu
+          case "$BUDGET" in
+            "" | *[!0-9]*)
+              echo "budget must be a whole number"
+              exit 1
+              ;;
+          esac
+          if [ "$BUDGET" -eq 0 ]; then
+            python3 scripts/run_checks.py \
+              --scope hexaemeron \
+              --report tmp/checks/hexaemeron.json
+          else
+            python3 scripts/run_checks.py \
+              --scope hexaemeron \
+              --jobs "$BUDGET" \
+              --report tmp/checks/hexaemeron.json
+          fi
+      - name: Preserve the bounded check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-measurement-budget-${{ matrix.budget }}
+          path: tmp/checks/hexaemeron.json
+          if-no-files-found: error
+          retention-days: 14

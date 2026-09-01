@@ -1,7 +1,7 @@
 {
   "name": "probitas",
   "displayName": "Probitas",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
   "author": {
     "name": "Wildcat Labs",

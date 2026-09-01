@@ -11,6 +11,7 @@ import unittest
 from . import support  # noqa: F401  (sets sys.path)
 
 import pandects  # noqa: E402
+from pandects_lib import run as run_module  # noqa: E402
 
 
 def run(argv):
@@ -127,6 +128,37 @@ class CheckTests(unittest.TestCase):
     def test_no_subcommand_prints_help_and_exits_two(self):
         code, _, _ = run([])
         self.assertEqual(code, 2)
+
+
+class RunTests(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root)
+
+    def test_a_run_without_a_sibling_exercise_map_exits_two_and_names_it(self):
+        catalogue = os.path.join(self.root, "catalogue.json")
+        with open(catalogue, "w") as handle:
+            json.dump(
+                {
+                    "version": "0.1.0",
+                    "observables": "ICreditObservables",
+                    "families": {"conservation": "held against each other"},
+                    "laws": [],
+                },
+                handle,
+            )
+        original = run_module.run_foundry
+        run_module.run_foundry = lambda root, match=None, timeout=1800: {
+            "argv": ["forge", "test", "-vv"],
+            "returncode": 0,
+            "output": "",
+        }
+        try:
+            code, _, err = run(["run", "--catalogue", catalogue])
+        finally:
+            run_module.run_foundry = original
+        self.assertEqual(code, 2)
+        self.assertIn("exercise.json", err)
 
 
 if __name__ == "__main__":

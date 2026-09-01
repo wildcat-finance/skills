@@ -37,6 +37,7 @@ PYTHON_WORKFLOWS = {
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
+    "plugin-gate-measurement.yml",
     "plugins.yml",
     "repo.yml",
     "synkrisis.yml",

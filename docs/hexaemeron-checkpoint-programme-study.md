@@ -6,6 +6,13 @@
 > permits checkpoint continuation only at a successful end of step or an
 > exhausted audit, on the same controller ledger.
 
+> **Issue renumbering, 31 August 2026.** The Wave Delta epic and its component
+> issues were re-filed under new numbers, and the links below point at the
+> successors: #558 to #859, #560 to #860, #561 to #861, #563 to #862, #564 to
+> #863, #565 to #864, #566 to #865, #567 to #866, and #568 to #867. The
+> `decision-chain` packet #559 has no successor. Those originals and #530,
+> #539, #547, #549, #550, and #562 no longer resolve on GitHub.
+
 Assuming, unless corrected:
 
 1. This delivery records the programme, its proposed decisions, and its issue
@@ -33,7 +40,7 @@ Assuming, unless corrected:
    `wildcat-finance/fiat-checkpoints` repository. That repository does not
    exist by authority of this study; exact owner, name, visibility, actor, and
    cloud targets are ask-first entry gates in issue
-   [#563](https://github.com/wildcat-finance/skills/issues/563).
+   [#862](https://github.com/wildcat-finance/skills/issues/862).
 8. The proposed first deployment uses replaceable DigitalOcean compute and
    Managed PostgreSQL in `LON1`, while locked S3 object versions and KMS-signed
    receipts in separate AWS accounts carry authority. PostgreSQL and the
@@ -73,15 +80,15 @@ contributor routing can fail and ship separately:
 
 | Module id | Responsibility | Issue | Target | Depends on |
 | --- | --- | --- | --- | --- |
-| `decision-chain` | Replace stale checkpoint prior art with the current contract and proposed records | [#559](https://github.com/wildcat-finance/skills/issues/559) | `wildcat-finance/skills` | #439, #434 |
-| `checkpoint-identity` | Fix run anchors, semantic identity, transport identity, parents, stage, and receipt sidecars | [#560](https://github.com/wildcat-finance/skills/issues/560) | `wildcat-finance/skills` | `decision-chain` |
-| `archive-core` | Export, inspect, and restore one cumulative deterministic archive | [#561](https://github.com/wildcat-finance/skills/issues/561) | `wildcat-finance/skills` | `checkpoint-identity`, #435, #436 |
-| `checkpoint-service` | Quarantine hostile uploads, validate, publish immutably, and index accepted state | [#563](https://github.com/wildcat-finance/skills/issues/563) | future service repository | `archive-core` |
-| `storage-authority` | Deploy locked primary and replica objects plus the receipt signer behind replaceable compute | [#564](https://github.com/wildcat-finance/skills/issues/564) | future service repository | `checkpoint-service` |
-| `publication-fence` | Require a verified acceptance receipt before an external transition advances | [#565](https://github.com/wildcat-finance/skills/issues/565) | `wildcat-finance/skills` | `archive-core`, `checkpoint-service`, `storage-authority` |
-| `lineage-resolution` | Preserve siblings, advisory claims, signed resolution, reconciliation, and salvage | [#566](https://github.com/wildcat-finance/skills/issues/566) | future service repository | `checkpoint-identity`, `publication-fence` |
-| `recovery-proof` | Break hostile, concurrent, revoked, and lost-infrastructure paths and measure recovery | [#567](https://github.com/wildcat-finance/skills/issues/567) | future service repository | every service/controller module |
-| `resume-routing` | Let Atlas offer resume, redraw, or start from redacted current state | [#568](https://github.com/wildcat-finance/skills/issues/568) | `wildcat-finance/shoggoth-wave-atlas` | #505, #530, `recovery-proof` |
+| `decision-chain` | Replace stale checkpoint prior art with the current contract and proposed records | #559 (retired, no successor) | `wildcat-finance/skills` | #439, #434 |
+| `checkpoint-identity` | Fix run anchors, semantic identity, transport identity, parents, stage, and receipt sidecars | [#860](https://github.com/wildcat-finance/skills/issues/860) | `wildcat-finance/skills` | `decision-chain` |
+| `archive-core` | Export, inspect, and restore one cumulative deterministic archive | [#861](https://github.com/wildcat-finance/skills/issues/861) | `wildcat-finance/skills` | `checkpoint-identity`, #435, #436 |
+| `checkpoint-service` | Quarantine hostile uploads, validate, publish immutably, and index accepted state | [#862](https://github.com/wildcat-finance/skills/issues/862) | future service repository | `archive-core` |
+| `storage-authority` | Deploy locked primary and replica objects plus the receipt signer behind replaceable compute | [#863](https://github.com/wildcat-finance/skills/issues/863) | future service repository | `checkpoint-service` |
+| `publication-fence` | Require a verified acceptance receipt before an external transition advances | [#864](https://github.com/wildcat-finance/skills/issues/864) | `wildcat-finance/skills` | `archive-core`, `checkpoint-service`, `storage-authority` |
+| `lineage-resolution` | Preserve siblings, advisory claims, signed resolution, reconciliation, and salvage | [#865](https://github.com/wildcat-finance/skills/issues/865) | future service repository | `checkpoint-identity`, `publication-fence` |
+| `recovery-proof` | Break hostile, concurrent, revoked, and lost-infrastructure paths and measure recovery | [#866](https://github.com/wildcat-finance/skills/issues/866) | future service repository | every service/controller module |
+| `resume-routing` | Let Atlas offer resume, redraw, or start from redacted current state | [#867](https://github.com/wildcat-finance/skills/issues/867) | `wildcat-finance/shoggoth-wave-atlas` | #505, #530, `recovery-proof` |
 
 Build order follows the table. Each row is a separate delivery with its own
 study, runbook, clean worktree, audit loop, receipts, and pull request. The
@@ -103,12 +110,12 @@ A working programme means this demonstration succeeds from two clean machines:
    until a signed resolution authorises a reconciliation checkpoint.
 6. The service loses its Droplet and PostgreSQL index and rebuilds the same
    accepted graph from locked records, with replica-only read/verify/restore
-   available inside the objective recorded in #567.
+   available inside the objective recorded in #866.
 
 The exact released commands are fixed by the component studies. The final
 demonstration records every command, SHA-256, snapshot id, object version,
 receipt signature, source freshness value, and recovery duration on
-[epic #558](https://github.com/wildcat-finance/skills/issues/558).
+[epic #859](https://github.com/wildcat-finance/skills/issues/859).
 
 ## 2. Prior art
 
@@ -349,16 +356,16 @@ and preserves the bytes.
 
 ## 7. Sources
 
-- [Wave Delta epic #558](https://github.com/wildcat-finance/skills/issues/558)
-  and component issues [#559](https://github.com/wildcat-finance/skills/issues/559),
-  [#560](https://github.com/wildcat-finance/skills/issues/560),
-  [#561](https://github.com/wildcat-finance/skills/issues/561),
-  [#563](https://github.com/wildcat-finance/skills/issues/563),
-  [#564](https://github.com/wildcat-finance/skills/issues/564),
-  [#565](https://github.com/wildcat-finance/skills/issues/565),
-  [#566](https://github.com/wildcat-finance/skills/issues/566),
-  [#567](https://github.com/wildcat-finance/skills/issues/567), and
-  [#568](https://github.com/wildcat-finance/skills/issues/568).
+- [Wave Delta epic #859](https://github.com/wildcat-finance/skills/issues/859)
+  and component issues #559 (retired, no successor),
+  [#860](https://github.com/wildcat-finance/skills/issues/860),
+  [#861](https://github.com/wildcat-finance/skills/issues/861),
+  [#862](https://github.com/wildcat-finance/skills/issues/862),
+  [#863](https://github.com/wildcat-finance/skills/issues/863),
+  [#864](https://github.com/wildcat-finance/skills/issues/864),
+  [#865](https://github.com/wildcat-finance/skills/issues/865),
+  [#866](https://github.com/wildcat-finance/skills/issues/866), and
+  [#867](https://github.com/wildcat-finance/skills/issues/867).
 - `plugins/hexaemeron/skills/fiat/SKILL.md` version `5.19.1` and
   `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`; PRs
   [#549](https://github.com/wildcat-finance/skills/pull/549) and
@@ -466,7 +473,7 @@ still gates the implementation packets: CP-3 records archive size, expanded
 size, export/inspect/restore time, and peak memory on a fixed corpus before any
 optimisation; CP-4 records route/dependency p95 and p99 plus validation queue
 age under a fixed workload; CP-8 measures the 60-minute read-only and four-hour
-full-recovery objectives from #567. Each target study must name the exact
+full-recovery objectives from #866. Each target study must name the exact
 measurement command and environment before code is kept. ZIP size and ratio
 ceilings are security limits, not claims that the service is fast.
 
