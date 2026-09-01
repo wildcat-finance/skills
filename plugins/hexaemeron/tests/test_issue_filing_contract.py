@@ -137,6 +137,29 @@ class StatusBlockTests(unittest.TestCase):
         self.assertEqual(faults, [], faults)
         self.assertEqual(span, (3, 5))
 
+    def test_an_html_comment_above_the_block_is_not_prose(self):
+        """92 of 137 open issues open on the wildcat-origin marker.
+
+        The position rule protects what a reader meets first. An HTML comment is
+        invisible to a reader, so it cannot cause that failure, and refusing the
+        arrangement those bodies naturally produce would make the contract
+        unusable on the corpus it governs.
+        """
+        span, faults = self.span(
+            "<!-- wildcat-origin: shoggoth -->\n\n"
+            "<!-- status:start -->\nSuperseded by #1030.\n<!-- status:end -->\n\n"
+            "An issue.\n")
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(span, (3, 5))
+
+    def test_visible_prose_above_the_block_is_still_refused(self):
+        """The comment exemption does not widen to anything a reader can see."""
+        span, faults = self.span(
+            "<!-- wildcat-origin: shoggoth -->\nAn issue.\n\n"
+            "<!-- status:start -->\nOne.\n<!-- status:end -->\n")
+        self.assertIsNone(span)
+        self.assertTrue(any("below the filing prose" in fault for fault in faults), faults)
+
     def test_a_control_character_in_the_block_is_refused(self):
         """Matching the carryover row reader, which refuses them by name."""
         span, faults = self.span(with_status(

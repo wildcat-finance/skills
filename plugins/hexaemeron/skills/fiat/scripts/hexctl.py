@@ -4511,14 +4511,19 @@ def status_block_span(
             f"the body would be read as its content"
         ]
     # The record puts the block above the filing prose, so a reader coming top to
-    # bottom meets the current statement before the original one. Blank lines are
-    # not prose; anything else is.
+    # bottom meets the current statement before the original one. The rule
+    # protects what a reader sees, so blank lines and whole-line HTML comments do
+    # not count: 92 of the 137 issues open at the time this was written begin with
+    # the invisible `wildcat-origin` marker, and refusing the arrangement those
+    # bodies produce would make the contract unusable on the corpus it governs.
     for physical in lines[:opened - 1]:
-        if physical.strip():
-            return None, [
-                f"{label} opens its status block below the filing prose, so a "
-                f"reader meets the original requirement before the correction"
-            ]
+        line = physical.strip()
+        if not line or (line.startswith("<!--") and line.endswith("-->")):
+            continue
+        return None, [
+            f"{label} opens its status block below the filing prose, so a "
+            f"reader meets the original requirement before the correction"
+        ]
     content = lines[opened:closed - 1]
     for offset, physical in enumerate(content, start=opened + 1):
         if _contains_nonprinting_character(physical.rstrip("\r\n")):
