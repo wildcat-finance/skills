@@ -191,6 +191,20 @@ def causes(before: dict, after: dict) -> list[dict]:
     return found
 
 
+def committed_scrutiny(scrutiny: dict) -> dict:
+    """The scrutiny record as it is committed: everything but the timing.
+
+    The coverage record beside it names the two digests it was built from and
+    nothing about what built it, so on its own it cannot be attributed to an
+    application commit or a skill version. Study question 4 needs that
+    attribution to be machine-readable, not only stated in the prose, because
+    the next release's comparison is a program reading this file.
+    """
+    body = {key: value for key, value in scrutiny.items() if key != "timing"}
+    body["scrutiny_sha256"] = scrutiny_digest(scrutiny)
+    return body
+
+
 def canonical_bytes(scrutiny: dict) -> bytes:
     """Everything but the subject and the timing.
 

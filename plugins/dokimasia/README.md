@@ -65,7 +65,8 @@ python3 plugins/dokimasia/scripts/dokimasia.py reconcile \
 python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check
 python3 plugins/dokimasia/scripts/dokimasia.py demonstrate \
   --app <a-pinned-checkout> --workbook <a-reviewed-workbook> \
-  --commit <the-40-character-commit> --label <name> --report-timing
+  --commit <the-40-character-commit> --label <name> \
+  --write-evidence --report-timing
 ```
 
 ## What is committed here

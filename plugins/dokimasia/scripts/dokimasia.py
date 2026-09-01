@@ -345,6 +345,10 @@ DEMONSTRATE_CRITERION = "pinned-demonstration"
 
 EVIDENCE = PLUGIN / "docs" / "evidence"
 
+# One path segment. A label becomes a file name under the declared evidence
+# root, and a segment carrying a separator or a parent reference leaves it.
+SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
 
 def demonstrate_command(
     app: str | None,
@@ -408,9 +412,19 @@ def demonstrate_command(
         body = json.dumps(coverage, indent=2, sort_keys=True) + "\n"
         prose = demonstrate_lib.render(scrutiny, coverage)
         if write_evidence:
-            EVIDENCE.mkdir(parents=True, exist_ok=True)
             label = application_label or Path(app).name
+            if not SAFE_LABEL.match(label) or label in (".", ".."):
+                raise SelfTestError(
+                    f"the label {label!r} is not one safe path segment, and a "
+                    "label names a file under the declared evidence root"
+                )
+            EVIDENCE.mkdir(parents=True, exist_ok=True)
+            written = json.dumps(
+                demonstrate_lib.committed_scrutiny(scrutiny),
+                indent=2, sort_keys=True,
+            ) + "\n"
             write_report_bytes(EVIDENCE / f"{label}.coverage.json", body)
+            write_report_bytes(EVIDENCE / f"{label}.scrutiny.json", written)
             write_report_bytes(EVIDENCE / f"{label}-scrutiny.md", prose)
             sys.stdout.write(
                 f"dokimasia demonstrate: wrote evidence for {label} at "
@@ -446,9 +460,11 @@ def _committed_evidence_failures() -> list[str]:
     and that the prose beside it reports the same figures.
     """
     coverage_path = EVIDENCE / "wildcat-app-v2.coverage.json"
+    scrutiny_path = EVIDENCE / "wildcat-app-v2.scrutiny.json"
     prose_path = EVIDENCE / "wildcat-app-v2-scrutiny.md"
-    if not coverage_path.is_file() or not prose_path.is_file():
-        return ["the committed evidence for wildcat-app-v2 is absent"]
+    for path in (coverage_path, scrutiny_path, prose_path):
+        if not path.is_file():
+            return [f"the committed evidence file {path.name} is absent"]
     failures: list[str] = []
     record = reconcile_lib.read_json(coverage_path)
     prose = prose_path.read_text(encoding="utf-8")
@@ -464,6 +480,27 @@ def _committed_evidence_failures() -> list[str]:
     for figure in (str(ratio["denominator"]), str(ratio["numerator"])):
         if figure not in prose:
             failures.append(f"the committed scrutiny prose does not state {figure}")
+    scrutiny = reconcile_lib.read_json(scrutiny_path)
+    try:
+        demonstrate_lib.identity(scrutiny)
+    except demonstrate_lib.DemonstrationError as error:
+        failures.append(f"the committed scrutiny record is malformed: {error}")
+        return failures
+    if scrutiny["examined"]["coverage_sha256"] != reconcile_lib.coverage_digest(record):
+        failures.append(
+            "the committed scrutiny names a coverage digest the record beside "
+            "it does not have"
+        )
+    if scrutiny["examined"]["scoped"] != record["counts"]["scoped"]:
+        failures.append("the committed scrutiny and its coverage disagree on scope")
+    # The renderer abbreviates a digest to twelve characters and writes a
+    # commit and a version in full, so compare the prefix in every case.
+    for name, value in demonstrate_lib.identity(scrutiny).items():
+        if value[:12] not in prose:
+            failures.append(
+                f"the committed prose does not name the {name} identity "
+                f"{value[:12]} the scrutiny record carries"
+            )
     # The prose abbreviates each digest, so compare against the same prefix the
     # renderer writes rather than the whole value.
     for field in ("inventory_sha256", "workbook_sha256"):

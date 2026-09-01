@@ -266,6 +266,45 @@ class CommittedEvidence(unittest.TestCase):
             self.assertTrue(short)
             self.assertIn(short, prose, f"the prose does not name the {field}")
 
+    def test_the_committed_scrutiny_names_its_producer(self):
+        """Study question 4, machine-readably rather than only in the prose.
+
+        The coverage record names the two digests it was built from and nothing
+        about what built it. Next release's comparison is a program reading
+        these files, so the attribution has to be in one of them.
+        """
+        scrutiny = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")
+        self.assertEqual(
+            scrutiny["subject"]["application"]["commit"], PINNED_COMMIT
+        )
+        self.assertTrue(scrutiny["skill_version"])
+        self.assertTrue(scrutiny["subject"]["workbook"]["sha256"])
+        self.assertNotIn(
+            "timing", scrutiny, "the committed scrutiny carries a measured value"
+        )
+        self.assertEqual(len(scrutiny["scrutiny_sha256"]), 64)
+
+    def test_the_committed_scrutiny_agrees_with_the_coverage_beside_it(self):
+        from dokimasia_lib import reconcile as reconcile_lib
+
+        scrutiny = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")
+        record = reconcile.read_json(self.coverage_path)
+        self.assertEqual(
+            scrutiny["examined"]["coverage_sha256"],
+            reconcile_lib.coverage_digest(record),
+        )
+        self.assertEqual(scrutiny["examined"]["scoped"], record["counts"]["scoped"])
+
+    def test_a_later_scrutiny_can_be_compared_against_the_committed_one(self):
+        """The committed record is usable as the earlier side of a comparison."""
+        scrutiny = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")
+        later = json.loads(json.dumps(scrutiny))
+        later["subject"]["application"]["commit"] = "d" * 40
+        later["examined"]["coverage_sha256"] = "e" * 64
+        found = demonstrate.causes(scrutiny, later)
+        self.assertEqual([entry["cause"] for entry in found], ["application"])
+        self.assertEqual(found[0]["from"], PINNED_COMMIT)
+
     def test_the_committed_record_carries_no_workbook_prose(self):
         """The phylax boundary: identifiers may be committed, rows may not."""
         record = reconcile.read_json(self.coverage_path)
@@ -295,6 +334,34 @@ class CommittedEvidence(unittest.TestCase):
             demonstrate.render(scrutiny, coverage),
             self.prose_path.read_text(encoding="utf-8"),
         )
+
+
+class EvidenceRootIsDeclared(ScrutinyCase):
+    """A label names a file under the declared root and may not leave it."""
+
+    def test_a_label_carrying_a_parent_reference_refuses(self):
+        result = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "dokimasia.py"), "demonstrate",
+             "--app", str(self.app), "--workbook", str(self.made["benign.xlsx"]),
+             "--commit", "a" * 40, "--label", "../../../../tmp/escaped",
+             "--write-evidence"],
+            capture_output=True, text=True, timeout=300,
+        )
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("not one safe path segment", result.stderr)
+        self.assertFalse(
+            (PLUGIN.parents[1] / "tmp" / "escaped.coverage.json").exists()
+        )
+
+    def test_a_label_carrying_a_separator_refuses(self):
+        result = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "dokimasia.py"), "demonstrate",
+             "--app", str(self.app), "--workbook", str(self.made["benign.xlsx"]),
+             "--commit", "a" * 40, "--label", "nested/name", "--write-evidence"],
+            capture_output=True, text=True, timeout=300,
+        )
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("not one safe path segment", result.stderr)
 
 
 class CommandSurface(unittest.TestCase):
