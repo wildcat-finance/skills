@@ -601,8 +601,8 @@ def oracle_tree_paths() -> tuple[str, ...]:
 def oracle_source(path: str) -> bytes:
     """Read the frozen blob without importing the production source reader."""
     if path in ORACLE_SOURCE_CACHE:
-        return ORACLE_SOURCE_CACHE[path]
-    if oracle_source_mode() == "git":
+        expected = ORACLE_SOURCE_CACHE[path]
+    elif oracle_source_mode() == "git":
         process = oracle_git("cat-file", "blob", f"{ORACLE_SOURCE_REF}:{path}")
         if process.returncode != 0:
             raise AssertionError(f"independent oracle could not read {path}")
@@ -2969,6 +2969,31 @@ class CorpusManifestTests(unittest.TestCase):
             self.assertEqual(AI._source_blob("AGENTS.md"), b"pinned")
             with self.assertRaisesRegex(AI.Refusal, "source drift"):
                 AI._source_blob("AGENTS.md")
+            self.assertEqual(live_read.call_count, 2)
+
+    def test_independent_oracle_cache_never_skips_live_source_drift_check(self):
+        clear_source_cache()
+        self.addCleanup(clear_source_cache)
+        with (
+            mock.patch.object(
+                sys.modules[__name__], "oracle_source_mode", return_value="git"
+            ),
+            mock.patch.object(
+                sys.modules[__name__],
+                "oracle_git",
+                return_value=mock.Mock(returncode=0, stdout=b"pinned"),
+            ),
+            mock.patch.object(
+                sys.modules[__name__],
+                "oracle_read_regular",
+                side_effect=[b"pinned", b"drifted"],
+            ) as live_read,
+        ):
+            self.assertEqual(oracle_source("AGENTS.md"), b"pinned")
+            with self.assertRaisesRegex(
+                AssertionError, "independent oracle observed source drift"
+            ):
+                oracle_source("AGENTS.md")
             self.assertEqual(live_read.call_count, 2)
 
     def test_git_output_limit_stops_producer_before_completion(self):
