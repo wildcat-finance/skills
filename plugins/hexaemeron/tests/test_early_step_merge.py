@@ -408,6 +408,28 @@ class AdoptedMergeStepCase(AdoptionHarness):
         self.assertIn("was adopted at push with merge", result.stderr)
         self.assertIn("does not merge again", result.stderr)
 
+    def test_an_adoption_the_run_branch_does_not_carry_refuses(self):
+        """The order nobody chose: the lower step merged first, so the work
+        never reached the run branch, and no completeness of record fixes that.
+        """
+        merge = "e" * 40
+        self._to_push(1)
+        self._adopt_and_push(1, merge)
+        self.adopted_merge = None
+        self._finish_ordinary(2)
+        self.env["FAKE_GIT_MODE"] = "not-ancestor"
+        self.env["FAKE_GIT_NOT_ANCESTOR"] = merge
+        try:
+            result = self.run_ctl(
+                "done", "merge-step", "--step", "1", "--merge-commit", merge, expect=2
+            )
+        finally:
+            self.env.pop("FAKE_GIT_MODE", None)
+            self.env.pop("FAKE_GIT_NOT_ANCESTOR", None)
+        self.assertIn("is not reachable from", result.stderr)
+        self.assertIn("does not carry this step's work", result.stderr)
+        self.assertIn("replacement pull request", result.stderr)
+
     def test_verify_replays_a_run_carrying_an_adopted_merge(self):
         merge = "e" * 40
         self._to_push(1)

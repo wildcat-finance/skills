@@ -8336,6 +8336,32 @@ def done_merge_step(args, state: dict) -> None:
                 f"{adoption['merge_commit']}; --merge-commit must name that "
                 "exact commit, because this step does not merge again"
             )
+        # An early merge landed in the base the pull request targeted, which for
+        # a step above the bottom of the stack is the step below it rather than
+        # the run branch. Whether the run branch carries this step's work then
+        # depends on an order nobody chose: it does when the lower step merged
+        # after this one, and does not when it merged before. Only reachability
+        # answers that, and a step whose work is not on the run branch is not
+        # satisfied, however completely its adoption was recorded.
+        run_tip = remote_branch_tip(
+            args.dir, pending["into"], f"run branch '{pending['into']}' tip"
+        )
+        if not commit_is_ancestor(
+            args.dir,
+            adoption["merge_commit"],
+            run_tip,
+            f"adopted merge for step {args.step} on '{pending['into']}'",
+        ):
+            die(
+                f"adopted merge {adoption['merge_commit']} for step {args.step} "
+                f"is not reachable from '{pending['into']}' at {run_tip}. The "
+                f"early merge landed in '{adoption['reachable_from']}', and the "
+                "run branch does not carry this step's work, so the step is not "
+                "satisfied by that record. Its own pull request is closed and "
+                "cannot supply the merge: bring the work onto the run branch "
+                "through a replacement pull request, then halt and finish by "
+                "hand rather than receipting a landing that did not happen"
+            )
         expected_merge_base = adoption["reachable_from"]
     pr_record = inspect_pull_request(
         args.dir,
