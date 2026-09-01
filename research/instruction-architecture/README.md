@@ -30,11 +30,14 @@ with lazy fetch, global and system configuration, prompts and ambient
 environment disabled. writes use a same-directory temporary file, `fsync`,
 atomic replacement and a complete reread.
 
-the 233 declared scenarios cover the 93 base combinations of 31 selectable
-canonical skills and three actual host routes: repository checkout, isolated
-Agent Skills and standalone plugin. each closure starts at that route's entry,
-binds one selected plugin runtime and skill plus a closed condition vector, and
-follows only matching source-directed workflow edges. every Ariadne scenario
+the 656 declared scenarios cover the complete condition-vector product over
+the 93 base combinations of 31 selectable canonical skills and three actual
+host routes: repository checkout, isolated Agent Skills and standalone plugin.
+repository checkout and Agent Skills each hold 229 vectors; standalone holds
+198 because it has no credential-backed contributor lookup. each closure
+starts at that route's entry, binds one selected plugin runtime and skill plus
+a closed condition vector, and follows only matching source-directed workflow
+edges. every Ariadne scenario
 chooses one operation; every Kronos scenario chooses one target and dispatches
 it through Fiat; Synkrisis rule reads occur only in mutually exclusive
 `diagnose` or `verify` vectors. Hermes's corpus and schema and Imprimatur's

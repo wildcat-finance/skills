@@ -1487,7 +1487,9 @@ def _reachability_by_root(
 
 
 def _validate_complete_scenarios(
-    topology: dict[str, Any], skill_paths: dict[str, str]
+    topology: dict[str, Any],
+    skill_paths: dict[str, str],
+    document_owner: dict[str, str],
 ) -> None:
     """Refuse incomplete routes, undeclared conditions, and branch unions."""
     router = ".agents/skills/promise-machine/SKILL.md"
@@ -1720,6 +1722,43 @@ def _validate_complete_scenarios(
     if covered_base_ids != expected_base_ids:
         raise Refusal("scenario roots omit the route/selection base product")
 
+    contributor_condition = "credential:github-contributor"
+    for name, path in sorted(skill_paths.items()):
+        plugin = _plugin(path)
+        if plugin is None:
+            raise Refusal(f"scenario skill has no plugin: {path}")
+        identifiers = {
+            "agent-skills": f"agent-skills:skill:{name}",
+            "repository": f"repository:skill:{name}",
+            "standalone": f"standalone:{plugin}:skill:{name}",
+        }
+        route_vectors: dict[str, frozenset[tuple[str, ...]]] = {}
+        for route, base_identifier in identifiers.items():
+            rows = [
+                root
+                for root in roots.values()
+                if root["base_scenario"] == base_identifier
+            ]
+            raw_vectors = [tuple(root["conditions"]) for root in rows]
+            if len(raw_vectors) != len(set(raw_vectors)):
+                raise Refusal(f"scenario route repeats a condition vector: {name}")
+            contributor_rows = [
+                root for root in rows if contributor_condition in root["conditions"]
+            ]
+            expected_contributor_vectors = 0 if route == "standalone" else 1
+            if len(contributor_rows) != expected_contributor_vectors:
+                raise Refusal(f"scenario credential placement is incomplete: {name}")
+            route_vectors[route] = frozenset(
+                tuple(
+                    condition
+                    for condition in root["conditions"]
+                    if condition != contributor_condition
+                )
+                for root in rows
+            )
+        if len(set(route_vectors.values())) != 1:
+            raise Refusal(f"scenario route condition product is incomplete: {name}")
+
     for edge in topology["scenario_edges"]:
         witnesses = (
             set(edge["active_scenarios"])
@@ -1788,7 +1827,7 @@ def _validate_complete_scenarios(
     if (
         len(candidate_ledgers) != 25
         or len(kronos_base_ids) != 3
-        or len(kronos_scenario_ids) != 27
+        or len(kronos_scenario_ids) != 83
         or len(host_ranking_edges) != len(candidate_ledgers)
         or {edge["target"] for edge in host_ranking_edges} != candidate_ledgers
         or any(
@@ -1850,6 +1889,130 @@ def _validate_complete_scenarios(
             raise Refusal(f"Kronos scenario is not one dispatched target: {identifier}")
         if non_dispatch and dispatch["condition"] not in root["conditions"]:
             raise Refusal(f"Kronos scenario omits Fiat dispatch: {identifier}")
+
+    # Reconstruct the expected vectors from the potential graph rather than
+    # trusting the declared roots or active scopes that are being validated.
+    base_paths: dict[str, dict[str, tuple[dict[str, Any], ...]]] = {}
+    for base_identifier, base in sorted(expected_templates.items()):
+        paths: dict[str, tuple[dict[str, Any], ...]] = {base["node"]: ()}
+        eligible_edges = sorted(
+            (
+                edge
+                for edge in topology["scenario_edges"]
+                if base_identifier in edge["eligible_base_scenarios"]
+            ),
+            key=lambda edge: edge["id"],
+        )
+        while True:
+            changed = False
+            for edge in eligible_edges:
+                prefix = paths.get(edge["source"])
+                if prefix is None:
+                    continue
+                candidate = (*prefix, edge)
+                current = paths.get(edge["target"])
+                candidate_key = (
+                    len(candidate),
+                    tuple(row["id"] for row in candidate),
+                )
+                current_key = (
+                    len(current),
+                    tuple(row["id"] for row in current),
+                ) if current is not None else None
+                if current_key is None or candidate_key < current_key:
+                    paths[edge["target"]] = candidate
+                    changed = True
+            if not changed:
+                break
+        base_paths[base_identifier] = paths
+
+    expected_vectors: dict[str, set[tuple[str, ...]]] = {
+        base_identifier: set() for base_identifier in expected_templates
+    }
+    target_conditions = {
+        edge["condition"]
+        for edge in topology["scenario_edges"]
+        if edge["source"] == kronos
+        and edge["target"] in set(skill_paths.values()) - {fiat}
+        and edge["condition"] is not None
+    }
+    for edge in topology["scenario_edges"]:
+        condition = edge["condition"]
+        if condition is None:
+            continue
+        candidates: list[
+            tuple[tuple[bool, int], str, tuple[dict[str, Any], ...]]
+        ] = []
+        desired_owner = document_owner.get(edge["target"], edge["source"])
+        for base_identifier in edge["eligible_base_scenarios"]:
+            base = expected_templates[base_identifier]
+            path = base_paths[base_identifier].get(edge["source"])
+            if path is None:
+                continue
+            path_conditions = {
+                row["condition"] for row in path if row["condition"] is not None
+            }
+            semantic_priority = (
+                skill_paths[base["selected_skill"]] != desired_owner,
+                len(path_conditions),
+            )
+            candidates.append((semantic_priority, base_identifier, path))
+        if not candidates:
+            raise Refusal(f"scenario oracle cannot reach condition: {edge['id']}")
+        best_priority = min(priority for priority, _, _ in candidates)
+        for priority, base_identifier, path in candidates:
+            if priority != best_priority:
+                continue
+            vector = {
+                row["condition"] for row in path if row["condition"] is not None
+            }
+            vector.add(condition)
+            if vector & target_conditions:
+                vector.add(dispatch["condition"])
+            expected_vectors[base_identifier].add(tuple(sorted(vector)))
+
+    ariadne_operations = {
+        edge["condition"]
+        for edge in topology["scenario_edges"]
+        if edge["source"] == skill_paths["ariadne"]
+        and edge["target"] in ARIADNE_OPERATION_CONDITIONS
+        and edge["condition"] is not None
+    }
+    canonical_ariadne_operation = min(ariadne_operations)
+    canonical_kronos_target = min(target_conditions)
+    for base_identifier, base in expected_templates.items():
+        vectors = expected_vectors[base_identifier]
+        if base["selected_skill"] == "ariadne":
+            normalized = set()
+            for vector in vectors | {()}:
+                conditions = set(vector)
+                if not conditions & ariadne_operations:
+                    conditions.add(canonical_ariadne_operation)
+                normalized.add(tuple(sorted(conditions)))
+            vectors = normalized
+        elif base["selected_skill"] == "kronos":
+            normalized = set()
+            for vector in vectors | {()}:
+                conditions = set(vector)
+                conditions.add(dispatch["condition"])
+                if not conditions & target_conditions:
+                    conditions.add(canonical_kronos_target)
+                normalized.add(tuple(sorted(conditions)))
+            vectors = normalized
+        else:
+            vectors = vectors | {()}
+        expected_vectors[base_identifier] = vectors
+
+    for base_identifier, expected in sorted(expected_vectors.items()):
+        actual = {
+            tuple(root["conditions"])
+            for root in roots.values()
+            if root["base_scenario"] == base_identifier
+        }
+        if actual != expected:
+            raise Refusal(
+                f"scenario source-derived condition product disagrees: {base_identifier}"
+            )
 
 
 def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
@@ -2613,17 +2776,20 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
             candidates.append((priority, root, path))
         if not candidates:
             raise Refusal(f"conditional scenario edge is unreachable: {edge['id']}")
-        _, root, path = min(candidates, key=lambda item: item[0])
-        vector = {
-            row["condition"] for row in path if row["condition"] is not None
-        }
-        vector.add(condition)
-        if vector & kronos_target_conditions:
-            dispatch_condition = kronos_dispatch["condition"]
-            if dispatch_condition is None:
-                raise Refusal("Kronos dispatch edge is not conditional")
-            vector.add(dispatch_condition)
-        vectors_by_base[root["id"]].add(tuple(sorted(vector)))
+        best_semantic_priority = min(priority[:2] for priority, _, _ in candidates)
+        for priority, root, path in sorted(candidates, key=lambda item: item[0]):
+            if priority[:2] != best_semantic_priority:
+                continue
+            vector = {
+                row["condition"] for row in path if row["condition"] is not None
+            }
+            vector.add(condition)
+            if vector & kronos_target_conditions:
+                dispatch_condition = kronos_dispatch["condition"]
+                if dispatch_condition is None:
+                    raise Refusal("Kronos dispatch edge is not conditional")
+                vector.add(dispatch_condition)
+            vectors_by_base[root["id"]].add(tuple(sorted(vector)))
 
     ariadne_skill = skill_paths["ariadne"]
     ariadne_operation_conditions = {
@@ -2707,7 +2873,7 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         "scenario_edges": scenario_edges,
         "reference_only": reference_only,
     }
-    _validate_complete_scenarios(topology, selectable_skills)
+    _validate_complete_scenarios(topology, selectable_skills, document_owner)
     return topology
 
 

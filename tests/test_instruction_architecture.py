@@ -30,10 +30,10 @@ SCHEMA = ROOT / "research/instruction-architecture/schemas/source-bound-v1.schem
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "9968d90e2d58f306c196a25226444c372054485682e263c9ee5f0865b193ee6c"
+    "b3e1e33bb84db57a3ec82c3930f0068110e0be2bf1b298778c5307675e15949c"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "76bcc6b32c659cf4441f40e9d5f8cd4280b694068ad0ce9f13ea3d343bdee566"
+    "86ba7a53c674ed912b8985347227dd6b9b15b22d51f56901f9cb91237b760d3d"
 )
 EXPECTED_KRONOS_RANKING_LEDGERS = {
     "plugins/alexandria/skills/alexandria/EVOLUTION.md",
@@ -1144,7 +1144,7 @@ class LoaderGraphTests(unittest.TestCase):
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
         self.assertEqual(len(self.graph["edges"]), 237)
-        self.assertEqual(len(self.graph["scenario_roots"]), 233)
+        self.assertEqual(len(self.graph["scenario_roots"]), 656)
         self.assertEqual(len(self.graph["scenario_edges"]), 277)
         self.assertEqual(len(self.graph["reference_only"]), 6)
         self.assertTrue(self.graph["constraints"]["complete_scenario_routes"])
@@ -1304,7 +1304,14 @@ class LoaderGraphTests(unittest.TestCase):
         validator = getattr(AI, "_validate_complete_scenarios", None)
         self.assertIsNotNone(validator)
         with self.assertRaisesRegex(AI.Refusal, "invalid base binding|wrong host route"):
-            validator(changed, skill_paths)
+            validator(
+                changed,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
     def test_graph_refuses_fabricated_manifest_reachability(self):
         for field, message in (
@@ -1468,7 +1475,7 @@ class LoaderGraphTests(unittest.TestCase):
             for root in self.graph["scenario_roots"]
             if root["selected_skill"] == "kronos"
         ]
-        self.assertEqual(len(kronos_roots), 27)
+        self.assertEqual(len(kronos_roots), 83)
         for root in kronos_roots:
             paths = reached[root["id"]]
             with self.subTest(scenario=root["id"]):
@@ -1658,6 +1665,215 @@ class LoaderGraphTests(unittest.TestCase):
                     )
                 )
 
+    def test_condition_vector_product_is_complete_across_host_routes(self):
+        contributor_condition = "credential:github-contributor"
+        routes = {"agent-skills", "repository", "standalone"}
+        by_skill: dict[str, dict[str, list[dict]]] = {}
+        for root in self.graph["scenario_roots"]:
+            by_skill.setdefault(root["selected_skill"], {}).setdefault(
+                root["route"], []
+            ).append(root)
+        self.assertEqual(len(by_skill), 31)
+        self.assertEqual(
+            {
+                route: sum(len(group[route]) for group in by_skill.values())
+                for route in routes
+            },
+            {"agent-skills": 229, "repository": 229, "standalone": 198},
+        )
+        for skill, groups in by_skill.items():
+            with self.subTest(skill=skill):
+                self.assertEqual(set(groups), routes)
+                normalized = {
+                    route: {
+                        tuple(
+                            condition
+                            for condition in root["conditions"]
+                            if condition != contributor_condition
+                        )
+                        for root in groups[route]
+                    }
+                    for route in routes
+                }
+                self.assertEqual(
+                    normalized["agent-skills"], normalized["repository"]
+                )
+                self.assertEqual(
+                    normalized["repository"], normalized["standalone"]
+                )
+                self.assertEqual(
+                    {
+                        route: sum(
+                            contributor_condition in root["conditions"]
+                            for root in groups[route]
+                        )
+                        for route in routes
+                    },
+                    {"agent-skills": 1, "repository": 1, "standalone": 0},
+                )
+        self.assertEqual(
+            {
+                skill: {
+                    route: len(by_skill[skill][route]) for route in routes
+                }
+                for skill in ("ariadne", "kronos", "synkrisis")
+            },
+            {
+                "ariadne": {
+                    "agent-skills": 7,
+                    "repository": 7,
+                    "standalone": 6,
+                },
+                "kronos": {
+                    "agent-skills": 28,
+                    "repository": 28,
+                    "standalone": 27,
+                },
+                "synkrisis": {
+                    "agent-skills": 5,
+                    "repository": 5,
+                    "standalone": 4,
+                },
+            },
+        )
+
+    def test_scenario_validator_refuses_missing_route_condition_vector(self):
+        changed = copy.deepcopy(self.graph)
+        removed = next(
+            root
+            for root in changed["scenario_roots"]
+            if root["selected_skill"] == "synkrisis"
+            and root["route"] == "standalone"
+            and "operation:synkrisis:diagnose" in root["conditions"]
+        )
+        changed["scenario_roots"].remove(removed)
+        for edge in changed["scenario_edges"]:
+            edge["active_scenarios"] = [
+                identifier
+                for identifier in edge["active_scenarios"]
+                if identifier != removed["id"]
+            ]
+        router = ".agents/skills/promise-machine/SKILL.md"
+        skill_paths = {
+            AI._skill_name(item["path"]): item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "skill_contract" and item["path"] != router
+        }
+        with self.assertRaisesRegex(
+            AI.Refusal, "scenario route condition product is incomplete"
+        ):
+            AI._validate_complete_scenarios(
+                changed,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
+
+    def test_scenario_validator_refuses_all_route_product_omission(self):
+        changed = copy.deepcopy(self.graph)
+        frontier = next(
+            edge["condition"]
+            for edge in changed["scenario_edges"]
+            if edge["source"] == "plugins/synkrisis/skills/synkrisis/SKILL.md"
+            and edge["kind"] == "frontier-gate"
+        )
+        removed = {
+            root["id"]
+            for root in changed["scenario_roots"]
+            if root["selected_skill"] == "synkrisis"
+            and root["conditions"] == [frontier]
+        }
+        self.assertEqual(len(removed), 3)
+        changed["scenario_roots"] = [
+            root for root in changed["scenario_roots"] if root["id"] not in removed
+        ]
+        substitutions = [
+            root
+            for root in changed["scenario_roots"]
+            if root["selected_skill"] == "synkrisis"
+            and "operation:synkrisis:diagnose" in root["conditions"]
+        ]
+        self.assertEqual(len(substitutions), 3)
+        for root in substitutions:
+            root["conditions"] = sorted({*root["conditions"], frontier})
+        for edge in changed["scenario_edges"]:
+            edge["active_scenarios"] = [
+                identifier
+                for identifier in edge["active_scenarios"]
+                if identifier not in removed
+            ]
+            for root in substitutions:
+                if root["base_scenario"] not in edge["eligible_base_scenarios"]:
+                    continue
+                if edge["condition"] is None or edge["condition"] in root["conditions"]:
+                    edge["active_scenarios"].append(root["id"])
+            edge["active_scenarios"] = sorted(set(edge["active_scenarios"]))
+        router = ".agents/skills/promise-machine/SKILL.md"
+        skill_paths = {
+            AI._skill_name(item["path"]): item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "skill_contract" and item["path"] != router
+        }
+        with self.assertRaisesRegex(
+            AI.Refusal, "scenario source-derived condition product disagrees"
+        ):
+            AI._validate_complete_scenarios(
+                changed,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
+
+    def test_scenario_validator_refuses_synchronized_bogus_vector(self):
+        changed = copy.deepcopy(self.graph)
+        frontier = next(
+            edge["condition"]
+            for edge in changed["scenario_edges"]
+            if edge["source"] == "plugins/synkrisis/skills/synkrisis/SKILL.md"
+            and edge["kind"] == "frontier-gate"
+        )
+        additions = []
+        for root in changed["scenario_roots"]:
+            if (
+                root["selected_skill"] == "synkrisis"
+                and "operation:synkrisis:diagnose" in root["conditions"]
+            ):
+                added = copy.deepcopy(root)
+                added["id"] = f"{root['base_scenario']}:bogus-vector"
+                added["conditions"] = sorted({*root["conditions"], frontier})
+                additions.append(added)
+        self.assertEqual(len(additions), 3)
+        changed["scenario_roots"].extend(additions)
+        changed["scenario_roots"].sort(key=lambda root: root["id"])
+        for edge in changed["scenario_edges"]:
+            for root in additions:
+                if root["base_scenario"] not in edge["eligible_base_scenarios"]:
+                    continue
+                if edge["condition"] is None or edge["condition"] in root["conditions"]:
+                    edge["active_scenarios"].append(root["id"])
+            edge["active_scenarios"] = sorted(set(edge["active_scenarios"]))
+        router = ".agents/skills/promise-machine/SKILL.md"
+        skill_paths = {
+            AI._skill_name(item["path"]): item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "skill_contract" and item["path"] != router
+        }
+        with self.assertRaisesRegex(
+            AI.Refusal, "scenario source-derived condition product disagrees"
+        ):
+            AI._validate_complete_scenarios(
+                changed,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
+
     def test_every_potential_edge_has_a_realizable_scenario_witness(self):
         observed = AI._reachability_by_root(
             self.graph["scenario_roots"],
@@ -1733,12 +1949,26 @@ class LoaderGraphTests(unittest.TestCase):
         root["conditions"].append("unknown")
         root["conditions"].sort()
         with self.assertRaisesRegex(AI.Refusal, "unknown condition"):
-            AI._validate_complete_scenarios(unknown, skill_paths)
+            AI._validate_complete_scenarios(
+                unknown,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
         wildcard = copy.deepcopy(self.graph)
         wildcard["scenario_edges"][0]["active_scenarios"] = ["*"]
         with self.assertRaisesRegex(AI.Refusal, "wildcard or unknown scope"):
-            AI._validate_complete_scenarios(wildcard, skill_paths)
+            AI._validate_complete_scenarios(
+                wildcard,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
         uncovered = copy.deepcopy(self.graph)
         edge = next(
@@ -1755,9 +1985,20 @@ class LoaderGraphTests(unittest.TestCase):
             if item["selected_skill"] == "ariadne"
         )
         edge["eligible_base_scenarios"] = [unreachable_root["base_scenario"]]
-        edge["active_scenarios"] = [unreachable_root["id"]]
+        edge["active_scenarios"] = [
+            item["id"]
+            for item in uncovered["scenario_roots"]
+            if item["base_scenario"] == unreachable_root["base_scenario"]
+        ]
         with self.assertRaisesRegex(AI.Refusal, "no realizable witness"):
-            AI._validate_complete_scenarios(uncovered, skill_paths)
+            AI._validate_complete_scenarios(
+                uncovered,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
         union = copy.deepcopy(self.graph)
         kronos = "plugins/hexaemeron/skills/kronos/SKILL.md"
@@ -1771,38 +2012,62 @@ class LoaderGraphTests(unittest.TestCase):
             not in {"plugins/hexaemeron/skills/fiat/SKILL.md"}
             and item["condition"] is not None
         ]
-        first, second = branches[:2]
-        identifier = first["active_scenarios"][0]
-        union_root = next(
-            item for item in union["scenario_roots"] if item["id"] == identifier
-        )
-        union_root["conditions"] = sorted(
-            {*union_root["conditions"], second["condition"]}
-        )
+        first, second = branches[1:3]
+        union_roots = [
+            root
+            for root in union["scenario_roots"]
+            if first["condition"] in root["conditions"]
+        ]
+        self.assertEqual(len(union_roots), 3)
+        for root in union_roots:
+            root["conditions"] = sorted(
+                {*root["conditions"], second["condition"]}
+            )
         second["active_scenarios"] = sorted(
-            {*second["active_scenarios"], identifier}
+            {
+                *second["active_scenarios"],
+                *(root["id"] for root in union_roots),
+            }
         )
         with self.assertRaisesRegex(AI.Refusal, "not one dispatched target"):
-            AI._validate_complete_scenarios(union, skill_paths)
+            AI._validate_complete_scenarios(
+                union,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
         ariadne_union = copy.deepcopy(self.graph)
-        ariadne_root = next(
-            item
-            for item in ariadne_union["scenario_roots"]
-            if item["selected_skill"] == "ariadne"
-        )
-        current = set(ariadne_root["conditions"]) & set(EXPECTED_ARIADNE_OPERATIONS)
-        second_operation = min(set(EXPECTED_ARIADNE_OPERATIONS) - current)
-        ariadne_root["conditions"] = sorted(
-            {*ariadne_root["conditions"], second_operation}
-        )
+        first_operation, second_operation = sorted(EXPECTED_ARIADNE_OPERATIONS)[1:3]
+        ariadne_roots = [
+            root
+            for root in ariadne_union["scenario_roots"]
+            if first_operation in root["conditions"]
+        ]
+        self.assertEqual(len(ariadne_roots), 3)
+        for root in ariadne_roots:
+            root["conditions"] = sorted(
+                {*root["conditions"], second_operation}
+            )
         for ariadne_edge in ariadne_union["scenario_edges"]:
             if ariadne_edge["condition"] == second_operation:
                 ariadne_edge["active_scenarios"] = sorted(
-                    {*ariadne_edge["active_scenarios"], ariadne_root["id"]}
+                    {
+                        *ariadne_edge["active_scenarios"],
+                        *(root["id"] for root in ariadne_roots),
+                    }
                 )
         with self.assertRaisesRegex(AI.Refusal, "does not select one operation"):
-            AI._validate_complete_scenarios(ariadne_union, skill_paths)
+            AI._validate_complete_scenarios(
+                ariadne_union,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
     def test_scenario_validator_refuses_missing_kronos_ranking_edge(self):
         router = ".agents/skills/promise-machine/SKILL.md"
@@ -1823,7 +2088,14 @@ class LoaderGraphTests(unittest.TestCase):
         with self.assertRaisesRegex(
             AI.Refusal, "Kronos scenario ranking scan is incomplete"
         ):
-            AI._validate_complete_scenarios(changed, skill_paths)
+            AI._validate_complete_scenarios(
+                changed,
+                skill_paths,
+                {
+                    item["path"]: item["canonical_owner"]
+                    for item in self.manifest["documents"]
+                },
+            )
 
     def test_recursive_frontier_and_workflow_closure_is_explicit(self):
         host_pairs = {
