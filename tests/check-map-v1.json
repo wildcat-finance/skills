@@ -299,6 +299,7 @@
     {"path": "LICENSE", "scope": "root"},
     {"path": "PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "README.md", "scope": "root"},
+    {"path": "VENUES.json", "scope": "root"},
     {"path": "pyproject.toml", "scope": "root"},
     {"path": "skills.sh.json", "scope": "root"},
     {"path": "SHOGGOTH.md", "scope": "root"},

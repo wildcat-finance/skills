@@ -165,6 +165,18 @@ python3 "$PLUGIN_ROOT/skills/ephoros/scripts/ephoros.py" <changed paths>
 python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/hypomnema.py" <changed docs>
 ```
 
+The mechanical part also includes the repository's own suite where one is
+discoverable. When the run worktree declares its checks in
+`tests/check-map-v1.json` under `wildcat.check-map.v1`, the `audit-round`
+directive carries that map's `root-suite` command as `repo_suite`: run it
+against the changed tree and require exit 0, the same way the lints are
+required. A directive without the field means no suite was discoverable
+there, not that the obligation went away -- a runbook step whose Tests
+contract names a command still owes that command. This closed the gap where
+two steps were receipted through implement, audit, prose and push with the
+three lints green and were then red on the repository's 1,110-test root
+suite, with the first signal arriving after the audits had closed.
+
 A non-zero exit is a finding like any other: log it, fix it on the stacked
 branch, and run the next round against the fixed tree. Then review the diff
 for the risk register's concerns the lints cannot see, log the result, and
@@ -181,9 +193,12 @@ hexctl audit-round --findings <n> --log <the directive's log_path> \
   --phylax-exit <n> --ephoros-exit <n> --hypomnema-exit <n>
 ```
 
-`next` names the exact audit-filter obligation on every round and the three
-lint flags when the round owes them, so each requirement arrives before the
-refusal does. A round reporting zero findings beside a non-zero exit is refused
+`next` names the exact audit-filter obligation on every round, the three
+lint flags when the round owes them, and the repository's declared suite when
+one is discoverable, so each requirement arrives before the refusal does. The
+suite carriage is informational: the controller takes no suite exit as a
+field, and the round's own record remains the evidence that it ran. A round
+reporting zero findings beside a non-zero exit is refused
 as well: the log would otherwise say a lint failed while the ledger said the
 round was clean.
 
