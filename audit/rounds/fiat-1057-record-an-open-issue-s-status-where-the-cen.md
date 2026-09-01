@@ -61,3 +61,19 @@ Elenchus verdict: guarded
 | S2-R2-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | The record states at `docs/decisions/draft-fix-the-issue-status-block-markers.md:51` that the block sits at the top of the body, before the filing prose. The reader did not check position, so a block opened below the prose parsed to a valid span and `issue-check` reported the body clean. A reader coming top to bottom would meet the stale requirement and never reach the correction, which is the failure #837 records inside documents and the half-enforced-contract shape #427 records. | fixed in 0170a68e057e0d553980a7b16a98599a184d1333 |
 
 Leads not pursued: this step's implement phase wrote eight parser cases where the runbook's Tests field named four, one per reachable risk-register concern. The extra four cover the well-formed span, absence, a closer with no opener, and the block reaching the contract record. More coverage than specified is not a defect, and it is recorded here rather than amended into the runbook because the count in that field is an estimate and the concerns it enumerates are all covered. The digest reconciliation ran three times across this step, eleven bindings each time, once for the implement commit and once for each audit fix; #892 owns the mechanism and the per-commit multiplier is recorded in round 1. The committed-copy comparison lead from step 1 stands.
+
+## Step 2, round 3 -- 2026-09-01T11:54:52Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: fenced-decoy=reviewed; unclosed-block=reviewed; duplicate-block=reviewed; control-characters=reviewed; body-size=reviewed; digest-drift=reviewed; extractor-collision=reviewed
+
+Not checked: whether the Atlas dependency extractor applies the same comment exemption, which is the obligation this round added to the record and is delivered in the Atlas repository. No body was fetched from GitHub over REST by the reader itself; the real issue 1057 body was fetched with `gh` and checked from a file. No measurement was taken, so the added comment scan carries no performance claim. Whether a title line should also be exempt was considered and refused: a heading is visible, which is the property the rule turns on.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R3-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | Round 2's position rule refused the arrangement 92 of the 137 open issues would produce, because those bodies begin with the invisible `wildcat-origin` HTML comment. The diagnostic asserted that a reader meets the original requirement before the correction, which an HTML comment cannot cause, so the rule was wrong about its own justification. The record was silent on whether a comment counts as filing prose, so a second consumer matching these bytes could have read it either way. | fixed in 7287f7fb886b32881e19a0ee199f8dd58bc40355, in the code and the record together |
+
+Leads not pursued: the fourth digest reconciliation across this step, eleven bindings each time. Recorded in rounds 1 and 2; nothing new is claimed here beyond the count. The committed-copy comparison lead from step 1 stands. The eight-versus-four test count recorded in round 2 stands, now eleven cases in total, and the three added by audit fixes are the loop's own guards rather than a further deviation from the Tests field.
