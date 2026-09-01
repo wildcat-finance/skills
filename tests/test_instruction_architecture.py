@@ -12,6 +12,7 @@ import os
 from pathlib import Path, PurePosixPath
 import posixpath
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -184,6 +185,8 @@ def scratch_directory(prefix: str = "instruction-architecture-"):
 
 
 ORACLE_SOURCE_REF = "a2b634d8e039af988bf30c8316defccf70071d8d"
+ORACLE_MAX_JSON_BYTES = 8 * 1024 * 1024
+ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_BASELINE_INVENTORY_SHA256 = (
     "67dfbfc52e0bb4c7a739d4cc2f4f23e8beac031921b40362ab24bc2eeecfc6c6"
@@ -281,6 +284,113 @@ ORACLE_GIT_ENV = {
 ORACLE_SOURCE_CACHE: dict[str, bytes] = {}
 
 
+def oracle_identity(metadata: os.stat_result) -> tuple[int, ...]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def oracle_open_parent(path: Path) -> tuple[int, str]:
+    """Open one repository parent without following mutable path components."""
+    if (
+        not hasattr(os, "O_DIRECTORY")
+        or not hasattr(os, "O_NOFOLLOW")
+        or not hasattr(os, "O_NONBLOCK")
+    ):
+        raise AssertionError("independent no-follow reads are unavailable")
+    try:
+        relative = path.relative_to(ROOT)
+    except ValueError as exc:
+        raise AssertionError("independent input leaves repository") from exc
+    if not relative.parts or any(
+        part in {"", ".", ".."} for part in relative.parts
+    ):
+        raise AssertionError("independent input path is unsafe")
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    try:
+        descriptor = os.open(ROOT, flags)
+    except OSError as exc:
+        raise AssertionError(
+            "independent input root is unavailable or unsafe"
+        ) from exc
+    try:
+        for part in relative.parent.parts:
+            try:
+                child = os.open(part, flags, dir_fd=descriptor)
+            except OSError as exc:
+                raise AssertionError(
+                    "independent input parent is unavailable or unsafe"
+                ) from exc
+            metadata = os.fstat(child)
+            if not stat.S_ISDIR(metadata.st_mode):
+                os.close(child)
+                raise AssertionError(
+                    "independent input parent is unavailable or unsafe"
+                )
+            os.close(descriptor)
+            descriptor = child
+        return descriptor, relative.name
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def oracle_read_regular(path: Path, limit: int) -> bytes:
+    """Read one bounded regular file and bind its name to the observed inode."""
+    parent, name = oracle_open_parent(path)
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+    try:
+        descriptor = os.open(name, flags, dir_fd=parent)
+    except OSError as exc:
+        os.close(parent)
+        raise AssertionError("independent input is unavailable or unsafe") from exc
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise AssertionError(
+                "independent input is not a single-link regular file"
+            )
+        if before.st_size > limit:
+            raise AssertionError("independent input exceeds byte limit")
+        chunks: list[bytes] = []
+        size = 0
+        while True:
+            chunk = os.read(descriptor, min(65_536, limit + 1 - size))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            size += len(chunk)
+            if size > limit:
+                raise AssertionError("independent input exceeds byte limit")
+        after = os.fstat(descriptor)
+        if oracle_identity(before) != oracle_identity(after):
+            raise AssertionError("independent input changed during read")
+    finally:
+        os.close(descriptor)
+        os.close(parent)
+
+    current_parent, current_name = oracle_open_parent(path)
+    try:
+        try:
+            current = os.open(current_name, flags, dir_fd=current_parent)
+        except OSError as exc:
+            raise AssertionError("independent input changed during read") from exc
+        try:
+            if oracle_identity(os.fstat(current)) != oracle_identity(after):
+                raise AssertionError("independent input changed during read")
+        finally:
+            os.close(current)
+    finally:
+        os.close(current_parent)
+    return b"".join(chunks)
+
+
 def oracle_git(
     *arguments: str, input_data: bytes | None = None
 ) -> subprocess.CompletedProcess[bytes]:
@@ -325,7 +435,7 @@ def oracle_source_mode() -> str:
 @lru_cache(maxsize=1)
 def oracle_inventory_snapshot() -> tuple[dict[str, bytes], tuple[str, ...]]:
     """Bind shallow source bytes and tree paths in one independent snapshot."""
-    inventory_raw = INVENTORY.read_bytes()
+    inventory_raw = oracle_read_regular(INVENTORY, ORACLE_MAX_JSON_BYTES)
     if (
         hashlib.sha256(inventory_raw).hexdigest()
         != ORACLE_BASELINE_INVENTORY_SHA256
@@ -347,7 +457,7 @@ def oracle_inventory_snapshot() -> tuple[dict[str, bytes], tuple[str, ...]]:
         ("invocation-profiles.json", PROFILES),
         ("loader-graph.json", GRAPH),
     ):
-        raw = path.read_bytes()
+        raw = oracle_read_regular(path, ORACLE_MAX_JSON_BYTES)
         identity = inventory.get("artifacts", {}).get(name)
         if (
             not isinstance(identity, dict)
@@ -444,12 +554,9 @@ def oracle_inventory_snapshot() -> tuple[dict[str, bytes], tuple[str, ...]]:
     sources: dict[str, bytes] = {}
     for path, (size, digest) in sorted(digests.items()):
         source_path = ROOT / path
-        if source_path.is_symlink() or not source_path.is_file():
-            raise AssertionError(f"independent snapshot source is unsafe: {path}")
-        data = source_path.read_bytes()
+        data = oracle_read_regular(source_path, ORACLE_MAX_SOURCE_BYTES)
         if (
-            len(data) > AI.MAX_SOURCE_BYTES
-            or (size is not None and len(data) != size)
+            (size is not None and len(data) != size)
             or hashlib.sha256(data).hexdigest() != digest
         ):
             raise AssertionError(f"independent snapshot source drift: {path}")
@@ -504,7 +611,7 @@ def oracle_source(path: str) -> bytes:
         expected = oracle_inventory_sources().get(path)
         if expected is None:
             raise AssertionError(f"independent oracle has no snapshot source: {path}")
-    live = (ROOT / path).read_bytes()
+    live = oracle_read_regular(ROOT / path, ORACLE_MAX_SOURCE_BYTES)
     if live != expected:
         raise AssertionError(f"independent oracle observed source drift: {path}")
     ORACLE_SOURCE_CACHE[path] = expected
@@ -1869,6 +1976,40 @@ class CorpusManifestTests(unittest.TestCase):
         finally:
             clear_source_cache()
 
+    def test_independent_inventory_refuses_oversized_input_before_digest(self):
+        with scratch_directory("oversized-oracle-inventory-") as temporary:
+            oversized = Path(temporary) / "artifact-inventory.json"
+            oversized.write_bytes(b" " * (8 * 1024 * 1024 + 1))
+            clear_source_cache()
+            try:
+                with (
+                    mock.patch.object(
+                        sys.modules[__name__], "INVENTORY", oversized
+                    ),
+                    self.assertRaisesRegex(
+                        AssertionError, "independent input exceeds byte limit"
+                    ),
+                ):
+                    oracle_inventory_snapshot()
+            finally:
+                clear_source_cache()
+
+    def test_independent_inventory_refuses_symlink_substitution(self):
+        with scratch_directory("symlinked-oracle-inventory-") as temporary:
+            symlink = Path(temporary) / "artifact-inventory.json"
+            symlink.symlink_to(INVENTORY)
+            clear_source_cache()
+            try:
+                with (
+                    mock.patch.object(sys.modules[__name__], "INVENTORY", symlink),
+                    self.assertRaisesRegex(
+                        AssertionError, "independent input is unavailable or unsafe"
+                    ),
+                ):
+                    oracle_inventory_snapshot()
+            finally:
+                clear_source_cache()
+
     def test_depth_one_checkout_replays_the_frozen_source(self):
         with scratch_directory("depth-one-checkout-") as temporary:
             checkout = Path(temporary) / "checkout"
@@ -2462,7 +2603,7 @@ class CorpusManifestTests(unittest.TestCase):
                 )
 
     def test_independent_oracle_refuses_coherently_resealed_generation(self):
-        original_read = Path.read_bytes
+        original_read = oracle_read_regular
         graph = load(GRAPH)
         graph["unbound_reseal"] = True
         graph_raw = canonical(graph)
@@ -2473,18 +2614,20 @@ class CorpusManifestTests(unittest.TestCase):
         }
         inventory_raw = canonical(inventory)
 
-        def resealed_generation(path: Path) -> bytes:
+        def resealed_generation(path: Path, limit: int) -> bytes:
             if path == INVENTORY:
                 return inventory_raw
             if path == GRAPH:
                 return graph_raw
-            return original_read(path)
+            return original_read(path, limit)
 
         clear_source_cache()
         try:
             with (
                 mock.patch.object(
-                    Path, "read_bytes", new=resealed_generation
+                    sys.modules[__name__],
+                    "oracle_read_regular",
+                    side_effect=resealed_generation,
                 ),
                 self.assertRaisesRegex(
                     AssertionError,
@@ -2940,6 +3083,41 @@ class CorpusManifestTests(unittest.TestCase):
                 AI.Refusal, "outside repository|unavailable or unsafe"
             ):
                 AI._read_regular(escape / "record.json", AI.MAX_JSON_BYTES)
+
+    def test_regular_read_refuses_fifo_without_blocking(self):
+        with scratch_directory("fifo-input-") as temporary:
+            fifo = Path(temporary) / "record.json"
+            os.mkfifo(fifo)
+            probe = "\n".join(
+                (
+                    "from pathlib import Path",
+                    "import sys",
+                    "from tests.test_instruction_architecture import AI",
+                    "try:",
+                    "    AI._read_regular(Path(sys.argv[1]), AI.MAX_JSON_BYTES)",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO input was accepted')",
+                )
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", probe, str(fifo)],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                stdout, stderr = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                self.fail("regular-file input open blocked on a FIFO")
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertEqual(
+                stdout.strip(), "input is not a single-link regular file"
+            )
 
     def test_regular_read_refuses_concurrent_parent_swap(self):
         with (

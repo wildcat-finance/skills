@@ -933,9 +933,10 @@ def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result
 def _read_regular(path: Path, limit: int) -> bytes:
     relative = _repository_relative(path, "path")
     parent, name = _open_parent(relative, create=False, label="input")
-    flags = os.O_RDONLY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    if not hasattr(os, "O_NONBLOCK"):
+        os.close(parent)
+        raise Refusal("nonblocking input reads are unavailable")
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
     try:
         descriptor = os.open(name, flags, dir_fd=parent)
     except OSError as exc:
