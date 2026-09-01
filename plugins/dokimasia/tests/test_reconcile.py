@@ -71,6 +71,33 @@ class ClosedSet(ReconcileCase):
         self.assertEqual({g["item"] for g in made["gaps"]}, expected)
         self.assertTrue(all(g["reason"].strip() for g in made["gaps"]))
 
+    def test_an_inventory_item_no_oracle_cites_is_named(self):
+        """The most important question the record answers, both directions."""
+        made = self.run_with("closed.json")
+        cited = made["unmatched"]["items_no_oracle_cites"]
+        by_item = {d["item"]: d for d in made["dispositions"]}
+        for key in cited:
+            self.assertNotEqual(
+                by_item[key]["disposition"], "covered",
+                f"{key} is covered, so an oracle cites it",
+            )
+        covered_items = [
+            d["item"] for d in made["dispositions"]
+            if d["disposition"] == "covered" and d["item"].startswith(
+                ("route:", "api:", "action:", "guard:")
+            )
+        ]
+        for key in covered_items:
+            self.assertNotIn(key, cited)
+
+    def test_a_workbook_case_no_item_cites_is_named(self):
+        made = self.run_with("closed.json")
+        cited_oracles = {
+            f"case:{d['oracle']}" for d in made["dispositions"] if d["oracle"]
+        }
+        for key in made["unmatched"]["cases_no_item_cites"]:
+            self.assertNotIn(key, cited_oracles)
+
     def test_both_sides_are_scoped(self):
         made = self.run_with("closed.json")
         self.assertEqual(
@@ -147,6 +174,51 @@ class Refusals(ReconcileCase):
 
     def test_a_disposition_naming_an_unscoped_item_refuses(self):
         self.assertIn("not a scoped item", self.refusal_from("unknown-item.json"))
+
+    def test_an_oracle_carrying_no_status_field_refuses(self):
+        """The check must not pass by absence.
+
+        Comparing only against the unreviewed value lets every oracle through
+        in a workbook that has no status column at all, which is the control
+        failing open in exactly the direction that widens coverage.
+        """
+        import copy
+        from dokimasia_lib import workbook as workbook_lib
+
+        stripped = copy.deepcopy(self.workbook)
+        for case in stripped["cases"]:
+            case["fields"].pop(reconcile.STATUS_FIELD, None)
+        stripped["workbook_sha256"] = workbook_lib.workbook_digest(stripped["cases"])
+        declared = reconcile.read_json(self.made["closed.json"])
+        declared["workbook_sha256"] = stripped["workbook_sha256"]
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, stripped, declared)
+        self.assertIn("carries no Status field", str(caught.exception))
+
+    def test_an_oracle_whose_status_is_blank_refuses(self):
+        import copy
+        from dokimasia_lib import workbook as workbook_lib
+
+        blanked = copy.deepcopy(self.workbook)
+        for case in blanked["cases"]:
+            case["fields"][reconcile.STATUS_FIELD] = "  "
+        blanked["workbook_sha256"] = workbook_lib.workbook_digest(blanked["cases"])
+        declared = reconcile.read_json(self.made["closed.json"])
+        declared["workbook_sha256"] = blanked["workbook_sha256"]
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, blanked, declared)
+        self.assertIn("is blank", str(caught.exception))
+
+    def test_a_reason_over_the_cap_refuses_whatever_the_disposition(self):
+        # The cap is declared over reasons, so a covered entry is bound by it
+        # even though covered is not required to carry one.
+        self.assertIn("over the", self.refusal_from("oversize-reason.json"))
+
+    def test_a_manual_item_naming_an_oracle_refuses(self):
+        """A row cannot read as both decided by a person and held to a case."""
+        self.assertIn(
+            "also names an oracle", self.refusal_from("manual-with-oracle.json")
+        )
 
     def test_a_state_outside_the_vocabulary_refuses(self):
         self.assertIn("is not one of", self.refusal_from("bad-vocabulary.json"))

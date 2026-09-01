@@ -29,6 +29,7 @@ NEEDS_REASON = ("manual", "excluded")
 
 # A status nobody has acted on is not an oracle. `covered` claims something is
 # held to a reviewed judgement, and a case sitting at this status carries none.
+STATUS_FIELD = "Status"
 UNREVIEWED_STATUS = "Not Run"
 
 MAX_DISPOSITIONS = 40_000
@@ -185,16 +186,25 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
                 + ", ".join(repr(name) for name in DISPOSITIONS)
             )
         reason = entry.get("reason", "")
+        # The cap is declared over reasons, so it binds every reason, not only
+        # the two states that are required to carry one.
+        if len(reason.encode("utf-8")) > MAX_REASON_BYTES:
+            raise ReconcileError(
+                f"the reason on {target!r} is over the "
+                f"{MAX_REASON_BYTES}-byte cap"
+            )
         if verdict in NEEDS_REASON:
             if not reason.strip():
                 raise ReconcileError(
                     f"{verdict} item {target!r} carries no reason, and an "
                     f"unexplained {verdict} is how a denominator shrinks quietly"
                 )
-            if len(reason.encode("utf-8")) > MAX_REASON_BYTES:
+            if entry.get("oracle", ""):
+                # A row reading as both decided-by-a-person and held-to-a-case
+                # states two different things about the same item.
                 raise ReconcileError(
-                    f"the reason on {target!r} is over the "
-                    f"{MAX_REASON_BYTES}-byte cap"
+                    f"{verdict} item {target!r} also names an oracle; only a "
+                    "covered item is held to one"
                 )
         if verdict == "covered":
             oracle = entry.get("oracle", "")
@@ -208,7 +218,23 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
                     f"covered item {target!r} names oracle {oracle!r}, which "
                     "the workbook does not hold"
                 )
-            status = cases[oracle]["fields"].get("Status", "")
+            fields = cases[oracle]["fields"]
+            if STATUS_FIELD not in fields:
+                # Comparing against the unreviewed value alone would pass every
+                # oracle in a workbook that has no status column at all, which
+                # is the check failing open in exactly the direction that
+                # widens coverage.
+                raise ReconcileError(
+                    f"covered item {target!r} names oracle {oracle!r}, which "
+                    f"carries no {STATUS_FIELD} field; nothing states whether "
+                    "anybody acted on it"
+                )
+            status = fields[STATUS_FIELD].strip()
+            if not status:
+                raise ReconcileError(
+                    f"covered item {target!r} names oracle {oracle!r}, whose "
+                    f"{STATUS_FIELD} is blank; nothing is held to it"
+                )
             if status == UNREVIEWED_STATUS:
                 raise ReconcileError(
                     f"covered item {target!r} names oracle {oracle!r}, whose "
@@ -267,6 +293,10 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
         "gaps": gaps,
         "unmatched": {
             "cases_no_item_cites": sorted(set(case_ids) - cited),
+            "items_no_oracle_cites": sorted(
+                key for key in inventory_ids
+                if key not in assigned or not assigned[key]["oracle"]
+            ),
         },
         "dispositions": [assigned[key] for key in sorted(assigned)],
     }
@@ -320,6 +350,8 @@ def check() -> list[str]:
         "unreviewed-oracle.json": "nothing is held to it",
         "covered-without-oracle.json": "names no oracle",
         "missing-reason.json": "carries no reason",
+        "oversize-reason.json": "over the",
+        "manual-with-oracle.json": "also names an oracle",
         "stale-inventory.json": "stale",
         "stale-workbook.json": "stale",
         "unknown-item.json": "not a scoped item",

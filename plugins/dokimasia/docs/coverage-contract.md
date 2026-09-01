@@ -40,6 +40,15 @@ A status a person recorded, including `Fail` and `Blocked`, is a reviewed
 judgement and is accepted; whether that judgement was correct is not something
 this record claims.
 
+An oracle carrying no status field at all refuses, and so does one whose status
+is blank. Comparing only against the unreviewed value would let every oracle
+through in a workbook that has no status column, which is this control failing
+open in exactly the direction that widens coverage.
+
+A `manual` or `excluded` entry naming an oracle refuses. Such a row would read
+as decided by a person and held to a case at once, which are two different
+claims about the same item.
+
 No code path proposes a disposition. The reconciler reads the set, checks it,
 and reports. An agent may draft a disposition set for a person to review, and
 it cannot mark anything covered by running this tool.
@@ -54,6 +63,16 @@ This is the failure that looks most like success. A stale set can account for
 every item perfectly and be an account of a tree nobody is looking at any more,
 and a ratio of one computed from it reads exactly like a ratio of one computed
 from the current records.
+
+## Both directions of the join
+
+The record names the inventory items no covered disposition holds to an oracle,
+and the workbook cases no covered disposition cites. The first is the uncovered
+application surface, which is the question the whole tool exists to answer. The
+second is effort spent on something the inventory does not know about.
+
+Both are recorded rather than one being inferred from the other, because a
+reader who has to derive a list by subtraction will eventually derive it wrong.
 
 ## The ratio
 

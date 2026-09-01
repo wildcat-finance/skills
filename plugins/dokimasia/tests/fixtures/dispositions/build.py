@@ -119,6 +119,10 @@ def build_all(directory: Path) -> dict[str, Path]:
         _envelope(inventory, workbook, closed + [dict(closed[0])]),
     )
 
+    reviewed_ids = [
+        case["id"] for case in workbook["cases"]
+        if case["fields"].get("Status") != reconcile_lib.UNREVIEWED_STATUS
+    ]
     covered = next(e for e in closed if e["disposition"] == "covered")
     absent = [dict(e) for e in closed]
     absent[closed.index(covered)] = {**covered, "oracle": "ZZZ-99"}
@@ -159,6 +163,16 @@ def build_all(directory: Path) -> dict[str, Path]:
             "reason": "this item is not in the inventory",
         }]),
     )
+
+    oversize = [dict(e) for e in closed]
+    oversize[closed.index(covered)] = {
+        **covered, "reason": "x" * (reconcile_lib.MAX_REASON_BYTES + 1),
+    }
+    write("oversize-reason.json", _envelope(inventory, workbook, oversize))
+
+    both = [dict(e) for e in closed]
+    both[closed.index(manual)] = {**manual, "oracle": reviewed_ids[0]}
+    write("manual-with-oracle.json", _envelope(inventory, workbook, both))
 
     wrong = [dict(e) for e in closed]
     wrong[0] = {**closed[0], "disposition": "partial"}

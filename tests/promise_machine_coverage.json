@@ -3889,9 +3889,9 @@
         "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio",
         "subject": "the inventory and workbook sha256 pair the set was written against",
         "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
-        "unknowns": "scoped items no disposition answered for, and workbook cases no covered disposition cites as its oracle"
+        "unknowns": "scoped items no disposition answered for, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
       },
-      "sha256": "3e795c0749f73392e6c5cf64600dac57130d124740693fab68483e8d1b4cd0e3",
+      "sha256": "bb6899481ffa01929783b0b3099fd984f205ae46bbfaa730cd01989f1e0ed0cd",
       "source": "plugins/dokimasia/schemas/coverage-v1.json"
     },
     "dokimasia-workbook-lineage": {

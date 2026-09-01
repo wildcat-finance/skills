@@ -77,11 +77,17 @@
     "unmatched": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["cases_no_item_cites"],
+      "required": ["cases_no_item_cites", "items_no_oracle_cites"],
       "properties": {
         "cases_no_item_cites": {
           "type": "array",
           "description": "Workbook cases no covered disposition names as its oracle.",
+          "maxItems": 40000,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "items_no_oracle_cites": {
+          "type": "array",
+          "description": "Inventory items no covered disposition holds to an oracle. This is the uncovered application surface, and both directions of the join are recorded so neither can be read off by omission.",
           "maxItems": 40000,
           "items": { "type": "string", "minLength": 1, "maxLength": 512 }
         }
