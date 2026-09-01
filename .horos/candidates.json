@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16565901,
+    "bytes_blob": 16569251,
     "bytes_generated": 98
   },
   "entries": [
@@ -294,7 +294,7 @@
       "path": "audit/rounds/fiat-dokimasia-frontend-coverage-skill.synopsis.md"
     },
     {
-      "bytes": 17229,
+      "bytes": 20579,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
