@@ -214,3 +214,19 @@ Elenchus verdict: guarded
 | S4-R4-02 | low | plugins/dokimasia/scripts/dokimasia_lib/reconcile.py | The `caps` block published two of the three bounds the reconciler enforces. The input byte cap applied to every record read and did not appear in the record, so a reader auditing which limits applied had to read the source to find one of them. The block is the record's own statement of its bounds, and a partial one invites the reader to treat it as complete. Fixed by publishing it and requiring it in the schema. Guarded by a test asserting the block equals the enforced set exactly rather than containing it. | fixed in 55feed8a |
 
 Leads not pursued: the three accepted items stand unchanged. Confirmed sound this round and recorded so a later round need not rediscover it: the coverage digest is unchanged by reordering the declared dispositions, and the counts add up three ways, with `by_disposition` summing to `disposed`, the two sides summing to `scoped`, and `disposed` plus `undisposed` summing to `scoped`. No emitted record is validated against its committed schema at runtime, which is a property of all three schemas this plugin ships. `read_json` still tests only the supplied path for a symlink and not its parents. An empty scoped set still reports zero over zero as not closed. The RS-40 regrade remains owed.
+
+## Step 4, round 5 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: disposition-closure=reviewed; evidence-digest-binding=reviewed; partial-write=reviewed; path-traversal=reviewed; cap-exhaustion=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; router-corpus-drift=reviewed; inventory-fidelity=not-applicable; workbook-bytes=not-applicable; workbook-lineage=not-applicable
+
+Not checked: the same negative space as the earlier rounds; no demonstration exists, the reconciler was exercised against the committed fixtures only, the Pashov pair still did not run under the recorded security-suite waiver, and RS-40 still has not been regraded for the reason round 2 records.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the five accepted items stand unchanged. Confirmed sound this round: all four built verbs exit zero on their check paths and `demonstrate` refuses with the not-built status, the design checker admits step:5 and refuses integration for the report step 5 owes, and the working tree is clean at the recorded head. One apparent finding this round was the auditor's own error rather than the code's: an exit-status sweep reported every check verb refusing, which was the shell passing each verb and its flag as one argument for argparse to reject, and each verb exits zero when invoked correctly. Carried forward and owed elsewhere: no emitted record is validated against its committed schema at runtime, which is a property of all three schemas this plugin ships rather than of this step; `read_json` tests only the supplied path for a symlink and not its parents; an empty scoped set reports zero over zero as not closed, which is deliberate; the ledger frontier and the README frontier prose still record the step 1 state, which step 5's Files clause owns; and the RS-40 regrade is owed, with the corpus digest and the deciding sentence both verified unchanged by this step.
