@@ -6862,7 +6862,7 @@ def _integrate_directive(
             "branch": step_branch_name(state, step),
             "pr_url": pr_url,
             "into": run_branch,
-            "merge": step_merge_command(pr_url),
+            "merge": step_merge_command(pr_url, run_branch),
             "then": (
                 f"hexctl done merge-step --step {step['n']} "
                 "--merge-commit <sha>"
@@ -8055,7 +8055,7 @@ def integration_revalidation_record(
     }
 
 
-def step_merge_command(pr_url: object) -> str:
+def step_merge_command(pr_url: object, into: str) -> str:
     """The exact invocation that merges the pull request the directive names.
 
     The directive already carried the URL and the receipt command, and left the
@@ -8066,6 +8066,16 @@ def step_merge_command(pr_url: object) -> str:
 
     Built from the URL rather than a number and a repository flag, so nothing has
     to be transcribed. Printed, never executed.
+
+    The retarget is the whole reason this is two commands and not one. A step's
+    pull request is opened against the step below it, because that is the diff a
+    reviewer needs to read. Integration merges it into the run branch instead,
+    which `into` names. `gh pr merge` merges a pull request into its own base and
+    takes no target, so the printed command alone landed steps 2 upward on their
+    parent step branches while this directive's own `into` field said the run
+    branch. Issue 1085. Step 1 is already based on the run branch and the edit is
+    a no-op there, so the sequence is the same for every step rather than
+    something the operator has to decide per step.
     """
     if not isinstance(pr_url, str) or GITHUB_PR_RE.fullmatch(pr_url) is None:
         die(
@@ -8073,7 +8083,14 @@ def step_merge_command(pr_url: object) -> str:
             "merge command cannot be built from it; repair the receipt rather "
             "than merging a pull request the directive did not name"
         )
-    return f"gh pr merge {pr_url.rstrip('/')} --merge"
+    if not isinstance(into, str) or not into:
+        die(
+            "the merge command needs the branch the step merges into, and the "
+            "directive named none; a merge with no stated target is the failure "
+            "this command exists to prevent"
+        )
+    url = pr_url.rstrip("/")
+    return f"gh pr edit {url} --base {into} && gh pr merge {url} --merge"
 
 
 def expected_run_branch_tip(state: dict):
@@ -11309,7 +11326,22 @@ def inspect_pull_request(
     head_ref = head.get("ref") if isinstance(head, dict) else None
     base_ref = base.get("ref") if isinstance(base, dict) else None
     if head_ref != expected_head or base_ref != expected_base:
-        die("pull request topology does not match the expected head and base")
+        # Naming both sides is the difference between a refusal an operator can
+        # act on and one they have to reverse-engineer. A base that is still the
+        # step below is the ordinary case: the pull request was opened for review
+        # and never retargeted, and `gh pr edit --base` fixes it while the pull
+        # request is open. Issue 1085.
+        detail = (
+            f"expected head {expected_head!r} into base {expected_base!r}; "
+            f"found head {head_ref!r} into base {base_ref!r}"
+        )
+        remedy = ""
+        if head_ref == expected_head and base_ref != expected_base:
+            remedy = (
+                f". Retarget it before merging: gh pr edit {url} --base "
+                f"{expected_base}"
+            )
+        die(f"pull request topology does not match: {detail}{remedy}")
     returned_head = head.get("sha")
     if not isinstance(returned_head, str) or not COMMIT_RE.fullmatch(returned_head):
         die("pull request topology has no full head SHA")
