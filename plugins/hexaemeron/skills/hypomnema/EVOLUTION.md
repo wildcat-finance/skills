@@ -9,6 +9,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `duplicate-home-discovery`
 - Current frontier: An explicit study mode binds one selected Protasis candidate to exactly one declared ADR or governed-skill ledger and refuses a duplicate the study itself declares, but no check discovers the same decision standing in a second established home when the study declares only one of them.
 - Next Fiat job: Close the remaining half of the skills#461 gap: prove mechanically that a selected design's decision stands in exactly one established home across the repository, not only in the one home its study declares. Accepted when a decision recorded in both an ADR and a governed-skill ledger is refused even though its study declares one of them, the check reads only exact declared identifiers rather than inferring a decision from prose, fixtures cover a second home in each direction and a same-home rewrite that is not a duplicate, H008's existing declared-duplicate and single-home results are unchanged, and both suites pass.
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 

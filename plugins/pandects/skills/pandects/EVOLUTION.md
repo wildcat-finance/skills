@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `search-record-engine-coverage`
 - Current frontier: The search-record runner records only the Foundry campaign, so Echidna and Medusa results survive as audit prose rather than as records.
 - Next Fiat job: Widen the search-record runner to the Echidna and Medusa campaigns, so every engine result ships as a record carrying its engine, configuration, sequence length and corpus digest, with a seed where the engine exposes one and a stated absence where it does not. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose.
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 

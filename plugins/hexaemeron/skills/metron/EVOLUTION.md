@@ -7,6 +7,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `measured-before-and-after`
 - Current frontier: Metron ships the budget check, so a declared budget is held mechanically, and nothing in the plugin produces the measurement it reads.
 - Next Fiat job: Ship a recorder that produces a run file from a command it times, so a budget is measured by the same tool that holds it rather than by whatever a caller wrote. Accepted when a timed command yields a run the check reads unedited, a repeat count reports the spread the variance is meant to be set from, and both suites pass.
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 

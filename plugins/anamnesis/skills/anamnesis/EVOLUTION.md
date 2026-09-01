@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `corpus-scope`
 - Current frontier: The admission question is settled. Corpus projections sit outside the Synkrisis cohort boundary by recorded decision, the projection is read directly under its own schema, and guards establish that it carries every count's denominator, its exclusions, its unknowns and what it does not establish.
 - Next Fiat job: Decide what the corpus preserves beyond the pilot. The seed release holds 41 findings from three skills chosen by hand, the curation scope is a resolver-side constant rather than a declared policy field, and whether those are the right records to have preserved is unanswered. Accepted when the release policy declares its own scope and a corpus built under a different declared scope rebuilds to its own release id, or when a decision record states that a hand-picked seed is the permanent shape and names what governs additions.
+- Venues: [../../../../VENUES.json](../../../../VENUES.json)
 
 ## History
 
