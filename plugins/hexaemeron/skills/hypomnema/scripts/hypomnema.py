@@ -11,6 +11,8 @@ though the reason exists and was checked. This settles the part a parser can.
   H005  a decision record whose status is not dated
   H006  a source comment citing a record that does not exist
   H007  an alert runbook missing one of its three required answers
+  H008  an explicit study design bridge that does not bind one selected design
+        to one established standing-record home
 
 Exit 0 clean, 1 findings, 2 bad invocation.
 
@@ -60,7 +62,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -96,6 +100,428 @@ SOURCE_ALLOW = re.compile(r"hypomnema:\s*allow\s+\S")
 # The bundled Pashov suite is vendored, keeps no ledger, and documents files it
 # generates in the target repository rather than files that live here.
 VENDORED = {"fizz", "x-ray", "solidity-auditor"}
+
+DESIGN_BRIDGE_SCHEMA = "hypomnema-design-bridge/v1"
+DESIGN_EVIDENCE_SCHEMA = "protasis-design-evidence/v1"
+MAX_STUDY_BYTES = 2 * 1024 * 1024
+MAX_DESIGN_BYTES = 2 * 1024 * 1024
+MAX_RECORD_BYTES = 2 * 1024 * 1024
+MAX_JSON_DEPTH = 64
+MAX_PORTABLE_PATH_BYTES = 4096
+MAX_CANDIDATES = 4
+MAX_CRITERIA = 32
+DESIGN_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+DESIGN_DIGEST = re.compile(r"^[0-9a-f]{64}$")
+DESIGN_FENCE = re.compile(
+    r"^(?P<indent> {0,3})(?P<marker>`{3,}|~{3,})(?P<info>.*)$"
+)
+DESIGN_TOP_KEYS = frozenset(
+    {"schema", "candidates", "criteria", "results", "selection"}
+)
+DESIGN_CANDIDATE_KEYS = frozenset({"id", "summary"})
+DESIGN_SELECTION_KEYS = frozenset({"candidate", "rule", "policy_ref"})
+DESIGN_SELECTION_RULES = frozenset(
+    {"unique-frontier", "exact-tie-simplicity", "user-policy"}
+)
+
+
+class DuplicateKey(ValueError):
+    """A JSON object repeated a key and is not one closed value."""
+
+
+def _strict_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise DuplicateKey("duplicate object key")
+        value[key] = item
+    return value
+
+
+def _stat_identity(value: os.stat_result) -> tuple:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_nlink,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _portable_relative(value: str) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    parts = value.split("/")
+    return not (
+        len(encoded) > MAX_PORTABLE_PATH_BYTES
+        or value.startswith(("/", "\\"))
+        or re.match(r"^[A-Za-z]:", value)
+        or "\\" in value
+        or any(part in ("", ".", "..") for part in parts)
+        or any(not character.isprintable() for character in value)
+    )
+
+
+def _relative_input(root: Path, supplied: Path | str) -> Path | None:
+    """Bind one caller path lexically below the already resolved root."""
+    candidate = Path(supplied)
+    try:
+        if candidate.is_absolute():
+            # Canonicalise only the containing directory. The final component
+            # stays unopened until the descriptor-relative no-follow read.
+            lexical = candidate.parent.resolve(strict=True) / candidate.name
+            relative = lexical.relative_to(root)
+        else:
+            relative = candidate
+    except (OSError, RuntimeError, ValueError):
+        return None
+    value = relative.as_posix()
+    return relative if _portable_relative(value) else None
+
+
+def _read_repo_file(
+    root: Path,
+    supplied: Path | str,
+    maximum: int,
+) -> tuple[bytes | None, Path | None, str | None]:
+    """Read one bounded stable ordinary file without following a path symlink."""
+    relative = _relative_input(root, supplied)
+    if relative is None:
+        return None, None, "path is not a portable repository-relative path"
+
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    file_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    descriptors: list[int] = []
+    file_descriptor: int | None = None
+    try:
+        current = os.open(root, directory_flags)
+        descriptors.append(current)
+        parts = relative.parts
+        for part in parts[:-1]:
+            current = os.open(part, directory_flags, dir_fd=current)
+            descriptors.append(current)
+        name = parts[-1]
+        before = os.stat(name, dir_fd=current, follow_symlinks=False)
+        if not stat.S_ISREG(before.st_mode) or stat.S_ISLNK(before.st_mode):
+            return None, relative, "is not an ordinary non-symlink file"
+        if before.st_size > maximum:
+            return None, relative, f"exceeds the {maximum}-byte input limit"
+        file_descriptor = os.open(name, file_flags, dir_fd=current)
+        opened = os.fstat(file_descriptor)
+        chunks: list[bytes] = []
+        total = 0
+        while total <= maximum:
+            chunk = os.read(file_descriptor, min(64 * 1024, maximum + 1 - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+        after = os.fstat(file_descriptor)
+        named = os.stat(name, dir_fd=current, follow_symlinks=False)
+        identities = {
+            _stat_identity(before),
+            _stat_identity(opened),
+            _stat_identity(after),
+            _stat_identity(named),
+        }
+        data = b"".join(chunks)
+        if len(data) > maximum:
+            return None, relative, f"exceeds the {maximum}-byte input limit"
+        if len(identities) != 1 or len(data) != before.st_size:
+            return None, relative, "changed while being read"
+        return data, relative, None
+    except (OSError, ValueError):
+        return None, relative, "is unavailable or not an ordinary non-symlink file"
+    finally:
+        if file_descriptor is not None:
+            os.close(file_descriptor)
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
+def _json_depth_within_limit(data: bytes) -> bool:
+    depth = 0
+    quoted = False
+    escaped = False
+    for byte in data:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:
+                escaped = True
+            elif byte == 0x22:
+                quoted = False
+            continue
+        if byte == 0x22:
+            quoted = True
+        elif byte in (0x5B, 0x7B):
+            depth += 1
+            if depth > MAX_JSON_DEPTH:
+                return False
+        elif byte in (0x5D, 0x7D) and depth:
+            depth -= 1
+    return True
+
+
+def _bounded_design_text(value, maximum=4096) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return len(encoded) <= maximum and all(character.isprintable() for character in value)
+
+
+def _selected_design(data: bytes) -> tuple[str | None, str | None]:
+    """Return the selected candidate from one closed selection envelope."""
+    if not _json_depth_within_limit(data):
+        return None, "design evidence is not one bounded strict JSON object"
+    try:
+        raw = json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=_strict_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (
+        DuplicateKey, MemoryError, RecursionError, UnicodeDecodeError, ValueError
+    ):
+        return None, "design evidence is not one bounded strict JSON object"
+    if not isinstance(raw, dict) or set(raw) != DESIGN_TOP_KEYS:
+        return None, "design evidence has an unsupported closed field set"
+    if raw.get("schema") != DESIGN_EVIDENCE_SCHEMA:
+        return None, f"design evidence is not {DESIGN_EVIDENCE_SCHEMA}"
+
+    candidates = raw.get("candidates")
+    if not isinstance(candidates, list) or not 2 <= len(candidates) <= MAX_CANDIDATES:
+        return None, "design evidence has an invalid candidate set"
+    candidate_ids: set[str] = set()
+    for candidate in candidates:
+        if not isinstance(candidate, dict) or set(candidate) != DESIGN_CANDIDATE_KEYS:
+            return None, "design evidence has a malformed candidate"
+        candidate_id = candidate.get("id")
+        if (
+            not isinstance(candidate_id, str)
+            or DESIGN_ID.fullmatch(candidate_id) is None
+            or candidate_id in candidate_ids
+            or not _bounded_design_text(candidate.get("summary"), 512)
+        ):
+            return None, "design evidence has a malformed candidate"
+        candidate_ids.add(candidate_id)
+
+    # Protasis owns the complete candidate/criterion/result semantics, including
+    # pending conformance cells after design-lock. Hypomnema consumes only the
+    # already checked selection envelope, so it bounds those arrays without
+    # maintaining a partial second copy of Protasis's evolving matrix rules.
+    criteria = raw.get("criteria")
+    results = raw.get("results")
+    if not isinstance(criteria, list) or not 1 <= len(criteria) <= MAX_CRITERIA:
+        return None, "design evidence has an invalid bounded criterion envelope"
+    if not isinstance(results, list) or len(results) > MAX_CANDIDATES * MAX_CRITERIA:
+        return None, "design evidence has an invalid bounded result envelope"
+
+    selection = raw.get("selection")
+    if not isinstance(selection, dict) or set(selection) != DESIGN_SELECTION_KEYS:
+        return None, "design evidence has a malformed selection"
+    selected = selection.get("candidate")
+    rule = selection.get("rule")
+    policy_ref = selection.get("policy_ref")
+    if selected not in candidate_ids or rule not in DESIGN_SELECTION_RULES:
+        return None, "design evidence has no supported selected candidate"
+    if (rule == "user-policy") != (policy_ref is not None):
+        return None, "design evidence has a malformed selection policy"
+    if policy_ref is not None and not _bounded_design_text(policy_ref):
+        return None, "design evidence has a malformed selection policy"
+    return selected, None
+
+
+def _design_bridge_block(lines: list[str]) -> tuple[dict | None, int, str | None]:
+    """Read exactly one closed, ordered three-row block outside examples."""
+    active: tuple[str, int, bool, int] | None = None
+    rows: list[tuple[int, str]] = []
+    blocks: list[tuple[int, list[tuple[int, str]], bool]] = []
+    for number, line in enumerate(lines, start=1):
+        match = DESIGN_FENCE.match(line)
+        if active is None:
+            if match is None:
+                continue
+            marker = match.group("marker")
+            info = match.group("info").strip()
+            target = info == "design-bridge" or info.startswith("design-bridge ")
+            active = (marker[0], len(marker), target, number)
+            rows = []
+            if target and info != "design-bridge":
+                rows.append((number, "<malformed-header>"))
+            continue
+
+        marker_character, marker_length, target, opened = active
+        if match is not None:
+            marker = match.group("marker")
+            closes = (
+                marker[0] == marker_character
+                and len(marker) >= marker_length
+                and not match.group("info").strip()
+            )
+            if closes:
+                if target:
+                    blocks.append((opened, rows, True))
+                active = None
+                rows = []
+                continue
+        if target:
+            rows.append((number, line))
+
+    if active is not None and active[2]:
+        return None, active[3], "design bridge block is not closed"
+    if not blocks:
+        return None, 1, "study has no design bridge block"
+    if len(blocks) != 1:
+        return None, blocks[1][0], "study declares more than one design bridge home"
+    opened, rows, _closed = blocks[0]
+    if len(rows) != 3:
+        return None, opened, "design bridge must have exactly three rows"
+    parsed: dict[str, str] = {}
+    expected = ("schema", "decision", "record")
+    for position, (number, row) in enumerate(rows):
+        parts = row.split("|")
+        if len(parts) != 2:
+            return None, number, "design bridge rows must have exactly two fields"
+        key, value = (part.strip() for part in parts)
+        if key != expected[position]:
+            return None, number, "design bridge rows are not ordered schema, decision, record"
+        if not value or key in parsed:
+            return None, number, "design bridge has an empty or repeated row"
+        parsed[key] = value
+    if parsed["schema"] != DESIGN_BRIDGE_SCHEMA:
+        return None, rows[0][0], f"design bridge schema is not {DESIGN_BRIDGE_SCHEMA}"
+    if DESIGN_ID.fullmatch(parsed["decision"]) is None:
+        return None, rows[1][0], "design bridge decision is not a bounded candidate id"
+    if not _portable_relative(parsed["record"]):
+        return None, rows[2][0], "design bridge record is not a portable repository-relative path"
+    parsed["record_line"] = str(rows[2][0])
+    return parsed, opened, None
+
+
+def _governed_skill_name(data: bytes) -> str | None:
+    try:
+        lines = data.decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        return None
+    if not lines or lines[0] != "---":
+        return None
+    names = []
+    for line in lines[1:]:
+        if line == "---":
+            break
+        match = re.fullmatch(r"name:\s*([a-z0-9]+(?:-[a-z0-9]+)*)\s*", line)
+        if match:
+            names.append(match.group(1))
+    return names[0] if len(names) == 1 else None
+
+
+def check_design_bridge(
+    study_path: Path | str,
+    design_evidence_path: Path | str,
+    repo_root: Path | str,
+) -> list[Finding]:
+    """Bind one checked study selection to one standing record as H008."""
+    supplied_root = Path(repo_root)
+    try:
+        if supplied_root.is_symlink():
+            raise OSError
+        root = supplied_root.resolve(strict=True)
+        if not root.is_dir():
+            raise OSError
+    except (OSError, RuntimeError):
+        return [Finding(supplied_root, 1, "H008", "repository root is unavailable or unsafe")]
+
+    study, study_relative, error = _read_repo_file(root, study_path, MAX_STUDY_BYTES)
+    if study is None:
+        return [Finding(Path(study_path), 1, "H008", f"study {error}")]
+    try:
+        lines = study.decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        return [Finding(root / study_relative, 1, "H008", "study is not UTF-8 text")]
+    bridge, line, error = _design_bridge_block(lines)
+    if bridge is None:
+        return [Finding(root / study_relative, line, "H008", error)]
+
+    evidence, evidence_relative, error = _read_repo_file(
+        root, design_evidence_path, MAX_DESIGN_BYTES
+    )
+    if evidence is None:
+        return [Finding(Path(design_evidence_path), 1, "H008", f"design evidence {error}")]
+    selected, error = _selected_design(evidence)
+    if selected is None:
+        return [Finding(root / evidence_relative, 1, "H008", error)]
+    if bridge["decision"] != selected:
+        return [Finding(
+            root / study_relative,
+            line,
+            "H008",
+            f"design bridge decision `{bridge['decision']}` does not match selected candidate `{selected}`",
+        )]
+
+    record = bridge["record"]
+    record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
+    record_line = int(bridge["record_line"])
+    if record_data is None:
+        return [Finding(
+            root / study_relative,
+            record_line,
+            "H008",
+            f"record `{record}` {error}",
+        )]
+
+    is_adr = (
+        RECORD_NAME.fullmatch(record_relative.name) is not None
+        and "decisions" in record_relative.parts[:-1]
+    )
+    is_ledger = record_relative.name == "EVOLUTION.md"
+    if is_ledger:
+        skill_relative = record_relative.parent / "SKILL.md"
+        skill_data, _skill_relative, skill_error = _read_repo_file(
+            root, skill_relative, MAX_RECORD_BYTES
+        )
+        governed = (
+            skill_data is not None
+            and "plugins" == record_relative.parts[0]
+            and "skills" in record_relative.parts[1:-1]
+            and _governed_skill_name(skill_data) == record_relative.parent.name
+        )
+        if not governed:
+            return [Finding(
+                root / study_relative,
+                record_line,
+                "H008",
+                f"record `{record}` is not a governed skill ledger"
+                + (f": {skill_error}" if skill_error else ""),
+            )]
+    if not is_adr and not is_ledger:
+        return [Finding(
+            root / study_relative,
+            record_line,
+            "H008",
+            f"record `{record}` is outside an established ADR or governed-skill-ledger home",
+        )]
+    return []
 
 
 class Finding:
@@ -600,13 +1026,36 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--include-vendored", action="store_true",
                         help="also check the bundled third-party skills")
+    parser.add_argument("--study", help="check one study's explicit design bridge")
+    parser.add_argument(
+        "--design-evidence",
+        help="the checked protasis-design-evidence/v1 record for --study",
+    )
+    parser.add_argument(
+        "--repo-root",
+        help="the repository root containing --study and --design-evidence",
+    )
     args = parser.parse_args(argv)
 
-    files = walk(args.paths or ["."], include_vendored=args.include_vendored)
-    index = adr_index(files)
-    findings: list[Finding] = []
-    for path in files:
-        findings.extend(check(path, index))
+    study_mode = any((args.study, args.design_evidence, args.repo_root))
+    if study_mode:
+        if not all((args.study, args.design_evidence, args.repo_root)):
+            parser.error(
+                "--study, --design-evidence and --repo-root must be supplied together"
+            )
+        if args.paths != ["."] or args.include_vendored:
+            parser.error("study mode does not accept walk paths or --include-vendored")
+        findings = check_design_bridge(
+            args.study,
+            args.design_evidence,
+            args.repo_root,
+        )
+    else:
+        files = walk(args.paths or ["."], include_vendored=args.include_vendored)
+        index = adr_index(files)
+        findings = []
+        for path in files:
+            findings.extend(check(path, index))
 
     if args.format == "json":
         print(json.dumps([f.as_dict() for f in findings], indent=2))

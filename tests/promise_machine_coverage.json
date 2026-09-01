@@ -110,7 +110,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "bc731ed721f937917b02ad51e3e0ea439fbe1a722651b3aee02d873a46e144f3",
+      "sha256": "c74b1081ee9a0323121b90b752f708494129011159fccb9014abfeb0d6e111c8",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
@@ -1507,6 +1507,31 @@
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
       "path": "plugins/probitas/tests/test_gates.py",
       "selector": "test_an_invented_transaction_hash_fails"
+    },
+    "probitas-statement-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_missing_evidence_case_refuses_without_output"
+    },
+    "probitas-statement-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_overclaim_case_keeps_ariadne_partial_boundary_visible"
+    },
+    "probitas-statement-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_positive_case_emits_bound_statement"
+    },
+    "probitas-statement-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_recovery_case_failed_verify_preserves_existing_statement"
+    },
+    "probitas-statement-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/probitas/tests/test_statement.py",
+      "selector": "test_stale_case_changes_only_the_mutated_input_digest"
     },
     "protasis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -2930,6 +2955,22 @@
     },
     {
       "cases": {
+        "M": "probitas-statement-m",
+        "O": "probitas-statement-o",
+        "P": "probitas-statement-p",
+        "R": "probitas-statement-r",
+        "S": "probitas-statement-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "probitas-statement-emission",
+      "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "protasis-m",
         "O": "protasis-o",
         "P": "protasis-p",
@@ -4226,7 +4267,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "50367019e444db2991d2f2ed8ebdc33b0eb9af44169ec5ce2441c9bf311e3d66",
+      "sha256": "3026fcd1afcf4eeab9b5b4105fd442b0052b3ec6a13a98df8a4afa31859b8ea5",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
@@ -4330,15 +4371,15 @@
     "pandects-search-record": {
       "bindings": {
         "evidence_classes": "campaign status joined to the canonical Evidence classes field",
-        "evidence_references": "captured search output and generated search-record JSON",
+        "evidence_references": "declared exercise map, captured search output and generated search-record JSON",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "engine, command, configuration, seed and sequence bounds",
-        "subject": "target revision, adapter and law identifiers",
+        "scope": "engine, command, configuration, seed, sequence bounds and per-law exercise evidence",
+        "subject": "target revision, adapter, catalogue law identifiers and declared exercise surfaces",
         "transition": "bounded campaign result joined to the canonical Authorises field",
-        "unknowns": "absent engines, unavailable values and timed-out campaigns"
+        "unknowns": "absent engines, unavailable values, timed-out campaigns and laws with no attributable surface in campaign output"
       },
-      "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
+      "sha256": "6c9a7281ce34020d3926ce319aad2d31031bf733456b1d90bd0baec3ec77b585",
       "source": "plugins/pandects/scripts/pandects.py"
     },
     "phylax-boundary-review": {
@@ -4366,7 +4407,7 @@
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "b865685b342b4e853a5084242b17945478e2d5069533cc79933f5970eab361c6",
+      "sha256": "9ada5e0cca35f8482796acbc24d3c1d93e6633ec5ca40c68d810610db5d75837",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {

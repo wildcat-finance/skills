@@ -311,6 +311,7 @@
     {"path": "pyproject.toml", "scope": "root"},
     {"path": "skills.sh.json", "scope": "root"},
     {"path": "SHOGGOTH.md", "scope": "root"},
+    {"path": "VENUES.json", "scope": "root"},
     {"path": "assets", "scope": "root"},
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},

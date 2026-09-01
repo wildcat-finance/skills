@@ -361,11 +361,15 @@ class PythonRuntimeContractTests(unittest.TestCase):
         )
         # One shard per declared scope, each running the committed graph for
         # that scope alone. The graph stays the only definition of a check, and
-        # no command is copied into the workflow.
+        # no command is copied into the workflow. The budget is explicit because
+        # the automatic one grants the nested suite coordinator a single worker
+        # on a four-core runner, which no longer finishes inside the per-check
+        # timeout; it is a capacity flag and names no check.
         self.assertEqual(
             text.count(
                 "python3 scripts/run_checks.py\n"
                 "          --scope ${{ matrix.scope }}\n"
+                "          --jobs 14\n"
                 "          --report tmp/checks/${{ matrix.scope }}.json"
             ),
             1,

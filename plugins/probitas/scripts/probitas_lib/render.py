@@ -67,8 +67,13 @@ class RenderError(ValueError):
 
 
 def load(path):
-    with open(path, encoding="utf-8") as handle:
-        payload = json.load(handle)
+    with open(path, "rb") as handle:
+        data = handle.read()
+    return load_bytes(data, path)
+
+
+def load_bytes(data, name):
+    payload = json.loads(data.decode("utf-8"))
     schema = payload.get("schema") if isinstance(payload, dict) else None
     if schema == 1:
         # Named here rather than left to gate 2. A schema-1 row carries no
@@ -76,18 +81,18 @@ def load(path):
         # message would read like a defect in the dossier rather than an
         # evidence file the tool has outgrown.
         raise RenderError(
-            f"{path} is a schema 1 evidence file, written before coverage rows "
+            f"{name} is a schema 1 evidence file, written before coverage rows "
             "named their source; collect again to produce a schema 2 file"
         )
     if schema != EVIDENCE_SCHEMA:
-        raise RenderError(f"{path} is not a probitas evidence file")
+        raise RenderError(f"{name} is not a probitas evidence file")
     for key in ("subject", "records", "coverage", "gaps"):
         if key not in payload:
-            raise RenderError(f"{path} has no {key!r} block")
+            raise RenderError(f"{name} has no {key!r} block")
         if key != "subject" and not isinstance(payload[key], list):
-            raise RenderError(f"{path} has a {key!r} block that is not a list")
+            raise RenderError(f"{name} has a {key!r} block that is not a list")
     if not isinstance(payload["subject"].get("addresses"), list):
-        raise RenderError(f"{path} has no subject addresses")
+        raise RenderError(f"{name} has no subject addresses")
     return payload
 
 

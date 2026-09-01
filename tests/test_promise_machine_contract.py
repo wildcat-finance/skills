@@ -617,6 +617,7 @@ class PromiseStructureTests(unittest.TestCase):
                 "probitas-evidence-collection",
                 "probitas-dossier-rendering",
                 "probitas-dossier-verification",
+                "probitas-statement-emission",
             },
             "plugins/sapheneia/skills/sapheneia/SKILL.md": {
                 "sapheneia-session-shape",
