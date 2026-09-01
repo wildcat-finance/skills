@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `attributed-confirmation`
 - Current frontier: Dokimasia drafts a complete disposition set a reviewer edits rather than authors, and admits only the entries a person confirmed. The pinned scrutiny of wildcat-app-v2 at bb9685fb against workbook 9da2f2e8 now closes at 202 over 261, drawn entirely from confirmed entries, with `covered` at zero. What the record cannot say is who confirmed those 202 or under what rule, which is why producing them required halting the run to ask a person by name.
 - Next Fiat job: Record who confirmed a disposition and under what rule, so a coverage figure states whose judgement it is. A drafted entry and a confirmed one now differ by one boolean that anything with write access can set, and the committed evidence cannot distinguish a reviewer working through 261 items from a script flipping a field. Accepted when a confirmed entry carries an attribution the reconciler requires and refuses without, when a rule-based confirmation records the rule it was applied under rather than only its result, when the coverage record reports confirmations by attribution so a reader can see how many people decided, and when a test proves an entry confirmed with no attribution is refused rather than counted.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

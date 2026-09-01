@@ -7,7 +7,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `content-parity-evaluation`
 - Current frontier: Vulgate defines a strict content-preserving voice mask, but its parity check is still a model judgement rather than a repeatable evaluation over facts, commitments, caveats, and registers.
 - Next Fiat job: Build and run a content-parity evaluation across all four registers, measure additions and omissions, fix only evidenced instruction failures, and record whether another material pass remains.
-- Venues: [../../../../VENUES.json](../../../../VENUES.json)
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

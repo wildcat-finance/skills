@@ -6,6 +6,21 @@ step's branch, logs everything, fixes on a stacked branch, and repeats
 until a round comes back clean or the remaining leads are judged not worth
 another pass.
 
+## One warden per step
+
+Delegate a step's first round to a new Warden, and every later round of the
+same step to that same agent. The suite documents Warden reads in round 1 come
+to 164,611 bytes; a fresh agent reads all of them again from nothing. Keeping
+the agent is the only thing that avoids that. A round number cannot, because an
+agent that has not read a document has not read it, and telling it otherwise
+would put a false claim in its context.
+
+Start a new Warden when the step changes, when the host cannot keep an agent
+alive between rounds, or when its context was lost. A new Warden reads the
+suite documents in full. Nothing about the evidence changes either way: one
+round still produces one `audit-round` receipt, and the round is still the unit
+Fiat records.
+
 ## One round
 
 1. Before selecting X-Ray, read the
@@ -15,7 +30,9 @@ another pass.
    `x-ray` pass first, then `solidity-auditor`. Both are vendored under
    `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read
    each SKILL.md and follow
-   it. Give each the step's full diff and the contracts it touches, not a
+   it, unless this same agent already read them for an earlier round of
+   this step. Give each the step's full diff and the contracts it touches,
+   not a
    summary. Its adapter is a preparation layer only: build the full logical
    scope from the current tree, read and digest every current source, and
    preserve every pinned X-Ray source-read and verification call. Reuse
@@ -165,6 +182,18 @@ python3 "$PLUGIN_ROOT/skills/ephoros/scripts/ephoros.py" <changed paths>
 python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/hypomnema.py" <changed docs>
 ```
 
+The mechanical part also includes the repository's own suite where one is
+discoverable. When the run worktree declares its checks in
+`tests/check-map-v1.json` under `wildcat.check-map.v1`, the `audit-round`
+directive carries that map's `root-suite` command as `repo_suite`: run it
+against the changed tree and require exit 0, the same way the lints are
+required. A directive without the field means no suite was discoverable
+there, not that the obligation went away -- a runbook step whose Tests
+contract names a command still owes that command. This closed the gap where
+two steps were receipted through implement, audit, prose and push with the
+three lints green and were then red on the repository's 1,110-test root
+suite, with the first signal arriving after the audits had closed.
+
 A non-zero exit is a finding like any other: log it, fix it on the stacked
 branch, and run the next round against the fixed tree. Then review the diff
 for the risk register's concerns the lints cannot see, log the result, and
@@ -181,9 +210,12 @@ hexctl audit-round --findings <n> --log <the directive's log_path> \
   --phylax-exit <n> --ephoros-exit <n> --hypomnema-exit <n>
 ```
 
-`next` names the exact audit-filter obligation on every round and the three
-lint flags when the round owes them, so each requirement arrives before the
-refusal does. A round reporting zero findings beside a non-zero exit is refused
+`next` names the exact audit-filter obligation on every round, the three
+lint flags when the round owes them, and the repository's declared suite when
+one is discoverable, so each requirement arrives before the refusal does. The
+suite carriage is informational: the controller takes no suite exit as a
+field, and the round's own record remains the evidence that it ran. A round
+reporting zero findings beside a non-zero exit is refused
 as well: the log would otherwise say a lint failed while the ledger said the
 round was clean.
 
