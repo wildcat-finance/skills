@@ -873,6 +873,12 @@ def _directory_flags() -> int:
     return flags | os.O_DIRECTORY | os.O_NOFOLLOW
 
 
+def _regular_read_flags() -> int:
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_NONBLOCK"):
+        raise Refusal("nonblocking no-follow input reads are unavailable")
+    return os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+
+
 def _open_parent(
     relative: PurePosixPath, *, create: bool, label: str
 ) -> tuple[int, str]:
@@ -932,11 +938,8 @@ def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result
 
 def _read_regular(path: Path, limit: int) -> bytes:
     relative = _repository_relative(path, "path")
+    flags = _regular_read_flags()
     parent, name = _open_parent(relative, create=False, label="input")
-    if not hasattr(os, "O_NONBLOCK"):
-        os.close(parent)
-        raise Refusal("nonblocking input reads are unavailable")
-    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
     try:
         descriptor = os.open(name, flags, dir_fd=parent)
     except OSError as exc:
@@ -5344,8 +5347,8 @@ def _safe_output(path: Path) -> Path:
 def _fresh_named_identity(
     relative: PurePosixPath, parent_identity: tuple[int, ...], expected: os.stat_result
 ) -> None:
+    flags = _regular_read_flags()
     parent, name = _open_parent(relative, create=False, label="output")
-    flags = os.O_RDONLY | os.O_NOFOLLOW
     try:
         if _directory_identity(os.fstat(parent)) != parent_identity:
             raise Refusal("output parent changed during publication")
@@ -5393,7 +5396,7 @@ def _atomic_write(path: Path, data: bytes) -> None:
             os.fsync(handle.fileno())
             staged = os.fstat(handle.fileno())
         try:
-            named_stage = os.open(temporary, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+            named_stage = os.open(temporary, _regular_read_flags(), dir_fd=parent)
         except OSError as exc:
             raise Refusal("output stage changed before publication") from exc
         try:
@@ -5416,7 +5419,7 @@ def _atomic_write(path: Path, data: bytes) -> None:
         temporary = None
         os.fsync(parent)
         try:
-            published = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+            published = os.open(name, _regular_read_flags(), dir_fd=parent)
         except OSError as exc:
             raise Refusal("published output is unavailable or unsafe") from exc
         try:

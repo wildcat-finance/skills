@@ -3119,6 +3119,134 @@ class CorpusManifestTests(unittest.TestCase):
                 stdout.strip(), "input is not a single-link regular file"
             )
 
+    def _assert_fifo_output_probe(
+        self, probe: str, target: Path, expected: str, blocked: str
+    ) -> None:
+        process = subprocess.Popen(
+            [sys.executable, "-c", probe, str(target)],
+            cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            self.fail(blocked)
+        self.assertEqual(process.returncode, 0, stderr)
+        self.assertEqual(stdout.strip(), expected)
+
+    def test_atomic_write_refuses_fifo_stage_replacement_without_blocking(self):
+        with scratch_directory("fifo-output-stage-") as temporary:
+            target = Path(temporary) / "record.json"
+            probe = "\n".join(
+                (
+                    "import os",
+                    "from pathlib import Path",
+                    "import sys",
+                    "from unittest import mock",
+                    "from tests.test_instruction_architecture import AI",
+                    "target = Path(sys.argv[1])",
+                    "real_open = os.open",
+                    "real_unlink = os.unlink",
+                    "real_mkfifo = os.mkfifo",
+                    "swapped = False",
+                    "def racing_open(path, flags, *args, **kwargs):",
+                    "    global swapped",
+                    "    if (not swapped and isinstance(path, str)",
+                    "            and path.startswith('.record.json.')",
+                    "            and not flags & os.O_WRONLY):",
+                    "        swapped = True",
+                    "        real_unlink(path, dir_fd=kwargs['dir_fd'])",
+                    "        real_mkfifo(path, dir_fd=kwargs['dir_fd'])",
+                    "    return real_open(path, flags, *args, **kwargs)",
+                    "try:",
+                    "    with mock.patch.object(AI.os, 'open', side_effect=racing_open):",
+                    "        AI._atomic_write(target, b'{}\\n')",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO stage replacement was accepted')",
+                )
+            )
+            self._assert_fifo_output_probe(
+                probe,
+                target,
+                "output stage changed before publication",
+                "output stage verification blocked on a FIFO replacement",
+            )
+
+    def test_atomic_write_refuses_fifo_published_replacement_without_blocking(self):
+        with scratch_directory("fifo-published-output-") as temporary:
+            target = Path(temporary) / "record.json"
+            probe = "\n".join(
+                (
+                    "import os",
+                    "from pathlib import Path",
+                    "import sys",
+                    "from unittest import mock",
+                    "from tests.test_instruction_architecture import AI",
+                    "target = Path(sys.argv[1])",
+                    "real_replace = os.replace",
+                    "real_unlink = os.unlink",
+                    "real_mkfifo = os.mkfifo",
+                    "def racing_replace(source, destination, *args, **kwargs):",
+                    "    real_replace(source, destination, *args, **kwargs)",
+                    "    real_unlink(destination, dir_fd=kwargs['dst_dir_fd'])",
+                    "    real_mkfifo(destination, dir_fd=kwargs['dst_dir_fd'])",
+                    "try:",
+                    "    with mock.patch.object(AI.os, 'replace', side_effect=racing_replace):",
+                    "        AI._atomic_write(target, b'{}\\n')",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO published replacement was accepted')",
+                )
+            )
+            self._assert_fifo_output_probe(
+                probe,
+                target,
+                "input is not a single-link regular file",
+                "published output verification blocked on a FIFO replacement",
+            )
+
+    def test_fresh_named_identity_refuses_fifo_without_blocking(self):
+        with scratch_directory("fifo-output-identity-") as temporary:
+            target = Path(temporary) / "record.json"
+            probe = "\n".join(
+                (
+                    "import os",
+                    "from pathlib import Path",
+                    "import sys",
+                    "from tests.test_instruction_architecture import AI",
+                    "target = Path(sys.argv[1])",
+                    "target.write_bytes(b'{}\\n')",
+                    "expected = target.stat()",
+                    "relative = AI._repository_relative(target, 'output')",
+                    "parent, _ = AI._open_parent(relative, create=False, label='output')",
+                    "try:",
+                    "    parent_identity = AI._directory_identity(os.fstat(parent))",
+                    "finally:",
+                    "    os.close(parent)",
+                    "target.unlink()",
+                    "os.mkfifo(target)",
+                    "try:",
+                    "    AI._fresh_named_identity(relative, parent_identity, expected)",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO identity replacement was accepted')",
+                )
+            )
+            self._assert_fifo_output_probe(
+                probe,
+                target,
+                "output changed during publication",
+                "final output identity check blocked on a FIFO replacement",
+            )
+
     def test_regular_read_refuses_concurrent_parent_swap(self):
         with (
             scratch_directory() as inside,
