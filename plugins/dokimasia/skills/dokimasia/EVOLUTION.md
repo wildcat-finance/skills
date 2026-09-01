@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `proposed-dispositions`
 - Current frontier: Dokimasia compiles a pinned checkout into a coverage denominator, imports a reviewed workbook without losing a row, reconciles both into dispositions, and has run one scrutiny of wildcat-app-v2 at bb9685fb against workbook 9da2f2e8. That scrutiny scoped 261 items and found none carrying a disposition, because no code path helps a reviewer write one and 261 entries by hand is the whole cost of using this.
 - Next Fiat job: Propose a disposition set a reviewer can edit rather than author from nothing: draft `manual` and `excluded` entries with reasons for every scoped item, and never propose `covered`, which ADR-001 reserves to a person holding an item to a reviewed oracle. Accepted when a proposed set is refused by the reconciler wherever a reviewer has not confirmed it, when no proposal path can emit `covered` and a test proves no such path exists, when a reviewer's edits survive a regeneration of the proposal, and when the pinned scrutiny reports a closure ratio above zero drawn only from entries a person confirmed.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 
