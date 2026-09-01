@@ -29,3 +29,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the committed-copy comparison carried from round 1, unchanged. Nothing compares a committed copy of a receipted artefact against the ledger's digest; this round confirmed the two copies byte-identical by `diff -q` again, which is evidence about this tree and not a check the repository owns.
+
+## Step 2, round 1 -- 2026-09-01T11:44:02Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: fenced-decoy=reviewed; unclosed-block=reviewed; duplicate-block=reviewed; control-characters=reviewed; body-size=reviewed; digest-drift=reviewed; extractor-collision=reviewed
+
+Not checked: whether the Atlas dependency extractor skips the delimited block, which needs the Atlas source and is delivered in that repository. The reader was exercised against handwritten bodies and the committed test fixtures, not against a body fetched from GitHub over REST, so the transport path around `read_task_issue_contract` is covered by its existing tests rather than by anything this round added. No measurement was taken of the reader's cost, so the single-read change carries no performance claim.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | `status_block_span` refused a closer with no opener only before the first block. After one closed, a further `<!-- status:end -->` was ignored: the reader returned span `(1, 3)` with no faults and `issue-check` reported a body carrying an unmatched delimiter as clean. The decision record's rule that a closer with no opener refuses was therefore enforced on one side of the block only. | fixed in 956c9e2ef28f5e0bb36192f0b956e1f718b204d3 |
+
+Leads not pursued: the controller digest reconciliation ran twice inside this one step, eleven bindings each time, because the implement commit and this audit fix both changed `hexctl.py`. Issue #892 owns the mechanism; what this round adds is that the cost is per-commit rather than per-step, so an audit loop multiplies it by the number of rounds touching the controller. Recorded rather than built, because collapsing it needs a derived digest at check time, which is a change to the Promise Machine rather than to this step. The committed-copy comparison lead from step 1 also stands, untouched here.
