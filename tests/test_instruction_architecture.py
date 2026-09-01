@@ -30,11 +30,38 @@ SCHEMA = ROOT / "research/instruction-architecture/schemas/source-bound-v1.schem
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "39b7b730fc520e58f3e69cc6a8559d0adeec6fd60b94df1f04101c12344dde56"
+    "9968d90e2d58f306c196a25226444c372054485682e263c9ee5f0865b193ee6c"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "1de22e55a4409ca35e615104fec8d4435a001f4c26fc50a5cd90d58712e905bb"
+    "76bcc6b32c659cf4441f40e9d5f8cd4280b694068ad0ce9f13ea3d343bdee566"
 )
+EXPECTED_KRONOS_RANKING_LEDGERS = {
+    "plugins/alexandria/skills/alexandria/EVOLUTION.md",
+    "plugins/anamnesis/skills/anamnesis/EVOLUTION.md",
+    "plugins/ariadne/skills/ariadne/EVOLUTION.md",
+    "plugins/berean/skills/berean/EVOLUTION.md",
+    "plugins/brevitas/skills/brevitas/EVOLUTION.md",
+    "plugins/hermes/skills/hermes/EVOLUTION.md",
+    "plugins/hexaemeron/skills/elenchus/EVOLUTION.md",
+    "plugins/hexaemeron/skills/ephoros/EVOLUTION.md",
+    "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+    "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md",
+    "plugins/hexaemeron/skills/imprimatur/EVOLUTION.md",
+    "plugins/hexaemeron/skills/metron/EVOLUTION.md",
+    "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
+    "plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+    "plugins/hexaemeron/skills/vulgate/EVOLUTION.md",
+    "plugins/homologia/skills/homologia/EVOLUTION.md",
+    "plugins/horos/skills/horos/EVOLUTION.md",
+    "plugins/janus/skills/janus/EVOLUTION.md",
+    "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+    "plugins/lemma/skills/lemma/EVOLUTION.md",
+    "plugins/pandects/skills/pandects/EVOLUTION.md",
+    "plugins/probitas/skills/probitas/EVOLUTION.md",
+    "plugins/sapheneia/skills/sapheneia/EVOLUTION.md",
+    "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
+    "plugins/tabularium/skills/tabularium/EVOLUTION.md",
+}
 
 EXPECTED_STRUCTURED_REFERENCES = {
     "plugins/hermes/skills/hermes/references/gas-rule-corpus.json": (177_562, "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"),
@@ -1116,9 +1143,9 @@ class LoaderGraphTests(unittest.TestCase):
 
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
-        self.assertEqual(len(self.graph["edges"]), 212)
+        self.assertEqual(len(self.graph["edges"]), 237)
         self.assertEqual(len(self.graph["scenario_roots"]), 233)
-        self.assertEqual(len(self.graph["scenario_edges"]), 252)
+        self.assertEqual(len(self.graph["scenario_edges"]), 277)
         self.assertEqual(len(self.graph["reference_only"]), 6)
         self.assertTrue(self.graph["constraints"]["complete_scenario_routes"])
         self.assertTrue(self.graph["constraints"]["condition_vectors_closed"])
@@ -1376,6 +1403,194 @@ class LoaderGraphTests(unittest.TestCase):
                 root["selected_skill"] == "synkrisis" and len(operations) == 1,
             )
 
+    def test_kronos_ranking_scan_is_exact_in_every_scenario(self):
+        kronos = "plugins/hexaemeron/skills/kronos/SKILL.md"
+        fiat = "plugins/hexaemeron/skills/fiat/SKILL.md"
+        versioning = "plugins/hexaemeron/skills/VERSIONING.md"
+        kronos_ledger = "plugins/hexaemeron/skills/kronos/EVOLUTION.md"
+        self.assertEqual(
+            EXPECTED_KRONOS_RANKING_LEDGERS,
+            {
+                f"{prefix}/EVOLUTION.md"
+                for prefix in AI.FRONTIER_SKILLS
+                if f"{prefix}/EVOLUTION.md" != kronos_ledger
+            },
+        )
+        candidate_ledgers = EXPECTED_KRONOS_RANKING_LEDGERS
+        self.assertEqual(len(candidate_ledgers), 25)
+        host_ranking = [
+            edge
+            for edge in self.graph["edges"]
+            if edge["source"] == kronos and edge["target"] in candidate_ledgers
+        ]
+        scenario_ranking = [
+            edge
+            for edge in self.graph["scenario_edges"]
+            if edge["source"] == kronos and edge["target"] in candidate_ledgers
+        ]
+        self.assertEqual(
+            {edge["target"] for edge in host_ranking}, candidate_ledgers
+        )
+        self.assertEqual(len(host_ranking), len(candidate_ledgers))
+        self.assertEqual(
+            {edge["target"] for edge in scenario_ranking}, candidate_ledgers
+        )
+        self.assertEqual(len(scenario_ranking), len(candidate_ledgers))
+        self.assertTrue(all(edge["condition"] is None for edge in scenario_ranking))
+
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        reached = {
+            root["id"]: {
+                path
+                for path, scenarios in observed.items()
+                if root["id"] in scenarios
+            }
+            for root in self.graph["scenario_roots"]
+        }
+        target_skills = {
+            edge["target"]
+            for edge in self.graph["scenario_edges"]
+            if edge["source"] == kronos
+            and edge["kind"] == "operation-branch"
+            and edge["target"] != fiat
+        }
+        mandatory_inputs = {
+            path
+            for path, metadata in AI._structured_metadata().items()
+            if metadata["load_semantics"] == "mandatory-executable"
+        }
+        kronos_roots = [
+            root
+            for root in self.graph["scenario_roots"]
+            if root["selected_skill"] == "kronos"
+        ]
+        self.assertEqual(len(kronos_roots), 27)
+        for root in kronos_roots:
+            paths = reached[root["id"]]
+            with self.subTest(scenario=root["id"]):
+                self.assertEqual(paths & candidate_ledgers, candidate_ledgers)
+                self.assertIn(versioning, paths)
+                self.assertEqual(len(paths & target_skills), 1)
+                self.assertIn(fiat, paths)
+                self.assertFalse(paths & mandatory_inputs)
+
+    def test_kronos_target_read_does_not_execute_target_structured_inputs(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        reached = {
+            root["id"]: {
+                path
+                for path, scenarios in observed.items()
+                if root["id"] in scenarios
+            }
+            for root in self.graph["scenario_roots"]
+        }
+        cases = {
+            "hermes": {
+                "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+                "plugins/hermes/skills/hermes/references/gas-rule-corpus.schema.json",
+            },
+            "imprimatur": {
+                "plugins/hexaemeron/skills/imprimatur/lexicon/gated.json",
+                "plugins/hexaemeron/skills/imprimatur/lexicon/hard.json",
+                "plugins/hexaemeron/skills/imprimatur/lexicon/structural.json",
+            },
+        }
+        for skill, structured_inputs in cases.items():
+            condition = f"nested-selection:kronos:target:{skill}"
+            roots = [
+                root
+                for root in self.graph["scenario_roots"]
+                if root["selected_skill"] == "kronos"
+                and condition in root["conditions"]
+            ]
+            self.assertTrue(roots)
+            owner = AI._structured_metadata()[min(structured_inputs)][
+                "canonical_owner"
+            ]
+            for root in roots:
+                with self.subTest(skill=skill, scenario=root["id"]):
+                    self.assertIn(owner, reached[root["id"]])
+                    self.assertFalse(structured_inputs & reached[root["id"]])
+        mandatory_inputs = {
+            path
+            for path, metadata in AI._structured_metadata().items()
+            if metadata["load_semantics"] == "mandatory-executable"
+        }
+        scribe = "plugins/hexaemeron/agents/scribe.md"
+        for root in self.graph["scenario_roots"]:
+            if root["selected_skill"] != "kronos":
+                continue
+            with self.subTest(scenario=root["id"]):
+                self.assertNotIn(scribe, reached[root["id"]])
+                self.assertFalse(mandatory_inputs & reached[root["id"]])
+
+    def test_fiat_scribe_invocation_executes_all_imprimatur_lexicons(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        scribe = "plugins/hexaemeron/agents/scribe.md"
+        lexicons = {
+            path
+            for path, metadata in AI._structured_metadata().items()
+            if metadata["canonical_owner"]
+            == "plugins/hexaemeron/skills/imprimatur/SKILL.md"
+            and metadata["load_semantics"] == "mandatory-executable"
+        }
+        scribe_scenarios = observed.get(scribe, set())
+        self.assertTrue(scribe_scenarios)
+        for identifier in scribe_scenarios:
+            root = next(
+                root
+                for root in self.graph["scenario_roots"]
+                if root["id"] == identifier
+            )
+            with self.subTest(scenario=identifier):
+                self.assertEqual(root["selected_skill"], "fiat")
+                self.assertTrue(
+                    all(identifier in observed.get(path, set()) for path in lexicons)
+                )
+
+    def test_mandatory_structured_scenario_reachability_matches_invocations(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        scribe = "plugins/hexaemeron/agents/scribe.md"
+        scribe_scenarios = observed.get(scribe, set())
+        synkrisis_rules = "plugins/synkrisis/references/rules-v1.json"
+        operations = set(AI.SYNKRISIS_RULE_OPERATIONS)
+        for path, metadata in AI._structured_metadata().items():
+            if metadata["load_semantics"] != "mandatory-executable":
+                continue
+            owner_skill = AI._skill_name(metadata["canonical_owner"])
+            actual = observed.get(path, set())
+            expected = set()
+            for root in self.graph["scenario_roots"]:
+                if path == synkrisis_rules:
+                    applicable = (
+                        root["selected_skill"] == "synkrisis"
+                        and len(set(root["conditions"]) & operations) == 1
+                    )
+                else:
+                    applicable = root["selected_skill"] == owner_skill
+                    if owner_skill == "imprimatur":
+                        applicable = applicable or root["id"] in scribe_scenarios
+                if applicable:
+                    expected.add(root["id"])
+            with self.subTest(path=path):
+                self.assertEqual(actual, expected)
+
     def test_every_reference_has_a_conditional_inbound_edge(self):
         references = {
             item["path"]
@@ -1530,6 +1745,8 @@ class LoaderGraphTests(unittest.TestCase):
             item
             for item in uncovered["scenario_edges"]
             if item["source"] == "plugins/hexaemeron/agents/scribe.md"
+            and item["target"]
+            == "plugins/hexaemeron/skills/vulgate/SKILL.md"
             and item["condition"] is None
         )
         unreachable_root = next(
@@ -1586,6 +1803,27 @@ class LoaderGraphTests(unittest.TestCase):
                 )
         with self.assertRaisesRegex(AI.Refusal, "does not select one operation"):
             AI._validate_complete_scenarios(ariadne_union, skill_paths)
+
+    def test_scenario_validator_refuses_missing_kronos_ranking_edge(self):
+        router = ".agents/skills/promise-machine/SKILL.md"
+        skill_paths = {
+            AI._skill_name(item["path"]): item["path"]
+            for item in self.manifest["documents"]
+            if item["document_class"] == "skill_contract" and item["path"] != router
+        }
+        changed = copy.deepcopy(self.graph)
+        kronos = "plugins/hexaemeron/skills/kronos/SKILL.md"
+        edge = next(
+            edge
+            for edge in changed["scenario_edges"]
+            if edge["source"] == kronos
+            and edge["target"] in EXPECTED_KRONOS_RANKING_LEDGERS
+        )
+        changed["scenario_edges"].remove(edge)
+        with self.assertRaisesRegex(
+            AI.Refusal, "Kronos scenario ranking scan is incomplete"
+        ):
+            AI._validate_complete_scenarios(changed, skill_paths)
 
     def test_recursive_frontier_and_workflow_closure_is_explicit(self):
         host_pairs = {

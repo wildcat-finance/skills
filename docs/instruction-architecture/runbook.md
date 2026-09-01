@@ -909,3 +909,12 @@ load.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: Retain the current Step 1 exit, with loader-graph clause 3 additionally requiring 25 source-proved Kronos ranking-scan edges from Kronos to every governed non-Kronos frontier ledger across all three Kronos bases and every declared Kronos condition vector. The exact graph inventory is 19 roots, 237 host edges, 233 scenario roots, 277 scenario edges and six reference-only records; corpus, partition, cohort and seal counts remain unchanged. Every Kronos scenario reaches all 25 candidate ledgers and the shared versioning policy, exactly one selected target skill and Fiat's dispatch contract, while target selection alone does not execute that target's mandatory structured inputs. The existing `benchmark.py verify-loader --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --graph tests/fixtures/instruction-architecture/loader-graph.json` command is the executable exit check.
+
+Complete replacement Tests: Retain every current Step 1 test and command. Add an independent exhaustive oracle requiring every Kronos scenario to reach exactly the 25 governed non-Kronos frontier ledgers, the shared versioning policy, exactly one selected target and no target-only mandatory executable input; mutate one Kronos ranking edge and require production validation to refuse the missing ledger. Retain the direct Hermes, Fiat-Scribe-to-Imprimatur and Synkrisis diagnose/verify executable-input oracles.
+**Why.** Audit round 8 found that the current Kronos scenarios model target selection but omit the mandatory ranking scan that precedes it, while a separate owner-document shortcut invents target executable reads. Exact scenario denominators require both sides of that boundary.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

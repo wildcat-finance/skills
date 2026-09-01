@@ -1602,14 +1602,26 @@ def _validate_complete_scenarios(
             for root in roots.values()
         ):
             raise Refusal(f"Synkrisis rule operation has no scenario: {operation}")
+    scribe = "plugins/hexaemeron/agents/scribe.md"
+    scribe_scenarios = {
+        identifier for identifier in roots if scribe in reached[identifier]
+    }
+    if not scribe_scenarios or any(
+        roots[identifier]["selected_skill"] != "fiat"
+        for identifier in scribe_scenarios
+    ):
+        raise Refusal("Scribe reachability is not an exact Fiat phase invocation")
     for target, metadata in _structured_metadata().items():
         if metadata["load_semantics"] != "mandatory-executable" or target == synkrisis_rules:
             continue
-        owner = metadata["canonical_owner"]
-        for identifier in roots:
-            if (target in reached[identifier]) != (owner in reached[identifier]):
+        owner_skill = _skill_name(metadata["canonical_owner"])
+        for identifier, root in roots.items():
+            applicable = root["selected_skill"] == owner_skill
+            if owner_skill == "imprimatur":
+                applicable = applicable or scribe in reached[identifier]
+            if (target in reached[identifier]) != applicable:
                 raise Refusal(
-                    f"mandatory executable reachability is incomplete: {identifier}: {target}"
+                    f"mandatory executable reachability is inexact: {identifier}: {target}"
                 )
     runtimes = {
         f"plugins/{plugin}/AGENTS.md"
@@ -1747,6 +1759,73 @@ def _validate_complete_scenarios(
 
     kronos = skill_paths["kronos"]
     fiat = skill_paths["fiat"]
+    versioning = "plugins/hexaemeron/skills/VERSIONING.md"
+    kronos_ledger = "plugins/hexaemeron/skills/kronos/EVOLUTION.md"
+    candidate_ledgers = {
+        f"{prefix}/EVOLUTION.md"
+        for prefix in FRONTIER_SKILLS
+        if f"{prefix}/EVOLUTION.md" != kronos_ledger
+    }
+    kronos_base_ids = {
+        root["base_scenario"]
+        for root in roots.values()
+        if root["selected_skill"] == "kronos"
+    }
+    kronos_scenario_ids = {
+        identifier
+        for identifier, root in roots.items()
+        if root["selected_skill"] == "kronos"
+    }
+    ranking_evidence = _evidence(
+        kronos,
+        "Walk the whole scope and find every `EVOLUTION.md` beneath it",
+    )
+    host_ranking_edges = [
+        edge
+        for edge in topology["edges"]
+        if edge["source"] == kronos and edge["target"] in candidate_ledgers
+    ]
+    if (
+        len(candidate_ledgers) != 25
+        or len(kronos_base_ids) != 3
+        or len(kronos_scenario_ids) != 27
+        or len(host_ranking_edges) != len(candidate_ledgers)
+        or {edge["target"] for edge in host_ranking_edges} != candidate_ledgers
+        or any(
+            edge["kind"] != "frontier-gate"
+            or edge["load_type"] != "agent-or-prompt"
+            or edge["active_roots"] != ["*"]
+            or edge["evidence"] != ranking_evidence
+            for edge in host_ranking_edges
+        )
+    ):
+        raise Refusal("Kronos host ranking scan is incomplete")
+    scenario_ranking_edges = [
+        edge
+        for edge in topology["scenario_edges"]
+        if edge["source"] == kronos and edge["target"] in candidate_ledgers
+    ]
+    if (
+        len(scenario_ranking_edges) != len(candidate_ledgers)
+        or {edge["target"] for edge in scenario_ranking_edges}
+        != candidate_ledgers
+        or any(
+            edge["kind"] != "frontier-gate"
+            or edge["load_type"] != "agent-or-prompt"
+            or edge["condition"] is not None
+            or set(edge["eligible_base_scenarios"]) != kronos_base_ids
+            or set(edge["active_scenarios"]) != kronos_scenario_ids
+            or edge["evidence"] != ranking_evidence
+            for edge in scenario_ranking_edges
+        )
+    ):
+        raise Refusal("Kronos scenario ranking scan is incomplete")
+    for identifier in kronos_scenario_ids:
+        if (
+            reached[identifier] & candidate_ledgers != candidate_ledgers
+            or versioning not in reached[identifier]
+        ):
+            raise Refusal(f"Kronos scenario omits ranking input: {identifier}")
     kronos_branches = [
         edge
         for edge in topology["scenario_edges"]
@@ -1987,6 +2066,18 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
             "frontier-gate",
             "the admitted frontier ledger requires the shared versioning policy",
             "VERSIONING.md",
+        )
+    kronos_skill = "plugins/hexaemeron/skills/kronos/SKILL.md"
+    for prefix in FRONTIER_SKILLS:
+        ledger = f"{prefix}/EVOLUTION.md"
+        if ledger == "plugins/hexaemeron/skills/kronos/EVOLUTION.md":
+            continue
+        add_edge(
+            kronos_skill,
+            ledger,
+            "frontier-gate",
+            "Kronos reads every governed non-Kronos frontier ledger before ranking",
+            "Walk the whole scope and find every `EVOLUTION.md` beneath it",
         )
     references_by_owner: dict[str, list[str]] = {}
     for item in documents:
@@ -2340,6 +2431,10 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
             if target == "plugins/synkrisis/references/rules-v1.json"
             else (None,)
         )
+        owner_skill = _skill_name(metadata["canonical_owner"])
+        invocation_bases = set(skill_scenarios[owner_skill])
+        if owner_skill == "imprimatur":
+            invocation_bases.update(skill_scenarios["fiat"])
         for condition in conditions:
             scenario_runtime_needle = (
                 SYNKRISIS_RULE_RUNTIME_NEEDLES[condition]
@@ -2358,6 +2453,7 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
                 "the applicable operation's mandatory executable reads this frozen input",
                 scenario_source_needle,
                 evidence_path=metadata["source_path"],
+                active_scenarios=invocation_bases,
                 conditioned=condition is not None,
                 condition_name=condition,
                 load_type="mandatory-executable",
@@ -2391,6 +2487,19 @@ def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
         "x-ray Acquisition Protocol",
     )
     kronos = skill_paths["kronos"]
+    for prefix in FRONTIER_SKILLS:
+        ledger = f"{prefix}/EVOLUTION.md"
+        if ledger == "plugins/hexaemeron/skills/kronos/EVOLUTION.md":
+            continue
+        add_scenario_edge(
+            kronos,
+            ledger,
+            "frontier-gate",
+            "Kronos reads every governed non-Kronos frontier ledger before ranking",
+            "Walk the whole scope and find every `EVOLUTION.md` beneath it",
+            active_scenarios=skill_scenarios["kronos"],
+            conditioned=False,
+        )
     add_scenario_edge(
         kronos,
         fiat,

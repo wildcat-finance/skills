@@ -625,3 +625,10 @@ require replacement.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** The source-bound loader graph must model Kronos's required whole-scope ranking scan. Every realizable Kronos invocation reads each of the 25 governed non-Kronos frontier ledgers before selecting one target; add one source-proved Kronos-to-ledger edge for each and carry those edges through all three Kronos host bases and their declared condition vectors. Keep Kronos's own frontier edge separate. The corrected graph has 19 roots, 237 host edges, 233 scenario roots, 277 scenario edges and six reference-only records. Corpus, partition, holdout membership and byte denominators do not change.
+**Why.** Audit round 8 proved that all 27 declared Kronos scenarios omitted every candidate `EVOLUTION.md`, even though Kronos's canonical loop requires walking the whole scope and reading those ledgers before scoring or selection. The prior graph therefore understated recursive required loads and later scenario-reachable denominators.
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected loader graph; only Step 1's exit and tests require replacement.
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

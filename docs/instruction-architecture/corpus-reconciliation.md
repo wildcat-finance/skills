@@ -161,9 +161,9 @@ source-bound rather than inferred from a file's presence.
 
 ## loader evidence
 
-`loader-graph.json` records 19 roots and 212
+`loader-graph.json` records 19 roots and 237
 host edges, plus 233 scenario roots and
-252 scenario edges and 6
+277 scenario edges and 6
 reference-only records. the scenarios cover the exact 93
 base combinations of 31 selectable canonical skills and the repository,
 isolated Agent Skills and standalone-plugin host routes. 87 bases admit a
