@@ -264,3 +264,19 @@ Elenchus verdict: guarded
 | S5-R2-02 | medium | plugins/dokimasia/scripts/dokimasia.py | `--label` became a file name under the declared evidence root with no check on its shape, so `--label ../../../../tmp/pwned` wrote both evidence files outside that root. Probed and confirmed before the fix. The study's boundary table states output writing is bounded by a declared root, and this was the one output path that was not. Fixed by requiring one safe path segment. Guarded by two tests, for a parent reference and for a separator, the first also asserting nothing was written outside the root. | fixed in 15990177 |
 
 Leads not pursued: the first version of the new identity check compared each value against the prose in full, and the renderer abbreviates a digest to twelve characters, so it reported the workbook identity as absent when it was present; the check caught its own error before the commit and both comparisons now use the prefix the renderer writes, which is recorded here rather than as a separate finding because it never reached a commit. The pinned regeneration test still reads its inputs from two environment variables and skips without them, and was run with both supplied. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4.
+
+## Step 5, round 3 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: inventory-fidelity=reviewed; workbook-bytes=reviewed; workbook-lineage=reviewed; disposition-closure=reviewed; evidence-digest-binding=reviewed; target-repository-write=reviewed; partial-write=reviewed; path-traversal=reviewed; subprocess-and-network=reviewed; cap-exhaustion=reviewed; router-corpus-drift=reviewed; marketplace-boundary=reviewed
+
+Not checked: the same negative space as the earlier rounds; no disposition set exists for the pinned release, the timing observation is one run on one machine, the scrutiny establishes what the declared rules recognised at one commit and nothing about behaviour, and the Pashov pair still did not run under the recorded security-suite waiver.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R3-01 | medium | plugins/dokimasia/schemas/ | `dokimasia-scrutiny/v1` was declared as a schema identifier on a record round 2 had just begun committing, and no schema stated its shape, while its three siblings each ship one. A record described as closed with nothing saying what closed means is closed only in prose, and the reader who most needs that shape is the program comparing next release's scrutiny against this one. Fixed by committing `schemas/scrutiny-v1.json`, which requires a full forty-character commit, sixty-four hex characters for each digest, the closure figures as separate fields, and documents the timing as present on an emitted record and absent from a committed one. The runtime binding for `dokimasia-pinned-scrutiny` moves with it: it named one instance of the committed evidence where the other three promises each name the schema of their result surface, which would have made every regenerated scrutiny a digest change in the promise machine. Guarded by a test that reads the schema identifier every library module declares and requires a committed schema to publish each one. | fixed in 208b40bf |
+
+Leads not pursued: still no code path validates an emitted record against its committed schema at runtime, now across four schemas rather than three; this round added the missing schema and the test that a schema exists, not a validator, and repairing it properly means one validator used by all four verbs. The pinned regeneration test still reads its inputs from two environment variables. `render` still recomputes each item's kind prefix twice per row. The RS-40 regrade remains owed from step 4.
