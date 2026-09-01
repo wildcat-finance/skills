@@ -9,7 +9,7 @@ import importlib.util
 import itertools
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import posixpath
 import re
 import subprocess
@@ -171,6 +171,7 @@ def clear_source_cache() -> None:
             cached.cache_clear()
     oracle_source_mode.cache_clear()
     oracle_inventory_sources.cache_clear()
+    oracle_tree_paths.cache_clear()
     ORACLE_SOURCE_CACHE.clear()
 
 
@@ -182,8 +183,9 @@ def scratch_directory(prefix: str = "instruction-architecture-"):
 
 
 ORACLE_SOURCE_REF = "a2b634d8e039af988bf30c8316defccf70071d8d"
+ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_BASELINE_INVENTORY_SHA256 = (
-    "260c5600d9fd10c0cdf72abd29c62ea984ab9f96ea47796e05ad53b7327e7a7a"
+    "67dfbfc52e0bb4c7a739d4cc2f4f23e8beac031921b40362ab24bc2eeecfc6c6"
 )
 ORACLE_SKILL_PATHS = {
     "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
@@ -358,8 +360,29 @@ def oracle_inventory_sources() -> dict[str, bytes]:
         bound[name] = value
 
     manifest = bound["corpus-manifest.json"]
-    if manifest.get("source", {}).get("ref") != ORACLE_SOURCE_REF:
+    source = manifest.get("source")
+    if (
+        not isinstance(source, dict)
+        or set(source) != {"ref", "repository_paths", "tree_sha256"}
+        or source.get("ref") != ORACLE_SOURCE_REF
+    ):
         raise AssertionError("independent manifest source ref mismatch")
+    repository_paths = source.get("repository_paths")
+    if (
+        not isinstance(repository_paths, list)
+        or not repository_paths
+        or len(repository_paths) > ORACLE_MAX_FROZEN_TREE_PATHS
+        or any(not isinstance(path, str) for path in repository_paths)
+        or repository_paths != sorted(set(repository_paths))
+        or any(
+            PurePosixPath(path).is_absolute()
+            or str(PurePosixPath(path)) != path
+            or "\\" in path
+            or any(part in {"", ".", ".."} for part in PurePosixPath(path).parts)
+            for path in repository_paths
+        )
+    ):
+        raise AssertionError("independent manifest repository paths are malformed")
     digests: dict[str, tuple[int | None, str]] = {}
     spans: list[tuple[str, int, int, str]] = []
     for document in manifest.get("documents", []):
@@ -415,6 +438,8 @@ def oracle_inventory_sources() -> dict[str, bytes]:
 
     for value in bound.values():
         collect(value)
+    if not set(digests) <= set(repository_paths):
+        raise AssertionError("independent manifest omits a source evidence path")
     sources: dict[str, bytes] = {}
     for path, (size, digest) in sorted(digests.items()):
         source_path = ROOT / path
@@ -433,6 +458,31 @@ def oracle_inventory_sources() -> dict[str, bytes]:
         if end > len(data) or hashlib.sha256(data[start:end]).hexdigest() != digest:
             raise AssertionError(f"independent snapshot span drift: {path}")
     return sources
+
+
+@lru_cache(maxsize=1)
+def oracle_tree_paths() -> tuple[str, ...]:
+    """Enumerate the frozen tree without using the production path reader."""
+    if oracle_source_mode() == "git":
+        process = oracle_git(
+            "ls-tree", "-r", "-z", "--name-only", ORACLE_SOURCE_REF
+        )
+        if process.returncode != 0:
+            raise AssertionError("independent oracle could not enumerate source paths")
+        try:
+            paths = tuple(
+                item.decode("utf-8", errors="strict")
+                for item in process.stdout.split(b"\0")
+                if item
+            )
+        except UnicodeDecodeError as exc:
+            raise AssertionError("independent source path is not UTF-8") from exc
+    else:
+        oracle_inventory_sources()
+        paths = tuple(load(MANIFEST)["source"]["repository_paths"])
+    if not paths or list(paths) != sorted(set(paths)):
+        raise AssertionError("independent source path inventory is not canonical")
+    return paths
 
 
 def oracle_source(path: str) -> bytes:
@@ -1309,30 +1359,9 @@ def oracle_profiles() -> list[dict]:
         f"plugins/hexaemeron/skills/solidity-auditor/references/{name}.md"
         for name in ("report-formatting", "judging", "senior-auditor-sop")
     )
-    agent_tree = subprocess.run(
-        [
-            "/usr/bin/git",
-            "--no-lazy-fetch",
-            "--no-optional-locks",
-            "-C",
-            str(ROOT),
-            "ls-tree",
-            "-r",
-            "--name-only",
-            ORACLE_SOURCE_REF,
-        ],
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        check=False,
-        text=True,
-        timeout=20,
-        env=ORACLE_GIT_ENV,
-    )
-    if agent_tree.returncode != 0:
-        raise AssertionError("independent oracle could not enumerate agent prompts")
     sol_agents = tuple(
         path
-        for path in agent_tree.stdout.splitlines()
+        for path in oracle_tree_paths()
         if path.startswith(
             "plugins/hexaemeron/skills/solidity-auditor/"
             "references/hacking-agents/"
@@ -1866,11 +1895,14 @@ class CorpusManifestTests(unittest.TestCase):
                 check=False,
                 timeout=90,
             )
-            oracle = subprocess.run(
+            shallow_suite = subprocess.run(
                 [
                     sys.executable,
                     "-m",
                     "unittest",
+                    "tests.test_instruction_architecture.CorpusManifestTests.test_build_baseline_reproduces_all_committed_outputs",
+                    "tests.test_instruction_architecture.CorpusManifestTests.test_independent_markdown_fixed_point_detects_an_unclassified_directive",
+                    "tests.test_instruction_architecture.InvocationProfileTests.test_independent_source_owned_profile_and_route_oracle",
                     "tests.test_instruction_architecture.LoaderGraphTests.test_independent_runtime_semantic_evidence_coverage_is_closed",
                     "-v",
                 ],
@@ -1878,12 +1910,12 @@ class CorpusManifestTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=90,
+                timeout=180,
             )
             self.assertEqual(
-                (verify.returncode, oracle.returncode),
+                (verify.returncode, shallow_suite.returncode),
                 (0, 0),
-                f"verify-loader:\n{verify.stderr}\nindependent oracle:\n{oracle.stderr}",
+                f"verify-loader:\n{verify.stderr}\nshallow suite:\n{shallow_suite.stderr}",
             )
 
     def test_source_directed_admission_is_exact_and_anchored(self):
@@ -2661,7 +2693,10 @@ class CorpusManifestTests(unittest.TestCase):
 
     def test_live_source_drift_refuses(self):
         clear_source_cache()
-        with mock.patch.object(AI, "_read_regular", return_value=b"not the Git blob"):
+        with (
+            mock.patch.object(AI, "_source_object", return_value=b"the Git blob"),
+            mock.patch.object(AI, "_read_regular", return_value=b"not the Git blob"),
+        ):
             with self.assertRaisesRegex(AI.Refusal, "source drift"):
                 AI._source_blob("AGENTS.md")
         clear_source_cache()

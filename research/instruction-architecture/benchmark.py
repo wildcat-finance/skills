@@ -35,6 +35,7 @@ SELECTION_SEED = "framework-74-holdout-v1-2026-08-31"
 MAX_JSON_BYTES = 8 * 1024 * 1024
 MAX_GIT_OUTPUT = 4 * 1024 * 1024
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
+MAX_FROZEN_TREE_PATHS = 10_000
 MAX_JSON_DEPTH = 64
 MAX_JSON_TOKENS = 1_000_000
 MAX_JSON_NUMBER_CHARS = 640
@@ -86,7 +87,7 @@ BASELINE_RECORD_NAMES = (
     "holdout-seal.json",
 )
 EXPECTED_BASELINE_INVENTORY_SHA256 = (
-    "260c5600d9fd10c0cdf72abd29c62ea984ab9f96ea47796e05ad53b7327e7a7a"
+    "67dfbfc52e0bb4c7a739d4cc2f4f23e8beac031921b40362ab24bc2eeecfc6c6"
 )
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
@@ -1262,14 +1263,28 @@ def _inventory_source_snapshot() -> dict[str, Any]:
         or set(manifest) != {"counts", "documents", "schema", "source", "totals"}
         or manifest.get("schema") != f"{SCHEMA_PREFIX}-corpus-manifest/v1"
         or not isinstance(manifest.get("source"), dict)
+        or set(manifest["source"])
+        != {"ref", "repository_paths", "tree_sha256"}
         or manifest["source"].get("ref") != SOURCE_REF
         or not isinstance(manifest.get("documents"), list)
     ):
         raise Refusal("inventory snapshot manifest is malformed")
 
+    repository_paths = manifest["source"].get("repository_paths")
+    if (
+        not isinstance(repository_paths, list)
+        or not repository_paths
+        or len(repository_paths) > MAX_FROZEN_TREE_PATHS
+        or any(not isinstance(path, str) for path in repository_paths)
+        or repository_paths != sorted(set(repository_paths))
+    ):
+        raise Refusal("inventory snapshot repository paths are malformed")
+    for path in repository_paths:
+        _safe_relative(path)
+
     digests: dict[str, tuple[int | None, str]] = {}
     corpus_paths: list[str] = []
-    tree_paths: set[str] = set()
+    tree_paths = set(repository_paths)
     for document in manifest["documents"]:
         if not isinstance(document, dict):
             raise Refusal("inventory snapshot document is malformed")
@@ -1289,11 +1304,12 @@ def _inventory_source_snapshot() -> dict[str, Any]:
             raise Refusal("inventory snapshot document paths are duplicated")
         digests[path] = (size, digest)
         corpus_paths.append(path)
-        tree_paths.add(path)
     if corpus_paths != sorted(corpus_paths):
         raise Refusal("inventory snapshot document paths are not canonical")
     if len(corpus_paths) != EXPECTED_TOTALS["physical_files"]:
         raise Refusal("inventory snapshot document count drift")
+    if not set(corpus_paths) <= tree_paths:
+        raise Refusal("inventory snapshot omits a corpus path")
     tree_rows = [
         f"{path}\0{digests[path][0]}\0{digests[path][1]}\n"
         for path in corpus_paths
@@ -1312,8 +1328,11 @@ def _inventory_source_snapshot() -> dict[str, Any]:
     for record in excluded_links:
         if not isinstance(record, dict) or not isinstance(record.get("path"), str):
             raise Refusal("inventory snapshot excluded link is malformed")
-        tree_paths.add(str(_safe_relative(record["path"])))
-    tree_paths.update(digests)
+        path = str(_safe_relative(record["path"]))
+        if path not in tree_paths and record.get("class") != "dynamic_target":
+            raise Refusal("inventory snapshot omits an excluded link")
+    if not set(digests) <= tree_paths:
+        raise Refusal("inventory snapshot omits a source evidence path")
 
     sources: dict[str, bytes] = {}
     for path, (expected_size, expected_digest) in sorted(digests.items()):
@@ -1331,7 +1350,7 @@ def _inventory_source_snapshot() -> dict[str, Any]:
     return {
         "corpus_paths": tuple(corpus_paths),
         "sources": sources,
-        "tree_paths": tuple(sorted(tree_paths)),
+        "tree_paths": tuple(repository_paths),
     }
 
 
@@ -1733,6 +1752,7 @@ def _canonical_owner(path: str, document_class: str) -> str:
 
 
 def build_manifest(profiles: dict[str, Any] | None = None) -> dict[str, Any]:
+    repository_paths = list(_frozen_tree_paths())
     paths = _corpus_paths()
     provisional: list[dict[str, Any]] = []
     by_digest: dict[str, list[str]] = {}
@@ -1874,6 +1894,7 @@ def build_manifest(profiles: dict[str, Any] | None = None) -> dict[str, Any]:
         "schema": f"{SCHEMA_PREFIX}-corpus-manifest/v1",
         "source": {
             "ref": SOURCE_REF,
+            "repository_paths": repository_paths,
             "tree_sha256": _sha256("".join(tree_rows).encode("utf-8")),
         },
         "counts": class_counts,

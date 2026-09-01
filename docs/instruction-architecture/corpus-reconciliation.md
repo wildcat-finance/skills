@@ -245,7 +245,7 @@ recorded in `cohorts.json`.
 `holdout-seal.json` commits the selection method, seed, membership, 16-slot
 case envelope, invocation-profile identity
 `8bfb56c6aa0b440ed6f072f6468844b750f176b0ad24b68be3b5e1134afb1501` and loader-graph identity
-`e28717bb28bb50630369ca2dc9fe161d603e0b33f32b1bf2e37a3c5af2409f9c`. it contains no prompt, expected answer, scorer key
+`f36f8224a1f2ddf007ab64f519f854b5fd14f0cd2c8aef673b74bdce447551fe`. it contains no prompt, expected answer, scorer key
 or model output. later work may open that envelope once; Step 1 does not score
 it.
 

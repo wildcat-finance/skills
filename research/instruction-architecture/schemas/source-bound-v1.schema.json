@@ -22,9 +22,16 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ref", "tree_sha256"],
+      "required": ["ref", "repository_paths", "tree_sha256"],
       "properties": {
         "ref": {"$ref": "#/$defs/gitOid"},
+        "repository_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
         "tree_sha256": {"$ref": "#/$defs/sha256"}
       }
     },
