@@ -23,12 +23,13 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
-VERSION = "1.1.0"
+VERSION = "2.1.0"
 UNBUILT: tuple[str, ...] = ()
 KEPT_PROMISES = (
     "dokimasia-scaffold-identity",
     "dokimasia-source-inventory",
     "dokimasia-workbook-lineage",
+    "dokimasia-drafted-dispositions",
     "dokimasia-disposition-closure",
     "dokimasia-pinned-scrutiny",
 )
@@ -157,6 +158,30 @@ class ContractTests(unittest.TestCase):
         # Earlier rows keep the digest of the frontier they were written under.
         recorded = re.findall(r"\| `([0-9a-f]{64})` \|", text)[-1]
         self.assertEqual(hashlib.sha256(line.encode("utf-8")).hexdigest(), recorded)
+
+    def test_the_committed_schema_set_holds_every_schema_this_plugin_ships(self):
+        """A dropped schema is caught here rather than inferred from a pass.
+
+        The set is asserted by name and by count. `dispositions-v1.json` joined
+        it when `propose` began emitting the disposition set, which until then
+        was a hand-written input nothing validated.
+        """
+        import json
+
+        names = {path.name for path in (PLUGIN / "schemas").glob("*.json")}
+        self.assertEqual(names, {
+            "coverage-v1.json",
+            "dispositions-v1.json",
+            "inventory-v1.json",
+            "scrutiny-v1.json",
+            "workbook-v1.json",
+        })
+        published = {
+            json.loads((PLUGIN / "schemas" / name).read_text(encoding="utf-8"))
+            ["properties"]["schema"]["const"]
+            for name in names
+        }
+        self.assertEqual(len(published), len(names), "two schemas publish one identifier")
 
     def test_every_declared_record_schema_has_a_committed_schema_file(self):
         """A closed record with no committed schema is closed only in prose."""
@@ -329,3 +354,57 @@ class CommandTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReportIdentity(unittest.TestCase):
+    """A report has to be able to name the frontier it is serving.
+
+    The candidate and criterion were module constants pinned to the frontier
+    this plugin was first built under, so every verb reported that identity
+    whatever record had asked for the run. A later frontier could run exactly
+    the resolver its own design record named and still be refused for
+    reporting somebody else's candidate.
+    """
+
+    def _report(self, *extra: str) -> dict:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "report.json"
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "reconcile", "--check",
+                 "--report", str(target), *extra],
+                capture_output=True, text=True, cwd=str(PLUGIN.parents[1]),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads(target.read_text(encoding="utf-8"))
+
+    def test_the_default_identity_is_unchanged(self):
+        made = self._report()
+        self.assertEqual(made["candidate"], "inventory-first")
+        self.assertEqual(made["criterion"], "disposition-closure")
+
+    def test_a_named_candidate_and_criterion_reach_the_report(self):
+        made = self._report(
+            "--candidate", "confirmed-flag",
+            "--criterion", "proposal-refused-unconfirmed",
+        )
+        self.assertEqual(made["candidate"], "confirmed-flag")
+        self.assertEqual(made["criterion"], "proposal-refused-unconfirmed")
+        self.assertEqual(made["schema"], "protasis-design-report/v1")
+        self.assertEqual(made["exit"], 0)
+        self.assertIs(made["value"], True)
+
+    def test_every_verb_that_writes_a_report_accepts_both(self):
+        """One verb taking the flags and another not is the drift to avoid."""
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, cwd=str(PLUGIN.parents[1]),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for verb in ("selftest", "inventory", "workbook", "reconcile", "demonstrate"):
+            with self.subTest(verb=verb):
+                usage = subprocess.run(
+                    [sys.executable, str(SCRIPT), verb, "--help"],
+                    capture_output=True, text=True, cwd=str(PLUGIN.parents[1]),
+                )
+                self.assertIn("--candidate", usage.stdout)
+                self.assertIn("--criterion", usage.stdout)

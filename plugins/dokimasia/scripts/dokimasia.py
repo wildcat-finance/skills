@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
 from dokimasia_lib import paths as paths_lib  # noqa: E402
+from dokimasia_lib import propose as propose_lib  # noqa: E402
 from dokimasia_lib import demonstrate as demonstrate_lib
 from dokimasia_lib import reconcile as reconcile_lib
 from dokimasia_lib import workbook as workbook_lib  # noqa: E402
@@ -35,7 +36,7 @@ LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 INSTALLED_LAW = PLUGIN / "PROMISE_MACHINE.md"
 ROOT_LAW = REPOSITORY / "PROMISE_MACHINE.md"
 
-VERSION = "1.1.0"
+VERSION = "2.1.0"
 CANDIDATE = "inventory-first"
 CRITERION = "scaffold-contract-check"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -133,10 +134,23 @@ def write_report_bytes(path: Path, body: str) -> None:
     os.replace(staging, path)
 
 
-def write_report(path: Path, criterion: str = None, command: str = None) -> None:
+def write_report(
+    path: Path,
+    criterion: str = None,
+    command: str = None,
+    candidate: str = None,
+) -> None:
+    """One closed conformance report.
+
+    The candidate and criterion default to the frontier this plugin was first
+    built under, and either can be named by the caller. A report writer pinned
+    to one frontier's identity can only ever satisfy that frontier's design
+    record, so a later frontier could run the command its own record names and
+    still be refused for reporting somebody else's candidate.
+    """
     body = json.dumps(
         {
-            "candidate": CANDIDATE,
+            "candidate": candidate or CANDIDATE,
             "command": command or REPORT_COMMAND.format(report=path),
             "criterion": criterion or CRITERION,
             "exit": 0,
@@ -155,13 +169,16 @@ def write_report(path: Path, criterion: str = None, command: str = None) -> None
     os.replace(staging, path)
 
 
-def selftest(report: str | None) -> int:
+def selftest(report: str | None, candidate: str | None = None,
+             criterion: str | None = None) -> int:
     try:
         check_one_version()
         check_installed_law()
         check_every_unbuilt_verb_refuses()
         if report is not None:
-            write_report(safe_report_path(report))
+            write_report(
+                safe_report_path(report), criterion, candidate=candidate
+            )
     except (SelfTestError, OSError, ValueError, KeyError) as error:
         sys.stderr.write(f"dokimasia selftest refused: {error}\n")
         return REFUSED
@@ -187,7 +204,9 @@ INVENTORY_CRITERION = "inventory-determinism"
 FIXTURE_ROOT = PLUGIN / "tests" / "fixtures" / "app"
 
 
-def inventory_command(root: str | None, report: str | None, check: bool) -> int:
+def inventory_command(root: str | None, report: str | None, check: bool,
+                      candidate: str | None = None,
+                      criterion: str | None = None) -> int:
     """Compile an inventory, or prove the compiler holds its own contract."""
     try:
         if check:
@@ -201,8 +220,9 @@ def inventory_command(root: str | None, report: str | None, check: bool) -> int:
             if report is not None:
                 write_report(
                     safe_report_path(report),
-                    INVENTORY_CRITERION,
+                    criterion or INVENTORY_CRITERION,
                     "python3 plugins/dokimasia/scripts/dokimasia.py inventory --check",
+                    candidate,
                 )
             sys.stdout.write(
                 "dokimasia inventory: check clean; two compiles agree and "
@@ -229,7 +249,9 @@ def inventory_command(root: str | None, report: str | None, check: bool) -> int:
 WORKBOOK_CRITERION = "workbook-roundtrip"
 
 
-def workbook_command(source: str | None, report: str | None, check: bool) -> int:
+def workbook_command(source: str | None, report: str | None, check: bool,
+                     candidate: str | None = None,
+                     criterion: str | None = None) -> int:
     """Import a workbook, or prove the importer holds its own contract."""
     try:
         if check:
@@ -243,8 +265,9 @@ def workbook_command(source: str | None, report: str | None, check: bool) -> int
             if report is not None:
                 write_report(
                     safe_report_path(report),
-                    WORKBOOK_CRITERION,
+                    criterion or WORKBOOK_CRITERION,
                     "python3 plugins/dokimasia/scripts/dokimasia.py workbook --check",
+                    candidate,
                 )
             sys.stdout.write(
                 "dokimasia workbook: check clean; the round trip holds and every "
@@ -285,6 +308,8 @@ def reconcile_command(
     dispositions: str | None,
     report: str | None,
     check: bool,
+    candidate: str | None = None,
+    criterion: str | None = None,
 ) -> int:
     """Join both records against a human-owned disposition set.
 
@@ -304,8 +329,9 @@ def reconcile_command(
             if report is not None:
                 write_report(
                     safe_report_path(report),
-                    RECONCILE_CRITERION,
+                    criterion or RECONCILE_CRITERION,
                     "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+                    candidate,
                 )
             sys.stdout.write(
                 "dokimasia reconcile: check clean; the closed fixture reaches a "
@@ -341,14 +367,100 @@ def reconcile_command(
         return REFUSED
 
 
-DEMONSTRATE_CRITERION = "pinned-demonstration"
-
 EVIDENCE = PLUGIN / "docs" / "evidence"
 
 # One path segment. A label becomes a file name under the declared evidence
 # root, and a segment carrying a separator or a parent reference leaves it.
 SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
+
+PROPOSE_CRITERION = "regeneration-preserves-edits"
+
+
+def propose_command(
+    inventory: str | None,
+    workbook: str | None,
+    label: str | None,
+    report: str | None,
+    check: bool,
+    candidate: str | None = None,
+    criterion: str | None = None,
+) -> int:
+    """Draft a disposition set for a person to edit.
+
+    Every entry it writes is unconfirmed, so a drafted set closes the ratio at
+    zero exactly as no set at all would. `covered` is never drafted and no
+    branch here constructs it.
+    """
+    try:
+        if check:
+            failures = propose_lib.check()
+            if failures:
+                sys.stderr.write(
+                    "dokimasia propose --check failed:\n"
+                    + "".join(f"  - {line}\n" for line in failures)
+                )
+                return REFUSED
+            if report is not None:
+                write_report(
+                    safe_report_path(report),
+                    criterion or PROPOSE_CRITERION,
+                    "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+                    candidate,
+                )
+            sys.stdout.write(
+                "dokimasia propose: check clean; a drafted set covers every "
+                "scoped item, closes at zero, and a reviewer's edits survive "
+                "a regeneration\n"
+            )
+            return 0
+        missing = [
+            name for name, value in (
+                ("--inventory", inventory), ("--workbook", workbook),
+            ) if value is None
+        ]
+        if missing:
+            raise SelfTestError("propose needs " + ", ".join(missing) + ", or --check")
+        target = None
+        if label is not None:
+            # The same control the scrutiny evidence takes, for the same
+            # reason: `--label ../../../../tmp/pwned` wrote outside the
+            # declared root once already, recorded as S5-R2-01.
+            if not SAFE_LABEL.match(label) or label in (".", ".."):
+                raise SelfTestError(
+                    f"the label {label!r} is not one safe path segment, and a "
+                    "label names a file under the declared evidence root"
+                )
+            target = EVIDENCE / f"{label}.dispositions.json"
+            if target.is_symlink():
+                raise SelfTestError(f"{target} is a symlink")
+        existing = None
+        if target is not None and target.is_file():
+            existing = reconcile_lib.read_json(target)
+        record, counts = propose_lib.propose(
+            reconcile_lib.read_json(Path(inventory)),
+            reconcile_lib.read_json(Path(workbook)),
+            existing,
+            VERSION,
+        )
+        body = json.dumps(record, indent=2, sort_keys=True) + "\n"
+        if target is not None:
+            propose_lib.write_set(record, target)
+            sys.stderr.write(
+                f"dokimasia propose: {counts['scoped']} scoped; "
+                f"{counts['preserved']} preserved, {counts['replaced']} replaced, "
+                f"{counts['added']} added, {counts['dropped']} dropped\n"
+            )
+        else:
+            sys.stdout.write(body)
+        return 0
+    except (SelfTestError, propose_lib.ProposeError,
+            reconcile_lib.ReconcileError, OSError, ValueError) as error:
+        sys.stderr.write(f"dokimasia propose refused: {error}\n")
+        return REFUSED
+
+
+DEMONSTRATE_CRITERION = "pinned-demonstration"
 
 def demonstrate_command(
     app: str | None,
@@ -360,6 +472,8 @@ def demonstrate_command(
     write_evidence: bool,
     application_label: str | None,
     commit: str | None,
+    candidate: str | None = None,
+    criterion: str | None = None,
 ) -> int:
     """Run one complete scrutiny of a pinned checkout and a reviewed workbook."""
     try:
@@ -381,8 +495,9 @@ def demonstrate_command(
             if report is not None:
                 write_report(
                     safe_report_path(report),
-                    DEMONSTRATE_CRITERION,
+                    criterion or DEMONSTRATE_CRITERION,
                     "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+                    candidate,
                 )
             sys.stdout.write(
                 "dokimasia demonstrate: check clean; a scrutiny is deterministic, "
@@ -531,12 +646,16 @@ def build_parser() -> argparse.ArgumentParser:
         "selftest", help="Prove the packaging, the contract and the ledger agree."
     )
     selftest_parser.add_argument("--report", default=None)
+    selftest_parser.add_argument("--candidate", default=None)
+    selftest_parser.add_argument("--criterion", default=None)
     inventory_parser = subparsers.add_parser(
         "inventory",
         help="Compile a pinned checkout into a closed, digest-bound inventory.",
     )
     inventory_parser.add_argument("--root", default=None)
     inventory_parser.add_argument("--report", default=None)
+    inventory_parser.add_argument("--candidate", default=None)
+    inventory_parser.add_argument("--criterion", default=None)
     inventory_parser.add_argument("--check", action="store_true")
     workbook_parser = subparsers.add_parser(
         "workbook",
@@ -544,6 +663,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     workbook_parser.add_argument("--source", default=None)
     workbook_parser.add_argument("--report", default=None)
+    workbook_parser.add_argument("--candidate", default=None)
+    workbook_parser.add_argument("--criterion", default=None)
     workbook_parser.add_argument("--check", action="store_true")
     reconcile_parser = subparsers.add_parser(
         "reconcile",
@@ -553,7 +674,21 @@ def build_parser() -> argparse.ArgumentParser:
     reconcile_parser.add_argument("--workbook", default=None)
     reconcile_parser.add_argument("--dispositions", default=None)
     reconcile_parser.add_argument("--report", default=None)
+    reconcile_parser.add_argument("--candidate", default=None)
+    reconcile_parser.add_argument("--criterion", default=None)
     reconcile_parser.add_argument("--check", action="store_true")
+    propose_parser = subparsers.add_parser(
+        "propose",
+        help="Draft a disposition set a reviewer edits rather than authors.",
+    )
+    propose_parser.add_argument("--inventory", default=None)
+    propose_parser.add_argument("--workbook", default=None)
+    propose_parser.add_argument("--label", default=None)
+    propose_parser.add_argument("--report", default=None)
+    propose_parser.add_argument("--candidate", default=None)
+    propose_parser.add_argument("--criterion", default=None)
+    propose_parser.add_argument("--check", action="store_true")
+
     demonstrate_parser = subparsers.add_parser(
         "demonstrate",
         help="Run one complete scrutiny and emit its record.",
@@ -564,6 +699,8 @@ def build_parser() -> argparse.ArgumentParser:
     demonstrate_parser.add_argument("--commit", default=None)
     demonstrate_parser.add_argument("--label", default=None)
     demonstrate_parser.add_argument("--report", default=None)
+    demonstrate_parser.add_argument("--candidate", default=None)
+    demonstrate_parser.add_argument("--criterion", default=None)
     demonstrate_parser.add_argument("--check", action="store_true")
     demonstrate_parser.add_argument("--report-timing", action="store_true")
     demonstrate_parser.add_argument("--write-evidence", action="store_true")
@@ -579,21 +716,30 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 0
     if args.verb == "selftest":
-        return selftest(args.report)
+        return selftest(args.report, args.candidate, args.criterion)
     if args.verb == "inventory":
-        return inventory_command(args.root, args.report, args.check)
+        return inventory_command(
+            args.root, args.report, args.check, args.candidate, args.criterion
+        )
     if args.verb == "workbook":
-        return workbook_command(args.source, args.report, args.check)
+        return workbook_command(
+            args.source, args.report, args.check, args.candidate, args.criterion
+        )
     if args.verb == "reconcile":
         return reconcile_command(
             args.inventory, args.workbook, args.dispositions,
-            args.report, args.check,
+            args.report, args.check, args.candidate, args.criterion,
+        )
+    if args.verb == "propose":
+        return propose_command(
+            args.inventory, args.workbook, args.label, args.report,
+            args.check, args.candidate, args.criterion,
         )
     if args.verb == "demonstrate":
         return demonstrate_command(
             args.app, args.workbook, args.dispositions, args.report,
             args.check, args.report_timing, args.write_evidence,
-            args.label, args.commit,
+            args.label, args.commit, args.candidate, args.criterion,
         )
     return refuse(args.verb)
 

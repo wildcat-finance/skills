@@ -2,33 +2,34 @@
   "closure_ratio": {
     "closed": false,
     "denominator": 261,
-    "numerator": 0,
-    "value": 0.0
+    "numerator": 202,
+    "value": 0.7739463601532567
   },
   "counts": {
     "by_disposition": {
       "covered": 0,
       "excluded": 0,
-      "manual": 0
+      "manual": 202
     },
-    "disposed": 0,
+    "disposed": 202,
     "inventory_items": 59,
     "scoped": 261,
-    "undisposed": 261,
+    "unconfirmed": 59,
+    "undisposed": 59,
     "workbook_cases": 202
   },
   "examined": {
-    "coverage_sha256": "70af3e184999b34af9c26f46301bb23b55d35c7c335d3e109a840cdaa37188de",
+    "coverage_sha256": "83c226869745f8312a568224b861f40f9af2ba1fa3d700902942a2b1dd95dc2c",
     "inventory_items": 59,
     "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
     "scoped": 261,
     "workbook_cases": 202,
     "workbook_sha256": "21493992f97e97124ccd0f8170cc447c44f204c09c3b29f2953a9bb938dd2eba"
   },
-  "gaps": 0,
+  "gaps": 202,
   "schema": "dokimasia-scrutiny/v1",
-  "scrutiny_sha256": "8f848e1e7209aadac96d6c00454b20dcb5bfb7e0ded52852629062a727b82d9e",
-  "skill_version": "1.1.0",
+  "scrutiny_sha256": "54a25d9b561bec224c9b31a5d0b277475465801021e721bbf05f573b86256295",
+  "skill_version": "2.1.0",
   "subject": {
     "application": {
       "commit": "bb9685fb7dbe9cd2f5b7683a9b3f164509dc2de9",
@@ -39,5 +40,5 @@
       "sha256": "9da2f2e8bbdb0271fac8d9a71f3f4129ca2d4ad79a4c1ee2f46412e831212a25"
     }
   },
-  "undisposed": 261
+  "undisposed": 59
 }
