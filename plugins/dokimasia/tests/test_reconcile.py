@@ -220,6 +220,29 @@ class Refusals(ReconcileCase):
             "also names an oracle", self.refusal_from("manual-with-oracle.json")
         )
 
+    def test_a_case_cannot_be_covered_by_itself_or_by_another_case(self):
+        """A case is an oracle, not something held to one.
+
+        Left open, a row could name itself and close the ratio on its own
+        evidence, which is the record certifying a circle.
+        """
+        self.assertIn(
+            "cannot be covered", self.refusal_from("case-covered-by-itself.json")
+        )
+        declared = reconcile.read_json(self.made["closed.json"])
+        cases = [c["id"] for c in self.workbook["cases"]]
+        for entry in declared["dispositions"]:
+            if entry["item"] == f"case:{cases[0]}":
+                entry.clear()
+                entry.update({
+                    "item": f"case:{cases[0]}",
+                    "disposition": "covered",
+                    "oracle": cases[2],
+                })
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, self.workbook, declared)
+        self.assertIn("cannot be covered", str(caught.exception))
+
     def test_a_state_outside_the_vocabulary_refuses(self):
         self.assertIn("is not one of", self.refusal_from("bad-vocabulary.json"))
 

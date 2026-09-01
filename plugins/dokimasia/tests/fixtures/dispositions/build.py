@@ -174,6 +174,17 @@ def build_all(directory: Path) -> dict[str, Path]:
     both[closed.index(manual)] = {**manual, "oracle": reviewed_ids[0]}
     write("manual-with-oracle.json", _envelope(inventory, workbook, both))
 
+    circular = [dict(e) for e in closed]
+    case_entry = next(
+        e for e in closed if e["item"].startswith("case:")
+    )
+    circular[closed.index(case_entry)] = {
+        "item": case_entry["item"],
+        "disposition": "covered",
+        "oracle": case_entry["item"].split(":", 1)[1],
+    }
+    write("case-covered-by-itself.json", _envelope(inventory, workbook, circular))
+
     wrong = [dict(e) for e in closed]
     wrong[0] = {**closed[0], "disposition": "partial"}
     write("bad-vocabulary.json", _envelope(inventory, workbook, wrong))

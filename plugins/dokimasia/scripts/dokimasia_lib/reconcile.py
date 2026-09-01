@@ -160,6 +160,7 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
 
     scoped = scoped_set(inventory, workbook)
     known = {entry["id"] for entry in scoped}
+    side = {entry["id"]: entry["side"] for entry in scoped}
     cases = {case["id"]: case for case in workbook.get("cases", [])}
 
     assigned: dict[str, dict] = {}
@@ -207,6 +208,16 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
                     "covered item is held to one"
                 )
         if verdict == "covered":
+            if side[target] == "workbook":
+                # An oracle is a workbook case, and `covered` asserts that
+                # something is held to one. A case cannot be held to a case:
+                # the case is the oracle. Left open, a row could name itself
+                # and close the ratio on its own evidence.
+                raise ReconcileError(
+                    f"workbook case {target!r} cannot be covered; a case is an "
+                    "oracle, not something held to one, so it takes manual or "
+                    "excluded"
+                )
             oracle = entry.get("oracle", "")
             if not oracle:
                 raise ReconcileError(
@@ -352,6 +363,7 @@ def check() -> list[str]:
         "missing-reason.json": "carries no reason",
         "oversize-reason.json": "over the",
         "manual-with-oracle.json": "also names an oracle",
+        "case-covered-by-itself.json": "cannot be covered",
         "stale-inventory.json": "stale",
         "stale-workbook.json": "stale",
         "unknown-item.json": "not a scoped item",

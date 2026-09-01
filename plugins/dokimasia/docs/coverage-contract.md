@@ -45,6 +45,13 @@ is blank. Comparing only against the unreviewed value would let every oracle
 through in a workbook that has no status column, which is this control failing
 open in exactly the direction that widens coverage.
 
+`covered` applies to the inventory side only. An oracle is a workbook case,
+and `covered` asserts that something is held to one; a case cannot be held to a
+case, because the case is the oracle. A workbook row takes `manual` or
+`excluded`, which answer the question actually being asked about it: has this
+row been dealt with, and by whom. Left open, a row could name itself as its own
+oracle and close the ratio on its own evidence.
+
 A `manual` or `excluded` entry naming an oracle refuses. Such a row would read
 as decided by a person and held to a case at once, which are two different
 claims about the same item.
