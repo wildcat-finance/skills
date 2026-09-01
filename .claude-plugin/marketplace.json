@@ -72,6 +72,28 @@
       ]
     },
     {
+      "name": "dokimasia",
+      "displayName": "Dokimasia",
+      "source": "./plugins/dokimasia",
+      "description": "Scaffold for compiling a frontend's routes, actions and guards into a coverage denominator and reconciling a reviewed UAT workbook against it; substantive operations currently refuse.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/dokimasia",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "testing",
+        "coverage",
+        "uat",
+        "frontend",
+        "evidence",
+        "dispositions"
+      ]
+    },
+    {
       "name": "horos",
       "displayName": "Horos",
       "source": "./plugins/horos",

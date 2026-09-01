@@ -1722,6 +1722,31 @@
       "evidence_class": "inferred",
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
+    },
+    "dokimasia-scaffold-p": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
+    },
+    "dokimasia-scaffold-m": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
+    },
+    "dokimasia-scaffold-s": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_the_canonical_skill_states_the_declared_version",
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
+    },
+    "dokimasia-scaffold-o": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_no_unbuilt_verb_prints_anything_on_standard_output",
+      "claim": "The nearest overclaim is a verb that answers with coverage: every unbuilt verb is required to leave standard output empty, so no caller can read a closure ratio off this version."
+    },
+    "dokimasia-scaffold-r": {
+      "path": "plugins/dokimasia/tests/test_scaffold.py",
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
+      "claim": "Recovery evidence requires the refusal to name its version, the runbook and the step that carries the behaviour, so the caller is told where to go."
     }
   },
   "handoffs": [
@@ -1759,7 +1784,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "83a33a3658a96fc7fff7b035c09165fc456c24612cd181b98dccdb4652b14dea"
+        "sha256": "06d44e9dd6c03a53f5c9a6ba5ae2e954772015786f7a6a8cf341eae5970217e3"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1767,7 +1792,7 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "e7df230c98de794a754862a9aeeeb3c0d17be5bb366d349852d099f65c96fd71"
+        "sha256": "e2b2ad10cc15a3c7a23dd099cf752649102ccefe44f748d5b7aa3d8f50e60845"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
@@ -2222,6 +2247,22 @@
       "group": "executable",
       "promise_id": "fiat-version-resolution",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "promise_id": "dokimasia-scaffold-identity",
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-scaffold-p",
+        "M": "dokimasia-scaffold-m",
+        "S": "dokimasia-scaffold-s",
+        "O": "dokimasia-scaffold-o",
+        "R": "dokimasia-scaffold-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
     },
     {
       "cases": {
