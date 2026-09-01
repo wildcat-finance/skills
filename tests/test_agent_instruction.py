@@ -2324,6 +2324,30 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         profile["executable_sha256"] = "0" * 64
         self.assertRefusal("WAI-E-ADAPTER.EXECUTABLE_CHANGED", AI._verify_profile_identity, profile)
 
+    def test_changed_executable_refusal_names_the_tokenizer_and_the_machine(self):
+        """skills#1098: the code and node path alone do not say what to do."""
+        profile = self.profile()
+        profile["executable_sha256"] = "0" * 64
+        with self.assertRaises(AI.CodecError) as raised:
+            AI._verify_profile_identity(profile)
+        detail = raised.exception.detail
+        self.assertIsNotNone(detail)
+        self.assertIn(profile["id"], detail)
+        self.assertIn(profile["runtime_executable"], detail)
+        self.assertIn(profile["executable"], detail)
+        self.assertIn("re-record", detail)
+
+    def test_refusal_detail_never_reaches_the_emitted_record(self):
+        error = AI.CodecError("WAI-E-ADAPTER.EXECUTABLE_CHANGED", "$.profile", "guidance")
+        self.assertEqual(error.code, "WAI-E-ADAPTER.EXECUTABLE_CHANGED")
+        self.assertEqual(error.node_path, "$.profile")
+        self.assertEqual(error.detail, "guidance")
+        self.assertNotIn("detail", AI._result("refused", error.code, error.node_path, b""))
+
+    def test_refusal_detail_is_optional_and_bounded(self):
+        self.assertIsNone(AI.CodecError("WAI-E-SHAPE.OBJECT", "$").detail)
+        self.assertEqual(len(AI.CodecError("WAI-E-SHAPE.OBJECT", "$", "x" * 4096).detail), 1024)
+
     def test_changed_vocabulary_digest_refuses(self):
         profile = self.profile()
         profile["model_blobs_sha256"] = ["b" * 64]
