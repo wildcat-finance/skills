@@ -158,6 +158,30 @@ class ContractTests(unittest.TestCase):
         recorded = re.findall(r"\| `([0-9a-f]{64})` \|", text)[-1]
         self.assertEqual(hashlib.sha256(line.encode("utf-8")).hexdigest(), recorded)
 
+    def test_the_committed_schema_set_holds_every_schema_this_plugin_ships(self):
+        """A dropped schema is caught here rather than inferred from a pass.
+
+        The set is asserted by name and by count. `dispositions-v1.json` joined
+        it when `propose` began emitting the disposition set, which until then
+        was a hand-written input nothing validated.
+        """
+        import json
+
+        names = {path.name for path in (PLUGIN / "schemas").glob("*.json")}
+        self.assertEqual(names, {
+            "coverage-v1.json",
+            "dispositions-v1.json",
+            "inventory-v1.json",
+            "scrutiny-v1.json",
+            "workbook-v1.json",
+        })
+        published = {
+            json.loads((PLUGIN / "schemas" / name).read_text(encoding="utf-8"))
+            ["properties"]["schema"]["const"]
+            for name in names
+        }
+        self.assertEqual(len(published), len(names), "two schemas publish one identifier")
+
     def test_every_declared_record_schema_has_a_committed_schema_file(self):
         """A closed record with no committed schema is closed only in prose."""
         import json
