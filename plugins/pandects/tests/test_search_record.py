@@ -66,6 +66,14 @@ class ShippedRecordTests(unittest.TestCase):
             self.record["corpus"]["version"], self.catalogue.raw["version"]
         )
 
+    def test_the_shipped_record_exercises_every_catalogue_law(self):
+        exercised = self.record["commands"][0]["detail"]["laws_exercised"]
+        self.assertEqual(
+            set(exercised),
+            {law.id for law in self.catalogue.laws},
+            "regenerate with: python3 scripts/pandects.py run --out search-record.json",
+        )
+
 
 class CommandShapeTests(unittest.TestCase):
     def test_a_command_carries_only_the_fields_ariadne_allows(self):
@@ -269,6 +277,211 @@ class SettingsTests(unittest.TestCase):
         result = {"argv": ["forge", "test"], "returncode": 1, "output": ""}
         entry = run_module.foundry_record(PLUGIN_ROOT, self.catalogue, result)
         self.assertEqual(entry["detail"]["outcome"], "failed")
+
+
+class PerLawExerciseTests(unittest.TestCase):
+    CONSERVED = "conservation/value-conserved/v1"
+    BACKED = "conservation/reserves-backed-by-claims/v1"
+    FALLS = "accrual/debt-falls-only-against-payment/v1"
+    AT_REST = "accrual/no-accrual-at-rest/v1"
+    PATH = "accrual/path-independent/v1"
+    SHRINKS = "claims/recorded-claim-never-shrinks/v1"
+
+    def setUp(self):
+        self.catalogue = catalogue_module.load(SHIPPED)
+        self.original_version = run_module.engine_version
+        run_module.engine_version = lambda argv, timeout=60: None
+        self.addCleanup(self.restore_version)
+
+    def restore_version(self):
+        run_module.engine_version = self.original_version
+
+    def detail(self, output, returncode=0, argv=None):
+        result = {
+            "argv": argv or ["forge", "test", "-vv"],
+            "returncode": returncode,
+            "output": output,
+        }
+        return run_module.foundry_record(PLUGIN_ROOT, self.catalogue, result)["detail"]
+
+    def test_a_passed_invariant_attributes_one_law_and_its_run_count(self):
+        detail = self.detail(
+            "Ran 1 test for test/SoundInvariant.t.sol:SoundInvariantTest\n"
+            "[PASS] invariant_value_is_conserved() "
+            "(runs: 64, calls: 4096, reverts: 0)\n"
+        )
+        exercised = detail["laws_exercised"]
+        self.assertEqual(set(exercised), {self.CONSERVED})
+        self.assertEqual(exercised[self.CONSERVED]["evaluations"], 64)
+        self.assertEqual(exercised[self.CONSERVED]["surfaces"][0]["outcome"], "passed")
+
+    def test_a_passed_multi_law_surface_attributes_every_mapped_law(self):
+        detail = self.detail(
+            "Ran 1 test for test/Corpus.t.sol:CorpusTest\n"
+            "[PASS] test_minted_claims_breaks_conservation_alone() (gas: 123)\n"
+        )
+        self.assertEqual(len(detail["laws_exercised"]), 6)
+
+    def test_a_failed_multi_law_surface_attributes_no_law_from_it(self):
+        detail = self.detail(
+            "Ran 1 test for test/Corpus.t.sol:CorpusTest\n"
+            "[FAIL: diagonal broke] test_minted_claims_breaks_conservation_alone() "
+            "(gas: 123)\n",
+            returncode=1,
+        )
+        self.assertEqual(detail["laws_exercised"], {})
+        self.assertIn(
+            "no per-law verdict",
+            detail["laws_not_exercised"][self.CONSERVED],
+        )
+
+    def test_a_failed_single_law_surface_still_attributes_that_law(self):
+        detail = self.detail(
+            "Ran 1 test for test/SoundInvariant.t.sol:SoundInvariantTest\n"
+            "[FAIL: violated] invariant_value_is_conserved() "
+            "(runs: 3, calls: 12, reverts: 0)\n",
+            returncode=1,
+        )
+        self.assertEqual(set(detail["laws_exercised"]), {self.CONSERVED})
+        surface = detail["laws_exercised"][self.CONSERVED]["surfaces"][0]
+        self.assertEqual(surface["outcome"], "failed")
+        self.assertNotIn("evaluations", detail["laws_exercised"][self.CONSERVED])
+
+    def test_forge_1_8_aggregate_runs_apply_to_each_passing_invariant(self):
+        detail = self.detail(
+            "Ran 1 test for test/SoundInvariant.t.sol:SoundInvariantTest\n"
+            "[PASS]\n"
+            "SoundInvariantTest invariants:\n"
+            "[PASS] invariant_reserves_are_backed_by_claims\n"
+            "[PASS] invariant_value_is_conserved\n"
+            " SoundInvariantTest invariants (runs: 64, calls: 4096, reverts: 0)\n"
+        )
+        self.assertEqual(
+            detail["laws_exercised"][self.CONSERVED]["evaluations"], 64
+        )
+        self.assertEqual(detail["laws_exercised"][self.BACKED]["evaluations"], 64)
+
+    def test_forge_1_8_aggregate_runs_exclude_a_non_pass_invariant(self):
+        detail = self.detail(
+            "Ran 1 test for test/SoundInvariant.t.sol:SoundInvariantTest\n"
+            "[FAIL: expected failure] invariant_value_is_conserved\n"
+            "SoundInvariantTest invariants: 1/2 invariants broken\n"
+            "[FAIL: expected failure] invariant_value_is_conserved\n"
+            "[PASS] invariant_reserves_are_backed_by_claims\n"
+            " SoundInvariantTest invariants (runs: 3, calls: 6, reverts: 0)\n",
+            returncode=1,
+        )
+        self.assertEqual(
+            detail["laws_exercised"][self.BACKED]["evaluations"], 3
+        )
+        self.assertNotIn("evaluations", detail["laws_exercised"][self.CONSERVED])
+        self.assertEqual(
+            detail["laws_exercised"][self.CONSERVED]["surfaces"][0]["outcome"],
+            "failed",
+        )
+
+    def test_recorded_calls_attach_only_to_succession_laws(self):
+        detail = self.detail(
+            "Ran 1 test for test/Wildcat.t.sol:WildcatTest\n"
+            "[PASS] test_the_model_runs_through_the_shipped_adapter() (gas: 123)\n"
+            "Logs:\n"
+            "  recordedCalls: 5\n"
+        )
+        for identifier in (self.FALLS, self.AT_REST, self.SHRINKS):
+            self.assertEqual(
+                detail["laws_exercised"][identifier]["recorded_calls"], 5
+            )
+        self.assertNotIn(
+            "recorded_calls", detail["laws_exercised"][self.CONSERVED]
+        )
+
+    def test_zero_and_unreadable_counts_are_absent_not_substituted(self):
+        detail = self.detail(
+            "Ran 1 test for test/SoundInvariant.t.sol:SoundInvariantTest\n"
+            "[PASS] invariant_value_is_conserved() "
+            "(runs: 0, calls: 0, reverts: 0)\n"
+            "recordedCalls: not-a-number\n"
+        )
+        self.assertNotIn(
+            "evaluations", detail["laws_exercised"][self.CONSERVED]
+        )
+        self.assertNotIn(
+            "recorded_calls", detail["laws_exercised"][self.CONSERVED]
+        )
+
+    def test_truncated_or_garbage_output_yields_absence_not_a_guess(self):
+        detail = self.detail("Compiling...\n[PASS maybe\n")
+        self.assertEqual(detail["laws_exercised"], {})
+        self.assertEqual(
+            set(detail["laws_not_exercised"]),
+            {law.id for law in self.catalogue.laws},
+        )
+
+    def test_a_timeout_keeps_per_law_evidence_captured_before_the_kill(self):
+        result = {
+            "argv": ["forge", "test", "-vv"],
+            "returncode": None,
+            "timed_out_after": 1800,
+            "output": (
+                "Ran 1 test for test/SoundInvariant.t.sol:SoundInvariantTest\n"
+                "[PASS] invariant_value_is_conserved() "
+                "(runs: 9, calls: 36, reverts: 0)\n"
+            ),
+        }
+        detail = run_module.foundry_record(
+            PLUGIN_ROOT, self.catalogue, result
+        )["detail"]
+        self.assertEqual(detail["outcome"], "timed out")
+        self.assertEqual(
+            detail["laws_exercised"][self.CONSERVED]["evaluations"], 9
+        )
+
+    def test_match_output_names_what_no_declared_surface_ran_under(self):
+        detail = self.detail(
+            "Ran 1 test for test/Law.t.sol:LawTest\n"
+            "[PASS] test_a_law_holding_returns_true_with_its_detail() (gas: 12)\n",
+            argv=["forge", "test", "-vv", "--match-contract", "LawTest"],
+        )
+        self.assertEqual(detail["laws_exercised"], {})
+        self.assertTrue(
+            all(
+                "--match LawTest" in reason
+                for reason in detail["laws_not_exercised"].values()
+            )
+        )
+
+    def test_every_law_exercised_omits_the_empty_not_exercised_section(self):
+        detail = self.detail(
+            "Ran 1 test for test/Corpus.t.sol:CorpusTest\n"
+            "[PASS] test_minted_claims_breaks_conservation_alone() (gas: 1)\n"
+            "Ran 1 test for test/Pairs.t.sol:PairsTest\n"
+            "[PASS] test_no_transition_of_the_sound_reference_breaks_a_pair_law() "
+            "(gas: 2)\n"
+            "Ran 1 test for test/Pairs.t.sol:PairsTest\n"
+            "[PASS] test_the_sound_reference_is_path_independent() (gas: 3)\n"
+        )
+        self.assertEqual(len(detail["laws_exercised"]), len(self.catalogue.laws))
+        self.assertNotIn("laws_not_exercised", detail)
+
+    def test_run_foundry_records_the_verbosity_that_makes_logs_readable(self):
+        original = run_module.subprocess.run
+        called = {}
+
+        class Finished(object):
+            returncode = 0
+            stdout = b""
+
+        def fake_run(argv, **kwargs):
+            called["argv"] = argv
+            return Finished()
+
+        run_module.subprocess.run = fake_run
+        try:
+            result = run_module.run_foundry(PLUGIN_ROOT)
+        finally:
+            run_module.subprocess.run = original
+        self.assertIn("-vv", called["argv"])
+        self.assertEqual(result["argv"], called["argv"])
 
 
 class CorpusDigestTests(unittest.TestCase):

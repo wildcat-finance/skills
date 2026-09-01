@@ -38,7 +38,7 @@ from probitas_lib.evidence import (  # noqa: E402
     Gap,
     Record,
 )
-from probitas_lib import gates, render  # noqa: E402
+from probitas_lib import gates, render, statement  # noqa: E402
 
 ADAPTERS = {
     "euler": euler.adapter,
@@ -254,9 +254,23 @@ def cmd_render(args):
 
 def cmd_verify(args):
     try:
-        payload = render.load(args.evidence)
-        with open(args.dossier, encoding="utf-8") as handle:
-            document = handle.read()
+        if args.statement_out == "-":
+            raise ValueError("statement output must name a file, not stdout")
+        if args.statement_out is not None:
+            output = os.path.realpath(os.path.abspath(args.statement_out))
+            inputs = {
+                os.path.realpath(os.path.abspath(args.dossier)),
+                os.path.realpath(os.path.abspath(args.evidence)),
+            }
+            if output in inputs:
+                raise ValueError("statement output must not be the dossier or evidence")
+
+        with open(args.evidence, "rb") as handle:
+            evidence_bytes = handle.read()
+        payload = render.load_bytes(evidence_bytes, args.evidence)
+        with open(args.dossier, "rb") as handle:
+            dossier_bytes = handle.read()
+        document = dossier_bytes.decode("utf-8")
         results = gates.check(document, payload)
     except (OSError, ValueError) as error:
         print(f"probitas: {error}", file=sys.stderr)
@@ -270,7 +284,24 @@ def cmd_verify(args):
             f"probitas: {len(breached)} gate(s) breached; this dossier does not ship",
             file=sys.stderr,
         )
+        if args.statement_out is not None:
+            print(
+                f"probitas: no statement was written to {args.statement_out}",
+                file=sys.stderr,
+            )
         return 1
+    if args.statement_out is not None:
+        try:
+            statement.emit_statement(
+                dossier_bytes,
+                evidence_bytes,
+                results,
+                args.statement_out,
+            )
+        except (OSError, ValueError) as error:
+            print(f"probitas: {error}", file=sys.stderr)
+            return 2
+        print(f"probitas: wrote statement {args.statement_out}", file=sys.stderr)
     return 0
 
 
@@ -338,6 +369,11 @@ def build_parser():
     verify = sub.add_parser("verify", help="check a dossier against the five gates")
     verify.add_argument("dossier")
     verify.add_argument("evidence")
+    verify.add_argument(
+        "--statement-out",
+        metavar="PATH",
+        help="write an unsigned Ariadne-readable statement after all gates pass",
+    )
     verify.set_defaults(func=cmd_verify)
 
     return parser
