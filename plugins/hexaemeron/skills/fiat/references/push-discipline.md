@@ -70,16 +70,27 @@ no later command reparses the issue or renames a branch.
 
 Take the merge from the directive, not from a number you read out of it. The
 `merge-step` directive carries the exact invocation for the pull request it
-names, beside the receipt command:
+names, beside the branch it goes into and the receipt command:
 
 ```text
-"merge": "gh pr merge https://github.com/<owner>/<repo>/pull/<n> --merge",
+"into":  "<run branch>",
+"merge": "gh pr edit <url> --base <run branch> && gh pr merge <url> --merge",
 "then":  "hexctl done merge-step --step <n> --merge-commit <sha>"
 ```
 
+Run the whole `merge` value, not the second half of it. A step's pull request
+is opened against the step below it, because that is the diff a reviewer needs
+to read, and `gh pr merge` merges a pull request into its own base and takes no
+target. Merging without the retarget therefore lands every step above the first
+on its parent step branch rather than on the run branch, which is what `into`
+names. Only step 1 is already based on the run branch, so only step 1 survives
+the omission, and that first success is what makes the next one look safe.
+Issue 1085.
+
 One at a time, in the order the directive gives them. `gh pr merge` with a
-missing argument does not fail: it falls through to the current branch's pull
-request, and on a chained stack that is the one holding every commit in the run.
+missing argument does not fail either: it falls through to the current branch's
+pull request, and on a chained stack that is the one holding every commit in
+the run.
 
 Two things refuse if the branch stops being where the loop left it. A waiting
 step refuses at the next merge-step when its current tip no longer contains the
@@ -235,6 +246,52 @@ and `--merge-commit` on `done merge-step`: a receipt names a commit, and the
 full SHA is how one is named.
 
 The receipt refuses a `--merge-commit` here. Merges belong to `integrate`.
+
+## An early merge
+
+Somebody merging a stacked pull request minutes after it opens is ordinary
+behaviour, not an attack and not a rewrite. The run did not perform that merge
+and cannot undo it, so the step is adopted rather than refused, and the receipt
+says so in its own words.
+
+Two checks admit it, and both have to hold:
+
+- The recorded head still equals the pull request head. This is the ordinary
+  head check, which already runs before the merged state is consulted, so a
+  branch that moved refuses first whatever its merged state.
+- The merge commit is still reachable from the recorded base. A merge in its
+  base is one this run did not perform. A merge that has left its base means
+  the base was rewritten underneath it, which is the case the refusal exists
+  for, and it stays refused. One bounded native `merge-base --is-ancestor`
+  answers it, and an unanswered query refuses as unknown rather than as a
+  denial; the merge is created on the remote, so a single bounded fetch of the
+  recorded base runs only once the question has actually come back
+  unanswerable.
+
+Nothing is requested and no flag is involved. A stacked step still refuses
+`--merge-commit`, so adoption is detected from the pull request GitHub returns
+for the read the receipt already performs. The push receipt then carries an
+`early_merge` block naming the merge commit, the ref it was reachable from and
+that ref's observed tip, and the merge earns GitHub's `verified: true` and
+`reason: valid` like every other commit the run receipts. The two older fields
+stay scoped to what the arguments carried, which for a stacked step is nothing,
+so `github_merge_verified` reading empty beside a populated `early_merge` is not
+a statement that no merge was verified.
+
+At `merge-step` the step is completed from that record instead of merging
+again, and `--merge-commit` has to name the exact adopted merge. One further
+check decides whether that is sound at all: the adopted merge has to be
+reachable from the run branch. An early merge lands in the base the pull
+request targeted, which above the bottom of the stack is the step below rather
+than the run branch, so whether the run branch carries the work depends on
+which of the two merges happened first, and a complete record is not evidence
+either way. A step whose work is not on the run branch refuses, names where its
+merge did land, and says a replacement pull request is required; its own pull
+request is closed and cannot supply the missing merge. Halt and finish that by
+hand rather than receipting a landing that did not happen.
+
+A run initialised before this existed has no `early_merge` in its push
+receipts. Nothing is inferred for it and it still owes an ordinary merge.
 
 ## Step checkpoint
 

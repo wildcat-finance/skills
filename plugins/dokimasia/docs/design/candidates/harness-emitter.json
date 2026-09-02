@@ -1,0 +1,14 @@
+{
+  "id": "harness-emitter",
+  "summary": "The skill emits a Playwright harness, manifest schema and reporter into the target repository and stops there.",
+  "checkable_without_a_browser": true,
+  "no_signer_authority": true,
+  "closes_the_coverage_question": false,
+  "resumable_after_a_kill": true,
+  "steps": [
+    "land the plugin scaffold and its router row",
+    "emit the harness templates into a fixture tree",
+    "prove the emitted tree installs and lints"
+  ],
+  "runtime_dependencies": []
+}

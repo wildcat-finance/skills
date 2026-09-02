@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `captured-cohort-validation`
 - Current frontier: Synkrisis ships two deterministic rule kinds proved on constructed example records, and no cohort built from captured production observations has yet exercised the catalogue.
 - Next Fiat job: Build one cohort from captured production run observations under the shipped policy schema, run the rule catalogue over it, and reconcile every refusal or missed pattern into rule or schema repairs. Accepted when the cohort, findings and report recompute from preserved inputs and each repair carries a red-to-green guard.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

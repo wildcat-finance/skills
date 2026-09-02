@@ -349,13 +349,16 @@ class Refusals(unittest.TestCase):
         self.assertEqual(out.getvalue(), "")
         self.assertTrue(err.getvalue().startswith("refused ["))
 
-    def test_the_skill_names_the_admission_that_has_not_happened(self):
-        """Step 3 shipped both projections. What is still owed is the other
-        side: Synkrisis gates on one producer identity and this is not it."""
+    def test_the_skill_names_the_admission_as_a_settled_decision(self):
+        """Synkrisis still gates on one producer identity and this is not it.
+        That is now a recorded decision rather than an open question, so the
+        skill has to name the decision and the record that carries it."""
         skill = (PLUGIN_ROOT / "skills/anamnesis/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Synkrisis does not yet admit this producer", skill)
+        self.assertIn("Synkrisis does not admit this producer", skill)
+        self.assertIn("a decision rather than a\ngap", skill)
         self.assertIn("promise-machine-run-observation/v1", skill)
-        self.assertIn("produced and not consumed", skill)
+        self.assertIn("ADR-005", skill)
+        self.assertNotIn("does not yet admit", skill)
 
 
 if __name__ == "__main__":

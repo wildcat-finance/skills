@@ -389,32 +389,44 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
     def test_malformed_pull_request_head_refuses_after_integration_branch_split(self):
         module = load_hexctl()
         url = "https://github.com/wildcat-finance/skills/pull/1"
-        payload = {
-            "user": {"login": "dave"},
-            "body": "",
-            "html_url": url,
-            "head": None,
-            "base": {"ref": "main"},
-            "merged": False,
-            "merge_commit_sha": None,
-        }
-        error = StringIO()
-        with mock.patch.object(
-            module, "github_repository", return_value="wildcat-finance/skills"
-        ), mock.patch.object(
-            module, "github_rest", return_value=payload
-        ), redirect_stderr(error):
-            with self.assertRaises(SystemExit) as raised:
-                module.inspect_pull_request(
-                    str(self.repo),
-                    url,
-                    expected_head="fiat/run",
-                    expected_base="main",
-                    expected_head_sha="a" * 40,
-                    expected_merge_sha=None,
-                )
-        self.assertEqual(raised.exception.code, 2)
-        self.assertIn("no full head SHA", error.getvalue())
+        # Topology is read before the head SHA, so an absent head is named as a
+        # topology mismatch and only a head that survives that check reaches the
+        # SHA rule. Both are refusals; neither may pass.
+        for name, head, expected in (
+            ("absent head", None, "pull request topology does not match"),
+            (
+                "malformed head sha",
+                {"ref": "fiat/run", "sha": "not-a-sha"},
+                "no full head SHA",
+            ),
+        ):
+            with self.subTest(head=name):
+                payload = {
+                    "user": {"login": "dave"},
+                    "body": "",
+                    "html_url": url,
+                    "head": head,
+                    "base": {"ref": "main"},
+                    "merged": False,
+                    "merge_commit_sha": None,
+                }
+                error = StringIO()
+                with mock.patch.object(
+                    module, "github_repository", return_value="wildcat-finance/skills"
+                ), mock.patch.object(
+                    module, "github_rest", return_value=payload
+                ), redirect_stderr(error):
+                    with self.assertRaises(SystemExit) as raised:
+                        module.inspect_pull_request(
+                            str(self.repo),
+                            url,
+                            expected_head="fiat/run",
+                            expected_base="main",
+                            expected_head_sha="a" * 40,
+                            expected_merge_sha=None,
+                        )
+                self.assertEqual(raised.exception.code, 2)
+                self.assertIn(expected, error.getvalue())
 
     def test_legacy_anchor_absence_is_accepted_but_new_anchor_cannot_be_rebound(self):
         worktree = self.init()

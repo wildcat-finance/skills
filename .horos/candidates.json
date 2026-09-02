@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16494907,
+    "bytes_blob": 16618554,
     "bytes_generated": 98
   },
   "entries": [
@@ -12,6 +12,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 25795,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -252,14 +259,14 @@
       "path": "audit/rounds/fiat-881-macos-path-repair-clean-run.synopsis.md"
     },
     {
-      "bytes": 86469,
+      "bytes": 97194,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 84421",
+      "evidence": "mean line length above 400 in a window at offset 95146",
       "grade": "candidate",
       "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.md"
     },
     {
-      "bytes": 87424,
+      "bytes": 98272,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -285,6 +292,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md"
+    },
+    {
+      "bytes": 53765,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-dokimasia-frontend-coverage-skill.synopsis.md"
+    },
+    {
+      "bytes": 22514,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-dokimasia-proposed-dispositions.synopsis.md"
     },
     {
       "bytes": 59394,

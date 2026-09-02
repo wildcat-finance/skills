@@ -1,0 +1,9 @@
+{
+  "candidate": "boundary-record",
+  "command": "python3 .hexaemeron/reports/resolve.py acceptance-check-ms",
+  "criterion": "acceptance-check-ms",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 106
+}

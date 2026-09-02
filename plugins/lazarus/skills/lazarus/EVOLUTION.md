@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `empty-block-receipt-witnesses`
 - Current frontier: Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
 - Next Fiat job: Accept an empty ordered receipt witness only when the verified header carries Ethereum's empty trie root, derive zero receipt-trie-proved relations without a target receipt or filtered-log request, and preserve the shipped non-empty Goldfinch relation plus every legacy format. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

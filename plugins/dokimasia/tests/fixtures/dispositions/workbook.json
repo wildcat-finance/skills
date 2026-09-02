@@ -1,0 +1,120 @@
+{
+  "caps": {
+    "cases": 20000,
+    "expansion_ratio": 200,
+    "member_bytes": 67108864,
+    "members": 512
+  },
+  "cases": [
+    {
+      "fields": {
+        "Comments / Defect ref": "clean",
+        "Expected result": "Succeeds",
+        "Flow / Area": "Admin login",
+        "ID": "ADM-01",
+        "Source": "Requested",
+        "Status": "Pass",
+        "Test step": "Log in",
+        "Tester": "",
+        "Tx hash / evidence": "0xabc",
+        "Wallet": "EOA"
+      },
+      "id": "ADM-01",
+      "row": 6,
+      "sheet": "1 Admin",
+      "source_id": "ADM-01",
+      "split": false
+    },
+    {
+      "fields": {
+        "Comments / Defect ref": "",
+        "Expected result": "Invite sent",
+        "Flow / Area": "Invite",
+        "ID": "ADM-02",
+        "Source": "Added",
+        "Status": "Not Run",
+        "Test step": "Invite a borrower",
+        "Tester": "",
+        "Tx hash / evidence": "",
+        "Wallet": "EOA"
+      },
+      "id": "ADM-02",
+      "row": 7,
+      "sheet": "1 Admin",
+      "source_id": "ADM-02",
+      "split": false
+    },
+    {
+      "fields": {
+        "Comments / Defect ref": "compound row",
+        "Expected result": "Both hold",
+        "Flow / Area": "Add token",
+        "ID": "M2-03",
+        "Source": "Requested",
+        "Status": "Pass",
+        "Test step": "Add the market token and check the balance",
+        "Tester": "",
+        "Tx hash / evidence": "0xdef",
+        "Wallet": "EOA"
+      },
+      "id": "M2-03",
+      "row": 8,
+      "sheet": "1 Admin",
+      "source_id": "M2-03",
+      "split": false
+    },
+    {
+      "fields": {
+        "Comments / Defect ref": "",
+        "Expected result": "It happens",
+        "Flow / Area": "Unknown status",
+        "ID": "ADM-04",
+        "Source": "Requested",
+        "Status": "Weird",
+        "Test step": "Do a thing",
+        "Tester": "",
+        "Tx hash / evidence": "",
+        "Wallet": "Safe"
+      },
+      "id": "ADM-04",
+      "row": 9,
+      "sheet": "1 Admin",
+      "source_id": "ADM-04",
+      "split": false
+    }
+  ],
+  "counts": {
+    "by_source": {
+      "Added": 1,
+      "Requested": 3
+    },
+    "by_status": {
+      "Not Run": 1,
+      "Pass": 2,
+      "Weird": 1
+    },
+    "cases": 4,
+    "source_rows": 4
+  },
+  "lineage": "dokimasia-workbook-lineage/v1",
+  "schema": "dokimasia-workbook/v1",
+  "sheets": [
+    {
+      "cases": 4,
+      "reason": "",
+      "rows": 5,
+      "sheet": "1 Admin"
+    },
+    {
+      "cases": 0,
+      "reason": "no row begins with 'ID'",
+      "rows": 2,
+      "sheet": "Defect Log"
+    }
+  ],
+  "subject": {
+    "label": "benign.xlsx",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "workbook_sha256": "9ff1e5c476ad150598c29f0121a6b81d3c0b553cfffcb7d20f724852802898a8"
+}

@@ -7,6 +7,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `amendment-block-check`
 - Current frontier: Protasis checks the fixed mechanical shape of study items, risk registers, study amendments, runbook steps, runbook amendments, and optional version relations through one bounded scanner.
 - Next Fiat job: None -- mature
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 
