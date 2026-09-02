@@ -12,17 +12,17 @@ classify every physical byte and seal disjoint development and holdout cohorts.
 generate the baseline:
 
 ```text
-uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py build-baseline
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py build-baseline
 ```
 
 verify it without rewriting anything:
 
 ```text
-uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-profiles --profiles tests/fixtures/instruction-architecture/invocation-profiles.json
-uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-corpus --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json
-uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-loader --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --graph tests/fixtures/instruction-architecture/loader-graph.json
-uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-partition --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
-uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-seal --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py verify-profiles --profiles tests/fixtures/instruction-architecture/invocation-profiles.json
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py verify-corpus --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py verify-loader --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --graph tests/fixtures/instruction-architecture/loader-graph.json
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py verify-partition --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py verify-seal --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
 ```
 
 ## source and publication boundary
