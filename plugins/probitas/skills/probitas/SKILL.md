@@ -9,7 +9,7 @@ description: >
   for questions about a single market's own numbers, and never to work out
   which individual controls an address.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 <p align="center">
@@ -84,7 +84,8 @@ python3 scripts/probitas.py collect \
 
 python3 scripts/probitas.py render evidence.json --out dossier.md
 
-python3 scripts/probitas.py verify dossier.md evidence.json
+python3 scripts/probitas.py verify dossier.md evidence.json \
+  --statement-out statement.json
 ```
 
 `collect` runs every venue adapter over the declared addresses and writes the
@@ -151,6 +152,18 @@ in their own section at the end.
 
 `verify` reads both together and checks the five gates, printing one line each.
 Exit 0 means the dossier may ship. Exit 1 names the gate that stopped it.
+
+### Binding the dossier to its evidence
+
+`--statement-out` writes a canonical unsigned in-toto Statement v1 only after
+all five gates pass. Its statement-level subject array binds the exact checked
+dossier bytes and evidence bytes by SHA-256. The five claims record the gate
+results against the dossier digest; they do not each carry the pair binding.
+
+Ariadne can inspect and verify the statement. Its five core gates pass, while
+gates 2 and 5 remain unchecked because the Probitas predicate is deliberately
+unregistered. The statement does not prove who produced it. Sign it downstream
+with cosign when publisher identity is required.
 
 ## Your part, and its limit
 
@@ -255,4 +268,16 @@ dossier pass.
 - Consequence: 3
 - Refuses: Shipping a dossier after any gate fails, hiding a gap, allowing inferred-address evidence into a conclusion or presenting the document as Wildcat approval.
 - Recovery: Fix the evidence or dossier named by the failed gate, preserve unresolved gaps and rerun all five gates before release.
+- Exceptions: none
+
+### probitas-statement-emission
+
+- Promise: A successful `verify --statement-out` emits a canonical unsigned in-toto Statement v1 only when all five gates passed, with one statement-level subject array binding the exact checked dossier and evidence bytes by SHA-256; absence of that statement authorises nothing.
+- Evidence: The exact dossier and evidence bytes read once, their SHA-256 digests and byte counts, the five named passed gate results, canonical statement bytes and successful atomic output.
+- Evidence classes: recorded, checked, recomputed
+- Boundary: The statement records the pair binding and gate results. It does not sign, verify a signature or upgrade `verify` into release authority; `probitas-dossier-verification` keeps that authority, and Ariadne gates 2 and 5 remain unchecked for this unregistered predicate type.
+- Authorises: Hand-off of the unsigned statement bytes for Ariadne core-gate inspection or downstream cosign signing without strengthening the dossier's evidence claims.
+- Consequence: 1
+- Refuses: Emitting after any gate fails, naming stdout or either input as the output, exceeding Ariadne's bounded-input limit, or treating a missing statement or unchecked signature as authority.
+- Recovery: Repair the failed dossier or evidence, choose a distinct file output, rerun all five gates and retain only the successful replacement.
 - Exceptions: none

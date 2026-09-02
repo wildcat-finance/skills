@@ -45,6 +45,7 @@ Add the same marketplace and install a plugin from inside Claude Code:
 /plugin install ariadne@wildcat-labs
 /plugin install berean@wildcat-labs
 /plugin install brevitas@wildcat-labs
+/plugin install dokimasia@wildcat-labs
 /plugin install hermes@wildcat-labs
 /plugin install hexaemeron@wildcat-labs
 /plugin install homologia@wildcat-labs
@@ -70,6 +71,7 @@ Claude namespaces plugin skills, so each entry skill answers as:
 /ariadne:ariadne
 /berean:berean
 /brevitas:brevitas
+/dokimasia:dokimasia
 /hermes:hermes
 /hexaemeron:fiat "<topic>"
 /hexaemeron:kronos

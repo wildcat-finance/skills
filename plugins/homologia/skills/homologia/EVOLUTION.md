@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `mirror-execution`
 - Current frontier: Homologia admits one closed, cap-bounded manifest and its declared vectors into a deterministic checked-inputs record with source digests and closed expected-answer provenance. It executes no mirror and produces no verdict, so nothing yet establishes that a pair agrees.
 - Next Fiat job: Execute one pinned mirror over checked vectors through the adapter protocol without judging its answers. Accepted when argv is pinned, no shell or output path enters the child, JSONL input and integer-only output are bounded, timeout and count or order failures refuse atomically, and the reference adapter records a repeatable runtime identity and answer digest.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

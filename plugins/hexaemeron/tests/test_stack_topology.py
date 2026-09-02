@@ -71,6 +71,64 @@ class StackCase(HexctlCase):
         self.fake_refs[branch] = sha
 
 
+class PrintedMergeCommandTests(StackCase):
+    """Issue 1085. The printed command must land the step where `into` says.
+
+    A step's pull request is opened against the step below it, because that is
+    the diff a reviewer reads. Integration merges it into the run branch. `gh pr
+    merge` merges a pull request into its own base and takes no target, so a
+    directive that printed the merge alone sent every step above the first to
+    its parent step branch while its own `into` field named the run branch.
+    """
+
+    def test_the_printed_command_retargets_before_merging(self):
+        self.to_stack()
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "merge-step")
+        run_branch = self.state()["run_branch"]
+        self.assertEqual(directive["into"], run_branch)
+        self.assertIn(f"gh pr edit {directive['pr_url']} --base {run_branch}",
+                      directive["merge"])
+        self.assertIn(f"gh pr merge {directive['pr_url']} --merge",
+                      directive["merge"])
+        self.assertLess(
+            directive["merge"].index("gh pr edit"),
+            directive["merge"].index("gh pr merge"),
+            "the retarget has to come before the merge or it changes nothing",
+        )
+
+    def test_the_retarget_names_the_branch_into_names(self):
+        """Whatever else moves, these two agree. Their disagreement is the bug."""
+        self.to_stack()
+        for _ in range(2):
+            directive = self.next_json()
+            if directive["do"] != "merge-step":
+                break
+            self.assertIn(f"--base {directive['into']}", directive["merge"])
+            self.merge(directive["step"])
+
+    def test_every_step_gets_the_same_shape_including_the_first(self):
+        """Step 1 is already based on the run branch and the edit is a no-op.
+
+        Printing it anyway keeps one sequence for the operator rather than a
+        rule about which steps need an extra command.
+        """
+        self.to_stack()
+        shapes = []
+        while True:
+            directive = self.next_json()
+            if directive["do"] != "merge-step":
+                break
+            shapes.append(
+                directive["merge"]
+                .replace(directive["pr_url"], "<url>")
+                .replace(directive["into"], "<into>")
+            )
+            self.merge(directive["step"])
+        self.assertEqual(len(shapes), 3)
+        self.assertEqual(len(set(shapes)), 1, shapes)
+
+
 class PrematureStackMergeTests(StackCase):
     def test_a_healthy_stack_merges_unchanged(self):
         """The guard has to be invisible to a run that does the right thing."""
@@ -182,8 +240,11 @@ class MergeCommandDirectiveTests(StackCase):
     def test_the_directive_carries_the_command_for_its_own_pull_request(self):
         self.to_stack()
         directive = self.next_json()
+        url = directive["pr_url"]
         self.assertEqual(
-            directive["merge"], f"gh pr merge {directive['pr_url']} --merge"
+            directive["merge"],
+            f"gh pr edit {url} --base {directive['into']} "
+            f"&& gh pr merge {url} --merge",
         )
 
     def test_the_command_follows_the_stack_down(self):

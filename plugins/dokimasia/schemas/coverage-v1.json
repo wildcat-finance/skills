@@ -1,0 +1,258 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wildcat.finance/schemas/dokimasia/coverage/v1.json",
+  "title": "Dokimasia coverage record",
+  "description": "Every scoped item from both sides with the one disposition a person gave it, the closure ratio with its numerator and denominator stated separately, and the gap list naming every manual and excluded item with its reason. Closed, so an unknown key is a refusal. The digest covers everything except the subject, so two reconciles of the same inputs agree.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "closure",
+    "subject",
+    "caps",
+    "vocabulary",
+    "counts",
+    "closure_ratio",
+    "undisposed",
+    "unconfirmed",
+    "gaps",
+    "unmatched",
+    "dispositions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "dokimasia-coverage/v1"
+    },
+    "closure": {
+      "const": "dokimasia-disposition-closure/v1"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inventory_sha256",
+        "workbook_sha256"
+      ],
+      "properties": {
+        "inventory_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "workbook_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Every bound the reconciler enforces, so a reader auditing what limits applied does not have to read the source to find one.",
+      "required": [
+        "dispositions",
+        "reason_bytes",
+        "input_bytes"
+      ],
+      "properties": {
+        "dispositions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "input_bytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "vocabulary": {
+      "type": "array",
+      "description": "The closed disposition set ADR-001 fixes. Recorded in the record so a reader can tell which vocabulary a scrutiny was written under.",
+      "items": {
+        "enum": [
+          "covered",
+          "manual",
+          "excluded"
+        ]
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scoped",
+        "disposed",
+        "unconfirmed",
+        "undisposed",
+        "inventory_items",
+        "workbook_cases",
+        "by_disposition"
+      ],
+      "properties": {
+        "scoped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disposed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unconfirmed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Entries a generator drafted that no person has confirmed. Counted apart from `disposed` and from `undisposed`, so a reader can tell how much was drafted from how much was decided."
+        },
+        "undisposed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inventory_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workbook_cases": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_disposition": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "closure_ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The numerator and denominator are separate fields so neither can move without the other being visible.",
+      "required": [
+        "numerator",
+        "denominator",
+        "value",
+        "closed"
+      ],
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "closed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "undisposed": {
+      "type": "array",
+      "description": "Scoped items no disposition answered for. A non-empty list holds the ratio below one.",
+      "maxItems": 40000,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Every manual and excluded item with the reason recorded for it. Reviewing this list is how the denominator is audited.",
+      "maxItems": 40000,
+      "items": {
+        "$ref": "#/definitions/disposition"
+      }
+    },
+    "unmatched": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cases_no_item_cites",
+        "items_no_oracle_cites"
+      ],
+      "properties": {
+        "cases_no_item_cites": {
+          "type": "array",
+          "description": "Workbook cases no covered disposition names as its oracle.",
+          "maxItems": 40000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "items_no_oracle_cites": {
+          "type": "array",
+          "description": "Inventory items no covered disposition holds to an oracle. This is the uncovered application surface, and both directions of the join are recorded so neither can be read off by omission.",
+          "maxItems": 40000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        }
+      }
+    },
+    "dispositions": {
+      "type": "array",
+      "maxItems": 40000,
+      "items": {
+        "$ref": "#/definitions/disposition"
+      }
+    },
+    "unconfirmed": {
+      "type": "array",
+      "description": "Every drafted entry no person confirmed, with its state and reason intact. Each is refused as a disposition and leaves its item in `undisposed`; the entry is named here so a reviewer can see what was drafted rather than only that something is missing.",
+      "maxItems": 40000,
+      "items": {
+        "$ref": "#/definitions/disposition"
+      }
+    }
+  },
+  "definitions": {
+    "disposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "disposition",
+        "reason",
+        "oracle"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "disposition": {
+          "enum": [
+            "covered",
+            "manual",
+            "excluded"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "oracle": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    }
+  }
+}

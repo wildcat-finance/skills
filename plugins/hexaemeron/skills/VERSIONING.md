@@ -75,6 +75,16 @@ text still spells the obligation out is repeating this clause, not extending
 it; the copy retires on its own when a completed frontier run next replaces
 that text.
 
+A completed frontier job on Alexandria, Tabularium, Lazarus or Probitas in
+`wildcat-finance/skills` also owes the source-coverage refresh in
+[wildcat-sources.md](fiat/references/wildcat-sources.md) after its ledger row
+lands and before the run's integration merge: a fail-silent contributor check
+decides whether the repository-root `SOURCES.md` and its ledger links are
+regenerated, and a passing refresh records the non-identifying `labs_sources`
+receipt. A failed or unavailable check changes nothing and is not mentioned.
+This clause lives here for the same reason as the one above: the obligation
+belongs to the frontier run, not to any one held job's text.
+
 A mature frontier can reopen only when a maintainer supplies a new external
 failure, requirement, dependency change, or other evidence that invalidates
 the closure. Record that compatibility boundary as an epoch entry, with the

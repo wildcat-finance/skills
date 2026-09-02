@@ -72,6 +72,28 @@
       ]
     },
     {
+      "name": "dokimasia",
+      "displayName": "Dokimasia",
+      "source": "./plugins/dokimasia",
+      "description": "Compiles a frontend's routes, actions and guards into a coverage denominator, imports a reviewed UAT workbook without losing a row, drafts a disposition set a reviewer edits rather than authors, and counts only the entries a person confirmed; a closure ratio states that nothing is unaccounted for, never that anything passed.",
+      "version": "2.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/dokimasia",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "testing",
+        "coverage",
+        "uat",
+        "frontend",
+        "evidence",
+        "dispositions"
+      ]
+    },
+    {
       "name": "horos",
       "displayName": "Horos",
       "source": "./plugins/horos",
@@ -140,7 +162,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-      "version": "0.1.3",
+      "version": "0.2.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

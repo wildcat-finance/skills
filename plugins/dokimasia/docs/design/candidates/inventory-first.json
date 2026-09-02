@@ -1,0 +1,16 @@
+{
+  "id": "inventory-first",
+  "summary": "The skill compiles a source inventory, imports the workbook and reconciles both into dispositions; the target repository keeps execution.",
+  "checkable_without_a_browser": true,
+  "no_signer_authority": true,
+  "closes_the_coverage_question": true,
+  "resumable_after_a_kill": true,
+  "steps": [
+    "land the plugin scaffold and its router row",
+    "compile the route, action and guard inventory",
+    "import the workbook into a closed record",
+    "reconcile both sides into dispositions",
+    "demonstrate against the pinned app and release"
+  ],
+  "runtime_dependencies": []
+}

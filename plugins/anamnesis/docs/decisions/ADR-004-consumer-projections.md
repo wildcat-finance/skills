@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted, 2026-08-31.
+Accepted, 2026-08-31. Corrected in part by ADR-005: the Decision below reads
+"the audit-corpus observation schema Synkrisis explicitly admits", and Synkrisis
+has never admitted it. The projection shipped; the admission did not happen.
 
 ## Context
 
