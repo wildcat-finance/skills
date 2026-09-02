@@ -49,7 +49,14 @@ delimiters as an example carries no block, the same rule the `Fiat-Required`
 line already follows. This is what lets this record show its own markers.
 
 **The block sits at the top of the body,** before the filing prose, so a reader
-meets the current statement before the original one.
+meets the current statement before the original one. The rule protects what a
+reader sees, so blank lines and whole-line HTML comments may precede the block
+and anything else may not. That exemption is not a convenience: 92 of the 137
+issues open on 1 September 2026 begin with the invisible `wildcat-origin`
+marker, and a rule refusing the arrangement those bodies produce would be
+unusable on the corpus it governs. A consumer matching these bytes has to apply
+the same exemption, or the two readers will disagree about a body carrying a
+marker.
 
 **Absence is not a refusal.** Most bodies carry no block, and that is ordinary.
 
