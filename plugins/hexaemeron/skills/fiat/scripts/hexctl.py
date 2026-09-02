@@ -286,6 +286,51 @@ SYNC_RESOLUTION_GUARD_KEYS = frozenset(
 )
 SYNC_TREE_PATH_BATCH_MAX = 64
 SYNC_TREE_ARG_BYTES_MAX = 64 * 1024
+DECISION_ASSIGNMENT_REPORT_SCHEMA = "fiat-decision-assignments/v1"
+DECISION_ASSIGNMENT_COMMAND_SCHEMA = "fiat-decision-assignment-command/v1"
+DECISION_ASSIGNMENT_RECEIPT_SCHEMA = (
+    "fiat-decision-assignment-composition/v1"
+)
+DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY = "fiat_decision_assignments_v1"
+DECISION_ASSIGNMENT_REPORT_RE = re.compile(
+    r"^\.hexaemeron/[a-z0-9][a-z0-9._-]*\.json$"
+)
+DECISION_ASSIGNMENT_REF_RE = re.compile(
+    r"^refs/(?:heads|remotes)/[A-Za-z0-9._/-]+$"
+)
+DECISION_ASSIGNMENT_REPORT_BYTES_MAX = 256 * 1024
+DECISION_ASSIGNMENT_MAPPINGS_MAX = 32
+DECISION_ASSIGNMENT_LIMITS = {
+    "max_adr_number": 999,
+    "max_blob_bytes": 1 << 20,
+    "max_drafts": 32,
+    "max_git_input_bytes": 2 << 20,
+    "max_git_output_bytes": 16 << 20,
+    "max_git_seconds": 20,
+    "max_heading_bytes": 4096,
+    "max_path_bytes": 1024,
+    "max_report_bytes": 256 << 10,
+    "max_report_depth": 16,
+    "max_slug_bytes": 96,
+    "max_tree_entries": 20_000,
+}
+DECISION_ASSIGNMENT_RECEIPT_KEYS = frozenset(
+    {
+        "schema",
+        "artifact",
+        "report_schema",
+        "report_sha256",
+        "base",
+        "base_ref",
+        "product",
+        "candidate",
+        "candidate_ref",
+        "result_tree",
+        "mappings",
+        "commit_message_sha256",
+        "limits",
+    }
+)
 GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
 GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
 GENERATOR_AGGREGATE_REGISTRY = {
@@ -313,6 +358,19 @@ RESOLUTION_SYNC_KEYS = frozenset(
         "resolution_guard",
     }
 )
+DECISION_ASSIGNMENT_SYNC_KEY = "decision_assignments"
+
+
+def _sync_field_set_is_supported(sync: dict) -> bool:
+    """Legacy syncs remain readable; new syncs may add one closed receipt."""
+    fields = set(sync)
+    legacy = RESOLUTION_SYNC_KEYS - {SYNC_BASE_HEAD_KEY}
+    return fields in {
+        RESOLUTION_SYNC_KEYS,
+        legacy,
+        RESOLUTION_SYNC_KEYS | {DECISION_ASSIGNMENT_SYNC_KEY},
+        legacy | {DECISION_ASSIGNMENT_SYNC_KEY},
+    }
 RESOLUTION_REVALIDATION_KEYS = frozenset(
     {
         "schema",
@@ -379,6 +437,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.47.1",
         "fiat-v5.48.1",
         "fiat-v5.49.1",
+        "fiat-v5.50.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -3952,7 +4011,7 @@ def _require_resolution_sync(
     relations: dict,
 ) -> None:
     """Recheck the active signed composition and its target-path coverage."""
-    if set(sync) != RESOLUTION_SYNC_KEYS:
+    if not _sync_field_set_is_supported(sync):
         die("active version-resolution sync has an unsupported field set")
     if (
         sync.get("commit") != head_commit
@@ -4086,6 +4145,11 @@ def _require_resolution_sync(
         base_dir,
         sync,
         product_head,
+        previous_sync=previous_sync,
+    )
+    replay_sync_decision_assignment(
+        base_dir,
+        sync,
         previous_sync=previous_sync,
     )
 
@@ -5264,6 +5328,14 @@ def cmd_record(args) -> None:
         # Recording context while halted is allowed; progress commands are not.
         pass
     value = parse_value(args.value)
+    if args.key == DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY:
+        replay_decision_assignment_receipt(args.dir, value)
+        existing = state["receipts"].get(args.key)
+        if existing is not None:
+            if existing != value:
+                die("bootstrap decision assignment receipt cannot be replaced")
+            print("bootstrap decision assignment receipt already recorded")
+            return
     if args.key == "task_issue":
         if args.key not in state["receipts"]:
             die(
@@ -7348,6 +7420,532 @@ def _sha256_value(value, label: str) -> str:
     return value
 
 
+def _decision_assignment_artifact(base_dir: str, value: str) -> tuple[str, str]:
+    """Resolve one controller-owned report path without following a symlink."""
+    try:
+        encoded_value = value.encode("ascii", "strict") if isinstance(value, str) else b""
+    except UnicodeEncodeError:
+        encoded_value = b""
+    if (
+        not isinstance(value, str)
+        or DECISION_ASSIGNMENT_REPORT_RE.fullmatch(value) is None
+        or not encoded_value
+        or len(encoded_value) > 1024
+    ):
+        die("decision assignment report path is malformed")
+    root = os.path.realpath(base_dir)
+    resolved = os.path.realpath(os.path.join(root, value))
+    if not contained_in(root, resolved):
+        die("decision assignment report path escapes the repository")
+    path = os.path.join(root, value)
+    try:
+        metadata = os.lstat(path)
+    except OSError:
+        die("decision assignment report cannot be read")
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        die("decision assignment report is not a regular file")
+    return value, path
+
+
+def _decision_assignment_report(base_dir: str, artifact: str) -> tuple[dict, bytes]:
+    """Read and close-parse the allocator's canonical report bytes."""
+    artifact, path = _decision_assignment_artifact(base_dir, artifact)
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(DECISION_ASSIGNMENT_REPORT_BYTES_MAX + 1)
+    except OSError:
+        die("decision assignment report cannot be read")
+    if len(raw) > DECISION_ASSIGNMENT_REPORT_BYTES_MAX:
+        die("decision assignment report exceeds its byte ceiling")
+    try:
+        report = json.loads(
+            raw.decode("ascii"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError):
+        die("decision assignment report is not canonical ASCII JSON")
+    if not isinstance(report, dict) or set(report) != {
+        "base",
+        "base_ref",
+        "limits",
+        "mappings",
+        "object_format",
+        "product",
+        "result_tree",
+        "schema",
+    }:
+        die("decision assignment report has an unsupported field set")
+    if (
+        report.get("schema") != DECISION_ASSIGNMENT_REPORT_SCHEMA
+        or report.get("limits") != DECISION_ASSIGNMENT_LIMITS
+        or report.get("object_format") not in {"sha1", "sha256"}
+    ):
+        die("decision assignment report has an unsupported contract")
+    oid_length = 40 if report["object_format"] == "sha1" else 64
+
+    def object_id(value, label: str) -> str:
+        if (
+            not isinstance(value, str)
+            or len(value) != oid_length
+            or re.fullmatch(r"[0-9a-f]+", value) is None
+        ):
+            die(f"decision assignment report {label} is malformed")
+        return value
+
+    for field in ("base", "product", "result_tree"):
+        object_id(report.get(field), field)
+    base_ref = report.get("base_ref")
+    if (
+        not isinstance(base_ref, str)
+        or DECISION_ASSIGNMENT_REF_RE.fullmatch(base_ref) is None
+    ):
+        die("decision assignment report base ref is malformed")
+    mappings = report.get("mappings")
+    if (
+        not isinstance(mappings, list)
+        or not 1 <= len(mappings) <= DECISION_ASSIGNMENT_MAPPINGS_MAX
+    ):
+        die("decision assignment report mapping count is malformed")
+    mapping_keys = {
+        "draft_path",
+        "final_path",
+        "identity",
+        "input_blob",
+        "mode",
+        "number",
+        "number_text",
+        "output_blob",
+        "slug",
+    }
+    slugs = []
+    numbers = []
+    for index, row in enumerate(mappings):
+        if not isinstance(row, dict) or set(row) != mapping_keys:
+            die(f"decision assignment mapping {index} is malformed")
+        slug = row.get("slug")
+        if (
+            not isinstance(slug, str)
+            or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) is None
+            or len(slug.encode("ascii")) > 96
+        ):
+            die(f"decision assignment mapping {index} slug is malformed")
+        number = row.get("number")
+        number_text = row.get("number_text")
+        if (
+            type(number) is not int
+            or not 1 <= number <= 999
+            or number_text != f"{number:03d}"
+        ):
+            die(f"decision assignment mapping {index} number is malformed")
+        expected = {
+            "draft_path": f"docs/decisions/drafts/{slug}.md",
+            "final_path": f"docs/decisions/ADR-{number_text}-{slug}.md",
+            "identity": f"adr/{slug}",
+        }
+        if any(row.get(field) != value for field, value in expected.items()):
+            die(f"decision assignment mapping {index} paths are malformed")
+        if row.get("mode") not in {"100644", "100755"}:
+            die(f"decision assignment mapping {index} mode is malformed")
+        object_id(row.get("input_blob"), f"mapping {index} input blob")
+        object_id(row.get("output_blob"), f"mapping {index} output blob")
+        slugs.append(slug)
+        numbers.append(number)
+    if slugs != sorted(set(slugs)) or len(numbers) != len(set(numbers)):
+        die("decision assignment mappings are not ordered and unique")
+    try:
+        expected_raw = (canonical(report) + "\n").encode("ascii")
+    except UnicodeEncodeError:
+        die("decision assignment report is not canonical ASCII JSON")
+    if raw != expected_raw:
+        die("decision assignment report bytes are not canonical")
+    return report, raw
+
+
+def _decision_assignment_tool_environment() -> dict[str, str]:
+    """Run the trusted allocator without inherited Git or Python substitution."""
+    environment = {
+        name: value
+        for name, value in _native_relation_environment().items()
+        if not name.startswith("GIT_") and not name.startswith("PYTHON")
+    }
+    environment["PYTHONNOUSERSITE"] = "1"
+    return environment
+
+
+def _replay_decision_assignment_report(
+    base_dir: str, artifact: str, report: dict, raw: bytes
+) -> None:
+    """Delegate numbering policy to Hypomnema and validate its closed result."""
+    allocator = os.path.realpath(
+        os.path.join(
+            plugin_root(),
+            "skills",
+            "hypomnema",
+            "scripts",
+            "decision_assignments.py",
+        )
+    )
+    if not os.path.isfile(allocator) or os.path.islink(allocator):
+        die("trusted decision assignment allocator is unavailable")
+    output = bounded_tool(
+        base_dir,
+        sys.executable,
+        [
+            "-I",
+            allocator,
+            "replay",
+            "--repo",
+            os.path.realpath(base_dir),
+            "--report",
+            artifact,
+        ],
+        "decision assignment report did not replay",
+        environment=_decision_assignment_tool_environment(),
+    )
+    try:
+        result = json.loads(
+            output.decode("ascii"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError):
+        die("decision assignment allocator returned malformed output")
+    if result != {
+        "base": report["base"],
+        "mapping_count": len(report["mappings"]),
+        "outcome": "replayed",
+        "product": report["product"],
+        "result_tree": report["result_tree"],
+        "schema": DECISION_ASSIGNMENT_COMMAND_SCHEMA,
+    }:
+        die("decision assignment allocator returned mismatched output")
+    reread, reread_raw = _decision_assignment_report(base_dir, artifact)
+    if reread != report or reread_raw != raw:
+        die("decision assignment report changed during replay")
+
+
+def _decision_assignment_worktree(base_dir: str) -> tuple[tuple[str, str], str, bytes]:
+    """Capture the repository, HEAD, and exact clean status without locks."""
+    repository = _native_relation_repository_identity(base_dir)
+    head = _native_relation_commit(base_dir, "HEAD", "decision assignment worktree HEAD")
+    status = _native_relation_git(
+        base_dir,
+        [
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            f"core.hooksPath={os.devnull}",
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--ignore-submodules=all",
+        ],
+        "decision assignment worktree status cannot be read",
+    )
+    return repository, head, status
+
+
+def _decision_assignment_candidate_ref(
+    base_dir: str, candidate_ref: str | None, candidate: str
+) -> None:
+    if candidate_ref is None:
+        return
+    if (
+        not isinstance(candidate_ref, str)
+        or DECISION_ASSIGNMENT_REF_RE.fullmatch(candidate_ref) is None
+    ):
+        die("decision assignment candidate ref is malformed")
+    if _native_relation_commit(
+        base_dir, candidate_ref, "decision assignment candidate ref"
+    ) != candidate:
+        die("decision assignment candidate ref moved")
+
+
+def _decision_assignment_tree(base_dir: str, commit_sha: str, label: str) -> str:
+    raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--verify", "--end-of-options", f"{commit_sha}^{{tree}}"],
+        f"{label} tree cannot be read",
+    )
+    try:
+        tree = raw.decode("ascii").strip()
+    except UnicodeDecodeError:
+        tree = ""
+    if COMMIT_RE.fullmatch(tree) is None:
+        die(f"{label} tree id is malformed")
+    return tree
+
+
+def _decision_assignment_message(
+    base_dir: str, candidate: str, report: dict
+) -> str:
+    raw = _exact_commit_git(
+        base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%B", candidate],
+        "decision assignment candidate message cannot be read",
+        native_relation=True,
+    )
+    try:
+        message = raw.decode("utf-8", "strict")
+    except UnicodeDecodeError:
+        die("decision assignment candidate message is not UTF-8")
+    lines = message.splitlines()
+    while lines and not lines[-1]:
+        lines.pop()
+    expected = [f"ADR-Assignment-Base: {report['base']}"]
+    expected.extend(
+        f"ADR-Assignment: {row['identity']}=ADR-{row['number_text']}"
+        for row in report["mappings"]
+    )
+    observed = [
+        line
+        for line in lines
+        if line.casefold().startswith("adr-assignment")
+    ]
+    if observed != expected:
+        die("decision assignment candidate trailers do not match the report")
+    last_blank = max((index for index, line in enumerate(lines) if not line), default=-1)
+    if any(line not in lines[last_blank + 1 :] for line in expected):
+        die("decision assignment evidence is not in the final trailer block")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _decision_assignment_candidate(
+    base_dir: str,
+    report: dict,
+    candidate: str,
+    *,
+    expected_sync_parents: list[str] | None,
+) -> str:
+    candidate = require_full_sha(candidate, "decision assignment candidate")
+    _native_relation_commit(base_dir, candidate, "decision assignment candidate")
+    if _decision_assignment_tree(base_dir, candidate, "decision assignment candidate") != report["result_tree"]:
+        die("decision assignment candidate tree does not match the report")
+    if expected_sync_parents is not None:
+        if (
+            not isinstance(expected_sync_parents, list)
+            or len(expected_sync_parents) != 2
+        ):
+            die("decision assignment expected sync parents are malformed")
+        expected_sync_parents = [
+            require_full_sha(parent, "decision assignment expected sync parent")
+            for parent in expected_sync_parents
+        ]
+        if _native_relation_parents(
+            base_dir, candidate, "decision assignment candidate"
+        ) != expected_sync_parents:
+            die("decision assignment candidate parents do not match the active sync")
+        if _native_relation_parents(
+            base_dir, report["product"], "decision assignment report product"
+        ) != expected_sync_parents:
+            die("decision assignment report product is not the unnumbered sync")
+
+    expected_paths = sorted(
+        [row["draft_path"] for row in report["mappings"]]
+        + [row["final_path"] for row in report["mappings"]]
+    )
+    actual_paths = _native_diff_paths(
+        base_dir,
+        report["product"],
+        candidate,
+        "decision assignment path delta",
+        "decision assignment path delta cannot be read",
+    )
+    if actual_paths != expected_paths:
+        die("decision assignment candidate path delta does not match the report")
+    product_entries = _sync_tree_entries(
+        base_dir,
+        report["product"],
+        expected_paths,
+        "decision assignment product",
+    )
+    candidate_entries = _sync_tree_entries(
+        base_dir,
+        candidate,
+        expected_paths,
+        "decision assignment candidate",
+    )
+    for row in report["mappings"]:
+        expected_input = f"{row['mode']} blob {row['input_blob']}"
+        expected_output = f"{row['mode']} blob {row['output_blob']}"
+        if (
+            product_entries[row["draft_path"]] != expected_input
+            or product_entries[row["final_path"]] is not None
+            or candidate_entries[row["draft_path"]] is not None
+            or candidate_entries[row["final_path"]] != expected_output
+        ):
+            die("decision assignment candidate blobs do not match the report")
+    return candidate
+
+
+def decision_assignment_receipt(
+    base_dir: str,
+    artifact: str,
+    candidate: str,
+    *,
+    candidate_ref: str | None = None,
+    expected_base: str | None = None,
+    expected_sync_parents: list[str] | None = None,
+    verify_base_ref: bool = True,
+) -> dict:
+    """Replay and bind one report without modifying Git or controller state."""
+    before_repository, before_head, before_status = _decision_assignment_worktree(
+        base_dir
+    )
+    if before_status:
+        die("decision assignment worktree is dirty")
+    report, raw = _decision_assignment_report(base_dir, artifact)
+    if expected_base is not None and report["base"] != require_full_sha(
+        expected_base, "decision assignment expected base"
+    ):
+        die("decision assignment report names a stale base")
+    candidate = require_full_sha(candidate, "decision assignment candidate")
+    _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
+    if verify_base_ref:
+        _replay_decision_assignment_report(base_dir, artifact, report, raw)
+    _decision_assignment_candidate(
+        base_dir,
+        report,
+        candidate,
+        expected_sync_parents=expected_sync_parents,
+    )
+    verify_local_commit(
+        base_dir,
+        candidate,
+        "decision assignment composition",
+        native_relation=True,
+    )
+    message_digest = _decision_assignment_message(base_dir, candidate, report)
+    _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
+    after_repository, after_head, after_status = _decision_assignment_worktree(
+        base_dir
+    )
+    if (
+        after_repository != before_repository
+        or after_head != before_head
+        or after_status != before_status
+    ):
+        die("decision assignment repository changed during evidence collection")
+    return {
+        "schema": DECISION_ASSIGNMENT_RECEIPT_SCHEMA,
+        "artifact": artifact,
+        "report_schema": report["schema"],
+        "report_sha256": hashlib.sha256(raw).hexdigest(),
+        "base": report["base"],
+        "base_ref": report["base_ref"],
+        "product": report["product"],
+        "candidate": candidate,
+        "candidate_ref": candidate_ref,
+        "result_tree": report["result_tree"],
+        "mappings": report["mappings"],
+        "commit_message_sha256": message_digest,
+        "limits": report["limits"],
+    }
+
+
+def replay_decision_assignment_receipt(
+    base_dir: str,
+    receipt: dict,
+    *,
+    expected_base: str | None = None,
+    expected_sync_parents: list[str] | None = None,
+    previous_receipt: dict | None = None,
+    verify_base_ref: bool = True,
+) -> dict:
+    """Recompute one closed receipt from its report and immutable objects."""
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != DECISION_ASSIGNMENT_RECEIPT_KEYS
+        or receipt.get("schema") != DECISION_ASSIGNMENT_RECEIPT_SCHEMA
+    ):
+        die("decision assignment receipt is partial or malformed")
+    _sha256_value(
+        receipt.get("report_sha256"), "decision assignment report digest"
+    )
+    _sha256_value(
+        receipt.get("commit_message_sha256"),
+        "decision assignment commit-message digest",
+    )
+    rebuilt = decision_assignment_receipt(
+        base_dir,
+        receipt.get("artifact"),
+        receipt.get("candidate"),
+        candidate_ref=receipt.get("candidate_ref"),
+        expected_base=(expected_base if expected_base is not None else receipt.get("base")),
+        expected_sync_parents=expected_sync_parents,
+        verify_base_ref=verify_base_ref,
+    )
+    if rebuilt != receipt:
+        die("decision assignment receipt does not replay")
+    if previous_receipt is not None:
+        require_decision_assignment_supersession(
+            base_dir, previous_receipt, receipt
+        )
+    return rebuilt
+
+
+def require_decision_assignment_supersession(
+    base_dir: str, previous: dict, current: dict
+) -> None:
+    """A stale assignment may remain in evidence, never active ancestry."""
+    if not isinstance(previous, dict) or not isinstance(current, dict):
+        die("decision assignment supersession evidence is malformed")
+    old_candidate = require_full_sha(
+        previous.get("candidate"), "superseded decision assignment candidate"
+    )
+    new_candidate = require_full_sha(
+        current.get("candidate"), "active decision assignment candidate"
+    )
+    status = _native_ancestry_status(base_dir, old_candidate, new_candidate)
+    if status is None:
+        die("decision assignment supersession ancestry cannot be determined")
+    if status == 0:
+        die("superseded decision assignment remains in active ancestry")
+
+
+def replay_sync_decision_assignment(
+    base_dir: str,
+    sync: dict,
+    *,
+    previous_sync: dict | None = None,
+    verify_base_ref: bool = True,
+) -> dict | None:
+    """Replay the optional assignment bound to one active sync receipt."""
+    receipt = sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+    previous_receipt = (
+        previous_sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+        if isinstance(previous_sync, dict)
+        else None
+    )
+    if receipt is None:
+        if previous_receipt is not None:
+            die("replacement integration sync dropped decision assignment evidence")
+        return None
+    if not isinstance(receipt, dict):
+        die("active integration sync decision assignment receipt is malformed")
+    commit_sha = require_full_sha(sync.get("commit"), "active integration sync")
+    if receipt.get("candidate") != commit_sha:
+        die("active integration sync decision assignment names another candidate")
+    parents = sync.get("parents")
+    if not isinstance(parents, list) or len(parents) != 2:
+        die("active integration sync parents are malformed")
+    return replay_decision_assignment_receipt(
+        base_dir,
+        receipt,
+        expected_base=sync.get(SYNC_BASE_HEAD_KEY),
+        expected_sync_parents=parents,
+        previous_receipt=previous_receipt,
+        verify_base_ref=verify_base_ref,
+    )
+
+
+def cmd_verify_decision_assignments(args) -> None:
+    receipt = decision_assignment_receipt(
+        args.dir,
+        args.report,
+        args.candidate,
+        candidate_ref=args.candidate_ref,
+    )
+    print(canonical(receipt))
+
 def _aggregate_relative_path(value, label: str) -> str:
     if not isinstance(value, str):
         die(f"{label} must be a path string")
@@ -8593,6 +9191,25 @@ def done_sync_run(args, state: dict) -> None:
             getattr(args, "acknowledge_sync_paths", None) or []
         ),
     )
+    assignment_receipt = None
+    current_assignment = current_sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+    if getattr(args, "decision_assignments", None):
+        assignment_receipt = decision_assignment_receipt(
+            args.dir,
+            args.decision_assignments,
+            sync_tip,
+            expected_base=base_tip,
+            expected_sync_parents=expected_parents,
+        )
+        if current_assignment is not None:
+            require_decision_assignment_supersession(
+                args.dir, current_assignment, assignment_receipt
+            )
+    elif current_assignment is not None:
+        die(
+            "replacement integration sync must carry a freshly replayed "
+            "--decision-assignments report"
+        )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
     _require_native_relation_history(args.dir)
@@ -8609,6 +9226,8 @@ def done_sync_run(args, state: dict) -> None:
         "revalidation": revalidation,
         "resolution_guard": resolution_guard,
     }
+    if assignment_receipt is not None:
+        new_sync[DECISION_ASSIGNMENT_SYNC_KEY] = assignment_receipt
     if current_sync:
         superseded_sync = {
             "sync": current_sync,
@@ -14196,6 +14815,26 @@ def clean(text: str) -> str:
 
 def cmd_status(args) -> None:
     state = load_state(args.dir)
+    assignment = as_dict(state.get("receipts")).get(
+        DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
+    )
+    if assignment is not None:
+        assignment = replay_decision_assignment_receipt(
+            args.dir, assignment, verify_base_ref=False
+        )
+    integrate_assignment = as_dict(as_dict(state.get("integrate")).get("sync"))
+    if integrate_assignment:
+        previous_sync = _active_sync_predecessor(
+            as_dict(state.get("integrate")), integrate_assignment.get("commit")
+        )
+        replayed = replay_sync_decision_assignment(
+            args.dir,
+            integrate_assignment,
+            previous_sync=previous_sync,
+            verify_base_ref=False,
+        )
+        if replayed is not None:
+            assignment = replayed
     version_relations = None
     resolution_state = None
     for name in ("study", "runbook"):
@@ -14265,6 +14904,14 @@ def cmd_status(args) -> None:
                 f"{target['anchor_version']}; {detail}"
             )
     print(f"observe: {controller_run_id(state)}")
+    if assignment is not None:
+        print(
+            "decision assignments: "
+            f"{assignment['report_schema']}; base {assignment['base']}; "
+            f"product {assignment['product']}; candidate "
+            f"{assignment['candidate']}; {len(assignment['mappings'])} "
+            f"mapping(s); report {assignment['report_sha256']}"
+        )
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
     blocked = amendment_block(state)
@@ -14523,6 +15170,28 @@ def verify_run(
         if version_relations is not None and event_relations != version_relations:
             die("done:runbook ledger event does not match the version anchor", 1)
     integrate_state = as_dict(state.get("integrate"))
+    bootstrap_assignment = as_dict(state.get("receipts")).get(
+        DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
+    )
+    if bootstrap_assignment is not None:
+        replay_decision_assignment_receipt(
+            base_dir,
+            bootstrap_assignment,
+            verify_base_ref=False,
+        )
+    active_sync = as_dict(integrate_state.get("sync"))
+    if active_sync:
+        if not _sync_field_set_is_supported(active_sync):
+            die("active integration sync has an unsupported field set", 1)
+        previous_sync = _active_sync_predecessor(
+            integrate_state, active_sync.get("commit")
+        )
+        replay_sync_decision_assignment(
+            base_dir,
+            active_sync,
+            previous_sync=previous_sync,
+            verify_base_ref=False,
+        )
     history = integrate_state.get("version_resolutions") or []
     if history:
         validate_version_resolution_history(
@@ -14700,6 +15369,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("next", help="emit the single next action as JSON")
     sp.set_defaults(fn=cmd_next)
 
+    sp = sub.add_parser(
+        "verify-decision-assignments",
+        help="replay one signed ADR assignment composition without writing state",
+    )
+    sp.add_argument("--report", required=True)
+    sp.add_argument("--candidate", required=True)
+    sp.add_argument("--candidate-ref", dest="candidate_ref")
+    sp.set_defaults(fn=cmd_verify_decision_assignments)
+
     sp = sub.add_parser("record", help="store a named receipt")
     sp.add_argument("key")
     sp.add_argument("value")
@@ -14749,6 +15427,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--commit")
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
+    sp.add_argument("--decision-assignments", dest="decision_assignments")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
     sp.add_argument(
         "--acknowledge-sync-path",

@@ -114,7 +114,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.49.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.50.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,19 +122,24 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.49.1")
+        self.assertEqual(latest["version"], "fiat-v5.50.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#1021", latest["evidence"])
-        self.assertIn("ADR-068", latest["evidence"])
-        self.assertIn("early_merge", latest["change"])
-        self.assertIn("reachable from the run branch", latest["change"])
-        self.assertIn("replacement pull request", latest["change"])
+        self.assertIn("skills#888", latest["evidence"])
+        self.assertIn("decision-assignment", latest["change"])
+        self.assertIn("Hypomnema", latest["change"])
+        self.assertIn("without assigning numbers", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
+        early_merge = by_version["fiat-v5.49.1"]
+        self.assertIn("skills#1021", early_merge["evidence"])
+        self.assertIn("ADR-068", early_merge["evidence"])
+        self.assertIn("early_merge", early_merge["change"])
+        self.assertIn("reachable from the run branch", early_merge["change"])
+        self.assertIn("replacement pull request", early_merge["change"])
         repo_suite = by_version["fiat-v5.48.1"]
         self.assertEqual(repo_suite["axis"], "generation")
         self.assertEqual(repo_suite["revision"], "state-shape-validation")
