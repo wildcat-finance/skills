@@ -12,11 +12,14 @@ import os
 from pathlib import Path, PurePosixPath
 import posixpath
 import re
+import selectors
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
 import time
+import types
 import unittest
 from unittest import mock
 
@@ -186,6 +189,8 @@ def scratch_directory(prefix: str = "instruction-architecture-"):
 
 ORACLE_SOURCE_REF = "a2b634d8e039af988bf30c8316defccf70071d8d"
 ORACLE_MAX_JSON_BYTES = 8 * 1024 * 1024
+ORACLE_MAX_GIT_OUTPUT = 4 * 1024 * 1024
+ORACLE_MAX_GIT_ERROR = 64 * 1024
 ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_BASELINE_INVENTORY_SHA256 = (
@@ -393,24 +398,136 @@ def oracle_read_regular(path: Path, limit: int) -> bytes:
 
 
 def oracle_git(
-    *arguments: str, input_data: bytes | None = None
+    *arguments: str,
+    input_data: bytes | None = None,
+    limit: int = ORACLE_MAX_GIT_OUTPUT,
 ) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(
-        [
-            "/usr/bin/git",
-            "--no-lazy-fetch",
-            "--no-optional-locks",
-            "-C",
-            str(ROOT),
-            *arguments,
-        ],
-        stdin=subprocess.DEVNULL if input_data is None else None,
-        input=input_data,
-        capture_output=True,
-        check=False,
-        timeout=20,
-        env=ORACLE_GIT_ENV,
-    )
+    """Capture one independent Git read without trusting production helpers."""
+    if type(limit) is not int or not 0 < limit <= ORACLE_MAX_GIT_OUTPUT:
+        raise AssertionError("independent Git output limit is invalid")
+    if input_data is not None:
+        if type(input_data) is not bytes:
+            raise AssertionError("independent Git input is not bytes")
+        if len(input_data) > 4_096:
+            raise AssertionError("independent Git input exceeds byte limit")
+    command = [
+        "/usr/bin/git",
+        "--no-lazy-fetch",
+        "--no-optional-locks",
+        "-C",
+        str(ROOT),
+        *arguments,
+    ]
+    try:
+        process = subprocess.Popen(
+            command,
+            stdin=(
+                subprocess.PIPE if input_data is not None else subprocess.DEVNULL
+            ),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=ORACLE_GIT_ENV,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise AssertionError("independent Git read failed") from exc
+    assert process.stdout is not None and process.stderr is not None
+    selector = selectors.DefaultSelector()
+    stdout = bytearray()
+    stderr = bytearray()
+    deadline = time.monotonic() + 20
+    leader_reaped = False
+    try:
+        if input_data is not None:
+            assert process.stdin is not None
+            try:
+                process.stdin.write(input_data)
+                process.stdin.close()
+            except OSError as exc:
+                raise AssertionError("independent Git input failed") from exc
+        selector.register(process.stdout, selectors.EVENT_READ, (stdout, limit))
+        selector.register(
+            process.stderr,
+            selectors.EVENT_READ,
+            (stderr, ORACLE_MAX_GIT_ERROR),
+        )
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise AssertionError("independent Git read timed out")
+            try:
+                events = selector.select(remaining)
+            except OSError as exc:
+                raise AssertionError(
+                    "independent Git output capture failed"
+                ) from exc
+            if not events:
+                raise AssertionError("independent Git read timed out")
+            for key, _ in events:
+                buffer, cap = key.data
+                try:
+                    chunk = os.read(
+                        key.fd, min(65_536, cap + 1 - len(buffer))
+                    )
+                except OSError as exc:
+                    raise AssertionError(
+                        "independent Git output capture failed"
+                    ) from exc
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) > cap:
+                    stream = "stdout" if buffer is stdout else "stderr"
+                    raise AssertionError(
+                        f"independent Git {stream} exceeds byte limit"
+                    )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise AssertionError("independent Git read timed out")
+        try:
+            returncode = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as exc:
+            raise AssertionError("independent Git read timed out") from exc
+        leader_reaped = True
+        return subprocess.CompletedProcess(
+            command, returncode, bytes(stdout), bytes(stderr)
+        )
+    finally:
+        selector.close()
+        leader_reaped = leader_reaped or process.returncode is not None
+        if not leader_reaped:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+        if process.poll() is None:
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
+        for stream in (process.stdout, process.stderr):
+            try:
+                stream.close()
+            except OSError:
+                pass
+        if process.stdin is not None and not process.stdin.closed:
+            try:
+                process.stdin.close()
+            except OSError:
+                pass
 
 
 @lru_cache(maxsize=1)
@@ -420,14 +537,23 @@ def oracle_source_mode() -> str:
         "cat-file",
         "--batch-check=%(objectname) %(objecttype)",
         input_data=f"{expression}\n".encode("ascii"),
+        limit=ORACLE_MAX_GIT_OUTPUT,
     )
+    if len(probe.stdout) > ORACLE_MAX_GIT_OUTPUT:
+        raise AssertionError("independent oracle source probe exceeds byte limit")
     if probe.returncode != 0:
         raise AssertionError("independent oracle source probe failed")
     if probe.stdout == f"{ORACLE_SOURCE_REF} commit\n".encode("ascii"):
         return "git"
     if probe.stdout != f"{expression} missing\n".encode("ascii"):
         raise AssertionError("independent oracle source probe was ambiguous")
-    shallow = oracle_git("rev-parse", "--is-shallow-repository")
+    shallow = oracle_git(
+        "rev-parse",
+        "--is-shallow-repository",
+        limit=ORACLE_MAX_GIT_OUTPUT,
+    )
+    if len(shallow.stdout) > ORACLE_MAX_GIT_OUTPUT:
+        raise AssertionError("independent shallow probe exceeds byte limit")
     if shallow.returncode != 0 or shallow.stdout != b"true\n":
         raise AssertionError("independent oracle could not resolve the frozen source")
     return "inventory"
@@ -580,22 +706,62 @@ def oracle_tree_paths() -> tuple[str, ...]:
     """Enumerate the frozen tree without using the production path reader."""
     if oracle_source_mode() == "git":
         process = oracle_git(
-            "ls-tree", "-r", "-z", "--name-only", ORACLE_SOURCE_REF
+            "ls-tree",
+            "-r",
+            "-z",
+            "--name-only",
+            ORACLE_SOURCE_REF,
+            limit=ORACLE_MAX_GIT_OUTPUT,
         )
         if process.returncode != 0:
             raise AssertionError("independent oracle could not enumerate source paths")
+        raw = process.stdout
+        path_count = raw.count(b"\0")
+        if (
+            len(raw) > ORACLE_MAX_GIT_OUTPUT
+            or not raw
+            or not raw.endswith(b"\0")
+            or raw.startswith(b"\0")
+            or b"\0\0" in raw
+        ):
+            raise AssertionError(
+                "independent source path inventory is not canonically framed"
+            )
+        if path_count > ORACLE_MAX_FROZEN_TREE_PATHS:
+            raise AssertionError(
+                "independent source path inventory exceeds count limit"
+            )
         try:
             paths = tuple(
                 item.decode("utf-8", errors="strict")
-                for item in process.stdout.split(b"\0")
-                if item
+                for item in raw.split(b"\0")[:-1]
             )
         except UnicodeDecodeError as exc:
             raise AssertionError("independent source path is not UTF-8") from exc
     else:
         _, paths = oracle_inventory_snapshot()
-    if not paths or list(paths) != sorted(set(paths)):
+    if (
+        not paths
+        or len(paths) > ORACLE_MAX_FROZEN_TREE_PATHS
+        or list(paths) != sorted(set(paths))
+    ):
         raise AssertionError("independent source path inventory is not canonical")
+    for path in paths:
+        try:
+            encoded = path.encode("utf-8", errors="strict")
+        except UnicodeEncodeError as exc:
+            raise AssertionError("independent source path is unsafe") from exc
+        candidate = PurePosixPath(path)
+        if (
+            len(encoded) > 1_024
+            or any(byte < 0x20 or byte > 0x7E for byte in encoded)
+            or path == "."
+            or candidate.is_absolute()
+            or "\\" in path
+            or candidate.as_posix() != path
+            or any(part in {"", ".", ".."} for part in candidate.parts)
+        ):
+            raise AssertionError("independent source path is unsafe")
     return paths
 
 
@@ -604,9 +770,16 @@ def oracle_source(path: str) -> bytes:
     if path in ORACLE_SOURCE_CACHE:
         expected = ORACLE_SOURCE_CACHE[path]
     elif oracle_source_mode() == "git":
-        process = oracle_git("cat-file", "blob", f"{ORACLE_SOURCE_REF}:{path}")
+        process = oracle_git(
+            "cat-file",
+            "blob",
+            f"{ORACLE_SOURCE_REF}:{path}",
+            limit=ORACLE_MAX_SOURCE_BYTES,
+        )
         if process.returncode != 0:
             raise AssertionError(f"independent oracle could not read {path}")
+        if len(process.stdout) > ORACLE_MAX_SOURCE_BYTES:
+            raise AssertionError("independent source blob exceeds byte limit")
         expected = process.stdout
     else:
         expected = oracle_inventory_sources().get(path)
@@ -617,6 +790,40 @@ def oracle_source(path: str) -> bytes:
         raise AssertionError(f"independent oracle observed source drift: {path}")
     ORACLE_SOURCE_CACHE[path] = expected
     return expected
+
+
+def oracle_head_module() -> types.ModuleType:
+    """Load the tracked oracle object as isolated exact-parent authority."""
+    process = oracle_git(
+        "show",
+        "HEAD:tests/test_instruction_architecture.py",
+        limit=ORACLE_MAX_GIT_OUTPUT,
+    )
+    if (
+        process.returncode != 0
+        or not process.stdout
+        or len(process.stdout) > ORACLE_MAX_GIT_OUTPUT
+    ):
+        raise AssertionError("independent tracked oracle is unavailable")
+    module = types.ModuleType("tracked_instruction_architecture_oracle")
+    module.__file__ = str(Path(__file__).resolve())
+    try:
+        code = compile(process.stdout, module.__file__, "exec")
+        # phylax: allow exact tracked test bytes are the Elenchus authority
+        exec(code, module.__dict__)
+    except (SyntaxError, UnicodeError) as exc:
+        raise AssertionError("independent tracked oracle is malformed") from exc
+    return module
+
+
+def oracle_guard_module() -> types.ModuleType:
+    """Route ordinary guards to candidate bytes and declared Elenchus to HEAD."""
+    authority = os.environ.get("FIAT1046_ELENCHUS_PARENT")
+    if authority is None:
+        return sys.modules[__name__]
+    if authority != "1":
+        raise AssertionError("independent oracle guard authority is invalid")
+    return oracle_head_module()
 
 
 def oracle_evidence(obligation: str, path: str, needle: str) -> dict:
@@ -3161,6 +3368,252 @@ class CorpusManifestTests(unittest.TestCase):
                 AI._frozen_tree_paths.cache_clear()
                 with self.assertRaisesRegex(AI.Refusal, reason):
                     AI._frozen_tree_paths()
+
+    def test_independent_git_capture_caps_stdout_and_stderr(self):
+        for descriptor, amount, stream in (
+            (1, ORACLE_MAX_GIT_OUTPUT + 1, "stdout"),
+            (2, ORACLE_MAX_GIT_ERROR + 1, "stderr"),
+        ):
+            with self.subTest(stream=stream):
+                tracked = oracle_guard_module()
+                real_popen = subprocess.Popen
+                oversized = subprocess.CompletedProcess(
+                    ("git",),
+                    0,
+                    b"x" * amount if descriptor == 1 else b"",
+                    b"x" * amount if descriptor == 2 else b"",
+                )
+
+                def spawn(*_arguments, **keywords):
+                    return real_popen(
+                        [
+                            sys.executable,
+                            "-c",
+                            f"import os; os.write({descriptor}, b'x' * {amount})",
+                        ],
+                        **keywords,
+                    )
+
+                with (
+                    mock.patch.object(subprocess, "Popen", side_effect=spawn),
+                    mock.patch.object(subprocess, "run", return_value=oversized),
+                    self.assertRaisesRegex(
+                        AssertionError,
+                        rf"independent Git {stream} exceeds byte limit",
+                    ),
+                ):
+                    tracked.oracle_git("ignored")
+
+    def test_independent_git_cap_kills_inherited_pipe_producer(self):
+        tracked = oracle_guard_module()
+        real_popen = subprocess.Popen
+        with scratch_directory("oracle-git-cap-") as temporary:
+            marker = Path(temporary) / "producer-finished"
+            producer = (
+                "import os\n"
+                "from pathlib import Path\n"
+                "import time\n"
+                "for _ in range(6):\n"
+                "    os.write(1, b'x' * 1048576)\n"
+                "    time.sleep(0.05)\n"
+                f"Path({str(marker)!r}).write_text('done')\n"
+            )
+            leader = (
+                "import subprocess\n"
+                "import sys\n"
+                f"subprocess.Popen([sys.executable, '-c', {producer!r}])\n"
+            )
+
+            def spawn(*_arguments, **keywords):
+                return real_popen(
+                    [sys.executable, "-c", leader],
+                    **keywords,
+                )
+
+            oversized = subprocess.CompletedProcess(
+                ("git",), 0, b"x" * (ORACLE_MAX_GIT_OUTPUT + 1), b""
+            )
+            with (
+                mock.patch.object(subprocess, "Popen", side_effect=spawn),
+                mock.patch.object(subprocess, "run", return_value=oversized),
+                self.assertRaisesRegex(
+                    AssertionError, "independent Git stdout exceeds byte limit"
+                ),
+            ):
+                tracked.oracle_git("ignored")
+            time.sleep(0.75)
+            self.assertFalse(marker.exists())
+
+    def test_independent_git_timeout_kills_process_group(self):
+        tracked = oracle_guard_module()
+        real_popen = subprocess.Popen
+        with scratch_directory("oracle-git-timeout-") as temporary:
+            marker = Path(temporary) / "descendant-finished"
+            descendant = (
+                "from pathlib import Path\n"
+                "import time\n"
+                "time.sleep(0.5)\n"
+                f"Path({str(marker)!r}).write_text('done')\n"
+                "time.sleep(5)\n"
+            )
+            leader = (
+                "import os\n"
+                "import subprocess\n"
+                "import sys\n"
+                "import time\n"
+                f"subprocess.Popen([sys.executable, '-c', {descendant!r}])\n"
+                "os.write(1, b'ready')\n"
+                "time.sleep(5)\n"
+            )
+
+            def spawn(*_arguments, **keywords):
+                return real_popen(
+                    [sys.executable, "-c", leader],
+                    **keywords,
+                )
+
+            legacy = subprocess.CompletedProcess(("git",), 0, b"ready", b"")
+            with (
+                mock.patch.object(subprocess, "Popen", side_effect=spawn),
+                mock.patch.object(subprocess, "run", return_value=legacy),
+                mock.patch.object(
+                    tracked.time, "monotonic", side_effect=(0.0, 0.0, 21.0)
+                ),
+                self.assertRaisesRegex(
+                    AssertionError, "independent Git read timed out"
+                ),
+            ):
+                tracked.oracle_git("ignored")
+            time.sleep(0.75)
+            self.assertFalse(marker.exists())
+
+    def test_independent_git_successfully_writes_bounded_stdin(self):
+        tracked = oracle_guard_module()
+        real_popen = subprocess.Popen
+        payload = b"source-object^{commit}\n"
+        observed: list[bytes] = []
+
+        def spawn(*_arguments, **keywords):
+            return real_popen(
+                [
+                    sys.executable,
+                    "-c",
+                    "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read())",
+                ],
+                **keywords,
+            )
+
+        def legacy(*_arguments, **keywords):
+            observed.append(keywords["input"])
+            return subprocess.CompletedProcess(("git",), 0, payload, b"")
+
+        with (
+            mock.patch.object(subprocess, "Popen", side_effect=spawn),
+            mock.patch.object(subprocess, "run", side_effect=legacy),
+        ):
+            process = tracked.oracle_git("ignored", input_data=payload)
+        self.assertEqual(
+            (process.returncode, process.stdout, process.stderr),
+            (0, payload, b""),
+        )
+        self.assertIn(observed, ([], [payload]))
+
+    def test_independent_oracle_guard_refuses_ambiguous_parent_authority(self):
+        with (
+            mock.patch.dict(
+                os.environ, {"FIAT1046_ELENCHUS_PARENT": "true"}, clear=False
+            ),
+            self.assertRaisesRegex(
+                AssertionError, "independent oracle guard authority is invalid"
+            ),
+        ):
+            oracle_guard_module()
+
+    def test_independent_git_tree_caps_count_and_requires_canonical_nuls(self):
+        tracked = oracle_guard_module()
+
+        def tree(count: int) -> bytes:
+            return b"".join(f"p/{index:05d}\0".encode() for index in range(count))
+
+        at_limit = tree(ORACLE_MAX_FROZEN_TREE_PATHS)
+        with (
+            mock.patch.object(tracked, "oracle_source_mode", return_value="git"),
+            mock.patch.object(
+                tracked,
+                "oracle_git",
+                return_value=subprocess.CompletedProcess(("git",), 0, at_limit, b""),
+            ),
+        ):
+            tracked.oracle_tree_paths.cache_clear()
+            self.assertEqual(
+                len(tracked.oracle_tree_paths()), ORACLE_MAX_FROZEN_TREE_PATHS
+            )
+
+        specimens = (
+            (tree(ORACLE_MAX_FROZEN_TREE_PATHS + 1), "count limit"),
+            (b"p/00000", "canonically framed"),
+            (b"p/00000\0\0p/00001\0", "canonically framed"),
+            (b"\0p/00000\0", "canonically framed"),
+            (b".\0", "unsafe"),
+        )
+        for raw, reason in specimens:
+            with (
+                self.subTest(reason=reason, raw_bytes=len(raw)),
+                mock.patch.object(
+                    tracked, "oracle_source_mode", return_value="git"
+                ),
+                mock.patch.object(
+                    tracked,
+                    "oracle_git",
+                    return_value=subprocess.CompletedProcess(
+                        ("git",), 0, raw, b""
+                    ),
+                ),
+                self.assertRaisesRegex(AssertionError, reason),
+            ):
+                tracked.oracle_tree_paths.cache_clear()
+                tracked.oracle_tree_paths()
+
+    def test_independent_git_blob_cap_is_enforced_before_live_comparison(self):
+        tracked = oracle_guard_module()
+        path = "AGENTS.md"
+        at_limit = b"x" * ORACLE_MAX_SOURCE_BYTES
+        at_limit_git = mock.Mock(
+            return_value=subprocess.CompletedProcess(("git",), 0, at_limit, b"")
+        )
+        with (
+            mock.patch.object(tracked, "oracle_source_mode", return_value="git"),
+            mock.patch.object(tracked, "oracle_git", at_limit_git),
+            mock.patch.object(tracked, "oracle_read_regular", return_value=at_limit),
+        ):
+            tracked.ORACLE_SOURCE_CACHE.clear()
+            self.assertEqual(tracked.oracle_source(path), at_limit)
+        with self.subTest(boundary="call-site-limit"):
+            self.assertEqual(
+                at_limit_git.call_args.kwargs.get("limit"), ORACLE_MAX_SOURCE_BYTES
+            )
+
+        oversized = b"x" * (ORACLE_MAX_SOURCE_BYTES + 1)
+        with (
+            self.subTest(boundary="over-limit"),
+            mock.patch.object(tracked, "oracle_source_mode", return_value="git"),
+            mock.patch.object(
+                tracked,
+                "oracle_git",
+                return_value=subprocess.CompletedProcess(
+                    ("git",), 0, oversized, b""
+                ),
+            ),
+            mock.patch.object(
+                tracked, "oracle_read_regular", return_value=oversized
+            ) as live_read,
+            self.assertRaisesRegex(
+                AssertionError, "independent source blob exceeds byte limit"
+            ),
+        ):
+            tracked.ORACLE_SOURCE_CACHE.clear()
+            tracked.oracle_source(path)
+        live_read.assert_not_called()
 
     def test_independent_oracle_cache_never_skips_live_source_drift_check(self):
         clear_source_cache()
