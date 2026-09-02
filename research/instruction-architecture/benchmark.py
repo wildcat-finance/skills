@@ -17,6 +17,7 @@ import os
 from pathlib import Path, PurePosixPath
 import posixpath
 import re
+import resource
 import secrets
 import selectors
 import signal
@@ -95,6 +96,59 @@ BASELINE_RECORD_NAMES = (
 EXPECTED_BASELINE_INVENTORY_SHA256 = (
     "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
 )
+
+DEVELOPMENT_SCHEMA = PurePosixPath(
+    "research/instruction-architecture/schemas/development-v1.schema.json"
+)
+DEVELOPMENT_FIXTURE_ROOT = PurePosixPath("tests/fixtures/instruction-architecture")
+DEVELOPMENT_EVIDENCE_ROOT = DEVELOPMENT_FIXTURE_ROOT / "evidence/development"
+DEVELOPMENT_RECORD_PATHS = (
+    "controls/noema.json",
+    "controls/raw.json",
+    "controls/section-graph.json",
+    "controls/simple.json",
+    "controls/wai1.json",
+    "development/cases.json",
+    "hostile/specimens.json",
+    "evidence/development/noema.json",
+    "evidence/development/raw.json",
+    "evidence/development/report.json",
+    "evidence/development/resource-samples.json",
+    "evidence/development/section-graph.json",
+    "evidence/development/simple.json",
+    "evidence/development/wai1.json",
+)
+DEVELOPMENT_ARMS = ("raw", "wai1", "noema", "simple", "section-graph")
+DEVELOPMENT_CLASSES = (
+    "order",
+    "scope",
+    "negation",
+    "exception",
+    "literal",
+    "alias",
+    "unknown",
+    "refusal",
+    "recovery",
+    "authority",
+)
+WAI1_CONTROL_REF = SOURCE_REF
+NOEMA_PRODUCT_REF = "07ee0475d1559a2b09488f925645a83f786d1f3c"
+NOEMA_REVIEW_REF = "7344de8874f9de8a2a2ef78a31f7e760f56e491e"
+MAX_CONTROL_PATHS = 1_024
+MAX_DEVELOPMENT_CASES = 128
+MAX_PROMPT_COMPONENTS = 8_192
+MAX_PROMPT_BYTES = 4 * 1024 * 1024
+MAX_SECTION_COUNT = 32_768
+MAX_HOSTILE_SPECIMENS = 128
+MAX_MODEL_OUTPUT_BYTES = 256 * 1024
+EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = "074b690821bcd0b8e5c1dde9194bed603d75d1d40b8219ec60c902ab35e8c3c4"
+EXPECTED_CONTROL_SHA256 = {
+    "noema": "e3c93bcc8785b13e220f5d23b5a56d7e1d7873132c1cb79ba0f66f21a60b8498",
+    "raw": "bfc416cc7fd3d9a1a569fea4eaa6e6577770bf89f77b68eb23378633d57da23e",
+    "section-graph": "571a5c3cb26d832058511495e0bdce1207bcacf2601f68e6347cb8a25c88f5d4",
+    "simple": "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
+    "wai1": "d296ad65805dacf9e9514e1e9517c0f61335ddcdc33a19b91a3fa1d8cfe8daab",
+}
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
     "research/instruction-architecture/schemas/invocation-profile-v1.schema.json"
@@ -6345,6 +6399,1651 @@ def _atomic_write(path: Path, data: bytes) -> None:
         os.close(parent)
 
 
+# Step 2 keeps evaluator semantics outside every adapter.  This same contract
+# is copied into each arm record so neither historical IR becomes the host.
+NEUTRAL_CONTRACT = {
+    "authority": "exact-canonical-source-bytes-at-source-ref",
+    "case_semantics": "exact-source-span",
+    "fallback": "exact-current-source-counted-as-not-native",
+    "prompt": "task-plus-representation-without-oracle-or-arm-label",
+    "score": "exact-source-recovery-and-native-mechanism",
+}
+
+
+@lru_cache(maxsize=4)
+def _pinned_commit(ref: str) -> str:
+    if re.fullmatch(r"[0-9a-f]{40}", ref) is None:
+        raise Refusal("control ref is not an exact commit id")
+    raw = _git(["rev-parse", "--verify", f"{ref}^{{commit}}"], 64)
+    if raw != f"{ref}\n".encode("ascii"):
+        raise Refusal("control commit identity drift")
+    return ref
+
+
+def _git_blob_at(ref: str, path: str) -> bytes:
+    _pinned_commit(ref)
+    _safe_relative(path)
+    return _git(["cat-file", "blob", f"{ref}:{path}"], MAX_SOURCE_BYTES)
+
+
+def _control_paths_at(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+    _pinned_commit(ref)
+    if not prefixes:
+        raise Refusal("control inventory has no admitted prefixes")
+    for prefix in prefixes:
+        _safe_relative(prefix)
+    raw = _git(
+        ["ls-tree", "-r", "-z", "--name-only", ref, "--", *prefixes],
+        2 * 1024 * 1024,
+    )
+    if not raw or not raw.endswith(b"\0") or raw.startswith(b"\0") or b"\0\0" in raw:
+        raise Refusal("control tree inventory is malformed")
+    try:
+        paths = [part.decode("utf-8", errors="strict") for part in raw[:-1].split(b"\0")]
+    except UnicodeDecodeError as exc:
+        raise Refusal("control tree path is not UTF-8") from exc
+    if paths != sorted(set(paths)) or len(paths) > MAX_CONTROL_PATHS:
+        raise Refusal("control tree inventory is unordered, duplicated, or oversized")
+    for path in paths:
+        _safe_relative(path)
+        if not any(
+            path == prefix or path.startswith(prefix.rstrip("/") + "/")
+            for prefix in prefixes
+        ):
+            raise Refusal("control tree escaped its admitted prefixes")
+    return paths
+
+
+def _control_inventory(
+    ref: str,
+    prefixes: tuple[str, ...],
+    *,
+    require_live_match: bool,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path in _control_paths_at(ref, prefixes):
+        data = _git_blob_at(ref, path)
+        if require_live_match:
+            live = _read_regular(
+                ROOT / Path(*PurePosixPath(path).parts), MAX_SOURCE_BYTES
+            )
+            if live != data:
+                raise Refusal(f"immutable control differs from its entry bytes: {path}")
+        records.append(
+            {"bytes": len(data), "path": path, "ref": ref, "sha256": _sha256(data)}
+        )
+    return records
+
+
+def _range_record(
+    document: dict[str, Any],
+    data: bytes,
+    start: int,
+    end: int,
+    mode: str,
+    reason: str,
+    representation_id: str,
+) -> dict[str, Any]:
+    if (
+        type(start) is not int
+        or type(end) is not int
+        or start < 0
+        or end <= start
+        or end > len(data)
+        or mode not in {"native", "raw-fallback"}
+    ):
+        raise Refusal("adapter range is malformed")
+    if mode == "native" and reason:
+        raise Refusal("native adapter range carries a fallback reason")
+    if mode == "raw-fallback" and not reason:
+        raise Refusal("fallback adapter range has no reason")
+    span = data[start:end]
+    return {
+        "bytes": len(span),
+        "end": end,
+        "mode": mode,
+        "path": document["path"],
+        "reason": reason,
+        "representation_id": representation_id,
+        "sha256": _sha256(span),
+        "start": start,
+    }
+
+
+def _coverage_summary(
+    manifest: dict[str, Any], ranges: list[dict[str, Any]]
+) -> dict[str, int]:
+    by_path: dict[str, list[dict[str, Any]]] = {}
+    for item in ranges:
+        by_path.setdefault(item["path"], []).append(item)
+    documents = {item["path"]: item for item in manifest["documents"]}
+    if set(by_path) != set(documents):
+        raise Refusal("adapter coverage does not name the complete corpus")
+    native_files = fallback_files = native_bytes = fallback_bytes = 0
+    for path, document in documents.items():
+        data = _source_blob(path)
+        rows = sorted(by_path[path], key=lambda item: (item["start"], item["end"]))
+        cursor = 0
+        modes: set[str] = set()
+        for row in rows:
+            if row["start"] != cursor or row["end"] > len(data):
+                raise Refusal(f"adapter coverage has a gap or overlap: {path}")
+            if (
+                row["bytes"] != row["end"] - row["start"]
+                or row["sha256"] != _sha256(data[row["start"] : row["end"]])
+            ):
+                raise Refusal(f"adapter coverage digest drift: {path}")
+            cursor = row["end"]
+            modes.add(row["mode"])
+            if row["mode"] == "native":
+                native_bytes += row["bytes"]
+            else:
+                fallback_bytes += row["bytes"]
+        if cursor != document["bytes"] or len(data) != document["bytes"]:
+            raise Refusal(f"adapter coverage does not recover source bytes: {path}")
+        native_files += "native" in modes
+        fallback_files += "raw-fallback" in modes
+
+    canonical_paths = {
+        item["path"]
+        for item in manifest["documents"]
+        if item["path"] == item["canonical_content_path"]
+    }
+    unique_native_files = unique_fallback_files = 0
+    unique_native_bytes = unique_fallback_bytes = 0
+    for path in canonical_paths:
+        modes = {item["mode"] for item in by_path[path]}
+        unique_native_files += "native" in modes
+        unique_fallback_files += "raw-fallback" in modes
+        for item in by_path[path]:
+            if item["mode"] == "native":
+                unique_native_bytes += item["bytes"]
+            else:
+                unique_fallback_bytes += item["bytes"]
+    summary = {
+        "fallback_physical_bytes": fallback_bytes,
+        "fallback_physical_files": fallback_files,
+        "fallback_ranges": sum(item["mode"] == "raw-fallback" for item in ranges),
+        "fallback_unique_bytes": unique_fallback_bytes,
+        "fallback_unique_files": unique_fallback_files,
+        "native_physical_bytes": native_bytes,
+        "native_physical_files": native_files,
+        "native_ranges": sum(item["mode"] == "native" for item in ranges),
+        "native_unique_bytes": unique_native_bytes,
+        "native_unique_files": unique_native_files,
+        "physical_bytes": manifest["totals"]["physical_bytes"],
+        "physical_files": manifest["totals"]["physical_files"],
+        "unique_bytes": manifest["totals"]["unique_bytes"],
+        "unique_files": manifest["totals"]["unique_files"],
+    }
+    if (
+        native_bytes + fallback_bytes != summary["physical_bytes"]
+        or unique_native_bytes + unique_fallback_bytes != summary["unique_bytes"]
+    ):
+        raise Refusal("adapter coverage denominators do not reconcile")
+    return summary
+
+
+def _coverage(
+    manifest: dict[str, Any], ranges: list[dict[str, Any]]
+) -> dict[str, Any]:
+    ranges.sort(key=lambda item: (item["path"], item["start"], item["end"]))
+    return {"ranges": ranges, "summary": _coverage_summary(manifest, ranges)}
+
+
+def _base_control(
+    arm: str,
+    manifest: dict[str, Any],
+    ranges: list[dict[str, Any]],
+    *,
+    binding_kind: str,
+    product_ref: str,
+    review_ref: str | None,
+    artifacts: list[dict[str, Any]],
+    checker: dict[str, Any] | None,
+    native_mappings: list[dict[str, Any]],
+    graph: dict[str, Any],
+    mechanism_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    if arm not in DEVELOPMENT_ARMS:
+        raise Refusal("unknown development arm")
+    binding_body = {
+        "artifacts": artifacts,
+        "kind": binding_kind,
+        "product_ref": product_ref,
+        "review_ref": review_ref,
+    }
+    control = {
+        "arm": arm,
+        "binding": {
+            **binding_body,
+            "artifacts_sha256": _sha256(_canonical_json(binding_body)),
+            "checker": checker,
+        },
+        "claims": {
+            "candidate_defines_semantics": False,
+            "fallback_is_aggregate_success": False,
+            "fallback_is_native_coverage": False,
+            "full_source_trace_required": True,
+            "round_trip_scope": "exact-source-bytes",
+        },
+        "contract": dict(NEUTRAL_CONTRACT),
+        "coverage": _coverage(manifest, ranges),
+        "graph": graph,
+        "manifest_sha256": _artifact_digest(manifest),
+        "mechanism_evidence": mechanism_evidence,
+        "native_mappings": native_mappings,
+        "schema": f"{SCHEMA_PREFIX}-control/v1",
+        "source_ref": SOURCE_REF,
+    }
+    expected = EXPECTED_CONTROL_SHA256.get(arm)
+    if expected is not None and _artifact_digest(control) != expected:
+        raise Refusal(f"immutable {arm} control digest drift")
+    return control
+
+
+def _raw_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    ranges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        ranges.append(
+            _range_record(
+                document, data, 0, len(data), "native", "", f"raw:{document['sha256']}"
+            )
+        )
+    return _base_control(
+        "raw",
+        manifest,
+        ranges,
+        binding_kind="verified-loader-source",
+        product_ref=SOURCE_REF,
+        review_ref=None,
+        artifacts=[],
+        checker=None,
+        native_mappings=[],
+        graph={"edges": [], "nodes": []},
+        mechanism_evidence={
+            "current_native_bytes": manifest["totals"]["physical_bytes"],
+            "current_native_envelopes": len(ranges),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+
+
+def _wai1_checker() -> tuple[list[dict[str, Any]], str]:
+    checker_path = "scripts/agent_instruction.py"
+    source = _git_blob_at(WAI1_CONTROL_REF, checker_path)
+    namespace: dict[str, Any] = {
+        "__file__": str(ROOT / checker_path),
+        "__name__": "_framework74_pinned_wai1_checker",
+        "__package__": None,
+    }
+    try:
+        # phylax: allow exact merged WAI1 checker blob at its immutable Git ref
+        exec(compile(source, f"{WAI1_CONTROL_REF}:{checker_path}", "exec"), namespace)
+        records = namespace["check_manifest"](
+            ROOT, "tests/fixtures/agent-instruction-v1/manifest.json"
+        )
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise Refusal("pinned WAI1 checker refused its immutable fixtures") from exc
+    fixture_ids = {
+        item.get("fixture_id")
+        for item in records
+        if isinstance(item, dict) and isinstance(item.get("fixture_id"), str)
+    } if isinstance(records, list) else set()
+    if (
+        not isinstance(records, list)
+        or len(records) != 21
+        or fixture_ids
+        != {
+            "fiat-study-runbook-phase",
+            "horos-boundary-check",
+            "promise-machine-router-selection",
+        }
+    ):
+        raise Refusal("pinned WAI1 checker result cardinality drift")
+    return records, _sha256(_canonical_json(records))
+
+
+def _wai1_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    prefixes = (
+        "docs/agent-instruction-language-v1.md",
+        "schemas/agent-instruction-v1.schema.json",
+        "scripts/agent_instruction.py",
+        "tests/fixtures/agent-instruction-v1",
+    )
+    artifacts = _control_inventory(WAI1_CONTROL_REF, prefixes, require_live_match=True)
+    wai_manifest = _decode_record(
+        _git_blob_at(WAI1_CONTROL_REF, "tests/fixtures/agent-instruction-v1/manifest.json")
+    )
+    fixtures = wai_manifest.get("fixtures")
+    if not isinstance(fixtures, list) or len(fixtures) != 3:
+        raise Refusal("WAI1 immutable manifest does not contain three envelopes")
+    documents = {item["path"]: item for item in manifest["documents"]}
+    native_by_path: dict[str, list[tuple[int, int, dict[str, Any]]]] = {}
+    mappings: list[dict[str, Any]] = []
+    for fixture in fixtures:
+        if not isinstance(fixture, dict) or not isinstance(fixture.get("source"), dict):
+            raise Refusal("WAI1 envelope source binding is malformed")
+        source = fixture["source"]
+        path = source.get("path")
+        if path not in documents:
+            raise Refusal("WAI1 envelope source is outside the current corpus")
+        try:
+            start = int(source["start"])
+            end = int(source["end"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise Refusal("WAI1 envelope range is malformed") from exc
+        data = _source_blob(path)
+        compact = fixture.get("artifacts", {}).get("compact", {})
+        compact_path = compact.get("path")
+        if (
+            source.get("sha256") != _sha256(data)
+            or start < 0
+            or end <= start
+            or end > len(data)
+            or source.get("span_sha256") != _sha256(data[start:end])
+            or not isinstance(compact_path, str)
+        ):
+            raise Refusal("WAI1 current envelope source binding drift")
+        compact_bytes = _git_blob_at(WAI1_CONTROL_REF, compact_path)
+        if compact.get("sha256") != _sha256(compact_bytes):
+            raise Refusal("WAI1 compact envelope digest drift")
+        identifier = f"wai1:{fixture['id']}"
+        mapping = {
+            "end": end,
+            "id": identifier,
+            "path": path,
+            "representation_bytes": len(compact_bytes),
+            "representation_path": compact_path,
+            "representation_sha256": _sha256(compact_bytes),
+            "source_sha256": _sha256(data[start:end]),
+            "start": start,
+        }
+        mappings.append(mapping)
+        native_by_path.setdefault(path, []).append((start, end, mapping))
+    mappings.sort(key=lambda item: item["id"])
+
+    ranges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        cursor = 0
+        for start, end, mapping in sorted(native_by_path.get(document["path"], [])):
+            if start < cursor:
+                raise Refusal("WAI1 current envelope ranges overlap")
+            if start > cursor:
+                ranges.append(
+                    _range_record(
+                        document,
+                        data,
+                        cursor,
+                        start,
+                        "raw-fallback",
+                        "unmapped-current-span",
+                        f"raw:{document['sha256']}:{cursor}:{start}",
+                    )
+                )
+            ranges.append(
+                _range_record(document, data, start, end, "native", "", mapping["id"])
+            )
+            cursor = end
+        if cursor < len(data):
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    cursor,
+                    len(data),
+                    "raw-fallback",
+                    "unmapped-current-span",
+                    f"raw:{document['sha256']}:{cursor}:{len(data)}",
+                )
+            )
+    records, checker_sha = _wai1_checker()
+    control = _base_control(
+        "wai1",
+        manifest,
+        ranges,
+        binding_kind="merged-wai1-at-entry-ref",
+        product_ref=WAI1_CONTROL_REF,
+        review_ref=None,
+        artifacts=artifacts,
+        checker={
+            "invoked": True,
+            "record_count": len(records),
+            "result_sha256": checker_sha,
+            "status": "pass",
+        },
+        native_mappings=mappings,
+        graph={"edges": [], "nodes": []},
+        mechanism_evidence={
+            "current_native_bytes": sum(item["end"] - item["start"] for item in mappings),
+            "current_native_envelopes": len(mappings),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+    summary = control["coverage"]["summary"]
+    if (
+        summary["native_ranges"] != 3
+        or summary["native_physical_bytes"] != 11_170
+        or summary["native_unique_bytes"] != 11_170
+        or summary["fallback_physical_bytes"] != 2_279_280
+        or summary["fallback_unique_bytes"] != 1_807_836
+    ):
+        raise Refusal("WAI1 current native/fallback coverage drift")
+    return control
+
+
+def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    product_prefixes = (
+        "docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md",
+        "docs/noema-v1.md",
+        "schemas/noema-v1.schema.json",
+        "scripts/noema.py",
+        "tests/fixtures/noema-v1",
+    )
+    review_prefixes = (
+        "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.md",
+        "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.synopsis.md",
+    )
+    artifacts = _control_inventory(
+        NOEMA_PRODUCT_REF, product_prefixes, require_live_match=False
+    ) + _control_inventory(NOEMA_REVIEW_REF, review_prefixes, require_live_match=False)
+    artifacts.sort(key=lambda item: (item["ref"], item["path"]))
+    noema_manifest = _decode_record(
+        _git_blob_at(NOEMA_PRODUCT_REF, "tests/fixtures/noema-v1/manifest.json")
+    )
+    specimens = noema_manifest.get("specimens")
+    if not isinstance(specimens, list) or len(specimens) != 4:
+        raise Refusal("Noema immutable specimen inventory drift")
+    documents = {item["path"]: item for item in manifest["documents"]}
+    current_by_path: dict[str, list[dict[str, Any]]] = {}
+    stale_paths: set[str] = set()
+    synthetic_spans = 0
+    synthetic_bytes = 0
+    current_sources = 0
+    for specimen in specimens:
+        if not isinstance(specimen, dict) or not isinstance(specimen.get("directory"), str):
+            raise Refusal("Noema specimen record is malformed")
+        root = specimen["directory"]
+        identity = _decode_record(
+            _git_blob_at(NOEMA_PRODUCT_REF, f"tests/fixtures/noema-v1/{root}/source.json")
+        )
+        spans_record = _decode_record(
+            _git_blob_at(
+                NOEMA_PRODUCT_REF,
+                f"tests/fixtures/noema-v1/{root}/source-spans.json",
+            )
+        )
+        path = identity.get("path")
+        spans = spans_record.get("spans")
+        if path not in documents or not isinstance(spans, list):
+            raise Refusal("Noema specimen source is outside the current corpus")
+        cursor = 0
+        mapped = 0
+        mapped_bytes = 0
+        normalized: list[dict[str, Any]] = []
+        for row in spans:
+            if not isinstance(row, dict):
+                raise Refusal("Noema source-span row is malformed")
+            start = row.get("start")
+            end = row.get("end")
+            kind = row.get("kind")
+            if (
+                type(start) is not int
+                or type(end) is not int
+                or start != cursor
+                or end <= start
+                or kind not in {"node", "unsupported-remainder"}
+            ):
+                raise Refusal("Noema source-span partition is malformed")
+            cursor = end
+            normalized.append(row)
+            if kind == "node":
+                mapped += 1
+                mapped_bytes += end - start
+        if cursor != identity.get("bytes") or mapped != specimen.get("mapped_spans"):
+            raise Refusal("Noema source-span partition does not close")
+        synthetic_spans += mapped
+        synthetic_bytes += mapped_bytes
+        current = _source_blob(path)
+        if identity.get("sha256") == _sha256(current) and identity.get("bytes") == len(current):
+            current_sources += 1
+            current_by_path[path] = normalized
+        else:
+            stale_paths.add(path)
+
+    ranges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        mapped_rows = current_by_path.get(document["path"])
+        if mapped_rows is None:
+            reason = (
+                "stale-control-source"
+                if document["path"] in stale_paths
+                else "unsupported-or-unmapped-current-source"
+            )
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    0,
+                    len(data),
+                    "raw-fallback",
+                    reason,
+                    f"raw:{document['sha256']}",
+                )
+            )
+            continue
+        for index, row in enumerate(mapped_rows):
+            native = row["kind"] == "node"
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    row["start"],
+                    row["end"],
+                    "native" if native else "raw-fallback",
+                    "" if native else "unsupported-by-noema-v1",
+                    (
+                        f"noema:{document['path']}:{row['node']}:{index}"
+                        if native
+                        else f"raw:{document['sha256']}:{row['start']}:{row['end']}"
+                    ),
+                )
+            )
+
+    synopsis_path = review_prefixes[1]
+    synopsis = _git_blob_at(NOEMA_REVIEW_REF, synopsis_path)
+    first_line = synopsis.splitlines()[0].decode("ascii", errors="strict")
+    match = re.fullmatch(
+        r"Synopsis schema=fiat-audit-synopsis/v1 \| source=(.+) \| "
+        r"source_sha256=([0-9a-f]{64}) \| h2_count=([0-9]+)",
+        first_line,
+    )
+    review = _git_blob_at(NOEMA_REVIEW_REF, review_prefixes[0])
+    if (
+        match is None
+        or match.group(1) != review_prefixes[0]
+        or match.group(2) != _sha256(review)
+        or int(match.group(3)) != 44
+    ):
+        raise Refusal("Noema review synopsis does not bind its authoritative record")
+    control = _base_control(
+        "noema",
+        manifest,
+        ranges,
+        binding_kind="parked-noema-product-and-review",
+        product_ref=NOEMA_PRODUCT_REF,
+        review_ref=NOEMA_REVIEW_REF,
+        artifacts=artifacts,
+        checker=None,
+        native_mappings=[],
+        graph={"edges": [], "nodes": []},
+        mechanism_evidence={
+            "current_native_bytes": sum(
+                item["bytes"] for item in ranges if item["mode"] == "native"
+            ),
+            "current_native_envelopes": sum(
+                item["mode"] == "native" for item in ranges
+            ),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus-with-separate-product-synthetic-evidence",
+            "stale_sources": len(stale_paths),
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": synthetic_bytes,
+            "synthetic_mapped_spans": synthetic_spans,
+        },
+    )
+    summary = control["coverage"]["summary"]
+    if (
+        current_sources != 1
+        or len(stale_paths) != 3
+        or synthetic_spans != 40
+        or synthetic_bytes != 3_173
+        or summary["native_ranges"] != 10
+        or summary["native_physical_bytes"] != 655
+        or summary["native_unique_bytes"] != 655
+        or summary["fallback_ranges"] != 201
+        or summary["fallback_physical_bytes"] != 2_289_795
+        or summary["fallback_unique_bytes"] != 1_818_351
+    ):
+        raise Refusal("Noema current fallback or synthetic coverage drift")
+    return control
+
+
+def _simple_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    ranges: list[dict[str, Any]] = []
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        ranges.append(
+            _range_record(
+                document, data, 0, len(data), "native", "", f"file:{document['sha256']}"
+            )
+        )
+        if document["path"] == document["canonical_content_path"]:
+            nodes.append(
+                {
+                    "bytes": document["bytes"],
+                    "id": f"file:{document['sha256']}",
+                    "path": document["path"],
+                    "sha256": document["sha256"],
+                }
+            )
+        if document["path"] != document["canonical_content_path"]:
+            edges.append(
+                {
+                    "kind": "exact-content-alias",
+                    "source": document["path"],
+                    "target": f"file:{document['sha256']}",
+                }
+            )
+    nodes.sort(key=lambda item: item["id"])
+    edges.sort(key=lambda item: (item["source"], item["target"]))
+    if len(nodes) != manifest["totals"]["unique_files"]:
+        raise Refusal("simple control deduplication cardinality drift")
+    return _base_control(
+        "simple",
+        manifest,
+        ranges,
+        binding_kind="exact-file-content-addresses",
+        product_ref=SOURCE_REF,
+        review_ref=None,
+        artifacts=[],
+        checker=None,
+        native_mappings=[],
+        graph={"edges": edges, "nodes": nodes},
+        mechanism_evidence={
+            "current_native_bytes": manifest["totals"]["physical_bytes"],
+            "current_native_envelopes": len(nodes),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+
+
+def _markdown_sections(path: str, data: bytes) -> list[dict[str, Any]]:
+    if len(data) > MAX_SOURCE_BYTES:
+        raise Refusal("section source exceeds its byte limit")
+    try:
+        data.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal("section source is not UTF-8") from exc
+    lines = data.splitlines(keepends=True)
+    positions: list[tuple[int, int, bytes]] = []
+    offset = 0
+    fence: tuple[int, int] | None = None
+    for line in lines:
+        body = line.rstrip(b"\r\n")
+        if len(body) > MAX_MARKDOWN_LINE_CHARS:
+            raise Refusal("section source line exceeds its limit")
+        fence_match = re.match(rb" {0,3}(`{3,}|~{3,})", body)
+        if fence_match is not None:
+            marker = fence_match.group(1)
+            identity = (marker[0], len(marker))
+            if fence is None:
+                fence = identity
+            elif identity[0] == fence[0] and identity[1] >= fence[1]:
+                fence = None
+            offset += len(line)
+            continue
+        if fence is None:
+            heading = re.match(rb" {0,3}(#{1,6})(?:[ \t]+(.*?)[ \t]*#*[ \t]*|[ \t]*)$", body)
+            if heading is not None:
+                title = heading.group(2) or b""
+                positions.append((offset, len(heading.group(1)), title))
+        offset += len(line)
+    if fence is not None:
+        raise Refusal("section source has an unclosed fenced block")
+    if len(positions) + 1 > MAX_SECTION_COUNT:
+        raise Refusal("section source exceeds its section count limit")
+
+    descriptors: list[tuple[int, int, bytes, str, list[str]]] = []
+    stack: list[tuple[int, str]] = []
+    duplicates: dict[tuple[int, bytes, str], int] = {}
+    preamble_id: str | None = None
+    if not positions or positions[0][0] > 0:
+        preamble_id = "section:" + _sha256((path + "\0preamble").encode("utf-8"))
+        end = positions[0][0] if positions else len(data)
+        descriptors.append((0, end, b"", preamble_id, []))
+    for index, (start, level, title) in enumerate(positions):
+        while stack and stack[-1][0] >= level:
+            stack.pop()
+        parent = stack[-1][1] if stack else preamble_id
+        parent_key = parent or "root"
+        key = (level, title, parent_key)
+        ordinal = duplicates.get(key, 0)
+        duplicates[key] = ordinal + 1
+        identifier = "section:" + _sha256(
+            path.encode("utf-8")
+            + b"\0"
+            + parent_key.encode("ascii")
+            + b"\0"
+            + str(level).encode("ascii")
+            + b"\0"
+            + title
+            + b"\0"
+            + str(ordinal).encode("ascii")
+        )
+        end = positions[index + 1][0] if index + 1 < len(positions) else len(data)
+        descriptors.append((start, end, title, identifier, [parent] if parent else []))
+        stack.append((level, identifier))
+    nodes: list[dict[str, Any]] = []
+    for start, end, title, identifier, dependencies in descriptors:
+        if end <= start:
+            raise Refusal("section parser emitted an empty span")
+        nodes.append(
+            {
+                "dependencies": dependencies,
+                "end": end,
+                "id": identifier,
+                "path": path,
+                "sha256": _sha256(data[start:end]),
+                "start": start,
+                "title_sha256": _sha256(title),
+            }
+        )
+    if b"".join(data[item["start"] : item["end"]] for item in nodes) != data:
+        raise Refusal("section graph does not round-trip exact source bytes")
+    return nodes
+
+
+def _section_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    ranges: list[dict[str, Any]] = []
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    documents = {item["path"]: item for item in manifest["documents"]}
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        if not document["path"].endswith(".md"):
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    0,
+                    len(data),
+                    "raw-fallback",
+                    "unsupported-non-markdown-source",
+                    f"raw:{document['sha256']}",
+                )
+            )
+            continue
+        for node in _markdown_sections(document["path"], data):
+            nodes.append(node)
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    node["start"],
+                    node["end"],
+                    "native",
+                    "",
+                    node["id"],
+                )
+            )
+            for dependency in node["dependencies"]:
+                edges.append(
+                    {"kind": "section-parent", "source": node["id"], "target": dependency}
+                )
+    if len(nodes) > MAX_SECTION_COUNT:
+        raise Refusal("section graph exceeds its global node limit")
+    nodes.sort(key=lambda item: (item["path"], item["start"], item["id"]))
+    edges.sort(key=lambda item: (item["source"], item["target"]))
+    node_ids = {item["id"] for item in nodes}
+    if len(node_ids) != len(nodes) or any(
+        edge["source"] not in node_ids or edge["target"] not in node_ids
+        for edge in edges
+    ):
+        raise Refusal("section graph has duplicate or missing dependency nodes")
+    control = _base_control(
+        "section-graph",
+        manifest,
+        ranges,
+        binding_kind="exact-source-span-section-graph",
+        product_ref=SOURCE_REF,
+        review_ref=None,
+        artifacts=[],
+        checker=None,
+        native_mappings=[],
+        graph={"edges": edges, "nodes": nodes},
+        mechanism_evidence={
+            "current_native_bytes": sum(item["bytes"] for item in ranges if item["mode"] == "native"),
+            "current_native_envelopes": len(nodes),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+    summary = control["coverage"]["summary"]
+    if (
+        summary["native_physical_bytes"] != 2_071_863
+        or summary["native_unique_bytes"] != 1_600_419
+        or summary["fallback_physical_bytes"] != 218_587
+        or summary["fallback_unique_bytes"] != 218_587
+    ):
+        raise Refusal("section graph Markdown/fallback coverage drift")
+    _validate_section_graph(control, manifest)
+    return control
+
+
+def _validate_section_graph(control: dict[str, Any], manifest: dict[str, Any]) -> None:
+    expected_nodes: list[dict[str, Any]] = []
+    expected_edges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        if not document["path"].endswith(".md"):
+            continue
+        for node in _markdown_sections(document["path"], _source_blob(document["path"])):
+            expected_nodes.append(node)
+            for dependency in node["dependencies"]:
+                expected_edges.append(
+                    {"kind": "section-parent", "source": node["id"], "target": dependency}
+                )
+    expected_nodes.sort(key=lambda item: (item["path"], item["start"], item["id"]))
+    expected_edges.sort(key=lambda item: (item["source"], item["target"]))
+    if control.get("graph") != {"edges": expected_edges, "nodes": expected_nodes}:
+        raise Refusal("section graph differs from its deterministic parser or misses an edge")
+
+
+CASE_SPECS = (
+    (
+        "order",
+        "plugins/hexaemeron/skills/fiat/SKILL.md",
+        "Act on the single directive it prints, then receipt it.",
+        "state the next action while preserving the governing operation order",
+        "tool-invocation",
+    ),
+    (
+        "scope",
+        "plugins/horos/skills/horos/SKILL.md",
+        "A scoped pass says nothing about outside-scope drift",
+        "state the bounded conclusion without widening its scope",
+        "decision",
+    ),
+    (
+        "negation",
+        "AGENTS.md",
+        "Files present in context are not automatically active skills.",
+        "decide whether the supplied context activates an instruction",
+        "decision",
+    ),
+    (
+        "exception",
+        "plugins/brevitas/skills/brevitas/SKILL.md",
+        "- Exceptions: none\n\n### brevitas-evidence-preservation",
+        "state whether the described gate has an applicable exception",
+        "decision",
+    ),
+    (
+        "literal",
+        "plugins/hexaemeron/skills/ephoros/SKILL.md",
+        "40-hex literal used as a metric label",
+        "preserve the exact literal constraint in the resulting plan",
+        "structured-plan",
+    ),
+    (
+        "alias",
+        "PROMISE_MACHINE.md",
+        "every canonical name a case expects or contests",
+        "resolve the named identity without inventing an alias",
+        "decision",
+    ),
+    (
+        "unknown",
+        "PROMISE_MACHINE.md",
+        "Absence, ambiguity and `unknown` never pass.",
+        "decide the transition when the supplied evidence is unknown",
+        "refusal",
+    ),
+    (
+        "refusal",
+        "plugins/hexaemeron/skills/elenchus/SKILL.md",
+        "- Refuses: A symptom-only patch",
+        "decide whether to proceed with the described repair",
+        "refusal",
+    ),
+    (
+        "recovery",
+        "plugins/hexaemeron/skills/metron/SKILL.md",
+        "- Recovery: Freeze one reproducible method",
+        "state the recovery sequence for the failed measurement",
+        "recovery",
+    ),
+    (
+        "authority",
+        "AGENTS.md",
+        "It does not activate a skill, grant authority,",
+        "decide whether the supplied material grants action authority",
+        "refusal",
+    ),
+)
+
+
+def _scenario_paths(
+    manifest: dict[str, Any], graph: dict[str, Any], scenario_id: str
+) -> list[str]:
+    roots = [item for item in graph["scenario_roots"] if item["id"] == scenario_id]
+    if len(roots) != 1:
+        raise Refusal("development scenario root is missing or duplicated")
+    adjacency: dict[str, set[str]] = {}
+    for edge in graph["scenario_edges"]:
+        if scenario_id in edge["active_scenarios"]:
+            adjacency.setdefault(edge["source"], set()).add(edge["target"])
+    pending = [roots[0]["node"]]
+    reached: set[str] = set()
+    ordered: list[str] = []
+    while pending:
+        node = pending.pop(0)
+        if node in reached:
+            continue
+        reached.add(node)
+        ordered.append(node)
+        if len(reached) > EXPECTED_TOTALS["physical_files"]:
+            raise Refusal("development scenario graph exceeds its corpus bound")
+        pending.extend(
+            path
+            for path in sorted(adjacency.get(node, set()))
+            if path not in reached and path not in pending
+        )
+    expected = {
+        item["path"]
+        for item in manifest["documents"]
+        if scenario_id in item["scenario_reachability"]
+    }
+    if reached != expected:
+        raise Refusal("development scenario graph has a missing or invented edge")
+    return ordered
+
+
+def _scenario_for_path(
+    document: dict[str, Any], graph: dict[str, Any], development_skills: set[str]
+) -> str:
+    roots = {item["id"]: item for item in graph["scenario_roots"]}
+    candidates = []
+    for identifier in document["scenario_reachability"]:
+        root = roots.get(identifier)
+        if (
+            root is not None
+            and root["route"] == "repository"
+            and root["credential"] == "absent"
+            and root["selected_skill"] in development_skills
+        ):
+            candidates.append(identifier)
+    if not candidates:
+        raise Refusal(f"development case source has no admitted scenario: {document['path']}")
+    return sorted(candidates)[0]
+
+
+def _development_cases(
+    manifest: dict[str, Any], cohorts: dict[str, Any], graph: dict[str, Any]
+) -> dict[str, Any]:
+    documents = {item["path"]: item for item in manifest["documents"]}
+    development_paths = set(cohorts["development"]["paths"])
+    holdout_paths = set(cohorts["holdout"]["paths"])
+    development_skills = set(cohorts["development"]["logical_skills"])
+    cases: list[dict[str, Any]] = []
+    for index, (semantic, path, needle, task, response_shape) in enumerate(CASE_SPECS, 1):
+        document = documents.get(path)
+        if document is None or path not in development_paths or path in holdout_paths:
+            raise Refusal("development case source crosses the sealed cohort boundary")
+        data = _source_blob(path)
+        encoded = needle.encode("utf-8")
+        start = data.find(encoded)
+        if start < 0 or data.find(encoded, start + 1) >= 0:
+            raise Refusal(f"development case source span is missing or ambiguous: {semantic}")
+        end = start + len(encoded)
+        scenario_id = _scenario_for_path(document, graph, development_skills)
+        if path not in _scenario_paths(manifest, graph, scenario_id):
+            raise Refusal("development case source is not scenario reachable")
+        cases.append(
+            {
+                "expectation": {
+                    "kind": "exact-source-span",
+                    "sha256": _sha256(data[start:end]),
+                },
+                "id": f"development-{index:02d}-{semantic}",
+                "response_shape": response_shape,
+                "scenario_id": scenario_id,
+                "semantic_class": semantic,
+                "source": {
+                    "end": end,
+                    "path": path,
+                    "sha256": _sha256(data[start:end]),
+                    "source_sha256": _sha256(data),
+                    "start": start,
+                },
+                "task": task,
+            }
+        )
+    record = {
+        "cases": cases,
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "manifest_sha256": _artifact_digest(manifest),
+        "schema": f"{SCHEMA_PREFIX}-cases/v1",
+        "source_ref": SOURCE_REF,
+    }
+    _validate_development_cases(record, manifest, cohorts, graph)
+    return record
+
+
+def _validate_development_cases(
+    record: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+) -> None:
+    _require_fields(
+        record,
+        ("cases", "cohorts_sha256", "manifest_sha256", "schema", "source_ref"),
+        ("cases", "cohorts_sha256", "manifest_sha256", "schema", "source_ref"),
+        "development cases",
+    )
+    cases = record["cases"]
+    if (
+        record["schema"] != f"{SCHEMA_PREFIX}-cases/v1"
+        or record["source_ref"] != SOURCE_REF
+        or record["manifest_sha256"] != _artifact_digest(manifest)
+        or record["cohorts_sha256"] != _artifact_digest(cohorts)
+        or not isinstance(cases, list)
+        or len(cases) > MAX_DEVELOPMENT_CASES
+        or [item.get("semantic_class") for item in cases] != list(DEVELOPMENT_CLASSES)
+    ):
+        raise Refusal("development case-set identity drift")
+    holdout_paths = set(cohorts["holdout"]["paths"])
+    development_paths = set(cohorts["development"]["paths"])
+    for case in cases:
+        _require_fields(
+            case,
+            ("expectation", "id", "response_shape", "scenario_id", "semantic_class", "source", "task"),
+            ("expectation", "id", "response_shape", "scenario_id", "semantic_class", "source", "task"),
+            "development case",
+        )
+        source = case["source"]
+        expectation = case["expectation"]
+        if not isinstance(source, dict) or not isinstance(expectation, dict):
+            raise Refusal("development case source or expectation is malformed")
+        _require_fields(
+            source,
+            ("end", "path", "sha256", "source_sha256", "start"),
+            ("end", "path", "sha256", "source_sha256", "start"),
+            "development case source",
+        )
+        _require_fields(
+            expectation,
+            ("kind", "sha256"),
+            ("kind", "sha256"),
+            "development case expectation",
+        )
+        path = source["path"]
+        data = _source_blob(path)
+        if (
+            path not in development_paths
+            or path in holdout_paths
+            or source["start"] < 0
+            or source["end"] <= source["start"]
+            or source["end"] > len(data)
+            or source["source_sha256"] != _sha256(data)
+            or source["sha256"] != _sha256(data[source["start"] : source["end"]])
+            or expectation != {"kind": "exact-source-span", "sha256": source["sha256"]}
+            or path not in _scenario_paths(manifest, graph, case["scenario_id"])
+        ):
+            raise Refusal("development case source oracle drift")
+        if not isinstance(case["task"], str) or not case["task"]:
+            raise Refusal("development case task is empty")
+
+
+def _control_ranges(control: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    result: dict[str, list[dict[str, Any]]] = {}
+    for row in control["coverage"]["ranges"]:
+        result.setdefault(row["path"], []).append(row)
+    return result
+
+
+def _prompt_component(
+    identifier: str,
+    content: bytes,
+    encoding: str,
+    source: dict[str, Any] | None,
+) -> dict[str, Any]:
+    try:
+        text = content.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal("prompt representation is not UTF-8") from exc
+    return {
+        "content": text,
+        "encoding": encoding,
+        "id": identifier,
+        "kind": "representation" if source is not None else "task",
+        "source": source,
+    }
+
+
+def _assemble_prompt(
+    arm: str,
+    case: dict[str, Any],
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if control["arm"] != arm:
+        raise Refusal("adapter and control identity differ")
+    documents = {item["path"]: item for item in manifest["documents"]}
+    paths = _scenario_paths(manifest, graph, case["scenario_id"])
+    components = [
+        _prompt_component(
+            "task",
+            case["task"].encode("utf-8"),
+            "utf-8-task",
+            None,
+        )
+    ]
+    trace: list[dict[str, Any]] = []
+    if arm == "simple":
+        emitted: dict[str, str] = {}
+        originals: dict[str, list[str]] = {}
+        for path in paths:
+            document = documents[path]
+            canonical_path = document["canonical_content_path"]
+            canonical = documents[canonical_path]
+            identifier = f"file:{canonical['sha256']}"
+            originals.setdefault(identifier, []).append(path)
+            if identifier in emitted:
+                continue
+            data = _source_blob(canonical_path)
+            component_id = f"representation-{len(components):04d}"
+            components.append(
+                _prompt_component(
+                    component_id,
+                    data,
+                    "content-addressed-source",
+                    {
+                        "end": len(data),
+                        "path": canonical_path,
+                        "sha256": _sha256(data),
+                        "start": 0,
+                    },
+                )
+            )
+            emitted[identifier] = component_id
+        for identifier in sorted(originals):
+            trace.append(
+                {
+                    "component_id": emitted[identifier],
+                    "mode": "native",
+                    "original_paths": sorted(originals[identifier]),
+                    "representation_id": identifier,
+                }
+            )
+    else:
+        ranges_by_path = _control_ranges(control)
+        mappings = {item["id"]: item for item in control["native_mappings"]}
+        for path in paths:
+            data = _source_blob(path)
+            rows = ranges_by_path.get(path)
+            if not rows:
+                raise Refusal("adapter selection has no source coverage")
+            for row in rows:
+                payload = data[row["start"] : row["end"]]
+                encoding = (
+                    "raw-source-fallback"
+                    if row["mode"] == "raw-fallback"
+                    else "exact-source"
+                )
+                if arm == "wai1" and row["mode"] == "native":
+                    mapping = mappings.get(row["representation_id"])
+                    if mapping is None:
+                        raise Refusal("WAI1 prompt mapping is missing")
+                    payload = _git_blob_at(WAI1_CONTROL_REF, mapping["representation_path"])
+                    if _sha256(payload) != mapping["representation_sha256"]:
+                        raise Refusal("WAI1 prompt representation digest drift")
+                    encoding = "wai1-compact"
+                elif arm == "section-graph" and row["mode"] == "native":
+                    encoding = "exact-source-section"
+                component_id = f"representation-{len(components):04d}"
+                source = {
+                    "end": row["end"],
+                    "path": path,
+                    "sha256": row["sha256"],
+                    "start": row["start"],
+                }
+                components.append(_prompt_component(component_id, payload, encoding, source))
+                trace.append(
+                    {
+                        "component_id": component_id,
+                        "mode": row["mode"],
+                        "original_paths": [path],
+                        "representation_id": row["representation_id"],
+                    }
+                )
+    if len(components) > MAX_PROMPT_COMPONENTS:
+        raise Refusal("prompt component count exceeds its limit")
+    body = {
+        "case_id": case["id"],
+        "components": components,
+        "scenario_id": case["scenario_id"],
+        "schema": f"{SCHEMA_PREFIX}-prompt/v1",
+    }
+    body_bytes = _canonical_json(body)
+    if len(body_bytes) > MAX_PROMPT_BYTES:
+        raise Refusal("prompt exceeds its byte limit")
+    prompt = {**body, "sha256": _sha256(body_bytes)}
+    if set(prompt) & {"arm", "candidate", "expected_answer", "scorer_key"}:
+        raise Refusal("prompt contains an answer or candidate label")
+    return prompt, trace
+
+
+def _case_native(control: dict[str, Any], case: dict[str, Any]) -> bool:
+    source = case["source"]
+    rows = [
+        item
+        for item in control["coverage"]["ranges"]
+        if item["path"] == source["path"]
+        and item["end"] > source["start"]
+        and item["start"] < source["end"]
+    ]
+    cursor = source["start"]
+    for row in rows:
+        start = max(row["start"], source["start"])
+        end = min(row["end"], source["end"])
+        if start != cursor or row["mode"] != "native":
+            return False
+        cursor = end
+    return cursor == source["end"]
+
+
+def _validate_prompt(prompt: dict[str, Any]) -> None:
+    _require_fields(
+        prompt,
+        ("case_id", "components", "scenario_id", "schema", "sha256"),
+        ("case_id", "components", "scenario_id", "schema", "sha256"),
+        "prompt",
+    )
+    components = prompt["components"]
+    if (
+        prompt["schema"] != f"{SCHEMA_PREFIX}-prompt/v1"
+        or not isinstance(components, list)
+        or not 2 <= len(components) <= MAX_PROMPT_COMPONENTS
+    ):
+        raise Refusal("prompt identity or component count drift")
+    for index, component in enumerate(components):
+        _require_fields(
+            component,
+            ("content", "encoding", "id", "kind", "source"),
+            ("content", "encoding", "id", "kind", "source"),
+            "prompt component",
+        )
+        if not isinstance(component["content"], str):
+            raise Refusal("prompt component content is malformed")
+        if index == 0:
+            if component["kind"] != "task" or component["source"] is not None:
+                raise Refusal("prompt task component drift")
+        elif component["kind"] != "representation" or not isinstance(
+            component["source"], dict
+        ):
+            raise Refusal("prompt representation component drift")
+    body = {key: value for key, value in prompt.items() if key != "sha256"}
+    if len(_canonical_json(body)) > MAX_PROMPT_BYTES:
+        raise Refusal("prompt exceeds its byte limit")
+    if prompt["sha256"] != _sha256(_canonical_json(body)):
+        raise Refusal("prompt digest drift")
+    if set(prompt) & {"arm", "candidate", "expected_answer", "scorer_key"}:
+        raise Refusal("prompt contains an answer or candidate label")
+
+
+def _validate_score(score: dict[str, Any]) -> None:
+    fields = (
+        "aggregate_success",
+        "exact_fidelity",
+        "fallback_used",
+        "native_success",
+        "trace_complete",
+    )
+    _require_fields(score, fields, fields, "deterministic score")
+    if any(type(score[field]) is not bool for field in fields):
+        raise Refusal("deterministic score fields are not Boolean")
+    if score["fallback_used"] and (
+        score["native_success"] or score["aggregate_success"]
+    ):
+        raise Refusal("raw fallback was relabelled as native or aggregate success")
+    if score["aggregate_success"] and (
+        not score["native_success"] or not score["exact_fidelity"]
+    ):
+        raise Refusal("aggregate success lacks native exact fidelity")
+
+
+def _arm_results(
+    arm: str,
+    cases_record: dict[str, Any],
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+) -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
+    for case in cases_record["cases"]:
+        prompt, trace = _assemble_prompt(arm, case, manifest, graph, control)
+        data = _source_blob(case["source"]["path"])
+        recovered = data[case["source"]["start"] : case["source"]["end"]]
+        exact = _sha256(recovered) == case["expectation"]["sha256"]
+        native = _case_native(control, case)
+        fallback = not native
+        score = {
+            "aggregate_success": bool(exact and native and not fallback),
+            "exact_fidelity": exact,
+            "fallback_used": fallback,
+            "native_success": bool(exact and native),
+            "trace_complete": all(row["original_paths"] for row in trace),
+        }
+        _validate_score(score)
+        outcome = {
+            "kind": case["response_shape"],
+            "recovered_source": {
+                "end": case["source"]["end"],
+                "path": case["source"]["path"],
+                "sha256": _sha256(recovered),
+                "start": case["source"]["start"],
+            },
+            "status": "exact-source-recovered" if exact else "refused",
+        }
+        correlation = _sha256(
+            (
+                SOURCE_REF
+                + "\0"
+                + arm
+                + "\0"
+                + case["scenario_id"]
+                + "\0"
+                + case["id"]
+                + "\0"
+                + prompt["sha256"]
+                + "\0"
+                + _sha256(_canonical_json(outcome))
+            ).encode("utf-8")
+        )
+        results.append(
+            {
+                "case_id": case["id"],
+                "correlation_id": correlation,
+                "outcome": outcome,
+                "prompt": prompt,
+                "scenario_id": case["scenario_id"],
+                "score": score,
+                "selection_trace": trace,
+            }
+        )
+        _validate_prompt(prompt)
+    aggregate = {
+        "aggregate_success_cases": sum(
+            item["score"]["aggregate_success"] for item in results
+        ),
+        "cases": len(results),
+        "exact_fidelity_cases": sum(item["score"]["exact_fidelity"] for item in results),
+        "fallback_cases": sum(item["score"]["fallback_used"] for item in results),
+        "native_success_cases": sum(item["score"]["native_success"] for item in results),
+        "prompt_bytes": sum(len(_canonical_json(item["prompt"])) for item in results),
+    }
+    if aggregate["aggregate_success_cases"] != aggregate["native_success_cases"]:
+        raise Refusal("aggregate success includes non-native results")
+    record = {
+        "aggregate": aggregate,
+        "arm": arm,
+        "case_set_sha256": _artifact_digest(cases_record),
+        "control_sha256": _artifact_digest(control),
+        "results": results,
+        "schema": f"{SCHEMA_PREFIX}-adapter-results/v1",
+        "source_ref": SOURCE_REF,
+    }
+    _validate_adapter_results(record)
+    return record
+
+
+def _validate_adapter_results(record: dict[str, Any]) -> None:
+    _require_fields(
+        record,
+        ("aggregate", "arm", "case_set_sha256", "control_sha256", "results", "schema", "source_ref"),
+        ("aggregate", "arm", "case_set_sha256", "control_sha256", "results", "schema", "source_ref"),
+        "adapter results",
+    )
+    if (
+        record["schema"] != f"{SCHEMA_PREFIX}-adapter-results/v1"
+        or record["source_ref"] != SOURCE_REF
+        or record["arm"] not in DEVELOPMENT_ARMS
+        or not isinstance(record["results"], list)
+    ):
+        raise Refusal("adapter result identity drift")
+    for result in record["results"]:
+        _require_fields(
+            result,
+            ("case_id", "correlation_id", "outcome", "prompt", "scenario_id", "score", "selection_trace"),
+            ("case_id", "correlation_id", "outcome", "prompt", "scenario_id", "score", "selection_trace"),
+            "adapter case result",
+        )
+        _validate_prompt(result["prompt"])
+        _validate_score(result["score"])
+    aggregate = record["aggregate"]
+    expected = {
+        "aggregate_success_cases": sum(item["score"]["aggregate_success"] for item in record["results"]),
+        "cases": len(record["results"]),
+        "exact_fidelity_cases": sum(item["score"]["exact_fidelity"] for item in record["results"]),
+        "fallback_cases": sum(item["score"]["fallback_used"] for item in record["results"]),
+        "native_success_cases": sum(item["score"]["native_success"] for item in record["results"]),
+        "prompt_bytes": sum(len(_canonical_json(item["prompt"])) for item in record["results"]),
+    }
+    if aggregate != expected or aggregate["aggregate_success_cases"] != aggregate["native_success_cases"]:
+        raise Refusal("adapter aggregate includes fallback or differs from case scores")
+
+
+def _hostile_specimens() -> dict[str, Any]:
+    rows = [
+        ("parser-differential", "unclosed-fence", "section source has an unclosed fenced block"),
+        ("stale-source", "changed-source-digest", "source drift"),
+        ("malformed-input", "noncanonical-json", "record is not canonical JSON"),
+        ("malformed-input", "duplicate-json-key", "duplicate JSON key"),
+        ("missing-edge", "delete-scenario-edge", "missing or invented edge"),
+        ("digest", "changed-span-digest", "adapter coverage digest drift"),
+        ("concurrent-change", "replace-open-input", "input changed during read"),
+        ("hostile-output", "oversized-model-output", "model output exceeds its limit"),
+        ("resource-bound", "too-many-components", "prompt component count exceeds its limit"),
+        ("path-boundary", "parent-traversal", "unsafe repository path"),
+        ("path-boundary", "symlink-input", "input is unavailable or unsafe"),
+        ("prompt-leak", "scorer-key-field", "prompt contains an answer or candidate label"),
+    ]
+    if len(rows) > MAX_HOSTILE_SPECIMENS:
+        raise Refusal("hostile specimen count exceeds its limit")
+    return {
+        "schema": f"{SCHEMA_PREFIX}-mutations/v1",
+        "source_ref": SOURCE_REF,
+        "specimens": [
+            {
+                "expected_refusal": expected,
+                "id": f"hostile-{index:02d}-{category}",
+                "mutation": mutation,
+                "risk_class": category,
+            }
+            for index, (category, mutation, expected) in enumerate(rows, 1)
+        ],
+    }
+
+
+def _validate_model_output(data: bytes) -> dict[str, Any]:
+    if len(data) > MAX_MODEL_OUTPUT_BYTES:
+        raise Refusal("model output exceeds its limit")
+    value = _decode_record(data)
+    _require_fields(value, ("case_id", "outcome"), ("case_id", "outcome"), "model output")
+    if not isinstance(value["case_id"], str) or not isinstance(value["outcome"], str):
+        raise Refusal("model output fields are malformed")
+    return value
+
+
+def _resource_record(
+    manifest: dict[str, Any], controls: dict[str, dict[str, Any]], payload_bytes: int
+) -> dict[str, Any]:
+    source = _read_regular(Path(__file__), 4 * 1024 * 1024).decode("utf-8")
+    executable_loc = sum(
+        bool(line.strip()) and not line.lstrip().startswith("#")
+        for line in source.splitlines()
+    )
+    imported = sorted(
+        {
+            match.group(1).split(".")[0]
+            for line in source.splitlines()
+            if (match := re.match(r"(?:from|import)\s+([A-Za-z_][A-Za-z0-9_.]*)", line))
+        }
+    )
+    return {
+        "artifact_payload_bytes": payload_bytes,
+        "dependency_count": {"external_runtime": 0, "standard_library_modules": len(imported)},
+        "executable_loc": executable_loc,
+        "limits": {
+            "max_control_paths": MAX_CONTROL_PATHS,
+            "max_development_cases": MAX_DEVELOPMENT_CASES,
+            "max_model_output_bytes": MAX_MODEL_OUTPUT_BYTES,
+            "max_prompt_bytes": MAX_PROMPT_BYTES,
+            "max_prompt_components": MAX_PROMPT_COMPONENTS,
+            "peak_rss_bytes": 2 * 1024 * 1024 * 1024,
+        },
+        "samples": [
+            {
+                "phase": "parse-validate",
+                "wall_time_budget_ms": 20_000,
+                "work_units": manifest["totals"]["physical_files"],
+            },
+            {
+                "phase": "select",
+                "wall_time_budget_ms": 20_000,
+                "work_units": len(DEVELOPMENT_CLASSES) * len(DEVELOPMENT_ARMS),
+            },
+            {
+                "phase": "assemble",
+                "wall_time_budget_ms": 20_000,
+                "work_units": sum(
+                    item["coverage"]["summary"]["native_ranges"]
+                    + item["coverage"]["summary"]["fallback_ranges"]
+                    for item in controls.values()
+                ),
+            },
+        ],
+        "schema": f"{SCHEMA_PREFIX}-resource-samples/v1",
+        "source_ref": SOURCE_REF,
+        "timing_policy": "wall time and peak RSS are measured at command execution; reproducible artifacts retain closed workload and upper bounds",
+    }
+
+
+def _development_report(
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    cases: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+    results: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for arm in DEVELOPMENT_ARMS:
+        control = controls[arm]
+        result = results[arm]
+        summary = control["coverage"]["summary"]
+        mechanism = control["mechanism_evidence"]
+        rows.append(
+            {
+                "development_aggregate_success_cases": result["aggregate"]["aggregate_success_cases"],
+                "arm": arm,
+                "control_sha256": _artifact_digest(control),
+                "development_case_count": result["aggregate"]["cases"],
+                "development_exact_fidelity_cases": result["aggregate"]["exact_fidelity_cases"],
+                "development_fallback_cases": result["aggregate"]["fallback_cases"],
+                "development_native_success_cases": result["aggregate"]["native_success_cases"],
+                "full_current_corpus_fallback_bytes": summary["fallback_physical_bytes"],
+                "full_current_corpus_native_bytes": summary["native_physical_bytes"],
+                "full_current_corpus_native_ranges": summary["native_ranges"],
+                "synthetic_in_aggregate_success": mechanism[
+                    "synthetic_in_aggregate_success"
+                ],
+                "synthetic_in_current_coverage": mechanism[
+                    "synthetic_in_current_coverage"
+                ],
+                "synthetic_mapped_bytes": mechanism["synthetic_mapped_bytes"],
+                "synthetic_mapped_spans": mechanism["synthetic_mapped_spans"],
+            }
+        )
+    report = {
+        "arms": rows,
+        "case_set_sha256": _artifact_digest(cases),
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "holdout": {"cases_accessed": 0, "opened": False},
+        "invariants": {
+            "candidate_independent_oracle": True,
+            "fallback_is_aggregate_success": False,
+            "fallback_is_native_coverage": False,
+            "synthetic_noema_is_current_coverage": False,
+        },
+        "manifest_sha256": _artifact_digest(manifest),
+        "schema": f"{SCHEMA_PREFIX}-aggregate-report/v1",
+        "source_ref": SOURCE_REF,
+    }
+    _validate_development_report(report)
+    return report
+
+
+def _validate_development_report(report: dict[str, Any]) -> None:
+    _require_fields(
+        report,
+        ("arms", "case_set_sha256", "cohorts_sha256", "holdout", "invariants", "manifest_sha256", "schema", "source_ref"),
+        ("arms", "case_set_sha256", "cohorts_sha256", "holdout", "invariants", "manifest_sha256", "schema", "source_ref"),
+        "development aggregate report",
+    )
+    if (
+        report["schema"] != f"{SCHEMA_PREFIX}-aggregate-report/v1"
+        or report["source_ref"] != SOURCE_REF
+        or report["holdout"] != {"cases_accessed": 0, "opened": False}
+        or report["invariants"]
+        != {
+            "candidate_independent_oracle": True,
+            "fallback_is_aggregate_success": False,
+            "fallback_is_native_coverage": False,
+            "synthetic_noema_is_current_coverage": False,
+        }
+        or not isinstance(report["arms"], list)
+        or [item.get("arm") for item in report["arms"]] != list(DEVELOPMENT_ARMS)
+    ):
+        raise Refusal("development report identity, order, or holdout boundary drift")
+    noema = next(item for item in report["arms"] if item["arm"] == "noema")
+    wai1 = next(item for item in report["arms"] if item["arm"] == "wai1")
+    if (
+        noema["full_current_corpus_native_bytes"] != 655
+        or noema["full_current_corpus_native_ranges"] != 10
+        or noema["development_native_success_cases"] != 0
+        or noema["development_aggregate_success_cases"] != 0
+        or wai1["full_current_corpus_native_bytes"] != 11_170
+        or any(
+            row["synthetic_in_aggregate_success"] is not False
+            or row["synthetic_in_current_coverage"] is not False
+            for row in report["arms"]
+        )
+    ):
+        raise Refusal("control report relabels native, fallback, or synthetic evidence")
+
+
 def _reconciliation_markdown(
     manifest: dict[str, Any],
     profiles: dict[str, Any],
@@ -6575,6 +8274,275 @@ remain unmeasured until the later arm and case builders exist.
     return text.encode("utf-8")
 
 
+def _development_baseline(
+    manifest_path: Path, cohorts_path: Path
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    directory = manifest_path.parent
+    records = _load_committed_baseline(
+        {
+            "byte-partition.json": directory / "byte-partition.json",
+            "cohorts.json": cohorts_path,
+            "corpus-manifest.json": manifest_path,
+            "holdout-seal.json": directory / "holdout-seal.json",
+            "invocation-profiles.json": directory / "invocation-profiles.json",
+            "loader-graph.json": directory / "loader-graph.json",
+        }
+    )
+    manifest = records["corpus-manifest.json"][0]
+    profiles = records["invocation-profiles.json"][0]
+    graph = records["loader-graph.json"][0]
+    cohorts = records["cohorts.json"][0]
+    seal = records["holdout-seal.json"][0]
+    partition = records["byte-partition.json"][0]
+    _validate_invocation_profiles(profiles)
+    _validate_manifest_shape(manifest, profiles)
+    _validate_loader_graph(graph, manifest, profiles)
+    _validate_partition_closure(partition, manifest)
+    _validate_cohorts(cohorts, manifest)
+    _validate_holdout_seal(seal, manifest, cohorts, profiles, graph)
+    if seal["opened"] is not False:
+        raise Refusal("sealed holdout was opened before development build")
+    return manifest, profiles, graph, cohorts, seal
+
+
+def _development_payloads(
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    cohorts: dict[str, Any],
+) -> tuple[dict[str, bytes], dict[str, int]]:
+    phase_start = time.perf_counter_ns()
+    controls = {
+        "raw": _raw_control(manifest),
+        "wai1": _wai1_control(manifest),
+        "noema": _noema_control(manifest),
+        "simple": _simple_control(manifest),
+        "section-graph": _section_control(manifest),
+    }
+    control_ns = time.perf_counter_ns() - phase_start
+    if tuple(controls) != DEVELOPMENT_ARMS:
+        raise Refusal("development arm order drift")
+
+    phase_start = time.perf_counter_ns()
+    cases = _development_cases(manifest, cohorts, graph)
+    hostile = _hostile_specimens()
+    case_ns = time.perf_counter_ns() - phase_start
+
+    phase_start = time.perf_counter_ns()
+    results = {
+        arm: _arm_results(arm, cases, manifest, graph, controls[arm])
+        for arm in DEVELOPMENT_ARMS
+    }
+    assembly_ns = time.perf_counter_ns() - phase_start
+    report = _development_report(manifest, cohorts, cases, controls, results)
+    values: dict[str, dict[str, Any]] = {
+        "controls/noema.json": controls["noema"],
+        "controls/raw.json": controls["raw"],
+        "controls/section-graph.json": controls["section-graph"],
+        "controls/simple.json": controls["simple"],
+        "controls/wai1.json": controls["wai1"],
+        "development/cases.json": cases,
+        "hostile/specimens.json": hostile,
+        "evidence/development/noema.json": results["noema"],
+        "evidence/development/raw.json": results["raw"],
+        "evidence/development/report.json": report,
+        "evidence/development/section-graph.json": results["section-graph"],
+        "evidence/development/simple.json": results["simple"],
+        "evidence/development/wai1.json": results["wai1"],
+    }
+    preliminary = {path: _canonical_json(value) for path, value in values.items()}
+    resource_record = _resource_record(
+        manifest, controls, sum(len(data) for data in preliminary.values())
+    )
+    values["evidence/development/resource-samples.json"] = resource_record
+    if set(values) != set(DEVELOPMENT_RECORD_PATHS):
+        raise Refusal("development payload inventory drift")
+    payloads = {path: _canonical_json(values[path]) for path in DEVELOPMENT_RECORD_PATHS}
+    return payloads, {
+        "assembly_wall_time_ns": assembly_ns,
+        "case_wall_time_ns": case_ns,
+        "control_wall_time_ns": control_ns,
+    }
+
+
+def _development_inventory(
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    cohorts: dict[str, Any],
+    payloads: dict[str, bytes],
+) -> dict[str, Any]:
+    cases = _decode_record(payloads["development/cases.json"])
+    return {
+        "artifacts": {
+            path: {"bytes": len(data), "sha256": _sha256(data)}
+            for path, data in payloads.items()
+        },
+        "case_set_sha256": _artifact_digest(cases),
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "loader_graph_sha256": _artifact_digest(graph),
+        "manifest_sha256": _artifact_digest(manifest),
+        "schema": f"{SCHEMA_PREFIX}-development-inventory/v1",
+        "source_ref": SOURCE_REF,
+        "source_tree_sha256": manifest["source"]["tree_sha256"],
+    }
+
+
+def _development_fixture_root(output: Path) -> tuple[PurePosixPath, PurePosixPath]:
+    relative = _repository_relative(output, "development evidence output")
+    if relative == DEVELOPMENT_EVIDENCE_ROOT:
+        return DEVELOPMENT_FIXTURE_ROOT, relative
+    if (
+        not relative.parts
+        or relative.parts[0] != SCRATCH_ROOT.as_posix()
+        or len(relative.parts) < 4
+        or relative.parts[-2:] != ("evidence", "development")
+    ):
+        raise Refusal("scratch development output must end in evidence/development")
+    return relative.parent.parent, relative
+
+
+def _peak_rss_bytes() -> int:
+    value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return value if sys.platform == "darwin" else value * 1024
+
+
+def build_development(args: argparse.Namespace) -> bytes:
+    output = _confined_output(
+        args.output,
+        "development evidence output",
+        exact=(DEVELOPMENT_EVIDENCE_ROOT,),
+        roots=(SCRATCH_ROOT,),
+    )
+    fixture_root, output_relative = _development_fixture_root(output)
+    manifest, _, graph, cohorts, seal = _development_baseline(args.manifest, args.cohorts)
+    if seal["opened"] is not False:
+        raise Refusal("development build attempted to access an opened holdout")
+    started = time.perf_counter_ns()
+    payloads, timings = _development_payloads(manifest, graph, cohorts)
+    inventory = _development_inventory(manifest, graph, cohorts, payloads)
+    inventory_bytes = _canonical_json(inventory)
+    if (
+        output_relative == DEVELOPMENT_EVIDENCE_ROOT
+        and EXPECTED_DEVELOPMENT_INVENTORY_SHA256 is not None
+        and _sha256(inventory_bytes) != EXPECTED_DEVELOPMENT_INVENTORY_SHA256
+    ):
+        raise Refusal("development inventory differs from its frozen digest")
+    targets = {
+        path: ROOT / Path(*(fixture_root / PurePosixPath(path)).parts)
+        for path in DEVELOPMENT_RECORD_PATHS
+    }
+    inventory_target = output / "artifact-inventory.json"
+    for target in [*targets.values(), inventory_target]:
+        _safe_output(target)
+    for path in DEVELOPMENT_RECORD_PATHS:
+        _atomic_write(targets[path], payloads[path])
+    _atomic_write(inventory_target, inventory_bytes)
+    peak = _peak_rss_bytes()
+    if peak > 2 * 1024 * 1024 * 1024:
+        raise Refusal("development build exceeded its peak RSS limit")
+    return _result(
+        "build-development",
+        inventory_bytes,
+        {
+            **timings,
+            "arms": len(DEVELOPMENT_ARMS),
+            "cases": len(DEVELOPMENT_CLASSES),
+            "peak_rss_bytes": peak,
+            "total_wall_time_ns": time.perf_counter_ns() - started,
+        },
+    )
+
+
+def _load_development_evidence(
+    evidence: Path,
+) -> tuple[dict[str, Any], bytes, dict[str, bytes]]:
+    fixture_root, relative = _development_fixture_root(evidence)
+    inventory_path = evidence / "artifact-inventory.json"
+    inventory_raw = _read_regular(inventory_path, MAX_JSON_BYTES)
+    if (
+        relative == DEVELOPMENT_EVIDENCE_ROOT
+        and EXPECTED_DEVELOPMENT_INVENTORY_SHA256 is not None
+        and _sha256(inventory_raw) != EXPECTED_DEVELOPMENT_INVENTORY_SHA256
+    ):
+        raise Refusal("development inventory differs from its frozen digest")
+    inventory = _decode_record(inventory_raw)
+    _require_fields(
+        inventory,
+        (
+            "artifacts",
+            "case_set_sha256",
+            "cohorts_sha256",
+            "loader_graph_sha256",
+            "manifest_sha256",
+            "schema",
+            "source_ref",
+            "source_tree_sha256",
+        ),
+        (
+            "artifacts",
+            "case_set_sha256",
+            "cohorts_sha256",
+            "loader_graph_sha256",
+            "manifest_sha256",
+            "schema",
+            "source_ref",
+            "source_tree_sha256",
+        ),
+        "development inventory",
+    )
+    if (
+        inventory["schema"] != f"{SCHEMA_PREFIX}-development-inventory/v1"
+        or inventory["source_ref"] != SOURCE_REF
+        or set(inventory["artifacts"]) != set(DEVELOPMENT_RECORD_PATHS)
+    ):
+        raise Refusal("development inventory identity drift")
+    payloads: dict[str, bytes] = {}
+    for path in DEVELOPMENT_RECORD_PATHS:
+        identity = inventory["artifacts"][path]
+        _require_fields(identity, ("bytes", "sha256"), ("bytes", "sha256"), "development artifact")
+        target = ROOT / Path(*(fixture_root / PurePosixPath(path)).parts)
+        raw = _read_regular(target, MAX_JSON_BYTES)
+        if len(raw) != identity["bytes"] or _sha256(raw) != identity["sha256"]:
+            raise Refusal(f"development artifact inventory mismatch: {path}")
+        _decode_record(raw)
+        payloads[path] = raw
+    if _read_regular(inventory_path, MAX_JSON_BYTES) != inventory_raw:
+        raise Refusal("development inventory changed during replay read")
+    return inventory, inventory_raw, payloads
+
+
+def replay_development(args: argparse.Namespace) -> bytes:
+    if args.cohort != "development":
+        raise Refusal("only the unopened development cohort may replay in Step 2")
+    started = time.perf_counter_ns()
+    inventory, inventory_raw, observed = _load_development_evidence(args.evidence)
+    baseline_root = ROOT / Path(*BASELINE_FIXTURE_ROOT.parts)
+    manifest, _, graph, cohorts, seal = _development_baseline(
+        baseline_root / "corpus-manifest.json", baseline_root / "cohorts.json"
+    )
+    if seal["opened"] is not False:
+        raise Refusal("development replay encountered an opened holdout")
+    expected, timings = _development_payloads(manifest, graph, cohorts)
+    expected_inventory = _development_inventory(manifest, graph, cohorts, expected)
+    if inventory != expected_inventory:
+        raise Refusal("development inventory differs from deterministic replay")
+    for path in DEVELOPMENT_RECORD_PATHS:
+        if observed[path] != expected[path]:
+            raise Refusal(f"development replay drift: {path}")
+    peak = _peak_rss_bytes()
+    if peak > 2 * 1024 * 1024 * 1024:
+        raise Refusal("development replay exceeded its peak RSS limit")
+    return _result(
+        "replay-development",
+        inventory_raw,
+        {
+            **timings,
+            "artifacts": len(expected),
+            "peak_rss_bytes": peak,
+            "total_wall_time_ns": time.perf_counter_ns() - started,
+        },
+    )
+
+
 def build_baseline(args: argparse.Namespace) -> bytes:
     output = _confined_output(
         args.output,
@@ -6678,6 +8646,25 @@ def parser() -> argparse.ArgumentParser:
         default=ROOT / "docs/instruction-architecture/corpus-reconciliation.md",
     )
     build.set_defaults(handler=build_baseline)
+
+    development = subparsers.add_parser("build-development")
+    development.add_argument("--manifest", type=_path, required=True)
+    development.add_argument("--cohorts", type=_path, required=True)
+    development.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/evidence/development",
+    )
+    development.set_defaults(handler=build_development)
+
+    replay = subparsers.add_parser("replay")
+    replay.add_argument("--cohort", required=True)
+    replay.add_argument(
+        "--evidence",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/evidence/development",
+    )
+    replay.set_defaults(handler=replay_development)
 
     corpus = subparsers.add_parser("verify-corpus")
     corpus.add_argument("--manifest", type=_path, required=True)

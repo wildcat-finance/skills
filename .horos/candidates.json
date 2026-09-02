@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 30650626,
+    "bytes_blob": 42537067,
     "bytes_generated": 98
   },
   "entries": [
@@ -582,30 +582,100 @@
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     },
     {
-      "bytes": 144945,
+      "bytes": 145533,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 144945 bytes",
+      "evidence": "no newline in the first 4096 bytes of 145533 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },
     {
-      "bytes": 5034918,
+      "bytes": 100093,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 5034918 bytes",
+      "evidence": "no newline in the first 4096 bytes of 100093 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/noema.json"
+    },
+    {
+      "bytes": 56832,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 56832 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/raw.json"
+    },
+    {
+      "bytes": 1660309,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1660309 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/section-graph.json"
+    },
+    {
+      "bytes": 99172,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 99172 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/simple.json"
+    },
+    {
+      "bytes": 73291,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 73291 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/wai1.json"
+    },
+    {
+      "bytes": 5188748,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 5188748 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 2094805,
+      "bytes": 1889088,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 2094805 bytes",
+      "evidence": "no newline in the first 4096 bytes of 1889088 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/noema.json"
+    },
+    {
+      "bytes": 1878144,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1878144 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/raw.json"
+    },
+    {
+      "bytes": 2487639,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 2487639 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/section-graph.json"
+    },
+    {
+      "bytes": 1594859,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1594859 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/simple.json"
+    },
+    {
+      "bytes": 1854489,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1854489 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/wai1.json"
+    },
+    {
+      "bytes": 2107727,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 2107727 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/invocation-profiles.json"
     },
     {
-      "bytes": 6871484,
+      "bytes": 6896669,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 6871484 bytes",
+      "evidence": "no newline in the first 4096 bytes of 6896669 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }

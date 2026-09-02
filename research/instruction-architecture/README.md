@@ -25,6 +25,44 @@ uv run --no-project --python "$(cat .python-version)" python research/instructio
 uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py verify-seal --profiles tests/fixtures/instruction-architecture/invocation-profiles.json --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
 ```
 
+build the closed development cases, five immutable arm controls and their
+deterministic evidence, then replay without writing:
+
+```text
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py build-development --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --output tests/fixtures/instruction-architecture/evidence/development
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py replay --cohort development --evidence tests/fixtures/instruction-architecture/evidence/development
+```
+
+## neutral development contract
+
+all five arms receive the same ten source-bound development cases for order,
+scope, negation, exception, literal, alias, unknown, refusal, recovery and
+authority. the task and representation enter the prompt; the source-span
+expectation, scorer state, candidate id and competing labels do not. exact
+canonical source bytes define authority and scoring. raw fallback preserves
+fidelity but is neither native coverage nor aggregate success.
+
+raw covers all 191 physical files and 2,290,450 bytes. WAI1 invokes the merged
+checker over its exact three reviewed envelopes: 11,170 current native bytes,
+with 2,279,280 bytes in 194 fallback ranges. Noema binds 140 immutable product
+and review artifacts. three of its four source identities are stale; the exact
+Sapheneia binding contributes 10 full-corpus native ranges and 655 bytes. that
+source is in the sealed holdout, so Noema has zero native development-case
+outcomes. its historical 40-span, 3,173-byte synthetic mechanism result is
+reported separately and never enters current coverage or aggregate success.
+
+the simple control has 174 exact whole-file content nodes and 17 duplicate
+aliases, with no section or permission semantics. the distinct section graph
+has 1,896 exact Markdown spans with explicit parent dependencies. it preserves
+2,071,863 Markdown bytes natively and keeps all 15 non-Markdown inputs and
+218,587 bytes as raw fallback. every claimed source projection round-trips.
+
+`evidence/development/artifact-inventory.json` is the publication point for 14
+payloads across controls, cases, hostile specimens and evidence. replay checks
+that inventory twice, rebuilds from the frozen source and pinned control
+objects, and requires every payload byte to match. the holdout stays unopened
+and no holdout task, answer or model output is accessed.
+
 ## source and publication boundary
 
 every accepted JSON record is canonical UTF-8 with an object root and closed
@@ -48,12 +86,15 @@ fetch, replacement objects, global and system configuration, prompts and the
 ambient environment disabled. stdin is capped at 4 KiB, stdout at 4 MiB,
 stderr at 64 KiB and each process at 20 seconds.
 
-the supplemental parent-classification test resolves one immutable commit,
-loads its test and benchmark blobs from that object and checks all 13 live
-study, runbook, schema and fixture dependencies against their raw Git blob
-identities under an 8 MiB per-file cap. index flags, stat caches, attributes
-and clean filters cannot stand in for byte equality. this is test evidence,
-not a second source authority or a production loader.
+the supplemental parent-classification test resolves one immutable commit and
+loads its test and benchmark blobs only from that object's verified blob ids.
+for Step-2 harness compatibility it reads the dependency declaration from the
+exact parent test, admits live divergence only for those two code paths, and
+checks the remaining 12 Step-1 study, runbook, schema and fixture dependencies
+against their raw Git blob identities under an 8 MiB per-file cap. a live
+dependency-list rebind, index flag, stat cache, attribute or clean filter cannot
+stand in for byte equality. this narrows the test harness, not Step-1 authority;
+it is test evidence, not a second source authority or a production loader.
 
 writes use a same-directory single-link temporary file, `fsync`, atomic
 replacement, parent-directory `fsync` and a complete identity-bound reread.
