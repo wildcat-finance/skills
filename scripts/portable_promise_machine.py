@@ -32,6 +32,7 @@ ROOT_FILES = (
     Path("repo_contract.py"),
     Path("schemas/promise-machine-run-observation-capture-v1.schema.json"),
     Path("schemas/promise-machine-run-observation-v1.schema.json"),
+    Path("schemas/promise-machine-semantic-v1.schema.json"),
     Path("scripts/promise_machine.py"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
@@ -59,6 +60,35 @@ OBLIGATION_FIXTURE_FILES = (
     Path(
         "tests/fixtures/promise-machine/obligations/law-required-sections.json"
     ),
+)
+
+SEMANTIC_FIXTURE_FILES = tuple(
+    Path(path)
+    for path in (
+        "tests/fixtures/promise-machine/consequences/authority.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-3.json",
+        "tests/fixtures/promise-machine/consequences/evidence/content.json",
+        "tests/fixtures/promise-machine/consequences/evidence/independent.json",
+        "tests/fixtures/promise-machine/consequences/evidence/negative.json",
+        "tests/fixtures/promise-machine/consequences/evidence/provenance.json",
+        "tests/fixtures/promise-machine/consequences/evidence/recovery.json",
+        "tests/fixtures/promise-machine/consequences/evidence/structure.json",
+        "tests/fixtures/promise-machine/consequences/evidence/tests.json",
+        "tests/fixtures/promise-machine/consequences/level-0.json",
+        "tests/fixtures/promise-machine/consequences/level-1.json",
+        "tests/fixtures/promise-machine/consequences/level-2.json",
+        "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+        "tests/fixtures/promise-machine/consequences/level-3.json",
+        "tests/fixtures/promise-machine/consequences/unknown.json",
+        "tests/fixtures/promise-machine/exceptions/expired.json",
+        "tests/fixtures/promise-machine/exceptions/reason.md",
+        "tests/fixtures/promise-machine/exceptions/valid.json",
+        "tests/fixtures/promise-machine/findings/missing-recovery.json",
+        "tests/fixtures/promise-machine/imports/subprocess.json",
+    )
 )
 
 PORTABLE_TEST_FILES = (
@@ -182,6 +212,7 @@ def source_files(root: Path) -> list[Path]:
     """Return the exact canonical files copied into the portable runtime."""
     selected = set(ROOT_FILES)
     selected.update(OBLIGATION_FIXTURE_FILES)
+    selected.update(SEMANTIC_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
     selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
     ordered = sorted(selected, key=lambda path: path.as_posix())

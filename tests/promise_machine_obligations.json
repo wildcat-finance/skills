@@ -23,6 +23,26 @@
       "recovery": "restore all nine required schema fields and rerun the obligation check"
     },
     {
+      "id": "law-core-checker-side-effects",
+      "clause_sha256": "f60a0bf02e71859a024c223fa267f68d4d521900a0eb50c3933f8483e7ff20b9",
+      "gate": "checker.side-effects",
+      "specimen": "tests/fixtures/promise-machine/imports/subprocess.json",
+      "finding": "PM094",
+      "consequence": 3,
+      "blocked_transition": "run a core checker capable of network, credential, shell, subprocess, dynamic-code or evidence-command access",
+      "recovery": "remove the forbidden import or call and rerun the offline core-checker guard"
+    },
+    {
+      "id": "law-exception-resolution",
+      "clause_sha256": "d2867efaa4e5ac58beecd645d4c3b4e0673171911cb938c619aa8228eaad6b78",
+      "gate": "exception.resolution",
+      "specimen": "tests/fixtures/promise-machine/exceptions/expired.json",
+      "finding": "PM093",
+      "consequence": 3,
+      "blocked_transition": "authorise a transition through an unresolved, mismatched, expired or revoked exception",
+      "recovery": "restore a digest-bound authority and reason record, matching promise, gate, subject and scope, valid expiry and explicit revocation state"
+    },
+    {
       "id": "law-generated-copy-identity",
       "clause_sha256": "b9da0367e1cda2d739a42d611a2e0c111121cf71aea0e6597ce21a439399461b",
       "gate": "law.generated-copy-marker",
@@ -43,6 +63,16 @@
       "recovery": "restore the settled governing-principle sentence and rerun the obligation check"
     },
     {
+      "id": "law-refusal-shape",
+      "clause_sha256": "e3383a98a024c4eecc2902f9cb0edae50cd3ff12f5c248ee47fd7cb1f86d17a1",
+      "gate": "refusal.structured",
+      "specimen": "tests/fixtures/promise-machine/findings/missing-recovery.json",
+      "finding": "PM092",
+      "consequence": 2,
+      "blocked_transition": "emit or consume an incomplete refusal record",
+      "recovery": "restore the complete refusal fields and render text and JSON again from the same finding"
+    },
+    {
       "id": "law-required-sections",
       "clause_sha256": "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
       "gate": "law.required-sections",
@@ -51,6 +81,26 @@
       "consequence": 2,
       "blocked_transition": "accept a root law with a missing or duplicated normative section",
       "recovery": "restore every required heading exactly once and rerun the obligation check"
+    },
+    {
+      "id": "law-unknowns-non-authorising",
+      "clause_sha256": "0086ce72fafa819da188612d5c8399caa5097d16f38e2a4dc12ed2bbe69f1f1f",
+      "gate": "transition.unknowns",
+      "specimen": "tests/fixtures/promise-machine/consequences/unknown.json",
+      "finding": "PM091",
+      "consequence": 3,
+      "blocked_transition": "authorise a positive transition from unknown, not-run, missing, stale or unresolved evidence",
+      "recovery": "record resolved positive evidence for the same subject and scope, preserve remaining unknowns, and rerun the transition check"
+    },
+    {
+      "id": "law-consequence-separation",
+      "clause_sha256": "4ca54c2c47e119492b505fd0b1e2746f1b2da5eb297054147f29424a86637716",
+      "gate": "transition.consequence",
+      "specimen": "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+      "finding": "PM090",
+      "consequence": 3,
+      "blocked_transition": "authorise a transition without its consequence-specific evidence path",
+      "recovery": "supply the exact evidence required by the declared consequence and rerun the transition check"
     }
   ]
 }

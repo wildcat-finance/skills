@@ -1,6 +1,8 @@
 import json
 import hashlib
+import io
 import os
+from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 import shutil
 import subprocess
@@ -31,6 +33,8 @@ PROMISE_FIELDS = (
 )
 OBLIGATION_REGISTRY = ROOT / "tests" / "promise_machine_obligations.json"
 OBLIGATION_FIXTURES = FIXTURES / "obligations"
+CONSEQUENCE_FIXTURES = FIXTURES / "consequences"
+EXCEPTION_FIXTURES = FIXTURES / "exceptions"
 DURABLE_OBLIGATION_STUDY = (
     ROOT / "docs" / "promise-machine" / "obligation-gates" / "study.md"
 )
@@ -90,10 +94,7 @@ def write_obligation_fixture(root):
     registry = root / "tests" / "promise_machine_obligations.json"
     registry.parent.mkdir(parents=True)
     shutil.copy2(OBLIGATION_REGISTRY, registry)
-    shutil.copytree(
-        OBLIGATION_FIXTURES,
-        root / "tests" / "fixtures" / "promise-machine" / "obligations",
-    )
+    shutil.copytree(FIXTURES, root / "tests" / "fixtures" / "promise-machine")
     return registry
 
 
@@ -101,6 +102,21 @@ def rewrite_registry(path, mutate):
     document = json.loads(path.read_text(encoding="utf-8"))
     mutate(document)
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+
+
+def load_fixture(relative_path):
+    return json.loads((FIXTURES / relative_path).read_text(encoding="utf-8"))
+
+
+def copy_semantic_fixtures(root):
+    destination = root / "tests" / "fixtures" / "promise-machine"
+    destination.parent.mkdir(parents=True)
+    shutil.copytree(FIXTURES, destination)
+    return destination
+
+
+def semantic_codes(findings):
+    return [finding.code for finding in findings]
 
 
 
@@ -328,7 +344,7 @@ class PromiseObligationTests(unittest.TestCase):
         completed = run_cli("check", "--only", "obligations", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["obligations"], 5)
+        self.assertEqual(report["counts"]["obligations"], 10)
         self.assertEqual(report["findings"], [])
 
     def test_marked_structural_claims_match_their_production_gates(self):
@@ -349,6 +365,30 @@ class PromiseObligationTests(unittest.TestCase):
             "law-declaration-fields": (
                 "> Obligation: This authored law contains each of the nine required promise\n"
                 "> declaration-field tokens."
+            ),
+            "law-required-sections": (
+                "> Obligation: Every required normative section of this authored law appears\n"
+                "> exactly once."
+            ),
+            "law-unknowns-non-authorising": (
+                "> Obligation: `unknown`, `not-run`, missing, stale or unresolved evidence never\n"
+                "> authorises a positive transition."
+            ),
+            "law-consequence-separation": (
+                "> Obligation: Consequence levels zero through three take distinct enforcement\n"
+                "> paths, and level three never accepts level-two-only evidence."
+            ),
+            "law-refusal-shape": (
+                "> Obligation: Every refusal report names the promise id, failed field or\n"
+                "> evidence, consequence level, blocked transition and recovery action."
+            ),
+            "law-exception-resolution": (
+                "> Obligation: Every exception resolves its authority, promise and gate,\n"
+                "> subject, scope, durable record, expiry, revocation state and recovery path."
+            ),
+            "law-core-checker-side-effects": (
+                "> Obligation: The core checker reaches no network, reads no credential and\n"
+                "> executes no shell, subprocess, dynamic code or evidence command."
             ),
         }
         for obligation_id, clause in expected.items():
@@ -1378,6 +1418,692 @@ class PromiseObligationTests(unittest.TestCase):
             and finding.obligation_id == "law-governing-principle"
         ]
         self.assertEqual(len(failed), 1)
+
+
+class PromiseSemanticGateTests(unittest.TestCase):
+    def transition(self, level):
+        return load_fixture(f"consequences/level-{level}.json")
+
+    def evaluate(self, document, *, root=ROOT, expected=None):
+        return promise_machine_module.evaluate_transition_record(
+            root,
+            document,
+            "semantic-test.json",
+            expected_obligation=expected or document.get("obligation_id"),
+        )
+
+    def valid_exception(self):
+        return load_fixture("exceptions/valid.json")
+
+    def exception_expected(self):
+        return {
+            "promise_id": "fixture-promise",
+            "gate": "fixture.gate",
+            "subject": "fixture-subject",
+            "scope": "fixture-scope",
+            "consequence": 3,
+            "transition": "publish the fixture result",
+        }
+
+    def check_exception(self, document, *, evaluated_at="2026-08-30T00:00:00Z"):
+        return promise_machine_module.validate_exception_record(
+            ROOT,
+            document,
+            "exception-test.json",
+            expected=self.exception_expected(),
+            evaluated_at=evaluated_at,
+        )
+
+    def test_level_zero_uses_its_content_only_path(self):
+        self.assertEqual(self.evaluate(self.transition(0)), [])
+
+    def test_level_one_uses_structure_and_provenance(self):
+        self.assertEqual(self.evaluate(self.transition(1)), [])
+
+    def test_level_two_uses_tests_negative_and_recovery_evidence(self):
+        self.assertEqual(self.evaluate(self.transition(2)), [])
+
+    def test_level_three_adds_authority_and_independent_evidence(self):
+        self.assertEqual(self.evaluate(self.transition(3)), [])
+
+        for source in ("content", "authority"):
+            with self.subTest(source=source):
+                replayed = self.transition(3)
+                independent = next(
+                    item for item in replayed["evidence"] if item["role"] == "independent"
+                )
+                if source == "content":
+                    reused = next(
+                        item for item in replayed["evidence"] if item["role"] == "content"
+                    )["reference"]
+                else:
+                    reused = replayed["authority"]
+                independent["reference"] = dict(reused)
+                self.assertEqual(semantic_codes(self.evaluate(replayed)), ["PM090"])
+
+    def test_level_three_refuses_a_level_two_only_replay(self):
+        document = load_fixture("consequences/level-3-level-2-only.json")
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
+
+    def test_visible_unknowns_cannot_authorise_a_positive_transition(self):
+        document = load_fixture("consequences/unknown.json")
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM091"])
+        document["unknowns"] = ["unresolved"] * 65
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
+
+    def test_unknown_or_malformed_evidence_cannot_authorise(self):
+        document = self.transition(0)
+        document["obligation_id"] = "law-unknowns-non-authorising"
+        document["evidence"][0]["status"] = "unknown"
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM091"])
+
+        for field, value in (("class", []), ("status", {})):
+            with self.subTest(field=field):
+                malformed = self.transition(0)
+                malformed["evidence"][0][field] = value
+                self.assertEqual(semantic_codes(self.evaluate(malformed)), ["PM090"])
+
+    def test_not_run_evidence_status_cannot_authorise(self):
+        document = self.transition(0)
+        document["obligation_id"] = "law-unknowns-non-authorising"
+        document["evidence"][0]["status"] = "not-run"
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM091"])
+
+    def test_missing_evidence_cannot_authorise(self):
+        document = self.transition(0)
+        document["obligation_id"] = "law-unknowns-non-authorising"
+        document["evidence"] = []
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM091"])
+
+    def test_stale_evidence_status_cannot_authorise(self):
+        document = self.transition(0)
+        document["obligation_id"] = "law-unknowns-non-authorising"
+        document["evidence"][0]["status"] = "stale"
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM091"])
+
+    def test_missing_transition_declaration_is_refused(self):
+        paths = (
+            "tests/fixtures/promise-machine/consequences/declarations/missing.json",
+            "tests/fixtures/promise-machine/consequences/declarations/invalid\u0000.json",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                document = self.transition(0)
+                document["declaration"] = {"path": path, "sha256": "0" * 64}
+                self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
+
+    def test_stale_transition_declaration_digest_is_refused(self):
+        document = self.transition(0)
+        document["declaration"]["sha256"] = "0" * 64
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
+
+    def test_mismatched_transition_declaration_is_refused(self):
+        mutations = (
+            ("level-0.json", "promise_id", "different-promise", False),
+            ("level-0.json", "consequence", False, False),
+            ("level-1.json", "consequence", True, False),
+        ) + tuple(
+            ("level-0.json", "transition", f"publish{separator}second", True)
+            for separator in ("\n", "\r", "\u2028", "\u2029")
+        )
+        for fixture, field, value, mirror in mutations:
+            with self.subTest(fixture=fixture, field=field, value=value):
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory)
+                    copy_semantic_fixtures(target)
+                    transition_path = (
+                        target
+                        / "tests/fixtures/promise-machine/consequences"
+                        / fixture
+                    )
+                    document = json.loads(
+                        transition_path.read_text(encoding="utf-8")
+                    )
+                    declaration_path = target / document["declaration"]["path"]
+                    declaration = json.loads(
+                        declaration_path.read_text(encoding="utf-8")
+                    )
+                    declaration[field] = value
+                    if mirror:
+                        document[field] = value
+                    declaration_path.write_text(
+                        json.dumps(declaration, indent=2) + "\n", encoding="utf-8"
+                    )
+                    document["declaration"]["sha256"] = hashlib.sha256(
+                        declaration_path.read_bytes()
+                    ).hexdigest()
+                    findings = self.evaluate(document, root=target)
+                self.assertEqual(semantic_codes(findings), ["PM090"])
+
+    def test_evidence_subject_must_match_the_transition(self):
+        document = self.transition(1)
+        document["evidence"][0]["subject"] = "different-subject"
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
+
+    def test_evidence_scope_must_match_the_transition(self):
+        document = self.transition(1)
+        document["evidence"][0]["scope"] = "different-scope"
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
+
+    def test_complete_exception_is_accepted_inside_its_recorded_time(self):
+        self.assertEqual(self.check_exception(self.valid_exception()), [])
+
+    def test_absent_exception_reference_is_refused(self):
+        document = self.transition(3)
+        document["exception"] = {
+            "path": "tests/fixtures/promise-machine/exceptions/missing.json",
+            "sha256": "0" * 64,
+        }
+        self.assertEqual(semantic_codes(self.evaluate(document)), ["PM093"])
+
+    def test_exception_without_a_durable_reason_record_is_refused(self):
+        document = self.valid_exception()
+        document["record"] = {
+            "path": "tests/fixtures/promise-machine/exceptions/missing.md",
+            "sha256": "0" * 64,
+        }
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            copy_semantic_fixtures(target)
+            blank = (
+                target
+                / "tests/fixtures/promise-machine/exceptions/blank.md"
+            )
+            blank.write_bytes(b"")
+            blank_document = self.valid_exception()
+            blank_document["record"] = {
+                "path": blank.relative_to(target).as_posix(),
+                "sha256": hashlib.sha256(b"").hexdigest(),
+            }
+            findings = promise_machine_module.validate_exception_record(
+                target,
+                blank_document,
+                "blank-reason.json",
+                expected=self.exception_expected(),
+                evaluated_at="2026-08-30T00:00:00Z",
+            )
+        self.assertEqual(semantic_codes(findings), ["PM093"])
+
+    def test_expired_exception_is_refused(self):
+        document = self.valid_exception()
+        document["expiry"] = {"at": "2026-08-29T23:59:59Z"}
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_revoked_exception_is_refused(self):
+        document = self.valid_exception()
+        document["revoked"] = True
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_unresolvable_exception_authority_is_refused(self):
+        document = self.valid_exception()
+        document["authority"]["reference"] = {
+            "path": "tests/fixtures/promise-machine/consequences/missing-authority.json",
+            "sha256": "0" * 64,
+        }
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            copy_semantic_fixtures(target)
+            padded = self.valid_exception()
+            authority_path = target / padded["authority"]["reference"]["path"]
+            authority = json.loads(authority_path.read_text(encoding="utf-8"))
+            authority["id"] = " fixture-authority "
+            authority_path.write_text(
+                json.dumps(authority, indent=2) + "\n", encoding="utf-8"
+            )
+            padded["authority"]["id"] = " fixture-authority "
+            padded["authority"]["reference"]["sha256"] = hashlib.sha256(
+                authority_path.read_bytes()
+            ).hexdigest()
+            findings = promise_machine_module.validate_exception_record(
+                target,
+                padded,
+                "padded-authority.json",
+                expected=self.exception_expected(),
+                evaluated_at="2026-08-30T00:00:00Z",
+            )
+        self.assertEqual(semantic_codes(findings), ["PM093"])
+
+    def test_exception_promise_must_match_the_transition(self):
+        document = self.valid_exception()
+        document["promise_id"] = "different-promise"
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_exception_gate_must_match_the_transition(self):
+        document = self.valid_exception()
+        document["gate"] = "different.gate"
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_exception_subject_must_match_the_transition(self):
+        document = self.valid_exception()
+        document["subject"] = "different-subject"
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_exception_scope_must_match_the_transition(self):
+        document = self.valid_exception()
+        document["scope"] = "different-scope"
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_calendar_invalid_exception_expiry_is_refused(self):
+        document = self.valid_exception()
+        document["expiry"] = {"at": "2026-02-30T00:00:00Z"}
+        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+
+    def test_calendar_invalid_exception_evaluation_time_is_refused(self):
+        findings = self.check_exception(
+            self.valid_exception(), evaluated_at="2026-02-30T00:00:00Z"
+        )
+        self.assertEqual(semantic_codes(findings), ["PM093"])
+
+    def test_non_expiring_exception_requires_a_reason(self):
+        reasons = ("", " padded reason ") + tuple(
+            f"reason{separator}second" for separator in ("\n", "\r", "\u2028", "\u2029")
+        )
+        for reason in reasons:
+            with self.subTest(reason=reason):
+                document = self.valid_exception()
+                document["expiry"] = {"not_applicable": reason}
+                self.assertEqual(
+                    semantic_codes(self.check_exception(document)), ["PM093"]
+                )
+
+    def test_repository_core_checker_source_is_static_guard_clean(self):
+        count, findings = promise_machine_module.check_core_imports(ROOT)
+        self.assertEqual(count, 1)
+        self.assertEqual(findings, [])
+
+    def test_forbidden_network_credential_and_process_imports_are_refused(self):
+        sources = (
+            "import socket\n",
+            "from urllib import request\n",
+            "import httpx\nhttpx.get('https://example.invalid')\n",
+            "import aiohttp\naiohttp.ClientSession()\n",
+            "import urllib3\nurllib3.PoolManager()\n",
+            "import websockets\nwebsockets.connect('wss://example.invalid')\n",
+            "import getpass\n",
+            "import subprocess\n",
+            "import asyncio\n",
+            "import ctypes\nctypes.CDLL(None).system(b'fixture')\n",
+            "import pty\npty.spawn(['/bin/sh'])\n",
+            "import concurrent.futures\nconcurrent.futures.ProcessPoolExecutor()\n",
+            "from os import *\nsystem('fixture')\n",
+        )
+        for source in sources:
+            with self.subTest(source=source.strip()):
+                findings = promise_machine_module.check_core_source_text(
+                    source, "forbidden-import.py"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM094"])
+
+    def test_forbidden_shell_dynamic_and_environment_calls_are_refused(self):
+        sources = (
+            "import os\nos.system('fixture')\n",
+            "import os\nos.getenv('TOKEN')\n",
+            "eval('1 + 1')\n",
+            "compile('1', '<fixture>', 'eval')\n",
+            "import os\nos.environ['TOKEN']\n",
+            "import builtins\nbuiltins.eval('1 + 1')\n",
+            "__builtins__.eval('1 + 1')\n",
+            "__builtins__['exec']('fixture = 1')\n",
+            "open('fixture', 'w').write('x')\n",
+            "from pathlib import Path\nPath('fixture').write_text('x')\n",
+            "from pathlib import Path\nPath('fixture').write_bytes(b'x')\n",
+            "from pathlib import Path\nPath('fixture').open('w').write('x')\n",
+            "from pathlib import Path\nPath('fixture').replace('target')\n",
+            "from pathlib import Path\npath = Path('fixture')\npath.replace('target')\n",
+            "import tempfile\ntempfile.NamedTemporaryFile()\n",
+            "import tempfile\ntempfile.TemporaryFile()\n",
+            "import os\nos.rename('fixture', 'target')\n",
+            "import os\nos.write(1, b'x')\n",
+            "import os\nos.putenv('FIAT884', 'x')\n",
+            "import os\nos.unsetenv('FIAT884')\n",
+            "import os\nos.chdir('/tmp')\n",
+            "import os\nos.umask(0)\n",
+            "import os\nos.kill(1, 0)\n",
+            "from pathlib import Path\nPath('/etc/passwd').read_text()\n",
+            "from pathlib import Path\n(Path.home() / '.config').read_text()\n",
+            "import os\nos.open('/etc/passwd', os.O_RDONLY)\n",
+        )
+        for source in sources:
+            with self.subTest(source=source.splitlines()[-1]):
+                findings = promise_machine_module.check_core_source_text(
+                    source, "forbidden-call.py"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM094"])
+
+    def test_aliases_and_dynamic_lookups_cannot_hide_forbidden_calls(self):
+        sources = (
+            "import os as operating\noperating.system('fixture')\n",
+            "from os import system as launch\nlaunch('fixture')\n",
+            "import os\ngetattr(os, 'system')('fixture')\n",
+            "import builtins\ngetattr(builtins, 'eval')('1 + 1')\n",
+            "import builtins\nbuiltins.__dict__['eval']('1 + 1')\n",
+            "import os\nos.__dict__['system']('fixture')\n",
+            "import os\nos.getenvb(b'SECRET')\n",
+            "import os\nos.environb[b'SECRET']\n",
+            "getattr(__builtins__, 'open')('/etc/passwd')\n",
+            "__builtins__.open('/etc/passwd')\n",
+            "__builtins__['open']('/etc/passwd')\n",
+            "import os\ngetattr(os, 'open')('/etc/passwd', os.O_RDONLY)\n",
+            "from pathlib import Path\ngetattr(Path, 'home')().joinpath('.config').read_text()\n",
+            "import os\ngetattr(os, 'rename')('fixture', 'target')\n",
+            "from pathlib import Path\ngetattr(Path, 'write_text')(Path('fixture'), 'x')\n",
+            "import tempfile\ngetattr(tempfile, 'mkstemp')()\n",
+            "__builtins__.get('open')('/etc/passwd')\n",
+            "import os\nvars(os)['open']('/etc/passwd', os.O_RDONLY)\n",
+            "from pathlib import Path\nvars(Path)['home']().joinpath('.config').read_text()\n",
+            "import tempfile\ntempfile.__dict__['mkstemp']()\n",
+        )
+        for source in sources:
+            with self.subTest(source=source.splitlines()[-1]):
+                findings = promise_machine_module.check_core_source_text(
+                    source, "forbidden-alias.py"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM094"])
+
+    def test_core_check_remains_clean_when_network_and_children_are_denied(self):
+        confined_root = ROOT.resolve()
+        real_os_fdopen = os.fdopen
+        real_os_open = os.open
+        real_path_open = Path.open
+
+        def inside_root(path):
+            try:
+                candidate = Path(path)
+            except TypeError:
+                return False
+            if not candidate.is_absolute():
+                candidate = confined_root / candidate
+            try:
+                candidate.resolve(strict=False).relative_to(confined_root)
+            except (OSError, RuntimeError, ValueError):
+                return False
+            return True
+
+        def guarded_os_fdopen(descriptor, mode="r", *args, **kwargs):
+            if any(marker in mode for marker in "wax+"):
+                raise AssertionError("write-capable os.fdopen used")
+            return real_os_fdopen(descriptor, mode, *args, **kwargs)
+
+        def guarded_os_open(path, flags, *args, **kwargs):
+            write_flags = (
+                os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
+            )
+            if flags & write_flags:
+                raise AssertionError("write-capable os.open used")
+            if kwargs.get("dir_fd") is None and not inside_root(path):
+                raise AssertionError("out-of-root os.open used")
+            return real_os_open(path, flags, *args, **kwargs)
+
+        def guarded_path_open(path, mode="r", *args, **kwargs):
+            if any(marker in mode for marker in "wax+"):
+                raise AssertionError("write-capable Path.open used")
+            if not inside_root(path):
+                raise AssertionError("out-of-root Path.open used")
+            return real_path_open(path, mode, *args, **kwargs)
+
+        denied = mock.Mock(side_effect=AssertionError("side effect used"))
+        patches = (
+            mock.patch("socket.socket", side_effect=AssertionError("network used")),
+            mock.patch.object(
+                subprocess, "Popen", side_effect=AssertionError("child used")
+            ),
+            mock.patch("builtins.open", denied),
+            mock.patch.object(promise_machine_module, "atomic_write", denied),
+            mock.patch.object(os, "fdopen", side_effect=guarded_os_fdopen),
+            mock.patch.object(os, "open", side_effect=guarded_os_open),
+            mock.patch.object(Path, "open", new=guarded_path_open),
+        )
+        patches += tuple(
+            mock.patch.object(os, name, denied)
+            for name in ("getenv", "getenvb")
+            if hasattr(os, name)
+        )
+        denied_attributes = (
+            (
+                os,
+                (
+                    "chmod",
+                    "chown",
+                    "chdir",
+                    "chroot",
+                    "fchdir",
+                    "fchmod",
+                    "fchown",
+                    "ftruncate",
+                    "lchmod",
+                    "lchown",
+                    "link",
+                    "kill",
+                    "killpg",
+                    "makedirs",
+                    "mkdir",
+                    "mkfifo",
+                    "mknod",
+                    "pwrite",
+                    "pwritev",
+                    "putenv",
+                    "remove",
+                    "removedirs",
+                    "rename",
+                    "renames",
+                    "replace",
+                    "rmdir",
+                    "symlink",
+                    "truncate",
+                    "umask",
+                    "unlink",
+                    "unsetenv",
+                    "utime",
+                    "write",
+                    "writev",
+                ),
+            ),
+            (
+                Path,
+                (
+                    "chmod",
+                    "hardlink_to",
+                    "lchmod",
+                    "link_to",
+                    "mkdir",
+                    "rename",
+                    "replace",
+                    "rmdir",
+                    "symlink_to",
+                    "touch",
+                    "unlink",
+                    "write_bytes",
+                    "write_text",
+                ),
+            ),
+            (
+                tempfile,
+                (
+                    "NamedTemporaryFile",
+                    "SpooledTemporaryFile",
+                    "TemporaryDirectory",
+                    "TemporaryFile",
+                    "mkdtemp",
+                    "mkstemp",
+                ),
+            ),
+        )
+        for owner, names in denied_attributes:
+            patches += tuple(
+                mock.patch.object(owner, name, denied)
+                for name in names
+                if hasattr(owner, name)
+            )
+        output = io.StringIO()
+        with ExitStack() as stack:
+            for patch in patches:
+                stack.enter_context(patch)
+            with redirect_stdout(output):
+                status = promise_machine_module.main(
+                    [
+                        "check",
+                        "--only",
+                        "obligations,contracts,exceptions,imports",
+                        "--json",
+                    ]
+                )
+        report = json.loads(output.getvalue())
+        self.assertEqual(status, 0)
+        self.assertEqual(report["findings"], [])
+
+    def test_refusal_payload_requires_every_actionable_field(self):
+        valid = {
+            "code": "PM092",
+            "fault": "obligation",
+            "path": "fixture.json",
+            "message": "fixture refusal",
+            "remedy": "repair the fixture",
+            "promise_id": "fixture-promise",
+            "obligation_id": "law-refusal-shape",
+            "consequence": 2,
+            "blocked_transition": "publish the fixture",
+            "recovery": "repair and rerun the fixture",
+        }
+        self.assertEqual(
+            promise_machine_module.validate_refusal_payload(valid, "fixture.json"),
+            [],
+        )
+        for field in valid:
+            with self.subTest(field=field):
+                incomplete = dict(valid)
+                incomplete.pop(field)
+                findings = promise_machine_module.validate_refusal_payload(
+                    incomplete, "fixture.json"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM092"])
+
+        for field in (
+            "fault",
+            "path",
+            "message",
+            "remedy",
+            "blocked_transition",
+            "recovery",
+        ):
+            with self.subTest(padded=field):
+                padded = dict(valid)
+                padded[field] = f" {padded[field]} "
+                findings = promise_machine_module.validate_refusal_payload(
+                    padded, "fixture.json"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM092"])
+
+        terminated = (
+            ("fault", "\n"),
+            ("path", "\r"),
+            ("message", "\u2028"),
+            ("remedy", "\u2029"),
+            ("blocked_transition", "\n"),
+            ("recovery", "\n"),
+        )
+        for field, separator in terminated:
+            with self.subTest(terminated=field, separator=repr(separator)):
+                multiline = dict(valid)
+                multiline[field] = f"{multiline[field]}{separator}continued"
+                findings = promise_machine_module.validate_refusal_payload(
+                    multiline, "fixture.json"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM092"])
+
+    def test_text_and_json_reports_share_one_actionable_finding(self):
+        finding = promise_machine_module.Finding(
+            "PM099",
+            "structural",
+            "fixture.json",
+            "fixture failure",
+            "repair the fixture",
+            promise_id="INVALID PROMISE",
+            obligation_id="INVALID OBLIGATION",
+        )
+        json_output = io.StringIO()
+        with redirect_stdout(json_output):
+            json_status = promise_machine_module.report(
+                "check", ROOT, [], [finding], as_json=True
+            )
+        text_output = io.StringIO()
+        with redirect_stdout(text_output):
+            text_status = promise_machine_module.report(
+                "check", ROOT, [], [finding], as_json=False
+            )
+        payload = json.loads(json_output.getvalue())["findings"][0]
+        rendered = text_output.getvalue()
+        self.assertEqual((json_status, text_status), (1, 1))
+        self.assertEqual(payload["promise_id"], "promise-machine-contract")
+        self.assertIsNone(payload["obligation_id"])
+        self.assertIn(f"promise={payload['promise_id']}", rendered)
+        self.assertIn(f"consequence={payload['consequence']}", rendered)
+        self.assertIn(f"blocked={payload['blocked_transition']!r}", rendered)
+        self.assertIn(f"recovery={payload['recovery']!r}", rendered)
+
+    def test_declared_exceptions_require_structured_canonical_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target)
+            fields = {
+                "Promise": "The named check accepted the subject.",
+                "Evidence": "example record",
+                "Evidence classes": "checked",
+                "Boundary": "No claim beyond the named rule.",
+                "Authorises": "Use of the checked result.",
+                "Consequence": "1",
+                "Refuses": "Use of a failed result.",
+                "Recovery": "Repair and rerun.",
+                "Exceptions": (
+                    "authority: fixture; scope: fixture; record: fixture; expiry: never"
+                ),
+            }
+            write_skill(plugin, fields=fields)
+            completed = run_cli(
+                "check", "--root", target, "--only", "inventory,structure", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM038", [item["code"] for item in report["findings"]])
+
+        for field in ("id", "gate", "subject", "scope", "recovery"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                copy_semantic_fixtures(target)
+                exception = self.valid_exception()
+                exception[field] = f" {exception[field]} "
+                if field in {"gate", "subject", "scope"}:
+                    authority_path = target / exception["authority"]["reference"]["path"]
+                    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+                    authority[field] = exception[field]
+                    authority_path.write_text(
+                        json.dumps(authority, indent=2) + "\n", encoding="utf-8"
+                    )
+                    exception["authority"]["reference"]["sha256"] = hashlib.sha256(
+                        authority_path.read_bytes()
+                    ).hexdigest()
+                exception_path = (
+                    target
+                    / "tests/fixtures/promise-machine/exceptions/declared-padded.json"
+                )
+                exception_path.write_text(
+                    json.dumps(exception, indent=2) + "\n", encoding="utf-8"
+                )
+                reference = json.dumps(
+                    {
+                        "path": exception_path.relative_to(target).as_posix(),
+                        "sha256": hashlib.sha256(exception_path.read_bytes()).hexdigest(),
+                    },
+                    separators=(",", ":"),
+                )
+                error = promise_machine_module.declared_exception_error(
+                    target, reference, "fixture-promise"
+                )
+                self.assertEqual(
+                    error,
+                    "exception record has an unsupported shape or promise identity",
+                )
 
 
 class PromiseLicenceTests(unittest.TestCase):

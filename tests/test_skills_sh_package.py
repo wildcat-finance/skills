@@ -33,7 +33,7 @@ CONFIG = ROOT / "skills.sh.json"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
-MAX_FILES = 1_000
+MAX_FILES = 1_024
 MAX_BYTES = 25 * 1024 * 1024
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
@@ -64,6 +64,31 @@ OBLIGATION_FIXTURE_FILES = {
     "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
     "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
     "tests/fixtures/promise-machine/obligations/law-required-sections.json",
+}
+SEMANTIC_FIXTURE_FILES = {
+    "tests/fixtures/promise-machine/consequences/authority.json",
+    "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
+    "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
+    "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
+    "tests/fixtures/promise-machine/consequences/declarations/level-3.json",
+    "tests/fixtures/promise-machine/consequences/evidence/content.json",
+    "tests/fixtures/promise-machine/consequences/evidence/independent.json",
+    "tests/fixtures/promise-machine/consequences/evidence/negative.json",
+    "tests/fixtures/promise-machine/consequences/evidence/provenance.json",
+    "tests/fixtures/promise-machine/consequences/evidence/recovery.json",
+    "tests/fixtures/promise-machine/consequences/evidence/structure.json",
+    "tests/fixtures/promise-machine/consequences/evidence/tests.json",
+    "tests/fixtures/promise-machine/consequences/level-0.json",
+    "tests/fixtures/promise-machine/consequences/level-1.json",
+    "tests/fixtures/promise-machine/consequences/level-2.json",
+    "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+    "tests/fixtures/promise-machine/consequences/level-3.json",
+    "tests/fixtures/promise-machine/consequences/unknown.json",
+    "tests/fixtures/promise-machine/exceptions/expired.json",
+    "tests/fixtures/promise-machine/exceptions/reason.md",
+    "tests/fixtures/promise-machine/exceptions/valid.json",
+    "tests/fixtures/promise-machine/findings/missing-recovery.json",
+    "tests/fixtures/promise-machine/imports/subprocess.json",
 }
 
 
@@ -232,14 +257,14 @@ class SkillsShPackageTests(unittest.TestCase):
             },
             PORTABLE_TEST_FILES,
         )
-        obligation_fixtures = RUNTIME / "tests/fixtures/promise-machine/obligations"
+        promise_machine_fixtures = RUNTIME / "tests/fixtures/promise-machine"
         self.assertEqual(
             {
                 path.relative_to(RUNTIME).as_posix()
-                for path in obligation_fixtures.rglob("*")
+                for path in promise_machine_fixtures.rglob("*")
                 if path.is_file() or path.is_symlink()
             },
-            OBLIGATION_FIXTURE_FILES,
+            OBLIGATION_FIXTURE_FILES | SEMANTIC_FIXTURE_FILES,
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())
