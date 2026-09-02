@@ -2084,6 +2084,51 @@ class VersionRelationTests(HexctlCase):
     def receipt(self, state):
         return state["receipts"]["runbook"]["version_relations"]
 
+    def make_legacy_branch_base(self):
+        """Reshape the live run as a controller older than the immutable anchor.
+
+        Runs initialised now pin ``state.base`` to a full commit, so the anchor
+        cannot be re-derived from a ref at all. The derived path these refusals
+        guard is still reachable for a run whose study was receipted before that
+        pinning, and this rebuilds exactly that shape: the named branch back in
+        ``state.base`` and the init event, the immutable ``starting_commit``
+        evidence untouched, and the hash chain closed over the result.
+        """
+        module = hexctl_module()
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        ledger_file = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
+        with open(state_path, "rb") as handle:
+            state = json.loads(handle.read())
+        with open(ledger_file, "rb") as handle:
+            entries = [
+                json.loads(line) for line in handle.read().splitlines() if line
+            ]
+        branch = state["config"]["git"]["base"]
+        state["base"] = branch
+        state["receipts"].pop("run_anchor", None)
+        entries[0]["data"]["base"] = branch
+        entries[0]["data"].pop("run_anchor_sha256", None)
+        entries[-1]["state"] = module.state_fingerprint(state)
+        previous = "genesis"
+        for entry in entries:
+            entry["prev"] = previous
+            body = {
+                key: entry[key] for key in ("ts", "event", "data", "prev", "state")
+            }
+            entry["hash"] = hashlib.sha256(
+                module.canonical(body).encode("utf-8")
+            ).hexdigest()
+            previous = entry["hash"]
+        with open(state_path, "wb") as handle:
+            handle.write(module.canonical(state).encode("utf-8") + b"\n")
+        with open(ledger_file, "wb") as handle:
+            handle.write(
+                b"".join(
+                    json.dumps(entry, sort_keys=True).encode("utf-8") + b"\n"
+                    for entry in entries
+                )
+            )
+
     def assert_unchanged_after_refusal(self, before_state, before_ledger):
         with open(
             os.path.join(self.target, ".hexaemeron", "state.json"),
@@ -2200,20 +2245,54 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(relation["anchor_commit"], anchor)
         self.assertEqual(relation["targets"][0]["anchor_version"], "fiat-v1.2.3")
 
-    def test_base_rewind_cannot_move_anchor_before_the_run_start(self):
+    def _rewound_run(self):
+        """A run whose integration base is reset behind its own starting point."""
         self.install_target("fiat", (1, 1, 3))
         older = self.commit_seed()
         self.write(self.ledger_path("fiat"), self.ledger("fiat", (1, 2, 3)))
         self.write(self.skill_path("fiat"), self.skill("fiat", (1, 2, 3)))
         self.commit_seed()
         self.init()
+        return older
 
+    def _rewind_base(self, older):
         subprocess.run(
             ["git", "reset", "--hard", older],
             cwd=self.dir,
             check=True,
             capture_output=True,
         )
+
+    def _relation_runbook(self):
+        return self.write(
+            "runbook.md",
+            "# Runbook\n\n"
+            + self.relation_block("fiat")
+            + "\n## Step 1: Build\n\n**Goal.** Build.\n",
+        )
+
+    def test_base_rewind_cannot_move_the_pinned_anchor(self):
+        older = self._rewound_run()
+        started = self.state()["base"]
+        self._rewind_base(older)
+        study = self.write("study.md", "# Study\n")
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self._relation_runbook()
+        steps = self.write("steps.json", '["Build"]')
+
+        # The anchor is the immutable commit init pinned, so rewinding the
+        # branch cannot reach it and there is nothing to refuse.
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        relation = self.receipt(self.state())
+        self.assertEqual(relation["anchor_commit"], started)
+        self.assertNotEqual(relation["anchor_commit"], older)
+
+    def test_base_rewind_refuses_a_legacy_branch_based_anchor(self):
+        older = self._rewound_run()
+        self.make_legacy_branch_base()
+        self._rewind_base(older)
         study = self.write("study.md", "# Study\n")
         self.run_ctl("done", "study", "--artifact", study)
         before_state = self.state()
@@ -2221,12 +2300,7 @@ class VersionRelationTests(HexctlCase):
             os.path.join(self.target, ".hexaemeron", "ledger.jsonl"), "rb"
         ) as handle:
             before_ledger = handle.read()
-        runbook = self.write(
-            "runbook.md",
-            "# Runbook\n\n"
-            + self.relation_block("fiat")
-            + "\n## Step 1: Build\n\n**Goal.** Build.\n",
-        )
+        runbook = self._relation_runbook()
         steps = self.write("steps.json", '["Build"]')
         result = self.run_ctl(
             "done",
@@ -2241,12 +2315,13 @@ class VersionRelationTests(HexctlCase):
         self.assertNotIn(older, result.stderr)
         self.assert_unchanged_after_refusal(before_state, before_ledger)
 
-    def test_run_branch_recreation_cannot_replace_the_init_anchor(self):
-        self.install_target("fiat")
-        original = self.commit_seed()
-        self.init()
-        run_branch = self.state()["run_branch"]
+    def _recreate_run_branch_on_a_moved_base(self):
+        """Move the integration base, then rebuild the run ref on top of it.
 
+        Deleting and recreating the checked-out ref replaces its branch reflog
+        without touching the linked worktree's controller state.
+        """
+        run_branch = self.state()["run_branch"]
         origin_ledger = os.path.join(self.dir, self.ledger_path("fiat"))
         origin_skill = os.path.join(self.dir, self.skill_path("fiat"))
         with open(origin_ledger, "w", encoding="utf-8") as handle:
@@ -2269,9 +2344,6 @@ class VersionRelationTests(HexctlCase):
             capture_output=True,
             text=True,
         ).stdout.strip()
-
-        # Deleting and recreating the checked-out ref replaces its branch
-        # reflog without touching the linked worktree's controller state.
         subprocess.run(
             ["git", "update-ref", "-d", f"refs/heads/{run_branch}"],
             cwd=self.dir,
@@ -2290,7 +2362,35 @@ class VersionRelationTests(HexctlCase):
             check=True,
             capture_output=True,
         )
+        return moved
 
+    def test_run_branch_recreation_cannot_replace_the_pinned_anchor(self):
+        self.install_target("fiat")
+        original = self.commit_seed()
+        self.init()
+        started = self.state()["base"]
+        moved = self._recreate_run_branch_on_a_moved_base()
+        study = self.write("study.md", "# Study\n")
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self._relation_runbook()
+        steps = self.write("steps.json", '["Build"]')
+
+        # The anchor is read from the pinned commit rather than derived from
+        # the recreated ref, so the replacement cannot reach it.
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        relation = self.receipt(self.state())
+        self.assertEqual(relation["anchor_commit"], started)
+        self.assertEqual(relation["anchor_commit"], original)
+        self.assertNotEqual(relation["anchor_commit"], moved)
+
+    def test_run_branch_recreation_refuses_a_legacy_branch_based_anchor(self):
+        self.install_target("fiat")
+        original = self.commit_seed()
+        self.init()
+        self.make_legacy_branch_base()
+        moved = self._recreate_run_branch_on_a_moved_base()
         study = self.write("study.md", "# Study\n")
         self.run_ctl("done", "study", "--artifact", study)
         before_state = self.state()
@@ -2298,12 +2398,7 @@ class VersionRelationTests(HexctlCase):
             os.path.join(self.target, ".hexaemeron", "ledger.jsonl"), "rb"
         ) as handle:
             before_ledger = handle.read()
-        runbook = self.write(
-            "runbook.md",
-            "# Runbook\n\n"
-            + self.relation_block("fiat")
-            + "\n## Step 1: Build\n\n**Goal.** Build.\n",
-        )
+        runbook = self._relation_runbook()
         steps = self.write("steps.json", '["Build"]')
         result = self.run_ctl(
             "done",

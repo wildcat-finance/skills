@@ -3306,13 +3306,21 @@ class TestProseAndPush(HexctlCase):
         with open(state_path, encoding="utf-8") as handle:
             state = json.load(handle)
         state["receipts"]["task_issue"] = issue
+        state["receipts"].pop("run_anchor")
         with open(ledger_path, encoding="utf-8") as handle:
             entries = [json.loads(line) for line in handle if line.strip()]
         controller = hexctl_module()
-        entry = entries[-1]
-        entry.pop("hash")
-        entry["state"] = controller.state_fingerprint(state)
-        entry["hash"] = hashlib.sha256(controller.canonical(entry).encode()).hexdigest()
+        entries[0]["data"].pop("run_anchor_sha256")
+        previous = "genesis"
+        for index, entry in enumerate(entries):
+            entry["prev"] = previous
+            entry.pop("hash")
+            if index == len(entries) - 1:
+                entry["state"] = controller.state_fingerprint(state)
+            entry["hash"] = hashlib.sha256(
+                controller.canonical(entry).encode()
+            ).hexdigest()
+            previous = entry["hash"]
         with open(state_path, "w", encoding="utf-8") as handle:
             json.dump(state, handle, indent=2)
             handle.write("\n")
