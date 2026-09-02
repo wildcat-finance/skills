@@ -169,8 +169,8 @@ record. The boundary changes only because deterministic regeneration walks the
 three added files, moving `files_walked` from 2170 to 2173; no entry,
 classification or byte total moves with it.
 
-The root suite passes 941 tests at the parent and 964 at this head. The
-difference is the twenty-three cases of the currency guard; the run-report
+The root suite passes 941 tests at the parent and 971 at this head. The
+difference is the thirty cases of the currency guard; the run-report
 guard lands in the Hexaemeron suite instead.
 
 ## What this step repaired
