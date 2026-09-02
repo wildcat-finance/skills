@@ -119,11 +119,13 @@ NEGATIVE_CASE_SPECIMEN_KINDS = frozenset(
         "import specimen",
     }
 )
-# The one count no local input recomputes.  Level-3 separation is exercised by
-# four consequence specimens that no registry row, declared inventory or
-# checker count enumerates, so it stays declared evidence and is held only to
-# the specimens its own rows name.
-NEGATIVE_CASE_DECLARED_KINDS = frozenset({"consequence specimens"})
+# The one count no local input recomputes, bound to the one class entitled to
+# it.  Level-3 separation is exercised by four consequence specimens that no
+# registry row, declared inventory or checker count enumerates, so it stays
+# declared evidence and is held only to the specimens its own rows name.  The
+# binding is the point: an unbound declared kind is a door any class can walk
+# through to escape recomputation entirely.
+NEGATIVE_CASE_DECLARED_KINDS = {"consequence specimens": "level-3-separation"}
 
 # Every ``counts`` key appears once in the evidence report's own table, so the
 # half a reader quotes cannot drift away from the half the digests bind.
@@ -155,6 +157,23 @@ def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def input_paths(inputs) -> list[str]:
+    """Every ``inputs[].path``, refused before it is hashed rather than after.
+
+    Two consumers put these values in a set and in a mapping key, where a
+    list-valued path raises ``TypeError: unhashable type`` before any
+    assertion runs.  The record deserves the same stable refusal there as it
+    gets from ``confined``.
+    """
+    values = []
+    for entry in inputs:
+        value = entry["path"]
+        if not isinstance(value, str):
+            raise AssertionError(f"path is not a string: {value!r}")
+        values.append(value)
+    return values
+
+
 def confined(relative: str) -> Path:
     """Resolve a record-supplied path under the repository root, or refuse it.
 
@@ -163,7 +182,15 @@ def confined(relative: str) -> Path:
     names is repository-relative by contract, and a digest mismatch afterwards
     would not undo a read that had already left the checkout, so the contract
     is checked here rather than assumed.
+
+    The type check comes first because a refusal has to stay a refusal.  A
+    list, integer, dict or bytes value reaching ``str`` methods raises
+    ``AttributeError`` or ``TypeError``, which arrives as an error rather than
+    an assertion failure, and a report mixing the two classifies
+    ``inconclusive`` instead of naming the bad record.
     """
+    if not isinstance(relative, str):
+        raise AssertionError(f"path is not a string: {relative!r}")
     if not relative or relative.strip() != relative:
         raise AssertionError(f"path is empty or padded: {relative!r}")
     if relative.startswith("/") or "\\" in relative or "\x00" in relative:
@@ -289,7 +316,7 @@ class DemonstrationRecordTests(unittest.TestCase):
                 self.assertEqual(entry["sha256"], hashlib.sha256(raw).hexdigest())
 
     def test_the_law_and_registry_are_named_inputs(self) -> None:
-        named = {entry["path"] for entry in self.record["inputs"]}
+        named = set(input_paths(self.record["inputs"]))
         for required in (
             "PROMISE_MACHINE.md",
             "tests/promise_machine_obligations.json",
@@ -382,6 +409,11 @@ class GateClassCoverageTests(unittest.TestCase):
                         kind,
                         NEGATIVE_CASE_DECLARED_KINDS,
                         "an unclassified negative-case kind recomputes from nothing",
+                    )
+                    self.assertEqual(
+                        NEGATIVE_CASE_DECLARED_KINDS[kind],
+                        entry["class"],
+                        "only the class entitled to this kind may declare it",
                     )
                     self.assertGreaterEqual(count, len(entry["specimens"]))
 
@@ -549,7 +581,10 @@ class RecordedObservationTests(unittest.TestCase):
                 ids = entry["obligation_ids"]
                 self.assertEqual(cells[2], str(len(ids)) if ids else "none")
                 negative = entry["negative_cases"]
-                self.assertIn(f"{negative['count']} {negative['kind']}", cells[3])
+                # Equality, not containment: "35 runtime binding rows" contains
+                # "5 runtime binding rows", so a substring check let the report
+                # differ from the record by any leading digits.
+                self.assertEqual(cells[3], f"{negative['count']} {negative['kind']}")
                 self.assertEqual(cells[5], str(len(entry["tests"])))
 
     def test_the_report_repeats_every_bound_input_digest(self) -> None:
@@ -560,8 +595,10 @@ class RecordedObservationTests(unittest.TestCase):
             for path, digest, size in REPORT_INPUT_ROW.findall(text)
         }
         recorded = {
-            entry["path"]: (entry["sha256"], entry["bytes"])
-            for entry in self.record["inputs"]
+            path: (entry["sha256"], entry["bytes"])
+            for path, entry in zip(
+                input_paths(self.record["inputs"]), self.record["inputs"]
+            )
         }
         self.assertEqual(observed, recorded)
 

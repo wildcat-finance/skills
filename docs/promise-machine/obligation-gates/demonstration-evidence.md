@@ -175,18 +175,29 @@ guard lands in the Hexaemeron suite instead.
 
 ## What this step repaired
 
-The exit clause's own command exposed a defect. `run_checks.py --report
-.reports/<name>.json` writes its report after building its plan, so the
-invocation that writes one completes. `.reports/` was neither ignored nor owned
-by the check map, so every later invocation saw it as a relevant untracked path
-with no declared owner and refused with `unknown-ownership` before starting a
-single check. The tree the step must prove clean was also no longer clean.
+The exit clause's own command exposed a defect. `run_checks.py` requires its
+`--report` target to be an ignored, untracked repository path, and enforces
+that in `require_ignored_report_path` while parsing arguments, before any plan
+is built. `.reports/` was not ignored, so
+`--report .reports/issue-884-full.json` was refused outright with
+`unsafe-report-path: report path must be ignored by this repository`, and no
+report was ever written. The exit clause named a command this repository would
+not run.
 
 `/.elenchus/` already carried that rule for the Elenchus runner's report, with
-the same rationale written into `.gitignore`. `/.reports/` now joins it. The
-guard lives beside the Elenchus case it mirrors, in
-`plugins/hexaemeron/tests/test_check_runner.py`, and fails without the ignore
-rule.
+the same rationale written into `.gitignore`. `/.reports/` now joins it, and
+the runbook's command is accepted. Two guards sit beside the Elenchus case they
+mirror, in `plugins/hexaemeron/tests/test_check_runner.py`: one holds the
+parse-time precondition on the runbook's own report path, and one holds the
+downstream rule that a written report must not reach the planner's changed set.
+Both fail without the ignore rule.
+
+Commit `e0b0af33` describes the downstream mechanism as though it were the
+cause: it says the writing invocation completes and every later invocation
+refuses with `unknown-ownership`. That sequence cannot occur, because the first
+invocation is refused before it writes anything. The fix is the one the
+repository needs either way; the account of why is corrected here, and the
+commit message stands as written history.
 
 ## Unknowns
 
