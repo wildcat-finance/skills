@@ -140,7 +140,7 @@ class DecisionRecordNumbering(unittest.TestCase):
             if number not in theirs:
                 continue
             added = names - theirs[number]
-            if added and True:
+            if added:
                 if len(names | theirs[number]) > 1:
                     collisions.append(
                         f"ADR-{number}: this branch adds {sorted(added)} while the "

@@ -37,6 +37,17 @@ plugins/*/harness/cache/
 # a plugin that wants its own tmp/ still decides for itself.
 /tmp/
 
+# The timing cache from plugins/hexaemeron/tests/run_tests.py, whose path is
+# `<cwd>/tmp/check-runner/timings-v1.json` because its run root is the working
+# directory. Run the plugin suite from the repository root, as AGENTS.md:276
+# does, and the rule above already covers it; run it from the plugin directory
+# the way plugins/hexaemeron/README.md:333 shows, or from the tests directory,
+# and the cache lands on a path nothing ignores. The rule names check-runner/
+# rather than tmp/ so a plugin still decides its own tmp/, per the note above.
+# It also covers the `.timings-v1.json.<pid>.<ns>.tmp` a hard-killed run leaves
+# beside the cache.
+**/tmp/check-runner/
+
 # Demo output. The Synkrisis example commands write their cohort here; the
 # committed expected copies live under the plugin's examples tree.
 /build/

@@ -3949,7 +3949,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "0b60bd18b93347a4757f5c5d1aeb61ee111e9c360530aa41b078ed87779bb684"
+      "sha256": "4cda944fb8289008402a0fabbf05bebf2d0a3437c4945c7c00ba4a4c186c8c4e"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4451,7 +4451,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "0b60bd18b93347a4757f5c5d1aeb61ee111e9c360530aa41b078ed87779bb684",
+      "sha256": "4cda944fb8289008402a0fabbf05bebf2d0a3437c4945c7c00ba4a4c186c8c4e",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -4482,7 +4482,7 @@
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
-      "sha256": "c9e063afcd59d326d31c995b07fcc3e57235509eb192205778da2ae8025940f3",
+      "sha256": "f860fb8c069325d90de0847d039acd3ca58d2582405602dc3fc2652fae7aa119",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4540,7 +4540,7 @@
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_push_advances_steps_then_the_stack_integrates",
-      "sha256": "c9e063afcd59d326d31c995b07fcc3e57235509eb192205778da2ae8025940f3",
+      "sha256": "f860fb8c069325d90de0847d039acd3ca58d2582405602dc3fc2652fae7aa119",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4598,7 +4598,7 @@
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
-      "sha256": "0194e563124b076d4409835ddb09276eb909c84dd9e59224426e10b646403ba9",
+      "sha256": "f37e3db9b8250118daca578563b9d8db13088264499f30a6d0e9af97f4d06b19",
       "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {
@@ -4627,7 +4627,7 @@
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
-      "sha256": "c9e063afcd59d326d31c995b07fcc3e57235509eb192205778da2ae8025940f3",
+      "sha256": "f860fb8c069325d90de0847d039acd3ca58d2582405602dc3fc2652fae7aa119",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-version-resolution": {
@@ -4656,7 +4656,7 @@
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
-      "sha256": "b626827f9cd10dd325f26c36cb071e45fcd3e64101876ace6e9c0b6d1c312428",
+      "sha256": "46dc5e32335fbd0bed62f1f55b79f6d1b2f5b112219cedb65b03a85c269ce658",
       "source": "plugins/hexaemeron/tests/test_version_relations.py"
     },
     "hermes-baseline-promotion": {
