@@ -93,3 +93,20 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: two shell builtins this host lacks, `mapfile` and `xargs -a`, each produced a lint result over the wrong input inside this round: the first reported clean over zero paths and the second failed with a usage error. Both were caught by printing the argument count rather than by the exit status, which is the same shape `push-discipline.md` records for a failed GitHub query. Recorded rather than built, because a guard belongs in whatever runs the lints rather than in this step's product. The committed-copy comparison lead from step 1, the test-count deviation from round 2, and the four digest reconciliations across this step all stand.
+
+## Step 3, round 1 -- 2026-09-02T02:16:36Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: body-size=reviewed; control-characters=reviewed; digest-drift=reviewed; fenced-decoy=reviewed; unclosed-block=reviewed; duplicate-block=reviewed; extractor-collision=not-applicable
+
+Not checked: the survey was never handed a set larger than the 138 issues this repository has open, so the 2048-row cap and the 8 MiB byte cap were not exercised against input that reaches them. The Atlas dependency extractor remains unread and unrun, and is delivered in the Atlas repository. No measurement was taken of the survey over 138 rows, so no performance claim is made. The demo path was run against the live issue and its edit was checked with the reader before publication, but no test exercises the REST path itself.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | A `body` that is not a string produced `AttributeError: 'dict' object has no attribute 'splitlines'` from inside `_unfenced_markdown_lines`, so hostile JSON reached the parser and failed as a traceback rather than a named refusal. Findings F-03 and F-04 in `plugins/hexaemeron/audit/AUDIT.md` record the same class. | fixed in 2d90f2db450c810da13d0d19ecdc9eb0109dfa06 |
+| S3-R1-02 | low | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | A control character in an issue title reached the terminal unaltered, rendering as `esc^[[31mRED`. Titles come from GitHub and these rows are printed, so a crafted title would emit escape sequences into an operator's terminal. The carryover row reader refuses control characters by name; this printer did neither. | fixed in 2d90f2db450c810da13d0d19ecdc9eb0109dfa06 by stripping to printable characters, because a title is display text rather than a field a decision rests on |
+
+Leads not pursued: the five carried from earlier steps stand, unchanged: the committed-copy comparison, the per-commit digest multiplier, the lint-scope guard, the Atlas extractor obligation, and the round-2 test-count deviation. This step adds one. The documented fetch for the survey's input read one unpaginated page and yielded 59 rows against 138 open issues; the command was corrected to name its count `surveyed` and to document `--paginate`, but nothing checks that the file it is handed is complete, and the reader cannot know what was left out of it. Recorded rather than built, because a completeness check needs a transport this command deliberately does not have.
