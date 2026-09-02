@@ -562,11 +562,16 @@ class RecordedObservationTests(unittest.TestCase):
                 self.assertEqual(observed[subject], self.record["counts"][key])
 
     def test_the_report_gate_table_repeats_every_recorded_gate_class(self) -> None:
-        """Rows, negative cases and test counts are joined cell by cell.
+        """Every cell of the report's gate table is joined to the record.
 
-        The report's gate table restates three numbers the record already
-        carries.  Checking only that each class name appeared somewhere in the
-        prose let all three drift silently.
+        The table restates six things the record already carries.  Checking
+        only that each class name appeared somewhere in the prose let all six
+        drift silently, and joining only the three numeric ones left the three
+        that carry the reader's instructions free: the report could name
+        ``check --only nonsense`` as the command that reproduces a refusal, or
+        a finding code the checker cannot emit, and stay green.  ``When a gate
+        stops the line`` sends the reader to the evaluator column by name, so
+        that column is a pointer and is resolved like one.
         """
         text = EVIDENCE_REPORT.read_text(encoding="utf-8")
         for entry in self.record["gate_classes"]:
@@ -578,6 +583,13 @@ class RecordedObservationTests(unittest.TestCase):
                 self.assertIsNotNone(match, "the class has no row in the report")
                 cells = [cell.strip() for cell in match.group(1).split("|")]
                 self.assertEqual(len(cells), 6, cells)
+                self.assertEqual(cells[0], entry["issue_obligation"])
+                evaluator = cells[1].strip("`")
+                self.assertTrue(evaluator.startswith("check "), evaluator)
+                self.assertTrue(
+                    entry["evaluator"].endswith(f" {evaluator}"),
+                    f"{evaluator!r} is not the tail of {entry['evaluator']!r}",
+                )
                 ids = entry["obligation_ids"]
                 self.assertEqual(cells[2], str(len(ids)) if ids else "none")
                 negative = entry["negative_cases"]
@@ -585,6 +597,10 @@ class RecordedObservationTests(unittest.TestCase):
                 # "5 runtime binding rows", so a substring check let the report
                 # differ from the record by any leading digits.
                 self.assertEqual(cells[3], f"{negative['count']} {negative['kind']}")
+                self.assertEqual(
+                    FINDING_CODE.findall(cells[4]),
+                    list(entry["finding_codes"]) + list(entry["network_findings"]),
+                )
                 self.assertEqual(cells[5], str(len(entry["tests"])))
 
     def test_the_report_repeats_every_bound_input_digest(self) -> None:
