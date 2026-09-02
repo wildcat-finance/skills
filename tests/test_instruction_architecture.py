@@ -193,6 +193,21 @@ ORACLE_MAX_GIT_OUTPUT = 4 * 1024 * 1024
 ORACLE_MAX_GIT_ERROR = 64 * 1024
 ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
+ORACLE_STEP1_PARENT_DEPENDENCIES = (
+    "docs/instruction-architecture/corpus-reconciliation.md",
+    "docs/instruction-architecture/runbook.md",
+    "docs/instruction-architecture/study.md",
+    "research/instruction-architecture/benchmark.py",
+    "research/instruction-architecture/schemas/invocation-profile-v1.schema.json",
+    "research/instruction-architecture/schemas/source-bound-v1.schema.json",
+    "tests/fixtures/instruction-architecture/artifact-inventory.json",
+    "tests/fixtures/instruction-architecture/byte-partition.json",
+    "tests/fixtures/instruction-architecture/cohorts.json",
+    "tests/fixtures/instruction-architecture/corpus-manifest.json",
+    "tests/fixtures/instruction-architecture/holdout-seal.json",
+    "tests/fixtures/instruction-architecture/invocation-profiles.json",
+    "tests/fixtures/instruction-architecture/loader-graph.json",
+)
 ORACLE_BASELINE_INVENTORY_SHA256 = (
     "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
 )
@@ -792,32 +807,124 @@ def oracle_source(path: str) -> bytes:
     return expected
 
 
-def oracle_head_module() -> types.ModuleType:
-    """Load the tracked oracle object as isolated exact-parent authority."""
+def oracle_head_oid() -> str:
+    """Resolve one immutable parent-test authority before reading its objects."""
     process = oracle_git(
-        "show",
-        "HEAD:tests/test_instruction_architecture.py",
-        limit=ORACLE_MAX_GIT_OUTPUT,
+        "rev-parse", "--verify", "HEAD^{commit}", limit=128
     )
     if (
         process.returncode != 0
+        or process.stderr
+        or not re.fullmatch(rb"(?:[0-9a-f]{40}|[0-9a-f]{64})\n", process.stdout)
+    ):
+        raise AssertionError("independent tracked oracle commit is unavailable")
+    return process.stdout[:-1].decode("ascii")
+
+
+def oracle_assert_step1_parent_dependencies(oid: str) -> None:
+    """Fail closed if a live Step 1 dependency differs from the parent oid."""
+    process = oracle_git(
+        "diff",
+        "--quiet",
+        "--no-ext-diff",
+        "--no-textconv",
+        oid,
+        "--",
+        *ORACLE_STEP1_PARENT_DEPENDENCIES,
+        limit=1,
+    )
+    if process.returncode == 1:
+        raise AssertionError("independent tracked oracle dependency drift")
+    if process.returncode != 0 or process.stdout or process.stderr:
+        raise AssertionError("independent tracked oracle dependencies unavailable")
+
+
+def oracle_tracked_source(oid: str, path: str) -> bytes:
+    """Read one bounded object from the already-resolved parent commit."""
+    process = oracle_git(
+        "show", f"{oid}:{path}", limit=ORACLE_MAX_GIT_OUTPUT
+    )
+    if (
+        process.returncode != 0
+        or process.stderr
         or not process.stdout
         or len(process.stdout) > ORACLE_MAX_GIT_OUTPUT
     ):
-        raise AssertionError("independent tracked oracle is unavailable")
+        raise AssertionError("independent tracked oracle object is unavailable")
+    return process.stdout
+
+
+def oracle_tracked_benchmark(source: bytes, oid: str) -> types.ModuleType:
+    """Compile the parent benchmark bytes without consulting the worktree."""
+    module = types.ModuleType("tracked_instruction_architecture_benchmark")
+    module.__file__ = str(SCRIPT)
+    module.__source_oid__ = oid
+    module.__source_sha256__ = hashlib.sha256(source).hexdigest()
+    try:
+        code = compile(source, module.__file__, "exec")
+        # phylax: allow exact tracked benchmark bytes as bounded parent evidence
+        exec(code, module.__dict__)
+    except (SyntaxError, UnicodeError) as exc:
+        raise AssertionError("independent tracked benchmark is malformed") from exc
+    return module
+
+
+def oracle_head_module() -> types.ModuleType:
+    """Load the bounded parent helper while declared live inputs match HEAD."""
+    oid = oracle_head_oid()
+    oracle_assert_step1_parent_dependencies(oid)
+    benchmark_source = oracle_tracked_source(
+        oid, "research/instruction-architecture/benchmark.py"
+    )
+    test_source = oracle_tracked_source(
+        oid, "tests/test_instruction_architecture.py"
+    )
+
+    class TrackedBenchmarkLoader:
+        def create_module(self, _spec):
+            return None
+
+        def exec_module(self, target):
+            tracked = oracle_tracked_benchmark(benchmark_source, oid)
+            target.__dict__.update(tracked.__dict__)
+
+    loader = TrackedBenchmarkLoader()
+    tracked_spec = importlib.util.spec_from_loader(
+        "instruction_architecture", loader, origin=str(SCRIPT)
+    )
+    if tracked_spec is None:
+        raise AssertionError("independent tracked benchmark is unavailable")
+    real_spec = importlib.util.spec_from_file_location
+
+    def parent_spec(name, location, *arguments, **keywords):
+        if name == "instruction_architecture" and Path(location) == SCRIPT:
+            return tracked_spec
+        return real_spec(name, location, *arguments, **keywords)
+
     module = types.ModuleType("tracked_instruction_architecture_oracle")
     module.__file__ = str(Path(__file__).resolve())
     try:
-        code = compile(process.stdout, module.__file__, "exec")
-        # phylax: allow exact tracked test bytes are the Elenchus authority
-        exec(code, module.__dict__)
+        code = compile(test_source, module.__file__, "exec")
+        with mock.patch.object(
+            importlib.util, "spec_from_file_location", side_effect=parent_spec
+        ):
+            # phylax: allow exact tracked test bytes as bounded parent evidence
+            exec(code, module.__dict__)
     except (SyntaxError, UnicodeError) as exc:
         raise AssertionError("independent tracked oracle is malformed") from exc
+
+    def load_tracked_benchmark():
+        return oracle_tracked_benchmark(benchmark_source, oid)
+
+    module.AI = load_tracked_benchmark()
+    module.load_module = load_tracked_benchmark
+    module.__source_oid__ = oid
+    module.__source_sha256__ = hashlib.sha256(test_source).hexdigest()
     return module
 
 
 def oracle_guard_module() -> types.ModuleType:
-    """Route ordinary guards to candidate bytes and declared Elenchus to HEAD."""
+    """Route ordinary guards to candidate and the supplemental helper to HEAD."""
     authority = os.environ.get("FIAT1046_ELENCHUS_PARENT")
     if authority is None:
         return sys.modules[__name__]
@@ -3528,6 +3635,57 @@ class CorpusManifestTests(unittest.TestCase):
             ),
         ):
             oracle_guard_module()
+
+    def test_independent_parent_oracle_pins_test_and_benchmark_to_one_oid(self):
+        tracked = oracle_guard_module()
+        parent = tracked.oracle_head_module()
+        test_oid = getattr(parent, "__source_oid__", None)
+        benchmark_oid = getattr(parent.AI, "__source_oid__", None)
+        self.assertIsNotNone(test_oid)
+        self.assertEqual(test_oid, benchmark_oid)
+        self.assertEqual(
+            getattr(parent.AI, "__source_sha256__", None),
+            hashlib.sha256(
+                oracle_git(
+                    "show",
+                    f"{test_oid}:research/instruction-architecture/benchmark.py",
+                    limit=ORACLE_MAX_GIT_OUTPUT,
+                ).stdout
+            ).hexdigest(),
+        )
+
+    def test_independent_parent_oracle_pins_benchmark_reloads(self):
+        tracked = oracle_guard_module()
+        parent = tracked.oracle_head_module()
+        reloaded = parent.load_module()
+        expected_oid = oracle_head_oid()
+        expected_source = oracle_git(
+            "show",
+            f"{expected_oid}:research/instruction-architecture/benchmark.py",
+            limit=ORACLE_MAX_GIT_OUTPUT,
+        ).stdout
+        self.assertEqual(getattr(reloaded, "__source_oid__", None), expected_oid)
+        self.assertEqual(
+            getattr(reloaded, "__source_sha256__", None),
+            hashlib.sha256(expected_source).hexdigest(),
+        )
+
+    def test_independent_parent_oracle_refuses_step1_dependency_drift(self):
+        tracked = oracle_guard_module()
+        real_git = tracked.oracle_git
+
+        def synthetic_drift(*arguments, **keywords):
+            if arguments and arguments[0] == "diff":
+                return subprocess.CompletedProcess(arguments, 1, b"", b"")
+            return real_git(*arguments, **keywords)
+
+        with (
+            mock.patch.object(tracked, "oracle_git", side_effect=synthetic_drift),
+            self.assertRaisesRegex(
+                AssertionError, "independent tracked oracle dependency drift"
+            ),
+        ):
+            tracked.oracle_head_module()
 
     def test_independent_git_tree_caps_count_and_requires_canonical_nuls(self):
         tracked = oracle_guard_module()
