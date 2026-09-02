@@ -10,6 +10,13 @@
       "kind": "suite",
       "script": "tests"
     },
+    "adr-assignment-workflow": {
+      "title": "Base-owned ADR assignment workflow",
+      "argv": ["python3", "-m", "unittest", "tests.test_adr_assignment_workflow", "-v"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "tests/test_adr_assignment_workflow.py"
+    },
     "dead-code-suite": {
       "title": "Report-only dead-code suite",
       "argv": ["python3", "-m", "unittest", "tests.test_dead_code", "-v"],
@@ -221,7 +228,7 @@
     },
     "ci": {
       "title": "Hosted workflow definitions",
-      "checks": []
+      "checks": ["adr-assignment-workflow"]
     },
     "alexandria": {"title": "Alexandria plugin", "checks": ["alexandria-suite"]},
     "ariadne": {"title": "Ariadne plugin", "checks": ["ariadne-suite"]},
