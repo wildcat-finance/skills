@@ -462,6 +462,21 @@ VERSION_RESOLUTION_KEYS = frozenset(
     }
 )
 
+CHECKPOINT_IDENTITY_SCHEMA = "fiat-checkpoint-identity/v1"
+CHECKPOINT_IDENTITY_RESULT_SCHEMA = "fiat-checkpoint-identity-result/v1"
+CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA = "fiat-checkpoint-identity-evidence/v1"
+CHECKPOINT_IDENTITY_POLICY_SCHEMA = "fiat-checkpoint-behavior-policy/v1"
+CHECKPOINT_IDENTITY_OBSERVATIONS_SCHEMA = "fiat-checkpoint-observations/v1"
+CHECKPOINT_IDENTITY_DOMAIN = b"wildcat-fiat-checkpoint-identity/v1\0"
+CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX = 100_000
+CHECKPOINT_IDENTITY_SKILLS_MAX = 32
+CHECKPOINT_IDENTITY_TEXT_BYTES_MAX = 128
+
+RUN_ANCHOR_SCHEMA = "fiat-run-anchor/v1"
+RUN_ANCHOR_RECEIPT = "run_anchor"
+RUN_ANCHOR_REPOSITORY_UNBOUND = {"status": "unbound"}
+RUN_ANCHOR_TASK_NONE = {"kind": "none"}
+
 
 def scoped_path(base_dir: str, supplied: str, label: str) -> str:
     """Resolve one path and refuse anything outside the target directory."""
@@ -1172,6 +1187,50 @@ def check_branch_name(name: str) -> None:
 def run_branch_of(state: dict):
     """The run's integration branch, or None for a run started before 3.4."""
     return state.get("run_branch")
+
+
+def init_starting_commit(base_dir: str, starting_ref: str) -> str:
+    """Resolve one validated init ref before the command may write anything."""
+    if not isinstance(starting_ref, str) or not starting_ref:
+        die("--base must name a branch or one full commit SHA")
+    if COMMIT_RE.fullmatch(starting_ref):
+        object_type = bounded_git(
+            base_dir,
+            ["cat-file", "-t", starting_ref],
+            "starting base does not resolve to an object",
+        )
+        if tool_text(object_type, "starting base object type").strip() != "commit":
+            die("starting base SHA does not name a commit object")
+        return starting_ref
+    check_branch_name(starting_ref)
+    expected_ref = f"refs/heads/{starting_ref}"
+    data = bounded_git(
+        base_dir,
+        ["show-ref", "--verify", "--hash", expected_ref],
+        "starting base does not resolve to a local branch",
+    )
+    lines = [
+        line.strip()
+        for line in tool_text(data, "starting base").splitlines()
+        if line.strip()
+    ]
+    if len(lines) != 1 or not COMMIT_RE.fullmatch(lines[0]):
+        die("starting base did not resolve to one full commit SHA")
+    return lines[0]
+
+
+def init_controller_identity() -> dict:
+    """The controller identity an init-owned anchor records."""
+    version = ledger_version(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            os.pardir,
+            "EVOLUTION.md",
+        )
+    )
+    if version is None:
+        die("init cannot resolve the controller version")
+    return {"name": "hexctl", "state_version": 1, "version": version}
 
 
 def integration_base_of(state: dict) -> str:
@@ -2402,19 +2461,8 @@ def parse_value(raw: str):
 
 # ------------------------------------------------------------------ commands
 
-def cmd_init(args) -> None:
-    origin_root = os.path.realpath(args.dir)
-    root = state_root(args.dir)
-    if os.path.exists(state_path(args.dir)):
-        die(f"state already exists at {root}; resume with `hexctl next`")
-    waiver = None
-    if args.controller_currency_waiver is not None:
-        waiver = args.controller_currency_waiver.strip()
-        if not waiver:
-            die(
-                "--controller-currency-waiver needs a reason; an empty one "
-                "records nothing"
-            )
+def init_preflight(args) -> dict:
+    """Resolve every immutable anchor input before init takes its write lock."""
     prefix = DEFAULT_CONFIG["git"]["run_branch_prefix"]
     issue_number = (
         task_issue_number(args.task_issue) if args.task_issue is not None else None
@@ -2434,8 +2482,60 @@ def cmd_init(args) -> None:
                 f"--run-branch for task issue {issue_number} must start with "
                 f"'{required_prefix}'"
             )
-    if run_branch == args.base:
-        die("--run-branch must differ from --base; the run needs its own branch")
+    integration_branch = (
+        DEFAULT_CONFIG["git"]["base"]
+        if COMMIT_RE.fullmatch(args.base)
+        else args.base
+    )
+    check_branch_name(integration_branch)
+    if run_branch == integration_branch:
+        die(
+            "--run-branch must differ from --base (the integration branch); "
+            "the run needs its own branch"
+        )
+    repo_root = repository_root(args.dir)
+    starting_commit = init_starting_commit(args.dir, args.base)
+    controller = init_controller_identity()
+    repository = target_repository_binding(args.dir)
+    task = run_anchor_task(args.task_issue, repository)
+    candidate = os.path.join(
+        repo_root, *WORKTREE_HOME, flattened_run_branch(run_branch)
+    )
+    if os.path.exists(state_path(candidate)):
+        die(
+            f"this run already has a worktree at {candidate}; "
+            f"resume with `hexctl --dir {candidate} next`"
+        )
+    worktree = check_worktree_path(repo_root, candidate)
+    refuse_checked_out_branch(args.dir, run_branch)
+    return {
+        "controller": controller,
+        "integration_branch": integration_branch,
+        "repository": repository,
+        "run_branch": run_branch,
+        "starting_commit": starting_commit,
+        "task": task,
+        "worktree": worktree,
+    }
+
+
+def cmd_init(args) -> None:
+    plan = getattr(args, "_init_preflight", None) or init_preflight(args)
+    origin_root = os.path.realpath(args.dir)
+    root = state_root(args.dir)
+    if os.path.exists(state_path(args.dir)):
+        die(f"state already exists at {root}; resume with `hexctl next`")
+    waiver = None
+    if args.controller_currency_waiver is not None:
+        waiver = args.controller_currency_waiver.strip()
+        if not waiver:
+            die(
+                "--controller-currency-waiver needs a reason; an empty one "
+                "records nothing"
+            )
+    run_branch = plan["run_branch"]
+    starting_commit = plan["starting_commit"]
+    integration_branch = plan["integration_branch"]
     frontier = None
     if args.frontier:
         ledger = args.frontier if os.path.isabs(args.frontier) else \
@@ -2460,7 +2560,7 @@ def cmd_init(args) -> None:
     # refusal still costs nothing: no worktree, no state, no ledger, no
     # breadcrumb.
     repo_root = repository_root(args.dir)
-    candidate = run_worktree_path(args.dir, run_branch)
+    candidate = plan["worktree"]
     if os.path.exists(state_path(candidate)):
         die(
             f"this run already has a worktree at {candidate}; "
@@ -2519,6 +2619,8 @@ def cmd_init(args) -> None:
             file=sys.stderr,
         )
     provenance = {**currency, "waiver": waiver}
+    if provenance.get("ledger_version") != plan["controller"]["version"]:
+        die("controller version changed during init; retry from a stable controller")
 
     home = os.path.dirname(worktree)
     os.makedirs(home, exist_ok=True)
@@ -2534,10 +2636,10 @@ def cmd_init(args) -> None:
             fh.write("*\n")
     bounded_git(
         args.dir,
-        ["worktree", "add", "-b", run_branch, worktree, args.base],
+        ["worktree", "add", "-b", run_branch, worktree, starting_commit],
         refusal=(
             f"could not create the run worktree at {worktree} "
-            f"for '{run_branch}' off '{args.base}'"
+            f"for '{run_branch}' off '{starting_commit}'"
         ),
     )
     try:
@@ -2572,7 +2674,7 @@ def cmd_init(args) -> None:
         "controller": "hexctl",
         "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA},
         "topic": args.topic,
-        "base": args.base,
+        "base": starting_commit,
         "run_branch": run_branch,
         "created_at": now(),
         "phase": "study",
@@ -2584,16 +2686,26 @@ def cmd_init(args) -> None:
         "frontier": frontier,
     }
     state["config"]["audit"]["log_path"] = run_audit_log_path(run_branch)
+    state["config"]["git"]["base"] = integration_branch
     state["config"]["git"]["worktree"] = worktree
     state["config"]["git"]["origin"] = origin_root
+    run_anchor = build_run_anchor(state, plan["repository"], plan["controller"])
+    if run_anchor["task"] != plan["task"]:
+        die("init task identity changed while constructing the run anchor", 1)
+    state["receipts"][RUN_ANCHOR_RECEIPT] = run_anchor
+    run_anchor_sha256 = hashlib.sha256(
+        canonical(run_anchor).encode("utf-8")
+    ).hexdigest()
     init_data = {
         "topic": args.topic,
-        "base": args.base,
+        "base": starting_commit,
+        "integration_branch": integration_branch,
         "run_branch": run_branch,
         "contracts": state["contracts"],
         "controller_currency": provenance,
         "task_issue_contract": task_issue_contract,
         "starting_commit": starting_commit,
+        "run_anchor_sha256": run_anchor_sha256,
     }
     if args.task_issue is not None:
         init_data["task_issue"] = args.task_issue
@@ -2605,7 +2717,7 @@ def cmd_init(args) -> None:
         die(f"could not record the run at {root}")
     print(
         f"initialised {root} (topic: {args.topic}); "
-        f"run branch {run_branch} off {args.base}"
+        f"run branch {run_branch} off {starting_commit}"
     )
     print(f"run worktree {worktree}")
     print(f"work in it: hexctl --dir {worktree} next")
@@ -5381,7 +5493,12 @@ def cmd_currency(args) -> None:
         sys.exit(3)
 
 
-RESERVED_RECEIPTS = {"study", "runbook", "run_observations"}
+RESERVED_RECEIPTS = {
+    "study",
+    "runbook",
+    "run_observations",
+    RUN_ANCHOR_RECEIPT,
+}
 
 
 def cmd_record(args) -> None:
@@ -5720,7 +5837,9 @@ def cmd_observe(args) -> None:
     )
 
 
-def verify_observation_bindings(base_dir: str, state: dict) -> tuple[int, int]:
+def verify_observation_bindings(
+    base_dir: str, state: dict, *, allow_unavailable: bool = False
+) -> tuple[int, int]:
     bindings = state["receipts"].get("run_observations")
     if not isinstance(bindings, list) or not bindings:
         observation_error(
@@ -5798,17 +5917,50 @@ def verify_observation_bindings(base_dir: str, state: dict) -> tuple[int, int]:
                 1,
             )
         used_record_lines.add(record.get("_line"))
-        if (
-            binding.get("capture_status") != "accepted"
-            or binding.get("validation_status") != "passed"
-            or binding.get("redaction_status") != "passed"
-        ):
+        available = (
+            binding.get("capture_status") == "accepted"
+            and binding.get("validation_status") == "passed"
+            and binding.get("redaction_status") == "passed"
+        )
+        if not available and not allow_unavailable:
             observation_error(
                 "FOB005",
                 "the requested observation claim is unavailable or failed",
                 "capture, validate, and redact an accepted prefix before claiming it",
                 1,
             )
+        if not available:
+            if (
+                set(binding)
+                != {
+                    "schema",
+                    "observation_contract",
+                    "controller_run_id",
+                    "recorded_at",
+                    "capture_status",
+                    "redaction_status",
+                    "receipt",
+                    "validation_status",
+                    "reason_code",
+                }
+                or binding.get("capture_status") not in OBSERVATION_CAPTURE_STATUSES
+                or binding.get("capture_status") == "accepted"
+                or binding.get("validation_status") != "unknown"
+                or binding.get("redaction_status") not in ("failed", "unknown")
+                or not isinstance(binding.get("recorded_at"), str)
+                or not binding["recorded_at"].isascii()
+                or len(binding["recorded_at"].encode("ascii"))
+                > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+                or not isinstance(binding.get("reason_code"), str)
+                or OBSERVATION_REASON_RE.fullmatch(binding["reason_code"]) is None
+            ):
+                observation_error(
+                    "FOB003",
+                    "a non-available observation binding has an invalid closed shape",
+                    "restore the complete receipted binding and verify again",
+                    1,
+                )
+            continue
         artifact = binding.get("artifact")
         byte_count = binding.get("byte_count")
         event_count = binding.get("event_count")
@@ -5938,6 +6090,12 @@ def cmd_config(args) -> None:
     value = parse_value(args.value)
     if args.path == "audit.log_path":
         value = check_audit_log_path(args.dir, state, value)
+    anchor = state["receipts"].get(RUN_ANCHOR_RECEIPT)
+    if anchor is not None and args.path == "git.base":
+        die("config git.base is fixed by the init-owned run anchor")
+    if anchor is not None and args.path == "git":
+        if not isinstance(value, dict) or value.get("base") != node[leaf].get("base"):
+            die("config git.base is fixed by the init-owned run anchor")
     node[leaf] = value
     commit(args.dir, state, "config-set", {"path": args.path, "value": node[leaf]})
     print(f"set {args.path}")
@@ -11502,6 +11660,178 @@ def require_full_sha(value: object, label: str) -> str:
     return value
 
 
+def target_repository_binding(base_dir: str):
+    """Return one credential-free GitHub identity or an explicit unbound value.
+
+    A missing or non-GitHub origin is not silently promoted into a repository
+    identity.  Successful but ambiguous Git output is malformed and refuses.
+    """
+    status, data = bounded_run(
+        base_dir, "git", ["config", "--get-all", "remote.origin.url"]
+    )
+    if status == 1:
+        return dict(RUN_ANCHOR_REPOSITORY_UNBOUND)
+    if status != 0:
+        die("target origin could not be resolved")
+    try:
+        lines = [line.strip() for line in data.decode("utf-8").splitlines() if line.strip()]
+    except UnicodeDecodeError:
+        die("target origin is not UTF-8")
+    if len(lines) != 1:
+        die("target origin does not name one repository")
+    match = GITHUB_HTTPS_RE.fullmatch(lines[0]) or GITHUB_SSH_RE.fullmatch(lines[0])
+    if match is None:
+        return dict(RUN_ANCHOR_REPOSITORY_UNBOUND)
+    repository = match.group("repo").lower()
+    if (
+        not REPOSITORY_RE.fullmatch(repository)
+        or any(segment in (".", "..") for segment in repository.split("/"))
+    ):
+        die("target origin does not name one GitHub repository")
+    return repository
+
+
+def run_anchor_task(task_issue, repository, *, exit_code: int = 2):
+    """Project one init task into the anchor's closed task vocabulary."""
+    if task_issue is None:
+        return dict(RUN_ANCHOR_TASK_NONE)
+    if not isinstance(task_issue, str):
+        die("run anchor task receipt is malformed", exit_code)
+    match = GITHUB_ISSUE_RE.fullmatch(task_issue)
+    if match is None or not isinstance(repository, str):
+        return {
+            "kind": "external",
+            "sha256": hashlib.sha256(task_issue.encode("utf-8")).hexdigest(),
+        }
+    issue_repository = match.group("repo")
+    if isinstance(repository, str) and issue_repository.casefold() != repository.casefold():
+        die("task issue repository does not match target origin", exit_code)
+    return {"kind": "github-issue", "number": int(match.group("number"))}
+
+
+def build_run_anchor(
+    state: dict, repository, controller: dict, *, exit_code: int = 2
+) -> dict:
+    """Build the init-owned closed anchor from controller state."""
+    return {
+        "schema": RUN_ANCHOR_SCHEMA,
+        "controller": controller,
+        "initial_base_sha": state["base"],
+        "integration_branch": state["config"]["git"]["base"],
+        "repository": repository,
+        "run_branch": state["run_branch"],
+        "run_id": controller_run_id(state),
+        "task": run_anchor_task(
+            state["receipts"].get("task_issue"),
+            repository,
+            exit_code=exit_code,
+        ),
+    }
+
+
+def validate_run_anchor_shape(anchor) -> dict:
+    """Accept only the closed version-1 anchor language."""
+    fields = {
+        "schema",
+        "controller",
+        "initial_base_sha",
+        "integration_branch",
+        "repository",
+        "run_branch",
+        "run_id",
+        "task",
+    }
+    if not isinstance(anchor, dict) or set(anchor) != fields:
+        die("run anchor has an unsupported shape", 1)
+    controller = anchor.get("controller")
+    if (
+        not isinstance(controller, dict)
+        or set(controller) != {"name", "state_version", "version"}
+        or controller.get("name") != "hexctl"
+        or controller.get("state_version") != 1
+        or isinstance(controller.get("state_version"), bool)
+        or not isinstance(controller.get("version"), str)
+        or re.fullmatch(r"fiat-v[0-9]+\.[0-9]+\.[0-9]+", controller["version"])
+        is None
+    ):
+        die("run anchor controller identity is malformed", 1)
+    repository = anchor.get("repository")
+    if not (
+        (
+            isinstance(repository, str)
+            and REPOSITORY_RE.fullmatch(repository) is not None
+            and repository == repository.lower()
+        )
+        or repository == RUN_ANCHOR_REPOSITORY_UNBOUND
+    ):
+        die("run anchor repository identity is malformed", 1)
+    task = anchor.get("task")
+    task_valid = False
+    if isinstance(task, dict):
+        if task == RUN_ANCHOR_TASK_NONE:
+            task_valid = True
+        elif set(task) == {"kind", "number"}:
+            number = task.get("number")
+            task_valid = (
+                task.get("kind") == "github-issue"
+                and isinstance(number, int)
+                and not isinstance(number, bool)
+                and number > 0
+            )
+        elif set(task) == {"kind", "sha256"}:
+            task_valid = (
+                task.get("kind") == "external"
+                and isinstance(task.get("sha256"), str)
+                and re.fullmatch(r"[0-9a-f]{64}", task["sha256"]) is not None
+            )
+    if not task_valid:
+        die("run anchor task identity is malformed", 1)
+    if (
+        anchor.get("schema") != RUN_ANCHOR_SCHEMA
+        or not isinstance(anchor.get("initial_base_sha"), str)
+        or COMMIT_RE.fullmatch(anchor["initial_base_sha"]) is None
+        or not isinstance(anchor.get("integration_branch"), str)
+        or not branch_name_ok(anchor["integration_branch"])
+        or not isinstance(anchor.get("run_branch"), str)
+        or not branch_name_ok(anchor["run_branch"])
+        or anchor["run_branch"] == anchor["integration_branch"]
+        or not isinstance(anchor.get("run_id"), str)
+        or re.fullmatch(r"fiat-[0-9a-f]{64}", anchor["run_id"]) is None
+    ):
+        die("run anchor has malformed semantic fields", 1)
+    return anchor
+
+
+def verify_run_anchor(base_dir: str, state: dict, initial_entry: dict | None) -> None:
+    """Verify every init join when a version-1 run anchor is present."""
+    receipts = state["receipts"]
+    initial_data = as_dict(as_dict(initial_entry).get("data"))
+    if RUN_ANCHOR_RECEIPT not in receipts:
+        if "run_anchor_sha256" in initial_data:
+            die("run anchor is missing from an anchored initial ledger event", 1)
+        return
+    anchor = validate_run_anchor_shape(receipts[RUN_ANCHOR_RECEIPT])
+    controller_currency = as_dict(receipts.get("controller_currency"))
+    controller = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+        "version": controller_currency.get("ledger_version"),
+    }
+    origin = configured_git_path(state, "origin")
+    if not isinstance(origin, str) or not origin:
+        die("run anchor cannot verify the target origin", 1)
+    repository = target_repository_binding(origin)
+    expected = build_run_anchor(state, repository, controller, exit_code=1)
+    if anchor != expected:
+        die("run anchor does not match controller state, origin, or task", 1)
+    digest = hashlib.sha256(canonical(anchor).encode("utf-8")).hexdigest()
+    if (
+        as_dict(initial_entry).get("event") != "init"
+        or initial_data.get("run_anchor_sha256") != digest
+    ):
+        die("run anchor does not match the initial ledger event", 1)
+
+
 def target_repository(base_dir: str) -> str:
     data = bounded_git(
         base_dir,
@@ -12078,7 +12408,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         packet["brief"] = {
             "topic": state["topic"],
             "target_dir": root,
-            "base_ref": state["base"],
+            "base_ref": integration_base_of(state),
             "output_path": scoped_path(
                 root, os.path.join(STATE_DIR_NAME, "study.md"), "study output"
             ),
@@ -12577,6 +12907,805 @@ def _checkpoint_ledger(data: bytes, state: dict) -> tuple[int, str]:
     if count == 0 or last_state != state_fingerprint(state):
         die("checkpoint state does not match its ledger tail")
     return count, previous
+
+
+def _checkpoint_identity_sha256(value, label: str) -> str:
+    """Accept one lowercase SHA-256 without coercing another JSON type."""
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        die(f"checkpoint identity {label} is not a lowercase SHA-256")
+    return value
+
+
+def _checkpoint_identity_short_ascii(value, label: str) -> str:
+    """Accept one bounded printable ASCII token used by the closed language."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or not value.isascii()
+        or len(value.encode("ascii")) > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+        or any(ord(character) < 33 or ord(character) > 126 for character in value)
+    ):
+        die(f"checkpoint identity {label} is not bounded printable ASCII")
+    return value
+
+
+def _checkpoint_identity_ledger(
+    data: bytes, state: dict
+) -> tuple[list[dict], int, str]:
+    """Verify the exact bounded appendable prefix used by semantic identity."""
+    if type(data) is not bytes:
+        die("checkpoint identity ledger input must be captured bytes")
+    if not data or len(data) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint identity ledger exceeds its byte ceiling")
+    if not data.endswith(b"\n"):
+        die("checkpoint identity ledger is not an appendable exact prefix")
+
+    previous = "genesis"
+    entries = []
+    for raw_line in io.BytesIO(data):
+        if not raw_line.strip():
+            die("checkpoint identity ledger contains an empty record")
+        entry = _checkpoint_json(raw_line, "identity ledger")
+        if (
+            not isinstance(entry, dict)
+            or set(entry) != {"ts", "event", "data", "prev", "state", "hash"}
+            or not isinstance(entry.get("ts"), str)
+            or not entry["ts"].isascii()
+            or len(entry["ts"].encode("ascii"))
+            > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+            or not isinstance(entry.get("event"), str)
+            or not entry["event"]
+            or not entry["event"].isascii()
+            or len(entry["event"].encode("ascii"))
+            > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+            or not isinstance(entry.get("data"), dict)
+            or not isinstance(entry.get("prev"), str)
+            or not isinstance(entry.get("state"), str)
+            or not isinstance(entry.get("hash"), str)
+        ):
+            die("checkpoint identity ledger entry has an unsupported shape")
+        if entry["prev"] != previous:
+            die("checkpoint identity ledger chain is invalid")
+        _checkpoint_identity_sha256(entry["state"], "ledger state")
+        _checkpoint_identity_sha256(entry["hash"], "ledger hash")
+        if entry["prev"] != "genesis":
+            _checkpoint_identity_sha256(entry["prev"], "ledger predecessor")
+        body = {
+            key: entry[key] for key in ("ts", "event", "data", "prev", "state")
+        }
+        expected = hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()
+        if entry["hash"] != expected:
+            die("checkpoint identity ledger chain is invalid")
+        previous = entry["hash"]
+        entries.append(entry)
+        if len(entries) > CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX:
+            die("checkpoint identity ledger exceeds its entry ceiling")
+
+    if entries[-1]["state"] != state_fingerprint(state):
+        die("checkpoint identity state does not match its ledger tail")
+    return entries, len(entries), previous
+
+
+def _checkpoint_identity_policy(state: dict) -> dict:
+    """Project only the behavior settings named by the version-1 contract."""
+    config = state["config"]
+    skills = config["skills"]
+    audit = config["audit"]
+    git_config = config["git"]
+    if not isinstance(skills, dict) or set(skills) != {
+        "prose_lint",
+        "voice",
+        "security",
+    }:
+        die("checkpoint identity skills policy has an unsupported shape")
+    security = skills.get("security")
+    if (
+        not isinstance(security, list)
+        or not security
+        or len(security) > CHECKPOINT_IDENTITY_SKILLS_MAX
+        or any(not isinstance(item, str) for item in security)
+        or len(set(security)) != len(security)
+    ):
+        die("checkpoint identity security policy is malformed")
+    skill_names = [skills.get("prose_lint"), skills.get("voice"), *security]
+    for skill_name in skill_names:
+        _checkpoint_identity_short_ascii(skill_name, "skill name")
+        if re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9][A-Za-z0-9._-]*",
+            skill_name,
+        ) is None:
+            die("checkpoint identity skill name is malformed")
+
+    max_rounds = audit.get("max_rounds")
+    if (
+        isinstance(max_rounds, bool)
+        or not isinstance(max_rounds, int)
+        or max_rounds < 1
+        or max_rounds > 1_000_000
+    ):
+        die("checkpoint identity audit round policy is malformed")
+    fold = audit.get("fold")
+    if not isinstance(fold, bool):
+        die("checkpoint identity audit fold policy is malformed")
+    suffix = _checkpoint_identity_short_ascii(
+        audit.get("stacked_suffix"), "audit stacked suffix"
+    )
+    if re.fullmatch(r"[A-Za-z0-9._/-]+", suffix) is None:
+        die("checkpoint identity audit stacked suffix is malformed")
+    draft_pr = git_config.get("draft_pr")
+    if not isinstance(draft_pr, bool):
+        die("checkpoint identity draft pull-request policy is malformed")
+    solidity = config.get("solidity")
+    if not solidity_mode(solidity):
+        die("checkpoint identity Solidity policy is malformed")
+
+    return {
+        "schema": CHECKPOINT_IDENTITY_POLICY_SCHEMA,
+        "skills": {
+            "prose_lint": skills["prose_lint"],
+            "voice": skills["voice"],
+            "security": list(security),
+        },
+        "audit": {
+            "max_rounds": max_rounds,
+            "fold": fold,
+            "stacked_suffix": suffix,
+        },
+        "git": {"draft_pr": draft_pr},
+        "solidity": solidity,
+    }
+
+
+def _checkpoint_identity_observation_shape(binding: dict, run_id: str) -> None:
+    """Validate the closed binding bytes before reducing them to one digest."""
+    common = {
+        "schema",
+        "observation_contract",
+        "controller_run_id",
+        "recorded_at",
+        "capture_status",
+        "redaction_status",
+        "receipt",
+        "validation_status",
+    }
+    available = {
+        *common,
+        "artifact",
+        "byte_count",
+        "event_count",
+        "sha256",
+        "interval",
+    }
+    unavailable = {*common, "reason_code"}
+    if not isinstance(binding, dict) or set(binding) not in (available, unavailable):
+        die("checkpoint identity observation binding has an unsupported shape")
+    if (
+        binding.get("schema") != OBSERVATION_BINDING_CONTRACT
+        or binding.get("observation_contract") != OBSERVATION_CONTRACT
+        or binding.get("controller_run_id") != run_id
+    ):
+        die("checkpoint identity observation binding names another contract or run")
+    recorded_at = binding.get("recorded_at")
+    if (
+        not isinstance(recorded_at, str)
+        or not recorded_at
+        or not recorded_at.isascii()
+        or len(recorded_at.encode("ascii"))
+        > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+    ):
+        die("checkpoint identity observation timestamp is malformed")
+    receipt = binding.get("receipt")
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != {"line", "event", "hash", "state"}
+        or isinstance(receipt.get("line"), bool)
+        or not isinstance(receipt.get("line"), int)
+        or receipt["line"] < 1
+    ):
+        die("checkpoint identity observation receipt has an unsupported shape")
+    _checkpoint_identity_short_ascii(receipt.get("event"), "observation event")
+    _checkpoint_identity_sha256(receipt.get("hash"), "observation receipt hash")
+    _checkpoint_identity_sha256(receipt.get("state"), "observation state")
+
+    if set(binding) == unavailable:
+        reason = binding.get("reason_code")
+        if (
+            binding.get("capture_status") not in OBSERVATION_CAPTURE_STATUSES
+            or binding.get("capture_status") == "accepted"
+            or binding.get("validation_status") != "unknown"
+            or binding.get("redaction_status") not in ("failed", "unknown")
+            or not isinstance(reason, str)
+            or OBSERVATION_REASON_RE.fullmatch(reason) is None
+        ):
+            die("checkpoint identity unavailable observation is malformed")
+        return
+
+    artifact = binding.get("artifact")
+    interval = binding.get("interval")
+    if (
+        binding.get("capture_status") != "accepted"
+        or binding.get("validation_status") != "passed"
+        or binding.get("redaction_status") != "passed"
+        or not isinstance(artifact, str)
+        or not artifact
+        or not artifact.isascii()
+        or len(artifact.encode("ascii")) > OBSERVATION_PATH_BYTES_MAX
+        or isinstance(binding.get("byte_count"), bool)
+        or not isinstance(binding.get("byte_count"), int)
+        or binding["byte_count"] < 1
+        or binding["byte_count"] > OBSERVATION_BYTES_MAX
+        or isinstance(binding.get("event_count"), bool)
+        or not isinstance(binding.get("event_count"), int)
+        or binding["event_count"] < 1
+        or not isinstance(interval, dict)
+        or set(interval)
+        != {
+            "first_sequence",
+            "last_sequence",
+            "first_event_id",
+            "last_event_id",
+        }
+    ):
+        die("checkpoint identity accepted observation is malformed")
+    _checkpoint_identity_sha256(binding.get("sha256"), "observation prefix")
+    first_sequence = interval.get("first_sequence")
+    last_sequence = interval.get("last_sequence")
+    if (
+        isinstance(first_sequence, bool)
+        or not isinstance(first_sequence, int)
+        or first_sequence < 0
+        or isinstance(last_sequence, bool)
+        or not isinstance(last_sequence, int)
+        or last_sequence < first_sequence
+    ):
+        die("checkpoint identity observation interval is malformed")
+    _checkpoint_identity_short_ascii(
+        interval.get("first_event_id"), "observation first event id"
+    )
+    _checkpoint_identity_short_ascii(
+        interval.get("last_event_id"), "observation last event id"
+    )
+
+
+def _checkpoint_identity_observations(state: dict, entries: list[dict]) -> dict:
+    """Reduce absent or already verified ordered bindings to path-free evidence."""
+    receipts = state["receipts"]
+    if "run_observations" not in receipts:
+        absent = {
+            "schema": CHECKPOINT_IDENTITY_OBSERVATIONS_SCHEMA,
+            "status": "absent",
+        }
+        return {
+            "status": "absent",
+            "bindings": 0,
+            "sha256": hashlib.sha256(canonical(absent).encode("utf-8")).hexdigest(),
+        }
+    bindings = receipts.get("run_observations")
+    if (
+        not isinstance(bindings, list)
+        or not bindings
+        or len(bindings) > OBSERVATION_BINDINGS_MAX
+    ):
+        die("checkpoint identity observation collection is malformed")
+    run_id = controller_run_id(state)
+    by_hash = {entry["hash"]: (line, entry) for line, entry in enumerate(entries, 1)}
+    observation_records = [
+        (line, entry)
+        for line, entry in enumerate(entries, 1)
+        if entry["event"] == "record:run-observation"
+    ]
+    if len(observation_records) != len(bindings):
+        die("checkpoint identity observation ledger count does not match state")
+    used_records = set()
+    previous_record_line = 0
+    for binding in bindings:
+        _checkpoint_identity_observation_shape(binding, run_id)
+        receipt = binding["receipt"]
+        selected_pair = by_hash.get(receipt["hash"])
+        binding_sha256 = hashlib.sha256(
+            canonical(binding).encode("utf-8")
+        ).hexdigest()
+        matches = [
+            (line, entry)
+            for line, entry in observation_records
+            if entry["data"].get("binding_sha256") == binding_sha256
+        ]
+        if selected_pair is None or len(matches) != 1:
+            die("checkpoint identity observation receipt is not joined to the ledger")
+        selected_line, selected = selected_pair
+        record_line, record = matches[0]
+        if (
+            selected["event"] == "record:run-observation"
+            or record_line in used_records
+            or record_line <= previous_record_line
+            or selected_line + 1 != record_line
+            or receipt
+            != {
+                "line": selected_line,
+                "event": selected["event"],
+                "hash": selected["hash"],
+                "state": selected["state"],
+            }
+            or record["data"].get("receipt_hash") != selected["hash"]
+            or record["data"].get("capture_status")
+            != binding["capture_status"]
+        ):
+            die("checkpoint identity observation receipt disagrees with the ledger")
+        used_records.add(record_line)
+        previous_record_line = record_line
+    return {
+        "status": "bound",
+        "bindings": len(bindings),
+        "sha256": hashlib.sha256(canonical(bindings).encode("utf-8")).hexdigest(),
+    }
+
+
+def _checkpoint_identity_working_commit(
+    state: dict, entries: list[dict]
+) -> tuple[str, int, str]:
+    """Derive the accepted boundary and its last receipted local commit."""
+    tail = entries[-1]
+    if tail["event"] not in ("done:push", "audit-round"):
+        die(
+            "checkpoint identity is allowed only immediately after done push or "
+            "at an active audit-verdict"
+        )
+    data = tail["data"]
+    step_number = data.get("step")
+    if (
+        isinstance(step_number, bool)
+        or not isinstance(step_number, int)
+        or step_number < 1
+    ):
+        die("checkpoint identity boundary has no positive step number")
+    matches = [step for step in state["steps"] if step.get("n") == step_number]
+    if len(matches) != 1:
+        die("checkpoint identity boundary step is not unique")
+    step = matches[0]
+
+    if tail["event"] == "done:push":
+        push = as_dict(as_dict(step.get("receipts")).get("push"))
+        verified = push.get("verified_commits")
+        if (
+            step.get("status") != "done"
+            or step.get("phase") != "done"
+            or not isinstance(verified, list)
+            or not verified
+            or len(verified) > GIT_PATHS_MAX
+            or any(
+                not isinstance(commit_sha, str)
+                or COMMIT_RE.fullmatch(commit_sha) is None
+                for commit_sha in verified
+            )
+            or data.get("verified_commits") != verified
+        ):
+            die("checkpoint identity post-push receipt is incomplete")
+        working = verified[-1]
+        if push.get("head_commit") != working or data.get("head_commit") != working:
+            die("checkpoint identity post-push working commit is not final")
+        kind = "post-push"
+    elif tail["event"] == "audit-round":
+        if (
+            state.get("phase") != "steps"
+            or state.get("current_step") != step_number
+            or step.get("status") != "open"
+            or step.get("phase") != "audit"
+            or _next_directive(state).get("do") != "audit-verdict"
+        ):
+            die("checkpoint identity audit-verdict boundary is not active")
+        rounds = as_dict(step.get("audit")).get("rounds")
+        if not isinstance(rounds, list) or not rounds:
+            die("checkpoint identity audit-verdict receipt is incomplete")
+        latest = rounds[-1]
+        latest_verified = as_dict(latest).get("verified_commits")
+        latest_round = as_dict(latest).get("round")
+        latest_findings = as_dict(latest).get("findings")
+        if (
+            not isinstance(latest, dict)
+            or type(latest_round) is not int
+            or latest_round < 1
+            or type(latest_findings) is not int
+            or latest_findings < 0
+            or type(data.get("round")) is not int
+            or type(data.get("findings")) is not int
+            or not isinstance(latest_verified, list)
+            or len(latest_verified) > GIT_PATHS_MAX
+            or any(
+                not isinstance(commit_sha, str)
+                or COMMIT_RE.fullmatch(commit_sha) is None
+                for commit_sha in latest_verified
+            )
+            or data.get("round") != latest_round
+            or data.get("findings") != latest_findings
+            or data.get("verified_commits") != latest_verified
+        ):
+            die("checkpoint identity audit-verdict ledger tail disagrees with state")
+        working = last_local_commit(step)
+        kind = "audit-verdict"
+    if not isinstance(working, str) or COMMIT_RE.fullmatch(working) is None:
+        die("checkpoint identity working commit is not a full receipted SHA")
+    return kind, step_number, working
+
+
+def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> dict:
+    """Derive path-free semantics from two already captured bounded byte strings."""
+    if type(state_bytes) is not bytes:
+        die("checkpoint identity state input must be captured bytes")
+    if not state_bytes or len(state_bytes) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint identity state exceeds its byte ceiling")
+    state = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    if (
+        type(state.get("version")) is not int
+        or state["version"] != 1
+        or state.get("controller") != "hexctl"
+    ):
+        die("checkpoint identity controller state has an unsupported identity")
+    selected_step = state.get("current_step")
+    if selected_step is not None and (
+        type(selected_step) is not int or selected_step < 1
+    ):
+        die("checkpoint identity current step is not a positive integer")
+    step_numbers = []
+    for step in state["steps"]:
+        number = step.get("n")
+        if type(number) is not int or number < 1:
+            die("checkpoint identity step number is not a positive integer")
+        step_numbers.append(number)
+    if len(step_numbers) != len(set(step_numbers)):
+        die("checkpoint identity step numbers are duplicated")
+    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
+        ledger_bytes, state
+    )
+    if (
+        not isinstance(state.get("base"), str)
+        or COMMIT_RE.fullmatch(state["base"]) is None
+    ):
+        die("checkpoint identity requires an immutable full-SHA run base")
+
+    anchor = state["receipts"].get(RUN_ANCHOR_RECEIPT)
+    if anchor is None:
+        die("checkpoint identity requires an init-owned run anchor")
+    anchor = validate_run_anchor_shape(anchor)
+    if anchor.get("repository") == RUN_ANCHOR_REPOSITORY_UNBOUND:
+        die("checkpoint identity requires a bound repository in the run anchor")
+    controller_currency = as_dict(state["receipts"].get("controller_currency"))
+    expected_anchor = build_run_anchor(
+        state,
+        anchor["repository"],
+        {
+            "name": state.get("controller"),
+            "state_version": state.get("version"),
+            "version": controller_currency.get("ledger_version"),
+        },
+        exit_code=1,
+    )
+    if anchor != expected_anchor:
+        die("checkpoint identity run anchor does not match captured state")
+    anchor_sha256 = hashlib.sha256(canonical(anchor).encode("utf-8")).hexdigest()
+    initial = entries[0]
+    if (
+        initial.get("event") != "init"
+        or initial["data"].get("run_anchor_sha256") != anchor_sha256
+    ):
+        die("checkpoint identity run anchor does not match the initial ledger event")
+
+    study_sha256 = _checkpoint_identity_sha256(
+        as_dict(state["receipts"].get("study")).get("sha256"), "study receipt"
+    )
+    runbook_sha256 = _checkpoint_identity_sha256(
+        as_dict(state["receipts"].get("runbook")).get("sha256"),
+        "runbook receipt",
+    )
+    policy = _checkpoint_identity_policy(state)
+    observations = _checkpoint_identity_observations(state, entries)
+    boundary, step_number, working_commit = _checkpoint_identity_working_commit(
+        state, entries
+    )
+    return {
+        "state": state,
+        "anchor": anchor,
+        "anchor_sha256": anchor_sha256,
+        "boundary": boundary,
+        "step": step_number,
+        "working_commit_sha": working_commit,
+        "study_sha256": study_sha256,
+        "runbook_sha256": runbook_sha256,
+        "policy": policy,
+        "observations": observations,
+        "ledger_entries": ledger_count,
+        "ledger_tail": ledger_tail,
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "state_fingerprint": state_fingerprint(state),
+    }
+
+
+def _checkpoint_identity_validate_evidence(
+    semantics: dict, evidence: dict
+) -> None:
+    """Join the pure capture to one closed set of prevalidated external facts."""
+    if not isinstance(evidence, dict) or set(evidence) != {
+        "schema",
+        "git",
+        "sources",
+        "observations",
+    }:
+        die("checkpoint identity evidence has an unsupported shape")
+    if evidence.get("schema") != CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA:
+        die("checkpoint identity evidence has an unsupported schema")
+
+    git_evidence = evidence.get("git")
+    if not isinstance(git_evidence, dict) or set(git_evidence) != {
+        "repository",
+        "refs",
+        "initial_base_sha",
+        "working_commit_sha",
+        "ancestry",
+    }:
+        die("checkpoint identity Git evidence has an unsupported shape")
+    refs = git_evidence.get("refs")
+    expected_refs = _checkpoint_ref_names(semantics["state"])
+    if (
+        not isinstance(refs, dict)
+        or len(refs) != len(expected_refs)
+        or set(refs) != set(expected_refs)
+        or any(
+            not isinstance(value, str) or COMMIT_RE.fullmatch(value) is None
+            for value in refs.values()
+        )
+        or refs.get(semantics["anchor"]["initial_base_sha"])
+        != semantics["anchor"]["initial_base_sha"]
+    ):
+        die("checkpoint identity ref evidence is malformed or incomplete")
+    if (
+        git_evidence.get("repository") != semantics["anchor"]["repository"]
+        or git_evidence.get("initial_base_sha")
+        != semantics["anchor"]["initial_base_sha"]
+        or git_evidence.get("working_commit_sha")
+        != semantics["working_commit_sha"]
+        or git_evidence.get("ancestry") != "verified"
+    ):
+        die("checkpoint identity Git evidence does not match the captured run")
+
+    sources = evidence.get("sources")
+    if not isinstance(sources, dict) or set(sources) != {
+        "study_sha256",
+        "runbook_sha256",
+    }:
+        die("checkpoint identity source evidence has an unsupported shape")
+    if (
+        _checkpoint_identity_sha256(sources.get("study_sha256"), "study source")
+        != semantics["study_sha256"]
+        or _checkpoint_identity_sha256(
+            sources.get("runbook_sha256"), "runbook source"
+        )
+        != semantics["runbook_sha256"]
+    ):
+        die("checkpoint identity source evidence does not match the receipts")
+
+    observations = evidence.get("observations")
+    expected_observations = semantics["observations"]
+    if not isinstance(observations, dict) or set(observations) != {
+        "status",
+        "bindings",
+        "sha256",
+    }:
+        die("checkpoint identity observation evidence has an unsupported shape")
+    bindings = observations.get("bindings")
+    if (
+        observations.get("status") not in ("absent", "bound")
+        or isinstance(bindings, bool)
+        or not isinstance(bindings, int)
+        or bindings < 0
+        or _checkpoint_identity_sha256(
+            observations.get("sha256"), "observation evidence"
+        )
+        != expected_observations["sha256"]
+        or observations != expected_observations
+    ):
+        die("checkpoint identity observation evidence does not match captured state")
+
+
+def checkpoint_identity_from_captured(
+    state_bytes: bytes, ledger_bytes: bytes, evidence: dict
+) -> dict:
+    """Return one semantic identity without opening a path or changing state."""
+    semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+    _checkpoint_identity_validate_evidence(semantics, evidence)
+    observations = semantics["observations"]
+    identity = {
+        "schema": CHECKPOINT_IDENTITY_SCHEMA,
+        "run": semantics["anchor"],
+        "boundary": {
+            "kind": semantics["boundary"],
+            "step": semantics["step"],
+            "working_commit_sha": semantics["working_commit_sha"],
+        },
+        "evidence": {
+            "ledger_entries": semantics["ledger_entries"],
+            "ledger_sha256": semantics["ledger_sha256"],
+            "ledger_tail": semantics["ledger_tail"],
+            "observation_bindings": observations["bindings"],
+            "observation_sha256": observations["sha256"],
+            "observation_status": observations["status"],
+            "policy_sha256": hashlib.sha256(
+                canonical(semantics["policy"]).encode("utf-8")
+            ).hexdigest(),
+            "run_anchor_sha256": semantics["anchor_sha256"],
+            "runbook_sha256": semantics["runbook_sha256"],
+            "state_fingerprint": semantics["state_fingerprint"],
+            "study_sha256": semantics["study_sha256"],
+        },
+    }
+    snapshot_id = hashlib.sha256(
+        CHECKPOINT_IDENTITY_DOMAIN + canonical(identity).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema": CHECKPOINT_IDENTITY_RESULT_SCHEMA,
+        "identity": identity,
+        "snapshot_id": snapshot_id,
+    }
+
+
+def _checkpoint_identity_sanitized(operation, refusal: str):
+    """Run a legacy verifier without letting its path-bearing errors escape."""
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            return operation()
+    except (Exception, SystemExit):
+        die(refusal)
+
+
+def _checkpoint_identity_source_evidence(
+    base_dir: str, state: dict
+) -> tuple[dict, tuple[tuple[str, str, str], ...]]:
+    """Verify current source receipts and return a stable-reread comparison token."""
+    sources = []
+    for name in ("study", "runbook"):
+        source = _checkpoint_identity_sanitized(
+            lambda: receipted_source(base_dir, state, name),
+            f"checkpoint identity {name} source verification failed",
+        )
+        if source is None:
+            die(f"checkpoint identity requires a current {name} source receipt")
+        if name == "runbook":
+            _receipted_runbook_amendments(source)
+        sources.append((source["path"], source["sha256"], source["text"]))
+    evidence = {
+        "study_sha256": sources[0][1],
+        "runbook_sha256": sources[1][1],
+    }
+    return evidence, tuple(sources)
+
+
+def _checkpoint_identity_git_evidence(
+    base_dir: str, semantics: dict
+) -> dict:
+    """Resolve the fixed Git facts without admitting them into hashed identity."""
+    state = semantics["state"]
+    origin = configured_git_path(state, "origin")
+    if not isinstance(origin, str) or not origin:
+        die("checkpoint identity cannot verify the target repository")
+    repository = target_repository_binding(origin)
+    if repository == RUN_ANCHOR_REPOSITORY_UNBOUND:
+        die("checkpoint identity cannot verify a bound target repository")
+    refs = _checkpoint_refs(base_dir, state)
+    initial_base_sha = resolved_commit(
+        base_dir,
+        semantics["anchor"]["initial_base_sha"],
+        "checkpoint identity immutable base",
+    )
+    working_commit_sha = resolved_commit(
+        base_dir,
+        semantics["working_commit_sha"],
+        "checkpoint identity working commit",
+    )
+    if not commit_is_ancestor(
+        base_dir,
+        initial_base_sha,
+        working_commit_sha,
+        "checkpoint identity working commit",
+    ):
+        die("checkpoint identity working commit does not descend from its immutable base")
+    return {
+        "repository": repository,
+        "refs": refs,
+        "initial_base_sha": initial_base_sha,
+        "working_commit_sha": working_commit_sha,
+        "ancestry": "verified",
+    }
+
+
+def _checkpoint_identity_verify_observations(
+    base_dir: str, state: dict
+) -> tuple[tuple[str, int, str], ...]:
+    """Verify bound bytes and return an exact stable-reread comparison token."""
+    if "run_observations" not in state["receipts"]:
+        return ()
+    prior_bytecode_policy = sys.dont_write_bytecode
+    try:
+        sys.dont_write_bytecode = True
+        verify_observation_bindings(base_dir, state, allow_unavailable=True)
+    finally:
+        sys.dont_write_bytecode = prior_bytecode_policy
+    token = []
+    seen = set()
+    for binding in state["receipts"]["run_observations"]:
+        if binding.get("capture_status") != "accepted":
+            continue
+        artifact = binding["artifact"]
+        if artifact in seen:
+            continue
+        seen.add(artifact)
+        relative, current = read_observation_bytes(base_dir, artifact, exit_code=1)
+        recheck_observation_bytes(base_dir, artifact, current, exit_code=1)
+        token.append(
+            (relative, len(current), hashlib.sha256(current).hexdigest())
+        )
+    return tuple(token)
+
+
+def cmd_checkpoint_identity(args) -> None:
+    """Print one stable semantic checkpoint identity without taking a write lock."""
+    base_dir = os.path.abspath(args.dir)
+    if os.path.lexists(state_path(base_dir) + ".tmp"):
+        die("checkpoint identity refuses a pending controller transaction")
+    state_bytes = _checkpoint_read_staged(
+        state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+    ledger_bytes = _checkpoint_read_staged(
+        ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+
+    _checkpoint_identity_sanitized(
+        lambda: verify_run(base_dir),
+        "checkpoint identity controller verification failed",
+    )
+    if (
+        _checkpoint_read_staged(state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX)
+        != state_bytes
+        or _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != ledger_bytes
+    ):
+        die("checkpoint identity source changed during verification")
+
+    semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+    state = semantics["state"]
+    source_evidence, source_token = _checkpoint_identity_source_evidence(
+        base_dir, state
+    )
+    observation_token = _checkpoint_identity_verify_observations(base_dir, state)
+    git_evidence = _checkpoint_identity_git_evidence(base_dir, semantics)
+    observation_evidence = semantics["observations"]
+    evidence = {
+        "schema": CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA,
+        "git": git_evidence,
+        "sources": source_evidence,
+        "observations": observation_evidence,
+    }
+    result = checkpoint_identity_from_captured(state_bytes, ledger_bytes, evidence)
+
+    if _checkpoint_identity_verify_observations(base_dir, state) != observation_token:
+        die("checkpoint identity observation bytes changed before output")
+    _, final_source_token = _checkpoint_identity_source_evidence(base_dir, state)
+    if final_source_token != source_token:
+        die("checkpoint identity source changed before output")
+    if _checkpoint_identity_git_evidence(base_dir, semantics) != git_evidence:
+        die("checkpoint identity Git evidence changed before output")
+    if (
+        os.path.lexists(state_path(base_dir) + ".tmp")
+        or _checkpoint_read_staged(
+            state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != state_bytes
+        or _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != ledger_bytes
+    ):
+        die("checkpoint identity source changed before output")
+    print(canonical(result))
 
 
 def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
@@ -14449,7 +15578,7 @@ def cmd_status(args) -> None:
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
-        print(f"run:   {state['run_branch']} -> {state['base']}")
+        print(f"run:   {state['run_branch']} -> {integration_base_of(state)}")
     if version_relations is not None:
         resolution_history = as_dict(state.get("integrate")).get(
             "version_resolutions"
@@ -14690,6 +15819,7 @@ def verify_run(
     runbook_event = None
     design_transition_events = []
     resolution_events = []
+    initial_entry = None
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
             if not line.strip():
@@ -14723,12 +15853,15 @@ def verify_run(
                 resolution_events.append(entry.get("data"))
             prev = entry["hash"]
             last_state = entry["state"]
+            if initial_entry is None:
+                initial_entry = entry
             count += 1
     if last_state is not None and state_fingerprint(state) != last_state:
         die(
             "state file does not match the last ledger entry; "
             "state.json was edited outside hexctl", 1
         )
+    verify_run_anchor(base_dir, state, initial_entry)
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
@@ -15053,9 +16186,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_resume)
 
     sp = sub.add_parser(
-        "checkpoint", help="export or restore portable controller state"
+        "checkpoint", help="identify, export or restore portable controller state"
     )
     checkpoint = sp.add_subparsers(dest="checkpoint_action", required=True)
+    identity = checkpoint.add_parser(
+        "identity", help="print one verified semantic checkpoint identity"
+    )
+    identity.set_defaults(fn=cmd_checkpoint_identity)
     export = checkpoint.add_parser(
         "export", help="write one deterministic controller capsule"
     )
@@ -15089,6 +16226,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     if args.fn.__name__ in MUTATING:
+        if args.fn.__name__ == "cmd_init":
+            args._init_preflight = init_preflight(args)
         with held_lock(args.dir, args.fn.__name__):
             args.fn(args)
         return
