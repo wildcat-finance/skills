@@ -781,29 +781,29 @@
       "selector": "test_labelled_subject_mismatch_cases"
     },
     "homologia-scaffold-m": {
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
-      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected"
     },
     "homologia-scaffold-o": {
+      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_no_verb_prints_a_verdict_on_standard_output",
-      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version."
+      "selector": "test_no_verb_prints_a_verdict_on_standard_output"
     },
     "homologia-scaffold-p": {
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
-      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace"
     },
     "homologia-scaffold-r": {
+      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
-      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go."
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from"
     },
     "homologia-scaffold-s": {
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_the_canonical_skill_states_the_declared_version",
-      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
+      "selector": "test_the_canonical_skill_states_the_declared_version"
     },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -2899,20 +2899,20 @@
       "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
     },
     {
-      "promise_id": "homologia-scaffold-identity",
-      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
-      "group": "executable",
       "cases": {
-        "P": "homologia-scaffold-p",
         "M": "homologia-scaffold-m",
-        "S": "homologia-scaffold-s",
         "O": "homologia-scaffold-o",
+        "P": "homologia-scaffold-p",
         "R": "homologia-scaffold-r",
+        "S": "homologia-scaffold-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      }
+      },
+      "group": "executable",
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
     }
   ],
   "run_observation": {
@@ -3138,493 +3138,1040 @@
   "runtime": {
     "alexandria-derived-view": {
       "bindings": {
-        "evidence_classes": "component evidence_class values joined to the canonical Evidence classes field",
-        "evidence_references": "objects, sources and corrections",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "coverage and components",
-        "subject": "release_id and kind",
-        "transition": "successful derive and verify status joined to the canonical Authorises field",
-        "unknowns": "coverage gaps and unsupported components"
+        "evidence_classes": "native_document.alexandria_derived_view.evidence.classes",
+        "evidence_references": "native_document.alexandria_derived_view.evidence.references",
+        "exception": "native_document.alexandria_derived_view.exception_state",
+        "promise_id": "native_document.alexandria_derived_view.promise",
+        "scope": "native_document.alexandria_derived_view.target.scope",
+        "source_digest": "native_document.alexandria_derived_view.source.sha256",
+        "subject": "native_document.alexandria_derived_view.target.subject",
+        "transition": "native_document.alexandria_derived_view.authorised_transition",
+        "unknowns": "native_document.alexandria_derived_view.open_unknowns"
       },
-      "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
-      "source": "plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
+        "selector": "negative",
+        "sha256": "d254361f493bef83a8f3d1d137366efac05f0c41f8aed3d89fa92b5483556259"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
+        "selector": "positive",
+        "sha256": "d254361f493bef83a8f3d1d137366efac05f0c41f8aed3d89fa92b5483556259"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_documented_build_and_verify_commands_run_exactly",
+      "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567",
+      "source": "plugins/alexandria/tests/test_demo.py"
     },
     "alexandria-raw-release": {
       "bindings": {
-        "evidence_classes": "component evidence_class values joined to the canonical Evidence classes field",
-        "evidence_references": "objects and components",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "coverage, capture and finality",
-        "subject": "release_id, source and chain",
-        "transition": "successful ingest and verify status joined to the canonical Authorises field",
-        "unknowns": "coverage gaps, corrections and unsupported components"
+        "evidence_classes": "native_document.alexandria_raw_release.evidence.classes",
+        "evidence_references": "native_document.alexandria_raw_release.evidence.references",
+        "exception": "native_document.alexandria_raw_release.exception_state",
+        "promise_id": "native_document.alexandria_raw_release.promise",
+        "scope": "native_document.alexandria_raw_release.target.scope",
+        "source_digest": "native_document.alexandria_raw_release.source.sha256",
+        "subject": "native_document.alexandria_raw_release.target.subject",
+        "transition": "native_document.alexandria_raw_release.authorised_transition",
+        "unknowns": "native_document.alexandria_raw_release.open_unknowns"
       },
-      "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
-      "source": "plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
+        "selector": "negative",
+        "sha256": "75768561f8b0808568fad6535b349ee5b95cfa6ea53467404e6fb6063bc680a9"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
+        "selector": "positive",
+        "sha256": "75768561f8b0808568fad6535b349ee5b95cfa6ea53467404e6fb6063bc680a9"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_documented_build_and_verify_commands_run_exactly",
+      "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567",
+      "source": "plugins/alexandria/tests/test_demo.py"
     },
     "ariadne-replay-command": {
       "bindings": {
-        "evidence_classes": "replay disposition joined to the canonical Evidence classes field",
-        "evidence_references": "statement predicate command and produced artefact digest",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "recorded command, arguments and exact replay mode",
-        "subject": "statement subject digest and replay project",
-        "transition": "allow-execution authority, registered predicate gates 2 and 5, and replay exit joined to the canonical Authorises field",
-        "unknowns": "redacted arguments, non-deterministic records and external effects of executed commands"
+        "evidence_classes": "adapter_output.ariadne_replay_command.classes",
+        "evidence_references": "adapter_output.ariadne_replay_command.references",
+        "exception": "adapter_output.ariadne_replay_command.exception",
+        "promise_id": "adapter_output.ariadne_replay_command.binding.promise_id",
+        "scope": "adapter_output.ariadne_replay_command.binding.scope",
+        "source_digest": "adapter_output.ariadne_replay_command.source_digest",
+        "subject": "adapter_output.ariadne_replay_command.binding.subject",
+        "transition": "adapter_output.ariadne_replay_command.transition",
+        "unknowns": "adapter_output.ariadne_replay_command.unresolved"
       },
-      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
-      "source": "plugins/ariadne/scripts/ariadne.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
+        "selector": "negative",
+        "sha256": "989d30c5ad7bffb967854b7eade29f5b6222c91691f5eb6612173ac6e93a753b"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
+        "selector": "positive",
+        "sha256": "989d30c5ad7bffb967854b7eade29f5b6222c91691f5eb6612173ac6e93a753b"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_all_examples_verify_with_nothing_unchecked",
+      "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+      "source": "plugins/ariadne/tests/test_examples.py"
     },
     "ariadne-verify-statement": {
       "bindings": {
-        "evidence_classes": "gate dispositions joined to the canonical Evidence classes field",
-        "evidence_references": "predicate materials, claims and gate report",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "predicate type, gates actually run and explicit unchecked set",
-        "subject": "in-toto subject name and digest",
-        "transition": "zero-exit result for applicable gates actually run joined to the canonical Authorises field",
-        "unknowns": "unchecked predicates, unsigned status and skipped records"
+        "authority": "adapter_output.ariadne_verify_statement.authorised_by",
+        "evidence_classes": "adapter_output.ariadne_verify_statement.classes",
+        "evidence_references": "adapter_output.ariadne_verify_statement.references",
+        "exception": "adapter_output.ariadne_verify_statement.exception",
+        "inspectable_evidence": "adapter_output.ariadne_verify_statement.inspectable",
+        "promise_id": "adapter_output.ariadne_verify_statement.binding.promise_id",
+        "scope": "adapter_output.ariadne_verify_statement.binding.scope",
+        "source_digest": "adapter_output.ariadne_verify_statement.source_digest",
+        "subject": "adapter_output.ariadne_verify_statement.binding.subject",
+        "transition": "adapter_output.ariadne_verify_statement.transition",
+        "unknowns": "adapter_output.ariadne_verify_statement.unresolved"
       },
-      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
-      "source": "plugins/ariadne/scripts/ariadne.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
+        "selector": "negative",
+        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
+        "selector": "positive",
+        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_all_examples_verify_with_nothing_unchecked",
+      "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+      "source": "plugins/ariadne/tests/test_examples.py"
     },
     "berean-release-promotion": {
       "bindings": {
-        "evidence_classes": "evaluation disposition joined to the canonical Evidence classes field",
-        "evidence_references": "evaluation_report_digest and record chain",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "action, previous_release_digest and thresholds",
-        "subject": "release_digest",
-        "transition": "operator, action and result joined to the canonical Authorises field",
-        "unknowns": "failed cases, ungrounded questions and recorded refusal conditions"
+        "authority": "native_document.berean_release_promotion.authority",
+        "evidence_classes": "native_document.berean_release_promotion.evidence.classes",
+        "evidence_references": "native_document.berean_release_promotion.evidence.references",
+        "exception": "native_document.berean_release_promotion.exception_state",
+        "inspectable_evidence": "native_document.berean_release_promotion.independent_evidence",
+        "promise_id": "native_document.berean_release_promotion.promise",
+        "scope": "native_document.berean_release_promotion.target.scope",
+        "source_digest": "native_document.berean_release_promotion.source.sha256",
+        "subject": "native_document.berean_release_promotion.target.subject",
+        "transition": "native_document.berean_release_promotion.authorised_transition",
+        "unknowns": "native_document.berean_release_promotion.open_unknowns"
       },
-      "sha256": "16ceae02a2f87bb44dcb718743708747e703ed254ddde85dc7c6135fbe11ecb7",
-      "source": "plugins/berean/schemas/promotion-record-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
+        "selector": "negative",
+        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
+        "selector": "positive",
+        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_a_clean_report_promotes_and_the_release_is_active",
+      "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f",
+      "source": "plugins/berean/tests/test_promote.py"
     },
     "elenchus-fixed-and-guarded": {
       "bindings": {
-        "evidence_classes": "runner category joined to the canonical Evidence classes field",
-        "evidence_references": "detached-parent and fixed-tree reports",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "reproduction command and named regression guard",
-        "subject": "baseline and fixed commit identities",
-        "transition": "fixed-and-guarded verdict joined to the canonical Authorises field",
-        "unknowns": "inconclusive, zero-test and infrastructure outcomes"
+        "evidence_classes": "adapter_output.elenchus_fixed_and_guarded.classes",
+        "evidence_references": "adapter_output.elenchus_fixed_and_guarded.references",
+        "exception": "adapter_output.elenchus_fixed_and_guarded.exception",
+        "promise_id": "adapter_output.elenchus_fixed_and_guarded.binding.promise_id",
+        "scope": "adapter_output.elenchus_fixed_and_guarded.binding.scope",
+        "source_digest": "adapter_output.elenchus_fixed_and_guarded.source_digest",
+        "subject": "adapter_output.elenchus_fixed_and_guarded.binding.subject",
+        "transition": "adapter_output.elenchus_fixed_and_guarded.transition",
+        "unknowns": "adapter_output.elenchus_fixed_and_guarded.unresolved"
       },
-      "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5",
-      "source": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
+        "selector": "negative",
+        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
+        "selector": "positive",
+        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_runner_categories_distinguish_all_three_outcomes",
+      "sha256": "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44",
+      "source": "plugins/hexaemeron/tests/test_elenchus_checker.py"
     },
     "ephoros-observability-review": {
       "bindings": {
-        "evidence_classes": "review disposition joined to the canonical Evidence classes field",
-        "evidence_references": "structured events, metrics, correlations, exercises and review record",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "named on-call questions and unattended path",
-        "subject": "reviewed step and build identity",
-        "transition": "review acceptance joined to the canonical Authorises field",
-        "unknowns": "unexercised failure modes and missing operational evidence"
+        "evidence_classes": "frontmatter.ephoros_observability_review.evidence.classes",
+        "evidence_references": "frontmatter.ephoros_observability_review.evidence.references",
+        "exception": "frontmatter.ephoros_observability_review.exception",
+        "promise_id": "frontmatter.ephoros_observability_review.promise",
+        "scope": "frontmatter.ephoros_observability_review.scope",
+        "source_digest": "frontmatter.ephoros_observability_review.source_digest",
+        "subject": "frontmatter.ephoros_observability_review.subject",
+        "transition": "frontmatter.ephoros_observability_review.transition",
+        "unknowns": "frontmatter.ephoros_observability_review.unknowns"
       },
-      "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
-      "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
+        "selector": "negative",
+        "sha256": "b04313df6fb9976b79618419b2c5fa36598f629220456ca791ab8ef78bed98f9"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
+        "selector": "positive",
+        "sha256": "b04313df6fb9976b79618419b2c5fa36598f629220456ca791ab8ef78bed98f9"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_ephoros_review_positive",
+      "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+      "source": "plugins/hexaemeron/tests/test_promise_cases.py"
     },
     "fiat-controller-checkpoint": {
       "bindings": {
-        "evidence_classes": "checked capsule and restore verification plus the recorded relocation event joined to the canonical Evidence classes field",
-        "evidence_references": "manifest digest, closed file inventory, resource totals, exact state and ledger identities, semantic directive, Git ref map and checkpoint:restore event",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the checkpoint command, capsule schema and canonical promise heading",
-        "scope": "one accepted controller capsule, its exact Git boundary and one fresh clean destination checkout",
-        "subject": "source controller identities, out-of-band manifest digest, exact refs and relocated controller state",
-        "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
-        "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
+        "evidence_classes": "adapter_output.fiat_controller_checkpoint.classes",
+        "evidence_references": "adapter_output.fiat_controller_checkpoint.references",
+        "exception": "adapter_output.fiat_controller_checkpoint.exception",
+        "promise_id": "adapter_output.fiat_controller_checkpoint.binding.promise_id",
+        "scope": "adapter_output.fiat_controller_checkpoint.binding.scope",
+        "source_digest": "adapter_output.fiat_controller_checkpoint.source_digest",
+        "subject": "adapter_output.fiat_controller_checkpoint.binding.subject",
+        "transition": "adapter_output.fiat_controller_checkpoint.transition",
+        "unknowns": "adapter_output.fiat_controller_checkpoint.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
+        "selector": "negative",
+        "sha256": "104c1c5afa311aec8bc63f7054ed96397cbbb053bdd327faeb426367bf1533ec"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
+        "selector": "positive",
+        "sha256": "104c1c5afa311aec8bc63f7054ed96397cbbb053bdd327faeb426367bf1533ec"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_restore_after_source_clone_loss",
+      "sha256": "d4b71f576fd2174a6e1a87752009b3658137de52d0e7f5c41de7780782486aa9",
+      "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py"
     },
     "fiat-final-integration": {
       "bindings": {
-        "evidence_classes": "receipt kind joined to the canonical Evidence classes field",
-        "evidence_references": "ledger receipts, green checks, PR URLs and commits",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to controller phase and canonical promise heading",
-        "scope": "ordered step PR stack and one base merge",
-        "subject": "run branch, base, integration head and merge commit",
-        "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
-        "unknowns": "carried-forward work and any unrun external check"
+        "authority": "adapter_output.fiat_final_integration.authorised_by",
+        "evidence_classes": "adapter_output.fiat_final_integration.classes",
+        "evidence_references": "adapter_output.fiat_final_integration.references",
+        "exception": "adapter_output.fiat_final_integration.exception",
+        "inspectable_evidence": "adapter_output.fiat_final_integration.inspectable",
+        "promise_id": "adapter_output.fiat_final_integration.binding.promise_id",
+        "scope": "adapter_output.fiat_final_integration.binding.scope",
+        "source_digest": "adapter_output.fiat_final_integration.source_digest",
+        "subject": "adapter_output.fiat_final_integration.binding.subject",
+        "transition": "adapter_output.fiat_final_integration.transition",
+        "unknowns": "adapter_output.fiat_final_integration.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
+        "selector": "negative",
+        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
+        "selector": "positive",
+        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-local-retirement": {
       "bindings": {
-        "evidence_classes": "checked controller integrity and recorded archive joined to the canonical Evidence classes field",
-        "evidence_references": "verify_run result, terminal phase, local archive moves, worktree status and removal result, breadcrumb rewrite and printed destination",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to cmd_reset and the canonical promise heading",
-        "scope": "one completed run's active controller state, derived local archive and run worktree",
-        "subject": "verified state, append-only ledger, origin checkout and recorded worktree",
-        "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
-        "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
+        "evidence_classes": "adapter_output.fiat_local_retirement.classes",
+        "evidence_references": "adapter_output.fiat_local_retirement.references",
+        "exception": "adapter_output.fiat_local_retirement.exception",
+        "promise_id": "adapter_output.fiat_local_retirement.binding.promise_id",
+        "scope": "adapter_output.fiat_local_retirement.binding.scope",
+        "source_digest": "adapter_output.fiat_local_retirement.source_digest",
+        "subject": "adapter_output.fiat_local_retirement.binding.subject",
+        "transition": "adapter_output.fiat_local_retirement.transition",
+        "unknowns": "adapter_output.fiat_local_retirement.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
+        "selector": "negative",
+        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
+        "selector": "positive",
+        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_terminal_archive_is_local_and_ignored_by_git",
+      "sha256": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98",
+      "source": "plugins/hexaemeron/tests/test_fiat_local_retirement.py"
     },
     "fiat-receipted-delivery": {
       "bindings": {
-        "evidence_classes": "receipt kind joined to the canonical Evidence classes field",
-        "evidence_references": "ordered state-container check, append-only ledger receipt payload and previous hash",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to controller phase and canonical promise heading",
-        "scope": "required state-container spine, current step and phase",
-        "subject": "validated state, topic, run branch, step branch and head commit",
-        "transition": "single next controller directive joined to the canonical Authorises field",
-        "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
+        "evidence_classes": "adapter_output.fiat_receipted_delivery.classes",
+        "evidence_references": "adapter_output.fiat_receipted_delivery.references",
+        "exception": "adapter_output.fiat_receipted_delivery.exception",
+        "promise_id": "adapter_output.fiat_receipted_delivery.binding.promise_id",
+        "scope": "adapter_output.fiat_receipted_delivery.binding.scope",
+        "source_digest": "adapter_output.fiat_receipted_delivery.source_digest",
+        "subject": "adapter_output.fiat_receipted_delivery.binding.subject",
+        "transition": "adapter_output.fiat_receipted_delivery.transition",
+        "unknowns": "adapter_output.fiat_receipted_delivery.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
+        "selector": "negative",
+        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
+        "selector": "positive",
+        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_push_advances_steps_then_the_stack_integrates",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-run-observation-binding": {
       "bindings": {
-        "evidence_classes": "checked prefix and recorded binding joined to the canonical Evidence classes field",
-        "evidence_references": "validator result, exact bytes, interval, counts, digest, receipt hash and record:run-observation event",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading and binding contract",
-        "scope": "one selected run-local prefix and its immediately preceding Fiat receipt",
-        "subject": "controller run identity, companion path, bound prefix digest and selected receipt hash",
-        "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
-        "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
+        "evidence_classes": "adapter_output.fiat_run_observation_binding.classes",
+        "evidence_references": "adapter_output.fiat_run_observation_binding.references",
+        "exception": "adapter_output.fiat_run_observation_binding.exception",
+        "promise_id": "adapter_output.fiat_run_observation_binding.binding.promise_id",
+        "scope": "adapter_output.fiat_run_observation_binding.binding.scope",
+        "source_digest": "adapter_output.fiat_run_observation_binding.source_digest",
+        "subject": "adapter_output.fiat_run_observation_binding.binding.subject",
+        "transition": "adapter_output.fiat_run_observation_binding.transition",
+        "unknowns": "adapter_output.fiat_run_observation_binding.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
+        "selector": "negative",
+        "sha256": "24fb2229140ebcef6bae6a05ca927a07549943d896fd5b724145ecd91246fc71"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
+        "selector": "positive",
+        "sha256": "24fb2229140ebcef6bae6a05ca927a07549943d896fd5b724145ecd91246fc71"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_normal_prefix_binds_to_the_selected_receipt",
+      "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9",
+      "source": "plugins/hexaemeron/tests/test_run_observation_binding.py"
     },
     "fiat-runbook-amendment": {
       "bindings": {
-        "evidence_classes": "checked structure and recorded operator verdicts joined to the canonical Evidence classes field",
-        "evidence_references": "prefix and amendment digests, replacement fields, current study join, Protasis exit, pending subject, receipt history and amend:runbook event",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading and amend:runbook event",
-        "scope": "one append-only final runbook amendment, current unbuilt steps and current-study-bound packet carriage",
-        "subject": "current runbook and study receipts, captured candidate bytes and canonical runbook path",
-        "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
-        "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
+        "evidence_classes": "adapter_output.fiat_runbook_amendment.classes",
+        "evidence_references": "adapter_output.fiat_runbook_amendment.references",
+        "exception": "adapter_output.fiat_runbook_amendment.exception",
+        "promise_id": "adapter_output.fiat_runbook_amendment.binding.promise_id",
+        "scope": "adapter_output.fiat_runbook_amendment.binding.scope",
+        "source_digest": "adapter_output.fiat_runbook_amendment.source_digest",
+        "subject": "adapter_output.fiat_runbook_amendment.binding.subject",
+        "transition": "adapter_output.fiat_runbook_amendment.transition",
+        "unknowns": "adapter_output.fiat_runbook_amendment.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
+        "selector": "negative",
+        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
+        "selector": "positive",
+        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+      "sha256": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3",
+      "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {
       "bindings": {
-        "evidence_classes": "checked structure and recorded operator verdicts joined to the canonical Evidence classes field",
-        "evidence_references": "prefix digest, amendment fields, Protasis exit, write-ahead record, state receipt and ledger event",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading and amend:study event",
-        "scope": "one append-only final amendment and every unbuilt-step verdict",
-        "subject": "current study receipt, captured candidate bytes and canonical study path",
-        "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
-        "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
+        "evidence_classes": "adapter_output.fiat_study_amendment.classes",
+        "evidence_references": "adapter_output.fiat_study_amendment.references",
+        "exception": "adapter_output.fiat_study_amendment.exception",
+        "promise_id": "adapter_output.fiat_study_amendment.binding.promise_id",
+        "scope": "adapter_output.fiat_study_amendment.binding.scope",
+        "source_digest": "adapter_output.fiat_study_amendment.source_digest",
+        "subject": "adapter_output.fiat_study_amendment.binding.subject",
+        "transition": "adapter_output.fiat_study_amendment.transition",
+        "unknowns": "adapter_output.fiat_study_amendment.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
+        "selector": "negative",
+        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
+        "selector": "positive",
+        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-version-resolution": {
       "bindings": {
-        "evidence_classes": "stable exact-object checks and append-only recorded receipt joined to the canonical Evidence classes field",
-        "evidence_references": "runbook and relation digests, stable base and run refs, native ledger and skill blobs, exact history rows, signed sync and path revalidation when required, pending subject and done:version-resolution event",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to done:version-resolution and the canonical promise heading",
-        "scope": "one relation-bearing run, one coherent base and candidate pair, and every declared target",
-        "subject": "exact runbook, relation source, base ref and commit, candidate head, target rows and skill metadata",
-        "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
-        "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
+        "evidence_classes": "adapter_output.fiat_version_resolution.classes",
+        "evidence_references": "adapter_output.fiat_version_resolution.references",
+        "exception": "adapter_output.fiat_version_resolution.exception",
+        "promise_id": "adapter_output.fiat_version_resolution.binding.promise_id",
+        "scope": "adapter_output.fiat_version_resolution.binding.scope",
+        "source_digest": "adapter_output.fiat_version_resolution.source_digest",
+        "subject": "adapter_output.fiat_version_resolution.binding.subject",
+        "transition": "adapter_output.fiat_version_resolution.transition",
+        "unknowns": "adapter_output.fiat_version_resolution.unresolved"
       },
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
+        "selector": "negative",
+        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
+        "selector": "positive",
+        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
+      "sha256": "8bdf7234a5aac4acd491faa7924504dad5352931fe1a0caeaed06aaf151014aa",
+      "source": "plugins/hexaemeron/tests/test_version_relations.py"
     },
     "hermes-baseline-promotion": {
       "bindings": {
-        "evidence_classes": "accepted status joined to the canonical Evidence classes field",
-        "evidence_references": "accepted result.json, snapshots, layouts and selector maps",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "declared optimisation class and promoted baseline",
-        "subject": "candidate commit, target set and sealed run directory",
-        "transition": "promotion command and accepted status joined to the canonical Authorises field",
-        "unknowns": "unmeasured targets and recorded fuzz-statistic changes"
+        "evidence_classes": "adapter_output.hermes_baseline_promotion.classes",
+        "evidence_references": "adapter_output.hermes_baseline_promotion.references",
+        "exception": "adapter_output.hermes_baseline_promotion.exception",
+        "promise_id": "adapter_output.hermes_baseline_promotion.binding.promise_id",
+        "scope": "adapter_output.hermes_baseline_promotion.binding.scope",
+        "source_digest": "adapter_output.hermes_baseline_promotion.source_digest",
+        "subject": "adapter_output.hermes_baseline_promotion.binding.subject",
+        "transition": "adapter_output.hermes_baseline_promotion.transition",
+        "unknowns": "adapter_output.hermes_baseline_promotion.unresolved"
       },
-      "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
-      "source": "plugins/hermes/skills/hermes/scripts/hermes.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
+        "selector": "negative",
+        "sha256": "21b7cfde51cb96b1dcf1c0d070b01e4470807bc703694a4789fc76b903456eec"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
+        "selector": "positive",
+        "sha256": "21b7cfde51cb96b1dcf1c0d070b01e4470807bc703694a4789fc76b903456eec"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_accepts_and_promotes_a_fully_verified_candidate",
+      "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
+      "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     "hermes-candidate-acceptance": {
       "bindings": {
-        "evidence_classes": "gate statuses joined to the canonical Evidence classes field",
-        "evidence_references": "result.json, command logs, snapshots, layouts, selectors and property report",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "one optimisation class and six gates",
-        "subject": "baseline commit, candidate commit and named targets",
-        "transition": "accepted status and zero exit joined to the canonical Authorises field",
-        "unknowns": "unmeasured behaviour and non-regression-neutral fuzz statistics"
+        "evidence_classes": "adapter_output.hermes_candidate_acceptance.classes",
+        "evidence_references": "adapter_output.hermes_candidate_acceptance.references",
+        "exception": "adapter_output.hermes_candidate_acceptance.exception",
+        "promise_id": "adapter_output.hermes_candidate_acceptance.binding.promise_id",
+        "scope": "adapter_output.hermes_candidate_acceptance.binding.scope",
+        "source_digest": "adapter_output.hermes_candidate_acceptance.source_digest",
+        "subject": "adapter_output.hermes_candidate_acceptance.binding.subject",
+        "transition": "adapter_output.hermes_candidate_acceptance.transition",
+        "unknowns": "adapter_output.hermes_candidate_acceptance.unresolved"
       },
-      "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
-      "source": "plugins/hermes/skills/hermes/scripts/hermes.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
+        "selector": "negative",
+        "sha256": "203df62a25d54240c736c2502fa20a5fb6f341f70ae6c1cd42f23258db39ee29"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
+        "selector": "positive",
+        "sha256": "203df62a25d54240c736c2502fa20a5fb6f341f70ae6c1cd42f23258db39ee29"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_accepts_and_promotes_a_fully_verified_candidate",
+      "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
+      "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     "hexaemeron-fizz-convert-properties": {
       "bindings": {
-        "evidence_classes": "vendored operation record joined to overlay Evidence classes",
-        "evidence_references": "conversion record, compilation and named tests",
-        "exception": "overlay Exceptions field",
-        "promise_id": "coverage key joined to the digest-bound vendored overlay",
-        "scope": "selected pending properties and unchanged harness boundary",
-        "subject": "target repository, PROPERTIES.md entry and harness assertion",
-        "transition": "successful conversion gates joined to overlay Authorises",
-        "unknowns": "unconverted properties and unrun campaigns"
+        "evidence_classes": "frontmatter.hexaemeron_fizz_convert_properties.evidence.classes",
+        "evidence_references": "frontmatter.hexaemeron_fizz_convert_properties.evidence.references",
+        "exception": "frontmatter.hexaemeron_fizz_convert_properties.exception",
+        "promise_id": "frontmatter.hexaemeron_fizz_convert_properties.promise",
+        "scope": "frontmatter.hexaemeron_fizz_convert_properties.scope",
+        "source_digest": "frontmatter.hexaemeron_fizz_convert_properties.source_digest",
+        "subject": "frontmatter.hexaemeron_fizz_convert_properties.subject",
+        "transition": "frontmatter.hexaemeron_fizz_convert_properties.transition",
+        "unknowns": "frontmatter.hexaemeron_fizz_convert_properties.unknowns"
       },
-      "sha256": "59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7",
-      "source": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
+        "selector": "negative",
+        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
+        "selector": "positive",
+        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-fizz-harness-campaign": {
       "bindings": {
-        "evidence_classes": "vendored operation record joined to overlay Evidence classes",
-        "evidence_references": "generated files, compilation, campaign logs and violations",
-        "exception": "overlay Exceptions field",
-        "promise_id": "coverage key joined to the digest-bound vendored overlay",
-        "scope": "selected contracts, properties, engine settings and corpus",
-        "subject": "target repository revision, generated harness and campaign",
-        "transition": "successful generation and campaign gates joined to overlay Authorises",
-        "unknowns": "unreached states, skipped engines and unresolved properties"
+        "authority": "frontmatter.hexaemeron_fizz_harness_campaign.authority",
+        "evidence_classes": "frontmatter.hexaemeron_fizz_harness_campaign.evidence.classes",
+        "evidence_references": "frontmatter.hexaemeron_fizz_harness_campaign.evidence.references",
+        "exception": "frontmatter.hexaemeron_fizz_harness_campaign.exception",
+        "inspectable_evidence": "frontmatter.hexaemeron_fizz_harness_campaign.inspectable_evidence",
+        "promise_id": "frontmatter.hexaemeron_fizz_harness_campaign.promise",
+        "scope": "frontmatter.hexaemeron_fizz_harness_campaign.scope",
+        "source_digest": "frontmatter.hexaemeron_fizz_harness_campaign.source_digest",
+        "subject": "frontmatter.hexaemeron_fizz_harness_campaign.subject",
+        "transition": "frontmatter.hexaemeron_fizz_harness_campaign.transition",
+        "unknowns": "frontmatter.hexaemeron_fizz_harness_campaign.unknowns"
       },
-      "sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
-      "source": "plugins/hexaemeron/skills/fizz/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
+        "selector": "negative",
+        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
+        "selector": "positive",
+        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-fizz-sync-drift": {
       "bindings": {
-        "evidence_classes": "vendored operation record joined to overlay Evidence classes",
-        "evidence_references": "drift report, quarantined properties, regenerated stubs and tests",
-        "exception": "overlay Exceptions field",
-        "promise_id": "coverage key joined to the digest-bound vendored overlay",
-        "scope": "added, removed and changed callable surface",
-        "subject": "target source revision, prior snapshot and reconciled harness",
-        "transition": "successful sync gates joined to overlay Authorises",
-        "unknowns": "semantically stale properties and unrun campaigns"
+        "evidence_classes": "frontmatter.hexaemeron_fizz_sync_drift.evidence.classes",
+        "evidence_references": "frontmatter.hexaemeron_fizz_sync_drift.evidence.references",
+        "exception": "frontmatter.hexaemeron_fizz_sync_drift.exception",
+        "promise_id": "frontmatter.hexaemeron_fizz_sync_drift.promise",
+        "scope": "frontmatter.hexaemeron_fizz_sync_drift.scope",
+        "source_digest": "frontmatter.hexaemeron_fizz_sync_drift.source_digest",
+        "subject": "frontmatter.hexaemeron_fizz_sync_drift.subject",
+        "transition": "frontmatter.hexaemeron_fizz_sync_drift.transition",
+        "unknowns": "frontmatter.hexaemeron_fizz_sync_drift.unknowns"
       },
-      "sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
-      "source": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
+        "selector": "negative",
+        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
+        "selector": "positive",
+        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-solidity-audit-report": {
       "bindings": {
-        "evidence_classes": "audit observations joined to overlay Evidence classes",
-        "evidence_references": "source citations, raw role results and final finding report",
-        "exception": "overlay Exceptions field",
-        "promise_id": "coverage key joined to the digest-bound vendored overlay",
-        "scope": "enumerated source, threat model and review roles",
-        "subject": "audited repository revision and Solidity scope",
-        "transition": "completed audit report joined to overlay Authorises",
-        "unknowns": "unreviewed code, unavailable tools and inconclusive leads"
+        "authority": "frontmatter.hexaemeron_solidity_audit_report.authority",
+        "evidence_classes": "frontmatter.hexaemeron_solidity_audit_report.evidence.classes",
+        "evidence_references": "frontmatter.hexaemeron_solidity_audit_report.evidence.references",
+        "exception": "frontmatter.hexaemeron_solidity_audit_report.exception",
+        "inspectable_evidence": "frontmatter.hexaemeron_solidity_audit_report.inspectable_evidence",
+        "promise_id": "frontmatter.hexaemeron_solidity_audit_report.promise",
+        "scope": "frontmatter.hexaemeron_solidity_audit_report.scope",
+        "source_digest": "frontmatter.hexaemeron_solidity_audit_report.source_digest",
+        "subject": "frontmatter.hexaemeron_solidity_audit_report.subject",
+        "transition": "frontmatter.hexaemeron_solidity_audit_report.transition",
+        "unknowns": "frontmatter.hexaemeron_solidity_audit_report.unknowns"
       },
-      "sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
-      "source": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
+        "selector": "negative",
+        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
+        "selector": "positive",
+        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "horos-boundary-scan": {
       "bindings": {
-        "evidence_classes": "classification rule joined to the canonical Evidence classes field",
-        "evidence_references": "boundary entries and per-file evidence",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "walked files and applied classification rules",
-        "subject": "repository root and tracked-tree identity",
-        "transition": "atomic scan write and zero exit joined to the canonical Authorises field",
-        "unknowns": "omitted paths and fail-open unproven classifications"
+        "evidence_classes": "adapter_output.horos_boundary_scan.classes",
+        "evidence_references": "adapter_output.horos_boundary_scan.references",
+        "exception": "adapter_output.horos_boundary_scan.exception",
+        "promise_id": "adapter_output.horos_boundary_scan.binding.promise_id",
+        "scope": "adapter_output.horos_boundary_scan.binding.scope",
+        "source_digest": "adapter_output.horos_boundary_scan.source_digest",
+        "subject": "adapter_output.horos_boundary_scan.binding.subject",
+        "transition": "adapter_output.horos_boundary_scan.transition",
+        "unknowns": "adapter_output.horos_boundary_scan.unresolved"
       },
-      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
-      "source": "plugins/horos/skills/horos/scripts/horos.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
+        "selector": "negative",
+        "sha256": "8e17125a15fa60b6724e4dca62fabd5b16735458645de0ce06b57a38ad6720ce"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
+        "selector": "positive",
+        "sha256": "8e17125a15fa60b6724e4dca62fabd5b16735458645de0ce06b57a38ad6720ce"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_check_passes_on_a_fresh_boundary",
+      "sha256": "da895091fd2fc62251e002fce6fda9666edc44f8503ce2a3617889434fa0ba4e",
+      "source": "plugins/horos/tests/test_boundary.py"
     },
     "hypomnema-record-placement": {
       "bindings": {
-        "evidence_classes": "review disposition joined to the canonical Evidence classes field",
-        "evidence_references": "authored records, alternatives, reasons and pointer-gate result",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "decision inventory and selected record homes",
-        "subject": "named decision and changed repository surface",
-        "transition": "accepted record placement joined to the canonical Authorises field",
-        "unknowns": "unresolved decisions and intentionally absent records"
+        "evidence_classes": "frontmatter.hypomnema_record_placement.evidence.classes",
+        "evidence_references": "frontmatter.hypomnema_record_placement.evidence.references",
+        "exception": "frontmatter.hypomnema_record_placement.exception",
+        "promise_id": "frontmatter.hypomnema_record_placement.promise",
+        "scope": "frontmatter.hypomnema_record_placement.scope",
+        "source_digest": "frontmatter.hypomnema_record_placement.source_digest",
+        "subject": "frontmatter.hypomnema_record_placement.subject",
+        "transition": "frontmatter.hypomnema_record_placement.transition",
+        "unknowns": "frontmatter.hypomnema_record_placement.unknowns"
       },
-      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
-      "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
+        "selector": "negative",
+        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
+        "selector": "positive",
+        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "janus-bounded-conformance": {
       "bindings": {
-        "evidence_classes": "bounded conformance result joined to the canonical Evidence classes field",
-        "evidence_references": "complete deltas, hostile-hook guards and Foundry results",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "recorder coverage, search settings and explored sequences",
-        "subject": "hook, host adapter and manifest revision",
-        "transition": "conformance verdict joined to the canonical Authorises field",
-        "unknowns": "unrecorded effects, other hosts and executions outside the bounded search"
+        "authority": "adapter_output.janus_bounded_conformance.authorised_by",
+        "evidence_classes": "adapter_output.janus_bounded_conformance.classes",
+        "evidence_references": "adapter_output.janus_bounded_conformance.references",
+        "exception": "adapter_output.janus_bounded_conformance.exception",
+        "inspectable_evidence": "adapter_output.janus_bounded_conformance.inspectable",
+        "promise_id": "adapter_output.janus_bounded_conformance.binding.promise_id",
+        "scope": "adapter_output.janus_bounded_conformance.binding.scope",
+        "source_digest": "adapter_output.janus_bounded_conformance.source_digest",
+        "subject": "adapter_output.janus_bounded_conformance.binding.subject",
+        "transition": "adapter_output.janus_bounded_conformance.transition",
+        "unknowns": "adapter_output.janus_bounded_conformance.unresolved"
       },
-      "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
-      "source": "plugins/janus/scripts/janus.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
+        "selector": "negative",
+        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
+        "selector": "positive",
+        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_gate1_and_gate2_honest_deposit",
+      "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
+      "source": "plugins/janus/harness/test/WildcatConformance.t.sol"
     },
     "kronos-fiat-dispatch": {
       "bindings": {
-        "evidence_classes": "selection record joined to the canonical Evidence classes field",
-        "evidence_references": "ledgers, recomputed scores and append-only scoreboard",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "eligible candidate set, mode and score inputs",
-        "subject": "selected plugin, skill and held job hash",
-        "transition": "explicit Fiat dispatch joined to the canonical Authorises field",
-        "unknowns": "excluded, mature, parked and unevidenced candidates"
+        "authority": "adapter_output.kronos_fiat_dispatch.authorised_by",
+        "evidence_classes": "adapter_output.kronos_fiat_dispatch.classes",
+        "evidence_references": "adapter_output.kronos_fiat_dispatch.references",
+        "exception": "adapter_output.kronos_fiat_dispatch.exception",
+        "inspectable_evidence": "adapter_output.kronos_fiat_dispatch.inspectable",
+        "promise_id": "adapter_output.kronos_fiat_dispatch.binding.promise_id",
+        "scope": "adapter_output.kronos_fiat_dispatch.binding.scope",
+        "source_digest": "adapter_output.kronos_fiat_dispatch.source_digest",
+        "subject": "adapter_output.kronos_fiat_dispatch.binding.subject",
+        "transition": "adapter_output.kronos_fiat_dispatch.transition",
+        "unknowns": "adapter_output.kronos_fiat_dispatch.unresolved"
       },
-      "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
-      "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
+        "selector": "negative",
+        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
+        "selector": "positive",
+        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_labelled_positive_cases",
+      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "kronos-parked-lane": {
       "bindings": {
-        "evidence_classes": "parking record joined to the canonical Evidence classes field",
-        "evidence_references": "current ledgers, score inputs and scoreboard record",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "named lane, parking reason and review boundary",
-        "subject": "parked plugin, skill and held job hash",
-        "transition": "park action joined to the canonical Authorises field",
-        "unknowns": "unresolved blocker and future eligibility"
+        "evidence_classes": "adapter_output.kronos_parked_lane.classes",
+        "evidence_references": "adapter_output.kronos_parked_lane.references",
+        "exception": "adapter_output.kronos_parked_lane.exception",
+        "promise_id": "adapter_output.kronos_parked_lane.binding.promise_id",
+        "scope": "adapter_output.kronos_parked_lane.binding.scope",
+        "source_digest": "adapter_output.kronos_parked_lane.source_digest",
+        "subject": "adapter_output.kronos_parked_lane.binding.subject",
+        "transition": "adapter_output.kronos_parked_lane.transition",
+        "unknowns": "adapter_output.kronos_parked_lane.unresolved"
       },
-      "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
-      "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
+        "selector": "negative",
+        "sha256": "97d509bbd69bbbcdc6a48733625261b35d54772d881d59e69d52c5515b41b229"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
+        "selector": "positive",
+        "sha256": "97d509bbd69bbbcdc6a48733625261b35d54772d881d59e69d52c5515b41b229"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_a_park_stores_the_reason_byte_for_byte",
+      "sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1",
+      "source": "plugins/hexaemeron/tests/test_kronos_scoreboard.py"
     },
     "lazarus-exact-replay": {
       "bindings": {
-        "evidence_classes": "response evidence_class joined to the canonical Evidence classes field",
-        "evidence_references": "manifest, request-key table and response record",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "captured method and parameters with loopback-only service",
-        "subject": "verified fixture identity and exact request key",
-        "transition": "verified replay binding joined to the canonical Authorises field",
-        "unknowns": "uncaptured requests, recorded-only RPC relations and chain-anchor canonicality or independence"
+        "evidence_classes": "adapter_output.lazarus_exact_replay.classes",
+        "evidence_references": "adapter_output.lazarus_exact_replay.references",
+        "exception": "adapter_output.lazarus_exact_replay.exception",
+        "promise_id": "adapter_output.lazarus_exact_replay.binding.promise_id",
+        "scope": "adapter_output.lazarus_exact_replay.binding.scope",
+        "source_digest": "adapter_output.lazarus_exact_replay.source_digest",
+        "subject": "adapter_output.lazarus_exact_replay.binding.subject",
+        "transition": "adapter_output.lazarus_exact_replay.transition",
+        "unknowns": "adapter_output.lazarus_exact_replay.unresolved"
       },
-      "sha256": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b",
-      "source": "plugins/lazarus/scripts/lazarus.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
+        "selector": "negative",
+        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
+        "selector": "positive",
+        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
+      "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+      "source": "plugins/lazarus/tests/test_goldfinch.py"
     },
     "lazarus-fixture-capture": {
       "bindings": {
-        "evidence_classes": "record evidence classes joined to the canonical Evidence classes field",
-        "evidence_references": "files, request records, proofs and manifest digests",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "plan subjects, limits and opening and closing headers",
-        "subject": "fixture digest, chain id, block number and block hash",
-        "transition": "in-process verification status joined to the canonical Authorises field",
-        "unknowns": "recorded-only RPC results and external canonical-chain provenance"
+        "evidence_classes": "native_document.lazarus_fixture_capture.evidence.classes",
+        "evidence_references": "native_document.lazarus_fixture_capture.evidence.references",
+        "exception": "native_document.lazarus_fixture_capture.exception_state",
+        "promise_id": "native_document.lazarus_fixture_capture.promise",
+        "scope": "native_document.lazarus_fixture_capture.target.scope",
+        "source_digest": "native_document.lazarus_fixture_capture.source.sha256",
+        "subject": "native_document.lazarus_fixture_capture.target.subject",
+        "transition": "native_document.lazarus_fixture_capture.authorised_transition",
+        "unknowns": "native_document.lazarus_fixture_capture.open_unknowns"
       },
-      "sha256": "53acaefd6ddaf5648dc9d16345fc13c64c3bd7786851271ef922b67b9f423c14",
-      "source": "plugins/lazarus/schemas/manifest-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
+        "selector": "negative",
+        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
+        "selector": "positive",
+        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
+      "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+      "source": "plugins/lazarus/tests/test_goldfinch.py"
     },
     "lazarus-preservation-release": {
       "bindings": {
-        "evidence_classes": "fixture and statement relations joined to the canonical Evidence classes field",
-        "evidence_references": "fixture, Ariadne statement and binding document",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "release member set and verified evidence counts",
-        "subject": "release digest, fixture digest and statement digest",
-        "transition": "verify-release status joined to the canonical Authorises field",
-        "unknowns": "unsigned publisher identity and recorded-only RPC evidence"
+        "authority": "native_document.lazarus_preservation_release.authority",
+        "evidence_classes": "native_document.lazarus_preservation_release.evidence.classes",
+        "evidence_references": "native_document.lazarus_preservation_release.evidence.references",
+        "exception": "native_document.lazarus_preservation_release.exception_state",
+        "inspectable_evidence": "native_document.lazarus_preservation_release.independent_evidence",
+        "promise_id": "native_document.lazarus_preservation_release.promise",
+        "scope": "native_document.lazarus_preservation_release.target.scope",
+        "source_digest": "native_document.lazarus_preservation_release.source.sha256",
+        "subject": "native_document.lazarus_preservation_release.target.subject",
+        "transition": "native_document.lazarus_preservation_release.authorised_transition",
+        "unknowns": "native_document.lazarus_preservation_release.open_unknowns"
       },
-      "sha256": "f7b8ce3eb37c40d79a23bdff1d88dd0e6e163c2d72ec67575b3b4e7023d5415d",
-      "source": "plugins/lazarus/schemas/release-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
+        "selector": "negative",
+        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
+        "selector": "positive",
+        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
+      "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+      "source": "plugins/lazarus/tests/test_goldfinch.py"
     },
     "metron-change-decision": {
       "bindings": {
-        "evidence_classes": "measured verdict joined to the canonical Evidence classes field",
-        "evidence_references": "before and after samples, variance and correctness results",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "measurement method, environment and budget",
-        "subject": "named workload, implementation and isolated change",
-        "transition": "keep or revert decision joined to the canonical Authorises field",
-        "unknowns": "noise, unmeasured workloads and unexplained environmental changes"
+        "evidence_classes": "frontmatter.metron_change_decision.evidence.classes",
+        "evidence_references": "frontmatter.metron_change_decision.evidence.references",
+        "exception": "frontmatter.metron_change_decision.exception",
+        "promise_id": "frontmatter.metron_change_decision.promise",
+        "scope": "frontmatter.metron_change_decision.scope",
+        "source_digest": "frontmatter.metron_change_decision.source_digest",
+        "subject": "frontmatter.metron_change_decision.subject",
+        "transition": "frontmatter.metron_change_decision.transition",
+        "unknowns": "frontmatter.metron_change_decision.unknowns"
       },
-      "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
-      "source": "plugins/hexaemeron/skills/metron/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
+        "selector": "negative",
+        "sha256": "1bb54619c4ce3128796412ba266548dabac5f5204d316bf061a93fc1d82bbdeb"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
+        "selector": "positive",
+        "sha256": "1bb54619c4ce3128796412ba266548dabac5f5204d316bf061a93fc1d82bbdeb"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
+      "sha256": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77",
+      "source": "plugins/hexaemeron/tests/test_metron_check.py"
     },
     "pandects-search-record": {
       "bindings": {
-        "evidence_classes": "campaign status joined to the canonical Evidence classes field",
-        "evidence_references": "captured search output and generated search-record JSON",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "engine, command, configuration, seed and sequence bounds",
-        "subject": "target revision, adapter and law identifiers",
-        "transition": "bounded campaign result joined to the canonical Authorises field",
-        "unknowns": "absent engines, unavailable values and timed-out campaigns"
+        "authority": "adapter_output.pandects_search_record.authorised_by",
+        "evidence_classes": "adapter_output.pandects_search_record.classes",
+        "evidence_references": "adapter_output.pandects_search_record.references",
+        "exception": "adapter_output.pandects_search_record.exception",
+        "inspectable_evidence": "adapter_output.pandects_search_record.inspectable",
+        "promise_id": "adapter_output.pandects_search_record.binding.promise_id",
+        "scope": "adapter_output.pandects_search_record.binding.scope",
+        "source_digest": "adapter_output.pandects_search_record.source_digest",
+        "subject": "adapter_output.pandects_search_record.binding.subject",
+        "transition": "adapter_output.pandects_search_record.transition",
+        "unknowns": "adapter_output.pandects_search_record.unresolved"
       },
-      "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
-      "source": "plugins/pandects/scripts/pandects.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
+        "selector": "negative",
+        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
+        "selector": "positive",
+        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_a_law_with_every_part_passes",
+      "sha256": "376f04fd838c578efca4a5a0dfb4ca97af3c9adc1dfde7d5478029dc91341db2",
+      "source": "plugins/pandects/tests/test_checker.py"
     },
     "phylax-boundary-review": {
       "bindings": {
-        "evidence_classes": "review disposition joined to the canonical Evidence classes field",
-        "evidence_references": "boundary inventory, controls, hostile cases and test results",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "named inputs, subprocesses, hosts, secrets and output paths",
-        "subject": "reviewed step, source tree and external-input boundary",
-        "transition": "review acceptance joined to the canonical Authorises field",
-        "unknowns": "unreviewed capabilities and unavailable adversarial evidence"
+        "evidence_classes": "frontmatter.phylax_boundary_review.evidence.classes",
+        "evidence_references": "frontmatter.phylax_boundary_review.evidence.references",
+        "exception": "frontmatter.phylax_boundary_review.exception",
+        "promise_id": "frontmatter.phylax_boundary_review.promise",
+        "scope": "frontmatter.phylax_boundary_review.scope",
+        "source_digest": "frontmatter.phylax_boundary_review.source_digest",
+        "subject": "frontmatter.phylax_boundary_review.subject",
+        "transition": "frontmatter.phylax_boundary_review.transition",
+        "unknowns": "frontmatter.phylax_boundary_review.unknowns"
       },
-      "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
-      "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
+        "selector": "negative",
+        "sha256": "e0e590762c180382b6fa5f05d25889e0c4b87a74e43ba3e219e968d156abdd6e"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
+        "selector": "positive",
+        "sha256": "e0e590762c180382b6fa5f05d25889e0c4b87a74e43ba3e219e968d156abdd6e"
+      },
+      "reader": "markdown-result-adapter-v1",
+      "selector": "test_phylax_review_positive",
+      "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+      "source": "plugins/hexaemeron/tests/test_promise_cases.py"
     },
     "probitas-dossier-verification": {
       "bindings": {
-        "evidence_classes": "provenance tier and gate result joined to the canonical Evidence classes field",
-        "evidence_references": "evidence records, citations, figures and source hashes",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "venue coverage rows keyed on venue and source, and five verification gates",
-        "subject": "dossier bytes, evidence digest and declared entity addresses",
-        "transition": "five passing gates and zero exit joined to the canonical Authorises field",
-        "unknowns": "unchecked venues, unsupported claims and explicit gaps"
+        "authority": "adapter_output.probitas_dossier_verification.authorised_by",
+        "evidence_classes": "adapter_output.probitas_dossier_verification.classes",
+        "evidence_references": "adapter_output.probitas_dossier_verification.references",
+        "exception": "adapter_output.probitas_dossier_verification.exception",
+        "inspectable_evidence": "adapter_output.probitas_dossier_verification.inspectable",
+        "promise_id": "adapter_output.probitas_dossier_verification.binding.promise_id",
+        "scope": "adapter_output.probitas_dossier_verification.binding.scope",
+        "source_digest": "adapter_output.probitas_dossier_verification.source_digest",
+        "subject": "adapter_output.probitas_dossier_verification.binding.subject",
+        "transition": "adapter_output.probitas_dossier_verification.transition",
+        "unknowns": "adapter_output.probitas_dossier_verification.unresolved"
       },
-      "sha256": "b865685b342b4e853a5084242b17945478e2d5069533cc79933f5970eab361c6",
-      "source": "plugins/probitas/scripts/probitas.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
+        "selector": "negative",
+        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
+        "selector": "positive",
+        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_it_exits_zero",
+      "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb",
+      "source": "plugins/probitas/tests/test_demo.py"
     },
     "tabularium-release-build": {
       "bindings": {
-        "evidence_classes": "source and mapping relations joined to the canonical Evidence classes field",
-        "evidence_references": "source, capture, events and coverage manifest digests",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "venue, chain, capture boundary and mapped selectors",
-        "subject": "release directory, source digest and adapter version",
-        "transition": "atomic build and verification status joined to the canonical Authorises field",
-        "unknowns": "unsupported entities, known gaps and unsigned publisher identity"
+        "evidence_classes": "adapter_output.tabularium_release_build.classes",
+        "evidence_references": "adapter_output.tabularium_release_build.references",
+        "exception": "adapter_output.tabularium_release_build.exception",
+        "promise_id": "adapter_output.tabularium_release_build.binding.promise_id",
+        "scope": "adapter_output.tabularium_release_build.binding.scope",
+        "source_digest": "adapter_output.tabularium_release_build.source_digest",
+        "subject": "adapter_output.tabularium_release_build.binding.subject",
+        "transition": "adapter_output.tabularium_release_build.transition",
+        "unknowns": "adapter_output.tabularium_release_build.unresolved"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
-      "source": "plugins/tabularium/scripts/tabularium.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
+        "selector": "negative",
+        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
+        "selector": "positive",
+        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_committed_release_verifies_offline_and_without_rewrites",
+      "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+      "source": "plugins/tabularium/tests/test_release.py"
     },
     "tabularium-release-verification": {
       "bindings": {
-        "evidence_classes": "verification result joined to the canonical Evidence classes field",
-        "evidence_references": "rebuilt event bytes, manifest digests and mapping provenance",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "venue, capture boundary, paths and one-to-one source selectors",
-        "subject": "release directory, source digest and adapter version",
-        "transition": "zero-exit verification joined to the canonical Authorises field",
-        "unknowns": "publisher identity, chain proof and unmapped source entities"
+        "authority": "adapter_output.tabularium_release_verification.authorised_by",
+        "evidence_classes": "adapter_output.tabularium_release_verification.classes",
+        "evidence_references": "adapter_output.tabularium_release_verification.references",
+        "exception": "adapter_output.tabularium_release_verification.exception",
+        "inspectable_evidence": "adapter_output.tabularium_release_verification.inspectable",
+        "promise_id": "adapter_output.tabularium_release_verification.binding.promise_id",
+        "scope": "adapter_output.tabularium_release_verification.binding.scope",
+        "source_digest": "adapter_output.tabularium_release_verification.source_digest",
+        "subject": "adapter_output.tabularium_release_verification.binding.subject",
+        "transition": "adapter_output.tabularium_release_verification.transition",
+        "unknowns": "adapter_output.tabularium_release_verification.unresolved"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
-      "source": "plugins/tabularium/scripts/tabularium.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
+        "selector": "negative",
+        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
+        "selector": "positive",
+        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_committed_release_verifies_offline_and_without_rewrites",
+      "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+      "source": "plugins/tabularium/tests/test_release.py"
     }
   },
   "schema": "promise-machine-coverage/v1"

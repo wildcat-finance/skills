@@ -300,3 +300,10 @@ Decision homes are:
 - tests/promise_machine_coverage.json: digest bindings for the new capability surfaces; it records the implementation but does not define the obligation universe.
 
 No plugin EVOLUTION.md entry is owed merely because the framework begins checking an existing promise more honestly. A plugin-specific evolution entry becomes necessary only if that plugin's own canonical promise or result semantics changes.
+
+### Amendment -- 2026-08-31
+
+**What changed.** The standing decision record for the additive obligation ledger and native binding layer moves from ADR-054 to ADR-062. The exact pinned implementation base had ADR-054 free when the record was written, but the current default branch now owns ADR-054 through a different merged decision and owns ADR-055 through ADR-061 as well. The decision, rejected alternatives, structural-versus-behavioural boundary, offline core, and separate upstream verifier remain unchanged.
+**Why.** Keeping the old number would make this branch collide with an unrelated default-branch decision and fail the repository's decision-record uniqueness gate. ADR-062 is the next number absent from both this branch and the current default branch.
+**Steps touched.** Step 3.
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.

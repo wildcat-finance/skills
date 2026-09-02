@@ -1,0 +1,139 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "fiat_runbook_amendment": {
+          "binding": {
+            "promise_id": "fiat-runbook-amendment",
+            "scope": "structural binding for fiat-runbook-amendment",
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+              "sha256": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind fiat-runbook-amendment without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+            "sha256": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-runbook-amendment",
+        "scope": "structural binding for fiat-runbook-amendment",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+        "transition": {
+          "action": "structurally bind fiat-runbook-amendment without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "fiat_runbook_amendment": {
+          "binding": {
+            "promise_id": "fiat-runbook-amendment",
+            "scope": "structural binding for fiat-runbook-amendment",
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+              "sha256": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3"
+            }
+          ],
+          "source_digest": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3",
+          "transition": {
+            "action": "structurally bind fiat-runbook-amendment without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+            "sha256": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-runbook-amendment",
+        "scope": "structural binding for fiat-runbook-amendment",
+        "source_digest": "d85e8e6a740a6c74a13c47fd98eea3f9c5a9784dec01f4e1a9931ce7e2b309b3",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+        "transition": {
+          "action": "structurally bind fiat-runbook-amendment without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "lazarus_preservation_release": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-preservation-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:lazarus-preservation-release",
+            "reference": {
+              "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+              "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/tests/test_goldfinch.py",
+                "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-preservation-release",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-preservation-release",
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:lazarus-preservation-release",
+          "reference": {
+            "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+            "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/lazarus/tests/test_goldfinch.py",
+          "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+        },
+        "promise_id": "lazarus-preservation-release",
+        "scope": "structural binding for lazarus-preservation-release",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "transition": {
+          "action": "structurally bind lazarus-preservation-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "lazarus_preservation_release": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-preservation-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:lazarus-preservation-release",
+            "reference": {
+              "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+              "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/tests/test_goldfinch.py",
+                "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-preservation-release",
+          "source": {
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-preservation-release",
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:lazarus-preservation-release",
+          "reference": {
+            "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
+            "sha256": "807d59ce7fabf624a15109787307ccebf529a416c65ed7867129a35f5b7dece7"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/lazarus/tests/test_goldfinch.py",
+          "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
+        },
+        "promise_id": "lazarus-preservation-release",
+        "scope": "structural binding for lazarus-preservation-release",
+        "source_digest": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "transition": {
+          "action": "structurally bind lazarus-preservation-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

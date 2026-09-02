@@ -1,7 +1,9 @@
+import copy
 import json
 import hashlib
 import io
 import os
+import re
 from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 import shutil
@@ -35,6 +37,18 @@ OBLIGATION_REGISTRY = ROOT / "tests" / "promise_machine_obligations.json"
 OBLIGATION_FIXTURES = FIXTURES / "obligations"
 CONSEQUENCE_FIXTURES = FIXTURES / "consequences"
 EXCEPTION_FIXTURES = FIXTURES / "exceptions"
+RUNTIME_FIXTURES = FIXTURES / "runtime"
+PYTHON_RUNTIME_BINDINGS = {
+    "promise_id": "adapter_output.binding.promise_id",
+    "subject": "adapter_output.binding.subject",
+    "scope": "adapter_output.binding.scope",
+    "evidence_references": "adapter_output.references",
+    "evidence_classes": "adapter_output.classes",
+    "unknowns": "adapter_output.unresolved",
+    "transition": "adapter_output.transition",
+    "exception": "adapter_output.exception",
+    "source_digest": "adapter_output.source_digest",
+}
 DURABLE_OBLIGATION_STUDY = (
     ROOT / "docs" / "promise-machine" / "obligation-gates" / "study.md"
 )
@@ -42,10 +56,10 @@ DURABLE_OBLIGATION_RUNBOOK = (
     ROOT / "docs" / "promise-machine" / "obligation-gates" / "runbook.md"
 )
 RECEIPTED_OBLIGATION_STUDY_SHA256 = (
-    "5eba8adc1cc21cdf9ba9da1059e6ae1384543387fd0d277b1d3f74d9506a20e2"
+    "964e97bf48a2c0fb88c1af7d2314f39c28ea177b8de56c2b665e3f7f8f55468b"
 )
 RECEIPTED_OBLIGATION_RUNBOOK_SHA256 = (
-    "6c75231401498ddd77c25bb6595873984e553391780bcdb1e4b8db3a90519cfb"
+    "0f56413ab1501873dbb2205fd2a22ae5a646c86b9a83c0350bc0b41e56da0bbc"
 )
 
 
@@ -117,6 +131,91 @@ def copy_semantic_fixtures(root):
 
 def semantic_codes(findings):
     return [finding.code for finding in findings]
+
+
+def declared_runtime_records():
+    """Discover level-two and level-three rows from authored promise blocks."""
+    coverage = json.loads(
+        (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    records = {}
+    for row in coverage["rows"]:
+        declaration_path = (
+            ROOT / "plugins" / "hexaemeron" / "PROMISES.md"
+            if row["group"] == "vendored"
+            else ROOT / row["skill_path"]
+        )
+        source = declaration_path.read_text(encoding="utf-8")
+        marker = f"### {row['promise_id']}"
+        start = source.find(marker)
+        if start < 0:
+            continue
+        following = source.find("\n### ", start + len(marker))
+        section = source[start : following if following >= 0 else None]
+        consequence_match = re.search(r"^- Consequence:\s*([0-3])\s*$", section, re.M)
+        classes_match = re.search(r"^- Evidence classes:\s*(.+?)\s*$", section, re.M)
+        if consequence_match is None or classes_match is None:
+            continue
+        consequence = int(consequence_match.group(1))
+        if consequence < 2:
+            continue
+        classes = frozenset(
+            item.strip().strip("`").split(":", 1)[0]
+            for item in re.split(r"[,;]", classes_match.group(1))
+            if item.strip()
+        )
+        records[row["promise_id"]] = promise_machine_module.PromiseRecord(
+            row["promise_id"],
+            row["skill_path"],
+            row["group"],
+            classes,
+            consequence,
+        )
+    return records
+
+
+def load_runtime_selector(descriptor):
+    path = ROOT / descriptor["path"]
+    document = json.loads(path.read_text(encoding="utf-8"))
+    return copy.deepcopy(document["specimens"][descriptor["selector"]])
+
+
+def set_dotted(document, dotted, value):
+    target = document
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        target = target[part]
+    target[parts[-1]] = value
+
+
+def mutate_runtime_field(result, binding, field, value):
+    mutated = copy.deepcopy(result)
+    set_dotted(mutated, binding["bindings"][field], value)
+    mutated["promise_machine"][field] = copy.deepcopy(value)
+    return mutated
+
+
+def fixture_runtime_binding(source, digest):
+    specimen = {
+        "path": "tests/runtime-specimen.json",
+        "selector": "positive",
+        "sha256": "0" * 64,
+    }
+    negative = dict(specimen)
+    negative["selector"] = "negative"
+    negative["finding"] = "PM095"
+    negative["field"] = "source_digest"
+    return {
+        "source": source,
+        "selector": "test_positive",
+        "sha256": digest,
+        "reader": "python-result-adapter-v1",
+        "bindings": dict(PYTHON_RUNTIME_BINDINGS),
+        "positive": specimen,
+        "negative": negative,
+    }
 
 
 
@@ -344,7 +443,7 @@ class PromiseObligationTests(unittest.TestCase):
         completed = run_cli("check", "--only", "obligations", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["obligations"], 10)
+        self.assertEqual(report["counts"]["obligations"], 11)
         self.assertEqual(report["findings"], [])
 
     def test_marked_structural_claims_match_their_production_gates(self):
@@ -377,6 +476,11 @@ class PromiseObligationTests(unittest.TestCase):
             "law-consequence-separation": (
                 "> Obligation: Consequence levels zero through three take distinct enforcement\n"
                 "> paths, and level three never accepts level-two-only evidence."
+            ),
+            "law-runtime-result-binding": (
+                "> Obligation: Every level-two or level-three runtime promise resolves its\n"
+                "> native binding fields through a bounded source-bound reader; level three\n"
+                "> also resolves authority and independently inspectable evidence."
             ),
             "law-refusal-shape": (
                 "> Obligation: Every refusal report names the promise id, failed field or\n"
@@ -3056,13 +3160,48 @@ class PromiseCoverageTests(unittest.TestCase):
                     self.assertIn(f"def {selector}(", source)
         self.assertIn("without advancing Fiat", coverage["transition"])
 
+    def test_runtime_positive_selectors_reject_declaration_text_decoys(self):
+        cases = {
+            "python-string": (
+                Path("decoy.py"),
+                '\"\"\"\ndef test_positive():\n    pass\n\"\"\"\n',
+            ),
+            "solidity-comment": (
+                Path("decoy.sol"),
+                "/*\nfunction test_positive() external {}\n*/\n",
+            ),
+        }
+        for label, (path, source) in cases.items():
+            with self.subTest(label=label):
+                self.assertFalse(
+                    promise_machine_module.selector_resolves(
+                        path, source, "test_positive"
+                    )
+                )
+
+        self.assertTrue(
+            promise_machine_module.selector_resolves(
+                Path("live.py"),
+                "class Tests:\n    async def test_positive(self):\n        pass\n",
+                "test_positive",
+            )
+        )
+        self.assertTrue(
+            promise_machine_module.selector_resolves(
+                Path("live.sol"),
+                "contract Tests {\nfunction test_positive() external {}\n}\n",
+                "test_positive",
+            )
+        )
+
     def test_repository_high_consequence_runtime_bindings_are_complete(self):
         coverage = json.loads(
             (ROOT / "tests" / "promise_machine_coverage.json").read_text(
                 encoding="utf-8"
             )
         )
-        expected_fields = {
+        records = declared_runtime_records()
+        common_fields = {
             "promise_id",
             "subject",
             "scope",
@@ -3071,13 +3210,497 @@ class PromiseCoverageTests(unittest.TestCase):
             "unknowns",
             "transition",
             "exception",
+            "source_digest",
         }
-        self.assertEqual(len(coverage["runtime"]), 35)
+        level_three_fields = {"authority", "inspectable_evidence"}
+        self.assertEqual(len(records), 35)
+        self.assertEqual(set(coverage["runtime"]), set(records))
+        native_maps = set()
         for promise_id, binding in coverage["runtime"].items():
             with self.subTest(promise_id=promise_id):
-                self.assertEqual(set(binding), {"source", "sha256", "bindings"})
+                record = records[promise_id]
+                expected_fields = common_fields | (
+                    level_three_fields if record.consequence == 3 else set()
+                )
+                self.assertEqual(
+                    set(binding),
+                    {
+                        "source",
+                        "selector",
+                        "sha256",
+                        "reader",
+                        "bindings",
+                        "positive",
+                        "negative",
+                    },
+                )
+                self.assertIn(
+                    binding["reader"],
+                    {
+                        "native-json-v1",
+                        "python-result-adapter-v1",
+                        "markdown-result-adapter-v1",
+                    },
+                )
                 self.assertEqual(set(binding["bindings"]), expected_fields)
-                self.assertTrue((ROOT / binding["source"]).is_file())
+                self.assertTrue(all(binding["bindings"].values()))
+                native_map = tuple(sorted(binding["bindings"].items()))
+                self.assertNotIn(native_map, native_maps)
+                native_maps.add(native_map)
+                source = ROOT / binding["source"]
+                row = next(
+                    item for item in coverage["rows"] if item["promise_id"] == promise_id
+                )
+                positive_evidence = coverage["evidence"][row["cases"]["P"]]
+                self.assertEqual(binding["source"], positive_evidence["path"])
+                self.assertEqual(binding["selector"], positive_evidence["selector"])
+                self.assertTrue(source.is_file())
+                self.assertEqual(
+                    hashlib.sha256(source.read_bytes()).hexdigest(), binding["sha256"]
+                )
+                self.assertEqual(
+                    set(binding["positive"]), {"path", "selector", "sha256"}
+                )
+                self.assertEqual(
+                    set(binding["negative"]),
+                    {"path", "selector", "sha256", "finding", "field"},
+                )
+                self.assertEqual(binding["negative"]["finding"], "PM095")
+                self.assertIn(binding["negative"]["field"], binding["bindings"])
+                self.assertNotEqual(
+                    binding["positive"]["selector"], binding["negative"]["selector"]
+                )
+                for specimen in (binding["positive"], binding["negative"]):
+                    path = ROOT / specimen["path"]
+                    self.assertTrue(path.is_file())
+                    self.assertEqual(
+                        hashlib.sha256(path.read_bytes()).hexdigest(),
+                        specimen["sha256"],
+                    )
+                    path.relative_to(RUNTIME_FIXTURES)
+
+    def test_runtime_cli_executes_every_bound_specimen(self):
+        commands = (
+            ("coverage", "--check", "--json"),
+            ("check", "--only", "runtime", "--json"),
+            (
+                "check",
+                "--only",
+                "obligations,contracts,coverage,runtime",
+                "--json",
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                completed = run_cli(*command)
+                report = json.loads(completed.stdout)
+                self.assertEqual(
+                    completed.returncode, 0, completed.stdout + completed.stderr
+                )
+                self.assertEqual(report["findings"], [])
+                self.assertEqual(report["counts"]["runtime_bindings"], 35)
+
+    def test_repository_runtime_specimens_use_the_production_reader(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        for promise_id, binding in coverage["runtime"].items():
+            record = records[promise_id]
+            positive = load_runtime_selector(binding["positive"])
+            negative = load_runtime_selector(binding["negative"])
+            with self.subTest(promise_id=promise_id, specimen="positive"):
+                findings = promise_machine_module.validate_runtime_result(
+                    ROOT,
+                    record,
+                    binding,
+                    positive,
+                    binding["positive"]["path"],
+                )
+                self.assertEqual(findings, [])
+                self.assertFalse(positive["promise_machine"]["transition"]["operation_ran"])
+                self.assertTrue(positive["promise_machine"]["unknowns"])
+            with self.subTest(promise_id=promise_id, specimen="negative"):
+                findings = promise_machine_module.validate_runtime_result(
+                    ROOT,
+                    record,
+                    binding,
+                    negative,
+                    binding["negative"]["path"],
+                )
+                self.assertEqual(semantic_codes(findings), ["PM095"])
+                self.assertEqual(findings[0].promise_id, promise_id)
+                self.assertEqual(findings[0].consequence, record.consequence)
+                self.assertTrue(findings[0].blocked_transition)
+                self.assertTrue(findings[0].recovery)
+
+    def test_every_runtime_binding_field_has_a_red_mutation(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        mutations = {
+            "promise_id": "wrong-promise",
+            "subject": "",
+            "scope": "",
+            "evidence_references": [],
+            "evidence_classes": ["unknown"],
+            "unknowns": [],
+            "transition": {
+                "status": "authorised",
+                "action": "claim that the domain operation ran",
+                "operation_ran": True,
+            },
+            "exception": {"status": "missing"},
+            "source_digest": "0" * 64,
+            "authority": None,
+            "inspectable_evidence": None,
+        }
+        for promise_id, binding in coverage["runtime"].items():
+            record = records[promise_id]
+            positive = load_runtime_selector(binding["positive"])
+            for field in binding["bindings"]:
+                with self.subTest(promise_id=promise_id, field=field):
+                    mutated = mutate_runtime_field(
+                        positive, binding, field, mutations[field]
+                    )
+                    findings = promise_machine_module.validate_runtime_result(
+                        ROOT,
+                        record,
+                        binding,
+                        mutated,
+                        binding["positive"]["path"],
+                    )
+                    self.assertEqual(semantic_codes(findings), ["PM095"])
+                    self.assertIn(field, findings[0].message)
+
+    def test_level_two_result_cannot_replay_at_level_three(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = next(
+            item for item, record in records.items() if record.consequence == 2
+        )
+        record = records[promise_id]
+        level_three = promise_machine_module.PromiseRecord(
+            record.promise_id,
+            record.skill_path,
+            record.group,
+            record.evidence_classes,
+            3,
+        )
+        binding = coverage["runtime"][promise_id]
+        result = load_runtime_selector(binding["positive"])
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT, level_three, binding, result, binding["positive"]["path"]
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("authority", findings[0].message)
+
+    def test_level_three_authority_and_evidence_require_distinct_bytes(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "ariadne-verify-statement"
+        record = records[promise_id]
+        binding = copy.deepcopy(coverage["runtime"][promise_id])
+        positive = load_runtime_selector(binding["positive"])
+        source_path = Path(binding["source"])
+        authority_path = Path(
+            promise_machine_module.runtime_authority_path(ROOT, record)
+        )
+        payload = (ROOT / source_path).read_bytes()
+        digest = hashlib.sha256(payload).hexdigest()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (source_path, authority_path):
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(payload)
+            binding["sha256"] = digest
+            result = mutate_runtime_field(
+                positive, binding, "source_digest", digest
+            )
+            references = copy.deepcopy(
+                result["promise_machine"]["evidence_references"]
+            )
+            for reference in references:
+                reference["sha256"] = digest
+            result = mutate_runtime_field(
+                result, binding, "evidence_references", references
+            )
+            inspectable = copy.deepcopy(
+                result["promise_machine"]["inspectable_evidence"]
+            )
+            inspectable["sha256"] = digest
+            result = mutate_runtime_field(
+                result, binding, "inspectable_evidence", inspectable
+            )
+            authority = copy.deepcopy(result["promise_machine"]["authority"])
+            authority["reference"]["sha256"] = digest
+            result = mutate_runtime_field(result, binding, "authority", authority)
+            findings = promise_machine_module.validate_runtime_result(
+                root,
+                record,
+                binding,
+                result,
+                "same-bytes-different-paths",
+            )
+
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("inspectable_evidence", findings[0].message)
+
+    def test_runtime_binding_refuses_missing_evidence_reference_and_header_mismatch(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = next(iter(sorted(records)))
+        record = records[promise_id]
+        binding = coverage["runtime"][promise_id]
+        positive = load_runtime_selector(binding["positive"])
+
+        absent = mutate_runtime_field(
+            positive,
+            binding,
+            "evidence_references",
+            [
+                {
+                    "path": "tests/fixtures/promise-machine/runtime/absent.json",
+                    "sha256": "0" * 64,
+                    "evidence_class": "checked",
+                }
+            ],
+        )
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT, record, binding, absent, binding["positive"]["path"]
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("evidence_references", findings[0].message)
+
+        mismatched = copy.deepcopy(positive)
+        mismatched["promise_machine"]["subject"] = "a different subject"
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT, record, binding, mismatched, binding["positive"]["path"]
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("subject", findings[0].message)
+
+    def test_runtime_satisfying_classes_require_corresponding_references(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "alexandria-derived-view"
+        record = records[promise_id]
+        binding = coverage["runtime"][promise_id]
+        positive = load_runtime_selector(binding["positive"])
+        unreferenced_class = mutate_runtime_field(
+            positive,
+            binding,
+            "evidence_classes",
+            ["checked", "recorded"],
+        )
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT,
+            record,
+            binding,
+            unreferenced_class,
+            binding["positive"]["path"],
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("evidence_references", findings[0].message)
+        self.assertIn("recorded", findings[0].message)
+
+    def test_runtime_unknown_codes_are_unique(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "alexandria-derived-view"
+        record = records[promise_id]
+        binding = coverage["runtime"][promise_id]
+        positive = load_runtime_selector(binding["positive"])
+        unknowns = copy.deepcopy(positive["promise_machine"]["unknowns"])
+        repeated = mutate_runtime_field(
+            positive,
+            binding,
+            "unknowns",
+            unknowns + [copy.deepcopy(unknowns[0])],
+        )
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT,
+            record,
+            binding,
+            repeated,
+            binding["positive"]["path"],
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("unknowns", findings[0].message)
+
+    def test_runtime_evidence_references_are_unique(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "alexandria-derived-view"
+        record = records[promise_id]
+        binding = coverage["runtime"][promise_id]
+        positive = load_runtime_selector(binding["positive"])
+        references = copy.deepcopy(
+            positive["promise_machine"]["evidence_references"]
+        )
+        repeated = mutate_runtime_field(
+            positive,
+            binding,
+            "evidence_references",
+            references + [copy.deepcopy(references[0])],
+        )
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT,
+            record,
+            binding,
+            repeated,
+            binding["positive"]["path"],
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("evidence_references", findings[0].message)
+
+    def test_runtime_negative_specimens_name_and_isolate_their_field(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        declared_fields = {
+            binding["negative"].get("field")
+            for binding in coverage["runtime"].values()
+        }
+        self.assertNotIn(None, declared_fields)
+        for promise_id, binding in coverage["runtime"].items():
+            with self.subTest(promise_id=promise_id):
+                field = binding["negative"].get("field")
+                self.assertIn(field, binding["bindings"])
+                positive = load_runtime_selector(binding["positive"])
+                negative = load_runtime_selector(binding["negative"])
+                self.assertIsNone(
+                    promise_machine_module.runtime_negative_mutation_error(
+                        binding, positive, negative
+                    )
+                )
+
+        binding = coverage["runtime"]["alexandria-derived-view"]
+        positive = load_runtime_selector(binding["positive"])
+        wrong_field = mutate_runtime_field(
+            positive, binding, "promise_id", "wrong-promise"
+        )
+        error = promise_machine_module.runtime_negative_mutation_error(
+            binding, positive, wrong_field
+        )
+        self.assertIn("does not mutate declared field", error)
+        negative = load_runtime_selector(binding["negative"])
+        extra_field = mutate_runtime_field(
+            negative, binding, "promise_id", "wrong-promise"
+        )
+        error = promise_machine_module.runtime_negative_mutation_error(
+            binding, positive, extra_field
+        )
+        self.assertIn("outside declared field", error)
+        wrong_kind = copy.deepcopy(binding)
+        wrong_kind["negative"]["field"] = []
+        error = promise_machine_module.runtime_negative_mutation_error(
+            wrong_kind, positive, negative
+        )
+        self.assertIn("does not name one declared runtime field", error)
+
+    def test_runtime_specimen_reads_refuse_hostile_paths_and_bytes(self):
+        record = promise_machine_module.PromiseRecord(
+            "fixture-promise",
+            "plugins/fixture/skills/fixture/SKILL.md",
+            "executable",
+            frozenset({"checked"}),
+            2,
+        )
+
+        def descriptor(path, payload=None):
+            digest = hashlib.sha256(payload).hexdigest() if payload is not None else "0" * 64
+            return {"path": path, "selector": "positive", "sha256": digest}
+
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory).resolve()
+            runtime = target / "tests" / "fixtures" / "promise-machine" / "runtime"
+            runtime.mkdir(parents=True)
+            outside = target.parent / f"{target.name}-outside.json"
+            outside.write_text('{}\n', encoding="utf-8")
+            self.addCleanup(lambda: outside.unlink(missing_ok=True))
+
+            cases = []
+            cases.append(("escape", descriptor("../outside.json")))
+
+            linked = runtime / "linked.json"
+            linked.symlink_to(outside)
+            cases.append(("symlink", descriptor(linked.relative_to(target).as_posix())))
+
+            nonfile = runtime / "directory.json"
+            nonfile.mkdir()
+            cases.append(("non-file", descriptor(nonfile.relative_to(target).as_posix())))
+
+            oversized = b"{" + b" " * (promise_machine_module.MAX_JSON_BYTES + 1)
+            oversized_path = runtime / "oversized.json"
+            oversized_path.write_bytes(oversized)
+            cases.append(
+                (
+                    "oversize",
+                    descriptor(oversized_path.relative_to(target).as_posix(), oversized),
+                )
+            )
+
+            invalid = b"{\"schema\":\"x\",\"specimens\":{\"positive\":\xff}}"
+            invalid_path = runtime / "invalid.json"
+            invalid_path.write_bytes(invalid)
+            cases.append(
+                (
+                    "invalid-utf8",
+                    descriptor(invalid_path.relative_to(target).as_posix(), invalid),
+                )
+            )
+
+            duplicate = b'{"schema":"x","schema":"x","specimens":{"positive":{}}}'
+            duplicate_path = runtime / "duplicate.json"
+            duplicate_path.write_bytes(duplicate)
+            cases.append(
+                (
+                    "duplicate-key",
+                    descriptor(duplicate_path.relative_to(target).as_posix(), duplicate),
+                )
+            )
+
+            for label, item in cases:
+                with self.subTest(label=label):
+                    loaded, findings = promise_machine_module.read_runtime_specimen(
+                        target, item, record, "positive"
+                    )
+                    self.assertIsNone(loaded)
+                    self.assertEqual(semantic_codes(findings), ["PM095"])
 
     def test_high_consequence_promise_without_runtime_binding_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -3110,20 +3733,9 @@ class PromiseCoverageTests(unittest.TestCase):
                 encoding="utf-8",
             )
             document["runtime"] = {
-                "example-check": {
-                    "source": "../outside.json",
-                    "sha256": "0" * 64,
-                    "bindings": {
-                        "promise_id": "promise id",
-                        "subject": "subject",
-                        "scope": "scope",
-                        "evidence_references": "evidence references",
-                        "evidence_classes": "evidence classes",
-                        "unknowns": "unknowns",
-                        "transition": "transition",
-                        "exception": "exception",
-                    },
-                }
+                "example-check": fixture_runtime_binding(
+                    "../outside.json", "0" * 64
+                )
             }
             coverage_path.write_text(json.dumps(document), encoding="utf-8")
             completed = run_cli(
@@ -3132,6 +3744,105 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM070", [item["code"] for item in report["findings"]])
+
+    def test_runtime_binding_source_must_be_the_covered_positive_surface(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            coverage_path, document = write_coverage_fixture(target)
+            skill = target / "plugins/hexaemeron/skills/elenchus/SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    "- Consequence: 1", "- Consequence: 2"
+                ),
+                encoding="utf-8",
+            )
+            unrelated = target / "tests" / "unrelated.py"
+            unrelated.write_text("def unrelated():\n    pass\n", encoding="utf-8")
+            source = unrelated.relative_to(target).as_posix()
+            source_digest = hashlib.sha256(unrelated.read_bytes()).hexdigest()
+            values = {
+                "promise_id": "example-check",
+                "subject": f"runtime source {source}",
+                "scope": "structural binding for example-check",
+                "evidence_references": [
+                    {
+                        "path": source,
+                        "sha256": source_digest,
+                        "evidence_class": "checked",
+                    }
+                ],
+                "evidence_classes": ["checked"],
+                "unknowns": [
+                    {
+                        "code": "domain-operation-not-run",
+                        "detail": "The structural reader did not run the domain operation.",
+                    }
+                ],
+                "transition": {
+                    "status": "structurally-bound",
+                    "action": "structurally bind example-check without running its domain operation",
+                    "operation_ran": False,
+                },
+                "exception": {"status": "none"},
+                "source_digest": source_digest,
+            }
+            positive = {
+                "schema": "promise-machine-python-result-adapter/v1",
+                "adapter_output": {},
+                "promise_machine": copy.deepcopy(values),
+            }
+            for field, dotted in PYTHON_RUNTIME_BINDINGS.items():
+                cursor = positive
+                parts = dotted.split(".")
+                for part in parts[:-1]:
+                    cursor = cursor.setdefault(part, {})
+                cursor[parts[-1]] = copy.deepcopy(values[field])
+            negative = mutate_runtime_field(
+                positive,
+                {"bindings": PYTHON_RUNTIME_BINDINGS},
+                "source_digest",
+                "0" * 64,
+            )
+            specimen_path = (
+                target
+                / "tests"
+                / "fixtures"
+                / "promise-machine"
+                / "runtime"
+                / "example-check.json"
+            )
+            specimen_path.parent.mkdir(parents=True)
+            specimen_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "promise-machine-runtime-specimens/v1",
+                        "specimens": {"positive": positive, "negative": negative},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            specimen_digest = hashlib.sha256(specimen_path.read_bytes()).hexdigest()
+            binding = fixture_runtime_binding(source, source_digest)
+            for kind in ("positive", "negative"):
+                binding[kind]["path"] = specimen_path.relative_to(target).as_posix()
+                binding[kind]["sha256"] = specimen_digest
+            document["runtime"] = {"example-check": binding}
+            coverage_path.write_text(json.dumps(document), encoding="utf-8")
+            completed = run_cli(
+                "coverage",
+                "--check",
+                "--root",
+                target,
+                "--group",
+                "executable",
+                "--json",
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM095", [item["code"] for item in report["findings"]])
+        self.assertTrue(
+            any("positive evidence" in item["message"] for item in report["findings"])
+        )
 
     def test_runtime_binding_source_digest_must_be_current(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -3145,20 +3856,9 @@ class PromiseCoverageTests(unittest.TestCase):
                 encoding="utf-8",
             )
             document["runtime"] = {
-                "example-check": {
-                    "source": "tests/evidence.py",
-                    "sha256": "0" * 64,
-                    "bindings": {
-                        "promise_id": "promise id",
-                        "subject": "subject",
-                        "scope": "scope",
-                        "evidence_references": "evidence references",
-                        "evidence_classes": "evidence classes",
-                        "unknowns": "unknowns",
-                        "transition": "transition",
-                        "exception": "exception",
-                    },
-                }
+                "example-check": fixture_runtime_binding(
+                    "tests/evidence.py", "0" * 64
+                )
             }
             coverage_path.write_text(json.dumps(document), encoding="utf-8")
             completed = run_cli(
@@ -3167,6 +3867,50 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM071", [item["code"] for item in report["findings"]])
+
+    def test_runtime_catalogue_reports_every_independent_row_fault(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            coverage_path, document = write_coverage_fixture(target)
+            skill = target / "plugins/hexaemeron/skills/elenchus/SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    "- Consequence: 1", "- Consequence: 2"
+                ),
+                encoding="utf-8",
+            )
+            source = target / "tests/evidence.py"
+            specimen = (
+                target
+                / "tests"
+                / "fixtures"
+                / "promise-machine"
+                / "runtime"
+                / "example-check.json"
+            )
+            specimen.parent.mkdir(parents=True)
+            specimen.write_text("{}\n", encoding="utf-8")
+            binding = fixture_runtime_binding(
+                "tests/evidence.py", hashlib.sha256(source.read_bytes()).hexdigest()
+            )
+            for kind in ("positive", "negative"):
+                binding[kind]["path"] = specimen.relative_to(target).as_posix()
+                binding[kind]["sha256"] = f"malformed-{kind}-digest"
+            document["runtime"] = {"example-check": binding}
+            coverage_path.write_text(json.dumps(document), encoding="utf-8")
+            completed = run_cli(
+                "check", "--only", "runtime", "--root", target, "--json"
+            )
+        report = json.loads(completed.stdout)
+        messages = [item["message"] for item in report["findings"]]
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual([item["code"] for item in report["findings"]], ["PM095"] * 2)
+        self.assertTrue(
+            any("runtime positive specimen digest is malformed" in item for item in messages)
+        )
+        self.assertTrue(
+            any("runtime negative specimen digest is malformed" in item for item in messages)
+        )
 
     def test_runtime_binding_source_read_is_bounded(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -3182,20 +3926,10 @@ class PromiseCoverageTests(unittest.TestCase):
             oversized = target / "tests/oversized.bin"
             oversized.write_bytes(b"x" * (1024 * 1024 + 1))
             document["runtime"] = {
-                "example-check": {
-                    "source": "tests/oversized.bin",
-                    "sha256": hashlib.sha256(oversized.read_bytes()).hexdigest(),
-                    "bindings": {
-                        "promise_id": "promise id",
-                        "subject": "subject",
-                        "scope": "scope",
-                        "evidence_references": "evidence references",
-                        "evidence_classes": "evidence classes",
-                        "unknowns": "unknowns",
-                        "transition": "transition",
-                        "exception": "exception",
-                    },
-                }
+                "example-check": fixture_runtime_binding(
+                    "tests/oversized.bin",
+                    hashlib.sha256(oversized.read_bytes()).hexdigest(),
+                )
             }
             coverage_path.write_text(json.dumps(document), encoding="utf-8")
             completed = run_cli(

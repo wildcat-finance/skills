@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1024,
-  "total_bytes": 21664883,
+  "total_bytes": 21710916,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -81,9 +81,9 @@
       "source": "LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "PROMISE_MACHINE.md"
     },
     {
@@ -141,9 +141,9 @@
       "source": "plugins/alexandria/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/alexandria/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/alexandria/PROMISE_MACHINE.md"
     },
     {
@@ -501,9 +501,9 @@
       "source": "plugins/ariadne/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/ariadne/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/ariadne/PROMISE_MACHINE.md"
     },
     {
@@ -843,9 +843,9 @@
       "source": "plugins/berean/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/berean/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/berean/PROMISE_MACHINE.md"
     },
     {
@@ -1131,9 +1131,9 @@
       "source": "plugins/brevitas/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/brevitas/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
@@ -1389,9 +1389,9 @@
       "source": "plugins/hermes/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/hermes/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/hermes/PROMISE_MACHINE.md"
     },
     {
@@ -1473,9 +1473,9 @@
       "source": "plugins/hexaemeron/PROMISES.md"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/hexaemeron/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/hexaemeron/PROMISE_MACHINE.md"
     },
     {
@@ -3039,9 +3039,9 @@
       "source": "plugins/homologia/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/homologia/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/homologia/PROMISE_MACHINE.md"
     },
     {
@@ -3099,9 +3099,9 @@
       "source": "plugins/horos/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/horos/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/horos/PROMISE_MACHINE.md"
     },
     {
@@ -3711,9 +3711,9 @@
       "source": "plugins/janus/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/janus/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/janus/PROMISE_MACHINE.md"
     },
     {
@@ -3945,9 +3945,9 @@
       "source": "plugins/lazarus/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/lazarus/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/lazarus/PROMISE_MACHINE.md"
     },
     {
@@ -4575,9 +4575,9 @@
       "source": "plugins/lemma/NOTICE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/lemma/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/lemma/PROMISE_MACHINE.md"
     },
     {
@@ -4749,9 +4749,9 @@
       "source": "plugins/pandects/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/pandects/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/pandects/PROMISE_MACHINE.md"
     },
     {
@@ -5187,9 +5187,9 @@
       "source": "plugins/probitas/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/probitas/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
@@ -5403,9 +5403,9 @@
       "source": "plugins/sapheneia/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/sapheneia/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/sapheneia/PROMISE_MACHINE.md"
     },
     {
@@ -5451,9 +5451,9 @@
       "source": "plugins/synkrisis/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/synkrisis/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/synkrisis/PROMISE_MACHINE.md"
     },
     {
@@ -5625,9 +5625,9 @@
       "source": "plugins/tabularium/LICENSE"
     },
     {
-      "bytes": 25192,
+      "bytes": 25475,
       "path": "plugins/tabularium/PROMISE_MACHINE.md",
-      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
+      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
       "source": "plugins/tabularium/PROMISE_MACHINE.md"
     },
     {
@@ -6003,9 +6003,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 200121,
+      "bytes": 240768,
       "path": "scripts/promise_machine.py",
-      "sha256": "ed85ec02ffb97535841040ab0da6a2105b67395ed6906cacba0742f6625503e0",
+      "sha256": "519d1784f51b7e2e535407dfb61409cb398714399f1919c2cf976e8e18c4c3fa",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6189,9 +6189,9 @@
       "source": "tests/fixtures/promise-machine/obligations/law-required-sections.json"
     },
     {
-      "bytes": 5488,
+      "bytes": 6063,
       "path": "tests/promise_machine_obligations.json",
-      "sha256": "5b990d2ddbd737055110aac6c45dcc67a13ca41dd295fbf54a2886dffe5ff934",
+      "sha256": "828476d3ad92d0d960f684b541f1272a6f04ffb16695f555bc2ed6abb78e2db4",
       "source": "tests/promise_machine_obligations.json"
     }
   ]

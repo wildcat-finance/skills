@@ -1,0 +1,139 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "ariadne_replay_command": {
+          "binding": {
+            "promise_id": "ariadne-replay-command",
+            "scope": "structural binding for ariadne-replay-command",
+            "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/ariadne/tests/test_examples.py",
+              "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind ariadne-replay-command without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "ariadne-replay-command",
+        "scope": "structural binding for ariadne-replay-command",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked",
+        "transition": {
+          "action": "structurally bind ariadne-replay-command without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "ariadne_replay_command": {
+          "binding": {
+            "promise_id": "ariadne-replay-command",
+            "scope": "structural binding for ariadne-replay-command",
+            "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/ariadne/tests/test_examples.py",
+              "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
+            }
+          ],
+          "source_digest": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+          "transition": {
+            "action": "structurally bind ariadne-replay-command without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "ariadne-replay-command",
+        "scope": "structural binding for ariadne-replay-command",
+        "source_digest": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+        "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked",
+        "transition": {
+          "action": "structurally bind ariadne-replay-command without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

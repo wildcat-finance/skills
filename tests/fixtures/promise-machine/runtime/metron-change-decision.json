@@ -1,0 +1,139 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "metron_change_decision": {
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_metron_check.py",
+                "sha256": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "metron-change-decision",
+          "scope": "structural binding for metron-change-decision",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/tests/test_metron_check.py#test_an_improvement_past_the_variance_is_reported_and_passes",
+          "transition": {
+            "action": "structurally bind metron-change-decision without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_metron_check.py",
+            "sha256": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "metron-change-decision",
+        "scope": "structural binding for metron-change-decision",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_metron_check.py#test_an_improvement_past_the_variance_is_reported_and_passes",
+        "transition": {
+          "action": "structurally bind metron-change-decision without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "metron_change_decision": {
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_metron_check.py",
+                "sha256": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "metron-change-decision",
+          "scope": "structural binding for metron-change-decision",
+          "source_digest": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77",
+          "subject": "runtime source plugins/hexaemeron/tests/test_metron_check.py#test_an_improvement_past_the_variance_is_reported_and_passes",
+          "transition": {
+            "action": "structurally bind metron-change-decision without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_metron_check.py",
+            "sha256": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "metron-change-decision",
+        "scope": "structural binding for metron-change-decision",
+        "source_digest": "da57f19f95c4d7123d210f4163aa6320285b194b1defb87035a6dc43e2556c77",
+        "subject": "runtime source plugins/hexaemeron/tests/test_metron_check.py#test_an_improvement_past_the_variance_is_reported_and_passes",
+        "transition": {
+          "action": "structurally bind metron-change-decision without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}

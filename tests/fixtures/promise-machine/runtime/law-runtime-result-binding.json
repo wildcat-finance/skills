@@ -1,0 +1,118 @@
+{
+  "schema": "promise-machine-runtime-obligation-specimen/v1",
+  "record": {
+    "promise_id": "fixture-runtime-binding",
+    "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
+    "evidence_classes": [
+      "checked"
+    ],
+    "consequence": 3
+  },
+  "binding": {
+    "source": "plugins/alexandria/tests/test_release.py",
+    "sha256": "8e3dc3adfb31808c25726fe7827dacc6bf5b2d3dde4cafa6e8bbb85c914585bc",
+    "reader": "python-result-adapter-v1",
+    "bindings": {
+      "authority": "adapter_output.authorised_by",
+      "evidence_classes": "adapter_output.classes",
+      "evidence_references": "adapter_output.references",
+      "exception": "adapter_output.exception",
+      "inspectable_evidence": "adapter_output.inspectable",
+      "promise_id": "adapter_output.binding.promise_id",
+      "scope": "adapter_output.binding.scope",
+      "source_digest": "adapter_output.source_digest",
+      "subject": "adapter_output.binding.subject",
+      "transition": "adapter_output.transition",
+      "unknowns": "adapter_output.unresolved"
+    }
+  },
+  "result": {
+    "schema": "promise-machine-python-result-adapter/v1",
+    "adapter_output": {
+      "authorised_by": {
+        "id": "promise-owner:fixture-runtime-binding",
+        "reference": {
+          "path": "plugins/alexandria/skills/alexandria/EVOLUTION.md",
+          "sha256": "14b2f468db0fe680d6a8e2531c123736cbcbf58a3c87f94464042a6e3917b038"
+        }
+      },
+      "binding": {
+        "promise_id": "fixture-runtime-binding",
+        "scope": "structural binding for fixture-runtime-binding",
+        "subject": "runtime source plugins/alexandria/tests/test_release.py"
+      },
+      "classes": [
+        "checked"
+      ],
+      "exception": {
+        "status": "none"
+      },
+      "inspectable": {
+        "path": "plugins/alexandria/tests/test_release.py",
+        "sha256": "8e3dc3adfb31808c25726fe7827dacc6bf5b2d3dde4cafa6e8bbb85c914585bc",
+        "evidence_class": "checked"
+      },
+      "references": [
+        {
+          "path": "plugins/alexandria/tests/test_release.py",
+          "sha256": "8e3dc3adfb31808c25726fe7827dacc6bf5b2d3dde4cafa6e8bbb85c914585bc",
+          "evidence_class": "checked"
+        }
+      ],
+      "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transition": {
+        "status": "structurally-bound",
+        "action": "structurally bind fixture-runtime-binding without running its domain operation",
+        "operation_ran": false
+      },
+      "unresolved": [
+        {
+          "code": "domain-operation-not-run",
+          "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+        }
+      ]
+    },
+    "promise_machine": {
+      "authority": {
+        "id": "promise-owner:fixture-runtime-binding",
+        "reference": {
+          "path": "plugins/alexandria/skills/alexandria/EVOLUTION.md",
+          "sha256": "14b2f468db0fe680d6a8e2531c123736cbcbf58a3c87f94464042a6e3917b038"
+        }
+      },
+      "evidence_classes": [
+        "checked"
+      ],
+      "evidence_references": [
+        {
+          "path": "plugins/alexandria/tests/test_release.py",
+          "sha256": "8e3dc3adfb31808c25726fe7827dacc6bf5b2d3dde4cafa6e8bbb85c914585bc",
+          "evidence_class": "checked"
+        }
+      ],
+      "exception": {
+        "status": "none"
+      },
+      "inspectable_evidence": {
+        "path": "plugins/alexandria/tests/test_release.py",
+        "sha256": "8e3dc3adfb31808c25726fe7827dacc6bf5b2d3dde4cafa6e8bbb85c914585bc",
+        "evidence_class": "checked"
+      },
+      "promise_id": "fixture-runtime-binding",
+      "scope": "structural binding for fixture-runtime-binding",
+      "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "subject": "runtime source plugins/alexandria/tests/test_release.py",
+      "transition": {
+        "status": "structurally-bound",
+        "action": "structurally bind fixture-runtime-binding without running its domain operation",
+        "operation_ran": false
+      },
+      "unknowns": [
+        {
+          "code": "domain-operation-not-run",
+          "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+        }
+      ]
+    }
+  }
+}

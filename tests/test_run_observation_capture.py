@@ -452,9 +452,12 @@ class CaptureProfileTests(unittest.TestCase):
 
     def test_current_promise_coverage_rows_are_present(self):
         coverage = json.loads((ROOT / "tests" / "promise_machine_coverage.json").read_text(encoding="utf-8"))
-        self.assertIn("sapheneia-durable-record-shape", {row["promise_id"] for row in coverage["rows"]})
-        expected = hashlib.sha256(
-            (ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py").read_bytes()
-        ).hexdigest()
+        rows = {row["promise_id"]: row for row in coverage["rows"]}
+        self.assertIn("sapheneia-durable-record-shape", rows)
         for key in ("fiat-final-integration", "fiat-receipted-delivery", "fiat-study-amendment"):
-            self.assertEqual(coverage["runtime"][key]["sha256"], expected)
+            positive = coverage["evidence"][rows[key]["cases"]["P"]]
+            runtime = coverage["runtime"][key]
+            self.assertEqual(runtime["source"], positive["path"])
+            self.assertEqual(runtime["selector"], positive["selector"])
+            expected = hashlib.sha256((ROOT / positive["path"]).read_bytes()).hexdigest()
+            self.assertEqual(runtime["sha256"], expected)
