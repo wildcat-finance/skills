@@ -77,6 +77,10 @@ class TabulariumPackagingTests(unittest.TestCase):
         shared_versioning = (
             REPO_ROOT / "plugins" / "hexaemeron" / "skills" / "VERSIONING.md"
         ).resolve()
+        # SOURCES.md at the repository root is the generated coverage manifest
+        # whose generator writes this citation into all 27 governed ledgers. Like
+        # the versioning contract, it is shared and not copied into any plugin.
+        shared_sources = (REPO_ROOT / "SOURCES.md").resolve()
         for path in PLUGIN_ROOT.rglob("*.md"):
             if "__pycache__" in path.parts:
                 continue
@@ -85,7 +89,7 @@ class TabulariumPackagingTests(unittest.TestCase):
                     continue
                 target = (path.parent / link.split("#", 1)[0]).resolve()
                 with self.subTest(document=path.relative_to(PLUGIN_ROOT), link=link):
-                    if target == shared_versioning:
+                    if target in (shared_versioning, shared_sources):
                         self.assertTrue(target.is_file())
                         continue
                     self.assertIn(PLUGIN_ROOT, target.parents)
