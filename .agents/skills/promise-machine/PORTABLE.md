@@ -1,11 +1,16 @@
 # Installed Promise Machine runtime
 
+This directory is the dependency-closed installed form of Wildcat Labs Skills,
+the Shoggoth. It carries the same collective, Promise Machine law, plugin
+runtime contracts, and canonical first-party skills as a source checkout, with
+the omissions listed below.
+
 ## Select the runtime
 
 Use this path only when the router is installed as one Agent Skills package.
 The full-source path is valid only when `../../../PROMISE_MACHINE.md` identifies
 `promise-machine/v1` and the sibling `../../../plugins/` directory holds all
-fifteen runtime contracts. A target repository's own `AGENTS.md` does not make
+sixteen runtime contracts. A target repository's own `AGENTS.md` does not make
 it a Wildcat Skills source checkout.
 
 ## Verify the copy

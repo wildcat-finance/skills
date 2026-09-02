@@ -10,7 +10,7 @@ description: >-
   Solidity, which belongs to solidity-auditor and x-ray, and do not use it to
   diagnose a failure that has already happened, which belongs to elenchus.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <p align="center">
@@ -35,14 +35,14 @@ gate in non-Solidity audit rounds. The Pashov suite owns Solidity review;
 Elenchus owns an observed failure; Ephoros owns retained telemetry. Phylax may
 constrain those siblings' off-chain tooling but never claim their result.
 
-Synkrisis is specified to compare already validated run observations. Its
-current scaffold writes nothing, and neither it nor a future finding may cross
-an off-chain boundary, expose protected data, or authorise a control change.
+Synkrisis compares already validated run observations. Neither its cohort nor
+its findings may cross an off-chain boundary, expose protected data, or
+authorise a control change.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** Phylax mechanically checks its established Python boundaries and source-local TypeScript controls for raw HTML ordering, persisted session credentials and runtime-selected absolute fetch hosts. This frontier is mature.
+**Current state.** Phylax mechanically checks its established Python boundaries and source-local TypeScript controls for raw HTML ordering, persisted session credentials and runtime-selected absolute fetch hosts. This frontier is mature. The Python pass also resolves preceding single-assignment locals in the exact containing function for P002, P004 and P008; every unsupported binding or scope stays unresolved.
 
 It also ships a synthetic job-scoped model proxy component: closed policy,
 framing, provider, lifecycle, receipt, operator-disclosure, and hostile-
@@ -326,8 +326,15 @@ The last rule resolves module and direct-import aliases for `pickle.load`,
 `yaml.load` call stays clean only when its second positional argument or
 `Loader=` value resolves directly to `SafeLoader` or `CSafeLoader`. An `eval`
 or `exec` call stays clean only when its first argument is an inline string or
-bytes constant. The parser does not follow assignments, prove input
-provenance, inspect custom loader classes or include `marshal.loads`.
+bytes constant. For P002, P004 and P008, one index per `FunctionDef` or
+`AsyncFunctionDef` exposes a name only when its one direct simple-name
+assignment precedes the use and no other binding or deletion of that name
+exists in the function. Resolution follows at most eight name assignments,
+checks P004 credential names before substitution, and leaves forward writes,
+rebinding, compound-statement writes, unsupported targets, imports,
+parameters, comprehensions, nested scopes, closures, module and class scope,
+cycles and longer chains unresolved. It does not prove input provenance,
+inspect custom loader classes or include `marshal.loads`.
 
 For tracked `.ts` and `.tsx` source it reports three source-local cases. A
 `rehype-raw` binding in a rendered plugin array needs a later

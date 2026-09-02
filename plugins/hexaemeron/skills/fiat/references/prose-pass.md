@@ -14,8 +14,13 @@ bundled in this plugin, so no external install is involved.
   `.hexaemeron/steps/<n>/pr.md` for the push phase to use verbatim.
 - On the last step, the run-level title and body as well, stashed at
   `.hexaemeron/run-pr.md`. That one carries a `## Carried forward` section
-  naming everything the run leaves unfinished, or saying plainly that it leaves
-  nothing; `done integrate` refuses the run without it.
+  holding one fenced `carryover` block, one row per item the run leaves
+  unfinished, each row disposing of its item in a filed issue, the existing
+  issue that already carries it, or a stated reason it earns neither. A run that
+  leaves nothing writes the single row `none | none | <why nothing is carried>`.
+  `done integrate` refuses the run without it, and prose alone no longer
+  satisfies it; the shape and its reasoning are in
+  [push-discipline.md](push-discipline.md).
 
 ## Order
 

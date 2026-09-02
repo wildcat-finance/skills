@@ -1,4 +1,0 @@
-interface:
-  display_name: "Ephoros"
-  short_description: "Decides what a step must emit to stay visible"
-  default_prompt: "Use $hexaemeron:ephoros to choose the events, metrics and alerts a step needs before it ships."

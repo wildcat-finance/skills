@@ -1,113 +1,171 @@
 # Fiat in plain English
 
-Fiat is the controller. It asks what happens next, gives that work to a named
-agent when one applies, checks the result, and records a receipt. An agent
-cannot advance the run or approve its own output.
+Fiat is the controller for taking one repository issue from “we should fix
+this” to an inspectable delivery. It keeps the work in order, records what each
+phase returned, and refuses to let a worker approve or advance its own output.
 
-## The whole run
+Fiat runs only when a user explicitly asks to start, run, resume, recover, or
+continue Fiat or Hexaemeron. A general request to implement something does not
+activate it.
 
-| Phase | Who does the work | What comes back | Who advances the run |
-| --- | --- | --- | --- |
-| Study | Surveyor | Problem, options, risks, chosen design | Fiat |
-| Runbook | Fiat, under Protasis | Small implementation steps and tests | Fiat |
-| Implement | Mason | Code, tests, commit and deferred items | Fiat |
-| Audit | Warden | Findings, fixes and audit log | Fiat |
-| Prose | Scribe | Checked documentation and PR text | Fiat |
-| Push | Fiat | Pushed branch and stacked PR | Fiat |
-| Integrate | Fiat | Ordered step merges and one merge into the base | Fiat |
+## The short version
 
 ```text
-You give Fiat a task
+understand the problem
         |
-Surveyor studies it
+write a buildable plan
         |
-Fiat writes the runbook under Protasis
+implement one checked step
         |
-Mason implements one step
+audit that exact step
         |
-Warden audits that step until the round closes
+explain what shipped
         |
-Scribe checks the documentation and PR text
-        |
-Fiat pushes the step and opens its stacked PR
-        |
-Repeat for every runbook step
-        |
-Fiat merges the stack in order, then merges once into the base
+push and integrate in order
 ```
 
-## The four named agents
+Fiat owns the state between those phases. A worker returns an artefact; Fiat
+checks the receipt and decides whether the next dependent action may begin.
+Chat history is never the controller ledger.
+
+## One run from beginning to end
+
+| Phase | Work produced | Who may advance the run |
+| --- | --- | --- |
+| Study | The problem, sources, options, chosen design, risks, and open questions | Fiat |
+| Runbook | Small implementation steps, tests, boundaries, and acceptance conditions | Fiat |
+| Implementation | Code, tests, one step commit, and visible deferrals | Fiat |
+| Audit | Raw tool output, findings, fixes, and the failure-to-guard record | Fiat |
+| Prose | Checked documentation and pull-request text that match the shipped change | Fiat |
+| Push | The verified branch and its stacked pull request | Fiat |
+| Integration | Ordered step merges and one verified result on the base | Fiat |
+
+The route can include an amended study, a revised runbook, several
+implementation steps, and several audit rounds. A failed check keeps its
+dependent action closed while inspection, repair, rerun, rollback, or safe exit
+remains available.
+
+“The code looks done” is not a controller state.
+
+## The four worker roles
+
+These workers are deliberately less powerful than Fiat. Each receives one
+source-bound packet and returns named evidence.
 
 ### Surveyor
 
-Surveyor handles the study. It receives the topic, target repository, base ref
-and output path. It writes a buildable description of the problem, the design
-options, the chosen design and the risks that the audit should inspect.
+Surveyor studies one problem. Its packet names the target, base revision,
+sources, and output path. It returns a buildable account of the problem, the
+reasonable design options, the selected design, the risks, and any questions
+that still need a person.
 
-Surveyor cannot record its own receipt or move Fiat to the runbook.
+Surveyor cannot record its own receipt, change the issue, publish, or move Fiat
+into the runbook.
 
 ### Mason
 
-Mason implements exactly one runbook step. It receives the complete step, the
-branch name and the ref from which that branch must start. It writes the code
-and tests, commits the work, then reports the branch, commit SHA, test command,
-pass count and any deliberate deferral.
+Mason implements exactly one runbook step from the exact starting revision and
+branch pair Fiat supplies. It writes the code and tests, commits the step, and
+returns the commit, test command, result, and any deliberate deferral.
 
-Mason cannot push, open a PR, merge or change Fiat's controller state.
+Mason cannot push, open a pull request, merge, widen the step, or alter Fiat's
+state.
 
 ### Warden
 
-Warden runs exactly one audit round on one step. It runs the configured
-security suite, writes every finding to the audit log and commits any fixes.
-It reports the finding count, fixes commit and log path.
+Warden performs one audit round over one step. It runs the security work the
+study and change require, preserves every finding and raw audit artefact, fixes
+bounded findings, and returns an Elenchus verdict that relates the failure to a
+guard.
 
-Warden cannot call a round clean if a required audit tool did not run.
+Warden cannot call missing evidence clean, accept its own round, or move the
+run forward.
 
 ### Scribe
 
-Scribe handles the prose phase for one step. It checks every changed prose file
-and the PR title and body. It runs Imprimatur, applies Vulgate without changing
-the facts, then runs the lint again.
+Scribe handles one bounded prose pass after the code and evidence exist. It
+checks the complete changed prose with Imprimatur, applies Vulgate to the
+surface without changing protected content, reruns Imprimatur, and reports the
+files and skills used.
 
-Scribe cannot invent an issue reference or record its own receipt.
+Scribe cannot invent a claim, issue reference, caveat, test result, or
+publication authority. It cannot receipt its own phase.
 
-## Skills used inside the phases
+Fiat may execute any of these packets in its own context when an isolated
+worker is unavailable. The packet, artefact, and receipt stay the same.
 
-These are rule sets, not top-level Fiat agents.
+## The disciplines inside a run
 
-| Skill | Phase | Question it answers |
+The following are skills Fiat may apply during a phase. They are not extra
+controllers.
+
+| Skill | Used when | Question it owns |
 | --- | --- | --- |
-| Protasis | Study and runbook | Is the specification complete enough to build? |
-| Phylax | Implement | Are external inputs, commands, secrets and dependencies controlled? |
-| Ephoros | Implement | What logs, metrics, traces and alerts must the step emit? |
-| Metron | Implement | Was a performance change measured before and after? |
-| Elenchus | Implement and audit | Was a failure traced to its cause and guarded by a test? |
-| Hypomnema | Prose | What decisions and operational knowledge must be recorded? |
-| Imprimatur | Prose | Does the text contain configured machine-writing patterns? |
-| Vulgate | Prose | Can the wording be made plain without changing its meaning? |
+| Protasis | Before and during implementation | Are the study and runbook buildable, and is the evidence due for the chosen design present now? |
+| Phylax | Off-chain software is in scope | Are inputs, commands, fetches, secrets, dependencies, paths, and model output controlled? |
+| Ephoros | A step may run unattended | What must it emit so an operator can explain it later? |
+| Metron | A non-gas performance claim exists | Was the change measured before and after in the same way? |
+| Elenchus | A failure has been observed | Was it reduced to its cause and guarded by a parent-red, fixed-green test? |
+| Hypomnema | A durable explanation may be needed | What must be recorded, and where? |
+| Imprimatur | Prose is about to ship | Does it contain banned writing habits or unsupported technical language? |
+| Vulgate | Checked content reads like machine prose | Can the wording become plain and human without changing the content? |
 
-## Agents inside the Solidity audit tools
+Hermes owns Solidity gas measurements. Warden may also use the unchanged
+Pashov security skills for audit preparation, Solidity review, and stateful
+fuzzing. Those tools can use their own internal specialist roles; none of them
+controls Fiat.
 
-Warden may run larger internal teams when a step contains applicable Solidity.
-They do not control Fiat and they do not run for non-Solidity work.
+## Durable state and checkpoints
 
-Solidity Auditor uses twelve specialist roles: Access Control, Asymmetry,
-Boundary, Economic Security, Execution Trace, First Principles, Flow Gap,
-Invariant, Math and Precision, Numerical Gap, Periphery and Trust Gap.
+Fiat stores its run in a dedicated worktree with a hash-chained state record.
+After an accepted step it writes a verified archive into a fixed local
+checkpoint store before continuing. A replacement local agent can restore that
+checkpoint only after verifying the archive, Git boundary, signatures, and
+controller capsule.
 
-Fizz can use Conservation Auditor, Round-Trip and Rounding Analyst, State
-Transition Mapper, Adversarial Profit Maximizer, Protocol-Type Specialist,
-Property Synthesizer, Global Property Implementer, Specific Property
-Implementer and Report Writer. A Protocol Analyzer may run when the usual
-protocol analysis is unavailable.
+This survives context loss on one machine. It does not make arbitrary
+mid-step state portable and it is not a distributed cross-machine service.
 
-## What keeps the agents bounded
+When handing off a completed step, pass the checkpoint's absolute path and
+digests directly. Do not infer progress from chat, choose an informal archive
+destination, or reuse a worker handle whose visible issue, step, or role comes
+from an older run.
 
-Each named agent receives a source-bound brief and must return a named
-artefact. Only Fiat can accept that result and submit the controller receipt.
-If the receipt fails, the phase remains open.
+## Git and publication
 
-Fiat also owns branch creation, pushes, PRs, ordered merges and the final
-status report. Small tasks may run directly in Fiat's main context instead of
-a subagent, but the role, checks and receipt stay the same.
+Fiat owns branch creation, step commits, pushes, stacked pull requests, ordered
+merges, and the final controller report within the authority the user and
+repository supplied. It never gains publication authority merely because the
+implementation passed.
 
+An external human contributor keeps their own Git author, signing identity,
+and GitHub account. Required Shoggoth provenance supplements that authorship;
+it does not replace it or permit the human to use a private Shoggoth key or
+account. Runtime hosts and model names are not co-authors or generated-by
+bylines for governed work.
+
+If the required signer, repository access, or controller evidence is absent,
+Fiat stops before the dependent commit, push, pull request, or merge and leaves
+a precise hand-off.
+
+## What completion means
+
+A complete Fiat run has satisfied the controller's required receipts and
+reached its authorised integration endpoint. The final report identifies the
+issue, run, branches, commits, checks, remaining boundaries, and current state.
+
+Completion does not mean:
+
+- every possible test was run;
+- a security review found every defect;
+- a maintainer must accept the contribution;
+- GitHub has already credited every author; or
+- a local checkpoint can be resumed anywhere.
+
+It means the next person can inspect what changed, why it changed, which checks
+ran on which bytes, what remains uncertain, and which authority accepted each
+transition.
+
+The canonical controller rules are in
+[`plugins/hexaemeron/skills/fiat/SKILL.md`](../plugins/hexaemeron/skills/fiat/SKILL.md).
+This guide explains them; it does not replace them.

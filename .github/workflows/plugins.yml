@@ -1,0 +1,121 @@
+name: plugins
+
+# This is the required aggregate plugin gate. The shard matrix has no path
+# filter because a required context must exist on every pull request, and the
+# declared full graph itself decides what complete coverage means. One shard per
+# declared scope runs the committed graph for that scope, so the graph remains
+# the only definition of a check and no command is copied into this file. The
+# `plugins` job below aggregates every shard and is the stable required context.
+#
+# The budget is explicit because the automatic one is wrong here. On a four-core
+# runner `run_checks.py` derives budget 2, `_allocation_for` grants a nested
+# coordinator `max(2, budget // 2)` slots, and the coordinator keeps one, so the
+# Hexaemeron suite ran at `--jobs 1`. At that width it stopped finishing: it was
+# killed on the 1800-second per-check timeout at 2131 tests. An explicit budget
+# sets no reserve and is taken as given, and 14 grants the suite six workers.
+#
+# Seven arms measured on this runner, in runs 33438750597 and 33442383478, gave
+# suite times of 1800.3s timed out at one worker, then 1083.1s, 953.8s, 830.3s,
+# 680.4s, 647.6s and 854.2s at two through seven. Six is the knee; seven regresses
+# because four cores run out. Re-measure before changing this number, and re-measure
+# it on any larger runner, where the knee will sit elsewhere.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    strategy:
+      fail-fast: false
+      matrix:
+        scope:
+          - alexandria
+          - anamnesis
+          - ariadne
+          - berean
+          - brevitas
+          - ci
+          - dead-code
+          - docs
+          - dokimasia
+          - hermes
+          - hexaemeron
+          - homologia
+          - horos
+          - janus
+          - lazarus
+          - lemma
+          - marketplace
+          - pandects
+          - probitas
+          - promise-machine
+          - repo-lints
+          - root
+          - sapheneia
+          - schemas
+          - synkrisis
+          - tabularium
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+          cache: pip
+          cache-dependency-path: plugins/lazarus/requirements.lock
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26.6.0"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+      - name: Install locked Lazarus dependencies
+        run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
+      - name: Import pinned historical verification key
+        env:
+          EXPECTED_GPG_FINGERPRINT: 636EC19DE45DF10F3CE6206F57742DA1ABED6F46
+        run: |
+          key_path=plugins/hexaemeron/tests/fixtures/signing-keys/shoggoth-636ec19d.asc
+          actual_fingerprint="$(
+            gpg --batch --with-colons --import-options show-only --import "$key_path" |
+              awk -F: '$1 == "fpr" {print $10; exit}'
+          )"
+          test "$actual_fingerprint" = "$EXPECTED_GPG_FINGERPRINT"
+          gpg --batch --import "$key_path"
+      - name: Declared checks for this scope
+        run: >-
+          python3 scripts/run_checks.py
+          --scope ${{ matrix.scope }}
+          --jobs 14
+          --report tmp/checks/${{ matrix.scope }}.json
+      - name: Preserve the bounded check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-check-report-${{ matrix.scope }}
+          path: tmp/checks/${{ matrix.scope }}.json
+          if-no-files-found: error
+          retention-days: 14
+
+  plugins:
+    needs: scope
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every declared scope reached terminal success
+        env:
+          SHARDS: ${{ needs.scope.result }}
+        run: |
+          echo "shard result: $SHARDS"
+          test "$SHARDS" = success

@@ -1,0 +1,72 @@
+{
+  "$id": "https://wildcat.finance/schemas/dead-code-suppressions-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Exact, reviewed exceptions for current dead-code candidate identities. Broad, stale and unused entries are invalid.",
+  "properties": {
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/suppression"
+      },
+      "maxItems": 10000,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "schema": {
+      "const": "dead-code-suppressions/v1"
+    }
+  },
+  "required": [
+    "schema",
+    "entries"
+  ],
+  "title": "dead-code-suppressions/v1",
+  "type": "object",
+  "$defs": {
+    "repositoryPath": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "pattern": "^[^/].*$",
+      "type": "string"
+    },
+    "sha256Identity": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "suppression": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "owner": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "reason": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "finding_id",
+        "path",
+        "symbol",
+        "reason",
+        "owner"
+      ],
+      "type": "object"
+    }
+  }
+}

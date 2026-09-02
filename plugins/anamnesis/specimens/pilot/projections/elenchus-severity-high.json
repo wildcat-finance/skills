@@ -1,0 +1,46 @@
+{
+  "analogues": [
+    {
+      "adjudication": "unknown",
+      "finding": "find:pandects-audit-rounds:S2-R1-01",
+      "locator": {
+        "line": 159
+      },
+      "native_id": "S2-R1-01",
+      "remediations": [
+        {
+          "basis": "fixed in this round: the fee is capped at claims that are not already reserved, and the reason is recorded on the function",
+          "id": "rem:pandects-audit-rounds:round:pandects-audit-rounds:5",
+          "state": "applied"
+        }
+      ],
+      "severity": "high",
+      "source": "pandects-audit-rounds"
+    },
+    {
+      "adjudication": "unknown",
+      "finding": "find:pandects-audit-rounds:S4-R1-01",
+      "locator": {
+        "line": 425
+      },
+      "native_id": "S4-R1-01",
+      "remediations": [
+        {
+          "basis": "fixed in aa3df12",
+          "id": "rem:pandects-audit-rounds:aa3df12",
+          "state": "applied"
+        }
+      ],
+      "severity": "high",
+      "source": "pandects-audit-rounds"
+    }
+  ],
+  "not_established": "An analogue is a past case that looks similar. It does not establish a cause for the present failure, that the present failure is the same defect, or that any remedy recorded here would work again. Elenchus must still reproduce the present failure and still earn its own guard.",
+  "query": {
+    "kind": "severity",
+    "value": "high"
+  },
+  "release_id": "079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56",
+  "schema": "anamnesis-elenchus-analogue/v1",
+  "verdict": null
+}

@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Hermes",
     "shortDescription": "Fail-closed Solidity gas optimisation with measured Foundry evidence.",
-    "longDescription": "Runs one Solidity gas-optimisation class at a time through measured Foundry checks, full tests, layout and selector diffs, and targeted accrual proofs.",
+    "longDescription": "Hermes runs one named Solidity gas-optimisation class at a time through a sealed baseline, Foundry measurements, full tests, storage-layout and selector diffs, and targeted arithmetic evidence. It rejects an unsafe or unproved saving instead of keeping the number. Its 12 current classes can select 62 of the 120 rules in the pinned corpus; 58 rules remain unavailable as candidates.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

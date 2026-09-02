@@ -2,11 +2,15 @@
 
 from pathlib import Path
 import os
+import stat
 import tempfile
 import unittest
+from unittest import mock
 
+import lazarus_lib.paths as paths_module
 from lazarus_lib.errors import PathError, ResourceLimitError
 from lazarus_lib.paths import (
+    atomic_write_confined,
     list_fixture_files,
     read_confined_bytes,
     validate_relative_path,
@@ -86,6 +90,197 @@ class PathTests(unittest.TestCase):
             (root / "three").mkdir()
             with self.assertRaises(ResourceLimitError):
                 list_fixture_files(root, max_entries=2)
+
+    def test_missing_descriptor_inventory_capability_is_a_bounded_refusal(self):
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(
+            paths_module.os,
+            "scandir",
+            side_effect=NotImplementedError("host detail"),
+        ):
+            try:
+                list_fixture_files(Path(directory))
+            except PathError as exception:
+                self.assertEqual(
+                    str(exception),
+                    "platform lacks secure fixture directory operations",
+                )
+            except NotImplementedError as exception:
+                self.fail(
+                    "fixture inventory leaked an unsupported operation: "
+                    f"{exception}"
+                )
+            else:
+                self.fail("fixture inventory accepted an unsupported operation")
+
+    def test_a_descriptor_root_remains_owned_and_usable_by_its_caller(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            nested = root / "nested"
+            nested.mkdir()
+            target = nested / "record.json"
+            target.write_bytes(b"old\n")
+            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+            root_fd = os.open(root, flags)
+            identity = os.fstat(root_fd)
+            try:
+                self.assertEqual(list_fixture_files(root_fd), {"nested/record.json"})
+                self.assertEqual(
+                    read_confined_bytes(
+                        root_fd,
+                        "nested/record.json",
+                        max_bytes=100,
+                    ),
+                    b"old\n",
+                )
+                atomic_write_confined(
+                    root_fd,
+                    "nested/record.json",
+                    b"new\n",
+                )
+                after = os.fstat(root_fd)
+                self.assertEqual(
+                    (after.st_dev, after.st_ino),
+                    (identity.st_dev, identity.st_ino),
+                )
+                component = os.open(
+                    "nested/record.json",
+                    os.O_RDONLY | os.O_NOFOLLOW,
+                    dir_fd=root_fd,
+                )
+                try:
+                    self.assertEqual(os.read(component, 100), b"new\n")
+                finally:
+                    os.close(component)
+            finally:
+                os.close(root_fd)
+
+    def test_descriptor_inventory_does_not_share_an_active_caller_scan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            expected = {"one.json", "two.json", "three.json"}
+            for name in expected:
+                (root / name).write_bytes(name.encode("utf-8"))
+            root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                with os.scandir(root_fd) as caller_scan:
+                    first = next(caller_scan).name
+                    self.assertEqual(list_fixture_files(root_fd), expected)
+                    caller_inventory = {first, *(entry.name for entry in caller_scan)}
+                self.assertEqual(caller_inventory, expected)
+            finally:
+                os.close(root_fd)
+
+    def test_descriptor_root_refuses_a_file_without_closing_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "record.json"
+            target.write_bytes(b"record\n")
+            descriptor = os.open(target, os.O_RDONLY | os.O_NOFOLLOW)
+            try:
+                with self.assertRaisesRegex(PathError, "not a directory"):
+                    list_fixture_files(descriptor)
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                self.assertEqual(os.read(descriptor, 100), b"record\n")
+            finally:
+                os.close(descriptor)
+
+    def test_descriptor_root_survives_rename_and_path_replacement(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            root = parent / "fixture"
+            root.mkdir()
+            (root / "record.json").write_bytes(b"owned\n")
+            descriptor = os.open(
+                root,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            )
+            try:
+                root.rename(parent / "moved-fixture")
+                root.mkdir()
+                (root / "record.json").write_bytes(b"replacement\n")
+                self.assertEqual(list_fixture_files(descriptor), {"record.json"})
+                self.assertEqual(
+                    read_confined_bytes(
+                        descriptor,
+                        "record.json",
+                        max_bytes=100,
+                    ),
+                    b"owned\n",
+                )
+            finally:
+                os.close(descriptor)
+
+    def test_descriptor_read_refuses_bytes_changed_after_the_first_stat(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "record.json"
+            target.write_bytes(b"before\n")
+            descriptor = os.open(
+                root,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            )
+            real_fstat = paths_module.os.fstat
+            changed = False
+
+            def change_after_first_file_stat(fd):
+                nonlocal changed
+                details = real_fstat(fd)
+                if stat.S_ISREG(details.st_mode) and not changed:
+                    changed = True
+                    target.write_bytes(b"after-change\n")
+                return details
+
+            try:
+                with mock.patch.object(
+                    paths_module.os,
+                    "fstat",
+                    side_effect=change_after_first_file_stat,
+                ):
+                    with self.assertRaisesRegex(PathError, "changed while it was read"):
+                        read_confined_bytes(
+                            descriptor,
+                            "record.json",
+                            max_bytes=100,
+                        )
+                self.assertTrue(changed)
+                os.fstat(descriptor)
+            finally:
+                os.close(descriptor)
+
+    def test_descriptor_inventory_keeps_entry_bounds_and_refuses_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "one").mkdir()
+            (root / "two").mkdir()
+            (root / "three").mkdir()
+            root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                with self.assertRaises(ResourceLimitError):
+                    list_fixture_files(root_fd, max_entries=2)
+            finally:
+                os.close(root_fd)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "target"
+            target.write_bytes(b"target\n")
+            (root / "link").symlink_to(target)
+            root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                with self.assertRaisesRegex(PathError, "symlink"):
+                    list_fixture_files(root_fd)
+            finally:
+                os.close(root_fd)
+
+    def test_descriptor_inventory_refuses_a_non_regular_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            os.mkfifo(root / "pipe")
+            root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                with self.assertRaisesRegex(PathError, "non-regular"):
+                    list_fixture_files(root_fd)
+            finally:
+                os.close(root_fd)
 
 
 if __name__ == "__main__":

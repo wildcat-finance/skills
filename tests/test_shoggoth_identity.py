@@ -7,8 +7,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY = ROOT / "SHOGGOTH.md"
-CONTRACT = "shoggoth-collective/v2"
-EXPECTED_SHA256 = "e983c7e7cc170190bc04b2dcf5de207f8e27051c9dba99480f6ab0c559607fce"
+CONTRACT = "shoggoth-collective/v4"
+EXPECTED_SHA256 = "1adb5cc69f16e055b0130e68d9cd9e45547d8c5ec90ac82750039a83c7ee750f"
 
 
 class ShoggothIdentityTests(unittest.TestCase):
@@ -43,6 +43,19 @@ class ShoggothIdentityTests(unittest.TestCase):
         self.assertIn("Use `the Creator` only when the role matters", text)
         self.assertIn("by personal name", text)
 
+    def test_resolved_human_contributors_are_addressed_as_creator(self):
+        text = self.identity_text()
+        agent_text = " ".join(
+            (ROOT / "AGENTS.md").read_text(encoding="utf-8").split()
+        )
+        self.assertIn("usable GitHub credentials for a user are already available", text)
+        self.assertIn("matches a human account named in the canonical", text)
+        self.assertIn("CONTRIBUTORS.md", text)
+        self.assertIn("will address that user as `Creator`", text)
+        self.assertIn("do not infer contributor identity", text)
+        self.assertIn("changes no authority, permission, authorship", text)
+        self.assertIn("resolving a user's collective form of address", agent_text)
+
     def test_governed_agent_work_uses_shoggoth_authorship(self):
         text = self.identity_text()
         self.assertIn("Authorship follows the contributing actor", text)
@@ -52,6 +65,11 @@ class ShoggothIdentityTests(unittest.TestCase):
         self.assertIn("The human remains the Git author and signer", text)
         self.assertIn("publishes through their own GitHub account", text)
         self.assertIn("Never request, copy, upload or provision those Shoggoth credentials", text)
+        self.assertIn("Git authorship and publication are separate roles", text)
+        self.assertIn("committer and signer and uses their own repository account", text)
+        self.assertIn("while Shoggoth remains the author", text)
+        self.assertIn("Without explicit authority and a repository-valid signing route", text)
+        self.assertIn("An authorised human publisher of Shoggoth-authored work is not a human contributor", text)
         self.assertIn("may retain the host's ordinary authorship", text)
 
 

@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `abi-return-and-mutability`
 - Current frontier: Callable-surface ABI validation does not independently check return types or state mutability.
 - Next Fiat job: Make callable-surface ABI validation cover return types and state mutability as well as names and input types, with any divergence rejecting the output. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

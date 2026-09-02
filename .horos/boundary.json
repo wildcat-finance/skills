@@ -1,22 +1,14 @@
 {
   "counts": {
-    "bytes_binary": 54682880,
+    "bytes_binary": 43942223,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 21856169,
+    "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 2103
+    "files_walked": 2465
   },
   "entries": [
-    {
-      "bytes": 21789099,
-      "category": "generated",
-      "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
-      "files": 987,
-      "grade": "hard",
-      "path": ".agents/skills/promise-machine/runtime/"
-    },
     {
       "bytes": 1485,
       "category": "generated",
@@ -44,41 +36,6 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "assets/characters/shoggoth.png"
-    },
-    {
-      "bytes": 1166639,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-cover.png"
-    },
-    {
-      "bytes": 978953,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-fiat-flow.png"
-    },
-    {
-      "bytes": 1682633,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-mascot-fiat.png"
-    },
-    {
-      "bytes": 2171579,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-mascot-roles.png"
-    },
-    {
-      "bytes": 1067330,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-whos-who.png"
     },
     {
       "bytes": 2168354,
@@ -130,21 +87,7 @@
       "path": "docs/assets/shoggoth-help-queues.png"
     },
     {
-      "bytes": 43750,
-      "category": "binary",
-      "evidence": "file signature pdf",
-      "grade": "hard",
-      "path": "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf"
-    },
-    {
-      "bytes": 3688570,
-      "category": "binary",
-      "evidence": "file signature pdf",
-      "grade": "hard",
-      "path": "docs/pdf/a-child-or-a-golden-retriever.pdf"
-    },
-    {
-      "bytes": 2702044,
+      "bytes": 2702627,
       "category": "binary",
       "evidence": "file signature pdf",
       "grade": "hard",
@@ -653,6 +596,13 @@
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/release/objects/sha256/ff/ff544298cc52691fb55e78265bb9f64c492dd41a9938788e6e4e28acf438407f"
+    },
+    {
+      "bytes": 58214,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "plugins/anamnesis/assets/characters/anamnesis.webp"
     },
     {
       "bytes": 314982,

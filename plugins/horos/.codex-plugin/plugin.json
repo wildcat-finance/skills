@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Horos",
     "shortDescription": "Classify a repository's token sinks with evidence and emit the reading boundary agents respect.",
-    "longDescription": "Walks a repository, classifies generated files, vendored trees, lockfiles, minified bundles and single-line blobs with the evidence that earned each entry, writes a deterministic committed boundary, verifies it against the tree, and prints Python skeleton maps for oriented reading.",
+    "longDescription": "Horos walks a repository, classifies generated files, vendored trees, lockfiles, minified bundles, and single-line blobs with the evidence that earned each exclusion, writes a deterministic boundary, and verifies it against tree drift. It also emits skeleton maps for Python, TypeScript, Go, C++, and Solidity. The boundary is advisory, fail-open, and disabled during every security review. A drafted content-addressed-object rule still owes its frontier run, and Markdown has no outline extractor.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

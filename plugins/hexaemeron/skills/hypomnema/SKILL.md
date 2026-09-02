@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "4.6.0"
+  version: "5.6.0"
 ---
 
 <p align="center">
@@ -32,14 +32,18 @@ README, or alert pointer must survive and which existing home owns it. During
 Fiat's prose phase it runs before Scribe applies Imprimatur and Vulgate. Fiat
 keeps the mask order, pull-request text, and receipt.
 
-A future Synkrisis finding may give a maintainer a reason to write or point to
-a record. The current scaffold produces no finding, and neither version gets
-to choose a durable home without Hypomnema's ordinary placement judgement.
+A Synkrisis finding may give a maintainer a reason to write or point to a
+record. It does not choose the durable home; Hypomnema's ordinary placement
+judgement still owns that decision.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** The point-or-write bridge requires a shipped study's chosen design and rejected alternatives to reach one standing record, but the pre-receipt review remains judgement: no mechanical check binds that design to exactly one ADR or governed-skill ledger row.
+**Current state.** The ordinary walk checks recognised record and runbook
+pointers and shapes. An explicit study mode now binds one selected Protasis
+candidate to exactly one ADR or governed-skill ledger through a closed design
+bridge. It refuses a duplicate the study declares; it does not discover the same
+decision standing in a second established home when the study declares one.
 
 ## Match what is already there
 
@@ -147,14 +151,26 @@ schema is the documentation and prose describes only what the schema cannot.
 
 ## The mechanical subset
 
-Four rules here are settled by a parser: whether the things a record points at
+Five rules here are settled by a parser: whether the things a record points at
 exist, whether a decision record carries the template's shape, whether a
 source comment's record reference resolves, and whether each Markdown file
-below a `runbooks` directory carries the three runbook answers. Run it over
-the documents a step touched, and require exit 0.
+below a `runbooks` directory carries the three runbook answers. The fifth binds
+one caller-named study's declared decision to the selected candidate in an
+already checked Protasis design-evidence record and to one established standing
+record. Run the ordinary walk over the documents a step touched, and require
+exit 0.
 
 ```bash
 python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/hypomnema.py" docs plugins
+```
+
+For a step that ships a study, run the explicit bridge check as well:
+
+```bash
+python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/hypomnema.py" \
+  --study <repository-relative-study> \
+  --design-evidence <repository-relative-design-evidence.json> \
+  --repo-root <repository-root>
 ```
 
 It reports a relative link that resolves to nothing, a superseding pointer
@@ -172,6 +188,26 @@ and TypeScript, leaving string literals and URLs alone; in source files the
 pragma is the bare `hypomnema: allow <why>` after a comment marker. Test
 fixtures are skipped on a directory walk, since a specimen documenting a
 fault is not a record.
+
+Study mode reports H008 unless exactly one closed `design-bridge` fence carries
+the three ordered rows `schema`, `decision` and `record`. The schema is
+`hypomnema-design-bridge/v1`; the decision equals the selected candidate in the
+strictly decoded `protasis-design-evidence/v1` selection envelope; and the
+record is one portable repository-relative path. Protasis remains the only
+owner of the complete candidate, criterion and result-matrix semantics, so a
+valid checked record may retain pending conformance cells after design lock.
+Hypomnema bounds those arrays and consumes only the schema, closed candidate
+set and selected-candidate membership needed for this join.
+
+The target is an ordinary non-symlink file read stably below the supplied root.
+It is either an ADR-numbered Markdown file below a `decisions` directory or an
+`EVOLUTION.md` beside a `SKILL.md` whose governed name matches its directory
+under a plugin skills tree. H008 also refuses absent, repeated, malformed or
+unclosed blocks, a selection mismatch, absolute, escaping, backslash or
+control-bearing paths, a wrong or dangling home, oversized inputs, duplicate
+JSON keys, excessive JSON depth, special files and a file that changes while
+it is read. The ordinary walk never infers a bridge, so historical studies and
+H000 through H007 retain their existing scope.
 
 The YAML H003 pass reads generic `runbook:` keys outside comments and block
 scalars, resolves relative Markdown targets from the YAML file's directory and
@@ -200,10 +236,10 @@ The bundled third-party skills are skipped, since they document files they
 generate in the target repository rather than files that live here. Pass
 `--include-vendored` to check them anyway.
 
-Deliberate exceptions state a reason: `<!-- hypomnema: allow <why> -->`, on the
+Deliberate walk exceptions state a reason: `<!-- hypomnema: allow <why> -->`, on the
 line or the one above it. For H007, only a reasoned pragma on the file's first
 line or the relevant heading suppresses the finding. Deciding what deserves a
-record stays judgement; this only checks the mechanical subset named above.
+record stays judgement. A pragma cannot manufacture or suppress an H008 bridge.
 
 ## Rationalisations
 
@@ -263,14 +299,14 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-pointer-gate
 
-- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, or absent and empty required runbook answers in the selected first-party documents.
-- Evidence: The exact lint version, arguments, selected paths, structured findings and zero exit status.
+- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run.
+- Evidence: The exact lint version, mode, arguments, selected paths, design-evidence and repository-root identities where supplied, structured findings and zero exit status.
 - Evidence classes: checked
-- Boundary: A clean lint proves only that recognised pointers resolve and recognised alert runbooks carry the three required answers at check time; the YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete, current or placed well.
+- Boundary: A clean ordinary walk proves only that recognised pointers resolve and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; Protasis owns full design-record validity, ADR shape and the versioning contract own record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
 - Authorises: Passing the mechanical record and runbook-shape gate for the exact paths and checker version recorded.
 - Consequence: 1
-- Refuses: Unsafe, unreadable or oversized paths, unresolved recognised pointers, a missing or empty required runbook answer, an unexplained suppression or a claim about documents excluded from the run.
-- Recovery: Restore or correct the target, mark supersession accurately, add the missing runbook or answer, and rerun the same bounded lint.
+- Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, or a claim about documents excluded from the run.
+- Recovery: Restore or correct the target, mark supersession accurately, add the missing runbook or answer, repair the one closed bridge or its selected record, and rerun the same bounded lint mode.
 - Exceptions: none
 
 ### hypomnema-record-placement

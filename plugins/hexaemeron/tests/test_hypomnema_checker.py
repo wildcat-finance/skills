@@ -6,6 +6,8 @@ reads as though the reason exists and was checked.
 
 import importlib.util
 import io
+import json
+import os
 import tempfile
 import time
 import unittest
@@ -684,6 +686,289 @@ class SourceComments(unittest.TestCase):
             findings.extend(hypomnema.check(path, index))
         self.assertEqual(["H006"],
                          sorted(f.code for f in findings if f.code == "H006"))
+
+
+DESIGN_BRIDGE_FIXTURES = FIXTURES / "design-bridge"
+
+
+def design_bridge_findings(study="studies/valid-adr.md", *, root=None,
+                           evidence="design-evidence.json"):
+    root = root or DESIGN_BRIDGE_FIXTURES
+    return hypomnema.check_design_bridge(
+        root / study,
+        root / evidence,
+        root,
+    )
+
+
+def write_design_bridge_tree(base, study, *, record=None, selected=None):
+    """Copy the closed fixture envelope into one mutable test repository."""
+    root = Path(base)
+    design = json.loads(
+        (DESIGN_BRIDGE_FIXTURES / "design-evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if selected is not None:
+        design["selection"]["candidate"] = selected
+    (root / "design-evidence.json").write_text(
+        json.dumps(design), encoding="utf-8"
+    )
+    (root / "study.md").write_text(study, encoding="utf-8")
+    if record is not None:
+        target = root / record
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("standing record\n", encoding="utf-8")
+    return root
+
+
+def bridge_block(decision="closed-bridge-block",
+                 record="docs/decisions/ADR-900-bridge.md"):
+    return (
+        "```design-bridge\n"
+        "schema | hypomnema-design-bridge/v1\n"
+        f"decision | {decision}\n"
+        f"record | {record}\n"
+        "```\n"
+    )
+
+
+class DesignBridge(unittest.TestCase):
+    def assert_h008(self, findings, message=None):
+        self.assertEqual(["H008"], [finding.code for finding in findings])
+        if message is not None:
+            self.assertIn(message, findings[0].message)
+
+    def test_a_valid_adr_bridge_is_clean(self):
+        self.assertEqual([], design_bridge_findings())
+
+    def test_a_valid_governed_ledger_bridge_is_clean(self):
+        self.assertEqual([], design_bridge_findings("studies/valid-ledger.md"))
+
+    def test_the_explicit_cli_mode_emits_one_clean_json_result(self):
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            status = hypomnema.main([
+                "--study", str(DESIGN_BRIDGE_FIXTURES / "studies/valid-adr.md"),
+                "--design-evidence", str(DESIGN_BRIDGE_FIXTURES / "design-evidence.json"),
+                "--repo-root", str(DESIGN_BRIDGE_FIXTURES),
+                "--format", "json",
+            ])
+        self.assertEqual(0, status)
+        self.assertEqual([], json.loads(output.getvalue()))
+
+    def test_an_absent_bridge_refuses(self):
+        self.assert_h008(design_bridge_findings("studies/no-block.md"), "no design bridge")
+
+    def test_a_dangling_record_refuses(self):
+        self.assert_h008(design_bridge_findings("studies/dangling.md"), "unavailable")
+
+    def test_an_adr_and_ledger_duplicate_refuses(self):
+        self.assert_h008(design_bridge_findings("studies/duplicate-homes.md"), "more than one")
+
+    def test_a_repeated_row_refuses(self):
+        source = bridge_block().replace(
+            "record | docs/decisions/ADR-900-bridge.md\n",
+            "record | docs/decisions/ADR-900-bridge.md\n"
+            "record | docs/decisions/ADR-901-copy.md\n",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, source, record="docs/decisions/ADR-900-bridge.md"
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "exactly")
+
+    def test_a_malformed_row_refuses(self):
+        source = bridge_block().replace(
+            "decision | closed-bridge-block", "decision: closed-bridge-block"
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, source, record="docs/decisions/ADR-900-bridge.md"
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "exactly")
+
+    def test_a_reordered_block_refuses(self):
+        source = bridge_block().replace(
+            "schema | hypomnema-design-bridge/v1\n"
+            "decision | closed-bridge-block\n",
+            "decision | closed-bridge-block\n"
+            "schema | hypomnema-design-bridge/v1\n",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, source, record="docs/decisions/ADR-900-bridge.md"
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "ordered")
+
+    def test_an_unclosed_block_refuses(self):
+        source = bridge_block().removesuffix("```\n")
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, source)
+            self.assert_h008(design_bridge_findings("study.md", root=root), "not closed")
+
+    def test_a_block_inside_a_quoted_example_does_not_count(self):
+        source = "````markdown\n" + bridge_block() + "````\n"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, source)
+            self.assert_h008(design_bridge_findings("study.md", root=root), "no design bridge")
+
+    def test_a_selected_candidate_mismatch_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(decision="section-link-inference"),
+                record="docs/decisions/ADR-900-bridge.md",
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "selected candidate")
+
+    def test_an_absolute_record_path_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, bridge_block(record="/tmp/record.md"))
+            self.assert_h008(design_bridge_findings("study.md", root=root), "portable")
+
+    def test_an_escaping_record_path_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, bridge_block(record="../record.md"))
+            self.assert_h008(design_bridge_findings("study.md", root=root), "portable")
+
+    def test_a_backslash_record_path_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="docs\\decisions\\ADR-900.md")
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "portable")
+
+    def test_a_control_bearing_record_path_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="docs/decisions/ADR-900\u0001.md")
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "portable")
+
+    def test_a_wrong_record_home_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="docs/notes/choice.md"),
+                record="docs/notes/choice.md",
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "established")
+
+    def test_a_mismatched_governed_skill_name_refuses(self):
+        record = "plugins/example/skills/example/EVOLUTION.md"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, bridge_block(record=record), record=record)
+            skill = root / "plugins/example/skills/example/SKILL.md"
+            skill.write_text("---\nname: another\n---\n", encoding="utf-8")
+            self.assert_h008(design_bridge_findings("study.md", root=root), "governed")
+
+    def test_a_symlinked_record_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, bridge_block())
+            target = root / "real.md"
+            target.write_text("record\n", encoding="utf-8")
+            link = root / "docs/decisions/ADR-900-bridge.md"
+            link.parent.mkdir(parents=True)
+            link.symlink_to(target)
+            self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires a POSIX FIFO")
+    def test_a_special_record_file_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(base, bridge_block())
+            fifo = root / "docs/decisions/ADR-900-bridge.md"
+            fifo.parent.mkdir(parents=True)
+            os.mkfifo(fifo)
+            self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+
+    def test_an_oversized_design_record_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(), record="docs/decisions/ADR-900-bridge.md"
+            )
+            (root / "design-evidence.json").write_bytes(
+                b" " * (hypomnema.MAX_DESIGN_BYTES + 1)
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "design evidence")
+
+    def test_a_duplicate_json_key_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(), record="docs/decisions/ADR-900-bridge.md"
+            )
+            source = (root / "design-evidence.json").read_text(encoding="utf-8")
+            (root / "design-evidence.json").write_text(
+                source.replace("{", '{"schema":"protasis-design-evidence/v1",', 1),
+                encoding="utf-8",
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "strict")
+
+    def test_a_checked_record_may_retain_pending_conformance_cells(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(), record="docs/decisions/ADR-900-bridge.md"
+            )
+            path = root / "design-evidence.json"
+            design = json.loads(path.read_text(encoding="utf-8"))
+            design["criteria"].append({
+                "id": "integration-proof",
+                "concern": "correctness",
+                "kind": "gate",
+                "stage": "conformance",
+                "owner": "hypomnema",
+                "unit": "boolean",
+                "comparator": "equals",
+                "threshold": True,
+                "blocks": "integration",
+            })
+            for candidate in ("closed-bridge-block", "section-link-inference"):
+                design["results"].append({
+                    "candidate": candidate,
+                    "criterion": "integration-proof",
+                    "state": "pending",
+                    "resolver": {"command": ["python3", "check.py"]},
+                    "report": "reports/integration.json",
+                    "blocks": "integration",
+                })
+            path.write_text(json.dumps(design), encoding="utf-8")
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_excessive_json_depth_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(), record="docs/decisions/ADR-900-bridge.md"
+            )
+            depth = hypomnema.MAX_JSON_DEPTH + 1
+            (root / "design-evidence.json").write_text(
+                "[" * depth + "]" * depth, encoding="utf-8"
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "strict")
+
+    def test_an_unstable_read_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(), record="docs/decisions/ADR-900-bridge.md"
+            )
+            original = hypomnema._stat_identity
+            calls = 0
+
+            def changed(value):
+                nonlocal calls
+                calls += 1
+                identity = original(value)
+                if calls == 3:
+                    return identity[:-1] + (identity[-1] + 1,)
+                return identity
+
+            with mock.patch.object(hypomnema, "_stat_identity", side_effect=changed):
+                self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
+
+    def test_default_walk_does_not_require_a_design_bridge(self):
+        with tempfile.TemporaryDirectory() as base:
+            path = Path(base) / "ordinary.md"
+            path.write_text("# Ordinary document\n", encoding="utf-8")
+            self.assertEqual([], hypomnema.check(path))
+            self.assertEqual([path], hypomnema.walk([str(path)]))
 
 
 

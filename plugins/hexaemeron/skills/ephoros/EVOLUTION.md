@@ -9,6 +9,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier revision: `typescript-rule-parity`
 - Current frontier: Five rules are executable: E001 to E003 read Python only, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer, running clean over this marketplace and the pinned application clone.
 - Next Fiat job: Extend E001, E002 and E003 to the TypeScript surface the checker already reads, so a log message built by interpolation, an unbounded metric label and a mean-summarised duration are caught in the language the application ships in. Accepted when each of the three is caught by a TypeScript fixture observed red before its recogniser lands, the verdict over the pinned wildcat-app-v2 clone is decided on its own evidence rather than assumed clean -- its known interpolated logger message either fires truly or is excluded by a stated rule -- the lint stays clean over this marketplace, and both suites pass.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

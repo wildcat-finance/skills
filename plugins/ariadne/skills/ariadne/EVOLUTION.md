@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `grounded-agent-predicate`
 - Current frontier: The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
 - Next Fiat job: None -- mature
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

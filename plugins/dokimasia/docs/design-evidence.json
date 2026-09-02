@@ -1,0 +1,429 @@
+{
+  "candidates": [
+    {
+      "id": "inventory-first",
+      "summary": "The skill compiles a source inventory, imports the workbook and reconciles both into dispositions; the target repository keeps execution."
+    },
+    {
+      "id": "harness-emitter",
+      "summary": "The skill emits a Playwright harness, manifest schema and reporter into the target repository and stops there."
+    },
+    {
+      "id": "resident-driver",
+      "summary": "The skill drives the browser, the wallet extension and the Safe lanes itself from this repository."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "source-and-oracle-bound",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "browser-free-check",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "no-signer-authority",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "kill-resumable",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "runbook-step-count",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "new-runtime-dependencies",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "scaffold-contract-check",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "inventory-determinism",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "workbook-roundtrip",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "disposition-closure",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "pinned-demonstration",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "inventory-first",
+      "criterion": "source-and-oracle-bound",
+      "report": {
+        "path": "reports/selection/inventory-first-source-and-oracle-bound.json",
+        "sha256": "d8dbb5eee65099e086bc905392d24ee6471c80936a7133c21774c8779f8bff9f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inventory-first",
+      "criterion": "browser-free-check",
+      "report": {
+        "path": "reports/selection/inventory-first-browser-free-check.json",
+        "sha256": "b6cecd60ce0a484b8e78012391a4ea97798e8b69a21dd4845039614cc3de155d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inventory-first",
+      "criterion": "no-signer-authority",
+      "report": {
+        "path": "reports/selection/inventory-first-no-signer-authority.json",
+        "sha256": "48db19799e57f944932a6e8f72cb9a30d1408b153d0a02d841ec113ad9929f2f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inventory-first",
+      "criterion": "kill-resumable",
+      "report": {
+        "path": "reports/selection/inventory-first-kill-resumable.json",
+        "sha256": "da724d73e010fbc72291762c98ca8a254f0331b9d2861ce99dd6593bcdbf0643"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inventory-first",
+      "criterion": "runbook-step-count",
+      "report": {
+        "path": "reports/selection/inventory-first-runbook-step-count.json",
+        "sha256": "8f47bfcd4fb4c7d420354b83716e632fa77032b741242989a1694b273a7363ce"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inventory-first",
+      "criterion": "new-runtime-dependencies",
+      "report": {
+        "path": "reports/selection/inventory-first-new-runtime-dependencies.json",
+        "sha256": "5dc6ec21dc3c78be77cf1358810614430e04daa81bd1f5c70829aa8fd9fd1f18"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "inventory-first",
+      "criterion": "scaffold-contract-check",
+      "report": "reports/conformance/inventory-first-scaffold-contract-check.json",
+      "resolver": "python3 scripts/run_checks.py --scope dokimasia",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "inventory-first",
+      "criterion": "inventory-determinism",
+      "report": "reports/conformance/inventory-first-inventory-determinism.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py inventory --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "inventory-first",
+      "criterion": "workbook-roundtrip",
+      "report": "reports/conformance/inventory-first-workbook-roundtrip.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py workbook --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "inventory-first",
+      "criterion": "disposition-closure",
+      "report": "reports/conformance/inventory-first-disposition-closure.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "inventory-first",
+      "criterion": "pinned-demonstration",
+      "report": "reports/conformance/inventory-first-pinned-demonstration.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    },
+    {
+      "candidate": "harness-emitter",
+      "criterion": "source-and-oracle-bound",
+      "report": {
+        "path": "reports/selection/harness-emitter-source-and-oracle-bound.json",
+        "sha256": "f0f2e147e15226111ad511a481fe354ccce763cbea4aee859c6f747d10c676f9"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "harness-emitter",
+      "criterion": "browser-free-check",
+      "report": {
+        "path": "reports/selection/harness-emitter-browser-free-check.json",
+        "sha256": "30f505a6550311ce4a186cb38ac870937bf1170d3e90fd60cfaf70699b279b45"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "harness-emitter",
+      "criterion": "no-signer-authority",
+      "report": {
+        "path": "reports/selection/harness-emitter-no-signer-authority.json",
+        "sha256": "e94acdbbe86ef211a413618553b8051964a16598dd82269b05bdba8714ba5f51"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "harness-emitter",
+      "criterion": "kill-resumable",
+      "report": {
+        "path": "reports/selection/harness-emitter-kill-resumable.json",
+        "sha256": "1efe4f85e1ac99f3f8b5ce4f0b86eb783958e6f2fea3025456414abac93d146d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "harness-emitter",
+      "criterion": "runbook-step-count",
+      "report": {
+        "path": "reports/selection/harness-emitter-runbook-step-count.json",
+        "sha256": "d4b1d4fca1f5b3afd9a01441375918f5c55a575f74b33270f9118e153fd659cc"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "harness-emitter",
+      "criterion": "new-runtime-dependencies",
+      "report": {
+        "path": "reports/selection/harness-emitter-new-runtime-dependencies.json",
+        "sha256": "a60d88a7560523917e632b7c7371281827672724c87b0452409eabfdb8433a4f"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "harness-emitter",
+      "criterion": "scaffold-contract-check",
+      "report": "reports/conformance/harness-emitter-scaffold-contract-check.json",
+      "resolver": "python3 scripts/run_checks.py --scope dokimasia",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "harness-emitter",
+      "criterion": "inventory-determinism",
+      "report": "reports/conformance/harness-emitter-inventory-determinism.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py inventory --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "harness-emitter",
+      "criterion": "workbook-roundtrip",
+      "report": "reports/conformance/harness-emitter-workbook-roundtrip.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py workbook --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "harness-emitter",
+      "criterion": "disposition-closure",
+      "report": "reports/conformance/harness-emitter-disposition-closure.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "harness-emitter",
+      "criterion": "pinned-demonstration",
+      "report": "reports/conformance/harness-emitter-pinned-demonstration.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    },
+    {
+      "candidate": "resident-driver",
+      "criterion": "source-and-oracle-bound",
+      "report": {
+        "path": "reports/selection/resident-driver-source-and-oracle-bound.json",
+        "sha256": "35897d0f4fb6d2d003d03bf47cb75b2cd9ce18003dec1c5449cf13d61e0b45a1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "resident-driver",
+      "criterion": "browser-free-check",
+      "report": {
+        "path": "reports/selection/resident-driver-browser-free-check.json",
+        "sha256": "f36ac2958b080cad74ea70f7cebb94cac92bbfc0b17afe7bec5edce889db37fb"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "resident-driver",
+      "criterion": "no-signer-authority",
+      "report": {
+        "path": "reports/selection/resident-driver-no-signer-authority.json",
+        "sha256": "f283486f6dae0ddb7e43d526e92ff23f2af8a22b35cb021941fa143e979f5438"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "resident-driver",
+      "criterion": "kill-resumable",
+      "report": {
+        "path": "reports/selection/resident-driver-kill-resumable.json",
+        "sha256": "ee448abd9afc0b6725dcdd672eedcb207898f5c65d4a28c9aa662253606e0b1a"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "resident-driver",
+      "criterion": "runbook-step-count",
+      "report": {
+        "path": "reports/selection/resident-driver-runbook-step-count.json",
+        "sha256": "9d3ba7d5fc75f7ff51f76eafb8366531e0ba25bf6dd1aa9c1d57208ef0edef6d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "resident-driver",
+      "criterion": "new-runtime-dependencies",
+      "report": {
+        "path": "reports/selection/resident-driver-new-runtime-dependencies.json",
+        "sha256": "c925b932fef9fb8f221a0441c06cb8678c6c72b89b08e12a22c8a1fe85fb8658"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "resident-driver",
+      "criterion": "scaffold-contract-check",
+      "report": "reports/conformance/resident-driver-scaffold-contract-check.json",
+      "resolver": "python3 scripts/run_checks.py --scope dokimasia",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "resident-driver",
+      "criterion": "inventory-determinism",
+      "report": "reports/conformance/resident-driver-inventory-determinism.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py inventory --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "resident-driver",
+      "criterion": "workbook-roundtrip",
+      "report": "reports/conformance/resident-driver-workbook-roundtrip.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py workbook --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "resident-driver",
+      "criterion": "disposition-closure",
+      "report": "reports/conformance/resident-driver-disposition-closure.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "resident-driver",
+      "criterion": "pinned-demonstration",
+      "report": "reports/conformance/resident-driver-pinned-demonstration.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "inventory-first",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

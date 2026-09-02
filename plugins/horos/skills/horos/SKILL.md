@@ -23,9 +23,9 @@ security review and does not narrow Warden, the Pashov suite, Phylax, or
 Elenchus while they investigate risk or a failure. Its version, held frontier,
 next job, and maturity state live in [EVOLUTION.md](EVOLUTION.md).
 
-The Synkrisis specification allows a future finding to suggest a Horos review
-when observations repeat. Its current scaffold cannot form a cohort or
-finding, and a future suggestion will not write or widen a reading boundary.
+A Synkrisis finding may suggest a Horos review when validated observations
+repeat. The finding does not write or widen a reading boundary; Horos still
+checks the repository evidence before changing one.
 
 **Current frontier.** The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
 

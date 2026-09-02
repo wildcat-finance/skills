@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import re
+import tempfile
 import unittest
 
 from repo_contract import (
@@ -54,6 +55,7 @@ MARKETPLACE_CONTEXT_START = "<!-- marketplace-context:start -->"
 MARKETPLACE_CONTEXT_END = "<!-- marketplace-context:end -->"
 IMMUTABLE_CONTEXT_PREFIXES = (
     ("audit",),
+    ("specimens",),
     ("skills", "fizz"),
     ("skills", "solidity-auditor"),
     ("skills", "x-ray"),
@@ -105,10 +107,13 @@ def marketplace_frontiers(path):
 def mutable_marketplace_surface(plugin_root, path):
     """Whether a context block is first-party prose that may track now.
 
-    Audit logs are historical evidence. The three Pashov roots are
-    upstream-owned distribution copies. Their recorded marketplace context is
-    allowed to describe the installation moment rather than being rewritten
-    when the first-party landing page advances.
+    Audit logs are historical evidence, and so are preserved specimens: a
+    specimen that quotes a marketplace-context marker is recording that the
+    marker was there, and rewriting it to track the current landing page would
+    destroy the thing it preserves. The three Pashov roots are upstream-owned
+    distribution copies. Their recorded marketplace context is allowed to
+    describe the installation moment rather than being rewritten when the
+    first-party landing page advances.
     """
     relative = path.relative_to(plugin_root)
     return not any(
@@ -151,6 +156,23 @@ def repository_markdown(root):
             yield path
 
 
+def plugin_marketplace_surfaces(plugin_root, root):
+    """Every first-party Markdown surface of one plugin, skipping checkouts.
+
+    The nested-checkout test is made against the path relative to the
+    repository root, never against its absolute parts. A clone living under a
+    directory this function would otherwise skip, which is where Claude Code
+    worktrees put one, has that name in every absolute path it contains: an
+    absolute test excludes the whole tree, the loop below runs zero times and
+    the assertion passes while checking nothing.
+    """
+    for path in sorted(plugin_root.rglob("*.md")):
+        if _inside_nested_checkout(path.relative_to(root), root):
+            continue
+        if mutable_marketplace_surface(plugin_root, path):
+            yield path
+
+
 class MarketplaceProseTests(unittest.TestCase):
     def test_wildcat_labs_identity_contains_the_promise_machine_architecture(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -159,9 +181,10 @@ class MarketplaceProseTests(unittest.TestCase):
             readme.index("./assets/characters/shoggoth.png"),
             readme.index("# The Shoggoth"),
         )
-        self.assertIn("## What Is It?", readme)
-        self.assertIn("## The Promise Machine", readme)
-        self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
+        self.assertIn("## What can it do today?", readme)
+        self.assertIn("## How the collective works", readme)
+        self.assertIn("[Promise Machine contract](./PROMISE_MACHINE.md)", readme)
+        self.assertIn("26 members: 17 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
         self.assertIn("Wildcat Labs Skills", marketplace["description"])
@@ -256,7 +279,7 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_root_readme_maps_every_plugin(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("## Meet the Shoggoth", readme)
+        self.assertIn("## Meet the collective", readme)
         self.assertNotIn("## Current status", readme)
         for name in PLUGINS:
             with self.subTest(plugin=name):
@@ -265,8 +288,8 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_root_readme_names_the_complete_collective(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        roster = readme.split("## Meet the Shoggoth", 1)[1].split(
-            "## How the members fit together", 1
+        roster = readme.split("## Meet the collective", 1)[1].split(
+            "## Try it", 1
         )[0]
 
         governed = sorted(
@@ -274,7 +297,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 25)
+        self.assertEqual(len(governed), 27)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
@@ -409,12 +432,8 @@ class MarketplaceProseTests(unittest.TestCase):
             expected = landing_frontiers[0]
 
             plugin_root = ROOT / "plugins" / name
-            surfaces = [
-                path
-                for path in plugin_root.rglob("*.md")
-                if ".claude" not in path.parts
-                and mutable_marketplace_surface(plugin_root, path)
-            ]
+            surfaces = list(plugin_marketplace_surfaces(plugin_root, ROOT))
+            self.assertTrue(surfaces, plugin_root)
             portable = ROOT / ".agents" / "skills" / name / "SKILL.md"
             if portable.is_file():
                 surfaces.append(portable)
@@ -480,3 +499,66 @@ class MarketplaceProseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SurfaceEnumerationTests(unittest.TestCase):
+    """The sweep must not go quiet because of where the clone happens to sit.
+
+    A filter that tests a path's absolute parts answers a question about the
+    machine rather than the repository. Claude Code puts worktrees under
+    `.claude/worktrees/`, so every absolute path in such a clone carries the
+    name a nested-checkout filter skips, and the enumeration returns nothing.
+    Nothing fails: the loop that consumes it runs zero times and its
+    assertions never execute.
+    """
+
+    def _plugin(self, root):
+        plugin_root = root / "plugins" / "example"
+        (plugin_root / "skills" / "example").mkdir(parents=True)
+        (plugin_root / "README.md").write_text("landing\n", encoding="utf-8")
+        (plugin_root / "AGENTS.md").write_text("agents\n", encoding="utf-8")
+        (plugin_root / "skills" / "example" / "SKILL.md").write_text(
+            "skill\n", encoding="utf-8"
+        )
+        return plugin_root
+
+    def test_surfaces_are_found_when_the_root_sits_under_a_skipped_name(self):
+        for holder in sorted(NESTED_CHECKOUT_NAMES):
+            with self.subTest(holder=holder):
+                with tempfile.TemporaryDirectory() as raw:
+                    root = Path(raw) / holder / "worktrees" / "repository"
+                    root.mkdir(parents=True)
+                    plugin_root = self._plugin(root)
+                    found = {
+                        path.relative_to(root).as_posix()
+                        for path in plugin_marketplace_surfaces(plugin_root, root)
+                    }
+                self.assertEqual(found, {
+                    "plugins/example/README.md",
+                    "plugins/example/AGENTS.md",
+                    "plugins/example/skills/example/SKILL.md",
+                })
+
+    def test_a_checkout_nested_inside_the_plugin_is_still_skipped(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw) / ".claude" / "worktrees" / "repository"
+            root.mkdir(parents=True)
+            plugin_root = self._plugin(root)
+            nested = plugin_root / "vendor" / "clone"
+            (nested / ".git").mkdir(parents=True)
+            (nested / "README.md").write_text("copy\n", encoding="utf-8")
+            found = {
+                path.relative_to(root).as_posix()
+                for path in plugin_marketplace_surfaces(plugin_root, root)
+            }
+        self.assertNotIn("plugins/example/vendor/clone/README.md", found)
+        self.assertIn("plugins/example/README.md", found)
+
+    def test_every_shipped_plugin_offers_at_least_one_surface(self):
+        """The guard that would have caught this in the suite it belongs to."""
+        for name in PLUGINS:
+            with self.subTest(plugin=name):
+                surfaces = list(
+                    plugin_marketplace_surfaces(ROOT / "plugins" / name, ROOT)
+                )
+                self.assertTrue(surfaces)

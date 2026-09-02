@@ -6,9 +6,30 @@
 
 # Promise Machine contract
 
-This document is the normative contract for every skill distributed as part of
-Wildcat Labs Skills. Plugin-local files with this name are generated,
-byte-identical installation copies. They are not separate laws.
+The Promise Machine is the rule that stops one useful result becoming a larger,
+unsupported claim as it moves between agents.
+
+Suppose Lazarus records the RPC response and proves one account-storage
+relation for a historical test. A later agent may say that the named relation
+was proved and the other response bytes were recorded. It may not describe the
+whole response as proved, call the provider canonical, or use the fixture as a
+whole-protocol safety result. The evidence moves forward with its original
+boundary.
+
+That is the practical purpose of this contract. Every governed operation says:
+
+- what success establishes;
+- which evidence supports it;
+- what the result still does not establish;
+- which next action it permits;
+- which action must stop when the evidence is missing; and
+- how a person or agent can inspect, repair, rerun, roll back, or leave safely.
+
+This is the normative contract for every skill distributed as part of Wildcat
+Labs Skills. The copies inside plugins are generated from this file and must be
+byte-identical. They are installation copies, not separate laws. In the source
+distribution, `docs/the-promise-machine-explained-properly.md` gives an
+example-led introduction.
 
 ## Contract identity
 
@@ -21,16 +42,16 @@ evolution version.
 > No skill may claim more than its evidence establishes, or authorise a more
 > consequential transition than that evidence warrants.
 
-This principle applies to every answer, artefact, repository change,
-publication, deployment and external action produced through the suite. A
-passing check establishes only the promise that names it. It does not establish
-the skill's general correctness, the truth of its inputs or any neighbouring
-claim.
+This principle applies to answers, derived artefacts, repository changes,
+publications, deployments, security conclusions, financial conclusions, and
+other external actions produced through the suite. A passing check establishes
+only the promise that names it. It does not establish the skill's general
+correctness, the truth of its inputs, or a neighbouring claim.
 
 ## Scope
 
 The contract applies to first-party skills, nested skills, vendored skills,
-routers, runtime contracts, generated copies and evidence handoffs. Each
+routers, runtime contracts, generated copies, and evidence hand-offs. Each
 logical skill has one canonical implementation. Routers select that
 implementation and establish no domain result of their own.
 

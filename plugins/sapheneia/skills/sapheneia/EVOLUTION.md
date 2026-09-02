@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `cross-model-corpus`
 - Current frontier: Cross-model behaviour has not yet been held against a published AuDHD task corpus.
 - Next Fiat job: Build and publish a held cross-model corpus covering debugging, explanation, destructive-action and long-running task turns, then reconcile the ten rules against its results. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

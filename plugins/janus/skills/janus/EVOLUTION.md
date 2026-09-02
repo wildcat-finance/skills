@@ -7,6 +7,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 - Frontier revision: `second-host-adapter`
 - Current frontier: Janus ships the Wildcat v2.5 host adapter and its seven gates against modeled hooks, and no second host adapter yet shows the manifest format holds for another callback model.
 - Next Fiat job: Ship a second host adapter for a different callback model, added only after the Wildcat adapter's suite passes, so the manifest format is shown host-neutral rather than asserted. Accepted when the second adapter's honest hook passes its gates, its hostile hooks are each caught, and the shared harness runs both adapters green.
+- Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
 

@@ -1,0 +1,31 @@
+{
+  "name": "dokimasia",
+  "version": "2.1.0",
+  "description": "Compiles a frontend's routes, actions and guards into a coverage denominator, imports a reviewed UAT workbook without losing a row, drafts a disposition set a reviewer edits rather than authors, and counts only the entries a person confirmed; a closure ratio states that nothing is unaccounted for, never that anything passed.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/dokimasia",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "keywords": [
+    "testing",
+    "coverage",
+    "uat",
+    "frontend",
+    "typescript",
+    "python",
+    "wildcat"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Dokimasia",
+    "shortDescription": "Compiles a frontend's routes, actions and guards into a coverage denominator, imports a reviewed UAT workbook without losing a row, drafts a disposition set a reviewer edits rather than authors, and counts only the entries a person confirmed; a closure ratio states that nothing is unaccounted for, never that anything passed.",
+    "longDescription": "Dokimasia is the planned home for the question a release spreadsheet cannot answer: which of an application's routes, actions and access guards has no reviewed oracle. It compiles the inventory from a pinned commit, imports the reviewed workbook without losing a row's identity, and reconciles both so every scoped item carries exactly one disposition. Version 0.1.0 ships the contract, packaging and a self-test; it compiles no inventory, imports no workbook and reconciles nothing. Every substantive verb refuses. The completed design would report a closure ratio and a gap list for one pinned commit, and would never report an item as covered without a reviewed oracle a person wrote.",
+    "developerName": "Wildcat Labs",
+    "category": "Developer Tools",
+    "capabilities": [],
+    "defaultPrompt": "Use $dokimasia to inspect the current frontend coverage scaffold and state which operation must be implemented before a release can be scrutinised."
+  },
+  "license": "Apache-2.0"
+}

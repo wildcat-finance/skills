@@ -39,9 +39,9 @@ Pandects states and tests the law; it does not generate a target-specific fuzz
 harness, audit the whole protocol, or turn one bounded campaign into security
 sign-off.
 
-Synkrisis is specified to compare validated run observations. It cannot promote
-repeated campaign outcomes into a law or security verdict, and its current
-scaffold produces no comparison at all.
+Synkrisis compares validated run observations. Its shipped comparison cannot
+promote repeated campaign outcomes into a law or security verdict, and a
+Pandects campaign result is not a run observation merely because it exists.
 
 A fuzzer searches a state space. It cannot decide which economic facts must
 survive that search. Generic token property libraries cover balances, approvals
@@ -302,7 +302,7 @@ means.
 ### pandects-search-record
 
 - Promise: A successful `pandects.py run` records the engine that actually ran, its argv, configuration, determinism, sequence length, disposition and corpus digest.
-- Evidence: The executed engine command, captured configuration, search output, timeout or result status and generated search-record JSON.
+- Evidence: The executed engine command, captured configuration, declared per-law exercise map, readable test and invariant-suite summaries, decoded positive succession call count, timeout or result status and generated search-record JSON.
 - Evidence classes: measured, recorded, checked
 - Boundary: The record establishes what the named campaign searched and reported; it does not decide law truth, cover an absent engine, prove universal safety or make a non-applicable law fit a target.
 - Authorises: Reporting the bounded campaign result or attaching its command record to an Ariadne release statement.

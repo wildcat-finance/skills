@@ -1,6 +1,6 @@
 {
   "name": "probitas",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
   "author": {
     "name": "Wildcat Labs",
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Probitas",
     "shortDescription": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-    "longDescription": "Takes an entity name and the wallet addresses a counterparty has declared, and produces a dossier a lender can act on: what they borrowed across on-chain lending venues, whether they gave it back, and what could not be established. A deterministic collector queries venue adapters and writes an evidence file in which a record cannot exist without a transaction hash, a URL or a document reference. The model writes the narrative and a gate checker binds it afterwards, so a citation-shaped sentence with nothing behind it fails the document rather than shipping in it. Coverage is stated: a venue nobody checked is a named line saying so, not silence that reads as a clean record. No personal data, no social graph, no working out which individual controls an address, and no score without a rubric printed beside it.",
+    "longDescription": "Probitas takes an entity name and addresses the counterparty declared, then builds a sourced dossier of borrowing, repayment, and what could not be established across supported venues. A deterministic collector writes the evidence; a gate checker requires every narrative figure and assertion to trace to it and keeps unchecked venues visible. It does not discover hidden addresses, identify a legal person, score the borrower, set terms, or make the decision. Morpho Midnight secondary-market borrow exits remain unattributable and its curation data remains uncollected.",
     "developerName": "Wildcat Labs",
     "category": "Research",
     "capabilities": [],

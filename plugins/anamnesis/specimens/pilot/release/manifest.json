@@ -1,0 +1,95 @@
+{
+  "components": [
+    {
+      "bytes": 110404,
+      "path": "assertions.json",
+      "sha256": "30d288b5fcd8edfbb6979644f48693828d4d7ea96ae6c7bb77e7cbe078309b72"
+    },
+    {
+      "bytes": 7092,
+      "path": "engagements.json",
+      "sha256": "9cc7e1845a9ac11398d2ffdd5e21a40918bde69510a964dda7f5593dd1736253"
+    },
+    {
+      "bytes": 326,
+      "path": "policy.json",
+      "sha256": "385391d430ce741219b40ff57f6bdf498d4dfec09d210a70bf19354129d015a0"
+    },
+    {
+      "bytes": 3,
+      "path": "quarantine.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "bytes": 48203,
+      "path": "relations.json",
+      "sha256": "329b39751f5bcbe32d060f72ed9d738a89241d4d1dc9175375a4fd59f8ebb6cb"
+    },
+    {
+      "bytes": 118,
+      "path": "unknowns.json",
+      "sha256": "d50dc3d2afee0b7cbf16ae342bf65c83051439b030135569967de5cf3c8bbe6c"
+    }
+  ],
+  "counts": {
+    "engagements": 3,
+    "findings": 41,
+    "occurrences": 41,
+    "relations": 142,
+    "remediations": 19,
+    "rounds": 31,
+    "rounds_with_no_findings": 12,
+    "submissions": 41,
+    "verifications": 31
+  },
+  "exclusions": [],
+  "policy": {
+    "disclosure": {
+      "derived_text": [
+        "public"
+      ]
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "taxonomy": {
+      "name": "warden-severity",
+      "severities": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "version": "1"
+    },
+    "version": "curation-2026-08-31"
+  },
+  "release_id": "079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56",
+  "schema": "anamnesis-release/v1",
+  "sources": [
+    {
+      "bytes": 5621,
+      "disclosure": "public",
+      "id": "hexaemeron-audit-rounds",
+      "sha256": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f"
+    },
+    {
+      "bytes": 45906,
+      "disclosure": "public",
+      "id": "pandects-audit-rounds",
+      "sha256": "66908cb68630f3c3cbea432aec6cf6efc305bcab85ccf5fadb278c535635edf9"
+    },
+    {
+      "bytes": 14400,
+      "disclosure": "public",
+      "id": "tabularium-audit-rounds",
+      "sha256": "1de310b5df5784d7e623ea9dbda83ae77e02cb1798b3aeedffc5d0c715f8e3a7"
+    }
+  ],
+  "unknowns": {
+    "finding.adjudication": 41,
+    "round.native_schema": 31,
+    "round.verdict": 31,
+    "submission.adjudication": 41
+  }
+}

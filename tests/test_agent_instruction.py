@@ -111,9 +111,9 @@ class AgentInstructionScaffoldTests(unittest.TestCase):
         self.assertEqual(entries, FIXTURE_IDS)
 
     def test_horos_boundary_is_current_for_the_scaffold(self):
-        from tests.test_boundary_currency import drifted_paths
+        from tests.test_boundary_currency import REFRESH, drifted_paths
 
-        self.assertEqual(drifted_paths(ROOT), [])
+        self.assertEqual(drifted_paths(ROOT), [], REFRESH)
 
     def test_existing_repository_licence_is_apache_2(self):
         text = (ROOT / "LICENSE").read_text(encoding="utf-8")
@@ -1846,8 +1846,9 @@ class FixtureBindingTests(RefusalAssertions, unittest.TestCase):
 
     def test_overlapping_sibling_bindings_refuse(self):
         model = fixture_model("fiat-study-runbook-phase")
+        sibling = next(item for item in model["bindings"] if item["node"] == "study-phase")
         binding = next(item for item in model["bindings"] if item["node"] == "runbook-phase")
-        binding["start"], binding["end"] = "17650", "17800"
+        binding["start"] = str(int(sibling["end"]) - 1)
         self.assertRefusal("WAI-E-REFERENCE.OVERLAP", AI.validate_model, model)
 
     def test_unsafe_source_path_in_manifest_refuses(self):
@@ -2322,6 +2323,30 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         profile = self.profile()
         profile["executable_sha256"] = "0" * 64
         self.assertRefusal("WAI-E-ADAPTER.EXECUTABLE_CHANGED", AI._verify_profile_identity, profile)
+
+    def test_changed_executable_refusal_names_the_tokenizer_and_the_machine(self):
+        """skills#1098: the code and node path alone do not say what to do."""
+        profile = self.profile()
+        profile["executable_sha256"] = "0" * 64
+        with self.assertRaises(AI.CodecError) as raised:
+            AI._verify_profile_identity(profile)
+        detail = raised.exception.detail
+        self.assertIsNotNone(detail)
+        self.assertIn(profile["id"], detail)
+        self.assertIn(profile["runtime_executable"], detail)
+        self.assertIn(profile["executable"], detail)
+        self.assertIn("re-record", detail)
+
+    def test_refusal_detail_never_reaches_the_emitted_record(self):
+        error = AI.CodecError("WAI-E-ADAPTER.EXECUTABLE_CHANGED", "$.profile", "guidance")
+        self.assertEqual(error.code, "WAI-E-ADAPTER.EXECUTABLE_CHANGED")
+        self.assertEqual(error.node_path, "$.profile")
+        self.assertEqual(error.detail, "guidance")
+        self.assertNotIn("detail", AI._result("refused", error.code, error.node_path, b""))
+
+    def test_refusal_detail_is_optional_and_bounded(self):
+        self.assertIsNone(AI.CodecError("WAI-E-SHAPE.OBJECT", "$").detail)
+        self.assertEqual(len(AI.CodecError("WAI-E-SHAPE.OBJECT", "$", "x" * 4096).detail), 1024)
 
     def test_changed_vocabulary_digest_refuses(self):
         profile = self.profile()
@@ -3216,7 +3241,7 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             sorted(record["path"] for record in coverage["documentation"]),
             [
                 "docs/agent-instruction-language-v1.md",
-                "docs/decisions/ADR-051-encode-a-closed-agent-instruction-model.md",
+                "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
             ],
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
@@ -3280,15 +3305,37 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_portable_promise_machine_runtime_is_current(self):
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts/portable_promise_machine.py"), "check"],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+    def test_portable_promise_machine_package_is_current(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            package = Path(temporary) / "package"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/portable_promise_machine.py"),
+                    "package",
+                    "--out",
+                    str(package),
+                ],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            verifier = (
+                package
+                / ".agents/skills/promise-machine/scripts/verify_runtime.py"
+            )
+            verified = subprocess.run(
+                [sys.executable, str(verifier)],
+                cwd=package,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                verified.returncode, 0, verified.stdout + verified.stderr
+            )
 
     def assert_stale_report_refuses(self, evidence_key: str, field_path: tuple[str, ...], code: str) -> None:
         with tempfile.TemporaryDirectory() as temporary:

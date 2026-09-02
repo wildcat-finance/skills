@@ -19,7 +19,11 @@ nothing.
 import hashlib
 import json
 import os
+import re
 import subprocess
+from typing import Any
+
+from . import checker
 
 #: The two classes ariadne's determinism gate allows.
 EXACT = "exact"
@@ -27,6 +31,25 @@ NONDETERMINISTIC = "nondeterministic"
 
 #: Every field an ariadne command entry may carry, and nothing else.
 COMMAND_FIELDS = frozenset({"name", "argv", "determinism", "output_digest", "detail"})
+
+FOUNDRY_SUITE = re.compile(
+    r"^Ran\s+\d+\s+tests?\s+for\s+.+:(?P<contract>[A-Za-z_][A-Za-z0-9_]*)\s*$"
+)
+FOUNDRY_TEST = re.compile(
+    r"^\[(?P<tag>PASS|FAIL[^\]]*)\]\s+"
+    r"(?P<function>[A-Za-z_][A-Za-z0-9_]*)\([^)]*\)\s+"
+    r"\((?P<detail>[^)]*)\)\s*$"
+)
+FOUNDRY_INVARIANT = re.compile(
+    r"^\[(?P<tag>PASS|FAIL[^\]]*)\]\s+"
+    r"(?P<function>invariant_[A-Za-z_][A-Za-z0-9_]*)\s*$"
+)
+FOUNDRY_INVARIANT_TOTAL = re.compile(
+    r"^\s*(?P<contract>[A-Za-z_][A-Za-z0-9_]*)\s+invariants\s+"
+    r"\(runs:\s*(?P<runs>\d+),\s*calls:\s*\d+,\s*reverts:\s*\d+\)\s*$"
+)
+FOUNDRY_RUNS = re.compile(r"(?:^|,\s*)runs:\s*(\d+)(?:,|$)")
+FOUNDRY_RECORDED_CALLS = re.compile(r"^\s*recordedCalls:\s*(\d+)\s*$")
 
 
 class RunError(Exception):
@@ -199,7 +222,7 @@ def run_foundry(root, match=None, timeout=1800):
     happened, and reporting it as passed would be worse. It comes back with an
     outcome of its own.
     """
-    argv = ["forge", "test"]
+    argv = ["forge", "test", "-vv"]
     if match:
         argv += ["--match-contract", match]
     try:
@@ -247,17 +270,160 @@ def outcome_of(result):
     return "passed" if result["returncode"] == 0 else "failed"
 
 
+def foundry_surfaces(output):
+    """Declared-test keys and readable outcomes from conservative forge lines."""
+    found = {}
+    contract = None
+    last = None
+    suite_invariants = set()
+    for line in output.splitlines():
+        suite = FOUNDRY_SUITE.match(line)
+        if suite:
+            contract = suite.group("contract")
+            last = None
+            suite_invariants = set()
+            continue
+        summary = FOUNDRY_TEST.match(line)
+        if summary and contract is not None:
+            key = (contract, summary.group("function"))
+            passed = summary.group("tag") == "PASS"
+            observed: dict[str, Any] = {
+                "outcome": "passed" if passed else "failed"
+            }
+            runs = FOUNDRY_RUNS.search(summary.group("detail"))
+            if passed and runs is not None and int(runs.group(1)) > 0:
+                observed["evaluations"] = int(runs.group(1))
+            found[key] = observed
+            if key[1].startswith("invariant_"):
+                suite_invariants.add(key)
+            last = key
+            continue
+        invariant = FOUNDRY_INVARIANT.match(line)
+        if invariant is not None and contract is not None:
+            key = (contract, invariant.group("function"))
+            found[key] = {
+                "outcome": (
+                    "passed" if invariant.group("tag") == "PASS" else "failed"
+                )
+            }
+            suite_invariants.add(key)
+            last = key
+            continue
+        aggregate = FOUNDRY_INVARIANT_TOTAL.match(line)
+        if aggregate is not None and aggregate.group("contract") == contract:
+            runs = int(aggregate.group("runs"))
+            if runs > 0:
+                for key in suite_invariants:
+                    if found[key]["outcome"] == "passed":
+                        found[key]["evaluations"] = runs
+            continue
+        recorded = FOUNDRY_RECORDED_CALLS.match(line)
+        if recorded is not None and last is not None and int(recorded.group(1)) > 0:
+            found[last]["recorded_calls"] = int(recorded.group(1))
+    return found
+
+
+def mapped_surfaces(exercise):
+    """Declared test key to every law and surface that names it."""
+    mapped = {}
+    for identifier, entry in exercise["laws"].items():
+        for surface in entry.get("surfaces", []):
+            key = (surface.get("contract"), surface.get("function"))
+            mapped.setdefault(key, []).append((identifier, surface))
+    return mapped
+
+
+def succession_laws(exercise):
+    """Laws with a deterministic transition surface need recorded call proof."""
+    return {
+        identifier
+        for identifier, entry in exercise["laws"].items()
+        if any(
+            surface.get("kind") == "deterministic-transition"
+            for surface in entry.get("surfaces", [])
+        )
+    }
+
+
+def match_contract(argv):
+    try:
+        index = argv.index("--match-contract")
+        return argv[index + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def law_exercise(catalogue, exercise, result):
+    """Per-law attribution supported by readable Foundry output, and no more."""
+    observed = foundry_surfaces(result.get("output", ""))
+    declared = mapped_surfaces(exercise)
+    succession = succession_laws(exercise)
+    attributed = {}
+    seen = {law.id: False for law in catalogue.laws}
+
+    for key, outcome in observed.items():
+        mapped = declared.get(key, [])
+        identifiers = {identifier for identifier, _ in mapped}
+        for identifier in identifiers:
+            seen[identifier] = True
+        if not mapped:
+            continue
+        if outcome["outcome"] == "failed" and len(identifiers) != 1:
+            continue
+        for identifier, declared_surface in mapped:
+            entry = attributed.setdefault(identifier, {"surfaces": []})
+            surface = dict(declared_surface)
+            surface["outcome"] = outcome["outcome"]
+            if surface not in entry["surfaces"]:
+                entry["surfaces"].append(surface)
+            if (
+                declared_surface.get("kind") == "invariant-fuzz"
+                and outcome.get("evaluations")
+            ):
+                entry["evaluations"] = entry.get("evaluations", 0) + outcome[
+                    "evaluations"
+                ]
+            if identifier in succession and outcome.get("recorded_calls"):
+                entry["recorded_calls"] = outcome["recorded_calls"]
+
+    exercised = {
+        law.id: attributed[law.id]
+        for law in catalogue.laws
+        if law.id in attributed
+    }
+    not_exercised = {}
+    matched = match_contract(result.get("argv", []))
+    for law in catalogue.laws:
+        if law.id in exercised:
+            continue
+        if seen.get(law.id):
+            reason = "its surfaces failed and the output carries no per-law verdict."
+        elif matched is not None:
+            reason = "no declared surface ran under --match %s." % matched
+        else:
+            reason = "no declared surface was readable in the captured Foundry output."
+        not_exercised[law.id] = reason
+    return exercised, not_exercised
+
+
 def foundry_record(root, catalogue, result, seed=None):
     """The command entry for a Foundry campaign that ran."""
+    try:
+        exercise = checker.load_exercise(root, catalogue, required=True)
+    except checker.ExerciseMapError as error:
+        raise RunError(str(error))
     settings = foundry_settings(root)
+    exercised, not_exercised = law_exercise(catalogue, exercise, result)
     detail = {
         "engine": "foundry",
         "configuration": settings,
         "sequence_length": settings.get("depth"),
         "corpus_digest": corpus_digest(root, catalogue),
-        "laws_searched": len(catalogue.laws),
+        "laws_exercised": exercised,
         "outcome": outcome_of(result),
     }
+    if not_exercised:
+        detail["laws_not_exercised"] = not_exercised
     if result.get("timed_out_after") is not None:
         detail["timed_out_after_seconds"] = result["timed_out_after"]
     # Two fields, one rule: what nobody could read is absent, never null. A
