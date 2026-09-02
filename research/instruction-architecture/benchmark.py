@@ -4709,6 +4709,12 @@ def _partition_ranges(
     def leading_spaces(line: bytes) -> int:
         return len(line) - len(line.lstrip(b" "))
 
+    def whitespace_end_column(start: int, whitespace: bytes) -> int:
+        column = start
+        for value in whitespace:
+            column += 1 if value == 0x20 else 4 - column % 4
+        return column
+
     def update_list_containers(line: bytes, active: list[int]) -> list[int]:
         """Track absolute content indents for source-proved list containers."""
         if not line.strip(b" \t\r\n"):
@@ -4720,25 +4726,31 @@ def _partition_ranges(
         parent = result[-1] if result else 0
         if indent < parent or indent - parent > 3:
             return result
-        marker = re.match(
-            rb"(?:[*+-]|[0-9]{1,9}[.)])([ \t]+)", line[indent:]
-        )
-        if marker is None:
-            return result
-        marker_width = marker.start(1)
-        padding = len(marker.group(1).expandtabs(4))
-        if padding > 4:
-            padding = 1
-        content_indent = indent + marker_width + padding
-        if content_indent > parent:
+        byte_index = indent
+        column = indent
+        while True:
+            marker = re.match(
+                rb"(?:[*+-]|[0-9]{1,9}[.)])([ \t]+)", line[byte_index:]
+            )
+            if marker is None:
+                break
+            marker_end = column + marker.start(1)
+            whitespace_end = whitespace_end_column(marker_end, marker.group(1))
+            padding = whitespace_end - marker_end
+            content_indent = marker_end + (padding if padding <= 4 else 1)
+            if content_indent <= parent:
+                break
             result.append(content_indent)
+            if padding > 4:
+                break
+            byte_index += marker.end(1)
+            column = whitespace_end
+            parent = content_indent
         return result
 
     def fence_container(line: bytes, active: list[int]) -> int | None:
         indent = leading_spaces(line)
-        if indent <= 3:
-            return 0
-        return next(
+        list_container = next(
             (
                 container
                 for container in reversed(active)
@@ -4746,6 +4758,9 @@ def _partition_ranges(
             ),
             None,
         )
+        if list_container is not None:
+            return list_container
+        return 0 if indent <= 3 else None
 
     def fence_marker(
         line: bytes, container_indent: int

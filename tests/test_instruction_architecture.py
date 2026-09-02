@@ -4630,6 +4630,162 @@ class BytePartitionTests(unittest.TestCase):
             "governed_operative_semantics",
         )
 
+    def test_nested_fence_retains_deepest_applicable_list_baseline(self):
+        """A root-valid opener must still close relative to its list item."""
+        for opening_indent, closing_indent in itertools.product((2, 3), (4, 5)):
+            ranges = None
+            source = (
+                b"- item\n"
+                + b" " * opening_indent
+                + b"```text\n"
+                + b"  body\n"
+                + b" " * closing_indent
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(
+                opening_indent=opening_indent,
+                closing_indent=closing_indent,
+            ), mock.patch.object(AI, "_source_blob", return_value=source):
+                try:
+                    ranges = AI._partition_ranges("nested-list.md", generated=False)
+                except AI.Refusal as exc:
+                    self.fail(f"valid list-contained fence was refused: {exc}")
+            if ranges is None:
+                continue
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+    def test_fence_container_falls_back_to_root_after_list_exit(self):
+        source = (
+            b"- item\n"
+            b"\n"
+            b"```text\n"
+            b"root literal\n"
+            b"```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("root-fallback.md", generated=False)
+        literal = source.index(b"root literal")
+        prose = source.index(b"after")
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= literal < item["end"]
+            ),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= prose < item["end"]
+            ),
+            "governed_operative_semantics",
+        )
+
+    def test_list_marker_tab_padding_uses_absolute_tab_stops(self):
+        """Marker padding tabs advance from the marker's ending column."""
+        for marker in (b"-\titem", b"- \titem", b"10.\titem"):
+            source = (
+                marker
+                + b"\n"
+                + b"    ```text\n"
+                + b"    body\n"
+                + b"      ```\n"
+                + b"after\n"
+            )
+            with self.subTest(marker=marker), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges("tab-list.md", generated=False)
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+    def test_same_line_nested_markers_retain_the_deepest_baseline(self):
+        source = (
+            b"- - item\n"
+            b"    ```text\n"
+            b"    body\n"
+            b"      ```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("same-line-nested.md", generated=False)
+        literal = source.index(b"body")
+        prose = source.index(b"after")
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= literal < item["end"]
+            ),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= prose < item["end"]
+            ),
+            "governed_operative_semantics",
+        )
+
+    def test_same_line_nested_marker_plus_four_does_not_open_a_fence(self):
+        source = (
+            b"- - item\n"
+            b"        ```text\n"
+            b"        body\n"
+            b"        ```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("same-line-too-deep.md", generated=False)
+        for needle in (b"```text", b"body"):
+            position = source.index(needle)
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= position < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
     def test_arbitrary_indentation_does_not_create_a_fence(self):
         specimens = {
             "plain-indented-code": (
