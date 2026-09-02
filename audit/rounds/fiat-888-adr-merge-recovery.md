@@ -63,3 +63,19 @@ Elenchus verdict: passed
 | S2-R1-03 | high | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py | An interruption or backup-cleanup I/O failure during multi-draft installation could leave sources moved or targets partially installed, so the operation was not fail-closed and verified-atomic. | fixed in 7ba217a0 |
 
 Leads not pursued: none
+
+## Step 2, round 2 -- 2026-09-02T10:31:26Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: git-object-input=reviewed; candidate-bytes=reviewed; stale-base=reviewed; workflow-input=reviewed; partial-state=reviewed; provenance=reviewed; hostile-config=reviewed; publication-state=reviewed
+
+Not checked: none
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: two run_checks attempts returned one WAI-E-ADAPTER.TIMEOUT in the host adapter's fake-chat test under concurrent repository checks; the direct root suite passed 1116/1116 and the full Hexaemeron runner passed 2240/2240 after warm-up, so the transient adapter result was not a product finding.
