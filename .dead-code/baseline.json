@@ -2808,6 +2808,41 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:ac26f4e311817e235ddbdd39ccc4c2cd081c6e524473c788c152115169b67e5c",
+      "path": "scripts/noema.py",
+      "suppressed": false,
+      "symbol": "_measurement_documents.index@9254"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7583223a8dd6f8a789cc0c1ceabb81aed532bae6c25331b9ecbd6bfa751b1a4e",
+      "path": "scripts/noema.py",
+      "suppressed": false,
+      "symbol": "_select_command.projection@5157"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:945aae16accc340b6f1cc78e3a63336a3f32085c2576f77d3dd13475ef61368c",
+      "path": "scripts/noema.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3ce467696dc1e48d7aa07d3398750e667e7a95fb8e31311c77422880c2d15054",
+      "path": "scripts/noema.py",
+      "suppressed": false,
+      "symbol": "line:634:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:943c12b560d2632a41a9eae523caf944bd0293b1a1007aec456132b32a81af6c",
+      "path": "scripts/noema.py",
+      "suppressed": false,
+      "symbol": "run_evaluation.profile_record@11371"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:89f98eb043744377759ff1d5190eb3466a6863fde9b738cf78e879072866dcff",
       "path": "scripts/portable_promise_machine.py",
       "suppressed": false,
@@ -2920,6 +2955,20 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:500969ac892458cb987989018d91b00b6c250184a12364fc65c15b975430caca",
+      "path": "tests/fixtures/noema-v1/seed-reference/test_noema.py",
+      "suppressed": false,
+      "symbol": "annotations@2"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:711038495fc7cb7a1eb723608240f879117d0d6921a9542aa4151284d7c6a9a8",
+      "path": "tests/fixtures/noema-v1/seed-reference/validate.py",
+      "suppressed": false,
+      "symbol": "annotations@2"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:00502dbf12bbd20a4ede790b5d6c9cbce6aec6d01d503b501261f41bac574dc5",
       "path": "tests/router_selection_driver.py",
       "suppressed": false,
@@ -2952,6 +3001,27 @@
       "path": "tests/test_fiat_checkpoint_decision_record.py",
       "suppressed": false,
       "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c494f6b1a8a3c3ac49d9027bb6f3f22eeb885c2cbd4c47b266fe5f74bc7b8cbc",
+      "path": "tests/test_noema.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e623ffc1c5dba68a5fef0babdc02c15eb59694af15c4355949b600d2ab471c40",
+      "path": "tests/test_noema.py",
+      "suppressed": false,
+      "symbol": "test_contradictory_receipt_refuses.build@4229"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7b3c8a6b31424972ed1a41e93bc1fbc978141fda7c8cc6abb9cdfde94edff196",
+      "path": "tests/test_noema.py",
+      "suppressed": false,
+      "symbol": "test_contradictory_receipt_refuses.projection@4229"
     },
     {
       "analyser_id": "python",
@@ -3076,10 +3146,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "3c67a6e293accc9ea2c00b4231c32a4894d83c80",
-    "git_tree": "015270bfdc83a516dc76542bd7b537760729f40e"
+    "commit": "b8ea20c97fbefeec396576d60e5c52abba45dc01",
+    "git_tree": "98b3adfa3990404a59471f746c6d606b771c0755"
   },
   "universe": {
-    "id": "sha256:d706d597fdd8343c8907e78bd681c8a57a118689050ef3fad35bf1be34d52bbc"
+    "id": "sha256:2dada8071345ac913cd660f761054bebd639c5ee11023053cb3653715c8c9bb9"
   }
 }

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import argparse
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 import copy
+from decimal import Decimal
 from hashlib import sha256
 import importlib.util
 import io
@@ -38,6 +41,8 @@ BOUND_SOURCE = NOEMA_FIXTURES / "codec" / "bound-source.txt"
 SOURCE_DIGEST = "34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac"
 RUNTIME_FIXTURE = NOEMA_FIXTURES / "runtime"
 CORPUS_MANIFEST = NOEMA_FIXTURES / "manifest.json"
+GIT_ANCHOR_WITNESS = NOEMA_FIXTURES / "evidence" / "git-anchor-witness.json"
+MEASUREMENT_PROFILES = NOEMA_FIXTURES / "profiles" / "measurement.json"
 SPECIMEN_FIXTURES = NOEMA_FIXTURES / "specimens"
 SEED_REFERENCE = NOEMA_FIXTURES / "seed-reference"
 SPECIMEN_NAMES = ("brevitas", "fiat", "phylax", "sapheneia")
@@ -60,6 +65,15 @@ def scratch_directory(prefix="noema-"):
     scratch = ROOT / "tmp"
     scratch.mkdir(exist_ok=True)
     return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
+
+def adapter_backoff_calls(sleep):
+    """Exclude polling observed through the process-global time module."""
+    return [
+        item
+        for item in sleep.call_args_list
+        if item in (mock.call(1), mock.call(2))
+    ]
 
 
 def source_binding(start: int = 0, end: int = 1):
@@ -173,6 +187,287 @@ def read_json(path: Path):
 
 def write_canonical_json(path: Path, value: object) -> None:
     write_bytes(path, noema._canonical_json(value))
+
+
+FAKE_ADAPTER_SOURCE = b'''#!/usr/bin/env python3
+import hashlib
+import json
+import os
+import sys
+import time
+
+raw = sys.stdin.buffer.read()
+mode = os.environ.get("NOEMA_FAKE_MODE", "success")
+sequence = os.environ.get("NOEMA_FAKE_SEQUENCE")
+state_path = os.environ.get("NOEMA_FAKE_STATE")
+if sequence and state_path:
+    try:
+        with open(state_path, "r", encoding="ascii") as state_file:
+            sequence_index = int(state_file.read())
+    except (FileNotFoundError, ValueError):
+        sequence_index = 0
+    with open(state_path, "w", encoding="ascii") as state_file:
+        state_file.write(str(sequence_index + 1))
+    sequence_modes = sequence.split(",")
+    mode = sequence_modes[min(sequence_index, len(sequence_modes) - 1)]
+if mode == "timeout":
+    time.sleep(5)
+if mode == "exit":
+    raise SystemExit(7)
+if mode == "stdout-cap":
+    sys.stdout.write("x" * 100000)
+    raise SystemExit(0)
+if mode == "stderr-cap":
+    sys.stderr.write("x" * 100000)
+    raise SystemExit(0)
+if mode == "malformed":
+    sys.stdout.write("{")
+    raise SystemExit(0)
+if mode == "duplicate-json":
+    sys.stdout.write('{"a":1,"a":2}\\n')
+    raise SystemExit(0)
+request = json.loads(raw)
+request_digest = hashlib.sha256(raw).hexdigest()
+prompt = request["prompt"].encode("utf-8")
+response = {
+    "answer_code": "NOE-OK",
+    "answer_id": (os.environ.get("NOEMA_FAKE_ANSWER", "answer.fake")
+                  if request["mode"] == "evaluation" else None),
+    "cost_usd": "0.000001",
+    "finish_reason": "stop",
+    "generation_id": "generation." + request_digest[:24],
+    "input_tokens": 7 if not prompt else 8 + len(prompt) // 4,
+    "model": os.environ["NOEMA_FAKE_MODEL"],
+    "output_tokens": 1,
+    "provider": os.environ["NOEMA_FAKE_PROVIDER"],
+    "request_sha256": request_digest,
+    "schema": "noema-adapter-response/v1",
+    "status": "recorded",
+}
+if mode == "unknown":
+    response.update(answer_code="NOE-E-ADAPTER.REMOTE", answer_id=None,
+                    cost_usd="0", finish_reason="unknown",
+                    generation_id="unknown", input_tokens=0,
+                    model="unknown", output_tokens=0, provider="unknown",
+                    status="unknown")
+elif mode == "policy-unknown":
+    response.update(answer_code="NOE-E-ADAPTER.PROVIDER_POLICY", answer_id=None,
+                    cost_usd="0", finish_reason="unknown",
+                    generation_id="unknown", input_tokens=0,
+                    model="unknown", output_tokens=0, provider="unknown",
+                    status="unknown")
+elif mode == "extra-field":
+    response["extra"] = "x"
+elif mode == "negative-count":
+    response["input_tokens"] = -1
+elif mode == "float-count":
+    response["input_tokens"] = 1.5
+elif mode == "bool-count":
+    response["input_tokens"] = True
+elif mode == "wrong-request":
+    response["request_sha256"] = "0" * 64
+elif mode == "wrong-model":
+    response["model"] = "wrong/model"
+elif mode == "wrong-provider":
+    response["provider"] = "wrong-provider"
+elif mode == "secret-answer":
+    response["answer_id"] = "sk-or-v1-not-a-real-secret"
+elif mode == "null-answer":
+    response["answer_id"] = None
+elif mode == "high-cost":
+    response["cost_usd"] = "0.9"
+elif mode == "invalid-code":
+    response["answer_code"] = "looks-good"
+elif mode == "invented-unknown":
+    response.update(answer_code="NOE-E-ADAPTER.REMOTE", answer_id=None,
+                    generation_id="unknown", model="unknown", provider="unknown",
+                    status="unknown")
+elif mode == "output-overrun":
+    response["output_tokens"] = request["max_output_tokens"] + 1
+encoded = json.dumps(response, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\\n"
+if mode == "noncanonical":
+    encoded = json.dumps(response, sort_keys=True) + "\\n"
+sys.stdout.write(encoded)
+'''
+
+
+def fake_external_profile(
+    executable: Path,
+    *,
+    identifier: str = "fake.openai",
+    family: str = "openai",
+    model: str = "fake/openai-current",
+    provider: str = "fake-provider-openai",
+    roles=("evaluation", "measurement"),
+    mode: str = "success",
+    answer: str = "answer.fake",
+):
+    role_values = sorted(roles)
+    vocabulary = sha256(f"{family}-vocabulary".encode()).hexdigest()
+    endpoint_model = model + "-20260830"
+    acquisition = {
+        "catalog_endpoint": f"https://openrouter.ai/api/v1/models/{model}/endpoints",
+        "context_length": 131072,
+        "endpoint_name": f"{provider} | {endpoint_model}",
+        "endpoint_model": endpoint_model,
+        "max_completion_tokens": 4096,
+        "max_prompt_tokens": 126976,
+        "model": model,
+        "observed_on": "2026-08-30",
+        "pricing": {
+            "completion": "0.000001",
+            "prompt": "0.000001",
+            "request": "0",
+        },
+        "pricing_overrides": [],
+        "provider": provider,
+        "provider_tag": "fake/local",
+        "quantization": "exact-test-double",
+        "supported_parameters": ["max_tokens", "response_format", "seed", "structured_outputs"],
+        "vocabulary_sha256": vocabulary,
+    }
+    return {
+        "acquisition": acquisition,
+        "acquisition_sha256": noema._value_sha256(acquisition),
+        "adapter": "noema-process-json/v1",
+        "argv": [],
+        "context": {
+            "examples": 0,
+            "messages": 1,
+            "mode": "fresh-process",
+            "repository_instructions": 0,
+            "tools": 0,
+        },
+        "endpoint": "local-process",
+        "endpoint_model": acquisition["endpoint_model"],
+        "environment_allowlist": [],
+        "evaluation_output_tokens": 64,
+        "evaluation_seed": 0 if "evaluation" in role_values else None,
+        "executable": str(executable),
+        "executable_sha256": sha256(executable.read_bytes()).hexdigest(),
+        "family": family,
+        "fixed_environment": {
+            "NOEMA_FAKE_ANSWER": answer,
+            "NOEMA_FAKE_MODE": mode,
+            "NOEMA_FAKE_MODEL": model,
+            "NOEMA_FAKE_PROVIDER": provider,
+        },
+        "id": identifier,
+        "invocation_files": [],
+        "max_stderr_bytes": 4096,
+        "max_stdout_bytes": 4096,
+        "max_token_parameter": "max_tokens",
+        "measurement_output_tokens": 1,
+        "model": model,
+        "provider": provider,
+        "provider_policy": {
+            "allow_fallbacks": False,
+            "data_collection": "deny",
+            "max_price": {"completion": "1", "prompt": "1", "request": "0"},
+            "only": [acquisition["provider_tag"]],
+            "require_parameters": True,
+            "zdr": True,
+        },
+        "roles": role_values,
+        "schema": "noema-external-profile/v1",
+        "timeout_seconds": 2,
+        "tokenizer": model + "/provider-accounting",
+        "tokenizer_identity": acquisition["endpoint_model"] + "/provider-accounting",
+        "vocabulary_sha256": vocabulary,
+        "vocabulary_status": "exact",
+    }
+
+
+def fake_profile_set(executable: Path):
+    specifications = (
+        ("fake.anthropic", "anthropic", "fake/claude-current", "fake-provider-anthropic", ("evaluation", "measurement")),
+        ("fake.google", "google", "fake/gemini-current", "fake-provider-google", ("measurement",)),
+        ("fake.open-weight", "open-weight", "fake/qwen-current", "fake-provider-open-weight", ("measurement",)),
+        ("fake.openai", "openai", "fake/openai-current", "fake-provider-openai", ("evaluation", "measurement")),
+    )
+    return {
+        "observed_on": "2026-08-30",
+        "profiles": [
+            fake_external_profile(
+                executable,
+                identifier=identifier,
+                family=family,
+                model=model,
+                provider=provider,
+                roles=roles,
+            )
+            for identifier, family, model, provider, roles in specifications
+        ],
+        "schema": "noema-external-profiles/v1",
+    }
+
+
+def valid_evaluation_answers(packet: dict[str, object], packet_raw: bytes):
+    answers = []
+    for family in packet["family_profiles"]:
+        for case in packet["cases"]:
+            for prompt in case["prompts"]:
+                key = (
+                    str(family["id"]),
+                    str(case["id"]),
+                    str(prompt["mode"]),
+                    str(prompt["context_nonce"]),
+                )
+                invocation = next(
+                    item["attempts"][0]
+                    for item in prompt["requests"]
+                    if item["family_id"] == family["id"]
+                )
+                answers.append(
+                    {
+                        "acquisition_sha256": family["acquisition_sha256"],
+                        "answer_code": "NOE-OK",
+                        "answer_id": case["required_answer_id"],
+                        "case_id": case["id"],
+                        "context_nonce": prompt["context_nonce"],
+                        "family": family["family"],
+                        "family_id": family["id"],
+                        "id": "result."
+                        + noema._correlation("evaluation-answer", *key),
+                        "mode": prompt["mode"],
+                        "model": family["model"],
+                        "profile_sha256": family["profile_sha256"],
+                        "prompt_sha256": prompt["sha256"],
+                        "provider": family["provider"],
+                        "provenance": {
+                            "attempts": [
+                                {
+                                    "answer_code": "NOE-OK",
+                                    "attempt": invocation["attempt"],
+                                    "context_nonce": invocation["context_nonce"],
+                                    "request_sha256": invocation["sha256"],
+                                    "status": "recorded",
+                                }
+                            ],
+                            "cost_usd": "0.000001",
+                            "finish_reason": "stop",
+                            "generation_id": "generation." + invocation["sha256"][:24],
+                            "input_tokens": 1,
+                            "output_tokens": 1,
+                            "request_sha256": invocation["sha256"],
+                        },
+                        "status": "recorded",
+                    }
+                )
+    return {
+        "answers": answers,
+        "case_set_sha256": packet["case_set_sha256"],
+        "packet_sha256": sha256(packet_raw).hexdigest(),
+        "profile_set_sha256": packet["profile_set_sha256"],
+        "repository_tree": packet["repository_tree"],
+        "schema": noema.EVALUATION_ANSWERS_SCHEMA,
+        "summary": {
+            "expected": len(answers),
+            "recorded": len(answers),
+            "status": "recorded",
+            "unknown": 0,
+        },
+    }
 
 
 def specimen_directory(name: str, root: Path = NOEMA_FIXTURES) -> Path:
@@ -344,11 +639,15 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "3984d411c2ad227764e5807fa711bbc6ae2cec46043333c8c4fb4958853408e2",
+            "3ddaa70761b0f473ec10c6759c707ff6a928f4fa93a9139bbaa368a490ed555b",
         )
 
     def test_repository_python_pin_is_exact(self):
         self.assertEqual((ROOT / ".python-version").read_text().strip(), "3.14.6")
+
+    def test_repository_invariant_checkout_remains_historyless(self):
+        workflow = (ROOT / ".github/workflows/repo.yml").read_text(encoding="utf-8")
+        self.assertNotIn("fetch-depth: 0", workflow)
 
     def test_schema_is_closed_and_names_all_record_families(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
@@ -360,7 +659,10 @@ class NoemaScaffoldTests(unittest.TestCase):
             "semanticDiff", "lock", "manifest", "sliceProjection", "result",
             "evidence", "sourceIdentity", "sourceSpans", "literalSet",
             "questionSet", "answerSet", "mutationPlan", "mutationResults",
-            "specimenCorpus",
+            "specimenCorpus", "externalProfiles", "measurement",
+            "evaluationPacket", "evaluationAnswers", "evaluationReport",
+            "corpusEvidence",
+            "gitAnchorWitness",
         }
         self.assertEqual(
             public_records,
@@ -405,6 +707,31 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertEqual(record["shadow"], {"const": True})
         self.assertEqual(record["unsupported_remainders"]["minimum"], 1)
         self.assertEqual(record["artifact_inventory_sha256"], {"$ref": "#/$defs/sha256"})
+
+    def test_live_profile_set_is_closed_current_and_digest_bound(self):
+        record, _raw, profiles = noema.load_external_profiles(
+            MEASUREMENT_PROFILES,
+            require_measurement_families=True,
+            verify_files=False,
+        )
+        self.assertEqual(record["observed_on"], "2026-08-31")
+        self.assertEqual(
+            [profile["family"] for profile in profiles],
+            ["anthropic", "google", "open-weight", "openai"],
+        )
+        self.assertEqual(
+            [profile["roles"] for profile in profiles],
+            [
+                ["measurement"],
+                ["evaluation", "measurement"],
+                ["measurement"],
+                ["evaluation", "measurement"],
+            ],
+        )
+        self.assertEqual(
+            [profile["evaluation_seed"] for profile in profiles],
+            [None, 0, None, 0],
+        )
 
     def test_schema_binds_mutation_assignments_and_critical_vectors(self):
         definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
@@ -4602,11 +4929,267 @@ class PathBoundaryTests(unittest.TestCase):
             )
 
 
+class GitAnchorWitnessTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.witness = read_json(GIT_ANCHOR_WITNESS)
+        cls.commit = cls.witness["repository_commit"]
+        cls.tree = cls.witness["repository_tree"]
+
+    @staticmethod
+    def completed(returncode=0, stdout=b""):
+        return subprocess.CompletedProcess([], returncode, stdout, b"")
+
+    def test_witness_carries_the_exact_anchor_tree_and_direct_carrier(self):
+        checked = noema._git_anchor_witness(
+            self.witness,
+            self.commit,
+            self.tree,
+        )
+        self.assertEqual(
+            checked["carrier_commit"],
+            "cab2e8f642413bc94daf5a3a1481eec390bcb518",
+        )
+        self.assertEqual(
+            {item["oid"] for item in checked["objects"]},
+            {self.commit, self.tree, checked["carrier_commit"]},
+        )
+
+    def test_full_checkout_still_requires_and_passes_real_ancestry(self):
+        noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+
+    def test_shallow_checkout_accepts_a_valid_witness_after_missing_history(self):
+        results = [
+            self.completed(128),
+            self.completed(128),
+            self.completed(stdout=b"true\n"),
+            self.completed(stdout=("f" * 40 + "\n").encode()),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+
+    def test_non_shallow_checkout_cannot_replace_ancestry_with_the_witness(self):
+        results = [
+            self.completed(128),
+            self.completed(128),
+            self.completed(stdout=b"false\n"),
+            self.completed(stdout=("f" * 40 + "\n").encode()),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_shallow_checkout_still_requires_one_valid_head_commit(self):
+        results = [
+            self.completed(128),
+            self.completed(128),
+            self.completed(stdout=b"true\n"),
+            self.completed(128),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_resolved_wrong_tree_refuses_even_when_git_reports_shallow(self):
+        results = [
+            self.completed(stdout=("0" * 40 + "\n").encode()),
+            self.completed(),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_changed_object_bytes_refuse_before_any_git_query(self):
+        witness = copy.deepcopy(self.witness)
+        encoded = witness["objects"][0]["data_base64"]
+        witness["objects"][0]["data_base64"] = encoded[:-2] + "AA"
+        with mock.patch.object(noema.subprocess, "run") as run:
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, witness)
+        run.assert_not_called()
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_rehashed_carrier_with_another_parent_still_refuses(self):
+        witness = copy.deepcopy(self.witness)
+        carrier = next(
+            item for item in witness["objects"]
+            if item["oid"] == witness["carrier_commit"]
+        )
+        raw = noema.base64.b64decode(carrier["data_base64"], validate=True)
+        changed = raw.replace(self.commit.encode(), b"0" * 40, 1)
+        changed_oid = noema._git_object_id("commit", changed)
+        carrier["data_base64"] = noema.base64.b64encode(changed).decode("ascii")
+        carrier["oid"] = changed_oid
+        witness["carrier_commit"] = changed_oid
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._git_anchor_witness(witness, self.commit, self.tree)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_rehashed_carrier_without_ssh_markers_still_refuses(self):
+        witness = copy.deepcopy(self.witness)
+        carrier = next(
+            item for item in witness["objects"]
+            if item["oid"] == witness["carrier_commit"]
+        )
+        raw = noema.base64.b64decode(carrier["data_base64"], validate=True)
+        changed = raw.replace(b"BEGIN SSH SIGNATURE", b"BEGIN BAD SIGNATURE", 1)
+        changed_oid = noema._git_object_id("commit", changed)
+        carrier["data_base64"] = noema.base64.b64encode(changed).decode("ascii")
+        carrier["oid"] = changed_oid
+        witness["carrier_commit"] = changed_oid
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._git_anchor_witness(witness, self.commit, self.tree)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+
 class SourceBindingTests(unittest.TestCase):
     def test_corpus_verifier_binds_four_specimens(self):
         verified = noema.verify_specimen_corpus(CORPUS_MANIFEST)
         self.assertEqual(verified["counts"]["specimens"], 4)
         self.assertEqual(verified["counts"]["members"], 17)
+
+    def test_corpus_evidence_binds_one_complete_accepted_run(self):
+        corpus = read_json(CORPUS_MANIFEST)
+        evidence = corpus["evidence"]
+        measurement = read_json(NOEMA_FIXTURES / evidence["measurement"])
+        answers = read_json(NOEMA_FIXTURES / evidence["answers"])
+        evaluation = read_json(NOEMA_FIXTURES / evidence["evaluation"])
+        self.assertEqual(measurement["summary"]["status"], "accepted")
+        self.assertEqual(
+            answers["summary"],
+            {
+                "expected": 32,
+                "recorded": 32,
+                "status": "recorded",
+                "unknown": 0,
+            },
+        )
+        self.assertEqual(
+            evaluation["summary"],
+            {"failed": 0, "pairs": 16, "passed": 16, "status": "accepted"},
+        )
+
+    def test_corpus_evidence_retains_both_cohorts_and_all_final_ledgers(self):
+        evidence_root = NOEMA_FIXTURES / "evidence"
+        retained = {
+            "answers-cohort-1.json":
+                "d6d7033112d5966f62e5ae70173ca22f34846ba1bc33a5695d771c706ce4a46d",
+            "evaluation-cohort-1.json":
+                "c91c8c488d6ff93605de52533e3f2baa1b52d61c9367ae3d582141f324437b24",
+            "ledger-0fd3801b-attempt-2.json":
+                "d5d25216e4d118ff1624dcac965184b98e96b9f3d307abf519c2869cbd3afaab",
+            "ledger-3806eb24-attempt-1.json":
+                "7fd00ad3082abb0261e2923c1e6ebaeb60be1778c6c2004b73212020131c8c68",
+            "ledger-cohort-1.json":
+                "cbec46c8ae063db4829abd9d17f30dfef763d1f3ad07b55f6fc16f842b3d0757",
+            "ledger-cohort-2.json":
+                "65e5295bf5be968ec5f0ad567aa7185c9dc4280dfc25fb0d62d12243129ba6ee",
+            "ledger-measurement.json":
+                "069ec47c7f4c8809403f8c22b302264be166b38663bc09cff86556a71dac09fe",
+            "measurement-0fd3801b-attempt-2.json":
+                "b617cbdd9abbfd3081ab085d069eea0a466b5744343fb73f2d95e2fb4b861058",
+            "measurement-3806eb24-attempt-1.json":
+                "90f4bfdf6af3f4a6e5318c28d505ba19b98ff66c01af794f0390f34879599650",
+        }
+        for name, expected in retained.items():
+            actual = sha256((evidence_root / name).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected)
+
+        verified = noema.verify_specimen_corpus(CORPUS_MANIFEST)
+        corpus = verified["manifest"]
+        evidence = corpus["evidence"]
+        profiles_path = NOEMA_FIXTURES / evidence["profiles"]
+        _record, profiles_raw, profiles = noema.load_external_profiles(
+            profiles_path,
+            require_measurement_families=True,
+            verify_files=False,
+        )
+        packet, packet_raw, _files = noema._build_evaluation_packet(
+            CORPUS_MANIFEST,
+            verified,
+            profiles_raw,
+            profiles,
+            evidence["repository_commit"],
+            evidence["repository_tree"],
+        )
+        answers_raw = (evidence_root / "answers-cohort-1.json").read_bytes()
+        first_report, success = noema._tally_evaluation_values(
+            packet,
+            packet_raw,
+            json.loads(answers_raw),
+            answers_raw,
+        )
+        self.assertTrue(success)
+        self.assertEqual(
+            first_report,
+            read_json(evidence_root / "evaluation-cohort-1.json"),
+        )
+
+        expected_ledgers = {
+            "ledger-measurement.json": ("30", "1.900021075", 152, 2),
+            "ledger-cohort-1.json": ("8", "0.723863125", 32, 0),
+            "ledger-cohort-2.json": ("8", "0.2818785", 32, 0),
+        }
+        for name, expected in expected_ledgers.items():
+            ledger = read_json(evidence_root / name)
+            self.assertEqual(
+                (
+                    ledger["budget_usd"],
+                    ledger["spent_usd"],
+                    ledger["calls"],
+                    len(ledger["reservations"]),
+                ),
+                expected,
+            )
+            self.assertIsNone(ledger["breach"])
+
+        failed_measurements = {
+            "measurement-3806eb24-attempt-1.json": (
+                "3806eb2456a4b7fe4f5eb02944591d2877e96eb4",
+                "NOE-E-ADAPTER.RESPONSE",
+                24,
+            ),
+            "measurement-0fd3801b-attempt-2.json": (
+                "0fd3801bd7ce65bfad1ec370ab1f1f79eabed29a",
+                "NOE-E-ADAPTER.HTTP_404",
+                1,
+            ),
+        }
+        for name, expected in failed_measurements.items():
+            measurement = read_json(evidence_root / name)
+            unknown = [
+                profile for profile in measurement["profiles"]
+                if profile["status"] == "unknown"
+            ]
+            self.assertEqual(measurement["summary"]["status"], "unknown")
+            self.assertEqual(len(unknown), 1)
+            self.assertEqual(
+                (
+                    measurement["repository_commit"],
+                    unknown[0]["refusal_code"],
+                    len(unknown[0]["attempts"]),
+                ),
+                expected,
+            )
+
+    def test_corpus_evidence_byte_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = root / "evidence/evaluation.json"
+            path.write_bytes(path.read_bytes() + b"\n")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVIDENCE")
+
+    def test_corpus_git_witness_byte_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = root / "evidence/git-anchor-witness.json"
+            path.write_bytes(path.read_bytes() + b"\n")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVIDENCE")
 
     def test_each_specimen_id_names_its_fixed_canonical_source(self):
         for name in SPECIMEN_NAMES:
@@ -4749,6 +5332,69 @@ class SourceBindingTests(unittest.TestCase):
         corpus = read_json(CORPUS_MANIFEST)
         self.assertTrue(all(item["shadow"] for item in corpus["specimens"]))
         self.assertEqual(sum(item["unsupported_remainders"] for item in corpus["specimens"]), 44)
+
+    def test_critical_nodes_bind_source_text_that_names_their_semantics(self):
+        expected = {
+            ("brevitas", "rule.exact"): "brevitas: evidence-exception",
+            ("fiat", "rule.authorized"): "Wildcat contributor explicitly asks",
+            ("fiat", "rule.negated"): "status` and `next` are the truth",
+            ("fiat", "rule.ordered"): "receipt it, ask for the next one",
+            ("phylax", "rule.blocked"): "model output to a shell",
+            ("phylax", "rule.default"): "Adding a dependency.",
+            ("phylax", "rule.authorized"): "approval a widened trust boundary",
+            ("sapheneia", "rule.authorized"): "destructive action",
+            ("sapheneia", "rule.unknown"): "genuinely ambiguous",
+        }
+        for (specimen, node), fragment in expected.items():
+            directory = specimen_directory(specimen)
+            identity = read_json(directory / "source.json")
+            source = (ROOT / identity["path"]).read_bytes()
+            spans = read_json(directory / "source-spans.json")["spans"]
+            span = next(item for item in spans if item.get("node") == node)
+            excerpt = source[span["start"] : span["end"]].decode("utf-8")
+            self.assertIn(fragment, excerpt, (specimen, node))
+
+    def test_specimen_effect_vocabularies_are_not_one_shared_scaffold(self):
+        vocabularies = {}
+        for specimen in SPECIMEN_NAMES:
+            records = noema._parse_source_lines(
+                (specimen_directory(specimen) / "source.noe").read_bytes()
+            )
+            vocabularies[specimen] = {
+                value
+                for record in records
+                if record[0] == "rule"
+                for kind, value in noema._typed_atoms(record[2])
+                if kind == "effect"
+            }
+            self.assertGreaterEqual(len(vocabularies[specimen]), 10)
+        for index, left in enumerate(SPECIMEN_NAMES):
+            for right in SPECIMEN_NAMES[index + 1 :]:
+                self.assertFalse(vocabularies[left] & vocabularies[right])
+
+    def test_source_authority_conditions_are_explicit_checked_facts(self):
+        expected = {
+            "fiat": "fiat-request-explicit",
+            "sapheneia": "destructive-action-confirmed",
+        }
+        for specimen, evidence in expected.items():
+            directory = specimen_directory(specimen)
+            records = noema._parse_source_lines((directory / "source.noe").read_bytes())
+            rule = next(
+                record
+                for record in records
+                if record[:2] == ["rule", "rule.authorized"]
+            )
+            proposition = rule[2][2][1]
+            self.assertEqual(
+                proposition,
+                ["core.checked", [":", "evidence", evidence]],
+            )
+            facts = {
+                item["id"]: item
+                for item in read_json(directory / "selection.json")["facts"]
+            }
+            self.assertEqual(facts[noema.fact_id(proposition)]["value"], "true")
 
     def test_corpus_record_cannot_promote_a_fully_mapped_specimen(self):
         record = copy.deepcopy(read_json(CORPUS_MANIFEST)["specimens"][0])
@@ -5055,6 +5701,10 @@ class SpecimenRoundTripTests(unittest.TestCase):
 
     def test_earlier_specimen_snapshot_is_held_through_the_corpus_verdict(self):
         with copied_corpus() as root:
+            manifest_path = root / "manifest.json"
+            manifest = read_json(manifest_path)
+            manifest.pop("evidence")
+            write_canonical_json(manifest_path, manifest)
             original = noema._verify_specimen
             calls = 0
 
@@ -5077,7 +5727,7 @@ class SpecimenRoundTripTests(unittest.TestCase):
                 side_effect=mutate_after_later_specimen,
             ):
                 with self.assertRaises(noema.Refusal) as raised:
-                    noema.verify_specimen_corpus(root / "manifest.json")
+                    noema.verify_specimen_corpus(manifest_path)
         self.assertEqual(raised.exception.code, "NOE-E-IO.CHANGED")
 
     def test_closed_inventory_stops_at_the_first_unexpected_member(self):
@@ -5178,8 +5828,98 @@ class SpecimenRoundTripTests(unittest.TestCase):
     def test_unreachable_hostile_literals_remain_out_of_the_operation_slice(self):
         directory = specimen_directory("brevitas")
         manifest = read_json(directory / "manifest.json")
-        self.assertEqual(manifest["literals"], ["lit.command"])
+        self.assertEqual(manifest["literals"], ["lit.quote"])
+        self.assertNotIn("lit.command", manifest["literals"])
         self.assertNotIn("lit.url", manifest["literals"])
+
+    def test_formal_kernel_is_complete_and_shared_by_every_projection(self):
+        kernel = KERNEL_FIXTURE.read_bytes()
+        self.assertGreater(len(kernel), 800)
+        for required in (
+            b"D[\"?\",g,d]=T:d,F:none,U:block(d)",
+            b"D[\"^\",actor,d]=actor is exclusive authority",
+            b"FACT id=sha256(canonical proposition)",
+            b"check(effect): active prohibit=>refuse",
+            b"execute=never",
+        ):
+            self.assertIn(required, kernel)
+        copies = [RUNTIME_FIXTURE / "kernel.noe"] + [
+            specimen_directory(name) / "kernel.noe" for name in SPECIMEN_NAMES
+        ]
+        for path in copies:
+            self.assertEqual(path.read_bytes(), kernel)
+
+    def test_every_checked_fact_has_one_exposed_graph_proposition(self):
+        for specimen in SPECIMEN_NAMES:
+            directory = specimen_directory(specimen)
+            build = read_json(directory / "build.json")
+            selection = read_json(directory / "selection.json")
+            context = noema._evaluation_runtime_context(
+                build["graph"],
+                selection,
+            )
+            self.assertEqual(
+                [item["id"] for item in context["facts"]],
+                [item["id"] for item in selection["facts"]],
+            )
+            for item in context["facts"]:
+                self.assertEqual(noema.fact_id(item["proposition"]), item["id"])
+
+    def test_unbound_checked_fact_cannot_enter_evaluation_context(self):
+        directory = specimen_directory("sapheneia")
+        build = read_json(directory / "build.json")
+        selection = copy.deepcopy(read_json(directory / "selection.json"))
+        selection["facts"] = [
+            {
+                "evidence_sha256": "0" * 64,
+                "id": "fact." + "0" * 64,
+                "value": "unknown",
+            }
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._evaluation_runtime_context(build["graph"], selection)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.FACT_CONTEXT")
+
+    def test_non_proposition_graph_list_cannot_enter_evaluation_context(self):
+        directory = specimen_directory("sapheneia")
+        build = read_json(directory / "build.json")
+        selection = copy.deepcopy(read_json(directory / "selection.json"))
+        rule = next(
+            record
+            for record in build["graph"]["records"]
+            if record[:2] == ["rule", "rule.authorized"]
+        )
+        selection["facts"] = [
+            {
+                "evidence_sha256": "0" * 64,
+                "id": noema.fact_id(rule[2]),
+                "value": "unknown",
+            }
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._evaluation_runtime_context(build["graph"], selection)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.FACT_CONTEXT")
+
+    def test_expanded_checked_fact_is_exposed_as_its_exact_proposition(self):
+        directory = specimen_directory("fiat")
+        build = read_json(directory / "build.json")
+        selection = copy.deepcopy(read_json(directory / "selection.json"))
+        rule = next(
+            record
+            for record in build["graph"]["records"]
+            if record[:2] == ["rule", "rule.defined"]
+        )
+        _literals, definitions = noema._runtime_registry(build["graph"])
+        expanded = noema._expand_runtime_term(rule[2][1], definitions)
+        selection["facts"] = [
+            {
+                "evidence_sha256": "0" * 64,
+                "id": noema.fact_id(expanded),
+                "value": "true",
+            }
+        ]
+        context = noema._evaluation_runtime_context(build["graph"], selection)
+        self.assertEqual(context["facts"][0]["proposition"], expanded)
 
     def test_full_projection_and_slice_are_separate_objects(self):
         for name in SPECIMEN_NAMES:
@@ -5232,33 +5972,25 @@ class MutationTests(unittest.TestCase):
 
     def test_source_mutation_recipes_are_pairwise_distinct(self):
         source_categories = sorted(noema.MUTATION_CATEGORIES - {"alias-collision"})
-        for name in SPECIMEN_NAMES:
-            directory = specimen_directory(name)
-            baseline_source = (directory / "source.noe").read_bytes()
-            baseline_profile = (directory / "profile.json").read_bytes()
-            for planned in read_json(directory / "mutation-plan.json")["mutations"]:
-                if planned["kind"] != "source":
-                    continue
-                for alternate in source_categories:
-                    if alternate == planned["category"]:
-                        continue
+        fingerprints = {}
+        for category in source_categories:
+            outcomes = []
+            for name in SPECIMEN_NAMES:
+                baseline_source = (
+                    specimen_directory(name) / "source.noe"
+                ).read_bytes()
+                try:
                     artifact = noema._expected_source_mutation(
-                        alternate,
+                        category,
                         baseline_source,
-                        "test.alternate",
+                        f"test.{category}.{name}",
                     )
-                    with self.assertRaises(noema.Refusal) as raised:
-                        noema._validate_mutation_artifact(
-                            planned,
-                            artifact,
-                            baseline_source,
-                            baseline_profile,
-                            "test.planned",
-                        )
-                    self.assertEqual(
-                        raised.exception.code,
-                        "NOE-E-REFERENCE.MUTATION_ARTIFACT",
-                    )
+                except noema.Refusal as error:
+                    outcomes.append((name, "refused", error.code))
+                else:
+                    outcomes.append((name, "changed", sha256(artifact).hexdigest()))
+            fingerprints[category] = tuple(outcomes)
+        self.assertEqual(len(set(fingerprints.values())), len(source_categories))
 
     def test_alias_collision_rejects_a_different_colliding_profile(self):
         directory = specimen_directory("brevitas")
@@ -5302,11 +6034,10 @@ class MutationTests(unittest.TestCase):
             directory = specimen_directory("sapheneia", root)
             path = directory / "mutations/sapheneia.swapped-actor.noe"
             path.write_bytes(
-                noema._expected_source_mutation(
-                    "missing-authority",
-                    (directory / "source.noe").read_bytes(),
-                    "test",
-                )
+                (
+                    specimen_directory("fiat", root)
+                    / "mutations/fiat.missing-authority.noe"
+                ).read_bytes()
             )
             with self.assertRaises(noema.Refusal) as raised:
                 noema._derive_specimen(directory, ROOT)
@@ -5617,7 +6348,7 @@ def _hostile_literal_test(kind):
         self.assertEqual(item["bytes"], len(item["value"].encode("utf-8")))
         self.assertEqual(item["sha256"], sha256(item["value"].encode("utf-8")).hexdigest())
         manifest, _projection = noema._verify_manifest_path(directory / "manifest.json")
-        if kind == "command":
+        if kind == "quote":
             result = noema.literal_runtime(item["id"], manifest)
             self.assertEqual(result["output"]["value"], item["value"])
         else:
@@ -5964,6 +6695,2023 @@ def _operator_test(operator):
 for _operator in sorted(noema.OPERATORS):
     safe_name = {"!": "require", "-": "prohibit", "+": "permit", "?": "when_true", "/": "when_false", "@": "scope", "^": "authority", ";": "sequence", "&": "and", "|": "or", "~": "not", "=": "equal", "=>": "implies", "<": "before"}.get(_operator, _operator)
     setattr(GraphValidationTests, f"test_operator_{safe_name}", _operator_test(_operator))
+
+
+class ExternalAdapterTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = scratch_directory("noema-adapter-")
+        self.directory = Path(self.temporary.name)
+        self.executable = self.directory / "fake-adapter.py"
+        write_bytes(self.executable, FAKE_ADAPTER_SOURCE)
+        self.executable.chmod(0o700)
+        self.ledger = self.directory / "budget.json"
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def profile(self, mode="success", **changes):
+        profile = fake_external_profile(self.executable, mode=mode)
+        profile.update(changes)
+        return profile
+
+    def invoke(self, profile, *, prompt=b"bounded public input", mode="evaluation", budget="1"):
+        return noema.invoke_adapter(
+            profile,
+            prompt,
+            mode=mode,
+            context_nonce="context.test",
+            credential=None,
+            budget=Decimal(budget),
+            budget_ledger=self.ledger,
+        )
+
+    def profile_refusal(self, profile):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_external_profile(
+                profile,
+                ROOT,
+                "profile",
+                verify_files=True,
+            )
+        return raised.exception
+
+    def invoke_openrouter_child(self, request_raw, provider_response):
+        credential = self.directory / "openrouter-key"
+        write_bytes(credential, b"sk-or-v1-test-only-value\n")
+        credential.chmod(0o600)
+
+        class CaptureOpener:
+            request = None
+
+            def open(self, request, timeout):
+                self.request = request
+                self.timeout = timeout
+                return io.BytesIO(provider_response)
+
+        opener = CaptureOpener()
+        stdin = mock.Mock()
+        stdin.buffer = io.BytesIO(request_raw)
+        stdout = mock.Mock()
+        stdout.buffer = io.BytesIO()
+        with (
+            mock.patch.object(noema.sys, "stdin", stdin),
+            mock.patch.object(noema.sys, "stdout", stdout),
+            mock.patch.object(noema.urllib.request, "build_opener", return_value=opener),
+            mock.patch.dict(
+                noema.os.environ,
+                {noema.OPENROUTER_KEY_PATH_ENV: str(credential)},
+                clear=False,
+            ),
+        ):
+            self.assertEqual(noema._openrouter_adapter(), 0)
+        return opener, json.loads(stdout.buffer.getvalue())
+
+    def invoke_refusal(self, mode, expected, **profile_changes):
+        with self.assertRaises(noema.Refusal) as raised:
+            self.invoke(self.profile(mode, **profile_changes))
+        self.assertEqual(raised.exception.code, expected)
+
+    def test_fake_profile_is_a_closed_valid_external_boundary(self):
+        profile = self.profile()
+        self.assertIs(
+            noema._validate_external_profile(profile, ROOT, "profile", verify_files=True),
+            profile,
+        )
+
+    def test_changed_executable_digest_refuses(self):
+        profile = self.profile(executable_sha256="0" * 64)
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.EXECUTABLE_CHANGED")
+
+    def test_changed_invocation_file_digest_refuses(self):
+        profile = self.profile(
+            invocation_files=[{"path": "scripts/noema.py", "sha256": "0" * 64}]
+        )
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.EXECUTABLE_CHANGED")
+
+    def test_exact_vocabulary_requires_digest(self):
+        profile = self.profile(vocabulary_sha256=None)
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-TYPE.SHA256")
+
+    def test_private_vocabulary_rejects_invented_digest(self):
+        profile = self.profile(vocabulary_status="provider-private")
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-TOKENIZER.IDENTITY")
+
+    def test_acquisition_digest_mismatch_refuses(self):
+        profile = self.profile(acquisition_sha256="0" * 64)
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-DIGEST.ACQUISITION")
+
+    def test_acquisition_vocabulary_mismatch_refuses(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["vocabulary_sha256"] = "1" * 64
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-EVALUATION.PROFILE")
+
+    def test_acquisition_catalogue_identity_mismatch_refuses(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["endpoint_name"] = "another endpoint"
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        self.assertEqual(
+            self.profile_refusal(profile).code,
+            "NOE-E-EVALUATION.PROFILE",
+        )
+
+    def test_provider_fallback_refuses(self):
+        profile = self.profile()
+        profile["provider_policy"] = copy.deepcopy(profile["provider_policy"])
+        profile["provider_policy"]["allow_fallbacks"] = True
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PROVIDER_POLICY")
+
+    def test_provider_collection_refuses(self):
+        profile = self.profile()
+        profile["provider_policy"] = copy.deepcopy(profile["provider_policy"])
+        profile["provider_policy"]["data_collection"] = "allow"
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PROVIDER_POLICY")
+
+    def test_provider_route_tag_change_refuses(self):
+        profile = self.profile()
+        profile["provider_policy"] = copy.deepcopy(profile["provider_policy"])
+        profile["provider_policy"]["only"] = [profile["provider"]]
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PROVIDER_POLICY")
+
+    def test_provider_price_ceiling_change_refuses(self):
+        profile = self.profile()
+        profile["provider_policy"] = copy.deepcopy(profile["provider_policy"])
+        profile["provider_policy"]["max_price"]["completion"] = "2"
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PROVIDER_POLICY")
+
+    def test_missing_request_price_refuses(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        del profile["acquisition"]["pricing"]["request"]
+        profile["acquisition_sha256"] = noema._value_sha256(
+            profile["acquisition"]
+        )
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-TYPE.KEYS")
+
+    def test_request_price_ceiling_change_refuses(self):
+        profile = self.profile()
+        profile["provider_policy"] = copy.deepcopy(profile["provider_policy"])
+        profile["provider_policy"]["max_price"]["request"] = "0.1"
+        self.assertEqual(
+            self.profile_refusal(profile).code,
+            "NOE-E-ADAPTER.PROVIDER_POLICY",
+        )
+
+    def test_missing_structured_output_support_refuses_evaluation_profile(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["supported_parameters"].remove("structured_outputs")
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_missing_seed_support_refuses_evaluation_profile(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["supported_parameters"].remove("seed")
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_missing_evaluation_seed_refuses(self):
+        profile = self.profile()
+        del profile["evaluation_seed"]
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-TYPE.KEYS")
+
+    def test_changed_evaluation_seed_refuses(self):
+        profile = self.profile(evaluation_seed=1)
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_measurement_only_profile_requires_null_evaluation_seed(self):
+        profile = fake_external_profile(self.executable, roles=("measurement",))
+        self.assertIsNone(profile["evaluation_seed"])
+        self.assertIs(
+            noema._validate_external_profile(profile, ROOT, "profile", verify_files=True),
+            profile,
+        )
+        profile["evaluation_seed"] = 0
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.PARAMETER")
+
+    def test_adapter_request_applies_seed_only_to_evaluation(self):
+        profile = self.profile()
+        evaluation_raw, _evaluation_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        measurement_raw, _measurement_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="measurement",
+            context_nonce="context.measurement",
+        )
+        self.assertEqual(json.loads(evaluation_raw)["evaluation_seed"], 0)
+        self.assertIsNone(json.loads(measurement_raw)["evaluation_seed"])
+
+    def test_measurement_only_profile_cannot_invoke_evaluation(self):
+        profile = fake_external_profile(self.executable, roles=("measurement",))
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._adapter_request_bytes(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.evaluation",
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.MODE")
+
+    def test_openrouter_child_refuses_measurement_seed_leakage(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="measurement",
+            context_nonce="context.measurement",
+        )
+        request = json.loads(request_raw)
+        request["evaluation_seed"] = 0
+        stdin = mock.Mock()
+        stdin.buffer = io.BytesIO(noema._canonical_json(request))
+        stdout = mock.Mock()
+        stdout.buffer = io.BytesIO()
+        with (
+            mock.patch.object(noema.sys, "stdin", stdin),
+            mock.patch.object(noema.sys, "stdout", stdout),
+        ):
+            self.assertEqual(noema._openrouter_adapter(), 0)
+        response = json.loads(stdout.buffer.getvalue())
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.PARAMETER")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_openrouter_child_sends_the_bound_evaluation_seed(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        provider_response = noema._canonical_json(
+            {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"answer_id":"answer.fake"}'},
+                    }
+                ],
+                "id": "generation.test",
+                "model": profile["model"],
+                "provider": profile["provider"],
+                "usage": {"completion_tokens": 1, "cost": "0.000001", "prompt_tokens": 8},
+            }
+        )
+
+        opener, response = self.invoke_openrouter_child(request_raw, provider_response)
+        self.assertIsNotNone(opener.request)
+        self.assertEqual(json.loads(opener.request.data)["seed"], 0)
+        self.assertEqual(response["status"], "recorded")
+
+    def test_openrouter_child_normalises_malformed_provider_envelope(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        _opener, response = self.invoke_openrouter_child(request_raw, b"{}\n")
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.RESPONSE")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_openrouter_child_normalises_missing_token_accounting(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        provider_response = noema._canonical_json(
+            {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"answer_id":"answer.fake"}'},
+                    }
+                ],
+                "id": "generation.test",
+                "model": profile["model"],
+                "provider": profile["provider"],
+            }
+        )
+        _opener, response = self.invoke_openrouter_child(
+            request_raw,
+            provider_response,
+        )
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.RESPONSE")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_openrouter_child_refuses_unbounded_provider_cost_exponent(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        provider_response = noema._canonical_json(
+            {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"answer_id":"answer.fake"}'},
+                    }
+                ],
+                "id": "generation.test",
+                "model": profile["model"],
+                "provider": profile["provider"],
+                "usage": {
+                    "completion_tokens": 1,
+                    "cost": "1e1000000000",
+                    "prompt_tokens": 8,
+                },
+            }
+        ).replace(b'"1e1000000000"', b"1e1000000000")
+        _opener, response = self.invoke_openrouter_child(request_raw, provider_response)
+        self.assertEqual(response["answer_code"], "NOE-E-BOUNDS.DECIMAL")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_provider_policy_requires_exact_json_number(self):
+        self.assertEqual(
+            noema._provider_json_number(Decimal("0.75"), "policy"),
+            0.75,
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._provider_json_number(
+                Decimal("0.1000000000000000000000001"),
+                "policy",
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.PROVIDER_POLICY")
+
+    def test_openrouter_child_refuses_lossy_price_before_network(self):
+        profile = self.profile(
+            adapter="noema-openrouter-chat/v1",
+            endpoint=noema.OPENROUTER_ENDPOINT,
+        )
+        request_raw, _request_digest = noema._adapter_request_bytes(
+            profile,
+            b"bounded public input",
+            mode="evaluation",
+            context_nonce="context.evaluation",
+        )
+        request = json.loads(request_raw)
+        request["provider_policy"]["max_price"]["prompt"] = (
+            "0.1000000000000000000000001"
+        )
+        opener, response = self.invoke_openrouter_child(
+            noema._canonical_json(request),
+            b"{}\n",
+        )
+        self.assertIsNone(opener.request)
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.PROVIDER_POLICY")
+        self.assertEqual(response["status"], "unknown")
+
+    def test_provider_decimal_bounds_fixed_expansion_before_render(self):
+        small = noema._provider_decimal(Decimal("1e-7"), "cost")
+        self.assertEqual(noema._decimal_string(small), "0.0000001")
+        self.assertEqual(
+            noema._provider_decimal(Decimal("0e-1000000000"), "cost"),
+            Decimal(0),
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._provider_decimal(Decimal("1e-1000000000"), "cost")
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.DECIMAL")
+
+    def test_environment_overlap_refuses(self):
+        profile = self.profile(environment_allowlist=["NOEMA_FAKE_MODE"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.ENVIRONMENT")
+
+    def test_local_adapter_cannot_receive_provider_credential_path(self):
+        profile = self.profile(environment_allowlist=[noema.OPENROUTER_KEY_PATH_ENV])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.ENVIRONMENT")
+
+    def test_secret_shaped_argv_refuses(self):
+        profile = self.profile(argv=["--api-key=value"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-ADAPTER.ARGV")
+
+    def test_relative_executable_refuses(self):
+        profile = self.profile(executable="fake-adapter.py")
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-PATH.EXECUTABLE")
+
+    def test_unknown_family_refuses(self):
+        profile = self.profile(family="same-provider-release")
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-EVALUATION.FAMILY")
+
+    def test_unknown_role_refuses(self):
+        profile = self.profile(roles=["authority"])
+        self.assertEqual(self.profile_refusal(profile).code, "NOE-E-EVALUATION.PROFILE")
+
+    def test_nonisolated_context_refuses(self):
+        context = copy.deepcopy(self.profile()["context"])
+        context["messages"] = 2
+        self.assertEqual(self.profile_refusal(self.profile(context=context)).code, "NOE-E-EVALUATION.CONTEXT")
+
+    def test_success_response_settles_budget(self):
+        response = self.invoke(self.profile())
+        self.assertEqual((response["status"], response["answer_id"]), ("recorded", "answer.fake"))
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["reservations"]), (1, []))
+
+    def test_unknown_response_retains_conservative_reservation(self):
+        response = self.invoke(self.profile("unknown"))
+        self.assertEqual(response["status"], "unknown")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual(len(ledger["reservations"]), 1)
+
+    def test_transient_unknown_retries_only_the_failed_invocation(self):
+        state = self.directory / "retry-state"
+        profile = self.profile()
+        profile["fixed_environment"].update(
+            NOEMA_FAKE_SEQUENCE="unknown,success",
+            NOEMA_FAKE_STATE=str(state),
+        )
+        with mock.patch.object(noema.time, "sleep") as sleep:
+            response, attempts = noema._invoke_adapter_with_retries(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.retry",
+                credential=None,
+                budget=Decimal("1"),
+                budget_ledger=self.ledger,
+            )
+        self.assertEqual(response["status"], "recorded")
+        self.assertEqual(
+            [(item["attempt"], item["status"]) for item in attempts],
+            [(1, "unknown"), (2, "recorded")],
+        )
+        self.assertEqual(len({item["request_sha256"] for item in attempts}), 2)
+        self.assertEqual(adapter_backoff_calls(sleep), [mock.call(1)])
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], len(ledger["reservations"])), (1, 1))
+        self.assertEqual(
+            ledger["reservations"][0]["request_sha256"],
+            attempts[0]["request_sha256"],
+        )
+
+    def test_transient_retry_exhaustion_is_bounded_and_conservative(self):
+        state = self.directory / "retry-state"
+        profile = self.profile()
+        profile["fixed_environment"].update(
+            NOEMA_FAKE_SEQUENCE="unknown,unknown,unknown",
+            NOEMA_FAKE_STATE=str(state),
+        )
+        with mock.patch.object(noema.time, "sleep") as sleep:
+            response, attempts = noema._invoke_adapter_with_retries(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.retry",
+                credential=None,
+                budget=Decimal("1"),
+                budget_ledger=self.ledger,
+            )
+        self.assertEqual(response["status"], "unknown")
+        self.assertEqual([item["attempt"] for item in attempts], [1, 2, 3])
+        self.assertEqual(adapter_backoff_calls(sleep), [mock.call(1), mock.call(2)])
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], len(ledger["reservations"])), (0, 3))
+
+    def test_independent_repeat_uses_a_fresh_bounded_ledger(self):
+        state = self.directory / "repeat-state"
+        profile = self.profile()
+        profile["fixed_environment"].update(
+            NOEMA_FAKE_SEQUENCE="unknown,success,success",
+            NOEMA_FAKE_STATE=str(state),
+        )
+        second_ledger = self.directory / "second-budget.json"
+        with mock.patch.object(noema.time, "sleep"):
+            first, first_attempts = noema._invoke_adapter_with_retries(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.repeat",
+                credential=None,
+                budget=Decimal("1"),
+                budget_ledger=self.ledger,
+            )
+            second, second_attempts = noema._invoke_adapter_with_retries(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.repeat",
+                credential=None,
+                budget=Decimal("1"),
+                budget_ledger=second_ledger,
+            )
+        self.assertEqual((first["status"], second["status"]), ("recorded", "recorded"))
+        self.assertEqual([item["attempt"] for item in first_attempts], [1, 2])
+        self.assertEqual([item["attempt"] for item in second_attempts], [1])
+        first_budget = noema._budget_record(self.ledger, Decimal("1"))
+        second_budget = noema._budget_record(second_ledger, Decimal("1"))
+        self.assertEqual(len(first_budget["reservations"]), 1)
+        self.assertEqual((second_budget["calls"], second_budget["reservations"]), (1, []))
+
+    def test_nonretryable_unknown_stops_after_one_attempt(self):
+        profile = self.profile("policy-unknown")
+        with mock.patch.object(noema.time, "sleep") as sleep:
+            response, attempts = noema._invoke_adapter_with_retries(
+                profile,
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.retry",
+                credential=None,
+                budget=Decimal("1"),
+                budget_ledger=self.ledger,
+            )
+        self.assertEqual(response["answer_code"], "NOE-E-ADAPTER.PROVIDER_POLICY")
+        self.assertEqual(len(attempts), 1)
+        self.assertEqual(adapter_backoff_calls(sleep), [])
+
+    def test_local_attempt_refusal_retains_the_exact_request_binding(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._invoke_adapter_with_retries(
+                self.profile("wrong-request"),
+                b"bounded public input",
+                mode="evaluation",
+                context_nonce="context.retry",
+                credential=None,
+                budget=Decimal("1"),
+                budget_ledger=self.ledger,
+            )
+        attempts = raised.exception.attempts
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.ADAPTER")
+        self.assertEqual(len(attempts), 1)
+        self.assertEqual(attempts[0]["answer_code"], raised.exception.code)
+        self.assertEqual(attempts[0]["status"], "refused")
+
+    def test_malformed_response_refuses(self):
+        self.invoke_refusal("malformed", "NOE-E-SYNTAX.JSON")
+
+    def test_duplicate_json_key_refuses(self):
+        self.invoke_refusal("duplicate-json", "NOE-E-SYNTAX.DUPLICATE_KEY")
+
+    def test_noncanonical_response_refuses(self):
+        self.invoke_refusal("noncanonical", "NOE-E-SYNTAX.CANONICAL")
+
+    def test_extra_response_field_refuses(self):
+        self.invoke_refusal("extra-field", "NOE-E-TYPE.KEYS")
+
+    def test_response_code_outside_closed_alphabet_refuses(self):
+        self.invoke_refusal("invalid-code", "NOE-E-ADAPTER.RESPONSE")
+
+    def test_unknown_response_cannot_invent_accounting(self):
+        self.invoke_refusal("invented-unknown", "NOE-E-ADAPTER.RESPONSE")
+
+    def test_negative_token_count_refuses(self):
+        self.invoke_refusal("negative-count", "NOE-E-BOUNDS.INTEGER")
+
+    def test_fractional_token_count_refuses(self):
+        self.invoke_refusal("float-count", "NOE-E-BOUNDS.INTEGER")
+
+    def test_boolean_token_count_refuses(self):
+        self.invoke_refusal("bool-count", "NOE-E-BOUNDS.INTEGER")
+
+    def test_cross_request_response_refuses(self):
+        self.invoke_refusal("wrong-request", "NOE-E-DIGEST.ADAPTER")
+
+    def test_changed_model_identity_refuses(self):
+        self.invoke_refusal("wrong-model", "NOE-E-ADAPTER.IDENTITY_CHANGED")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["reservations"]), (1, []))
+
+    def test_changed_provider_identity_refuses(self):
+        self.invoke_refusal("wrong-provider", "NOE-E-ADAPTER.IDENTITY_CHANGED")
+
+    def test_secret_shaped_answer_refuses(self):
+        self.invoke_refusal("secret-answer", "NOE-E-EVALUATION.SECRET_OUTPUT")
+
+    def test_success_without_answer_refuses(self):
+        self.invoke_refusal("null-answer", "NOE-E-EVALUATION.ANSWER")
+
+    def test_child_exit_refuses_as_unavailable(self):
+        self.invoke_refusal("exit", "NOE-E-ADAPTER.UNAVAILABLE")
+
+    def test_timeout_kills_the_process_group(self):
+        self.invoke_refusal("timeout", "NOE-E-ADAPTER.TIMEOUT", timeout_seconds=1)
+
+    def test_stdout_cap_refuses(self):
+        self.invoke_refusal("stdout-cap", "NOE-E-ADAPTER.OUTPUT_CAP")
+
+    def test_stderr_cap_refuses(self):
+        self.invoke_refusal("stderr-cap", "NOE-E-ADAPTER.OUTPUT_CAP")
+
+    def test_provider_cost_above_reservation_refuses(self):
+        self.invoke_refusal("high-cost", "NOE-E-BUDGET.OVERRUN")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["spent_usd"], ledger["reservations"]), (1, "0.9", []))
+        self.assertEqual(ledger["breach"]["reason"], "reservation-exceeded")
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(
+                self.ledger,
+                Decimal("1"),
+                "f" * 64,
+                Decimal("0.01"),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.BREACH")
+
+    def test_provider_output_above_requested_bound_refuses(self):
+        self.invoke_refusal("output-overrun", "NOE-E-ADAPTER.PARAMETER")
+        ledger, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual((ledger["calls"], ledger["reservations"]), (1, []))
+
+    def test_budget_reserve_and_finalize_are_atomic(self):
+        request = "a" * 64
+        noema._budget_reserve(self.ledger, Decimal("1"), request, Decimal("0.2"))
+        noema._budget_finalize(self.ledger, Decimal("1"), request, Decimal("0.1"))
+        ledger = noema._budget_record(self.ledger, Decimal("1"))
+        self.assertEqual((ledger["calls"], ledger["spent_usd"], ledger["reservations"]), (1, "0.1", []))
+
+    def test_budget_refuses_request_past_ceiling(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(self.ledger, Decimal("0.1"), "b" * 64, Decimal("0.1000001"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LIMIT")
+
+    def test_live_command_requires_explicit_budget_authority(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_arguments(
+                argparse.Namespace(
+                    budget_ledger=self.ledger,
+                    budget_usd=None,
+                )
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.AUTHORITY")
+
+    def test_budget_refuses_duplicate_unresolved_request(self):
+        noema._budget_reserve(self.ledger, Decimal("1"), "c" * 64, Decimal("0.1"))
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(self.ledger, Decimal("1"), "c" * 64, Decimal("0.1"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.DUPLICATE")
+
+    def test_budget_refuses_tampered_overcommit(self):
+        record = {
+            "breach": None,
+            "budget_usd": "1",
+            "calls": 0,
+            "reservations": [{"estimated_usd": "0.6", "request_sha256": "d" * 64}],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0.5",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_record(self.ledger, Decimal("1"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
+
+    def test_budget_refuses_overcommit_hidden_by_decimal_context_rounding(self):
+        record = {
+            "breach": None,
+            "budget_usd": "1",
+            "calls": 0,
+            "reservations": [
+                {
+                    "estimated_usd": "0.00000000000000000000000000006",
+                    "request_sha256": "e" * 64,
+                }
+            ],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0.99999999999999999999999999995",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_record(self.ledger, Decimal("1"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
+
+    def test_budget_refuses_combined_call_and_reservation_overflow(self):
+        record = {
+            "breach": None,
+            "budget_usd": "1",
+            "calls": noema.MAX_BUDGET_CALLS,
+            "reservations": [
+                {"estimated_usd": "0", "request_sha256": "e" * 64}
+            ],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_record(self.ledger, Decimal("1"))
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LEDGER")
+
+    def test_budget_refuses_reservation_at_call_cap(self):
+        record = {
+            "breach": None,
+            "budget_usd": "1",
+            "calls": noema.MAX_BUDGET_CALLS,
+            "reservations": [],
+            "schema": noema.BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0",
+        }
+        write_canonical_json(self.ledger, record)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(
+                self.ledger,
+                Decimal("1"),
+                "e" * 64,
+                Decimal("0.1"),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LIMIT")
+
+    def test_budget_migrates_legacy_ledger_on_next_write(self):
+        record = {
+            "budget_usd": "1",
+            "calls": 0,
+            "reservations": [],
+            "schema": noema.LEGACY_BUDGET_LEDGER_SCHEMA,
+            "spent_usd": "0",
+        }
+        write_canonical_json(self.ledger, record)
+        noema._budget_reserve(
+            self.ledger,
+            Decimal("1"),
+            "e" * 64,
+            Decimal("0.1"),
+        )
+        migrated, _raw = noema._read_canonical_json(self.ledger, "ledger")
+        self.assertEqual(migrated["schema"], noema.BUDGET_LEDGER_SCHEMA)
+        self.assertIsNone(migrated["breach"])
+
+    def test_budget_missing_parent_refuses_without_traceback(self):
+        missing = self.directory / "missing" / "budget.json"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._budget_reserve(
+                missing,
+                Decimal("1"),
+                "e" * 64,
+                Decimal("0.1"),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.LOCK")
+
+    def test_budget_lock_serialises_parallel_reservations_and_settlements(self):
+        requests = [f"{index:064x}" for index in range(24)]
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(
+                pool.map(
+                    lambda request: noema._budget_reserve(
+                        self.ledger,
+                        Decimal("10"),
+                        request,
+                        Decimal("0.1"),
+                    ),
+                    requests,
+                )
+            )
+        record = noema._budget_record(self.ledger, Decimal("10"))
+        self.assertEqual(len(record["reservations"]), len(requests))
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(
+                pool.map(
+                    lambda request: noema._budget_finalize(
+                        self.ledger,
+                        Decimal("10"),
+                        request,
+                        Decimal("0.05"),
+                    ),
+                    requests,
+                )
+            )
+        record = noema._budget_record(self.ledger, Decimal("10"))
+        self.assertEqual((record["calls"], record["spent_usd"], record["reservations"]), (24, "1.2", []))
+
+    def test_cost_bound_is_above_byte_worst_case_and_completion(self):
+        profile = self.profile()
+        bound = noema._request_cost_bound(profile, b"x" * 1000, 64)
+        expected = Decimal(1000 + 4096 + 64) * Decimal("0.000001")
+        self.assertGreater(bound, expected)
+
+    def test_cost_bound_reserves_the_per_request_price(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["pricing"]["request"] = "0.25"
+        bound = noema._request_cost_bound(profile, b"", 1)
+        self.assertGreaterEqual(bound, Decimal("0.2625"))
+
+    def test_conservative_prompt_bound_refuses_endpoint_overflow(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["max_prompt_tokens"] = 4096
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_request_capacity(profile, b"x", 1)
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.INPUT_CAP")
+
+    def test_unauthorised_pricing_override_refuses_before_spend(self):
+        profile = self.profile()
+        profile["acquisition"] = copy.deepcopy(profile["acquisition"])
+        profile["acquisition"]["pricing_overrides"] = [
+            {
+                "completion": "0.000002",
+                "min_prompt_tokens": 1,
+                "prompt": "0.000002",
+            }
+        ]
+        profile["acquisition_sha256"] = noema._value_sha256(profile["acquisition"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_request_capacity(profile, b"x", 1)
+        self.assertEqual(raised.exception.code, "NOE-E-BUDGET.PRICE_TIER")
+
+    def test_private_credential_file_mode_is_required(self):
+        credential = self.directory / "key"
+        write_bytes(credential, b"sk-or-v1-test-only-value\n")
+        credential.chmod(0o644)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._credential_path(credential)
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.CREDENTIAL")
+
+    def test_openrouter_child_requires_isolated_python(self):
+        profiles = read_json(MEASUREMENT_PROFILES)["profiles"]
+        self.assertTrue(profiles)
+        self.assertEqual(
+            {tuple(profile["argv"]) for profile in profiles},
+            {("-I", "scripts/noema.py", "_openrouter-adapter")},
+        )
+
+    def test_live_evaluation_profiles_use_the_bounded_reasoning_ceiling(self):
+        profiles = read_json(MEASUREMENT_PROFILES)["profiles"]
+        evaluation = [
+            profile for profile in profiles if "evaluation" in profile["roles"]
+        ]
+        self.assertEqual(len(evaluation), 2)
+        self.assertEqual(
+            {profile["evaluation_output_tokens"] for profile in evaluation},
+            {2048},
+        )
+        self.assertEqual({profile["evaluation_seed"] for profile in evaluation}, {0})
+        self.assertTrue(
+            all("seed" in profile["acquisition"]["supported_parameters"] for profile in evaluation)
+        )
+
+    def test_clean_git_identity_rejects_untracked_bytes(self):
+        repository = self.directory / "repository"
+        repository.mkdir()
+        write_bytes(repository / "tracked.txt", b"tracked\n")
+        commands = (
+            ["/usr/bin/git", "init", "--quiet", str(repository)],
+            ["/usr/bin/git", "-C", str(repository), "add", "tracked.txt"],
+            [
+                "/usr/bin/git",
+                "-C",
+                str(repository),
+                "-c",
+                "user.name=Noema Test",
+                "-c",
+                "user.email=noema@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "fixture",
+            ],
+        )
+        for command in commands:
+            subprocess.run(command, check=True, capture_output=True, env={})
+        noema._git_identity(repository, require_clean=True)
+        write_bytes(repository / "shadow.py", b"raise RuntimeError('shadowed')\n")
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._git_identity(repository, require_clean=True)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+
+class MeasurementEvaluationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temporary = scratch_directory("noema-measure-evaluation-")
+        cls.directory = Path(cls.temporary.name)
+        cls.executable = cls.directory / "fake-adapter.py"
+        write_bytes(cls.executable, FAKE_ADAPTER_SOURCE)
+        cls.executable.chmod(0o700)
+        cls.profile_path = cls.directory / "profiles.json"
+        write_canonical_json(cls.profile_path, fake_profile_set(cls.executable))
+        cls.profile_record, cls.profile_raw, cls.profiles = noema.load_external_profiles(
+            cls.profile_path,
+            require_measurement_families=True,
+        )
+        cls.corpus_root = cls.directory / "corpus"
+        shutil.copytree(NOEMA_FIXTURES, cls.corpus_root)
+        cls.manifest = cls.corpus_root / "manifest.json"
+        corpus = read_json(cls.manifest)
+        corpus.pop("evidence", None)
+        write_canonical_json(cls.manifest, corpus)
+        cls.verified = noema.verify_specimen_corpus(cls.manifest)
+        cls.documents = noema._measurement_documents(cls.manifest, cls.verified)
+        cls.measurement, cls.measurement_success = noema.measure_corpus(
+            cls.manifest,
+            cls.profile_path,
+            credential=None,
+            budget=Decimal("5"),
+            budget_ledger=cls.directory / "measurement-budget.json",
+        )
+        cls.packet_directory = cls.directory / "packet"
+        noema.emit_evaluation_packet(
+            cls.manifest,
+            cls.profile_path,
+            cls.packet_directory,
+        )
+        cls.packet, cls.packet_raw = noema._load_packet(
+            cls.packet_directory / "manifest.json"
+        )
+        cls.answers = valid_evaluation_answers(cls.packet, cls.packet_raw)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temporary.cleanup()
+
+    def validate_measurement(self, value):
+        corpus = self.verified["manifest"]
+        return noema._validate_measurement_report(
+            value,
+            corpus_sha256=noema._value_sha256(noema._corpus_identity_value(corpus)),
+            counts=self.verified["counts"],
+            profile_record=self.profile_record,
+            profile_raw=self.profile_raw,
+            profiles=self.profiles,
+            documents=self.documents,
+            repository_commit=self.measurement["repository_commit"],
+            repository_tree=self.measurement["repository_tree"],
+        )
+
+    def measurement_refusal(self, value):
+        with self.assertRaises(noema.Refusal) as raised:
+            self.validate_measurement(value)
+        return raised.exception
+
+    def unknown_measurement_profile(self, recorded, attempts, refusal_code):
+        identity_names = {
+            "acquisition_sha256",
+            "family",
+            "id",
+            "model",
+            "profile_sha256",
+            "provider",
+            "tokenizer",
+            "vocabulary_sha256",
+            "vocabulary_status",
+        }
+        unknown = {name: recorded[name] for name in identity_names}
+        unknown.update(
+            attempts=attempts,
+            refusal_code=refusal_code,
+            status="unknown",
+            unknowns=["counts"],
+        )
+        return unknown
+
+    def answers_file(self, value):
+        path = self.directory / ("answers-" + os.urandom(8).hex() + ".json")
+        write_canonical_json(path, value)
+        return path
+
+    @contextlib.contextmanager
+    def copied_packet(self):
+        with scratch_directory("noema-packet-copy-") as temporary:
+            target = Path(temporary) / "packet"
+            shutil.copytree(self.packet_directory, target)
+            yield target
+
+    def test_fake_measurement_crosses_all_four_unlike_profiles(self):
+        self.assertTrue(self.measurement_success)
+        checked, accepted = self.validate_measurement(self.measurement)
+        self.assertTrue(accepted)
+        self.assertEqual(checked["summary"]["measured_profiles"], 4)
+
+    def test_fake_measurement_recovers_one_transient_invocation_in_place(self):
+        profile = copy.deepcopy(self.profiles[0])
+        state = self.directory / "measurement-retry-state"
+        profile["fixed_environment"].update(
+            NOEMA_FAKE_SEQUENCE="unknown,success",
+            NOEMA_FAKE_STATE=str(state),
+        )
+        attempts = []
+        ledger = self.directory / "measurement-retry-budget.json"
+        with mock.patch.object(noema.time, "sleep") as sleep:
+            result = noema._measure_one_profile(
+                profile,
+                self.documents,
+                credential=None,
+                budget=Decimal("5"),
+                budget_ledger=ledger,
+                attempt_log=attempts,
+            )
+        plan = noema._measurement_invocation_plan(profile, self.documents)
+        self.assertEqual(result["status"], "recorded")
+        self.assertEqual(len(attempts), len(plan) + 1)
+        self.assertEqual(
+            [(item["attempt"], item["status"]) for item in attempts[:3]],
+            [(1, "unknown"), (2, "recorded"), (1, "recorded")],
+        )
+        self.assertEqual(adapter_backoff_calls(sleep), [mock.call(1)])
+        budget = noema._budget_record(ledger, Decimal("5"))
+        self.assertEqual((budget["calls"], len(budget["reservations"])), (len(plan), 1))
+
+    def test_fake_measurement_preserves_bounded_terminal_attempts(self):
+        profile = copy.deepcopy(self.profiles[0])
+        state = self.directory / "measurement-exhaustion-state"
+        profile["fixed_environment"].update(
+            NOEMA_FAKE_SEQUENCE="unknown,unknown,unknown",
+            NOEMA_FAKE_STATE=str(state),
+        )
+        attempts = []
+        ledger = self.directory / "measurement-exhaustion-budget.json"
+        with (
+            mock.patch.object(noema.time, "sleep"),
+            self.assertRaises(noema.Refusal) as raised,
+        ):
+            noema._measure_one_profile(
+                profile,
+                self.documents,
+                credential=None,
+                budget=Decimal("5"),
+                budget_ledger=ledger,
+                attempt_log=attempts,
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.REMOTE")
+        self.assertEqual([item["attempt"] for item in attempts], [1, 2, 3])
+        budget = noema._budget_record(ledger, Decimal("5"))
+        self.assertEqual((budget["calls"], len(budget["reservations"])), (0, 3))
+
+    def test_recorded_measurement_attempt_cannot_claim_a_refusal(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["attempts"][-1]["answer_code"] = (
+            "NOE-E-ADAPTER.HTTP_502"
+        )
+        self.assertEqual(
+            self.measurement_refusal(value).code,
+            "NOE-E-MEASURE.UNKNOWN",
+        )
+
+    def test_unknown_measurement_refusal_binds_its_terminal_attempt(self):
+        value = copy.deepcopy(self.measurement)
+        recorded = value["profiles"][0]
+        attempt = copy.deepcopy(recorded["attempts"][0])
+        attempt.update(
+            answer_code="NOE-E-ADAPTER.PROVIDER_POLICY",
+            status="unknown",
+        )
+        value["profiles"][0] = self.unknown_measurement_profile(
+            recorded,
+            [attempt],
+            "NOE-E-ADAPTER.CREDENTIAL",
+        )
+        self.assertEqual(
+            self.measurement_refusal(value).code,
+            "NOE-E-MEASURE.UNKNOWN",
+        )
+
+    def test_unknown_measurement_cannot_omit_attempt_provenance(self):
+        value = copy.deepcopy(self.measurement)
+        recorded = value["profiles"][0]
+        value["profiles"][0] = self.unknown_measurement_profile(
+            recorded,
+            [],
+            "NOE-E-ADAPTER.CREDENTIAL",
+        )
+        self.assertEqual(
+            self.measurement_refusal(value).code,
+            "NOE-E-BOUNDS.ATTEMPTS",
+        )
+
+    def test_transient_measurement_exhaustion_is_a_valid_unknown_report(self):
+        value = copy.deepcopy(self.measurement)
+        recorded = value["profiles"][0]
+        bindings = noema._adapter_request_attempt_bindings(
+            self.profiles[0],
+            noema._measurement_prompt(b""),
+            mode="measurement",
+            context_nonce=f"measure.{self.profiles[0]['id']}.transport",
+        )
+        attempts = [
+            {
+                "answer_code": "NOE-E-ADAPTER.HTTP_502",
+                "attempt": binding["attempt"],
+                "context_nonce": binding["context_nonce"],
+                "request_sha256": binding["sha256"],
+                "status": "unknown",
+            }
+            for binding in bindings
+        ]
+        value["profiles"][0] = self.unknown_measurement_profile(
+            recorded,
+            attempts,
+            "NOE-E-ADAPTER.HTTP_502",
+        )
+        value["summary"].update(
+            measured_profiles=3,
+            status="unknown",
+            unknown_profiles=1,
+        )
+        checked, accepted = self.validate_measurement(value)
+        self.assertFalse(accepted)
+        self.assertEqual(checked["summary"]["unknown_profiles"], 1)
+
+    def test_post_response_measurement_refusal_is_a_valid_unknown_report(self):
+        value = copy.deepcopy(self.measurement)
+        recorded = value["profiles"][0]
+        value["profiles"][0] = self.unknown_measurement_profile(
+            recorded,
+            [copy.deepcopy(recorded["attempts"][0])],
+            "NOE-E-TOKENIZER.COUNT",
+        )
+        value["summary"].update(
+            measured_profiles=3,
+            status="unknown",
+            unknown_profiles=1,
+        )
+        _checked, accepted = self.validate_measurement(value)
+        self.assertFalse(accepted)
+
+    def test_public_schema_names_every_emitted_step_five_field(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+
+        def closed(name, value):
+            definition = definitions[name]
+            self.assertLessEqual(set(definition["required"]), set(value), name)
+            self.assertLessEqual(set(value), set(definition["properties"]), name)
+
+        self.assertEqual(definitions["adapterAttemptLog"]["minItems"], 1)
+        closed("externalProfiles", self.profile_record)
+        for profile in self.profiles:
+            closed("externalProfile", profile)
+            closed("externalAcquisition", profile["acquisition"])
+            closed("providerPolicy", profile["provider_policy"])
+        closed("measurement", self.measurement)
+        for profile in self.measurement["profiles"]:
+            closed("recordedMeasurementProfile", profile)
+            for attempt in profile["attempts"]:
+                closed("adapterAttempt", attempt)
+            closed("measurementTransport", profile["transport"])
+            closed("measurementTotals", profile["totals"])
+            for observation in profile["observations"]:
+                closed("measurementObservation", observation)
+            for document in profile["documents"]:
+                closed("measurementDocument", document)
+                closed("measurementComponents", document["components"])
+                for component in document["components"].values():
+                    closed("measuredComponent", component)
+                for gate in document["gates"].values():
+                    closed("ratio", gate)
+            for amortised in profile["amortised"]:
+                closed("measurementAmortised", amortised)
+        closed("evaluationPacket", self.packet)
+        for profile in self.packet["family_profiles"]:
+            closed("evaluationFamilyProfile", profile)
+        for case in self.packet["cases"]:
+            closed("evaluationCase", case)
+            closed("evaluationRuntimeContext", case["runtime_context"])
+            for fact in case["runtime_context"]["facts"]:
+                closed("evaluationFactContext", fact)
+            for candidate in case["candidate_answers"]:
+                closed("evaluationCandidate", candidate)
+                closed("answerView", candidate["value"])
+            for prompt in case["prompts"]:
+                closed("evaluationPrompt", prompt)
+                for request in prompt["requests"]:
+                    for attempt in request["attempts"]:
+                        closed("adapterRequestAttempt", attempt)
+        closed("evaluationAnswers", self.answers)
+        for answer in self.answers["answers"]:
+            closed("evaluationAnswer", answer)
+            closed("answerProvenance", answer["provenance"])
+            for attempt in answer["provenance"]["attempts"]:
+                closed("adapterAttempt", attempt)
+        report, _success = noema._tally_evaluation_values(
+            self.packet,
+            self.packet_raw,
+            self.answers,
+            noema._canonical_json(self.answers),
+        )
+        closed("evaluationReport", report)
+
+    def test_public_schema_accepts_module_lock_identifiers(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+        self.assertEqual(
+            definitions["moduleLock"]["properties"]["id"],
+            {"$ref": "#/$defs/identifier"},
+        )
+        runtime_lock = read_json(RUNTIME_FIXTURE / "build.json")["lock"]
+        self.assertTrue(runtime_lock["modules"])
+        self.assertTrue(all(item["id"] == "core" for item in runtime_lock["modules"]))
+        for directory in (specimen_directory(name) for name in SPECIMEN_NAMES):
+            lock = read_json(directory / "lock.json")
+            self.assertTrue(lock["modules"])
+            self.assertTrue(all(item["id"] == "core" for item in lock["modules"]))
+
+    def test_measurement_component_omission_refuses(self):
+        value = copy.deepcopy(self.measurement)
+        del value["profiles"][0]["documents"][0]["components"]["alias_dictionary"]
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-TYPE.KEYS")
+
+    def test_measurement_requires_byte_identical_shared_amortisation_components(self):
+        for name in ("kernel", "alias_dictionary"):
+            with self.subTest(component=name):
+                documents = copy.deepcopy(self.documents)
+                documents[1][name] += b"x"
+                with mock.patch.object(
+                    noema,
+                    "invoke_adapter",
+                    side_effect=AssertionError(
+                        "adapter called before component validation"
+                    ),
+                ) as invoke:
+                    with self.assertRaises(noema.Refusal) as raised:
+                        noema._measure_one_profile(
+                            self.profiles[0],
+                            documents,
+                            credential=None,
+                            budget=Decimal("5"),
+                            budget_ledger=(
+                                self.directory / f"shared-{name}-budget.json"
+                            ),
+                        )
+                self.assertEqual(
+                    raised.exception.code,
+                    "NOE-E-MEASURE.COMPONENT",
+                )
+                invoke.assert_not_called()
+                with self.assertRaises(noema.Refusal) as replayed:
+                    noema._validate_measurement_report(
+                        self.measurement,
+                        corpus_sha256=noema._value_sha256(
+                            noema._corpus_identity_value(
+                                self.verified["manifest"]
+                            )
+                        ),
+                        counts=self.verified["counts"],
+                        profile_record=self.profile_record,
+                        profile_raw=self.profile_raw,
+                        profiles=self.profiles,
+                        documents=documents,
+                        repository_commit=self.measurement["repository_commit"],
+                        repository_tree=self.measurement["repository_tree"],
+                    )
+                self.assertEqual(
+                    replayed.exception.code,
+                    "NOE-E-MEASURE.COMPONENT",
+                )
+
+    def test_measurement_dictionary_undercount_refuses(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["documents"][0]["components"]["alias_dictionary"]["tokens"] -= 1
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-TOKENIZER.COUNT")
+
+    def test_measurement_transport_change_refuses(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["transport"]["input_tokens"] += 1
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-TOKENIZER.COUNT")
+
+    def test_measurement_transport_binds_the_fixed_inert_wrapper(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["transport"]["prompt_sha256"] = "0" * 64
+        self.assertEqual(
+            self.measurement_refusal(value).code,
+            "NOE-E-DIGEST.MEASUREMENT",
+        )
+
+    def test_measurement_source_must_precede_projection_counts(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["source_baseline_sequence"] = 1
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-MEASURE.BASELINE")
+
+    def test_measurement_source_baseline_boundary_cannot_include_projection(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["source_baseline_sequence"] += 1
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-MEASURE.BASELINE")
+
+    def test_measurement_unreferenced_observation_refuses(self):
+        value = copy.deepcopy(self.measurement)
+        profile = value["profiles"][0]
+        observation = copy.deepcopy(profile["observations"][-1])
+        observation.update(
+            generation_id="generation.extra",
+            request_sha256="e" * 64,
+            sequence=len(profile["observations"]) + 1,
+            sha256="f" * 64,
+        )
+        observation["observation_sha256"] = noema._value_sha256(
+            {key: item for key, item in observation.items() if key != "observation_sha256"}
+        )
+        profile["observations"].append(observation)
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-MEASURE.COMPONENT")
+
+    def test_measurement_profile_gate_uses_the_declared_corpus(self):
+        value = copy.deepcopy(self.measurement["profiles"][0])
+        self.assertTrue(noema._measurement_profile_passes(value))
+        value["gates"]["steady_state"]["passes"] = False
+        self.assertFalse(noema._measurement_profile_passes(value))
+
+    def test_measurement_profile_family_change_refuses_unlike_cohort(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["family"] = value["profiles"][1]["family"]
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-MEASURE.COHORT")
+
+    def test_measurement_summary_is_recomputed(self):
+        value = copy.deepcopy(self.measurement)
+        value["summary"]["measured_profiles"] = 3
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-DIGEST.MEASUREMENT")
+
+    def test_measurement_observation_digest_is_recomputed(self):
+        value = copy.deepcopy(self.measurement)
+        value["profiles"][0]["observations"][0]["observation_sha256"] = "0" * 64
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-DIGEST.MEASUREMENT")
+
+    def test_measurement_observation_binds_the_exact_adapter_request(self):
+        value = copy.deepcopy(self.measurement)
+        profile = value["profiles"][0]
+        observation = profile["observations"][0]
+        old_digest = observation["observation_sha256"]
+        observation["request_sha256"] = "f" * 64
+        observation["observation_sha256"] = noema._value_sha256(
+            {
+                key: item
+                for key, item in observation.items()
+                if key != "observation_sha256"
+            }
+        )
+        new_digest = observation["observation_sha256"]
+        for document in profile["documents"]:
+            for component in document["components"].values():
+                if component["observation_sha256"] == old_digest:
+                    component["observation_sha256"] = new_digest
+        for amortised in profile["amortised"]:
+            for component in (amortised["source"], amortised["first_use"]):
+                if component["observation_sha256"] == old_digest:
+                    component["observation_sha256"] = new_digest
+        self.assertEqual(self.measurement_refusal(value).code, "NOE-E-DIGEST.ADAPTER")
+
+    def test_measurement_gate_boundary_is_integer_exact(self):
+        self.assertTrue(noema._ratio(7, 10, 70)["passes"])
+        self.assertFalse(noema._ratio(701, 1000, 70)["passes"])
+
+    def test_measure_command_replays_anchored_evidence_without_adapter_calls(self):
+        report = copy.deepcopy(self.measurement)
+        raw = noema._canonical_json(report)
+        arguments = argparse.Namespace(
+            budget_ledger=self.directory / "unused-budget.json",
+            budget_usd=None,
+            credential_file=None,
+            manifest=self.manifest,
+            output=self.directory / "replayed-measurement.json",
+            profiles=self.profile_path,
+        )
+        with (
+            mock.patch.object(noema, "_recorded_measurement", return_value=(report, raw)),
+            mock.patch.object(noema, "measure_corpus") as live_measure,
+        ):
+            result, success = noema._measure_command(arguments)
+        self.assertTrue(success)
+        live_measure.assert_not_called()
+        self.assertEqual(arguments.output.read_bytes(), raw)
+        self.assertEqual(result["digests"]["output"], sha256(raw).hexdigest())
+
+    def test_replayed_failed_measurement_uses_public_refusal_verdict(self):
+        report = copy.deepcopy(self.measurement)
+        report["summary"]["status"] = "rejected"
+        raw = noema._canonical_json(report)
+        arguments = argparse.Namespace(
+            budget_ledger=self.directory / "unused-rejected-budget.json",
+            budget_usd=None,
+            credential_file=None,
+            manifest=self.manifest,
+            output=self.directory / "replayed-rejected-measurement.json",
+            profiles=self.profile_path,
+        )
+        with mock.patch.object(
+            noema,
+            "_recorded_measurement",
+            return_value=(report, raw),
+        ):
+            result, success = noema._measure_command(arguments)
+        self.assertFalse(success)
+        self.assertEqual(result["verdict"], "refuse")
+
+    def test_packet_emission_is_deterministic_at_one_tree(self):
+        with scratch_directory("noema-packet-repeat-") as temporary:
+            repeated = Path(temporary) / "packet"
+            noema.emit_evaluation_packet(
+                self.manifest,
+                self.profile_path,
+                repeated,
+            )
+            names = sorted(path.name for path in self.packet_directory.iterdir())
+            self.assertEqual(names, sorted(path.name for path in repeated.iterdir()))
+            for name in names:
+                self.assertEqual(
+                    (self.packet_directory / name).read_bytes(),
+                    (repeated / name).read_bytes(),
+                )
+
+    def test_packet_has_one_nonce_per_case_and_representation(self):
+        nonces = [
+            prompt["context_nonce"]
+            for case in self.packet["cases"]
+            for prompt in case["prompts"]
+        ]
+        self.assertEqual((len(nonces), len(set(nonces))), (16, 16))
+
+    def test_packet_prompts_do_not_leak_the_oracle(self):
+        for prompt in self.packet_directory.glob("prompt-*.txt"):
+            lowered = prompt.read_bytes().lower()
+            self.assertNotIn(b"required_answer", lowered)
+            self.assertNotIn(b"correct answer", lowered)
+
+    def test_candidate_order_is_deterministically_counterbalanced(self):
+        positions = [
+            next(
+                index
+                for index, candidate in enumerate(case["candidate_answers"])
+                if candidate["id"] == case["required_answer_id"]
+            )
+            for case in self.packet["cases"]
+        ]
+        self.assertEqual(positions, [0, 1, 0, 1, 0, 1, 0, 1])
+        required_is_low = [
+            case["required_answer_id"]
+            == min(candidate["id"] for candidate in case["candidate_answers"])
+            for case in self.packet["cases"]
+        ]
+        self.assertEqual(
+            required_is_low,
+            [True, True, False, False, True, True, False, False],
+        )
+
+    def test_noema_prompts_do_not_include_markdown_binding_excerpt(self):
+        for case in self.packet["cases"]:
+            prompt = next(item for item in case["prompts"] if item["mode"] == "noema")
+            payload = (self.packet_directory / prompt["path"]).read_bytes()
+            self.assertNotIn(case["source_excerpt"]["text"].encode(), payload)
+
+    def test_each_prompt_carries_the_exact_runtime_context_and_bounded_focus(self):
+        for case in self.packet["cases"]:
+            context = noema._canonical_json(case["runtime_context"]).rstrip()
+            source_excerpt = case["source_excerpt"]["text"].encode()
+            for prompt in case["prompts"]:
+                payload = (self.packet_directory / prompt["path"]).read_bytes()
+                self.assertIn(b"runtime_context: " + context + b"\n", payload)
+                if prompt["mode"] == "source":
+                    self.assertIn(source_excerpt, payload)
+                else:
+                    self.assertNotIn(source_excerpt, payload)
+
+    def test_each_prompt_defines_runtime_context_semantics(self):
+        context_contract = (
+            b"runtime_context contract: authority lists established authorizing actors; "
+            b"facts bind exact propositions to true, false, or unknown; "
+            b"absent conditions are unknown.\n"
+        )
+        decision_contract = (
+            b"decision contract: when the document conditions the queried effect on asking, "
+            b"confirmation, or approval and authority is empty, the effect is not permitted; "
+            b"candidate outcome fields are alternatives, not governing evidence.\n"
+        )
+        for case in self.packet["cases"]:
+            for prompt in case["prompts"]:
+                payload = (self.packet_directory / prompt["path"]).read_bytes()
+                self.assertEqual(payload.count(context_contract), 1)
+                self.assertEqual(payload.count(decision_contract), 1)
+
+    def test_phylax_consequence_case_binds_ask_first_without_minting_approval(self):
+        directory = specimen_directory("phylax")
+        source = (ROOT / read_json(directory / "source.json")["path"]).read_bytes()
+        records = noema._parse_source_lines((directory / "source.noe").read_bytes())
+        rule = next(record for record in records if record[:2] == ["rule", "rule.default"])
+        self.assertEqual(rule[2][-1], ["+", [":", "effect", "dependency.add"]])
+        self.assertEqual(source[int(rule[3][3]) : int(rule[3][4])], b"**Ask first.** Adding a dependency.")
+        self.assertEqual(read_json(directory / "selection.json")["authority"], [])
+
+    def test_packet_fact_proposition_tamper_refuses(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            fact = manifest["cases"][0]["runtime_context"]["facts"][0]
+            fact["proposition"] = [
+                "core.checked",
+                [":", "evidence", "substituted"],
+            ]
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.FACTS")
+
+    def test_packet_missing_prompt_refuses(self):
+        with self.copied_packet() as packet:
+            (packet / "prompt-01-noema.txt").unlink()
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-IO.READ")
+
+    def test_packet_extra_file_refuses(self):
+        with self.copied_packet() as packet:
+            write_bytes(packet / "extra.txt", b"x")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.EXTRA_MEMBER")
+
+    def test_packet_prompt_change_refuses(self):
+        with self.copied_packet() as packet:
+            path = packet / "prompt-01-noema.txt"
+            write_bytes(path, path.read_bytes() + b"x")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROMPT")
+
+    def test_packet_duplicate_nonce_refuses(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            manifest["cases"][0]["prompts"][1]["context_nonce"] = manifest["cases"][0]["prompts"][0]["context_nonce"]
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.CONTEXT")
+
+    def test_rehashed_packet_attempt_tamper_refuses_before_calls(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            manifest["cases"][0]["prompts"][0]["requests"][0]["attempts"][0][
+                "sha256"
+            ] = "f" * 64
+            manifest["case_set_sha256"] = noema._value_sha256(
+                [
+                    {
+                        "case_sha256": case["case_sha256"],
+                        "id": case["id"],
+                        "prompts": case["prompts"],
+                    }
+                    for case in manifest["cases"]
+                ]
+            )
+            write_canonical_json(packet / "manifest.json", manifest)
+            with (
+                mock.patch.object(noema, "invoke_adapter") as invoke,
+                self.assertRaises(noema.Refusal) as raised,
+            ):
+                noema.run_evaluation(
+                    packet / "manifest.json",
+                    self.manifest,
+                    self.profile_path,
+                    credential=None,
+                    budget=Decimal("5"),
+                    budget_ledger=self.directory / "tampered-attempt-budget.json",
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVALUATION")
+            invoke.assert_not_called()
+
+    def test_packet_attempt_digest_tamper_refuses(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            manifest["cases"][0]["prompts"][0]["requests"][0]["attempts"][0][
+                "sha256"
+            ] = "f" * 64
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.CASE_SET")
+
+    def test_packet_answer_leakage_refuses_even_when_rehashed(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            prompt_record = manifest["cases"][0]["prompts"][0]
+            prompt_path = packet / prompt_record["path"]
+            payload = prompt_path.read_bytes() + b"required_answer\n"
+            write_bytes(prompt_path, payload)
+            prompt_record["bytes"] = len(payload)
+            prompt_record["sha256"] = sha256(payload).hexdigest()
+            manifest["case_set_sha256"] = noema._value_sha256(
+                [
+                    {"case_sha256": case["case_sha256"], "id": case["id"], "prompts": case["prompts"]}
+                    for case in manifest["cases"]
+                ]
+            )
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.LEAKAGE")
+
+    def test_packet_family_alias_refuses(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            manifest["family_profiles"][1]["family"] = manifest["family_profiles"][0]["family"]
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.ALIAS")
+
+    def test_valid_answer_set_tallies_all_critical_pairs(self):
+        report, success = noema._tally_evaluation_values(
+            self.packet,
+            self.packet_raw,
+            self.answers,
+            noema._canonical_json(self.answers),
+        )
+        self.assertTrue(success)
+        self.assertEqual((report["summary"]["pairs"], report["summary"]["passed"]), (16, 16))
+
+    def test_transient_retry_chain_tallies_against_preregistered_requests(self):
+        value = copy.deepcopy(self.answers)
+        answer = value["answers"][0]
+        case = next(item for item in self.packet["cases"] if item["id"] == answer["case_id"])
+        prompt = next(item for item in case["prompts"] if item["mode"] == answer["mode"])
+        bindings = next(
+            item["attempts"]
+            for item in prompt["requests"]
+            if item["family_id"] == answer["family_id"]
+        )
+        answer["provenance"]["attempts"] = [
+            {
+                "answer_code": "NOE-E-ADAPTER.HTTP_502",
+                "attempt": bindings[0]["attempt"],
+                "context_nonce": bindings[0]["context_nonce"],
+                "request_sha256": bindings[0]["sha256"],
+                "status": "unknown",
+            },
+            {
+                "answer_code": "NOE-OK",
+                "attempt": bindings[1]["attempt"],
+                "context_nonce": bindings[1]["context_nonce"],
+                "request_sha256": bindings[1]["sha256"],
+                "status": "recorded",
+            },
+        ]
+        answer["provenance"]["request_sha256"] = bindings[1]["sha256"]
+        answer["provenance"]["generation_id"] = "generation." + bindings[1]["sha256"][:24]
+        _report, accepted = noema._tally_evaluation_values(
+            self.packet,
+            self.packet_raw,
+            value,
+            noema._canonical_json(value),
+        )
+        self.assertTrue(accepted)
+
+    def test_answer_code_binds_the_terminal_attempt(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["provenance"]["attempts"][-1][
+            "answer_code"
+        ] = "NOE-E-EVALUATION.ANSWER"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(
+                self.packet,
+                self.packet_raw,
+                value,
+                noema._canonical_json(value),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.ADAPTER")
+
+    def test_semantic_refusal_cannot_authorise_a_retry_chain(self):
+        value = copy.deepcopy(self.answers)
+        answer = value["answers"][0]
+        case = next(item for item in self.packet["cases"] if item["id"] == answer["case_id"])
+        prompt = next(item for item in case["prompts"] if item["mode"] == answer["mode"])
+        bindings = next(
+            item["attempts"]
+            for item in prompt["requests"]
+            if item["family_id"] == answer["family_id"]
+        )
+        answer["provenance"]["attempts"] = [
+            {
+                "answer_code": "NOE-E-ADAPTER.PROVIDER_POLICY",
+                "attempt": bindings[0]["attempt"],
+                "context_nonce": bindings[0]["context_nonce"],
+                "request_sha256": bindings[0]["sha256"],
+                "status": "unknown",
+            },
+            {
+                "answer_code": "NOE-OK",
+                "attempt": bindings[1]["attempt"],
+                "context_nonce": bindings[1]["context_nonce"],
+                "request_sha256": bindings[1]["sha256"],
+                "status": "recorded",
+            },
+        ]
+        answer["provenance"]["request_sha256"] = bindings[1]["sha256"]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(
+                self.packet,
+                self.packet_raw,
+                value,
+                noema._canonical_json(value),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-ADAPTER.RETRY")
+
+    def test_duplicate_answer_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"].append(copy.deepcopy(value["answers"][0]))
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.DUPLICATE")
+
+    def test_missing_answer_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"].pop()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.MISSING")
+
+    def test_unknown_candidate_answer_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["answer_id"] = "answer.outside"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.UNKNOWN_ANSWER")
+
+    def test_answer_summary_mismatch_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["summary"]["recorded"] -= 1
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVALUATION")
+
+    def test_answer_result_identity_mismatch_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["id"] = "result.wrong"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVALUATION")
+
+    def test_answer_provenance_binds_the_exact_packet_request(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["provenance"]["request_sha256"] = "f" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(
+                self.packet,
+                self.packet_raw,
+                value,
+                noema._canonical_json(value),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.ADAPTER")
+
+    def test_cross_paired_answer_context_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["context_nonce"] = value["answers"][1]["context_nonce"]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.CROSS_PAIR")
+
+    def test_answer_order_is_canonical(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0], value["answers"][1] = value["answers"][1], value["answers"][0]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.ORDER")
+
+    def test_reused_generation_identity_refuses(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][1]["provenance"]["generation_id"] = value["answers"][0]["provenance"]["generation_id"]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.CONTEXT")
+
+    def test_unknown_status_cannot_carry_candidate(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["status"] = "unknown"
+        value["answers"][0]["answer_code"] = "NOE-E-ADAPTER.REMOTE"
+        value["summary"].update(recorded=31, status="unknown", unknown=1)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.ANSWER")
+
+    def test_recorded_error_cannot_carry_candidate(self):
+        value = copy.deepcopy(self.answers)
+        value["answers"][0]["answer_code"] = "NOE-E-ADAPTER.REMOTE"
+        value["summary"]["status"] = "unknown"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.ANSWER")
+
+    def test_unknown_answer_cannot_claim_recorded_provenance(self):
+        value = copy.deepcopy(self.answers)
+        answer = value["answers"][0]
+        answer.update(
+            answer_code="NOE-E-ADAPTER.PROVIDER_POLICY",
+            answer_id=None,
+            status="unknown",
+        )
+        answer["provenance"]["attempts"][-1].update(
+            answer_code="NOE-E-ADAPTER.PROVIDER_POLICY",
+            status="unknown",
+        )
+        answer["provenance"].update(
+            cost_usd="0",
+            finish_reason="unknown",
+            generation_id="unknown",
+            input_tokens=1,
+            output_tokens=0,
+        )
+        value["summary"].update(recorded=31, status="unknown", unknown=1)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._tally_evaluation_values(self.packet, self.packet_raw, value, noema._canonical_json(value))
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.ANSWER")
+
+    def test_wrong_required_answer_is_recorded_as_rejection(self):
+        value = copy.deepcopy(self.answers)
+        first = value["answers"][0]
+        case = next(item for item in self.packet["cases"] if item["id"] == first["case_id"])
+        first["answer_id"] = next(
+            candidate["id"]
+            for candidate in case["candidate_answers"]
+            if candidate["id"] != case["required_answer_id"]
+        )
+        report, success = noema._tally_evaluation_values(
+            self.packet,
+            self.packet_raw,
+            value,
+            noema._canonical_json(value),
+        )
+        self.assertFalse(success)
+        self.assertEqual(report["summary"]["status"], "rejected")
+
+    def test_fake_live_runner_records_all_32_isolated_answers(self):
+        required_by_nonce = {
+            prompt["context_nonce"]: case["required_answer_id"]
+            for case in self.packet["cases"]
+            for prompt in case["prompts"]
+        }
+
+        def recorded_answer(profile, _prompt, *, context_nonce, **_kwargs):
+            _request_raw, request_digest = noema._adapter_request_bytes(
+                profile,
+                _prompt,
+                mode="evaluation",
+                context_nonce=context_nonce,
+            )
+            return {
+                "answer_code": "NOE-OK",
+                "answer_id": required_by_nonce[context_nonce],
+                "cost_usd": "0.000001",
+                "finish_reason": "stop",
+                "generation_id": "generation." + request_digest[:24],
+                "input_tokens": 100,
+                "model": profile["model"],
+                "output_tokens": 1,
+                "provider": profile["provider"],
+                "request_sha256": request_digest,
+                "schema": noema.ADAPTER_RESPONSE_SCHEMA,
+                "status": "recorded",
+            }
+
+        with mock.patch.object(noema, "invoke_adapter", side_effect=recorded_answer):
+            report, success = noema.run_evaluation(
+                self.packet_directory / "manifest.json",
+                self.manifest,
+                self.profile_path,
+                credential=None,
+                budget=Decimal("5"),
+                budget_ledger=self.directory / "evaluation-budget.json",
+            )
+        self.assertTrue(success)
+        self.assertEqual((report["summary"]["expected"], report["summary"]["recorded"]), (32, 32))
+
+    def test_live_runner_marks_an_out_of_set_model_answer_unknown(self):
+        def outside_answer(profile, prompt, *, context_nonce, **_kwargs):
+            _request_raw, request_digest = noema._adapter_request_bytes(
+                profile,
+                prompt,
+                mode="evaluation",
+                context_nonce=context_nonce,
+            )
+            return {
+                "answer_code": "NOE-OK",
+                "answer_id": "answer.outside",
+                "cost_usd": "0.000001",
+                "finish_reason": "stop",
+                "generation_id": "generation." + request_digest[:24],
+                "input_tokens": 100,
+                "model": profile["model"],
+                "output_tokens": 1,
+                "provider": profile["provider"],
+                "request_sha256": request_digest,
+                "schema": noema.ADAPTER_RESPONSE_SCHEMA,
+                "status": "recorded",
+            }
+
+        with mock.patch.object(
+            noema,
+            "invoke_adapter",
+            side_effect=outside_answer,
+        ):
+            report, success = noema.run_evaluation(
+                self.packet_directory / "manifest.json",
+                self.manifest,
+                self.profile_path,
+                credential=None,
+                budget=Decimal("5"),
+                budget_ledger=self.directory / "outside-budget.json",
+            )
+        self.assertFalse(success)
+        self.assertTrue(
+            all(
+                answer["answer_code"] == "NOE-E-EVALUATION.UNKNOWN_ANSWER"
+                and answer["answer_id"] is None
+                for answer in report["answers"]
+            )
+        )
+
+    def test_live_runner_preserves_request_identity_on_adapter_refusal(self):
+        failure = noema.Refusal(
+            "NOE-E-ADAPTER.REMOTE",
+            "provider",
+            "provider request failed",
+        )
+        with mock.patch.object(noema, "invoke_adapter", side_effect=failure):
+            answers, success = noema.run_evaluation(
+                self.packet_directory / "manifest.json",
+                self.manifest,
+                self.profile_path,
+                credential=None,
+                budget=Decimal("5"),
+                budget_ledger=self.directory / "refusal-budget.json",
+            )
+        self.assertFalse(success)
+        request_digests = [
+            answer["provenance"]["request_sha256"]
+            for answer in answers["answers"]
+        ]
+        self.assertNotIn("0" * 64, request_digests)
+        self.assertEqual(len(request_digests), len(set(request_digests)))
+        report, accepted = noema._tally_evaluation_values(
+            self.packet,
+            self.packet_raw,
+            answers,
+            noema._canonical_json(answers),
+        )
+        self.assertFalse(accepted)
+        self.assertEqual(report["summary"]["failed"], 16)
+
+    def test_live_runner_refuses_stale_repository_tree_before_calls(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            manifest["repository_tree"] = "0" * 40
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.run_evaluation(
+                    packet / "manifest.json",
+                    self.manifest,
+                    self.profile_path,
+                    credential=None,
+                    budget=Decimal("5"),
+                    budget_ledger=self.directory / "stale-budget.json",
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_live_runner_rereads_exact_prompt_before_each_call(self):
+        with self.copied_packet() as packet:
+            original_load = noema._load_packet
+
+            def load_then_change(path):
+                loaded = original_load(path)
+                prompt = packet / "prompt-01-noema.txt"
+                write_bytes(prompt, prompt.read_bytes() + b"changed\n")
+                return loaded
+
+            with mock.patch.object(noema, "_load_packet", side_effect=load_then_change):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema.run_evaluation(
+                        packet / "manifest.json",
+                        self.manifest,
+                        self.profile_path,
+                        credential=None,
+                        budget=Decimal("5"),
+                        budget_ledger=self.directory / "changed-prompt-budget.json",
+                    )
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROMPT")
+
+    def test_packet_publication_refuses_existing_target(self):
+        with scratch_directory("noema-packet-existing-") as temporary:
+            target = Path(temporary) / "packet"
+            target.mkdir()
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_packet_directory(target, {"prompt.txt": b"x"}, b"{}\n")
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.EXISTS")
+
+    def test_packet_publication_refuses_aggregate_overflow(self):
+        with scratch_directory("noema-packet-overflow-") as temporary:
+            target = Path(temporary) / "packet"
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_packet_directory(
+                    target,
+                    {"prompt.txt": b"x" * noema.MAX_PACKET_BYTES},
+                    b"{}\n",
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.PACKET")
 
 
 if __name__ == "__main__":

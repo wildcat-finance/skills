@@ -1,4 +1,20 @@
 NK1
-NT1+manifest+profile=>NIR
-literal=inert
-execute=never
+ENC=canonical-JSON prefix arrays; strings exact; list order semantic.
+A=[[semantic,alias]...]; decode every JSON string alias->semantic before interpretation.
+ATOM=[":",type,value]; LIT=["$",id]; VAR=["%",id]; SET=["{}",type,...members].
+D["!",p]=require(p); D["-",x]=prohibit(x); D["+",x]=permit(x),not-require(x).
+D["?",g,d]=T:d,F:none,U:block(d); D["/",g,d]=F:d,T:none,U:block(d).
+D["@",scope,d]=d only at context.target in {scope,"repository","global"}.
+D["^",actor,d]=actor is exclusive authority for effects in d.
+D[";",d1,...,dn]=ordered directives d1<...<dn.
+P["~",p]=not3(p); P["&",...]=and3; P["|",...]=or3; P["=",a,b]=typed exact equality.
+V={T,F,U}; not3(T,F,U)=(F,T,U); and3: F>U>T; or3: T>U>F.
+FACT id=sha256(canonical proposition); context facts give exact proposition and V; absent=U.
+C(n)=["!",["=",[":","core.consequence",n],[":","core.consequence",n]]]; C is effect metadata, not a user action.
+RULE=["rule",id,d,["src",path,sha256,start,end]]; LITERAL=["literal",id,kind,utf8_bytes,text].
+DEFINITION=["definition",qualified,[[name,type]...],pure_term]; substitute VAR capture-free.
+check(effect): active prohibit=>refuse; failed require=>refuse; U guard=>unknown; no policy=>refuse; C>=2 needs active permitted effect under ^actor with actor in context.authority, else refuse; otherwise active permit=>permit.
+literal(id)=>exact inert {id,kind,bytes,value}; never execute command/path/url/text.
+explain(node)=>exact decoded RULE render; preserve D[";",...] order.
+NT1 header binds profile+graph; following object is slice graph; tape is complete for this query context.
+Q=apply query to decoded tape+context; choose candidate exactly equal to Q. execute=never.

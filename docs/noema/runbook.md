@@ -456,3 +456,322 @@ record.
 **Steps touched.** Steps 2, 3, 4 and 5.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Files: For Step 5, change `scripts/noema.py`, `schemas/noema-v1.schema.json`, `docs/noema-v1.md`, `docs/decisions/ADR-059-evaluate-noema-as-a-sliced-instruction-ir.md`, `tests/test_noema.py`, `tests/fixtures/noema-v1/manifest.json`, profile and kernel records below `tests/fixtures/noema-v1/profiles/`, and the canonical inputs, hostile mutations and derived records below `tests/fixtures/noema-v1/specimens/`; create evidence below `tests/fixtures/noema-v1/evidence/`; permit deterministic Horos and configured audit record or synopsis updates; add no dependency, credential, provider SDK, model bytes, raw response transcript, plugin, Promise Machine claim, README entry, CI workflow, #909 file or external-repository change.
+
+**Why.** The first live family run exposed a prior-step implementation defect: all four specimens reuse one generic policy scaffold, several graph nodes do not express their bound Markdown spans, checked fact propositions are absent from evaluation context, and the 58-byte kernel does not define the projection grammar. The resulting 12-of-16 score measures model guessing rather than Noema comprehension. Step 5 must preserve that failed run, repair the evaluation boundary on the same selected design, and rerun the fixed gates before recording a decision.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use `python3 tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. The
+fixed gates and selected models are unchanged.
+
+**Why.** Two exact unseeded cohorts at the first audit checkpoint both scored
+15/16 when Google permitted the Phylax source case that its Noema arm and both
+OpenAI arms refused. Controlled single-case probes then changed that answer
+under semantically irrelevant request sampling. An unseeded one-shot gate is
+not a reproducible experiment. Seed `0` was selected before the rerun; no seed
+search or quorum rule is permitted. The seed reduces sampling variance but does
+not claim provider determinism, so a repeated fixed-seed cohort remains
+evidence rather than stress testing. Integration remains out of scope.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use `python3 tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. Every
+source and Noema prompt carries the same representation-neutral decision
+contract: asking, confirmation and approval are requirements rather than
+permission; absent authorising actors cannot satisfy them; candidate outcome
+fields are alternatives, not governing evidence. Negative tests prohibit case,
+candidate, consequence and required-answer leakage. The corpus, queries,
+candidates, gates, profiles and fixed seed are unchanged.
+
+**Why.** The first seed-`0` cohort reproduced the same 15/16 Google source miss,
+falsifying sampling noise as the whole cause. The prompt defined the authority
+array but not how natural-language approval requirements map into a decision,
+while exposing consequence and controlling-node labels inside both candidate
+outputs. That let an output alternative supply semantics the source did not.
+The shared contract closes the experimental ambiguity without naming a case,
+candidate id, consequence or required answer. Integration remains out of scope.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use `python3 tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. Every
+source and Noema prompt carries the same representation-neutral decision
+contract: asking, confirmation and approval are requirements rather than
+permission; absent authorising actors cannot satisfy them; candidate outcome
+fields are alternatives, not governing evidence. Negative tests prohibit case,
+candidate, consequence and required-answer leakage. The final evidence anchor
+records the sole predeclared exact same-packet repeat: its 15/16 predecessor is
+retained as rejected evidence and the repeat's 16/16 is a capability result,
+not a determinism or frequency claim. No profile, seed, prompt, candidate, gate
+or model changed between them. A later automated gate requires a deterministic
+judge or a preregistered repetition, aggregation and failure rule.
+
+**Why.** Provider seed `0` is best-effort, not a deterministic replay key. The
+accepted repeat establishes one complete capability run under Step 5's stated
+run-specific contract; it does not erase its predecessor or establish a
+frequency. Any later integration that wants to use family evaluation as a gate
+must first choose a deterministic judge or preregister a repetition,
+aggregation and failure rule. This run does neither post hoc. Its exit remains
+continued shadowing; integration is out of scope.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output, atomic reports,
+provider-cost exponent bounds, exact JSON-number price ceilings, combined
+settled-plus-pending call cardinality, v1-to-v2 ledger migration, settlement
+before semantic refusal and terminal actual-cost overruns. Audit repairs use
+`python3 tests/run_tests.py --elenchus-report {report}`, format
+`unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. Every
+source and Noema prompt carries the same representation-neutral decision
+contract: asking, confirmation and approval are requirements rather than
+permission; absent authorising actors cannot satisfy them; candidate outcome
+fields are alternatives, not governing evidence. Negative tests prohibit case,
+candidate, consequence and required-answer leakage. The repaired signed anchor
+runs one four-family measurement; only provider unavailability or unknown
+accounting permits one unchanged retry, while a substantive gate failure does
+not. It then runs two exact same-packet evaluation cohorts regardless of the
+first result. A split permits exactly one unchanged tie-break cohort. The fresh
+anchor is accepted only when at least two complete cohorts score 16/16; unknown
+or incomplete cohorts do not pass. Every attempted run and digest remains in
+the decision record. Profiles, seed, prompts, candidates, gates and models stay
+fixed throughout.
+
+**Why.** The Step 5 audit found four more boundary defects after the first
+accepted evidence: provider numeric exponents could escape the response byte
+cap during fixed rendering; non-integral price ceilings could change through a
+lossy float; settled and pending calls had independent rather than aggregate
+caps; and a charged response could be rejected before actual cost settlement,
+while a provider overrun left a smaller reusable reservation. The repair bounds
+numbers before rendering, refuses lossy policy serialization, gives the ledger
+one combined settled-plus-pending call cap, and records a terminal breach
+before refusing. The
+fresh evidence rule is declared before any replacement call and treats seed `0`
+as best-effort rather than shopping for one passing sample. Its exit remains
+continued shadowing; integration is out of scope.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: retain every prior Step 5 case
+and add deterministic request identities for three total attempts per logical
+adapter invocation, one- and two-second backoff, a closed transient refusal
+set, attempt provenance in measurement and evaluation artifacts, malformed
+provider-envelope normalization, conservative reservation retention and
+tamper checks over retry order and packet bindings. Only HTTP 408, 425, 429,
+500, 502, 503 and 504, remote transport failure, malformed provider JSON or
+envelope, and missing exact provider accounting can advance to another
+attempt. Authentication, policy, identity, semantic, parameter, output-bound,
+budget-overrun and local validation failures are terminal. Each retry changes
+only the adapter request identity; the provider, model, prompt, seed,
+parameters and provider payload remain byte-identical. Unknown attempts keep
+their full reservation. The next signed implementation anchor gets one
+four-family measurement command with only those internal attempts; exhaustion
+records unknown and ends the evidence run. If measurement passes, run two
+exact same-packet evaluation cohorts regardless of the first result and one
+tie-break cohort only after a split. Give each independent cohort a fresh,
+preallocated ledger so an unresolved identity cannot be reused, and keep the
+sum of all ledger ceilings within the operator's external spend authority. At
+least two complete 16/16 cohorts are still required. Preserve every attempted
+artifact and ledger digest. The four
+remote profiles test cross-family portability; a small local decoder is a
+separate pre-integration gate and is not inferred from this cohort.
+
+**Why.** The preregistered `6e48bb02` replacement measurement and its one
+permitted whole-command retry recorded only two and then three families. The
+failures were HTTP 429, a malformed 200 envelope and HTTP 502; the commands
+repeated 37 successful invocations because one transient response discarded a
+whole profile. That is an adapter liveness and accounting defect, not a token
+or semantic gate failure. Bounded per-invocation recovery removes the repeated
+work without releasing uncertain spend or shopping profiles, prompts, models,
+seeds or acceptance thresholds. The new evidence rule applies only to the new
+signed implementation anchor. Its exit remains continued shadowing;
+integration is out of scope.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Exit: Step 5 exits only when one signed,
+clean implementation anchor produces an accepted four-family measurement and
+at least two complete 16/16 source-versus-Noema evaluation cohorts from one
+answer-free packet. `measure` runs once; each logical provider
+invocation may use only its three preregistered attempts and closed transient
+retry class. Exhaustion records unknown and ends the evidence run. Evaluation
+uses one packet from `emit-evaluation`; `run-evaluation` runs two cohorts
+regardless of the first result and permits one tie-break only after a split;
+`tally-evaluation` settles each answer file. Each independent cohort uses a
+fresh preallocated ledger; all
+ledger ceilings, settled charges and pending reservations remain within the
+operator's one external spend authority. Every attempted artifact and ledger
+digest is retained. Checked-in evidence binds the exact commit, tree, corpus,
+profiles, packet, measurement, answers and tally, and deterministic replay,
+hostile mutations, the full repository suite, the discipline checks and diff
+hygiene all pass. ADR-059 records every result and chooses accepted for
+continued shadowing, narrowed or rejected without moving a profile, prompt,
+seed, model, threshold or failed case. Markdown remains authoritative. The
+remote cohort establishes only cross-family capability; a named small local
+decoder must pass the same paired semantic boundary in a separate
+pre-integration gate. This run proposes no plugin, runtime, repository or
+authorship integration and stops after publishing the stacked Step 5 work.
+
+**Why.** Earlier Step 5 repairs correctly changed the durable prototype and
+test contract but left direct edits inside the frozen runbook baseline. The
+append-only controller therefore still exposed the obsolete ADR number and
+pre-retry exit. This complete replacement states the effective exit in one
+receiptable block before the fresh evidence call; it preserves the fixed
+experiment and the user's stop-before-integration boundary.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Files: For Step 5, change
+`scripts/noema.py`, `schemas/noema-v1.schema.json`, `docs/noema-v1.md`,
+`docs/noema/runbook.md`, `tests/test_noema.py`,
+`tests/fixtures/noema-v1/manifest.json`, profile and kernel records below
+`tests/fixtures/noema-v1/profiles/`, the canonical inputs, hostile mutations
+and derived records below `tests/fixtures/noema-v1/specimens/`, and evidence
+below `tests/fixtures/noema-v1/evidence/`; rename the unmerged
+`docs/decisions/ADR-059-evaluate-noema-as-a-sliced-instruction-ir.md` to
+`docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md` and
+change its heading and current references accordingly; permit deterministic
+Horos and configured audit record or synopsis updates. Add no dependency,
+credential, provider SDK, model bytes, raw response transcript, plugin,
+Promise Machine claim, README entry, CI workflow, #909 file or
+external-repository change.
+
+**Why.** The pre-publication fetch observed `origin/main` at
+`ae535e2a90499694ed0ddfd7a24991cf105cf309`, where
+`ADR-059-report-baseline-currency-without-failing-the-check.md` now collides
+with the unmerged Noema record and ADR numbers 060 through 065 are occupied.
+ADR-066 is the current next free number. Moving only this unmerged record and
+its current references restores the repository uniqueness gate without
+changing the design, paid evidence anchor, profiles, prompts, models, result,
+threshold, authority or stop-before-integration boundary. Earlier amendment
+text remains historical.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: Step 5 exits only when one signed,
+clean implementation anchor produces an accepted four-family measurement and
+at least two complete 16/16 source-versus-Noema evaluation cohorts from one
+answer-free packet. `measure` runs once; each logical provider invocation may
+use only its three preregistered attempts and closed transient retry class.
+Exhaustion records unknown and ends the evidence run. Evaluation uses one
+packet from `emit-evaluation`; `run-evaluation` runs two cohorts regardless of
+the first result and permits one tie-break only after a split;
+`tally-evaluation` settles each answer file. Each independent cohort uses a
+fresh preallocated ledger; all ledger ceilings, settled charges and pending
+reservations remain within the operator's one external spend authority. Every
+attempted artifact and ledger digest is retained. Checked-in evidence binds
+the exact commit, tree, corpus, profiles, packet, measurement, answers and
+tally, and deterministic replay, hostile mutations, the full repository
+suite, the discipline checks and diff hygiene all pass. ADR-066 records every
+result and chooses accepted for continued shadowing, narrowed or rejected
+without moving a profile, prompt, seed, model, threshold or failed case.
+Markdown remains authoritative. The remote cohort establishes only
+cross-family capability; a named small local decoder must pass the same paired
+semantic boundary in a separate pre-integration gate. This run proposes no
+plugin, runtime, repository or authorship integration and stops after
+publishing the stacked Step 5 work.
+
+**Why.** The immediately preceding Files replacement moves the unmerged Noema
+record to ADR-066, but the effective Step 5 Exit still named ADR-059. Replacing
+the Exit changes that one decision-record identifier and preserves every
+evidence, threshold, authority and stop-before-integration condition.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.

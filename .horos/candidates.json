@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16134137,
+    "bytes_blob": 16790911,
     "bytes_generated": 98
   },
   "entries": [
@@ -236,6 +236,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
+    },
+    {
+      "bytes": 161298,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.synopsis.md"
     },
     {
       "bytes": 59394,
@@ -524,6 +531,41 @@
       "evidence": "no newline in the first 4096 bytes of 203679 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
+    },
+    {
+      "bytes": 36939,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 36939 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/answers-cohort-1.json"
+    },
+    {
+      "bytes": 36942,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 36942 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/answers.json"
+    },
+    {
+      "bytes": 125173,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 125173 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/measurement-0fd3801b-attempt-2.json"
+    },
+    {
+      "bytes": 130866,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 130866 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/measurement-3806eb24-attempt-1.json"
+    },
+    {
+      "bytes": 165556,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 165556 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/noema-v1/evidence/measurement.json"
     }
   ],
   "schema": 2,

@@ -9,6 +9,12 @@ execute it. Later steps add canonical codec fixtures, runtime fixtures,
 byte-identical non-executable seed references, reviewed source bindings,
 mutations, profiles and evidence under their named directories.
 
+`evidence/measurement.json`, `evidence/answers.json` and
+`evidence/evaluation.json` are the accepted Step 5 record. `manifest.json`
+binds their bytes plus the exact ancestor commit, tree, profile set, packet and
+case set. Verification reconstructs the packet and tally locally; it makes no
+provider call and retains no raw response transcript.
+
 Run the current boundary with:
 
 ```bash
