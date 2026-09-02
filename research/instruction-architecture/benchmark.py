@@ -4715,42 +4715,109 @@ def _partition_ranges(
             column += 1 if value == 0x20 else 4 - column % 4
         return column
 
+    def thematic_break(line: bytes) -> bool:
+        """Recognise the bounded thematic-break forms before list markers."""
+        return re.fullmatch(
+            rb" {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})",
+            line.rstrip(b"\r\n"),
+        ) is not None
+
+    def paragraph_interrupts(line: bytes) -> bool:
+        """Return whether a bounded block start can end a lazy paragraph."""
+        content = line.rstrip(b"\r\n")
+        if thematic_break(line):
+            return True
+        fence = re.match(rb"^ {0,3}(`{3,}|~{3,})(.*)", content)
+        if fence is not None:
+            marker, remainder = fence.groups()
+            if marker[:1] == b"~" or b"`" not in remainder:
+                return True
+        if re.match(rb"^ {0,3}(?:#{1,6})(?:[ \t]+|$)", content):
+            return True
+        if re.match(rb"^ {0,3}>", content):
+            return True
+        marker = re.match(
+            rb"^ {0,3}(?:([*+-])|([0-9]{1,9})[.)])(?:[ \t]+|$)",
+            content,
+        )
+        if marker is None:
+            return False
+        remainder = content[marker.end():]
+        if not remainder.strip(b" \t"):
+            return False
+        return marker.group(1) is not None or marker.group(2) == b"1"
+
     def update_list_containers(
-        line: bytes, active: list[int]
-    ) -> tuple[list[int], tuple[int, int] | None]:
-        """Track list baselines and the content start after same-line markers."""
+        line: bytes,
+        active: list[int],
+        paragraph_baseline: int | None,
+    ) -> tuple[
+        list[int], tuple[int, int] | None, int | None, bool, bool
+    ]:
+        """Track bounded list baselines, marker suffixes and lazy paragraphs."""
         if not line.strip(b" \t\r\n"):
-            return active, None
+            return active, None, None, False, False
         indent = leading_spaces(line)
         result = list(active)
         while result and indent < result[-1]:
+            if (
+                paragraph_baseline == result[-1]
+                and not paragraph_interrupts(line)
+            ):
+                return result, None, paragraph_baseline, False, True
             result.pop()
+            if paragraph_baseline not in result:
+                paragraph_baseline = None
         parent = result[-1] if result else 0
         if indent < parent or indent - parent > 3:
-            return result, None
+            return result, None, paragraph_baseline, False, False
         byte_index = indent
         column = indent
         content_start: tuple[int, int] | None = None
+        marker_found = False
         while True:
+            if thematic_break(line[byte_index:]):
+                break
             marker = re.match(
-                rb"(?:[*+-]|[0-9]{1,9}[.)])([ \t]+)", line[byte_index:]
+                rb"(?:([*+-])|([0-9]{1,9})[.)])", line[byte_index:]
             )
             if marker is None:
                 break
-            marker_end = column + marker.start(1)
-            whitespace_end = whitespace_end_column(marker_end, marker.group(1))
+            suffix = line[byte_index + marker.end():]
+            whitespace = re.match(rb"[ \t]*", suffix).group(0)
+            remainder = suffix[len(whitespace):].rstrip(b"\r\n")
+            if not whitespace and remainder:
+                break
+            if paragraph_baseline == parent and (
+                not remainder.strip(b" \t")
+                or (marker.group(2) is not None and marker.group(2) != b"1")
+            ):
+                break
+            marker_end = column + marker.end()
+            whitespace_end = whitespace_end_column(marker_end, whitespace)
             padding = whitespace_end - marker_end
-            content_indent = marker_end + (padding if padding <= 4 else 1)
+            blank_item = not remainder.strip(b" \t")
+            content_indent = marker_end + (
+                1 if blank_item or padding > 4 else padding
+            )
             if content_indent <= parent:
                 break
             result.append(content_indent)
-            byte_index += marker.end(1)
+            marker_found = True
+            byte_index += marker.end() + len(whitespace)
             column = whitespace_end
-            content_start = (byte_index, column)
-            if padding > 4:
+            content_start = None if blank_item else (byte_index, column)
+            if blank_item or padding > 4:
                 break
             parent = content_indent
-        return result, content_start
+            paragraph_baseline = None
+        return (
+            result,
+            content_start,
+            paragraph_baseline,
+            marker_found,
+            False,
+        )
 
     def fence_container(indent: int, active: list[int]) -> int | None:
         list_container = next(
@@ -4814,11 +4881,20 @@ def _partition_ranges(
     active_fence: tuple[int, int, int] | None = None
     pending_template: tuple[int, int] | None = None
     list_containers: list[int] = []
+    paragraph_baseline: int | None = None
     for index, line in enumerate(lines):
         content_start: tuple[int, int] | None = None
+        marker_found = False
+        lazy_continuation = False
         if active_fence is None:
-            list_containers, content_start = update_list_containers(
-                line, list_containers
+            (
+                list_containers,
+                content_start,
+                paragraph_baseline,
+                marker_found,
+                lazy_continuation,
+            ) = update_list_containers(
+                line, list_containers, paragraph_baseline
             )
             container_indent = fence_container(
                 leading_spaces(line), list_containers
@@ -4875,6 +4951,37 @@ def _partition_ranges(
             if opens(marker):
                 classification = "exact_literal_or_evidence"
                 active_fence = (fence[0], len(fence), container_indent)
+        if active_fence is not None:
+            paragraph_baseline = None
+        elif not line.strip(b" \t\r\n"):
+            paragraph_baseline = None
+        elif lazy_continuation:
+            pass
+        elif marker_found:
+            if content_start is None:
+                paragraph_baseline = None
+            else:
+                byte_index, _ = content_start
+                paragraph_baseline = (
+                    list_containers[-1]
+                    if not paragraph_interrupts(line[byte_index:])
+                    else None
+                )
+        else:
+            indent = leading_spaces(line)
+            baseline = (
+                list_containers[-1]
+                if list_containers and indent >= list_containers[-1]
+                else 0
+            )
+            relative = line[baseline:]
+            relative_indent = leading_spaces(relative)
+            if paragraph_interrupts(relative) or (
+                relative_indent >= 4 and paragraph_baseline != baseline
+            ):
+                paragraph_baseline = None
+            else:
+                paragraph_baseline = baseline
         end = offset + len(line)
         if ranges and ranges[-1][2] == classification:
             ranges[-1] = (ranges[-1][0], end, classification)

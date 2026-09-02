@@ -4822,6 +4822,234 @@ class BytePartitionTests(unittest.TestCase):
                     "governed_operative_semantics",
                 )
 
+    def test_empty_list_items_establish_their_content_baseline(self):
+        """A blank first block uses one column after the list marker."""
+        specimens = {
+            "bullet": (b"-\n", 2),
+            "spaced-bullet": (b"-   \n", 2),
+            "ordered": (b"10.\n", 4),
+            "spaced-ordered": (b"10.  \n", 4),
+        }
+        for name, (prefix, baseline) in specimens.items():
+            for close_offset in range(4):
+                source = (
+                    prefix
+                    + b" " * baseline
+                    + b"```text\n"
+                    + b" " * baseline
+                    + b"body\n"
+                    + b" " * (baseline + close_offset)
+                    + b"```\n"
+                    + b"after\n"
+                )
+                with self.subTest(
+                    name=name, close_offset=close_offset
+                ), mock.patch.object(AI, "_source_blob", return_value=source):
+                    ranges = AI._partition_ranges(
+                        f"empty-{name}.md", generated=False
+                    )
+                literal = source.index(b"body")
+                prose = source.index(b"after")
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= literal < item["end"]
+                    ),
+                    "exact_literal_or_evidence",
+                )
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= prose < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
+    def test_thematic_breaks_do_not_establish_list_baselines(self):
+        for thematic in (b"- - -\n", b"* * *\n"):
+            source = (
+                thematic
+                + b"    ```text\n"
+                + b"    body\n"
+                + b"      ```\n"
+                + b"after\n"
+            )
+            with self.subTest(thematic=thematic), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges("thematic.md", generated=False)
+            for needle in (b"```text", b"body", b"after"):
+                position = source.index(needle)
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= position < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
+        source = (
+            b"- + item\n"
+            b"    ```text\n"
+            b"    body\n"
+            b"       ```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("mixed-list.md", generated=False)
+        literal = source.index(b"body")
+        prose = source.index(b"after")
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= literal < item["end"]
+            ),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= prose < item["end"]
+            ),
+            "governed_operative_semantics",
+        )
+
+    def test_lazy_paragraph_continuation_retains_the_list_baseline(self):
+        specimens = {
+            "bullet": (b"- item\n", 2),
+            "ordered": (b"1. item\n", 3),
+        }
+        for name, (prefix, baseline) in specimens.items():
+            source = (
+                prefix
+                + b"lazy continuation\n"
+                + b" " * (baseline + 2)
+                + b"```text\n"
+                + b" " * baseline
+                + b"body\n"
+                + b" " * (baseline + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(name=name), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges(
+                    f"lazy-{name}.md", generated=False
+                )
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+        source = (
+            b"- item\n"
+            b"\n"
+            b"outside\n"
+            b"    ```text\n"
+            b"    body\n"
+            b"    ```\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("ended-list.md", generated=False)
+        for needle in (b"```text", b"body"):
+            position = source.index(needle)
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= position < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+    def test_only_ordered_one_can_interrupt_an_open_paragraph(self):
+        for ordinal in (b"2.", b"10.", b"123456789."):
+            source = (
+                b"paragraph\n"
+                + ordinal
+                + b" item\n"
+                + b" " * (len(ordinal) + 1)
+                + b"```text\n"
+                + b" " * (len(ordinal) + 1)
+                + b"body\n"
+                + b" " * (len(ordinal) + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(ordinal=ordinal), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                if ordinal == b"2.":
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "unterminated Markdown fence"
+                    ):
+                        AI._partition_ranges(
+                            "paragraph-ordered.md", generated=False
+                        )
+                    continue
+                ranges = AI._partition_ranges(
+                    "paragraph-ordered.md", generated=False
+                )
+                for needle in (b"```text", b"body", b"after"):
+                    position = source.index(needle)
+                    self.assertEqual(
+                        next(
+                            item["classification"]
+                            for item in ranges
+                            if item["start"] <= position < item["end"]
+                        ),
+                        "governed_operative_semantics",
+                    )
+
+        source = (
+            b"paragraph\n"
+            b"1. item\n"
+            b"   ```text\n"
+            b"   body\n"
+            b"     ```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("paragraph-one.md", generated=False)
+        literal = source.index(b"body")
+        prose = source.index(b"after")
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= literal < item["end"]
+            ),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= prose < item["end"]
+            ),
+            "governed_operative_semantics",
+        )
+
     def test_list_fences_allow_zero_to_three_spaces_after_the_baseline(self):
         specimens = {
             "bullet": (b"- item\n", 2),
