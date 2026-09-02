@@ -152,9 +152,185 @@ REPORT_INPUT_ROW = re.compile(
     r"^- `([^`]+)`, SHA-256 `([0-9a-f]{64})`, (\d+) bytes$", re.MULTILINE
 )
 
+# Every leaf of the record and the type it must carry.  The closed key sets
+# above say which fields exist and say nothing about what they hold, so a
+# wrong-typed value reached a ``str`` method, a comparison or a hash and raised
+# there.  That arrives as an error rather than an assertion failure, and a
+# report mixing the two classifies ``inconclusive`` instead of naming the bad
+# field.  Typing one field in one helper left the class alive everywhere else.
+RECORD_SHAPE = {
+    "contract": str,
+    "schema": str,
+    "issue": str,
+    "date": str,
+    "step": int,
+    "counts": {"*": int},
+    "host": {"*": str},
+    "evidence_classes": {"*": str},
+    "unknowns": [str],
+    "non_goals": [str],
+    "inputs": [{"path": str, "sha256": str, "bytes": int}],
+    "commands": [
+        {"command": str, "stage": str, "evidence_class": str, "exit_status": int}
+    ],
+    "gate_classes": [
+        {
+            "class": str,
+            "issue_obligation": str,
+            "evaluator": str,
+            "checker_function": str,
+            "disposition": str,
+            "marker_backed": bool,
+            "obligation_ids": [str],
+            "specimens": [str],
+            "blocked_transitions": [str],
+            "recovery_actions": [str],
+            "finding_codes": [str],
+            "network_findings": [str],
+            "tests": [str],
+            "negative_cases": {"count": int, "kind": str},
+        }
+    ],
+}
+
 
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def typed(value, shape, where: str) -> None:
+    """Walk one record value against its declared shape, naming what fails.
+
+    ``"*"`` as a mapping's only key means arbitrary string keys carrying that
+    value type.  ``bool`` is excluded from ``int`` deliberately: Python makes
+    ``True`` an integer, so a boolean where an exit status or a count belongs
+    would otherwise pass an ``isinstance`` check unnoticed.
+
+    Every failure here is an ``AssertionError`` raised from ``setUp``, which
+    unittest records as a failure rather than an error.  That is the whole
+    point: the module refuses a malformed record by naming the field, instead
+    of scattering ``AttributeError`` and ``unhashable type`` across whichever
+    consumers happen to touch it first.
+    """
+    if isinstance(shape, dict):
+        if not isinstance(value, dict):
+            raise AssertionError(f"{where} is {type(value).__name__}, expected an object")
+        if "*" in shape:
+            for key, item in value.items():
+                if not isinstance(key, str):
+                    raise AssertionError(f"{where} has a non-string key {key!r}")
+                typed(item, shape["*"], f"{where}.{key}")
+            return
+        if set(value) != set(shape):
+            raise AssertionError(
+                f"{where} keys are {sorted(value)}, expected {sorted(shape)}"
+            )
+        for key, sub in shape.items():
+            typed(value[key], sub, f"{where}.{key}")
+        return
+    if isinstance(shape, list):
+        if not isinstance(value, list):
+            raise AssertionError(f"{where} is {type(value).__name__}, expected a list")
+        for index, item in enumerate(value):
+            typed(item, shape[0], f"{where}[{index}]")
+        return
+    if shape is int and isinstance(value, bool):
+        raise AssertionError(f"{where} is a bool, expected an int")
+    if not isinstance(value, shape):
+        raise AssertionError(
+            f"{where} is {type(value).__name__}, expected {shape.__name__}"
+        )
+
+
+def claimed_rows(rows: dict, entry: dict) -> list[dict]:
+    """Registry rows for one class's ids, refused by assertion when absent.
+
+    Indexing the registry directly turned an unknown obligation id into a
+    ``KeyError`` in two consumers, so a bad record produced one failure and two
+    errors.  The partition test still owns the message about what is wrong; this
+    only keeps the other readers from erroring before it can say so.
+    """
+    missing = [o for o in entry["obligation_ids"] if o not in rows]
+    if missing:
+        raise AssertionError(f"{entry['class']} claims unknown obligation ids: {missing}")
+    return [rows[o] for o in entry["obligation_ids"]]
+
+
+def emittable_finding_codes(path: Path) -> set[str]:
+    """Finding codes a script can actually emit, read from its live literals.
+
+    A regex over the whole source counts a code named in a comment or a
+    docstring, so the record could claim a code the checker cannot raise and
+    this module would still pass it -- the declaration-only defect #884 exists
+    to close, in the guard that reports on closing it.  Comments are absent
+    from the AST entirely; docstrings are the first statement of a module,
+    class or function and are excluded here by position.
+    """
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    docstrings = set()
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if not isinstance(
+            node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+        ):
+            continue
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            docstrings.add(id(body[0].value))
+    codes: set[str] = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and id(node) not in docstrings
+        ):
+            codes.update(FINDING_CODE.findall(node.value))
+    return codes
+
+
+def checker_functions() -> set[str]:
+    """Every function the checker defines, read statically from its source."""
+    tree = ast.parse(CHECKER.read_text(encoding="utf-8"))
+    return {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+
+def checker_only_values() -> set[str]:
+    """The exact ``--only`` values the checker accepts, from its own literal.
+
+    Read from the source rather than restated here, so the two cannot drift.
+    If the checker stops declaring them where this reads them, the helper
+    refuses instead of quietly returning an empty set that would accept
+    anything.
+    """
+    source = CHECKER.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        segment = ast.get_source_segment(source, node) or ""
+        if "unsupported --only value(s)" not in segment:
+            continue
+        for sub in ast.walk(node):
+            if (
+                isinstance(sub, ast.Assign)
+                and len(sub.targets) == 1
+                and isinstance(sub.targets[0], ast.Name)
+                and sub.targets[0].id == "allowed"
+                and isinstance(sub.value, ast.Set)
+            ):
+                return {e.value for e in sub.value.elts if isinstance(e, ast.Constant)}
+    raise AssertionError(
+        "the checker no longer declares its --only values where this reads them"
+    )
 
 
 def input_paths(inputs) -> list[str]:
@@ -241,6 +417,20 @@ class DemonstrationRecordTests(unittest.TestCase):
         cls.record = load_json(DEMONSTRATION)
         cls.registry = load_json(REGISTRY)
         cls.counts = checker_counts()
+
+    def setUp(self) -> None:
+        typed(self.record, RECORD_SHAPE, "record")
+
+    def test_every_record_field_carries_its_declared_type(self) -> None:
+        """The declared shape is bound to the closed key sets it types.
+
+        Two declarations of the same fields drift, so the shape is checked
+        against the key sets rather than maintained beside them: a field added
+        to one and not the other fails here.
+        """
+        self.assertEqual(set(RECORD_SHAPE), RECORD_FIELDS)
+        self.assertEqual(set(RECORD_SHAPE["gate_classes"][0]), GATE_CLASS_FIELDS)
+        self.assertEqual(set(RECORD_SHAPE["commands"][0]), COMMAND_FIELDS)
 
     def test_record_declares_the_fixed_contract_and_closed_shape(self) -> None:
         self.assertEqual(self.record["contract"], "promise-machine/v1")
@@ -338,6 +528,9 @@ class GateClassCoverageTests(unittest.TestCase):
         cls.rows = {row["id"]: row for row in cls.registry["obligations"]}
         cls.methods = contract_test_methods()
 
+    def setUp(self) -> None:
+        typed(self.record, RECORD_SHAPE, "record")
+
     def test_the_ten_issue_classes_appear_once_in_their_recorded_order(self) -> None:
         observed = tuple(entry["class"] for entry in self.record["gate_classes"])
         self.assertEqual(observed, ISSUE_GATE_CLASSES)
@@ -369,7 +562,7 @@ class GateClassCoverageTests(unittest.TestCase):
     def test_each_claimed_row_supplies_its_specimen_transition_and_recovery(self) -> None:
         for entry in self.record["gate_classes"]:
             with self.subTest(gate_class=entry["class"]):
-                rows = [self.rows[o] for o in entry["obligation_ids"]]
+                rows = claimed_rows(self.rows, entry)
                 self.assertEqual(
                     entry["specimens"], sorted({row["specimen"] for row in rows})
                 )
@@ -418,7 +611,14 @@ class GateClassCoverageTests(unittest.TestCase):
                     self.assertGreaterEqual(count, len(entry["specimens"]))
 
     def test_every_recorded_finding_code_can_be_emitted_by_the_checker(self) -> None:
-        emitted = set(FINDING_CODE.findall(CHECKER.read_text(encoding="utf-8")))
+        """A claimed code has to be a live literal, not a mention in a comment.
+
+        The scan was a regex over the whole checker source, so ``# PM999`` in a
+        comment satisfied a record claiming ``PM999`` as a code that gate
+        emits.  That is a declaration nothing evaluates, which is the defect
+        this whole record exists to demonstrate closed.
+        """
+        emitted = emittable_finding_codes(CHECKER)
         for entry in self.record["gate_classes"]:
             for code in entry["finding_codes"]:
                 with self.subTest(gate_class=entry["class"], code=code):
@@ -437,8 +637,8 @@ class GateClassCoverageTests(unittest.TestCase):
         must be named as a network finding, so a new fetched case cannot enter
         the inventory and read as covered.
         """
-        offline = set(FINDING_CODE.findall(CHECKER.read_text(encoding="utf-8")))
-        upstream = set(FINDING_CODE.findall(VENDORED_VERIFIER.read_text(encoding="utf-8")))
+        offline = emittable_finding_codes(CHECKER)
+        upstream = emittable_finding_codes(VENDORED_VERIFIER)
         named = set()
         for entry in self.record["gate_classes"]:
             for code in entry["network_findings"]:
@@ -456,8 +656,39 @@ class GateClassCoverageTests(unittest.TestCase):
             if not entry["marker_backed"]:
                 continue
             with self.subTest(gate_class=entry["class"]):
-                declared = {self.rows[o]["finding"] for o in entry["obligation_ids"]}
+                declared = {row["finding"] for row in claimed_rows(self.rows, entry)}
                 self.assertTrue(declared <= set(entry["finding_codes"]))
+
+    def test_every_recorded_pointer_resolves_where_the_record_points(self) -> None:
+        """``checker_function`` and ``evaluator`` are pointers, so they resolve.
+
+        Both were held to a prefix and nothing more, and ``checker_function``
+        was read at all only for the two classes without a marker, so eight of
+        the ten went unread.  Renaming every one of them to a function the
+        checker does not define left this module green, as did pointing the
+        evaluator at a script that does not exist, at an unsupported ``--only``
+        value, or at the real checker with an extra flag that makes it exit 2.
+
+        The evaluator column is not decoration.  The evidence report's ``When a
+        gate stops the line`` section sends a reader to it by name, and the
+        report join added in the previous round only made both halves agree on
+        whatever the record said -- including a command that does not run.
+        """
+        defined = checker_functions()
+        allowed = checker_only_values()
+        self.assertTrue(allowed)
+        for entry in self.record["gate_classes"]:
+            with self.subTest(gate_class=entry["class"]):
+                self.assertIn(entry["checker_function"], defined)
+                parts = entry["evaluator"].split()
+                self.assertEqual(len(parts), 5, parts)
+                self.assertEqual(parts[0], "python3")
+                self.assertEqual(confined(parts[1]), CHECKER)
+                self.assertEqual(parts[2], "check")
+                self.assertEqual(parts[3], "--only")
+                requested = parts[4].split(",")
+                self.assertTrue(all(requested), parts)
+                self.assertLessEqual(set(requested), allowed)
 
     def test_every_named_test_selector_exists_in_the_contract_suite(self) -> None:
         for entry in self.record["gate_classes"]:
@@ -484,6 +715,9 @@ class RecordedObservationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.record = load_json(DEMONSTRATION)
+
+    def setUp(self) -> None:
+        typed(self.record, RECORD_SHAPE, "record")
 
     def test_every_command_is_a_labelled_recorded_observation(self) -> None:
         commands = self.record["commands"]
@@ -554,7 +788,16 @@ class RecordedObservationTests(unittest.TestCase):
         both fail.
         """
         text = EVIDENCE_REPORT.read_text(encoding="utf-8")
-        observed = {subject: int(n) for subject, n in REPORT_COUNT_ROW.findall(text)}
+        rows = REPORT_COUNT_ROW.findall(text)
+        # Built as a list first: reading the rows straight into a dict let a
+        # second row for the same subject overwrite the first, so a wrong row
+        # placed above the right one disappeared and a reader quoting the
+        # report got a number the record contradicts.
+        subjects = [subject for subject, _ in rows]
+        self.assertEqual(
+            sorted(subjects), sorted(set(subjects)), "a count subject has two rows"
+        )
+        observed = {subject: int(n) for subject, n in rows}
         self.assertEqual(set(observed), set(REPORT_COUNT_SUBJECTS))
         self.assertEqual(set(REPORT_COUNT_SUBJECTS.values()), set(self.record["counts"]))
         for subject, key in REPORT_COUNT_SUBJECTS.items():
@@ -606,15 +849,22 @@ class RecordedObservationTests(unittest.TestCase):
     def test_the_report_repeats_every_bound_input_digest(self) -> None:
         """A quoted digest is evidence, so it is compared rather than trusted."""
         text = EVIDENCE_REPORT.read_text(encoding="utf-8")
-        observed = {
-            path: (digest, int(size))
-            for path, digest, size in REPORT_INPUT_ROW.findall(text)
-        }
+        rows = REPORT_INPUT_ROW.findall(text)
+        # Same collapse as the count table: a duplicate row for one path was
+        # overwritten rather than caught, and a duplicated record entry would
+        # have hidden the same way on the other side of the comparison.
+        quoted = [path for path, _, _ in rows]
+        self.assertEqual(
+            sorted(quoted), sorted(set(quoted)), "a path is quoted more than once"
+        )
+        named = input_paths(self.record["inputs"])
+        self.assertEqual(
+            sorted(named), sorted(set(named)), "a path is recorded more than once"
+        )
+        observed = {path: (digest, int(size)) for path, digest, size in rows}
         recorded = {
             path: (entry["sha256"], entry["bytes"])
-            for path, entry in zip(
-                input_paths(self.record["inputs"]), self.record["inputs"]
-            )
+            for path, entry in zip(named, self.record["inputs"])
         }
         self.assertEqual(observed, recorded)
 
