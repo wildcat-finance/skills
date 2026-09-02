@@ -192,6 +192,7 @@ ORACLE_MAX_JSON_BYTES = 8 * 1024 * 1024
 ORACLE_MAX_GIT_OUTPUT = 4 * 1024 * 1024
 ORACLE_MAX_GIT_ERROR = 64 * 1024
 ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
+ORACLE_MAX_STEP1_DEPENDENCY_BYTES = 8 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_STEP1_PARENT_DEPENDENCIES = (
     "docs/instruction-architecture/corpus-reconciliation.md",
@@ -823,20 +824,38 @@ def oracle_head_oid() -> str:
 
 def oracle_assert_step1_parent_dependencies(oid: str) -> None:
     """Fail closed if a live Step 1 dependency differs from the parent oid."""
-    process = oracle_git(
-        "diff",
-        "--quiet",
-        "--no-ext-diff",
-        "--no-textconv",
-        oid,
-        "--",
-        *ORACLE_STEP1_PARENT_DEPENDENCIES,
-        limit=1,
-    )
-    if process.returncode == 1:
-        raise AssertionError("independent tracked oracle dependency drift")
-    if process.returncode != 0 or process.stdout or process.stderr:
-        raise AssertionError("independent tracked oracle dependencies unavailable")
+    for path in ORACLE_STEP1_PARENT_DEPENDENCIES:
+        expression = f"{oid}:{path}"
+        probe = oracle_git(
+            "cat-file",
+            "--batch-check=%(objectname) %(objecttype)",
+            input_data=f"{expression}\n".encode("ascii"),
+            limit=128,
+        )
+        match = re.fullmatch(
+            rb"([0-9a-f]{40}|[0-9a-f]{64}) blob\n", probe.stdout
+        )
+        if (
+            probe.returncode != 0
+            or probe.stderr
+            or match is None
+            or len(match.group(1)) != len(oid)
+        ):
+            raise AssertionError(
+                "independent tracked oracle dependencies unavailable"
+            )
+        live = oracle_read_regular(
+            ROOT / path, ORACLE_MAX_STEP1_DEPENDENCY_BYTES
+        )
+        header = f"blob {len(live)}\0".encode("ascii")
+        if len(oid) == 40:
+            hasher = hashlib.sha1(usedforsecurity=False)
+        else:
+            hasher = hashlib.sha256()
+        hasher.update(header)
+        hasher.update(live)
+        if hasher.hexdigest().encode("ascii") != match.group(1):
+            raise AssertionError("independent tracked oracle dependency drift")
 
 
 def oracle_tracked_source(oid: str, path: str) -> bytes:
@@ -3672,20 +3691,225 @@ class CorpusManifestTests(unittest.TestCase):
 
     def test_independent_parent_oracle_refuses_step1_dependency_drift(self):
         tracked = oracle_guard_module()
-        real_git = tracked.oracle_git
+        real_read = tracked.oracle_read_regular
+        target = tracked.ROOT / tracked.ORACLE_STEP1_PARENT_DEPENDENCIES[0]
 
-        def synthetic_drift(*arguments, **keywords):
-            if arguments and arguments[0] == "diff":
-                return subprocess.CompletedProcess(arguments, 1, b"", b"")
-            return real_git(*arguments, **keywords)
+        def hidden_drift(path, limit):
+            data = real_read(path, limit)
+            return data + b"\n" if path == target else data
 
         with (
-            mock.patch.object(tracked, "oracle_git", side_effect=synthetic_drift),
+            mock.patch.object(
+                tracked, "oracle_read_regular", side_effect=hidden_drift
+            ),
             self.assertRaisesRegex(
                 AssertionError, "independent tracked oracle dependency drift"
             ),
         ):
             tracked.oracle_head_module()
+
+    def test_independent_parent_oracle_refuses_index_hidden_dependency_drift(self):
+        tracked = oracle_guard_module()
+        for flag in ("--assume-unchanged", "--skip-worktree"):
+            with (
+                self.subTest(flag=flag),
+                scratch_directory("oracle-index-drift-") as temporary,
+            ):
+                repository = Path(temporary) / "repository"
+                repository.mkdir()
+
+                def git(*arguments: str) -> str:
+                    process = subprocess.run(
+                        ["/usr/bin/git", "-C", str(repository), *arguments],
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=20,
+                        env=tracked.ORACLE_GIT_ENV,
+                    )
+                    self.assertEqual(process.returncode, 0, process.stderr)
+                    return process.stdout.strip()
+
+                git("init", "--quiet")
+                dependency = repository / "dependency"
+                dependency.write_bytes(b"parent\n")
+                git("add", "dependency")
+                tree = git("write-tree")
+                git("update-index", flag, "dependency")
+                dependency.write_bytes(b"candidate\n")
+                self.assertEqual(
+                    git(
+                        "diff",
+                        "--quiet",
+                        "--no-ext-diff",
+                        "--no-textconv",
+                        tree,
+                        "--",
+                        "dependency",
+                    ),
+                    "",
+                )
+                with (
+                    mock.patch.object(tracked, "ROOT", repository),
+                    mock.patch.object(
+                        tracked,
+                        "ORACLE_STEP1_PARENT_DEPENDENCIES",
+                        ("dependency",),
+                    ),
+                    self.assertRaisesRegex(
+                        AssertionError,
+                        "independent tracked oracle dependency drift",
+                    ),
+                ):
+                    tracked.oracle_assert_step1_parent_dependencies(tree)
+
+    def test_independent_parent_oracle_refuses_filter_hidden_dependency_drift(self):
+        tracked = oracle_guard_module()
+        with scratch_directory("oracle-filter-drift-") as temporary:
+            repository = Path(temporary) / "repository"
+            repository.mkdir()
+
+            def git(*arguments: str) -> str:
+                process = subprocess.run(
+                    ["/usr/bin/git", "-C", str(repository), *arguments],
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=20,
+                    env=tracked.ORACLE_GIT_ENV,
+                )
+                self.assertEqual(process.returncode, 0, process.stderr)
+                return process.stdout.strip()
+
+            git("init", "--quiet")
+            dependency = repository / "dependency"
+            dependency.write_bytes(b"parent\n")
+            (repository / ".gitattributes").write_text(
+                "dependency filter=mask\n", encoding="utf-8"
+            )
+            git("config", "filter.mask.clean", "printf 'parent\\n'")
+            git("add", "dependency", ".gitattributes")
+            tree = git("write-tree")
+            dependency.write_bytes(b"candidate\n")
+            self.assertEqual(
+                git(
+                    "diff",
+                    "--quiet",
+                    "--no-ext-diff",
+                    "--no-textconv",
+                    tree,
+                    "--",
+                    "dependency",
+                ),
+                "",
+            )
+            with (
+                mock.patch.object(tracked, "ROOT", repository),
+                mock.patch.object(
+                    tracked,
+                    "ORACLE_STEP1_PARENT_DEPENDENCIES",
+                    ("dependency",),
+                ),
+                self.assertRaisesRegex(
+                    AssertionError,
+                    "independent tracked oracle dependency drift",
+                ),
+            ):
+                tracked.oracle_assert_step1_parent_dependencies(tree)
+
+    def test_independent_parent_oracle_supports_both_git_object_formats(self):
+        tracked = oracle_guard_module()
+        parent = b"parent\n"
+        candidate = b"candidate\n"
+        for oid_length, algorithm in ((40, "sha1"), (64, "sha256")):
+            with self.subTest(algorithm=algorithm):
+                header = f"blob {len(parent)}\0".encode("ascii")
+                hasher = hashlib.new(
+                    algorithm, usedforsecurity=algorithm != "sha1"
+                )
+                hasher.update(header)
+                hasher.update(parent)
+                object_oid = hasher.hexdigest().encode("ascii")
+
+                def git(*arguments, **_keywords):
+                    if arguments and arguments[0] == "cat-file":
+                        return subprocess.CompletedProcess(
+                            arguments, 0, object_oid + b" blob\n", b""
+                        )
+                    return subprocess.CompletedProcess(arguments, 0, b"", b"")
+
+                with (
+                    mock.patch.object(tracked, "oracle_git", side_effect=git),
+                    mock.patch.object(
+                        tracked,
+                        "ORACLE_STEP1_PARENT_DEPENDENCIES",
+                        ("dependency",),
+                    ),
+                ):
+                    with mock.patch.object(
+                        tracked, "oracle_read_regular", return_value=parent
+                    ):
+                        tracked.oracle_assert_step1_parent_dependencies(
+                            "0" * oid_length
+                        )
+                    with (
+                        mock.patch.object(
+                            tracked,
+                            "oracle_read_regular",
+                            return_value=candidate,
+                        ),
+                        self.assertRaisesRegex(
+                            AssertionError,
+                            "independent tracked oracle dependency drift",
+                        ),
+                    ):
+                        tracked.oracle_assert_step1_parent_dependencies(
+                            "0" * oid_length
+                        )
+
+    def test_independent_parent_oracle_dependency_byte_limit_is_exact(self):
+        tracked = oracle_guard_module()
+        with scratch_directory("oracle-dependency-limit-") as temporary:
+            repository = Path(temporary) / "repository"
+            repository.mkdir()
+
+            def git(*arguments: str) -> str:
+                process = subprocess.run(
+                    ["/usr/bin/git", "-C", str(repository), *arguments],
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=20,
+                    env=tracked.ORACLE_GIT_ENV,
+                )
+                self.assertEqual(process.returncode, 0, process.stderr)
+                return process.stdout.strip()
+
+            git("init", "--quiet")
+            dependency = repository / "dependency"
+            dependency.write_bytes(b"x" * ORACLE_MAX_STEP1_DEPENDENCY_BYTES)
+            git("add", "dependency")
+            tree = git("write-tree")
+            with (
+                mock.patch.object(tracked, "ROOT", repository),
+                mock.patch.object(
+                    tracked,
+                    "ORACLE_STEP1_PARENT_DEPENDENCIES",
+                    ("dependency",),
+                ),
+            ):
+                tracked.oracle_assert_step1_parent_dependencies(tree)
+                git("update-index", "--assume-unchanged", "dependency")
+                dependency.write_bytes(
+                    b"x" * (ORACLE_MAX_STEP1_DEPENDENCY_BYTES + 1)
+                )
+                with self.assertRaisesRegex(
+                    AssertionError, "independent input exceeds byte limit"
+                ):
+                    tracked.oracle_assert_step1_parent_dependencies(tree)
 
     def test_independent_git_tree_caps_count_and_requires_canonical_nuls(self):
         tracked = oracle_guard_module()
