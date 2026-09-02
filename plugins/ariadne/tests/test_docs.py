@@ -40,14 +40,23 @@ DOCUMENTED = (
 EXAMPLES = os.path.join(PLUGIN, "examples")
 
 POLICY_CITATION = re.compile(r"(?m)^Policy: \[[^\]]+\]\([^)]+\)$")
-"""The one link a ledger has to point outside the plugin.
+"""The first of two links a ledger has to point outside the plugin.
 
 `tests/test_evolution_contract.py` at the repository root requires every
 governed ledger to cite `plugins/hexaemeron/skills/VERSIONING.md` by a relative
 path that resolves to that file. The versioning contract is shared by twelve
 plugins and is not copied into each, so that citation cannot both satisfy the
-repository contract and stay inside this plugin. The exemption is this one line;
-every other link in the ledger is held to the rule below.
+repository contract and stay inside this plugin.
+"""
+
+SOURCES_CITATION = re.compile(r"(?m)^- Sources: \[[^\]]+\]\([^)]+\)$")
+"""The second, on the same terms as the policy citation above.
+
+`SOURCES.md` at the repository root is the generated coverage manifest that
+replaced `VENUES.json`. Its generator writes and repairs this line in all 27
+governed ledgers, so it is no more copyable into one plugin than the versioning
+contract is. The exemption is these two lines; every other link in the ledger is
+held to the rule below.
 """
 
 
@@ -230,6 +239,7 @@ class ContractTests(unittest.TestCase):
                 text = read(path)
                 if name == "EVOLUTION.md":
                     text = POLICY_CITATION.sub("", text)
+                    text = SOURCES_CITATION.sub("", text)
                 for link in re.findall(r"\]\((\.[^)]+)\)", text):
                     target = os.path.normpath(os.path.join(directory, link))
                     with self.subTest(document=os.path.relpath(path, PLUGIN)):
