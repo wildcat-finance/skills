@@ -45,6 +45,79 @@ def body(decision="Fiat-Required: 1", rows="none | none | nothing is carried\n",
     return text
 
 
+class StaleBodyReportTests(unittest.TestCase):
+    """The report-only survey of open issues carrying no status block.
+
+    Report-only, following ADR-053's posture for dead-code discovery: it names
+    what it found and never gates. A body with no block is the ordinary case,
+    so the report is a count somebody reads rather than a refusal somebody
+    works around.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.hexctl = hexctl_module()
+
+    def survey(self, bodies):
+        return self.hexctl.stale_body_report(bodies)
+
+    def test_every_body_without_a_block_is_named_once(self):
+        report = self.survey([
+            {"number": 11, "title": "no block", "body": "An issue.\n"},
+            {"number": 12, "title": "also none", "body": "Another.\n"},
+        ])
+        self.assertEqual(report["surveyed"], 2)
+        self.assertEqual(report["without_block"], 2)
+        self.assertEqual([row["number"] for row in report["rows"]], [11, 12])
+        self.assertEqual(len({row["number"] for row in report["rows"]}), 2)
+
+    def test_a_body_carrying_a_block_is_not_reported(self):
+        report = self.survey([
+            {"number": 11, "title": "has one",
+             "body": "<!-- status:start -->\nSuperseded.\n<!-- status:end -->\n\nAn issue.\n"},
+            {"number": 12, "title": "has none", "body": "Another.\n"},
+        ])
+        self.assertEqual(report["without_block"], 1)
+        self.assertEqual([row["number"] for row in report["rows"]], [12])
+
+    def test_a_malformed_block_is_reported_as_a_fault_not_an_absence(self):
+        """A body mid-edit is a different problem from a body nobody has touched."""
+        report = self.survey([
+            {"number": 11, "title": "mid-edit",
+             "body": "<!-- status:start -->\nStill open.\n\nAn issue.\n"},
+        ])
+        self.assertEqual(report["without_block"], 0)
+        self.assertEqual(report["malformed"], 1)
+        self.assertEqual(report["rows"][0]["state"], "malformed")
+
+    def test_a_body_that_is_not_text_is_refused_by_name(self):
+        """Hostile JSON reaches this parser; a traceback is not a diagnosis."""
+        with self.assertRaises(SystemExit):
+            self.survey([{"number": 1, "title": "t", "body": {"not": "a string"}}])
+
+    def test_a_title_that_is_not_text_is_refused_by_name(self):
+        with self.assertRaises(SystemExit):
+            self.survey([{"number": 1, "title": 7, "body": "An issue.\n"}])
+
+    def test_a_control_character_in_a_title_is_stripped(self):
+        """Titles come from GitHub and are printed to a terminal.
+
+        The carryover row reader refuses control characters by name. This one
+        renders its rows, so an escape sequence in a crafted title would reach
+        the operator's terminal raw.
+        """
+        report = self.survey([
+            {"number": 1, "title": "esc\x1b[31mRED", "body": "An issue.\n"}])
+        self.assertNotIn("\x1b", report["rows"][0]["title"])
+        self.assertIn("RED", report["rows"][0]["title"])
+
+    def test_the_survey_never_gates(self):
+        """Report-only: the shape carries no exit code and no refusal."""
+        report = self.survey([{"number": 11, "title": "none", "body": "An issue.\n"}])
+        self.assertNotIn("exit", report)
+        self.assertEqual(report["schema"], "fiat-stale-body-report/v1")
+
+
 def with_status(block, rest="An issue.\n\nFiat-Required: 1\n"):
     """One candidate body carrying the given status-block text above its prose."""
     return block + "\n" + rest

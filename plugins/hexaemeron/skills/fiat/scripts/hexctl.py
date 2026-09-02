@@ -4535,6 +4535,70 @@ def status_block_span(
     return (opened, closed), []
 
 
+STALE_BODY_REPORT_SCHEMA = "fiat-stale-body-report/v1"
+STALE_BODY_INPUT_BYTES_MAX = 8 * 1024 * 1024
+STALE_BODY_ROWS_MAX = 2048
+
+
+def stale_body_report(bodies: list[dict]) -> dict:
+    """Which open issues carry no status block, and which carry a broken one.
+
+    Report-only, following ADR-053's posture for dead-code discovery: it counts
+    and names, and nothing here refuses. An absent block is the ordinary case
+    rather than a defect, so a gate on this number would be a gate on almost
+    every issue in the repository.
+
+    An absence and a malformed block are separated deliberately. A body nobody
+    has touched needs somebody to decide whether its requirement still holds; a
+    body mid-edit needs its own delimiters finished, which is a different job
+    for a different person.
+    """
+    rows = []
+    absent = malformed = carried = 0
+    for entry in bodies:
+        number = entry["number"]
+        body = entry.get("body")
+        title = entry.get("title")
+        # Hostile JSON reaches this parser. A wrong type used to surface as an
+        # AttributeError from deep inside the line reader, which is a traceback
+        # rather than a diagnosis; findings F-03 and F-04 in the plugin's own
+        # audit record are the same class, fixed the same way.
+        if body is not None and not isinstance(body, str):
+            die(f"issue {number} carries a body that is not text")
+        if title is not None and not isinstance(title, str):
+            die(f"issue {number} carries a title that is not text")
+        span, faults = status_block_span(body or "", f"issue {number}")
+        if faults:
+            malformed += 1
+            state, detail = "malformed", faults[0]
+        elif span is None:
+            absent += 1
+            state, detail = "absent", "no status block"
+        else:
+            carried += 1
+            continue
+        rows.append({
+            # Titles come from GitHub and these rows are printed to a terminal,
+            # so an escape sequence in a crafted title would render raw. The
+            # carryover row reader refuses control characters by name; this one
+            # strips them, because a title is display text rather than a field
+            # any decision rests on.
+            "number": number,
+            "title": "".join(c for c in (title or "") if c.isprintable()),
+            "state": state,
+            "detail": detail,
+        })
+    rows.sort(key=lambda row: row["number"])
+    return {
+        "schema": STALE_BODY_REPORT_SCHEMA,
+        "surveyed": len(bodies),
+        "with_block": carried,
+        "without_block": absent,
+        "malformed": malformed,
+        "rows": rows,
+    }
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -5352,6 +5416,64 @@ def cmd_record(args) -> None:
     state["receipts"][args.key] = value
     commit(args.dir, state, "record", {"key": args.key, "value": value})
     print(f"recorded {args.key}")
+
+
+def cmd_stale_bodies(args) -> None:
+    """Report which open issues carry no status block, or a broken one.
+
+    Report-only. It prints what it found and exits zero whatever that is,
+    following ADR-053's posture for dead-code discovery. Almost every issue in
+    a repository lacks a block, so a gate on this count would refuse nearly
+    everything and teach the reader to bypass it.
+
+    The bodies come from a file rather than the network, because the survey a
+    person acts on is one they can rerun on the same input and get the same
+    answer. Produce that file with the reader's own transport, and pass
+    `--paginate`: the issues endpoint returns pull requests alongside issues,
+    so one unpaginated page of 100 yielded 59 issues out of 138 here and the
+    survey could not tell it had seen well under half of them.
+
+        gh api --paginate "repos/OWNER/NAME/issues?state=open&per_page=100" \
+          --jq '.[] | select(.pull_request == null) | {number, title, body}'
+
+    Collect those objects into one JSON array before passing the file in. The
+    counts describe the file and never the repository: this reader is handed a
+    set and cannot know what was left out of it, so it reports `surveyed`
+    rather than `open` and leaves the completeness claim to whoever produced
+    the file.
+    """
+    try:
+        with open(args.bodies, "rb") as handle:
+            raw = handle.read(STALE_BODY_INPUT_BYTES_MAX + 1)
+    except OSError as exc:
+        die(f"{args.bodies} cannot be read ({exc})")
+    if len(raw) > STALE_BODY_INPUT_BYTES_MAX:
+        die(f"{args.bodies} is above the {STALE_BODY_INPUT_BYTES_MAX}-byte cap "
+            f"this reader will parse")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        die(f"{args.bodies} is not readable JSON ({exc})")
+    if not isinstance(payload, list):
+        die(f"{args.bodies} must hold a JSON array of issues")
+    if len(payload) > STALE_BODY_ROWS_MAX:
+        die(f"{args.bodies} holds {len(payload)} issues, above the "
+            f"{STALE_BODY_ROWS_MAX} this reader will survey")
+    bodies = []
+    for index, entry in enumerate(payload):
+        if not isinstance(entry, dict) or not isinstance(entry.get("number"), int):
+            die(f"{args.bodies} entry {index} carries no integer issue number")
+        bodies.append(entry)
+    report = stale_body_report(bodies)
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print(f"{report['surveyed']} issue(s) surveyed: {report['with_block']} carry a "
+          f"status block, {report['without_block']} carry none, "
+          f"{report['malformed']} carry a broken one")
+    for row in report["rows"]:
+        print(f"  #{row['number']} {row['state']}: {row['title']}")
+    print("report-only; nothing here refuses")
 
 
 def cmd_issue_check(args) -> None:
@@ -14484,6 +14606,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--body", help="path to the candidate issue body")
     sp.add_argument("--issue", help="canonical GitHub issue URL to read")
     sp.set_defaults(fn=cmd_issue_check)
+
+    sp = sub.add_parser(
+        "stale-bodies",
+        help="report which open issues carry no status block (report-only)",
+    )
+    sp.add_argument("--bodies", required=True,
+                    help="path to a JSON array of {number, title, body}")
+    sp.add_argument("--json", action="store_true", help="emit the report as JSON")
+    sp.set_defaults(fn=cmd_stale_bodies)
 
     sp = sub.add_parser("next", help="emit the single next action as JSON")
     sp.set_defaults(fn=cmd_next)
