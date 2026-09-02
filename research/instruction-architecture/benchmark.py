@@ -24,6 +24,7 @@ import stat
 import subprocess
 import sys
 import time
+from bisect import bisect_left, bisect_right
 from functools import lru_cache
 from typing import Any, Iterable
 
@@ -4705,6 +4706,10 @@ def _partition_ranges(
             }
         ]
     lines = data.splitlines(keepends=True)
+    inline_list_marker = re.compile(
+        rb"(?:([*+-])|([0-9]{1,9})[.)])"
+    )
+    marker_whitespace = re.compile(rb"[ \t]*")
 
     def leading_spaces(line: bytes) -> int:
         return len(line) - len(line.lstrip(b" "))
@@ -4722,6 +4727,32 @@ def _partition_ranges(
             line.rstrip(b"\r\n"),
         ) is not None
 
+    def thematic_suffix_starts(line: bytes) -> set[int]:
+        """Find homogeneous thematic suffixes in one backward pass."""
+        end = len(line)
+        while end and line[end - 1] in b" \t\r\n":
+            end -= 1
+        if not end or line[end - 1] not in b"*-_":
+            return set()
+        marker = line[end - 1]
+        positions: list[int] = []
+        cursor = end - 1
+        while cursor >= 0 and line[cursor] == marker:
+            positions.append(cursor)
+            cursor -= 1
+            while cursor >= 0 and line[cursor] in b" \t":
+                cursor -= 1
+        return set(positions[2:])
+
+    def list_block_marker(line: bytes) -> re.Match[bytes] | None:
+        """Return a valid bounded list marker, with thematic precedence."""
+        if thematic_break(line):
+            return None
+        return re.match(
+            rb"^ {0,3}(?:([*+-])|([0-9]{1,9})[.)])(?:[ \t]+|$)",
+            line.rstrip(b"\r\n"),
+        )
+
     def paragraph_interrupts(line: bytes) -> bool:
         """Return whether a bounded block start can end a lazy paragraph."""
         content = line.rstrip(b"\r\n")
@@ -4736,16 +4767,33 @@ def _partition_ranges(
             return True
         if re.match(rb"^ {0,3}>", content):
             return True
-        marker = re.match(
-            rb"^ {0,3}(?:([*+-])|([0-9]{1,9})[.)])(?:[ \t]+|$)",
-            content,
-        )
+        marker = list_block_marker(line)
         if marker is None:
             return False
         remainder = content[marker.end():]
         if not remainder.strip(b" \t"):
             return False
-        return marker.group(1) is not None or marker.group(2) == b"1"
+        return marker.group(1) is not None or int(marker.group(2)) == 1
+
+    def list_container_interrupts(
+        line: bytes, active: list[int], indent: int
+    ) -> bool:
+        """Recognise a block that exits the deepest active list item."""
+        limit = max(0, len(active) - 1)
+        start = bisect_left(active, indent - 3, 0, limit)
+        end = bisect_right(active, indent, start, limit)
+        for index in range(end - 1, start - 1, -1):
+            parent = active[index]
+            relative = line[parent:]
+            if (
+                paragraph_interrupts(relative)
+                or list_block_marker(relative) is not None
+            ):
+                return True
+        return indent <= 3 and (
+            paragraph_interrupts(line)
+            or list_block_marker(line) is not None
+        )
 
     def update_list_containers(
         line: bytes,
@@ -4758,15 +4806,19 @@ def _partition_ranges(
         if not line.strip(b" \t\r\n"):
             return active, None, None, False, False
         indent = leading_spaces(line)
-        result = list(active)
+        result = active
+        container_interrupt = list_container_interrupts(line, active, indent)
         while result and indent < result[-1]:
             if (
                 paragraph_baseline == result[-1]
                 and not paragraph_interrupts(line)
+                and not container_interrupt
             ):
                 return result, None, paragraph_baseline, False, True
-            result.pop()
-            if paragraph_baseline not in result:
+            if result is active:
+                result = list(active)
+            removed = result.pop()
+            if paragraph_baseline == removed:
                 paragraph_baseline = None
         parent = result[-1] if result else 0
         if indent < parent or indent - parent > 3:
@@ -4775,38 +4827,54 @@ def _partition_ranges(
         column = indent
         content_start: tuple[int, int] | None = None
         marker_found = False
+        content_end = len(line)
+        while content_end and line[content_end - 1] in b"\r\n":
+            content_end -= 1
+        thematic_starts = thematic_suffix_starts(line)
         while True:
-            if thematic_break(line[byte_index:]):
+            if byte_index in thematic_starts:
                 break
-            marker = re.match(
-                rb"(?:([*+-])|([0-9]{1,9})[.)])", line[byte_index:]
-            )
+            marker = inline_list_marker.match(line, byte_index, content_end)
             if marker is None:
                 break
-            suffix = line[byte_index + marker.end():]
-            whitespace = re.match(rb"[ \t]*", suffix).group(0)
-            remainder = suffix[len(whitespace):].rstrip(b"\r\n")
-            if not whitespace and remainder:
+            marker_byte_end = marker.end()
+            whitespace_match = marker_whitespace.match(
+                line, marker_byte_end, content_end
+            )
+            whitespace_byte_end = whitespace_match.end()
+            has_whitespace = whitespace_byte_end > marker_byte_end
+            has_remainder = whitespace_byte_end < content_end
+            if not has_whitespace and has_remainder:
                 break
             if paragraph_baseline == parent and (
-                not remainder.strip(b" \t")
-                or (marker.group(2) is not None and marker.group(2) != b"1")
+                not has_remainder
+                or (
+                    marker.group(2) is not None
+                    and int(marker.group(2)) != 1
+                )
             ):
                 break
-            marker_end = column + marker.end()
+            marker_end = column + marker_byte_end - byte_index
+            whitespace = line[marker_byte_end:whitespace_byte_end]
             whitespace_end = whitespace_end_column(marker_end, whitespace)
             padding = whitespace_end - marker_end
-            blank_item = not remainder.strip(b" \t")
+            blank_item = not has_remainder
             content_indent = marker_end + (
                 1 if blank_item or padding > 4 else padding
             )
             if content_indent <= parent:
                 break
+            if result is active:
+                result = list(active)
             result.append(content_indent)
             marker_found = True
-            byte_index += marker.end() + len(whitespace)
+            byte_index = whitespace_byte_end
             column = whitespace_end
-            content_start = None if blank_item else (byte_index, column)
+            content_start = (
+                None
+                if blank_item or padding > 4
+                else (byte_index, column)
+            )
             if blank_item or padding > 4:
                 break
             parent = content_indent
@@ -4820,16 +4888,10 @@ def _partition_ranges(
         )
 
     def fence_container(indent: int, active: list[int]) -> int | None:
-        list_container = next(
-            (
-                container
-                for container in reversed(active)
-                if container <= indent <= container + 3
-            ),
-            None,
-        )
-        if list_container is not None:
-            return list_container
+        start = bisect_left(active, indent - 3)
+        end = bisect_right(active, indent, start)
+        if start < end:
+            return active[end - 1]
         return 0 if indent <= 3 else None
 
     def fence_marker(
@@ -4861,20 +4923,92 @@ def _partition_ranges(
             and not remainder.strip(b" \t")
         )
 
-    @lru_cache(maxsize=None)
-    def commonmark_suffix_is_balanced(start: int, container_indent: int) -> bool:
-        active: tuple[int, int] | None = None
-        for line in lines[start:]:
-            marker = fence_marker(line, container_indent)
-            if marker is None:
+    suffix_events: dict[
+        int, list[tuple[int, tuple[bytes, bytes]]]
+    ] | None = None
+    suffix_balance_indexes: dict[int, tuple[list[int], list[bool]]] = {}
+
+    def indexed_suffix_events(
+    ) -> dict[int, list[tuple[int, tuple[bytes, bytes]]]]:
+        """Index each root-leading marker under its at-most-four baselines."""
+        nonlocal suffix_events
+        if suffix_events is not None:
+            return suffix_events
+        suffix_events = {}
+        for index, line in enumerate(lines):
+            match = re.match(
+                rb"^( *)(`{3,}|~{3,})([^\r\n]*)", line
+            )
+            if match is None:
                 continue
-            if active is not None:
-                if closes(marker, active):
-                    active = None
-            elif opens(marker):
-                fence, _ = marker
-                active = (fence[0], len(fence))
-        return active is None
+            indent = len(match.group(1))
+            marker = (match.group(2), match.group(3))
+            for baseline in range(max(0, indent - 3), indent + 1):
+                suffix_events.setdefault(baseline, []).append((index, marker))
+        return suffix_events
+
+    def suffix_balance_index(
+        container_indent: int,
+    ) -> tuple[list[int], list[bool]]:
+        """Build the greedy CommonMark balance result for every event suffix."""
+        cached = suffix_balance_indexes.get(container_indent)
+        if cached is not None:
+            return cached
+        events = indexed_suffix_events().get(container_indent, [])
+        positions = [index for index, _ in events]
+        event_count = len(events)
+        balanced = [True] * (event_count + 1)
+        if not events:
+            result = (positions, balanced)
+            suffix_balance_indexes[container_indent] = result
+            return result
+
+        lengths = sorted({len(marker[0]) for _, marker in events})
+        length_count = len(lengths)
+        nearest_by_type = {
+            ord("`"): [event_count] * (length_count + 1),
+            ord("~"): [event_count] * (length_count + 1),
+        }
+        next_close = [event_count] * event_count
+
+        def nearest_at_least(tree: list[int], length: int) -> int:
+            cursor = length_count - bisect_left(lengths, length)
+            nearest = event_count
+            while cursor:
+                nearest = min(nearest, tree[cursor])
+                cursor -= cursor & -cursor
+            return nearest
+
+        def add_closer(tree: list[int], length: int, index: int) -> None:
+            cursor = length_count - bisect_left(lengths, length)
+            while cursor <= length_count:
+                tree[cursor] = min(tree[cursor], index)
+                cursor += cursor & -cursor
+
+        for event_index in range(event_count - 1, -1, -1):
+            _, marker = events[event_index]
+            fence, remainder = marker
+            tree = nearest_by_type[fence[0]]
+            next_close[event_index] = nearest_at_least(tree, len(fence))
+            if not remainder.strip(b" \t"):
+                add_closer(tree, len(fence), event_index)
+
+        for event_index in range(event_count - 1, -1, -1):
+            _, marker = events[event_index]
+            if not opens(marker):
+                balanced[event_index] = balanced[event_index + 1]
+                continue
+            close_index = next_close[event_index]
+            balanced[event_index] = (
+                close_index < event_count and balanced[close_index + 1]
+            )
+        result = (positions, balanced)
+        suffix_balance_indexes[container_indent] = result
+        return result
+
+    def commonmark_suffix_is_balanced(start: int, container_indent: int) -> bool:
+        positions, balanced = suffix_balance_index(container_indent)
+        return balanced[bisect_left(positions, start)]
 
     ranges: list[tuple[int, int, str]] = []
     offset = 0

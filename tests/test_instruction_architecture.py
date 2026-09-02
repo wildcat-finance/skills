@@ -4982,6 +4982,91 @@ class BytePartitionTests(unittest.TestCase):
                 "governed_operative_semantics",
             )
 
+    def test_ancestor_relative_block_interrupt_ends_inner_lazy_paragraph(self):
+        outer_items = {
+            "four-column": (b"10. outer\n", 4),
+            "eleven-column": (b"000000001. outer\n", 11),
+        }
+        blocks = {
+            "thematic": b"---\n",
+            "heading": b"# head\n",
+            "blockquote": b"> quote\n",
+        }
+        for (outer_name, (outer, baseline)), (
+            block_name,
+            block,
+        ) in itertools.product(outer_items.items(), blocks.items()):
+            source = (
+                outer
+                + b" " * baseline
+                + b"- inner paragraph\n"
+                + b" " * baseline
+                + block
+                + b" " * (baseline + 4)
+                + b"```text\n"
+                + b" " * (baseline + 4)
+                + b"body\n"
+                + b" " * (baseline + 5)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(
+                outer=outer_name, block=block_name
+            ), mock.patch.object(AI, "_source_blob", return_value=source):
+                ranges = AI._partition_ranges(
+                    f"ancestor-{outer_name}-{block_name}.md", generated=False
+                )
+            for needle in (b"```text", b"body", b"after"):
+                position = source.index(needle)
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= position < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
+        for outer, baseline in outer_items.values():
+            source = (
+                outer
+                + b" " * baseline
+                + b"- inner paragraph\n"
+                + b" " * baseline
+                + b"lazy continuation\n"
+                + b" " * (baseline + 4)
+                + b"```text\n"
+                + b" " * (baseline + 4)
+                + b"body\n"
+                + b" " * (baseline + 5)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(
+                outer=outer, block="lazy-text-inverse"
+            ), mock.patch.object(AI, "_source_blob", return_value=source):
+                ranges = AI._partition_ranges(
+                    "ancestor-lazy-text.md", generated=False
+                )
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
     def test_only_ordered_one_can_interrupt_an_open_paragraph(self):
         for ordinal in (b"2.", b"10.", b"123456789."):
             source = (
@@ -5048,6 +5133,447 @@ class BytePartitionTests(unittest.TestCase):
                 if item["start"] <= prose < item["end"]
             ),
             "governed_operative_semantics",
+        )
+
+    def test_leading_zero_numeric_one_interrupts_an_open_paragraph(self):
+        for ordinal, delimiter in itertools.product(
+            (b"01", b"001", b"000000001"), (b".", b")")
+        ):
+            marker = ordinal + delimiter
+            baseline = len(marker) + 1
+            source = (
+                b"paragraph\n"
+                + marker
+                + b" item\n"
+                + b" " * baseline
+                + b"```text\n"
+                + b" " * baseline
+                + b"body\n"
+                + b" " * (baseline + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(
+                ordinal=ordinal, delimiter=delimiter
+            ), mock.patch.object(AI, "_source_blob", return_value=source):
+                ranges = AI._partition_ranges(
+                    "paragraph-leading-zero-one.md", generated=False
+                )
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+        for ordinal in (b"000000000", b"000000002"):
+            marker = ordinal + b"."
+            baseline = len(marker) + 1
+            source = (
+                b"paragraph\n"
+                + marker
+                + b" item\n"
+                + b" " * baseline
+                + b"```text\n"
+                + b" " * baseline
+                + b"body\n"
+                + b" " * (baseline + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(ordinal=ordinal), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges(
+                    "paragraph-leading-zero-non-one.md", generated=False
+                )
+            for needle in (b"```text", b"body", b"after"):
+                position = source.index(needle)
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= position < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
+    def test_indented_code_item_does_not_seed_a_lazy_paragraph(self):
+        specimens = {
+            "bullet-spaces": (b"-     code\n", 2),
+            "bullet-tab-stop": (b"-   \tcode\n", 2),
+            "ordered-spaces": (b"1.     code\n", 3),
+            "ordered-tab-stop": (b"1.  \tcode\n", 3),
+        }
+        for name, (prefix, baseline) in specimens.items():
+            source = (
+                prefix
+                + b"outside\n"
+                + b"    ```text\n"
+                + b"    body\n"
+                + b"    ```\n"
+                + b"after\n"
+            )
+            with self.subTest(name=name, transition="exit"), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges(
+                    f"indented-code-{name}.md", generated=False
+                )
+            for needle in (b"```text", b"body", b"after"):
+                position = source.index(needle)
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= position < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
+            source = (
+                prefix
+                + b" " * baseline
+                + b"```text\n"
+                + b" " * baseline
+                + b"body\n"
+                + b" " * (baseline + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(
+                name=name, transition="retained-container"
+            ), mock.patch.object(AI, "_source_blob", return_value=source):
+                ranges = AI._partition_ranges(
+                    f"indented-code-{name}.md", generated=False
+                )
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+        for prefix, baseline in (
+            (b"-    item\n", 5),
+            (b"-\titem\n", 4),
+            (b"1.    item\n", 6),
+            (b"1.\titem\n", 4),
+        ):
+            source = (
+                prefix
+                + b"lazy continuation\n"
+                + b" " * baseline
+                + b"```text\n"
+                + b" " * baseline
+                + b"body\n"
+                + b" " * (baseline + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(
+                prefix=prefix, transition="paragraph-padding"
+            ), mock.patch.object(AI, "_source_blob", return_value=source):
+                ranges = AI._partition_ranges(
+                    "bounded-padding-paragraph.md", generated=False
+                )
+            literal = source.index(b"body")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+
+    def test_underindented_list_marker_replaces_the_lazy_container(self):
+        specimens = {
+            "wider-ordered-sibling": (b"1. first\n", b"10. second\n", 4),
+            "zero-padded-sibling": (b"1. first\n", b"010. second\n", 5),
+            "changed-delimiter": (b"1. first\n", b"10) second\n", 4),
+            "ordered-after-bullet": (b"- first\n", b"2. second\n", 3),
+            "empty-ordered-after-bullet": (b"- first\n", b"2.\n", 3),
+            "empty-bullet-after-ordered": (b"1. first\n", b"-\n", 2),
+        }
+        for name, (first, second, baseline) in specimens.items():
+            ranges = None
+            source = (
+                first
+                + second
+                + b" " * baseline
+                + b"```text\n"
+                + b" " * baseline
+                + b"body\n"
+                + b" " * (baseline + 3)
+                + b"```\n"
+                + b"after\n"
+            )
+            with self.subTest(name=name), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges(
+                    f"list-transition-{name}.md", generated=False
+                )
+            if ranges is None:
+                continue
+            literal = source.index(b"body")
+            prose = source.index(b"after")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "exact_literal_or_evidence",
+            )
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= prose < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+        source = (
+            b"paragraph\n"
+            b"10. item\n"
+            b"    ```text\n"
+            b"    body\n"
+            b"       ```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges(
+                "root-paragraph-non-one.md", generated=False
+            )
+        for needle in (b"```text", b"body", b"after"):
+            position = source.index(needle)
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= position < item["end"]
+                ),
+                "governed_operative_semantics",
+            )
+
+    def test_deep_list_container_lookup_does_not_rescan_the_stack(self):
+        depth = 128
+        continuations = 128
+        source = (
+            b"- " * depth
+            + b"item\n"
+            + b"lazy continuation\n" * continuations
+        )
+        real_reversed = reversed
+        real_list = list
+        real_fullmatch = AI.re.fullmatch
+        visits = 0
+        copies = 0
+        thematic_bytes = 0
+
+        def counted_reversed(value):
+            iterator = real_reversed(value)
+
+            def counted_items():
+                nonlocal visits
+                for item in iterator:
+                    visits += 1
+                    yield item
+
+            return counted_items()
+
+        def counted_list(value=()):
+            nonlocal copies
+            copies += 1
+            return real_list(value)
+
+        def counted_fullmatch(*args, **kwargs):
+            nonlocal thematic_bytes
+            thematic_bytes += len(args[1])
+            return real_fullmatch(*args, **kwargs)
+
+        with mock.patch.object(
+            AI, "_source_blob", return_value=source
+        ), mock.patch.object(
+            AI, "list", side_effect=counted_list, create=True
+        ), mock.patch.object(
+            AI.re, "fullmatch", side_effect=counted_fullmatch
+        ), mock.patch("builtins.reversed", side_effect=counted_reversed):
+            ranges = AI._partition_ranges("deep-list.md", generated=False)
+        self.assertEqual(
+            {item["classification"] for item in ranges},
+            {"governed_operative_semantics"},
+        )
+        with self.subTest(metric="container-iterations"):
+            self.assertLessEqual(visits, depth + continuations)
+        with self.subTest(metric="baseline-copies"):
+            self.assertLessEqual(copies, 2)
+        with self.subTest(metric="thematic-scan-bytes"):
+            self.assertLessEqual(thematic_bytes, len(source) * 8)
+
+    def test_nested_template_balance_does_not_rescan_suffixes(self):
+        fence_pattern = rb"^( *)(`{3,}|~{3,})([^\r\n]*)"
+        real_match = AI.re.match
+
+        def classification(ranges, position):
+            return next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= position < item["end"]
+            )
+
+        def counted_partition(source, path):
+            marker_scans = 0
+
+            def counted_match(pattern, *args, **kwargs):
+                nonlocal marker_scans
+                if pattern == fence_pattern:
+                    marker_scans += 1
+                return real_match(pattern, *args, **kwargs)
+
+            with mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ), mock.patch.object(AI.re, "match", side_effect=counted_match):
+                ranges = AI._partition_ranges(path, generated=False)
+            return ranges, marker_scans
+
+        semantic_specimens = {
+            "equal-backtick": b"```outer\n```inner\n```\n```\nafter\n",
+            "equal-tilde": b"~~~outer\n~~~inner\n~~~\n~~~\nafter\n",
+            "inner-longer": b"```outer\n````inner\n````\n```\nafter\n",
+            "outer-longer": b"````outer\n```inner\n```\n````\nafter\n",
+            "mixed-family": b"```outer\n~~~inner\n~~~\n```\nafter\n",
+            "balanced-tail": b"```outer\n```inner\n```\nafter\n",
+        }
+        for name, source in semantic_specimens.items():
+            with self.subTest(name=name):
+                with mock.patch.object(
+                    AI, "_source_blob", return_value=source
+                ):
+                    ranges = AI._partition_ranges(name, generated=False)
+                self.assertEqual(
+                    classification(ranges, source.index(b"inner")),
+                    "exact_literal_or_evidence",
+                )
+                self.assertEqual(
+                    classification(ranges, source.index(b"after")),
+                    "governed_operative_semantics",
+                )
+
+        unmatched = b"```outer\n```inner\n```\n~~~orphan\n"
+        with mock.patch.object(AI, "_source_blob", return_value=unmatched):
+            with self.assertRaisesRegex(
+                AI.Refusal, r"^unterminated Markdown fence: unmatched-tail$"
+            ):
+                AI._partition_ranges("unmatched-tail", generated=False)
+
+        frozen_transitions = {
+            "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/"
+            "protocol-type-specialist.md": (2368, 2974, 3297),
+            "plugins/hexaemeron/skills/solidity-auditor/SKILL.md": (
+                12810,
+                13018,
+                13019,
+            ),
+        }
+        for path, (opening, close_end, resumed) in frozen_transitions.items():
+            with self.subTest(path=path, transition="frozen-template"):
+                ranges = AI._partition_ranges(path, generated=False)
+                for position in (opening, close_end):
+                    self.assertEqual(
+                        classification(ranges, position),
+                        "exact_literal_or_evidence",
+                    )
+                self.assertEqual(
+                    classification(ranges, resumed),
+                    "governed_operative_semantics",
+                )
+
+        depth = 64
+        cross_indent_parts = [b"- " * depth + b"item\n"]
+        for level in range(depth, 0, -1):
+            baseline = level * 2
+            indent = b" " * baseline
+            cross_indent_parts.extend(
+                (
+                    indent + b"```outer\n",
+                    indent + b"```inner\n",
+                    indent + b"```\n",
+                    indent + b"```\n",
+                )
+            )
+            if level > 1:
+                cross_indent_parts.append(
+                    b" " * (baseline - 2) + b"# exit\n"
+                )
+        cross_indent_parts.append(b"after\n")
+        cross_indent = b"".join(cross_indent_parts)
+        ranges, marker_scans = counted_partition(
+            cross_indent, "cross-indent-template-stress.md"
+        )
+        cursor = 0
+        while True:
+            cursor = cross_indent.find(b"outer", cursor)
+            if cursor < 0:
+                break
+            self.assertEqual(
+                classification(ranges, cursor), "exact_literal_or_evidence"
+            )
+            cursor += 1
+        self.assertEqual(
+            classification(ranges, cross_indent.index(b"after")),
+            "governed_operative_semantics",
+        )
+        self.assertLessEqual(
+            marker_scans, len(cross_indent.splitlines()) * 3
+        )
+
+        templates = 128
+        same_indent = (
+            b"```outer\n"
+            + b"```inner\n```\n" * templates
+            + b"```\nafter\n"
+        )
+        ranges, marker_scans = counted_partition(
+            same_indent, "nested-template-stress.md"
+        )
+        self.assertEqual(
+            classification(ranges, same_indent.index(b"inner")),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            classification(ranges, same_indent.index(b"after")),
+            "governed_operative_semantics",
+        )
+        self.assertLessEqual(
+            marker_scans, len(same_indent.splitlines()) * 3
         )
 
     def test_list_fences_allow_zero_to_three_spaces_after_the_baseline(self):
