@@ -4138,9 +4138,10 @@ def _require_resolution_sync(
         die("version resolution sync checks do not cover every affected path")
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
-    previous_sync = _active_sync_predecessor(
+    sync_history = _active_sync_history(
         as_dict(state.get("integrate")), head_commit
     )
+    previous_sync = sync_history[-1] if sync_history else None
     _require_sync_resolution_guard(
         base_dir,
         sync,
@@ -4150,7 +4151,7 @@ def _require_resolution_sync(
     replay_sync_decision_assignment(
         base_dir,
         sync,
-        previous_sync=previous_sync,
+        previous_sync=sync_history,
     )
 
 
@@ -7282,21 +7283,37 @@ def _sync_tree_entries(
     return identities
 
 
-def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
-    """Return the sync immediately superseded by the active receipt."""
+def _active_sync_history(integrate: dict, active_commit: str) -> list[dict]:
+    """Return the bounded, fully joined history behind the active sync."""
     history = integrate.get("superseded_syncs") or []
-    if not isinstance(history, list):
+    if (
+        not isinstance(history, list)
+        or len(history) > INTEGRATION_SYNC_SUPERSESSIONS_MAX
+    ):
         die("recorded superseded integration syncs are malformed")
     if not history:
-        return None
-    tail = history[-1]
-    previous = tail.get("sync") if isinstance(tail, dict) else None
-    if (
-        not isinstance(previous, dict)
-        or tail.get("superseded_by") != active_commit
-    ):
-        die("active integration sync is not joined to its supersession history")
-    return previous
+        return []
+    expected = require_full_sha(active_commit, "active integration sync")
+    seen = {expected}
+    reversed_syncs = []
+    for entry in reversed(history):
+        previous = entry.get("sync") if isinstance(entry, dict) else None
+        if not isinstance(previous, dict):
+            die("recorded superseded integration syncs are malformed")
+        superseded_by = require_full_sha(
+            entry.get("superseded_by"), "superseding integration sync"
+        )
+        if superseded_by != expected:
+            die("active integration sync is not joined to its supersession history")
+        previous_commit = require_full_sha(
+            previous.get("commit"), "superseded integration sync"
+        )
+        if previous_commit in seen:
+            die("recorded superseded integration syncs are malformed")
+        seen.add(previous_commit)
+        reversed_syncs.append(previous)
+        expected = previous_commit
+    return list(reversed(reversed_syncs))
 
 
 def sync_resolution_guard_record(
@@ -7571,21 +7588,10 @@ def _decision_assignment_tool_environment() -> dict[str, str]:
     return environment
 
 
-def _replay_decision_assignment_report(
-    base_dir: str, artifact: str, report: dict, raw: bytes
+def _run_decision_assignment_report_replay(
+    base_dir: str, artifact: str, report: dict, raw: bytes, allocator: str
 ) -> None:
-    """Delegate numbering policy to Hypomnema and validate its closed result."""
-    allocator = os.path.realpath(
-        os.path.join(
-            plugin_root(),
-            "skills",
-            "hypomnema",
-            "scripts",
-            "decision_assignments.py",
-        )
-    )
-    if not os.path.isfile(allocator) or os.path.islink(allocator):
-        die("trusted decision assignment allocator is unavailable")
+    """Run Hypomnema against one repository whose report refs are already fixed."""
     output = bounded_tool(
         base_dir,
         sys.executable,
@@ -7621,25 +7627,329 @@ def _replay_decision_assignment_report(
         die("decision assignment report changed during replay")
 
 
+def _decision_assignment_common_objects(base_dir: str) -> str:
+    """Return the one native object directory safe for a private replay repo."""
+    _git_dir, common_dir = _native_relation_repository_identity(base_dir)
+    objects = os.path.join(common_dir, "objects")
+    try:
+        metadata = os.lstat(objects)
+        encoded = os.fsencode(objects)
+    except (OSError, UnicodeError):
+        die("decision assignment native object directory cannot be read")
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or stat.S_ISLNK(metadata.st_mode)
+        or not os.path.isabs(objects)
+        or not encoded
+        or len(encoded) > 4096
+        or any(byte in encoded for byte in (b"\x00", b"\n", b"\r"))
+    ):
+        die("decision assignment native object directory is malformed")
+    return objects
+
+
+def _write_decision_assignment_replay_file(path: str, raw: bytes) -> None:
+    """Write one private regular file without following a pre-existing path."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags, 0o600)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except OSError:
+        die("decision assignment private replay file cannot be written")
+
+
+def _replay_decision_assignment_report(
+    base_dir: str,
+    artifact: str,
+    report: dict,
+    raw: bytes,
+    *,
+    verify_base_ref: bool = True,
+) -> None:
+    """Replay Hypomnema policy, optionally isolating its mutable ref check."""
+    allocator = os.path.realpath(
+        os.path.join(
+            plugin_root(),
+            "skills",
+            "hypomnema",
+            "scripts",
+            "decision_assignments.py",
+        )
+    )
+    if not os.path.isfile(allocator) or os.path.islink(allocator):
+        die("trusted decision assignment allocator is unavailable")
+    if verify_base_ref:
+        _run_decision_assignment_report_replay(
+            base_dir, artifact, report, raw, allocator
+        )
+        return
+
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="fiat-decision-assignment-policy-"
+        ) as temporary:
+            replay_root = os.path.join(temporary, "repository")
+            bounded_tool(
+                base_dir,
+                "git",
+                [
+                    "init",
+                    "--quiet",
+                    f"--object-format={report['object_format']}",
+                    replay_root,
+                ],
+                "decision assignment private replay repository cannot be initialized",
+                environment=_native_relation_environment(),
+            )
+            objects = _decision_assignment_common_objects(base_dir)
+            alternates = os.path.join(
+                replay_root, ".git", "objects", "info", "alternates"
+            )
+            _write_decision_assignment_replay_file(
+                alternates, os.fsencode(objects) + b"\n"
+            )
+            report_path = os.path.join(replay_root, artifact)
+            os.makedirs(os.path.dirname(report_path), mode=0o700)
+            _write_decision_assignment_replay_file(report_path, raw)
+            bounded_tool(
+                replay_root,
+                "git",
+                [
+                    "--no-replace-objects",
+                    "update-ref",
+                    "--no-deref",
+                    report["base_ref"],
+                    report["base"],
+                ],
+                "decision assignment private base ref cannot be fixed",
+                environment=_native_relation_environment(),
+            )
+            _run_decision_assignment_report_replay(
+                replay_root, artifact, report, raw, allocator
+            )
+    except OSError:
+        die("decision assignment private replay repository cannot be prepared")
+
+
+def _decision_assignment_filter_config(
+    base_dir: str, scope: str
+) -> tuple[int, bytes]:
+    """Read one fixed repository config scope without exposing its values."""
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "config",
+            scope,
+            "--includes",
+            "--name-only",
+            "--get-regexp",
+            r"^filter\..*\.(clean|process)$",
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in {0, 1}:
+        die("decision assignment repository filter configuration cannot be read")
+    return status, output
+
+
+def _decision_assignment_reject_clean_filters(base_dir: str) -> None:
+    """Refuse executable clean-filter state before Git observes the worktree."""
+    status, output = _decision_assignment_filter_config(base_dir, "--local")
+    if status == 0 or output:
+        die("decision assignment repository configures a clean or process filter")
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "config",
+            "--local",
+            "--includes",
+            "--type=bool",
+            "--get",
+            "extensions.worktreeConfig",
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in {0, 1}:
+        die("decision assignment repository filter configuration cannot be read")
+    if status == 1:
+        if output:
+            die("decision assignment repository filter configuration is malformed")
+        return
+    try:
+        enabled = output.decode("ascii").strip()
+    except UnicodeDecodeError:
+        enabled = ""
+    if enabled == "false":
+        return
+    if enabled != "true":
+        die("decision assignment repository filter configuration is malformed")
+    status, output = _decision_assignment_filter_config(base_dir, "--worktree")
+    if status == 0 or output:
+        die("decision assignment repository configures a clean or process filter")
+
+
+def _decision_assignment_index_snapshot(path: str, label: str) -> bytes:
+    """Read one stable regular Git index without following its final path."""
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        named_before = os.lstat(path)
+        if (
+            stat.S_ISLNK(named_before.st_mode)
+            or not stat.S_ISREG(named_before.st_mode)
+            or named_before.st_size > GIT_OUTPUT_MAX
+        ):
+            die(f"decision assignment {label} is not a bounded regular file")
+        descriptor = os.open(path, flags)
+        with os.fdopen(descriptor, "rb") as handle:
+            opened = os.fstat(handle.fileno())
+            raw = handle.read(GIT_OUTPUT_MAX + 1)
+            finished = os.fstat(handle.fileno())
+        named_after = os.lstat(path)
+    except OSError:
+        die(f"decision assignment {label} cannot be read")
+    identity = lambda value: (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+    if (
+        len(raw) > GIT_OUTPUT_MAX
+        or not stat.S_ISREG(opened.st_mode)
+        or identity(named_before) != identity(opened)
+        or identity(opened) != identity(finished)
+        or identity(finished) != identity(named_after)
+        or len(raw) != finished.st_size
+    ):
+        die(f"decision assignment {label} changed during read")
+    return raw
+
+
+def _decision_assignment_private_status(
+    base_dir: str, repository: tuple[str, str], head: str
+) -> bytes:
+    """Observe one worktree through private fixed Git metadata and index bytes."""
+    git_dir, common_dir = repository
+    index_path = os.path.join(git_dir, "index")
+    index = _decision_assignment_index_snapshot(index_path, "worktree index")
+    shared_raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--shared-index-path"],
+        "decision assignment shared index path cannot be read",
+    )
+    try:
+        shared_path = shared_raw.decode("utf-8", "strict").strip()
+    except UnicodeDecodeError:
+        shared_path = "\x00"
+    shared = None
+    if shared_path:
+        shared_name = os.path.basename(shared_path)
+        allowed_parents = {os.path.realpath(git_dir), os.path.realpath(common_dir)}
+        if (
+            not os.path.isabs(shared_path)
+            or os.path.realpath(os.path.dirname(shared_path)) not in allowed_parents
+            or re.fullmatch(r"sharedindex\.[0-9a-f]{40}(?:[0-9a-f]{24})?", shared_name)
+            is None
+        ):
+            die("decision assignment shared index path is malformed")
+        shared = (
+            shared_name,
+            _decision_assignment_index_snapshot(shared_path, "shared worktree index"),
+        )
+    object_format = "sha1" if len(head) == 40 else "sha256"
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="fiat-decision-assignment-worktree-"
+        ) as temporary:
+            private_root = os.path.join(temporary, "repository")
+            bounded_tool(
+                temporary,
+                "git",
+                [
+                    "init",
+                    "--quiet",
+                    f"--object-format={object_format}",
+                    private_root,
+                ],
+                "decision assignment private worktree repository cannot be initialized",
+                environment=_native_relation_environment(),
+            )
+            private_git = os.path.join(private_root, ".git")
+            objects = os.path.join(common_dir, "objects")
+            try:
+                objects_metadata = os.lstat(objects)
+                objects_raw = os.fsencode(objects)
+            except (OSError, UnicodeError):
+                die("decision assignment native object directory cannot be read")
+            if (
+                not stat.S_ISDIR(objects_metadata.st_mode)
+                or stat.S_ISLNK(objects_metadata.st_mode)
+                or not os.path.isabs(objects)
+                or not objects_raw
+                or len(objects_raw) > 4096
+                or any(byte in objects_raw for byte in (b"\x00", b"\n", b"\r"))
+            ):
+                die("decision assignment native object directory is malformed")
+            _write_decision_assignment_replay_file(
+                os.path.join(private_git, "objects", "info", "alternates"),
+                objects_raw + b"\n",
+            )
+            _write_decision_assignment_replay_file(
+                os.path.join(private_git, "index"), index
+            )
+            if shared is not None:
+                _write_decision_assignment_replay_file(
+                    os.path.join(private_git, shared[0]), shared[1]
+                )
+            bounded_tool(
+                private_root,
+                "git",
+                ["--no-replace-objects", "update-ref", "--no-deref", "HEAD", head],
+                "decision assignment private worktree HEAD cannot be fixed",
+                environment=_native_relation_environment(),
+            )
+            return bounded_tool(
+                private_root,
+                "git",
+                [
+                    "--no-replace-objects",
+                    f"--work-tree={os.path.realpath(base_dir)}",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    f"core.hooksPath={os.devnull}",
+                    "status",
+                    "--porcelain=v1",
+                    "-z",
+                    "--untracked-files=all",
+                    "--ignore-submodules=all",
+                ],
+                "decision assignment worktree status cannot be read",
+                environment=_native_relation_environment(),
+            )
+    except OSError:
+        die("decision assignment private worktree repository cannot be prepared")
+
+
 def _decision_assignment_worktree(base_dir: str) -> tuple[tuple[str, str], str, bytes]:
     """Capture the repository, HEAD, and exact clean status without locks."""
+    _decision_assignment_reject_clean_filters(base_dir)
     repository = _native_relation_repository_identity(base_dir)
     head = _native_relation_commit(base_dir, "HEAD", "decision assignment worktree HEAD")
-    status = _native_relation_git(
-        base_dir,
-        [
-            "-c",
-            "core.fsmonitor=false",
-            "-c",
-            f"core.hooksPath={os.devnull}",
-            "status",
-            "--porcelain=v1",
-            "-z",
-            "--untracked-files=all",
-            "--ignore-submodules=all",
-        ],
-        "decision assignment worktree status cannot be read",
-    )
+    status = _decision_assignment_private_status(base_dir, repository, head)
     return repository, head, status
 
 
@@ -7657,6 +7967,14 @@ def _decision_assignment_candidate_ref(
         base_dir, candidate_ref, "decision assignment candidate ref"
     ) != candidate:
         die("decision assignment candidate ref moved")
+
+
+def _decision_assignment_base_ref(base_dir: str, report: dict) -> None:
+    """Require the report's mutable base ref to retain its exact base commit."""
+    if _native_relation_commit(
+        base_dir, report["base_ref"], "decision assignment base ref"
+    ) != report["base"]:
+        die("decision assignment base ref moved during evidence collection")
 
 
 def _decision_assignment_tree(base_dir: str, commit_sha: str, label: str) -> str:
@@ -7798,9 +8116,16 @@ def decision_assignment_receipt(
     ):
         die("decision assignment report names a stale base")
     candidate = require_full_sha(candidate, "decision assignment candidate")
-    _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
     if verify_base_ref:
-        _replay_decision_assignment_report(base_dir, artifact, report, raw)
+        _decision_assignment_base_ref(base_dir, report)
+    _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
+    _replay_decision_assignment_report(
+        base_dir,
+        artifact,
+        report,
+        raw,
+        verify_base_ref=verify_base_ref,
+    )
     _decision_assignment_candidate(
         base_dir,
         report,
@@ -7815,6 +8140,8 @@ def decision_assignment_receipt(
     )
     message_digest = _decision_assignment_message(base_dir, candidate, report)
     _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
+    if verify_base_ref:
+        _decision_assignment_base_ref(base_dir, report)
     after_repository, after_head, after_status = _decision_assignment_worktree(
         base_dir
     )
@@ -7841,16 +8168,8 @@ def decision_assignment_receipt(
     }
 
 
-def replay_decision_assignment_receipt(
-    base_dir: str,
-    receipt: dict,
-    *,
-    expected_base: str | None = None,
-    expected_sync_parents: list[str] | None = None,
-    previous_receipt: dict | None = None,
-    verify_base_ref: bool = True,
-) -> dict:
-    """Recompute one closed receipt from its report and immutable objects."""
+def _decision_assignment_receipt_shape(receipt: object) -> dict:
+    """Validate one retained assignment receipt without strengthening its claim."""
     if (
         not isinstance(receipt, dict)
         or set(receipt) != DECISION_ASSIGNMENT_RECEIPT_KEYS
@@ -7864,6 +8183,20 @@ def replay_decision_assignment_receipt(
         receipt.get("commit_message_sha256"),
         "decision assignment commit-message digest",
     )
+    return receipt
+
+
+def replay_decision_assignment_receipt(
+    base_dir: str,
+    receipt: dict,
+    *,
+    expected_base: str | None = None,
+    expected_sync_parents: list[str] | None = None,
+    previous_receipt: dict | list[dict] | None = None,
+    verify_base_ref: bool = True,
+) -> dict:
+    """Recompute one closed receipt from its report and immutable objects."""
+    receipt = _decision_assignment_receipt_shape(receipt)
     rebuilt = decision_assignment_receipt(
         base_dir,
         receipt.get("artifact"),
@@ -7883,40 +8216,73 @@ def replay_decision_assignment_receipt(
 
 
 def require_decision_assignment_supersession(
-    base_dir: str, previous: dict, current: dict
+    base_dir: str, previous: dict | list[dict], current: dict
 ) -> None:
     """A stale assignment may remain in evidence, never active ancestry."""
-    if not isinstance(previous, dict) or not isinstance(current, dict):
+    if not isinstance(current, dict):
         die("decision assignment supersession evidence is malformed")
-    old_candidate = require_full_sha(
-        previous.get("candidate"), "superseded decision assignment candidate"
-    )
+    previous_receipts = previous if isinstance(previous, list) else [previous]
+    if (
+        not previous_receipts
+        or len(previous_receipts) > INTEGRATION_SYNC_SUPERSESSIONS_MAX + 1
+        or any(not isinstance(receipt, dict) for receipt in previous_receipts)
+    ):
+        die("decision assignment supersession evidence is malformed")
     new_candidate = require_full_sha(
         current.get("candidate"), "active decision assignment candidate"
     )
-    status = _native_ancestry_status(base_dir, old_candidate, new_candidate)
-    if status is None:
-        die("decision assignment supersession ancestry cannot be determined")
-    if status == 0:
-        die("superseded decision assignment remains in active ancestry")
+    seen = set()
+    for receipt in previous_receipts:
+        old_candidate = require_full_sha(
+            receipt.get("candidate"), "superseded decision assignment candidate"
+        )
+        if old_candidate in seen:
+            die("decision assignment supersession evidence is malformed")
+        seen.add(old_candidate)
+        status = _native_ancestry_status(base_dir, old_candidate, new_candidate)
+        if status is None:
+            die("decision assignment supersession ancestry cannot be determined")
+        if status == 0:
+            die("superseded decision assignment remains in active ancestry")
+
+
+def _decision_assignment_previous_receipts(
+    previous_sync: dict | list[dict] | None,
+) -> list[dict]:
+    """Validate and extract every retained assignment receipt in sync history."""
+    if previous_sync is None:
+        return []
+    previous_syncs = previous_sync if isinstance(previous_sync, list) else [previous_sync]
+    if (
+        len(previous_syncs) > INTEGRATION_SYNC_SUPERSESSIONS_MAX + 1
+        or any(not isinstance(sync, dict) for sync in previous_syncs)
+    ):
+        die("recorded superseded integration syncs are malformed")
+    receipts = []
+    for sync in previous_syncs:
+        receipt = sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+        if receipt is None:
+            continue
+        receipt = _decision_assignment_receipt_shape(receipt)
+        commit_sha = require_full_sha(sync.get("commit"), "superseded integration sync")
+        if receipt.get("candidate") != commit_sha:
+            die("superseded integration sync decision assignment names another candidate")
+        receipts.append(receipt)
+    return receipts
 
 
 def replay_sync_decision_assignment(
     base_dir: str,
     sync: dict,
     *,
-    previous_sync: dict | None = None,
+    previous_sync: dict | list[dict] | None = None,
     verify_base_ref: bool = True,
 ) -> dict | None:
     """Replay the optional assignment bound to one active sync receipt."""
     receipt = sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
-    previous_receipt = (
-        previous_sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
-        if isinstance(previous_sync, dict)
-        else None
-    )
+    previous_receipts = _decision_assignment_previous_receipts(previous_sync)
     if receipt is None:
-        if previous_receipt is not None:
+        if previous_receipts:
             die("replacement integration sync dropped decision assignment evidence")
         return None
     if not isinstance(receipt, dict):
@@ -7932,7 +8298,7 @@ def replay_sync_decision_assignment(
         receipt,
         expected_base=sync.get(SYNC_BASE_HEAD_KEY),
         expected_sync_parents=parents,
-        previous_receipt=previous_receipt,
+        previous_receipt=(previous_receipts if previous_receipts else None),
         verify_base_ref=verify_base_ref,
     )
 
@@ -9096,6 +9462,7 @@ def done_sync_run(args, state: dict) -> None:
     current_sync = as_dict(integrate.get("sync"))
     superseded_sync = None
     supersession_reason = None
+    sync_history = []
     if current_sync:
         if args.supersede_sync is None:
             die(
@@ -9106,6 +9473,7 @@ def done_sync_run(args, state: dict) -> None:
         active = require_full_sha(
             current_sync.get("commit"), "active recorded sync commit"
         )
+        sync_history = _active_sync_history(integrate, active)
         supplied = require_full_sha(
             args.supersede_sync, "sync commit to supersede"
         )
@@ -9192,7 +9560,9 @@ def done_sync_run(args, state: dict) -> None:
         ),
     )
     assignment_receipt = None
-    current_assignment = current_sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+    previous_assignments = _decision_assignment_previous_receipts(
+        [*sync_history, current_sync] if current_sync else None
+    )
     if getattr(args, "decision_assignments", None):
         assignment_receipt = decision_assignment_receipt(
             args.dir,
@@ -9201,11 +9571,11 @@ def done_sync_run(args, state: dict) -> None:
             expected_base=base_tip,
             expected_sync_parents=expected_parents,
         )
-        if current_assignment is not None:
+        if previous_assignments:
             require_decision_assignment_supersession(
-                args.dir, current_assignment, assignment_receipt
+                args.dir, previous_assignments, assignment_receipt
             )
-    elif current_assignment is not None:
+    elif previous_assignments:
         die(
             "replacement integration sync must carry a freshly replayed "
             "--decision-assignments report"
@@ -9603,9 +9973,8 @@ def done_integrate(args, state: dict) -> None:
             state, recorded_tip
         ):
             die("recorded product evidence changed after the integration sync")
-        previous_sync = _active_sync_predecessor(
-            integrate, sync.get("commit")
-        )
+        sync_history = _active_sync_history(integrate, sync.get("commit"))
+        previous_sync = sync_history[-1] if sync_history else None
         _require_sync_resolution_guard(
             args.dir,
             sync,
@@ -14824,13 +15193,13 @@ def cmd_status(args) -> None:
         )
     integrate_assignment = as_dict(as_dict(state.get("integrate")).get("sync"))
     if integrate_assignment:
-        previous_sync = _active_sync_predecessor(
+        sync_history = _active_sync_history(
             as_dict(state.get("integrate")), integrate_assignment.get("commit")
         )
         replayed = replay_sync_decision_assignment(
             args.dir,
             integrate_assignment,
-            previous_sync=previous_sync,
+            previous_sync=sync_history,
             verify_base_ref=False,
         )
         if replayed is not None:
@@ -15183,13 +15552,13 @@ def verify_run(
     if active_sync:
         if not _sync_field_set_is_supported(active_sync):
             die("active integration sync has an unsupported field set", 1)
-        previous_sync = _active_sync_predecessor(
+        sync_history = _active_sync_history(
             integrate_state, active_sync.get("commit")
         )
         replay_sync_decision_assignment(
             base_dir,
             active_sync,
-            previous_sync=previous_sync,
+            previous_sync=sync_history,
             verify_base_ref=False,
         )
     history = integrate_state.get("version_resolutions") or []
@@ -15375,7 +15744,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sp.add_argument("--report", required=True)
     sp.add_argument("--candidate", required=True)
-    sp.add_argument("--candidate-ref", dest="candidate_ref")
+    sp.add_argument("--candidate-ref", dest="candidate_ref", required=True)
     sp.set_defaults(fn=cmd_verify_decision_assignments)
 
     sp = sub.add_parser("record", help="store a named receipt")

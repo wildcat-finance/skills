@@ -231,6 +231,58 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
         verifier.assert_called_once()
         return receipt
 
+    def assert_clean_filter_refuses_without_execution(self, scope: str) -> None:
+        with tempfile.TemporaryDirectory() as outside:
+            sentinel = Path(outside) / "clean-filter-executed"
+            if scope == "--worktree":
+                git(
+                    self.repo.path,
+                    "config",
+                    "--local",
+                    "extensions.worktreeConfig",
+                    "true",
+                )
+            git(
+                self.repo.path,
+                "config",
+                scope,
+                "filter.hostile.clean",
+                "sh -c 'touch \"$FILTER_SENTINEL\"; cat'",
+            )
+            write(
+                self.repo.path,
+                ".git/info/attributes",
+                "* filter=hostile\n",
+            )
+            stderr = io.StringIO()
+            stopped = None
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"FILTER_SENTINEL": str(sentinel)},
+                ),
+                mock.patch.object(
+                    self.module,
+                    "verify_local_commit",
+                    return_value=self.repo.candidate,
+                ),
+                contextlib.redirect_stderr(stderr),
+            ):
+                try:
+                    self.module.decision_assignment_receipt(
+                        str(self.repo.path),
+                        self.repo.report_path,
+                        self.repo.candidate,
+                        candidate_ref="refs/heads/candidate",
+                    )
+                except SystemExit as error:
+                    stopped = error.code
+            self.assertEqual((stopped, sentinel.exists()), (2, False))
+            self.assertIn(
+                "configures a clean or process filter",
+                stderr.getvalue(),
+            )
+
     def test_exact_report_candidate_and_ordered_trailers_are_receipted(self):
         receipt = self.receipt()
         self.assertEqual(receipt["schema"], "fiat-decision-assignment-composition/v1")
@@ -242,6 +294,95 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
         self.assertEqual(receipt["mappings"], self.repo.report["mappings"])
         self.assertRegex(receipt["report_sha256"], r"\A[0-9a-f]{64}\Z")
         self.assertRegex(receipt["commit_message_sha256"], r"\A[0-9a-f]{64}\Z")
+
+    def test_repository_without_clean_filters_still_verifies(self):
+        self.assertEqual(self.receipt()["candidate"], self.repo.candidate)
+
+    def test_local_clean_filter_refuses_before_worktree_observation(self):
+        self.assert_clean_filter_refuses_without_execution("--local")
+
+    def test_worktree_clean_filter_refuses_before_worktree_observation(self):
+        self.assert_clean_filter_refuses_without_execution("--worktree")
+
+    def test_filter_added_after_preflight_cannot_execute_during_status(self):
+        with tempfile.TemporaryDirectory() as outside:
+            sentinel = Path(outside) / "clean-filter-executed"
+            write(
+                self.repo.path,
+                ".git/info/attributes",
+                "* filter=hostile\n",
+            )
+            tracked = self.repo.path / "docs/decisions/ADR-060-existing.md"
+            os.utime(tracked, None)
+            original_probe = self.module.bounded_probe
+            config_probes = 0
+            installed = False
+
+            def changing_probe(
+                base_dir,
+                program,
+                argv,
+                extra_env=None,
+                *,
+                environment=None,
+            ):
+                nonlocal config_probes, installed
+                is_status = program == "git" and "status" in argv
+                try:
+                    result = original_probe(
+                        base_dir,
+                        program,
+                        argv,
+                        extra_env,
+                        environment=environment,
+                    )
+                finally:
+                    if is_status and installed:
+                        git(
+                            self.repo.path,
+                            "config",
+                            "--local",
+                            "--unset-all",
+                            "filter.hostile.clean",
+                            check=False,
+                        )
+                if program == "git" and len(argv) > 1 and argv[1] == "config":
+                    config_probes += 1
+                    if config_probes == 2:
+                        git(
+                            self.repo.path,
+                            "config",
+                            "--local",
+                            "filter.hostile.clean",
+                            "sh -c 'touch \"$FILTER_SENTINEL\"; cat'",
+                        )
+                        installed = True
+                return result
+
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"FILTER_SENTINEL": str(sentinel)},
+                ),
+                mock.patch.object(
+                    self.module,
+                    "bounded_probe",
+                    side_effect=changing_probe,
+                ),
+            ):
+                receipt = self.receipt()
+            configured = git(
+                self.repo.path,
+                "config",
+                "--local",
+                "--get-all",
+                "filter.hostile.clean",
+                check=False,
+            )
+            self.assertEqual(
+                (receipt["schema"], sentinel.exists(), configured),
+                ("fiat-decision-assignment-composition/v1", False, ""),
+            )
 
     def test_stale_base_ref_refuses_before_a_receipt(self):
         git(self.repo.path, "checkout", "--quiet", "main")
@@ -392,6 +533,88 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             )
         self.assertEqual(replayed, receipt)
 
+    def test_recovery_replays_policy_without_requiring_the_mutable_base_ref(self):
+        receipt = self.receipt()
+        base_tree = git(self.repo.path, "rev-parse", f"{self.repo.base}^{{tree}}")
+        advanced_base = git(
+            self.repo.path,
+            "commit-tree",
+            "--no-gpg-sign",
+            base_tree,
+            "-p",
+            self.repo.base,
+            "-m",
+            "move base before recovery",
+        )
+        git(
+            self.repo.path,
+            "update-ref",
+            "refs/heads/main",
+            advanced_base,
+        )
+        with (
+            mock.patch.object(
+                self.module,
+                "_replay_decision_assignment_report",
+                wraps=self.module._replay_decision_assignment_report,
+            ) as replay,
+            mock.patch.object(
+                self.module,
+                "verify_local_commit",
+                return_value=self.repo.candidate,
+            ),
+        ):
+            replayed = self.module.replay_decision_assignment_receipt(
+                str(self.repo.path),
+                receipt,
+                verify_base_ref=False,
+            )
+        self.assertEqual(replayed, receipt)
+        replay.assert_called_once()
+        self.assertFalse(replay.call_args.kwargs["verify_base_ref"])
+
+    def test_base_ref_movement_after_policy_replay_refuses(self):
+        base_tree = git(self.repo.path, "rev-parse", f"{self.repo.base}^{{tree}}")
+        advanced_base = git(
+            self.repo.path,
+            "commit-tree",
+            "--no-gpg-sign",
+            base_tree,
+            "-p",
+            self.repo.base,
+            "-m",
+            "advance base ref",
+        )
+
+        def move_base_ref(*_args, **_kwargs):
+            git(
+                self.repo.path,
+                "update-ref",
+                "refs/heads/main",
+                advanced_base,
+            )
+
+        with (
+            mock.patch.object(
+                self.module,
+                "_replay_decision_assignment_report",
+                side_effect=move_base_ref,
+            ),
+            mock.patch.object(
+                self.module,
+                "verify_local_commit",
+                return_value=self.repo.candidate,
+            ),
+        ):
+            message = self.refusal(
+                self.module.decision_assignment_receipt,
+                str(self.repo.path),
+                self.repo.report_path,
+                self.repo.candidate,
+                candidate_ref="refs/heads/candidate",
+            )
+        self.assertIn("base ref moved during evidence collection", message)
+
     def test_superseded_assignment_cannot_remain_in_active_ancestry(self):
         old = self.receipt()
         descendant = self.repo.make_candidate(parent=self.repo.candidate)
@@ -401,6 +624,66 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             str(self.repo.path),
             old,
             current,
+        )
+
+    def test_every_superseded_assignment_is_excluded_from_active_ancestry(self):
+        first = self.receipt()
+        sibling_candidate = self.repo.make_candidate(
+            message=self.repo.message().replace(
+                "Assign decision records", "First replacement assignment", 1
+            )
+        )
+        second = dict(first, candidate=sibling_candidate)
+        active_candidate = self.repo.make_candidate(
+            parent=self.repo.candidate,
+            message=self.repo.message().replace(
+                "Assign decision records", "Second replacement assignment", 1
+            ),
+        )
+        active = dict(first, candidate=active_candidate)
+        message = self.refusal(
+            self.module.require_decision_assignment_supersession,
+            str(self.repo.path),
+            [first, second],
+            active,
+        )
+        self.assertIn(
+            "superseded decision assignment remains in active ancestry",
+            message,
+        )
+
+    def test_complete_supersession_history_reaches_receipt_replay(self):
+        active_receipt = self.receipt()
+        first_receipt = dict(active_receipt, candidate=self.repo.base)
+        second_receipt = dict(active_receipt, candidate=self.repo.product)
+        active_sync = {
+            "commit": self.repo.candidate,
+            "parents": [self.repo.base, self.repo.product],
+            self.module.DECISION_ASSIGNMENT_SYNC_KEY: active_receipt,
+        }
+        history = [
+            {
+                "commit": self.repo.base,
+                self.module.DECISION_ASSIGNMENT_SYNC_KEY: first_receipt,
+            },
+            {
+                "commit": self.repo.product,
+                self.module.DECISION_ASSIGNMENT_SYNC_KEY: second_receipt,
+            },
+        ]
+        with mock.patch.object(
+            self.module,
+            "replay_decision_assignment_receipt",
+            return_value=active_receipt,
+        ) as replay:
+            self.module.replay_sync_decision_assignment(
+                str(self.repo.path),
+                active_sync,
+                previous_sync=history,
+            )
+        self.assertEqual(
+            replay.call_args.kwargs["previous_receipt"],
+            [first_receipt, second_receipt],
         )
 
     def test_replacement_assignment_may_be_a_sibling(self):
@@ -429,6 +712,19 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             ]
         )
         self.assertIs(args.fn, self.module.cmd_verify_decision_assignments)
+
+    def test_read_only_command_requires_candidate_ref(self):
+        with self.assertRaises(SystemExit) as stopped:
+            self.module.build_parser().parse_args(
+                [
+                    "verify-decision-assignments",
+                    "--report",
+                    self.repo.report_path,
+                    "--candidate",
+                    self.repo.candidate,
+                ]
+            )
+        self.assertEqual(stopped.exception.code, 2)
 
 
 if __name__ == "__main__":
