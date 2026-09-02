@@ -60,3 +60,9 @@ plugins/*/harness/cache/
 # scripts/run_checks.py sees a relevant untracked path with no declared owner
 # and refuses its own plan the moment an Elenchus report has been written.
 /.elenchus/
+
+# Check-runner run reports. scripts/run_checks.py writes a --report target after
+# its plan is built, so the invocation that writes one still runs and every later
+# invocation refuses with unknown-ownership on the runner's own output. Same
+# class as the Elenchus rule above, reached through the reporting flag instead.
+/.reports/

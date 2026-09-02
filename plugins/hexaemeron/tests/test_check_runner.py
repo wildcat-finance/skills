@@ -94,6 +94,35 @@ class CheckMapContractTests(unittest.TestCase):
             if created:
                 report.unlink()
 
+    def test_a_written_run_report_does_not_refuse_the_next_plan(self) -> None:
+        """Regression: the runner's own ``--report`` output refused the runner.
+
+        ``run_checks.py --report .reports/<name>.json`` writes its run report
+        after the plan is built, so the invocation that writes it still runs.
+        Every later invocation then sees ``.reports/<name>.json`` as a relevant
+        untracked path with no declared owner and refuses with
+        ``unknown-ownership`` before starting a single check, and the tree it
+        was asked to prove clean is no longer clean.  This is the same class
+        the ``.elenchus`` case above records, reached through the runner's own
+        reporting flag rather than through Elenchus.
+        """
+        report = REPO_ROOT / ".reports" / "probe.json"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        created = not report.exists()
+        if created:
+            report.write_text("{}\n", encoding="utf-8")
+        try:
+            observed = run_checks.changed_paths(REPO_ROOT, None)
+            self.assertNotIn(
+                ".reports/probe.json", observed,
+                "a run report must not look like a source change",
+            )
+        finally:
+            if created:
+                report.unlink()
+                if not any(report.parent.iterdir()):
+                    report.parent.rmdir()
+
     def test_relevant_untracked_paths_also_resolve_to_an_owner(self) -> None:
         """Totality over ``git ls-files`` alone does not cover what the planner reads.
 
