@@ -35,11 +35,30 @@ ROOT_FILES = (
     Path("scripts/promise_machine.py"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
+    Path("tests/promise_machine_obligations.json"),
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
     Path("docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md"),
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
     Path("docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
+)
+
+OBLIGATION_FIXTURE_FILES = (
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-contract-identity.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-declaration-fields.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-governing-principle.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-required-sections.json"
+    ),
 )
 
 PORTABLE_TEST_FILES = (
@@ -162,6 +181,7 @@ def _omitted(relative: Path) -> bool:
 def source_files(root: Path) -> list[Path]:
     """Return the exact canonical files copied into the portable runtime."""
     selected = set(ROOT_FILES)
+    selected.update(OBLIGATION_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
     selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
     ordered = sorted(selected, key=lambda path: path.as_posix())

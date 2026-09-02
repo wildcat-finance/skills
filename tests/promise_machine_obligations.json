@@ -1,0 +1,56 @@
+{
+  "contract": "promise-machine/v1",
+  "schema": "promise-machine-obligations/v1",
+  "obligations": [
+    {
+      "id": "law-contract-identity",
+      "clause_sha256": "1e4cfcd2d01bc9bbfc4e5b6e93f58867114a3191b488ffba3a627aa1247d4be1",
+      "gate": "law.contract-identity",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-contract-identity.json",
+      "finding": "PM007",
+      "consequence": 3,
+      "blocked_transition": "publish or consume a law under a competing contract identity",
+      "recovery": "restore the one promise-machine/v1 contract identity and rerun the obligation check"
+    },
+    {
+      "id": "law-declaration-fields",
+      "clause_sha256": "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
+      "gate": "law.declaration-fields",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-declaration-fields.json",
+      "finding": "PM008",
+      "consequence": 2,
+      "blocked_transition": "accept an authored law that omits a required promise declaration field",
+      "recovery": "restore all nine required schema fields and rerun the obligation check"
+    },
+    {
+      "id": "law-generated-copy-identity",
+      "clause_sha256": "b9da0367e1cda2d739a42d611a2e0c111121cf71aea0e6597ce21a439399461b",
+      "gate": "law.generated-copy-marker",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
+      "finding": "PM005",
+      "consequence": 3,
+      "blocked_transition": "publish generated installation copies without the canonical-source identity",
+      "recovery": "restore the canonical generated-copy marker, regenerate copies, and rerun the obligation check"
+    },
+    {
+      "id": "law-governing-principle",
+      "clause_sha256": "f8cd9cdd6129e69f588f81143bc5f4f597246fb3b3e6ae5b9a7ced9c1911d07b",
+      "gate": "law.governing-principle",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
+      "finding": "PM009",
+      "consequence": 3,
+      "blocked_transition": "accept an authored law whose governing-principle sentence changed",
+      "recovery": "restore the settled governing-principle sentence and rerun the obligation check"
+    },
+    {
+      "id": "law-required-sections",
+      "clause_sha256": "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
+      "gate": "law.required-sections",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-required-sections.json",
+      "finding": "PM006",
+      "consequence": 2,
+      "blocked_transition": "accept a root law with a missing or duplicated normative section",
+      "recovery": "restore every required heading exactly once and rerun the obligation check"
+    }
+  ]
+}

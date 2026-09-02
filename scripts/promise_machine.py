@@ -10,6 +10,7 @@ import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import re
+import stat
 import tempfile
 
 
@@ -39,6 +40,9 @@ REQUIRED_HEADINGS = (
     "## Exceptions",
     "## Conformance",
     "## First-party licence promise",
+    "## Run observation promise",
+    "## Contributor ranking promise",
+    "## Router selection promise",
     "## Installation copies",
 )
 REQUIRED_FIELDS = (
@@ -72,6 +76,111 @@ OVERLAY_HEADING = "# Hexaemeron Promise Machine overlays"
 OVERLAY_FIELDS = ("Path", "SHA-256", *REQUIRED_FIELDS)
 COVERAGE_PATH = Path("tests/promise_machine_coverage.json")
 COVERAGE_SCHEMA = "promise-machine-coverage/v1"
+OBLIGATION_PATH = Path("tests/promise_machine_obligations.json")
+OBLIGATION_SCHEMA = "promise-machine-obligations/v1"
+OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-obligation-specimen/v1"
+OBLIGATION_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/obligations")
+OBLIGATION_MARKER = re.compile(
+    r"<!-- promise-machine-obligation: id=([a-z][a-z0-9]*(?:-[a-z0-9]+)*) -->"
+)
+OBLIGATION_MARKER_PREFIX = "<!-- promise-machine-obligation:"
+OBLIGATION_CLAUSE_PREFIX = "> Obligation:"
+OPEN_SUPPORTS_DIR_FD = os.open in os.supports_dir_fd
+HTML_BLOCK_TYPE_1_OPEN = re.compile(
+    r"^ {0,3}<(script|pre|style|textarea)(?=[ \t>]|$)", re.IGNORECASE
+)
+HTML_BLOCK_TYPE_1_CLOSE = re.compile(
+    r"</(?:script|pre|style|textarea)>", re.IGNORECASE
+)
+HTML_COMMENT_OPEN = re.compile(r"^ {0,3}<!--")
+HTML_COMMENT_CLOSE = re.compile(r"-->")
+HTML_PROCESSING_OPEN = re.compile(r"^ {0,3}<\?")
+HTML_PROCESSING_CLOSE = re.compile(r"\?>")
+HTML_DECLARATION_OPEN = re.compile(r"^ {0,3}<![A-Z]")
+HTML_DECLARATION_CLOSE = re.compile(r">")
+HTML_CDATA_OPEN = re.compile(r"^ {0,3}<!\[CDATA\[")
+HTML_CDATA_CLOSE = re.compile(r"\]\]>")
+HTML_BLOCK_TYPE_6_OPEN = re.compile(
+    r"^ {0,3}</?([A-Za-z][A-Za-z0-9-]*)(?=[ \t>]|/>|$)"
+)
+HTML_BLOCK_TYPE_6_TAGS = {
+    "address", "article", "aside", "base", "basefont", "blockquote",
+    "body", "caption", "center", "col", "colgroup", "dd", "details",
+    "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption",
+    "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3",
+    "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "iframe",
+    "legend", "li", "link", "main", "menu", "menuitem", "nav",
+    "noframes", "ol", "optgroup", "option", "p", "param", "search",
+    "section", "summary", "table", "tbody", "td", "tfoot", "th",
+    "thead", "title", "tr", "track", "ul",
+}
+HTML_BLOCK_TYPE_1_TAGS = {"script", "pre", "style", "textarea"}
+HTML_ATTRIBUTE = (
+    r"[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*"
+    r"(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^']*'|\"[^\"]*\"))?"
+)
+HTML_BLOCK_TYPE_7_LINE = re.compile(
+    r"^ {0,3}(?:<([A-Za-z][A-Za-z0-9-]*)(?:"
+    + HTML_ATTRIBUTE
+    + r")*[ \t]*/?>|</([A-Za-z][A-Za-z0-9-]*)[ \t]*>)[ \t]*$"
+)
+MARKDOWN_THEMATIC_BREAK = re.compile(
+    r"^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$"
+)
+MARKDOWN_SETEXT_UNDERLINE = re.compile(r"^ {0,3}(=+|-+)[ \t]*$")
+MARKDOWN_ATX_HEADING = re.compile(
+    r"^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$"
+)
+MARKDOWN_ATX_CLOSING_HASHES = re.compile(r"[ \t]+#+[ \t]*$")
+MARKDOWN_LINK_REFERENCE = re.compile(
+    r"^ {0,3}\[(?:\\.|[^\[\]])+\]:"
+)
+MARKDOWN_BLOCK_START = re.compile(
+    r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|[-+*](?:[ \t]|$))"
+)
+MARKDOWN_ORDERED_LIST = re.compile(r"^ {0,3}(\d{1,9})[.)](?:[ \t]|$)")
+MARKDOWN_LIST_ITEM = re.compile(
+    r"^(?P<indent> {0,3})(?:(?P<bullet>[-+*])|"
+    r"(?P<number>\d{1,9})(?P<delimiter>[.)]))"
+    r"(?P<whitespace>[ \t]*)(?P<body>.*)$"
+)
+OBLIGATION_ROW_KEYS = {
+    "id",
+    "clause_sha256",
+    "gate",
+    "specimen",
+    "finding",
+    "consequence",
+    "blocked_transition",
+    "recovery",
+}
+OBLIGATION_GATES = {
+    "law-contract-identity": (
+        "law.contract-identity",
+        "PM007",
+        "1e4cfcd2d01bc9bbfc4e5b6e93f58867114a3191b488ffba3a627aa1247d4be1",
+    ),
+    "law-declaration-fields": (
+        "law.declaration-fields",
+        "PM008",
+        "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
+    ),
+    "law-generated-copy-identity": (
+        "law.generated-copy-marker",
+        "PM005",
+        "b9da0367e1cda2d739a42d611a2e0c111121cf71aea0e6597ce21a439399461b",
+    ),
+    "law-governing-principle": (
+        "law.governing-principle",
+        "PM009",
+        "f8cd9cdd6129e69f588f81143bc5f4f597246fb3b3e6ae5b9a7ced9c1911d07b",
+    ),
+    "law-required-sections": (
+        "law.required-sections",
+        "PM006",
+        "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
+    ),
+}
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
 RUNTIME_BINDING_KEYS = {
@@ -157,6 +266,10 @@ class Finding:
     message: str
     remedy: str
     promise_id: str | None = None
+    obligation_id: str | None = None
+    consequence: int | None = None
+    blocked_transition: str | None = None
+    recovery: str | None = None
 
 
 @dataclass(frozen=True)
@@ -183,6 +296,11 @@ class PromiseRecord:
     group: str
     evidence_classes: frozenset[str]
     consequence: int
+
+
+@dataclass(frozen=True)
+class MaskedMarkdownLine:
+    indentation: int
 
 
 def relative(path: Path, root: Path) -> str:
@@ -215,6 +333,76 @@ def bounded_sha256(path: Path, limit: int):
     return digest.hexdigest(), None
 
 
+def bounded_read_bytes(path: Path, root: Path, limit: int):
+    """Read a bounded regular file through a no-follow descriptor walk."""
+    try:
+        relative_path = path.relative_to(root)
+    except ValueError as exc:
+        raise OSError("input path is outside the repository root") from exc
+    parts = relative_path.parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise OSError("input path is not a safe repository-relative path")
+    if (
+        not hasattr(os, "O_DIRECTORY")
+        or not hasattr(os, "O_NOFOLLOW")
+        or not OPEN_SUPPORTS_DIR_FD
+    ):
+        raise OSError("platform lacks no-follow descriptor reads")
+
+    directory_flags = (
+        os.O_RDONLY
+        | os.O_DIRECTORY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = (
+        os.O_RDONLY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
+    current = os.open(root, directory_flags)
+    descriptor = None
+    try:
+        if not stat.S_ISDIR(os.fstat(current).st_mode):
+            raise OSError("repository root is not a directory")
+        for part in parts[:-1]:
+            following = os.open(part, directory_flags, dir_fd=current)
+            if not stat.S_ISDIR(os.fstat(following).st_mode):
+                os.close(following)
+                raise OSError(f"input path component is not a directory: {part}")
+            os.close(current)
+            current = following
+
+        descriptor = os.open(parts[-1], file_flags, dir_fd=current)
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise OSError("input path is not a regular file")
+        body = bytearray()
+        while len(body) <= limit:
+            chunk = os.read(descriptor, min(64 * 1024, limit + 1 - len(body)))
+            if not chunk:
+                break
+            body.extend(chunk)
+        finished = os.fstat(descriptor)
+        identity = lambda item: (
+            item.st_dev,
+            item.st_ino,
+            item.st_mode,
+            item.st_nlink,
+            item.st_size,
+            item.st_mtime_ns,
+            item.st_ctime_ns,
+        )
+        if identity(opened) != identity(finished):
+            raise OSError("input changed while it was read")
+        return bytes(body)
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(current)
+
+
 def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str):
     findings: list[Finding] = []
     shown = relative(path, root)
@@ -241,7 +429,7 @@ def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str
         )
         return None, findings
     try:
-        payload = path.read_bytes()
+        payload = bounded_read_bytes(path, root, MAX_MARKDOWN_BYTES)
     except OSError as exc:
         findings.append(
             Finding(
@@ -312,7 +500,7 @@ def read_json(
             )
         ]
     try:
-        payload = path.read_bytes()
+        payload = bounded_read_bytes(path, root, max_bytes)
     except OSError as exc:
         return None, [
             Finding(
@@ -341,8 +529,26 @@ def read_json(
             document[key] = value
         return document
 
+    def require_unicode_scalars(value):
+        pending = [value]
+        while pending:
+            item = pending.pop()
+            if isinstance(item, str):
+                try:
+                    item.encode("utf-8")
+                except UnicodeEncodeError as exc:
+                    raise ValueError(
+                        "JSON strings must contain only Unicode scalar values"
+                    ) from exc
+            elif isinstance(item, dict):
+                pending.extend(item)
+                pending.extend(item.values())
+            elif isinstance(item, list):
+                pending.extend(item)
+
     try:
         document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
+        require_unicode_scalars(document)
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         return None, [
             Finding(
@@ -377,6 +583,332 @@ def frontmatter_lines(text: str):
     return lines[1:end]
 
 
+def markdown_unfenced_lines(text: str):
+    """Return lines outside fenced code and CommonMark raw HTML blocks."""
+    physical_lines = re.split(r"\r\n?|\n", text)
+    frontmatter_end = None
+    if physical_lines and physical_lines[0] == "---":
+        try:
+            frontmatter_end = physical_lines.index("---", 1)
+        except ValueError:
+            pass
+    visible: list[str | None] = []
+    fence: tuple[str, int] | None = None
+    html_end: re.Pattern | None = None
+    html_until_blank = False
+    paragraph_open = False
+    for index, line in enumerate(physical_lines):
+        if frontmatter_end is not None and index <= frontmatter_end:
+            visible.append(None)
+            continue
+        if fence is not None:
+            character, width = fence
+            closing = re.fullmatch(
+                rf" {{0,3}}{re.escape(character)}{{{width},}}[ \t]*", line
+            )
+            visible.append(None)
+            if closing is not None:
+                fence = None
+            continue
+
+        if html_end is not None:
+            visible.append(None)
+            if html_end.search(line) is not None:
+                html_end = None
+            continue
+
+        if html_until_blank:
+            if line.strip():
+                visible.append(None)
+                continue
+            html_until_blank = False
+            paragraph_open = False
+            visible.append(line)
+            continue
+
+        if not line.strip():
+            visible.append(line)
+            paragraph_open = False
+            continue
+
+        stripped = line.lstrip(" ")
+        indentation = len(line) - len(stripped)
+        opening = re.match(r"(`{3,}|~{3,})(.*)$", stripped)
+        if indentation <= 3 and opening is not None:
+            run, info = opening.groups()
+            if run[0] == "~" or "`" not in info:
+                fence = (run[0], len(run))
+                visible.append(MaskedMarkdownLine(indentation))
+                paragraph_open = False
+                continue
+
+        # These standalone HTML comments are the law's authored metadata. An
+        # enclosing raw HTML block still masks them through the states above.
+        if line == MARKER:
+            visible.append(line)
+            paragraph_open = False
+            continue
+        if (
+            OBLIGATION_MARKER_PREFIX in line
+            and HTML_COMMENT_OPEN.match(line) is not None
+        ):
+            visible.append(line)
+            comment_open = HTML_COMMENT_OPEN.match(line)
+            if (
+                comment_open is not None
+                and HTML_COMMENT_CLOSE.search(line, comment_open.end()) is None
+            ):
+                html_end = HTML_COMMENT_CLOSE
+            paragraph_open = False
+            continue
+
+        html_type_1 = HTML_BLOCK_TYPE_1_OPEN.match(line)
+        if html_type_1 is not None:
+            visible.append(MaskedMarkdownLine(indentation))
+            if HTML_BLOCK_TYPE_1_CLOSE.search(line, html_type_1.end()) is None:
+                html_end = HTML_BLOCK_TYPE_1_CLOSE
+            paragraph_open = False
+            continue
+        html_openings = (
+            (HTML_CDATA_OPEN, HTML_CDATA_CLOSE),
+            (HTML_COMMENT_OPEN, HTML_COMMENT_CLOSE),
+            (HTML_PROCESSING_OPEN, HTML_PROCESSING_CLOSE),
+            (HTML_DECLARATION_OPEN, HTML_DECLARATION_CLOSE),
+        )
+        opened_html = False
+        for opening, closing in html_openings:
+            matched = opening.match(line)
+            if matched is None:
+                continue
+            visible.append(MaskedMarkdownLine(indentation))
+            if closing.search(line, matched.end()) is None:
+                html_end = closing
+            paragraph_open = False
+            opened_html = True
+            break
+        if opened_html:
+            continue
+
+        html_type_6 = HTML_BLOCK_TYPE_6_OPEN.match(line)
+        if (
+            html_type_6 is not None
+            and html_type_6.group(1).lower() in HTML_BLOCK_TYPE_6_TAGS
+        ):
+            visible.append(MaskedMarkdownLine(indentation))
+            html_until_blank = True
+            paragraph_open = False
+            continue
+        html_type_7 = HTML_BLOCK_TYPE_7_LINE.match(line)
+        if html_type_7 is not None and not paragraph_open:
+            opening_tag = (html_type_7.group(1) or "").lower()
+            if opening_tag not in HTML_BLOCK_TYPE_1_TAGS:
+                visible.append(MaskedMarkdownLine(indentation))
+                html_until_blank = True
+                paragraph_open = False
+                continue
+
+        # Keep malformed marker-shaped prose visible to the closed grammar,
+        # but only after a containing raw HTML block had the chance to mask it.
+        if OBLIGATION_MARKER_PREFIX in line:
+            visible.append(line)
+            paragraph_open = False
+            continue
+
+        visible.append(line)
+        block_start = MARKDOWN_BLOCK_START.match(line)
+        ordered_list = MARKDOWN_ORDERED_LIST.match(line)
+        ordered_list_start = ordered_list is not None and (
+            not paragraph_open or int(ordered_list.group(1)) == 1
+        )
+        thematic_break = MARKDOWN_THEMATIC_BREAK.fullmatch(line)
+        setext_underline = (
+            paragraph_open and MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
+        )
+        if block_start or ordered_list_start or thematic_break or setext_underline:
+            paragraph_open = False
+        elif not paragraph_open:
+            indented_code = line.startswith("    ") or line.startswith("\t")
+            link_reference = MARKDOWN_LINK_REFERENCE.match(line)
+            paragraph_open = not (indented_code or link_reference)
+        else:
+            paragraph_open = True
+    return visible
+
+
+def markdown_section(lines: list[str | MaskedMarkdownLine | None], heading: str):
+    """Return one section from already fence- and raw-HTML-masked lines."""
+    expected = markdown_atx_heading(heading)
+    if expected is None:
+        return []
+    headings = markdown_heading_events(lines)
+    matches = [item for item in headings if item[2:] == expected]
+    if len(matches) != 1:
+        return []
+    selected = matches[0]
+    start = selected[1] + 1
+    end = len(lines)
+    for candidate in headings:
+        if candidate[0] >= start and candidate[2] <= expected[0]:
+            end = candidate[0]
+            break
+    return [line for line in lines[start:end] if isinstance(line, str)]
+
+
+def markdown_atx_heading(line: str):
+    """Return a CommonMark ATX heading's level and literal source title."""
+    matched = MARKDOWN_ATX_HEADING.fullmatch(line)
+    if matched is None:
+        return None
+    title = matched.group(2) or ""
+    title = MARKDOWN_ATX_CLOSING_HASHES.sub("", title).strip(" \t")
+    return len(matched.group(1)), title
+
+
+def markdown_list_item(line: str):
+    """Return one CommonMark list marker and its content indentation."""
+    matched = MARKDOWN_LIST_ITEM.fullmatch(line)
+    if matched is None:
+        return None
+    whitespace = matched.group("whitespace")
+    body = matched.group("body")
+    if not whitespace and body:
+        return None
+
+    marker = matched.group("bullet") or (
+        matched.group("number") + matched.group("delimiter")
+    )
+    marker_end = len(matched.group("indent")) + len(marker)
+    column = marker_end
+    for character in whitespace:
+        if character == "\t":
+            column += 4 - (column % 4)
+        else:
+            column += 1
+    padding = column - marker_end
+    content_indent = column if 1 <= padding <= 4 else marker_end + 1
+    number = matched.group("number")
+    return (
+        len(matched.group("indent")),
+        content_indent,
+        int(number) if number is not None else None,
+        bool(body),
+    )
+
+
+def markdown_heading_events(lines: list[str | MaskedMarkdownLine | None]):
+    """Return top-level CommonMark ATX and setext heading source spans."""
+    headings: list[tuple[int, int, int, str]] = []
+    paragraph: list[tuple[int, str]] = []
+    container_open = False
+    container_blank = False
+    list_floor: int | None = None
+    for index, line in enumerate(lines):
+        if isinstance(line, MaskedMarkdownLine):
+            paragraph = []
+            if list_floor is not None and line.indentation >= list_floor:
+                container_open = True
+                container_blank = False
+            else:
+                container_open = False
+                container_blank = False
+                list_floor = None
+            continue
+        if line is None:
+            paragraph = []
+            if list_floor is None:
+                container_open = False
+                container_blank = False
+            continue
+        if not line.strip():
+            paragraph = []
+            if container_open:
+                container_blank = True
+            continue
+
+        indentation = len(line) - len(line.lstrip(" "))
+        if list_floor is not None and indentation >= list_floor:
+            paragraph = []
+            container_open = True
+            container_blank = False
+            continue
+
+        atx = markdown_atx_heading(line)
+        if atx is not None:
+            headings.append((index, index, *atx))
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+
+        setext = MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
+        if setext is not None and paragraph:
+            level = 1 if setext.group(1).startswith("=") else 2
+            title = " ".join(item.strip() for _, item in paragraph)
+            headings.append((paragraph[0][0], index, level, title))
+            paragraph = []
+            continue
+
+        if MARKDOWN_THEMATIC_BREAK.fullmatch(line):
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+
+        list_item = markdown_list_item(line)
+        list_item_start = list_item is not None and (
+            list_floor is not None
+            or not paragraph
+            or (
+                list_item[3]
+                and (list_item[2] is None or list_item[2] == 1)
+            )
+        )
+        if list_item_start:
+            marker_indent, content_indent, _number, _has_body = list_item
+            if list_floor is None or marker_indent < list_floor:
+                list_floor = content_indent
+            paragraph = []
+            container_open = True
+            container_blank = False
+            continue
+
+        block_start = MARKDOWN_BLOCK_START.match(line)
+        ordered_list = MARKDOWN_ORDERED_LIST.match(line)
+        ordered_list_start = ordered_list is not None and (
+            not paragraph or int(ordered_list.group(1)) == 1
+        )
+        if block_start is not None or ordered_list_start:
+            paragraph = []
+            container_open = True
+            container_blank = False
+            list_floor = None
+            continue
+        if MARKDOWN_LINK_REFERENCE.match(line):
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+        if line.startswith("    ") or line.startswith("\t"):
+            if container_open or not paragraph:
+                continue
+        if line == MARKER or OBLIGATION_MARKER.fullmatch(line) is not None:
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+        if container_open:
+            if not container_blank:
+                continue
+            container_open = False
+            list_floor = None
+        paragraph.append((index, line))
+    return headings
+
+
 def check_law(root: Path):
     law_path = root / LAW_NAME
     loaded, findings = read_markdown(
@@ -385,65 +917,567 @@ def check_law(root: Path):
     if loaded is None:
         return None, findings
     payload, text = loaded
-    lines = text.splitlines()
+    findings.extend(validate_law_document(payload, text, LAW_NAME))
+    return payload, findings
+
+
+def validate_law_document(payload: bytes, text: str, shown: str):
+    """Apply the production law gates to one already bounded Markdown payload."""
+    findings: list[Finding] = []
+    lines = markdown_unfenced_lines(text)
+    headings = markdown_heading_events(lines)
+
+    def heading_count(heading: str):
+        expected = markdown_atx_heading(heading)
+        return sum(item[2:] == expected for item in headings)
+
     if MARKER not in lines[:5]:
         findings.append(
             Finding(
                 "PM005",
                 "identity",
-                LAW_NAME,
+                shown,
                 "generated-copy marker is absent from the law header",
                 "restore the promise-machine/v1 canonical/copies marker",
             )
         )
     for heading in REQUIRED_HEADINGS:
-        if lines.count(heading) != 1:
+        if heading_count(heading) != 1:
             findings.append(
                 Finding(
                     "PM006",
                     "structural",
-                    LAW_NAME,
+                    shown,
                     f"required heading must occur once: {heading}",
                     "restore the one normative section with that exact heading",
                 )
             )
     versions = set(re.findall(r"promise-machine/v[0-9]+", text))
-    if versions != {CONTRACT_ID}:
+    identity_heading_present = heading_count("## Contract identity") == 1
+    identity_section = markdown_section(lines, "## Contract identity")
+    identity_declaration = f"The shared contract identity is `{CONTRACT_ID}`."
+    identity_declaration_missing = (
+        identity_heading_present
+        and not any(
+            line.startswith(identity_declaration) for line in identity_section
+        )
+    )
+    if versions != {CONTRACT_ID} or identity_declaration_missing:
+        message = (
+            f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}"
+            if versions != {CONTRACT_ID}
+            else "the contract identity declaration is absent or changed"
+        )
         findings.append(
             Finding(
                 "PM007",
                 "version",
-                LAW_NAME,
-                f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}",
+                shown,
+                message,
                 "use the shared contract identity and remove competing identities",
             )
         )
+    declarations_heading_present = heading_count("## Promise declarations") == 1
+    declarations_section = markdown_section(lines, "## Promise declarations")
     for field in REQUIRED_FIELDS:
-        if f"`{field}`" not in text:
+        if declarations_heading_present and f"- `{field}`" not in declarations_section:
             findings.append(
                 Finding(
                     "PM008",
                     "structural",
-                    LAW_NAME,
+                    shown,
                     f"promise declaration field is absent: {field}",
                     "restore the field in the per-promise schema",
                 )
             )
     principle = (
-        "No skill may claim more than its evidence establishes, or authorise a more\n"
+        "> No skill may claim more than its evidence establishes, or authorise a more\n"
         "> consequential transition than that evidence warrants."
     )
-    if principle not in text:
+    principle_heading_present = heading_count("## Governing principle") == 1
+    principle_section = "\n".join(
+        markdown_section(lines, "## Governing principle")
+    )
+    if principle_heading_present and principle not in principle_section:
         findings.append(
             Finding(
                 "PM009",
                 "structural",
-                LAW_NAME,
+                shown,
                 "the governing principle is absent or changed",
                 "restore the settled suite-wide principle exactly",
             )
         )
-    return payload, findings
+    return findings
+
+
+def discover_obligations(text: str):
+    """Discover the closed explicit obligation grammar from the authored law."""
+    findings: list[Finding] = []
+    lines = markdown_unfenced_lines(text)
+    markers: dict[str, int] = {}
+    marker_lines: dict[int, str] = {}
+    clause_markers: set[int] = set()
+    clause_digests: dict[str, str] = {}
+
+    for index, line in enumerate(lines):
+        if not isinstance(line, str):
+            continue
+        if OBLIGATION_MARKER_PREFIX not in line:
+            continue
+        matched = OBLIGATION_MARKER.fullmatch(line)
+        if matched is None:
+            findings.append(
+                Finding(
+                    "PM080",
+                    "structural",
+                    LAW_NAME,
+                    f"malformed obligation marker at line {index + 1}",
+                    "use the exact promise-machine-obligation id marker grammar",
+                )
+            )
+            continue
+        obligation_id = matched.group(1)
+        if obligation_id in markers:
+            findings.append(
+                Finding(
+                    "PM081",
+                    "identity",
+                    LAW_NAME,
+                    f"obligation id is marked more than once: {obligation_id}",
+                    "retain one marker on the one clause that owns this stable id",
+                    obligation_id=obligation_id,
+                )
+            )
+            continue
+        markers[obligation_id] = index
+        marker_lines[index] = obligation_id
+
+    for index, line in enumerate(lines):
+        if not isinstance(line, str):
+            continue
+        if not line.startswith(OBLIGATION_CLAUSE_PREFIX):
+            continue
+        previous = index - 1
+        while (
+            previous >= 0
+            and isinstance(lines[previous], str)
+            and not lines[previous].strip()
+        ):
+            previous -= 1
+        obligation_id = marker_lines.get(previous)
+        if obligation_id is None:
+            findings.append(
+                Finding(
+                    "PM080",
+                    "structural",
+                    LAW_NAME,
+                    f"explicit obligation clause at line {index + 1} has no marker",
+                    "put one valid stable obligation marker immediately before the clause",
+                )
+            )
+            continue
+        clause_markers.add(previous)
+        end = index + 1
+        while (
+            end < len(lines)
+            and isinstance(lines[end], str)
+            and lines[end].startswith(">")
+        ):
+            end += 1
+        clause = "\n".join(
+            line for line in lines[index:end] if line is not None
+        ).encode("utf-8")
+        clause_digests[obligation_id] = hashlib.sha256(clause).hexdigest()
+
+    for index, obligation_id in marker_lines.items():
+        if index in clause_markers:
+            continue
+        findings.append(
+            Finding(
+                "PM080",
+                "structural",
+                LAW_NAME,
+                f"obligation marker has no following explicit clause: {obligation_id}",
+                "place the marker immediately before one > Obligation: clause",
+                obligation_id=obligation_id,
+            )
+        )
+    return set(markers), clause_digests, findings
+
+
+def obligation_finding(code: str, path: str, message: str, remedy: str, row=None):
+    row = row if isinstance(row, dict) else {}
+    return Finding(
+        code,
+        "obligation",
+        path,
+        message,
+        remedy,
+        obligation_id=row.get("id"),
+        consequence=row.get("consequence"),
+        blocked_transition=row.get("blocked_transition"),
+        recovery=row.get("recovery"),
+    )
+
+
+def repository_relative_fixture(raw: str):
+    if not isinstance(raw, str) or not raw or raw != raw.strip():
+        return None
+    candidate = Path(raw)
+    if candidate.is_absolute() or ".." in candidate.parts or candidate.as_posix() != raw:
+        return None
+    try:
+        candidate.relative_to(OBLIGATION_FIXTURE_ROOT)
+    except ValueError:
+        return None
+    if candidate.suffix != ".json":
+        return None
+    return candidate
+
+
+def validate_obligation_specimen(root: Path, law_text: str, row: dict):
+    specimen_raw = row["specimen"]
+    relative_specimen = repository_relative_fixture(specimen_raw)
+    if relative_specimen is None:
+        return [
+            obligation_finding(
+                "PM087",
+                str(specimen_raw),
+                "negative specimen path is not a confined JSON path under the fixture root",
+                "use one repository-relative JSON fixture below tests/fixtures/promise-machine/obligations",
+                row,
+            )
+        ]
+    specimen_path = root / relative_specimen
+    document, findings = read_json(
+        specimen_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM087",
+        unsafe_code="PM087",
+        malformed_code="PM088",
+        noun="Promise Machine obligation specimen",
+    )
+    if document is None:
+        return [
+            obligation_finding(
+                item.code,
+                item.path,
+                item.message,
+                item.remedy,
+                row,
+            )
+            for item in findings
+        ]
+    if set(document) != {"schema", "obligation_id", "mutation"}:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen fields are not exactly schema, obligation_id, and mutation",
+                "restore the closed promise-machine-obligation-specimen/v1 shape",
+                row,
+            )
+        ]
+    if document["schema"] != OBLIGATION_SPECIMEN_SCHEMA:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                f"unsupported specimen schema: {document['schema']!r}",
+                f"declare {OBLIGATION_SPECIMEN_SCHEMA}",
+                row,
+            )
+        ]
+    if document["obligation_id"] != row["id"]:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen obligation id does not match its registry row",
+                "bind the specimen to the row's exact stable obligation id",
+                row,
+            )
+        ]
+    mutation = document["mutation"]
+    if not isinstance(mutation, dict) or set(mutation) != {"operation", "old", "new"}:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen mutation is not the closed operation, old, and new object",
+                "restore one bounded replace_once mutation",
+                row,
+            )
+        ]
+    old = mutation.get("old")
+    new = mutation.get("new")
+    if (
+        mutation.get("operation") != "replace_once"
+        or not isinstance(old, str)
+        or not old
+        or not isinstance(new, str)
+        or old == new
+        or law_text.count(old) != 1
+    ):
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "replace_once mutation is invalid or its source text is not unique",
+                "name one exact unique law fragment and a different replacement",
+                row,
+            )
+        ]
+    mutated_text = law_text.replace(old, new, 1)
+    mutated_payload = mutated_text.encode("utf-8")
+    if len(mutated_payload) > MAX_MARKDOWN_BYTES:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                f"mutated law exceeds the {MAX_MARKDOWN_BYTES}-byte limit",
+                "keep the hostile specimen inside the bounded law surface",
+                row,
+            )
+        ]
+    produced = validate_law_document(
+        mutated_payload, mutated_text, relative_specimen.as_posix()
+    )
+    expected = row["finding"]
+    if len(produced) != 1 or produced[0].code != expected:
+        observed = [item.code for item in produced]
+        return [
+            obligation_finding(
+                "PM089",
+                relative_specimen.as_posix(),
+                f"negative specimen produced {observed!r}; expected only {expected}",
+                "restore the selected production gate or narrow the specimen to its one expected finding",
+                row,
+            )
+        ]
+    return []
+
+
+def check_obligations(root: Path, law: bytes | None):
+    findings: list[Finding] = []
+    if law is None:
+        return 0, findings
+    law_text = law.decode("utf-8")
+    marker_ids, clause_digests, marker_findings = discover_obligations(law_text)
+    findings.extend(marker_findings)
+    registry_path = root / OBLIGATION_PATH
+    document, registry_findings = read_json(
+        registry_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM082",
+        unsafe_code="PM082",
+        malformed_code="PM082",
+        noun="Promise Machine obligation registry",
+    )
+    findings.extend(registry_findings)
+    if document is None:
+        return len(marker_ids), findings
+    if set(document) != {"contract", "schema", "obligations"}:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry fields are not exactly contract, schema, and obligations",
+                "restore the closed promise-machine-obligations/v1 document",
+            )
+        )
+        return len(marker_ids), findings
+    if document["contract"] != CONTRACT_ID or document["schema"] != OBLIGATION_SCHEMA:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry contract or schema identity is unsupported",
+                f"declare contract {CONTRACT_ID} and schema {OBLIGATION_SCHEMA}",
+            )
+        )
+    rows = document["obligations"]
+    if not isinstance(rows, list) or not rows:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry obligations must be a non-empty list",
+                "register every discovered explicit obligation exactly once",
+            )
+        )
+        return len(marker_ids), findings
+
+    valid_rows: dict[str, dict] = {}
+    for index, row in enumerate(rows):
+        path = f"{OBLIGATION_PATH.as_posix()}#obligations[{index}]"
+        if not isinstance(row, dict) or set(row) != OBLIGATION_ROW_KEYS:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry row does not have the exact required fields",
+                    "restore id, clause_sha256, gate, specimen, finding, consequence, blocked_transition, and recovery",
+                    row,
+                )
+            )
+            continue
+        obligation_id = row["id"]
+        strings = (
+            "id",
+            "clause_sha256",
+            "gate",
+            "specimen",
+            "finding",
+            "blocked_transition",
+            "recovery",
+        )
+        if any(
+            not isinstance(row[key], str)
+            or not row[key]
+            or row[key] != row[key].strip()
+            for key in strings
+        ) or PROMISE_ID.fullmatch(obligation_id) is None:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry row has an invalid or empty scalar field",
+                    "use a stable kebab-case id and non-empty exact string fields",
+                    row,
+                )
+            )
+            continue
+        if re.fullmatch(r"[0-9a-f]{64}", row["clause_sha256"]) is None:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry clause digest is not a lowercase SHA-256 value",
+                    "record the SHA-256 of the exact marked obligation clause",
+                    row,
+                )
+            )
+            continue
+        consequence = row["consequence"]
+        if type(consequence) is not int or consequence not in range(4):
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry consequence is not an integer from 0 through 3",
+                    "record the root-law consequence level for the blocked transition",
+                    row,
+                )
+            )
+            continue
+        if obligation_id in valid_rows:
+            findings.append(
+                obligation_finding(
+                    "PM085",
+                    path,
+                    f"registry contains a duplicate obligation row: {obligation_id}",
+                    "retain exactly one row for the stable obligation id",
+                    row,
+                )
+            )
+            continue
+        valid_rows[obligation_id] = row
+
+    row_ids = set(valid_rows)
+    for obligation_id in sorted(marker_ids - row_ids):
+        findings.append(
+            obligation_finding(
+                "PM085",
+                OBLIGATION_PATH.as_posix(),
+                f"discovered obligation has no registry row: {obligation_id}",
+                "add its gate and hostile specimen in the same change",
+                {"id": obligation_id},
+            )
+        )
+    for obligation_id in sorted(row_ids - marker_ids):
+        findings.append(
+            obligation_finding(
+                "PM085",
+                OBLIGATION_PATH.as_posix(),
+                f"registry-only obligation has no authored law marker: {obligation_id}",
+                "restore the matching explicit law clause or retire the row with its owning change",
+                valid_rows[obligation_id],
+            )
+        )
+
+    selector_ids: dict[str, str] = {}
+    for obligation_id, (selector, _code, _clause) in sorted(OBLIGATION_GATES.items()):
+        prior = selector_ids.get(selector)
+        if prior is not None:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    "scripts/promise_machine.py",
+                    f"production gate selector is bound to both {prior} and {obligation_id}: {selector}",
+                    "bind every production gate selector to one stable obligation id",
+                    {"id": obligation_id},
+                )
+            )
+        else:
+            selector_ids[selector] = obligation_id
+    for obligation_id in sorted(set(OBLIGATION_GATES) - marker_ids):
+        findings.append(
+            obligation_finding(
+                "PM086",
+                "scripts/promise_machine.py",
+                f"production gate has no authored law marker: {obligation_id}",
+                "restore the matching explicit law clause or remove the stale selector",
+                {"id": obligation_id},
+            )
+        )
+
+    for obligation_id in sorted(row_ids & marker_ids):
+        row = valid_rows[obligation_id]
+        expected_gate = OBLIGATION_GATES.get(obligation_id)
+        if expected_gate is None:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation id has no production gate selector: {obligation_id}",
+                    "register the stable obligation id and its production gate together",
+                    row,
+                )
+            )
+            continue
+        expected_selector, expected_code, expected_clause = expected_gate
+        if (
+            row["gate"] != expected_selector
+            or row["finding"] != expected_code
+            or row["clause_sha256"] != expected_clause
+        ):
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation {obligation_id} does not match its registered clause, selector, and finding code",
+                    "restore the stable id's exact clause digest, production selector, and finding code",
+                    row,
+                )
+            )
+            continue
+        if clause_digests.get(obligation_id) != expected_clause:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation {obligation_id} clause digest does not match its authored marker",
+                    "restore the marker to its owned clause or update the row with the reviewed clause change",
+                    row,
+                )
+            )
+            continue
+        findings.extend(validate_obligation_specimen(root, law_text, row))
+    return len(marker_ids), findings
 
 
 def discover_plugins(root: Path):
@@ -2621,7 +3655,21 @@ def sync_copies(root: Path, law: bytes, plugins: list[Path]):
                 )
             )
             continue
-        current = destination.read_bytes() if destination.is_file() else None
+        current = None
+        if destination.is_file():
+            try:
+                current = bounded_read_bytes(destination, root, MAX_MARKDOWN_BYTES)
+            except OSError as exc:
+                findings.append(
+                    Finding(
+                        "PM013",
+                        "identity",
+                        relative(destination, root),
+                        f"copy could not be read safely: {exc}",
+                        "restore a readable regular copy inside the plugin directory",
+                    )
+                )
+                continue
         if current == law:
             continue
         try:
@@ -2651,6 +3699,7 @@ def report(
     copies: int = 0,
     inventory: Inventory | None = None,
     promises: int = 0,
+    obligations: int = 0,
     stats: dict[str, int] | None = None,
 ):
     findings = sorted(findings, key=lambda item: (item.path, item.code, item.message))
@@ -2673,6 +3722,7 @@ def report(
         "routers": len(inventory.routers) if inventory else 0,
         "overlays": len(inventory.overlays) if inventory else 0,
         "promises": promises,
+        "obligations": obligations,
         "claude_plugins": 0,
         "codex_plugins": 0,
         "package_versions": 0,
@@ -2700,8 +3750,23 @@ def report(
     elif findings:
         for item in findings:
             promise = f" promise={item.promise_id}" if item.promise_id else ""
+            obligation = (
+                f" obligation={item.obligation_id}" if item.obligation_id else ""
+            )
+            consequence = (
+                f" consequence={item.consequence}"
+                if item.consequence is not None
+                else ""
+            )
+            blocked = (
+                f" blocked={item.blocked_transition!r}"
+                if item.blocked_transition
+                else ""
+            )
+            recovery = f" recovery={item.recovery!r}" if item.recovery else ""
             print(
-                f"{item.code} fault={item.fault} path={item.path}{promise}: "
+                f"{item.code} fault={item.fault} path={item.path}{promise}"
+                f"{obligation}{consequence}{blocked}{recovery}: "
                 f"{item.message}; repair: {item.remedy}"
             )
         print(f"refused: {len(findings)} finding(s)")
@@ -2750,6 +3815,7 @@ def parse_only(raw: str):
         "hosts",
         "coverage",
         "licences",
+        "obligations",
     }
     unknown = sorted(set(requested) - allowed)
     if unknown or not requested:
@@ -2771,7 +3837,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences"
+            "versions,hosts,coverage,licences,obligations"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -2857,7 +3923,7 @@ def main(argv=None):
         inventory = None
         promises = 0
         stats: dict[str, int] = {}
-        if "law" in only or "copies" in only:
+        if "law" in only or "copies" in only or "obligations" in only:
             law, law_findings = check_law(root)
             findings.extend(law_findings)
         if "copies" in only:
@@ -2919,6 +3985,10 @@ def main(argv=None):
             stats["coverage_rows"] = coverage_rows
             stats["coverage_selected"] = coverage_selected
             findings.extend(coverage_findings)
+        obligations = 0
+        if "obligations" in only:
+            obligations, obligation_findings = check_obligations(root, law)
+            findings.extend(obligation_findings)
         return report(
             "check",
             root,
@@ -2928,6 +3998,7 @@ def main(argv=None):
             copies=len(plugins) if "copies" in only else 0,
             inventory=inventory,
             promises=promises,
+            obligations=obligations,
             stats=stats,
         )
 
