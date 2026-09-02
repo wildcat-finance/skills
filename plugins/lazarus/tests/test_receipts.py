@@ -111,6 +111,25 @@ class ReceiptEncodingTests(unittest.TestCase):
         type_one["receipt_type"] = "0x1"
         self.assertEqual(encode_receipt(type_one)[0], 1)
 
+    def test_blob_and_set_code_receipts_reuse_the_typed_payload(self):
+        material = support.receipt_fixture_material()
+        _, typed = material["receipt_witness"]["receipts"]
+        payload = encode_receipt(typed)[1:]
+        for receipt_type, prefix in (("0x3", 3), ("0x4", 4)):
+            widened = copy.deepcopy(typed)
+            widened["receipt_type"] = receipt_type
+            encoded = encode_receipt(widened)
+            self.assertEqual(encoded[0], prefix)
+            self.assertEqual(encoded[1:], payload)
+
+    def test_unallocated_receipt_type_is_still_refused(self):
+        material = support.receipt_fixture_material()
+        _, typed = material["receipt_witness"]["receipts"]
+        widened = copy.deepcopy(typed)
+        widened["receipt_type"] = "0x5"
+        with self.assertRaisesRegex(FormatError, "unsupported receipt type"):
+            encode_receipt(widened)
+
     def test_pre_byzantium_root_is_legacy_only(self):
         receipt = copy.deepcopy(support.sample_receipt_witness()["receipts"][0])
         receipt.pop("status")
