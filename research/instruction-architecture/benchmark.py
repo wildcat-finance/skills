@@ -87,7 +87,7 @@ BASELINE_RECORD_NAMES = (
     "holdout-seal.json",
 )
 EXPECTED_BASELINE_INVENTORY_SHA256 = (
-    "88420f4476f7311af54d381339ec9ccf58f95afa10b79f5913c761ef78119c90"
+    "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
 )
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
@@ -4706,9 +4706,57 @@ def _partition_ranges(
         ]
     lines = data.splitlines(keepends=True)
 
-    def fence_marker(line: bytes) -> tuple[bytes, bytes] | None:
-        match = re.match(rb"^ {0,3}(`{3,}|~{3,})([^\r\n]*)", line)
-        return None if match is None else (match.group(1), match.group(2))
+    def leading_spaces(line: bytes) -> int:
+        return len(line) - len(line.lstrip(b" "))
+
+    def update_list_containers(line: bytes, active: list[int]) -> list[int]:
+        """Track absolute content indents for source-proved list containers."""
+        if not line.strip(b" \t\r\n"):
+            return active
+        indent = leading_spaces(line)
+        result = list(active)
+        while result and indent < result[-1]:
+            result.pop()
+        parent = result[-1] if result else 0
+        if indent < parent or indent - parent > 3:
+            return result
+        marker = re.match(
+            rb"(?:[*+-]|[0-9]{1,9}[.)])([ \t]+)", line[indent:]
+        )
+        if marker is None:
+            return result
+        marker_width = marker.start(1)
+        padding = len(marker.group(1).expandtabs(4))
+        if padding > 4:
+            padding = 1
+        content_indent = indent + marker_width + padding
+        if content_indent > parent:
+            result.append(content_indent)
+        return result
+
+    def fence_container(line: bytes, active: list[int]) -> int | None:
+        indent = leading_spaces(line)
+        if indent <= 3:
+            return 0
+        return next(
+            (
+                container
+                for container in reversed(active)
+                if container <= indent <= container + 3
+            ),
+            None,
+        )
+
+    def fence_marker(
+        line: bytes, container_indent: int
+    ) -> tuple[bytes, bytes] | None:
+        match = re.match(rb"^( *)(`{3,}|~{3,})([^\r\n]*)", line)
+        if match is None:
+            return None
+        indent = len(match.group(1))
+        if not container_indent <= indent <= container_indent + 3:
+            return None
+        return match.group(2), match.group(3)
 
     def opens(marker: tuple[bytes, bytes]) -> bool:
         fence, remainder = marker
@@ -4723,10 +4771,10 @@ def _partition_ranges(
         )
 
     @lru_cache(maxsize=None)
-    def commonmark_suffix_is_balanced(start: int) -> bool:
+    def commonmark_suffix_is_balanced(start: int, container_indent: int) -> bool:
         active: tuple[int, int] | None = None
         for line in lines[start:]:
-            marker = fence_marker(line)
+            marker = fence_marker(line, container_indent)
             if marker is None:
                 continue
             if active is not None:
@@ -4739,20 +4787,33 @@ def _partition_ranges(
 
     ranges: list[tuple[int, int, str]] = []
     offset = 0
-    active_fence: tuple[int, int] | None = None
+    active_fence: tuple[int, int, int] | None = None
     pending_template: tuple[int, int] | None = None
+    list_containers: list[int] = []
     for index, line in enumerate(lines):
-        marker = fence_marker(line)
+        if active_fence is None:
+            list_containers = update_list_containers(line, list_containers)
+            container_indent = fence_container(line, list_containers)
+        else:
+            container_indent = active_fence[2]
+        marker = (
+            None
+            if container_indent is None
+            else fence_marker(line, container_indent)
+        )
         classification = "governed_operative_semantics"
         if active_fence is not None:
             classification = "exact_literal_or_evidence"
             if marker is not None:
                 fence, remainder = marker
-                if closes(marker, active_fence):
+                active_marker = (active_fence[0], active_fence[1])
+                if closes(marker, active_marker):
                     if (
                         pending_template is not None
                         and closes(marker, pending_template)
-                        and not commonmark_suffix_is_balanced(index + 1)
+                        and not commonmark_suffix_is_balanced(
+                            index + 1, active_fence[2]
+                        )
                     ):
                         pending_template = None
                     else:
@@ -4772,7 +4833,7 @@ def _partition_ranges(
             fence, _ = marker
             if opens(marker):
                 classification = "exact_literal_or_evidence"
-                active_fence = (fence[0], len(fence))
+                active_fence = (fence[0], len(fence), container_indent)
         end = offset + len(line)
         if ranges and ranges[-1][2] == classification:
             ranges[-1] = (ranges[-1][0], end, classification)

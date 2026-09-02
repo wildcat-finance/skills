@@ -36,10 +36,10 @@ PROFILE_SCHEMA = ROOT / "research/instruction-architecture/schemas/invocation-pr
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "6960a5176eb2cebda819b3dfd220f7f877147d75f29b7acf32449a6495180e2b"
+    "8e7236de8321431f295647f9fdf0a4cd782fa4def89b260a98fd13402fea545a"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "7287c3f5288f5b0246c05aa5a53320b5e4d948c2cc6f787ed5a4972e7f44485c"
+    "4d2f1af3ff6a42a5ba7d90068be842942907351c62a29ec57dae2fcf3ecd0d1d"
 )
 EXPECTED_KRONOS_RANKING_LEDGERS = {
     "plugins/alexandria/skills/alexandria/EVOLUTION.md",
@@ -189,7 +189,7 @@ ORACLE_MAX_JSON_BYTES = 8 * 1024 * 1024
 ORACLE_MAX_SOURCE_BYTES = 2 * 1024 * 1024
 ORACLE_MAX_FROZEN_TREE_PATHS = 10_000
 ORACLE_BASELINE_INVENTORY_SHA256 = (
-    "88420f4476f7311af54d381339ec9ccf58f95afa10b79f5913c761ef78119c90"
+    "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
 )
 ORACLE_SKILL_PATHS = {
     "alexandria": "plugins/alexandria/skills/alexandria/SKILL.md",
@@ -4481,9 +4481,9 @@ class BytePartitionTests(unittest.TestCase):
         self.assertEqual(
             self.partition["totals"],
             {
-                "exact_literal_or_evidence": 345_607,
+                "exact_literal_or_evidence": 345_771,
                 "generated_duplicate": 471_444,
-                "governed_operative_semantics": 1_473_399,
+                "governed_operative_semantics": 1_473_235,
                 "human_only_explanation_or_rationale": 0,
                 "unsupported_or_unknown": 0,
             },
@@ -4530,6 +4530,136 @@ class BytePartitionTests(unittest.TestCase):
             )
             self.assertEqual(
                 containing["classification"], "exact_literal_or_evidence", path
+            )
+
+    def test_space_indented_fence_pairs_remain_exact_literal_evidence(self):
+        """Independently retain fenced literals nested under list containers."""
+        by_path = {item["path"]: item for item in self.partition["files"]}
+        observed: list[tuple[str, int, int]] = []
+        marker = re.compile(rb"^( {4,})(`{3,}|~{3,})([^\r\n]*)")
+        for path, file_record in by_path.items():
+            if not path.endswith(".md"):
+                continue
+            source = oracle_source(path)
+            lines = source.splitlines(keepends=True)
+            offsets = list(
+                itertools.accumulate((len(line) for line in lines), initial=0)
+            )
+            for index, line in enumerate(lines):
+                opening = marker.match(line)
+                if opening is None or not opening.group(3).strip(b" \t"):
+                    continue
+                indent = opening.group(1)
+                fence = opening.group(2)
+                closing = re.compile(
+                    rb"^"
+                    + re.escape(indent)
+                    + re.escape(fence[:1])
+                    + rb"{"
+                    + str(len(fence)).encode("ascii")
+                    + rb",}[ \t]*(?:\r?\n)?$"
+                )
+                close_index = next(
+                    (
+                        candidate
+                        for candidate in range(index + 1, len(lines))
+                        if closing.match(lines[candidate])
+                    ),
+                    None,
+                )
+                if close_index is None:
+                    continue
+                start = offsets[index]
+                end = offsets[close_index + 1]
+                observed.append((path, start, end))
+                for position in (start, end - 1):
+                    containing = next(
+                        item
+                        for item in file_record["ranges"]
+                        if item["start"] <= position < item["end"]
+                    )
+                    self.assertEqual(
+                        containing["classification"],
+                        "exact_literal_or_evidence",
+                        f"{path}:{index + 1}-{close_index + 1}",
+                    )
+        self.assertEqual(
+            observed,
+            [
+                (
+                    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/"
+                    "protocol-type-specialist.md",
+                    2368,
+                    2975,
+                ),
+                (
+                    "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
+                    11063,
+                    11227,
+                ),
+            ],
+        )
+
+    def test_nested_list_fence_parser_keeps_literal_and_resumes_prose(self):
+        source = (
+            b"1. outer\n"
+            b"   - example:\n"
+            b"     ```solidity\n"
+            b"     uint256 value = 1;\n"
+            b"     ```\n"
+            b"   - after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=source):
+            ranges = AI._partition_ranges("nested-list.md", generated=False)
+        literal = source.index(b"uint256")
+        prose = source.index(b"after")
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= literal < item["end"]
+            ),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= prose < item["end"]
+            ),
+            "governed_operative_semantics",
+        )
+
+    def test_arbitrary_indentation_does_not_create_a_fence(self):
+        specimens = {
+            "plain-indented-code": (
+                b"prose\n"
+                b"    ```solidity\n"
+                b"    uint256 value = 1;\n"
+                b"    ```\n"
+                b"after\n"
+            ),
+            "past-container-allowance": (
+                b"- item\n"
+                b"      ```solidity\n"
+                b"      uint256 value = 1;\n"
+                b"      ```\n"
+                b"after\n"
+            ),
+        }
+        for name, source in specimens.items():
+            with self.subTest(name=name), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges(f"{name}.md", generated=False)
+            literal = source.index(b"uint256")
+            self.assertEqual(
+                next(
+                    item["classification"]
+                    for item in ranges
+                    if item["start"] <= literal < item["end"]
+                ),
+                "governed_operative_semantics",
             )
 
     def test_shorter_or_mismatched_fence_inside_long_fence_is_literal(self):
