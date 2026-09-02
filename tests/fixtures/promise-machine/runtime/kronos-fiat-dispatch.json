@@ -25,13 +25,13 @@
           "inspectable": {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
           },
           "references": [
             {
               "evidence_class": "checked",
               "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-              "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+              "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -63,7 +63,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
           }
         ],
         "exception": {
@@ -72,7 +72,7 @@
         "inspectable_evidence": {
           "evidence_class": "checked",
           "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-          "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+          "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
         },
         "promise_id": "kronos-fiat-dispatch",
         "scope": "structural binding for kronos-fiat-dispatch",
@@ -116,16 +116,16 @@
           "inspectable": {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
           },
           "references": [
             {
               "evidence_class": "checked",
               "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-              "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+              "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
             }
           ],
-          "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+          "source_digest": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
           "transition": {
             "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
             "operation_ran": false,
@@ -154,7 +154,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
           }
         ],
         "exception": {
@@ -163,11 +163,11 @@
         "inspectable_evidence": {
           "evidence_class": "checked",
           "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
-          "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
+          "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
         },
         "promise_id": "kronos-fiat-dispatch",
         "scope": "structural binding for kronos-fiat-dispatch",
-        "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+        "source_digest": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
         "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind kronos-fiat-dispatch without running its domain operation",

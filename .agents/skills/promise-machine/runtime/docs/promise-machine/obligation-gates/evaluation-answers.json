@@ -1,0 +1,16 @@
+{
+  "answers": {
+    "hexaemeron-fizz-convert-properties": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "hexaemeron-fizz-harness-campaign": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "hexaemeron-fizz-sync-drift": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "hexaemeron-solidity-audit-report": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "hexaemeron-x-ray-preaudit": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "hypomnema-record-placement": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "kronos-fiat-dispatch": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "sapheneia-deactivation": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "sapheneia-durable-record-shape": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "sapheneia-session-shape": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n",
+    "vulgate-register-rewrite": "{\n  \"E01\": \"refuse\",\n  \"E02\": \"accept\",\n  \"E03\": \"recover\",\n  \"E04\": \"refuse\",\n  \"E05\": \"refuse\"\n}\n\n"
+  },
+  "contract": "promise-machine-evaluation-answers/v1"
+}

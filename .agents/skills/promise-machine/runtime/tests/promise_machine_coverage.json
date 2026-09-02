@@ -2775,9 +2775,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; forward model behaviour remains unknown.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; record placement still requires its own domain evidence.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Review record placement against the canonical Hypomnema contract.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "prompt",
@@ -2821,9 +2824,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; user authority remains external evidence.",
-        "model": "not-run",
-        "prompt": "Decide whether a ranked Kronos job may enter Fiat under the authority boundary.",
+        "disposition": "The recorded model classified all five labelled cases; user authority remains external evidence.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
+        "prompt": "Decide whether a ranked Kronos job may enter Fiat under the canonical authority boundary.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "prompt",
@@ -2890,10 +2896,13 @@
       },
       "evaluation": {
         "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; deactivation still requires the active user's instruction.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Decide whether Sapheneia may deactivate under its canonical stop contract.",
-        "status": "unknown"
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "status": "recorded"
       },
       "group": "prompt",
       "promise_id": "sapheneia-deactivation",
@@ -2913,10 +2922,13 @@
       },
       "evaluation": {
         "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; durable-record parity still requires the exact candidate and inventory.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Shape one named durable record while preserving its evidence inventory and host structure.",
-        "status": "unknown"
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "status": "recorded"
       },
       "group": "prompt",
       "promise_id": "sapheneia-durable-record-shape",
@@ -2936,10 +2948,13 @@
       },
       "evaluation": {
         "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; session shaping still requires the active user's state and preference.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Shape an active Sapheneia reply under the canonical interaction contract.",
-        "status": "unknown"
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "status": "recorded"
       },
       "group": "prompt",
       "promise_id": "sapheneia-session-shape",
@@ -2959,10 +2974,13 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model content parity remains unknown.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; content parity still requires the exact source and rewrite.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Rewrite a source passage under Vulgate while holding all content constant.",
-        "status": "unknown"
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "status": "recorded"
       },
       "group": "prompt",
       "promise_id": "vulgate-register-rewrite",
@@ -2982,9 +3000,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no conversion result is claimed.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; no conversion result is claimed.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Classify a Fizz Convert result under its digest-bound overlay.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "vendored",
@@ -3005,9 +3026,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no harness campaign is claimed.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; no harness campaign is claimed.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Classify a Fizz harness and campaign result under its digest-bound overlay.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "vendored",
@@ -3028,9 +3052,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no harness sync is claimed.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; no harness sync is claimed.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Classify a Fizz Sync result under its digest-bound overlay.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "vendored",
@@ -3051,9 +3078,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no audit report is claimed.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; no audit report is claimed.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Classify a Solidity Auditor result under its digest-bound overlay.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "vendored",
@@ -3074,9 +3104,12 @@
       },
       "evaluation": {
         "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no pre-audit result is claimed.",
-        "model": "not-run",
+        "disposition": "The recorded model classified all five labelled cases; no pre-audit result is claimed.",
+        "domain_evidence": "required-separately",
+        "gate": "labelled-case-classification",
+        "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
         "prompt": "Classify an X-Ray result under its digest-bound overlay.",
+        "run": "docs/promise-machine/obligation-gates/evaluation-run.json",
         "status": "recorded"
       },
       "group": "vendored",
@@ -3837,16 +3870,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
         "selector": "negative",
-        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
+        "sha256": "bd8b96959a82026776609ebabd296e2646b0526eb640b22d72beddc093e1bda4"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
         "selector": "positive",
-        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
+        "sha256": "bd8b96959a82026776609ebabd296e2646b0526eb640b22d72beddc093e1bda4"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
-      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
       "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-fizz-harness-campaign": {
@@ -3868,16 +3901,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
         "selector": "negative",
-        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
+        "sha256": "75c12032aa170037bae5020effed82d01fb7a09e20874d3d801054709501c83f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
         "selector": "positive",
-        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
+        "sha256": "75c12032aa170037bae5020effed82d01fb7a09e20874d3d801054709501c83f"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
-      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
       "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-fizz-sync-drift": {
@@ -3897,16 +3930,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
         "selector": "negative",
-        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
+        "sha256": "0941c6be1a6eed60fa9754528a0933a58a783011e5d5700848eb5f06c0e6cc71"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
         "selector": "positive",
-        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
+        "sha256": "0941c6be1a6eed60fa9754528a0933a58a783011e5d5700848eb5f06c0e6cc71"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
-      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
       "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "hexaemeron-solidity-audit-report": {
@@ -3928,16 +3961,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
         "selector": "negative",
-        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
+        "sha256": "4c0eade976ee0b6a5773b421620a6c8f747dddf35146800e2dc44122cfb94b4b"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
         "selector": "positive",
-        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
+        "sha256": "4c0eade976ee0b6a5773b421620a6c8f747dddf35146800e2dc44122cfb94b4b"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
-      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
       "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "horos-boundary-scan": {
@@ -3986,16 +4019,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
         "selector": "negative",
-        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
+        "sha256": "464b56a0efd80a851ee6970b31d5fb6ab0d72c3912b1a2583b78643980ce38f7"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
         "selector": "positive",
-        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
+        "sha256": "464b56a0efd80a851ee6970b31d5fb6ab0d72c3912b1a2583b78643980ce38f7"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
-      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
       "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "janus-bounded-conformance": {
@@ -4048,16 +4081,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "negative",
-        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
+        "sha256": "36c3ad9d9dc712584a87c4833906c093d93f810fea2254a7a517b77cdd8ac69d"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "positive",
-        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
+        "sha256": "36c3ad9d9dc712584a87c4833906c093d93f810fea2254a7a517b77cdd8ac69d"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
-      "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+      "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
       "source": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py"
     },
     "kronos-parked-lane": {

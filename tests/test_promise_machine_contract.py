@@ -64,7 +64,7 @@ RECEIPTED_OBLIGATION_STUDY_SHA256 = (
     "cd39131e527cfd0a670757610e1e42016c7a7eede27b403d563c10b22b40ae1c"
 )
 RECEIPTED_OBLIGATION_RUNBOOK_SHA256 = (
-    "1a7569a9869ab4b05c2fd053721d99f5c2a867a533fb0dfd03cc7058a8c5ee49"
+    "c4daddbe2a12f3c8c9360d25d635755a77ca17e72d9291cfa0ead1525f654e42"
 )
 
 
@@ -5300,6 +5300,343 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM069", [item["code"] for item in report["findings"]])
+
+
+class PromiseEvaluationGateTests(unittest.TestCase):
+    def copy_evaluation_fixture(self, target):
+        coverage = json.loads(
+            (ROOT / promise_machine_module.COVERAGE_PATH).read_text(encoding="utf-8")
+        )
+        selected = [
+            row
+            for row in coverage["rows"]
+            if row.get("evaluation", {}).get("gate")
+            == promise_machine_module.EVALUATION_GATE
+        ]
+        paths = {
+            promise_machine_module.COVERAGE_PATH,
+            promise_machine_module.EVALUATION_TEMPLATE_PATH,
+            promise_machine_module.EVALUATION_ANSWERS_PATH,
+            promise_machine_module.OVERLAY_PATH,
+        }
+        for row in selected:
+            paths.add(Path(row["skill_path"]))
+            paths.add(Path(row["evaluation"]["corpus"]))
+            paths.add(Path(row["evaluation"]["run"]))
+        for relative_path in paths:
+            destination = target / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / relative_path, destination)
+        return selected
+
+    def run_fixture(self, mutate=None):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        target = Path(directory.name)
+        self.copy_evaluation_fixture(target)
+        if mutate is not None:
+            mutate(target)
+        completed = run_cli(
+            "check", "--root", target, "--only", "evaluation", "--json"
+        )
+        return completed, json.loads(completed.stdout)
+
+    def rewrite_json(self, path, mutate):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        mutate(document)
+        path.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    def rebind_evaluation_tree(self, target):
+        coverage = json.loads(
+            (target / promise_machine_module.COVERAGE_PATH).read_text(
+                encoding="utf-8"
+            )
+        )
+        selected = [
+            row
+            for row in coverage["rows"]
+            if row.get("evaluation", {}).get("gate")
+            == promise_machine_module.EVALUATION_GATE
+        ]
+        paths = {
+            promise_machine_module.COVERAGE_PATH.as_posix(),
+            promise_machine_module.EVALUATION_TEMPLATE_PATH.as_posix(),
+        }
+        for row in selected:
+            paths.add(row["skill_path"])
+            paths.add(row["evaluation"]["corpus"])
+            if row["group"] == "vendored":
+                paths.add(promise_machine_module.OVERLAY_PATH.as_posix())
+        inventory = [
+            {
+                "path": path,
+                "sha256": hashlib.sha256((target / path).read_bytes()).hexdigest(),
+            }
+            for path in sorted(paths)
+        ]
+        run_path = target / selected[0]["evaluation"]["run"]
+
+        def change(document):
+            document["prompt_template_sha256"] = hashlib.sha256(
+                (target / promise_machine_module.EVALUATION_TEMPLATE_PATH).read_bytes()
+            ).hexdigest()
+            document["tree_sha256"] = promise_machine_module.evaluation_digest(
+                inventory
+            )
+
+        self.rewrite_json(run_path, change)
+
+    def test_evaluation_is_a_selectable_repository_check(self):
+        self.assertEqual(
+            promise_machine_module.parse_only("evaluation"),
+            {"evaluation"},
+        )
+
+    def test_repository_evaluation_record_is_complete(self):
+        completed = run_cli("check", "--only", "evaluation", "--json")
+        self.assertEqual(
+            completed.returncode,
+            0,
+            completed.stdout + completed.stderr,
+        )
+        report = json.loads(completed.stdout)
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["counts"]["evaluation_cases"], 11)
+        self.assertEqual(report["counts"]["evaluation_outcomes"], 55)
+
+    def test_copied_evaluation_record_is_self_contained(self):
+        completed, report = self.run_fixture()
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertTrue(report["ok"])
+
+    def test_missing_gate_row_and_not_run_model_refuse(self):
+        def mutate(target):
+            coverage = target / promise_machine_module.COVERAGE_PATH
+
+            def change(document):
+                selected = [
+                    row
+                    for row in document["rows"]
+                    if row.get("evaluation", {}).get("gate")
+                    == promise_machine_module.EVALUATION_GATE
+                ]
+                selected[0]["evaluation"].pop("gate")
+                selected[1]["evaluation"]["model"] = "not-run"
+
+            self.rewrite_json(coverage, change)
+
+        completed, report = self.run_fixture(mutate)
+        self.assertEqual(completed.returncode, 1)
+        codes = [item["code"] for item in report["findings"]]
+        self.assertIn("PM107", codes)
+        self.assertIn("PM108", codes)
+
+    def test_missing_extra_partial_and_not_run_answers_refuse(self):
+        mutations = (
+            lambda answers: answers.pop(sorted(answers)[0]),
+            lambda answers: answers.__setitem__("extra-promise", "{}"),
+            lambda answers: answers.__setitem__(sorted(answers)[0], '{"E01":"refuse"}'),
+            lambda answers: answers.__setitem__(sorted(answers)[0], "not-run"),
+            lambda answers: answers.__setitem__(
+                sorted(answers)[0], "[" * 5_000 + "0" + "]" * 5_000
+            ),
+        )
+        for index, mutation in enumerate(mutations):
+            with self.subTest(index=index):
+                def mutate(target, mutation=mutation):
+                    path = target / promise_machine_module.EVALUATION_ANSWERS_PATH
+                    self.rewrite_json(path, lambda document: mutation(document["answers"]))
+
+                completed, report = self.run_fixture(mutate)
+                self.assertEqual(completed.returncode, 1)
+                self.assertIn("PM109", [item["code"] for item in report["findings"]])
+
+    def test_open_evaluation_corpus_refuses(self):
+        def mutate(target):
+            coverage = json.loads(
+                (target / promise_machine_module.COVERAGE_PATH).read_text(
+                    encoding="utf-8"
+                )
+            )
+            selected = next(
+                row
+                for row in coverage["rows"]
+                if row.get("evaluation", {}).get("gate")
+                == promise_machine_module.EVALUATION_GATE
+            )
+            path = target / selected["evaluation"]["corpus"]
+            self.rewrite_json(
+                path,
+                lambda document: document.__setitem__(
+                    "model_answers", {"leaked": True}
+                ),
+            )
+
+        completed, report = self.run_fixture(mutate)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM107", [item["code"] for item in report["findings"]])
+
+    def test_invalid_prompt_template_refuses_even_when_hashes_are_rebound(self):
+        def mutate(target):
+            path = target / promise_machine_module.EVALUATION_TEMPLATE_PATH
+            path.write_text(
+                path.read_text(encoding="utf-8").replace("{request}", "request"),
+                encoding="utf-8",
+            )
+            self.rebind_evaluation_tree(target)
+
+        completed, report = self.run_fixture(mutate)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM107", [item["code"] for item in report["findings"]])
+
+    def test_non_scalar_evaluation_dispositions_refuse(self):
+        def corpus_mutation(target):
+            coverage = json.loads(
+                (target / promise_machine_module.COVERAGE_PATH).read_text(
+                    encoding="utf-8"
+                )
+            )
+            selected = next(
+                row
+                for row in coverage["rows"]
+                if row.get("evaluation", {}).get("gate")
+                == promise_machine_module.EVALUATION_GATE
+            )
+            path = target / selected["evaluation"]["corpus"]
+            self.rewrite_json(
+                path,
+                lambda document: document["cases"][selected["promise_id"]]["P"].__setitem__(
+                    "disposition", []
+                ),
+            )
+
+        def answer_mutation(target):
+            path = target / promise_machine_module.EVALUATION_ANSWERS_PATH
+
+            def change(document):
+                first = sorted(document["answers"])[0]
+                answer = json.loads(document["answers"][first])
+                answer["E01"] = []
+                document["answers"][first] = json.dumps(answer)
+
+            self.rewrite_json(path, change)
+
+        def skill_path_mutation(target):
+            path = target / promise_machine_module.COVERAGE_PATH
+
+            def change(document):
+                selected = next(
+                    row
+                    for row in document["rows"]
+                    if row.get("evaluation", {}).get("gate")
+                    == promise_machine_module.EVALUATION_GATE
+                )
+                selected["skill_path"] = []
+
+            self.rewrite_json(path, change)
+
+        for mutate, code in (
+            (corpus_mutation, "PM107"),
+            (answer_mutation, "PM109"),
+            (skill_path_mutation, "PM107"),
+        ):
+            with self.subTest(mutate=mutate.__name__):
+                completed, report = self.run_fixture(mutate)
+                self.assertEqual(completed.returncode, 1)
+                self.assertIn(code, [item["code"] for item in report["findings"]])
+
+    def test_edited_answer_or_run_record_refuses(self):
+        mutations = (
+            lambda target: self.rewrite_json(
+                target / promise_machine_module.EVALUATION_ANSWERS_PATH,
+                lambda document: document["answers"].__setitem__(
+                    sorted(document["answers"])[0],
+                    document["answers"][sorted(document["answers"])[0]].replace(
+                        '"accept"', '"refuse"', 1
+                    ),
+                ),
+            ),
+            lambda target: self.rewrite_json(
+                target
+                / "docs/promise-machine/obligation-gates/evaluation-run.json",
+                lambda document: document["counts"].__setitem__("passed", 54),
+            ),
+        )
+        for index, mutate in enumerate(mutations):
+            with self.subTest(index=index):
+                completed, report = self.run_fixture(mutate)
+                self.assertEqual(completed.returncode, 1)
+                self.assertIn("PM109", [item["code"] for item in report["findings"]])
+
+    def test_model_and_date_must_be_complete_and_real(self):
+        mutations = (
+            lambda document: document.__setitem__("model", "qwen"),
+            lambda document: document.__setitem__("model", 7),
+            lambda document: document.__setitem__("date", "2026-02-30"),
+        )
+        for index, mutation in enumerate(mutations):
+            with self.subTest(index=index):
+                def mutate(target, mutation=mutation):
+                    self.rewrite_json(
+                        target
+                        / "docs/promise-machine/obligation-gates/evaluation-run.json",
+                        mutation,
+                    )
+
+                completed, report = self.run_fixture(mutate)
+                self.assertEqual(completed.returncode, 1)
+                self.assertIn("PM108", [item["code"] for item in report["findings"]])
+
+    def test_grade_cannot_claim_or_replace_domain_evidence(self):
+        def coverage_claim(target):
+            path = target / promise_machine_module.COVERAGE_PATH
+
+            def change(document):
+                selected = next(
+                    row
+                    for row in document["rows"]
+                    if row.get("evaluation", {}).get("gate")
+                    == promise_machine_module.EVALUATION_GATE
+                )
+                selected["evaluation"]["domain_evidence"] = "supplied-by-grade"
+
+            self.rewrite_json(path, change)
+
+        def run_claim(target):
+            self.rewrite_json(
+                target
+                / "docs/promise-machine/obligation-gates/evaluation-run.json",
+                lambda document: document.__setitem__(
+                    "domain_evidence", "claimed-by-grade"
+                ),
+            )
+
+        for mutate in (coverage_claim, run_claim):
+            with self.subTest(mutate=mutate.__name__):
+                completed, report = self.run_fixture(mutate)
+                self.assertEqual(completed.returncode, 1)
+                self.assertIn("PM110", [item["code"] for item in report["findings"]])
+
+    def test_missing_or_symlinked_record_refuses(self):
+        def missing(target):
+            (target / promise_machine_module.EVALUATION_ANSWERS_PATH).unlink()
+
+        def linked(target):
+            path = target / promise_machine_module.EVALUATION_ANSWERS_PATH
+            outside = target.parent / f"{target.name}-outside.json"
+            outside.write_bytes(path.read_bytes())
+            self.addCleanup(outside.unlink, missing_ok=True)
+            path.unlink()
+            path.symlink_to(outside)
+
+        for mutate in (missing, linked):
+            with self.subTest(mutate=mutate.__name__):
+                completed, report = self.run_fixture(mutate)
+                self.assertEqual(completed.returncode, 1)
+                self.assertIn("PM109", [item["code"] for item in report["findings"]])
 
 
 if __name__ == "__main__":

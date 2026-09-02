@@ -109,6 +109,45 @@ The offline core checks this file without reading Git history or running a
 command. Changing the entry anchor is therefore an explicit reviewed change,
 not a side effect of checking the working tree.
 
+Eleven prompt or vendored promises use one further closed gate,
+`labelled-case-classification`. Their coverage rows name a full model identity,
+one prompt request, one source corpus, one run record, and the literal boundary
+`required-separately`. The two corpora own only the request and five labelled
+P/M/S/O/R scenarios for each promise. They do not carry a model result.
+
+`tests/promise_evaluation_driver.py` stops at the model boundary. `emit` reads
+only bounded repository inputs, writes one isolated prompt per promise, and
+writes the manifest last. The manifest binds the prompt template, corpus,
+complete input tree, exact case set, and every prompt byte. An operator invokes
+one fresh model context per prompt and preserves each raw response as a string.
+`tally` accepts only the exact eleven answers and the closed
+`accept`/`refuse`/`recover` vocabulary, then records the full model identity,
+date, input digests, raw-answer byte identities, and outcome counts. `verify`
+recomputes that record. None of the three commands opens a socket, reads a
+credential, invokes a model, or starts a child process.
+
+The driver accepts only the request-only schema, the exact promise set assigned
+to each corpus, and one full model and run identity across the eleven coverage
+rows. Each template placeholder appears exactly once. Rendering replaces only
+tokens already present in that template, so braces supplied by a request remain
+data instead of starting a second template pass.
+
+Repository and answer reads walk descriptor-relative paths without following
+links and open the final file in non-blocking mode. They require a stable
+regular-file identity before and after each bounded read. Packet and run-record
+writes use exclusive descriptor-relative creation. A platform without those
+controls refuses instead of weakening the boundary.
+
+The core `evaluation` check independently reads the committed answer sheet and
+run record, recomputes the source-tree and corpus digests, grades all 55
+outcomes, and refuses missing, partial, duplicate, extra, edited, stale,
+symlinked, `not-run`, or malformed evidence under PM107 through PM110. The run
+must say `domain_evidence: not-supplied`. A perfect grade satisfies only the
+labelled-case gate: it is not evidence that Fizz, Fizz Convert, Fizz Sync,
+X-Ray, Solidity Auditor, Hypomnema, Vulgate, Kronos, or Sapheneia performed the
+operation named by its promise. Those transitions still require their native
+records and authority.
+
 ## Alternatives
 
 **Treat normative words as the obligation grammar.** Rejected. Words such as
@@ -134,6 +173,17 @@ same rules.
 shallow or packaged without its object database, and the core is required to
 remain offline and child-process free. The committed entry anchor and explicit
 continuity graph preserve the comparison boundary instead.
+
+**Let the evaluation driver call the model.** Rejected. That would mix network,
+credential, process, provider, and retry policy into the deterministic evidence
+tool. The driver emits and verifies bytes; the operator owns the isolated model
+invocations.
+
+**Use a correct model classification as the owning skill's result.** Rejected.
+The classifier sees authored scenarios, not a campaign, audit, conversion,
+sync, pre-audit, placement review, rewrite comparison, user authority record,
+or active session. The grade can test the promise boundary without supplying
+the evidence the boundary demands.
 
 ## Consequences
 

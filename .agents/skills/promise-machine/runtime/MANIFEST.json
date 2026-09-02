@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1042,
-  "total_bytes": 22636793,
+  "file_count": 1048,
+  "total_bytes": 22721005,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -27,10 +27,12 @@
         "plugins/berean/tests/test_examples.py",
         "plugins/berean/tests/test_promote.py",
         "plugins/hexaemeron/tests/test_hexctl.py",
+        "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
         "plugins/hexaemeron/tests/test_run_observation_binding.py",
         "plugins/lazarus/tests/test_capture.py",
         "plugins/lazarus/tests/test_verifier.py",
         "plugins/lemma/tests/test_markdown.py",
+        "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
         "plugins/synkrisis/tests/test_cohort.py",
         "plugins/synkrisis/tests/test_verify.py",
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
@@ -72,7 +74,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "082a768ab7b17efa2cfd6b56073668ce47766fe3526955e7ea7564dea4ba956d",
+      "sha256": "88f0170a2e1bed6b2e4e204b8ce6026aedd0f3c10143175af915c88875e017e3",
       "source": null
     },
     {
@@ -140,6 +142,18 @@
       "path": "docs/fiat-run-observation-binding-v1.md",
       "sha256": "eb6b6f9431e0b1f12d9d6d30f572b8b08689a730ca4c2df3a68263de8c936e4f",
       "source": "docs/fiat-run-observation-binding-v1.md"
+    },
+    {
+      "bytes": 1911,
+      "path": "docs/promise-machine/obligation-gates/evaluation-answers.json",
+      "sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855",
+      "source": "docs/promise-machine/obligation-gates/evaluation-answers.json"
+    },
+    {
+      "bytes": 3231,
+      "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+      "sha256": "c20acd1daa13444018fb9c58ef3ce22334f34846c58e54ddbb0fa9cfa255b524",
+      "source": "docs/promise-machine/obligation-gates/evaluation-run.json"
     },
     {
       "bytes": 6177,
@@ -3076,6 +3090,12 @@
       "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     },
     {
+      "bytes": 10497,
+      "path": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+      "sha256": "b05b0b5a7dbbfd80c502f09ed3842b82356af5c44199fd2693ee4b2dbfc4d7a4",
+      "source": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json"
+    },
+    {
       "bytes": 230175,
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
@@ -5518,6 +5538,12 @@
       "source": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml"
     },
     {
+      "bytes": 4188,
+      "path": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+      "sha256": "5604380cbc8c4b48a8e426fc9f48caa72a223a9b240d611d63794e7c8af8a8fb",
+      "source": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json"
+    },
+    {
       "bytes": 5019,
       "path": "plugins/synkrisis/AGENTS.md",
       "sha256": "054c8712fd54fe5a24d7a80eec42d07ef0afe1c3e7d4653e32af1100127c3eff",
@@ -6094,9 +6120,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 306801,
+      "bytes": 329751,
       "path": "scripts/promise_machine.py",
-      "sha256": "e83269d2e51b258523a91c6fd8fb160792a67c96653b9bc981280ab42bfb62a6",
+      "sha256": "934bc0eb261106c7286291f9b73e5ef93901d9b63fef7404a7951ea9f06eedb1",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6232,6 +6258,12 @@
       "source": "tests/fixtures/promise-machine/consequences/unknown.json"
     },
     {
+      "bytes": 762,
+      "path": "tests/fixtures/promise-machine/evaluation/prompt-template.txt",
+      "sha256": "bb58f1dc5b6da0c37ae4303415f210d5158344516b51cc24f20bc623909eb5c2",
+      "source": "tests/fixtures/promise-machine/evaluation/prompt-template.txt"
+    },
+    {
       "bytes": 1128,
       "path": "tests/fixtures/promise-machine/exceptions/expired.json",
       "sha256": "66be71f33b3ca273f2b574c5ed7cfebb54fb728f529fb7a29488070468cdaf8d",
@@ -6298,9 +6330,15 @@
       "source": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json"
     },
     {
-      "bytes": 191861,
+      "bytes": 37391,
+      "path": "tests/promise_evaluation_driver.py",
+      "sha256": "385add206ab8ace2ed04857213670f7e427079498d8f6e2c404ddd3db3201fd6",
+      "source": "tests/promise_evaluation_driver.py"
+    },
+    {
+      "bytes": 195143,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "5738527b4832154d59e48fc79260e725d94d2670d0cebc7cb6acb1a4f22d52d6",
+      "sha256": "13d8e72c7d69c7379ac87a3d4ff25d64a38a3e262bb9689472c348959157c3fa",
       "source": "tests/promise_machine_coverage.json"
     },
     {

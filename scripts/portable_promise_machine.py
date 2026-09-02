@@ -37,6 +37,7 @@ ROOT_FILES = (
     Path("scripts/verify_vendored_provenance.py"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
+    Path("tests/promise_evaluation_driver.py"),
     Path("tests/promise_machine_coverage.json"),
     Path("tests/promise_machine_obligations.json"),
     Path("tests/promise_machine_id_history.json"),
@@ -45,6 +46,8 @@ ROOT_FILES = (
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
     Path("docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
+    Path("docs/promise-machine/obligation-gates/evaluation-answers.json"),
+    Path("docs/promise-machine/obligation-gates/evaluation-run.json"),
 )
 
 OBLIGATION_FIXTURE_FILES = (
@@ -63,6 +66,10 @@ OBLIGATION_FIXTURE_FILES = (
     Path(
         "tests/fixtures/promise-machine/obligations/law-required-sections.json"
     ),
+)
+
+EVALUATION_FIXTURE_FILES = (
+    Path("tests/fixtures/promise-machine/evaluation/prompt-template.txt"),
 )
 
 SEMANTIC_FIXTURE_FILES = tuple(
@@ -104,10 +111,14 @@ PORTABLE_TEST_FILES = (
     Path("plugins/berean/tests/test_examples.py"),
     Path("plugins/berean/tests/test_promote.py"),
     Path("plugins/hexaemeron/tests/test_hexctl.py"),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json"
+    ),
     Path("plugins/hexaemeron/tests/test_run_observation_binding.py"),
     Path("plugins/lazarus/tests/test_capture.py"),
     Path("plugins/lazarus/tests/test_verifier.py"),
     Path("plugins/lemma/tests/test_markdown.py"),
+    Path("plugins/sapheneia/tests/fixtures/promise-machine/cases.json"),
     Path("plugins/synkrisis/tests/test_cohort.py"),
     Path("plugins/synkrisis/tests/test_verify.py"),
     Path(
@@ -230,6 +241,7 @@ def source_files(root: Path) -> list[Path]:
     """Return the exact canonical files copied into the portable runtime."""
     selected = set(ROOT_FILES)
     selected.update(OBLIGATION_FIXTURE_FILES)
+    selected.update(EVALUATION_FIXTURE_FILES)
     selected.update(SEMANTIC_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
     selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))

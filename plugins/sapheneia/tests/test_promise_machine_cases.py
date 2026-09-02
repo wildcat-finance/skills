@@ -15,8 +15,8 @@ class SapheneiaPromiseCaseTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         document = json.loads(CASES.read_text(encoding="utf-8"))
-        if document["schema"] != "promise-machine-labelled-cases/v1":
-            raise AssertionError("unsupported labelled-case schema")
+        if document["schema"] != "promise-machine-evaluation-cases/v1":
+            raise AssertionError("unsupported evaluation-case schema")
         cls.cases = document["cases"]
         if set(cls.cases) != EXPECTED:
             raise AssertionError("labelled-case promise set does not match Sapheneia")
@@ -24,12 +24,8 @@ class SapheneiaPromiseCaseTests(unittest.TestCase):
     def assert_category(self, code, disposition):
         for promise_id, record in self.cases.items():
             with self.subTest(promise_id=promise_id, code=code):
-                self.assertEqual(set(record), {"evaluation", "P", "M", "S", "O", "R"})
-                self.assertEqual(
-                    set(record["evaluation"]),
-                    {"model", "prompt", "corpus", "disposition"},
-                )
-                self.assertTrue(all(value.strip() for value in record["evaluation"].values()))
+                self.assertEqual(set(record), {"request", "P", "M", "S", "O", "R"})
+                self.assertTrue(record["request"].strip())
                 case = record[code]
                 self.assertEqual(case["disposition"], disposition)
                 self.assertTrue(case["scenario"].strip())

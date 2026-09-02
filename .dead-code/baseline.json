@@ -2822,10 +2822,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:5d5acb2e5bbafb17f179f38dc25176cbf900c28f987255ddb89277f259cf9ead",
+      "id": "sha256:18d67fe789ced4dca537532e96214ddcec088c2f74419b52e55e9b9752da76a1",
       "path": "scripts/promise_machine.py",
       "suppressed": false,
-      "symbol": "line:3530:constant-true"
+      "symbol": "line:3567:constant-true"
     },
     {
       "analyser_id": "python",
@@ -2934,6 +2934,20 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:d3e4a7f8b322ac5062fdfcd86e05e19d7d2db24f329fbc8dd16abb3d9b58834c",
+      "path": "tests/promise_evaluation_driver.py",
+      "suppressed": false,
+      "symbol": "annotations@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3c5bc23c7f833af6a0f21653b0f2e340af828ce748bb3807143676212c3ef1c2",
+      "path": "tests/promise_evaluation_driver.py",
+      "suppressed": false,
+      "symbol": "line:210:constant-true"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:00502dbf12bbd20a4ede790b5d6c9cbce6aec6d01d503b501261f41bac574dc5",
       "path": "tests/router_selection_driver.py",
       "suppressed": false,
@@ -2964,6 +2978,13 @@
       "analyser_id": "python",
       "id": "sha256:5227e46494fc09a846118e22d3ac7afeca335cae92748927dea349c9950eee25",
       "path": "tests/test_fiat_checkpoint_decision_record.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e296d55163237aed16e9fa3fec462faea087d59d22a18ea2bb89fe08776863b6",
+      "path": "tests/test_promise_evaluation_driver.py",
       "suppressed": false,
       "symbol": "annotations@3"
     },
@@ -3090,10 +3111,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "e092c11f70f6b924f7dffa77e9239b6d3365e407",
-    "git_tree": "8f8191c882fffa29d521677dfd700b8fdef7bd4a"
+    "commit": "4015728cb18b8e227b16907cf35b80b76d0170e3",
+    "git_tree": "9c6056feb37c91ccf11e438a00e420da0095c6c2"
   },
   "universe": {
-    "id": "sha256:98865d43a4d0df4da535e92c921c97fbd6485d17362e5384d789a362fc2f0cfc"
+    "id": "sha256:d6ce699e6f9def49f3edd67b44710901c242f01899ec63a8151f60ce648c29b1"
   }
 }

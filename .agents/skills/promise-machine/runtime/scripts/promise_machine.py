@@ -103,6 +103,38 @@ HISTORY_SCHEMA = "promise-machine-id-history/v1"
 HISTORY_ACTIONS = {"unchanged", "introduced", "retired", "renamed", "split"}
 COVERAGE_PATH = Path("tests/promise_machine_coverage.json")
 COVERAGE_SCHEMA = "promise-machine-coverage/v1"
+EVALUATION_TEMPLATE_PATH = Path(
+    "tests/fixtures/promise-machine/evaluation/prompt-template.txt"
+)
+EVALUATION_ANSWERS_PATH = Path(
+    "docs/promise-machine/obligation-gates/evaluation-answers.json"
+)
+EVALUATION_GATE = "labelled-case-classification"
+EVALUATION_DOMAIN_BOUNDARY = "required-separately"
+EVALUATION_RUN_DOMAIN = "not-supplied"
+EVALUATION_CASE_SCHEMA = "promise-machine-evaluation-cases/v1"
+EVALUATION_ANSWERS_SCHEMA = "promise-machine-evaluation-answers/v1"
+EVALUATION_RUN_SCHEMA = "promise-machine-evaluation-run/v1"
+EVALUATION_EXPECTED_CASES = 11
+EVALUATION_CASE_CODES = ("P", "M", "S", "O", "R")
+EVALUATION_PROMPT_CASE_ORDER = ("O", "P", "R", "M", "S")
+EVALUATION_SCENARIO_IDS = tuple(
+    f"E{number:02d}" for number in range(1, len(EVALUATION_CASE_CODES) + 1)
+)
+EVALUATION_TEMPLATE_FIELDS = (
+    "{promise_id}",
+    "{skill_path}",
+    "{contract}",
+    "{request}",
+    "{scenarios}",
+)
+EVALUATION_DISPOSITIONS = frozenset({"accept", "refuse", "recover"})
+EVALUATION_MODEL_ID = re.compile(
+    r"[a-z][a-z0-9._-]*/[^@\s]+@sha256:[0-9a-f]{64}", re.IGNORECASE
+)
+MAX_EVALUATION_ANSWERS_BYTES = 1024 * 1024
+MAX_EVALUATION_ANSWER_BYTES = 16 * 1024
+MAX_EVALUATION_RUN_BYTES = 512 * 1024
 OBLIGATION_PATH = Path("tests/promise_machine_obligations.json")
 OBLIGATION_SCHEMA = "promise-machine-obligations/v1"
 OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-obligation-specimen/v1"
@@ -754,6 +786,11 @@ FORBIDDEN_OS_IMPORTS = {
 }
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
+EVALUATION_GATE_KEYS = EVALUATION_KEYS | {
+    "gate",
+    "run",
+    "domain_evidence",
+}
 RUNTIME_BINDING_KEYS = {
     "promise_id",
     "subject",
@@ -6594,6 +6631,586 @@ def check_runtime(root: Path, inventory: Inventory):
     return len(records), findings
 
 
+def evaluation_finding(code, path, message, *, promise_id=None):
+    details = {
+        "PM107": (
+            "evaluation-catalogue",
+            "restore exactly eleven closed labelled-case rows and their source-bound cases",
+            "accept the labelled-case-classification gate",
+        ),
+        "PM108": (
+            "evaluation-state",
+            "run every isolated case with one full model identity and record the result",
+            "accept an absent, partial or not-run model evaluation",
+        ),
+        "PM109": (
+            "evaluation-binding",
+            "restore the confined raw answers and recompute the digest-bound run record",
+            "accept a stale, edited or incomplete evaluation record",
+        ),
+        "PM110": (
+            "evidence-boundary",
+            "restore required-separately and not-supplied, then run the domain operation independently",
+            "substitute a model grade for domain-operation evidence",
+        ),
+    }
+    fault, recovery, blocked = details[code]
+    return Finding(
+        code,
+        fault,
+        path,
+        message,
+        recovery,
+        promise_id=(
+            promise_id
+            if isinstance(promise_id, str) and PROMISE_ID.fullmatch(promise_id)
+            else None
+        ),
+        consequence=2,
+        blocked_transition=blocked,
+        recovery=recovery,
+    )
+
+
+def read_evaluation_bytes(root: Path, raw_path, noun: str, limit: int, code="PM109"):
+    if not closed_non_empty_scalar(raw_path):
+        return None, [
+            evaluation_finding(code, COVERAGE_PATH.as_posix(), f"{noun} path is absent")
+        ]
+    candidate = Path(raw_path)
+    if (
+        candidate.is_absolute()
+        or "\\" in raw_path
+        or any(ord(character) < 32 for character in raw_path)
+        or any(part in {"", ".", ".."} for part in raw_path.split("/"))
+    ):
+        return None, [
+            evaluation_finding(
+                code,
+                str(raw_path),
+                f"{noun} path is not a safe repository-relative path",
+            )
+        ]
+    path = root / candidate
+    if path.is_symlink() or not confined(path, root) or not path.is_file():
+        return None, [
+            evaluation_finding(
+                code,
+                candidate.as_posix(),
+                f"{noun} is absent, non-regular, a symlink or outside the repository",
+            )
+        ]
+    try:
+        payload = bounded_read_bytes(path, root, limit)
+    except OSError as exc:
+        return None, [
+            evaluation_finding(
+                code,
+                candidate.as_posix(),
+                f"{noun} could not be read safely: {exc}",
+            )
+        ]
+    if len(payload) > limit:
+        return None, [
+            evaluation_finding(
+                code,
+                candidate.as_posix(),
+                f"{noun} is larger than the {limit}-byte limit",
+            )
+        ]
+    return payload, []
+
+
+def read_evaluation_json(root: Path, raw_path, noun: str, limit: int, code="PM109"):
+    payload, findings = read_evaluation_bytes(root, raw_path, noun, limit, code)
+    if payload is None:
+        return None, None, findings
+    document, error = parse_json_object_bytes(payload, noun)
+    if error is not None:
+        return None, payload, [
+            evaluation_finding(code, str(raw_path), error)
+        ]
+    return document, payload, []
+
+
+def evaluation_digest(value) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def evaluation_canonical(value) -> bytes:
+    return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def check_evaluation(root: Path):
+    findings: list[Finding] = []
+    coverage, coverage_payload, read_findings = read_evaluation_json(
+        root,
+        COVERAGE_PATH.as_posix(),
+        "evaluation coverage catalogue",
+        MAX_COVERAGE_BYTES,
+        "PM107",
+    )
+    findings.extend(read_findings)
+    if coverage is None:
+        return 0, 0, findings
+    rows = coverage.get("rows")
+    if not isinstance(rows, list):
+        return 0, 0, findings + [
+            evaluation_finding(
+                "PM107",
+                COVERAGE_PATH.as_posix(),
+                "evaluation coverage has no rows array",
+            )
+        ]
+
+    selected = []
+    for index, row in enumerate(rows):
+        evaluation = row.get("evaluation") if isinstance(row, dict) else None
+        if isinstance(evaluation, dict) and evaluation.get("model") == "not-run":
+            findings.append(
+                evaluation_finding(
+                    "PM108",
+                    f"{COVERAGE_PATH.as_posix()}#rows[{index}].evaluation.model",
+                    "evaluation is explicitly not-run",
+                    promise_id=row.get("promise_id"),
+                )
+            )
+        if isinstance(evaluation, dict) and evaluation.get("gate") == EVALUATION_GATE:
+            selected.append((index, row))
+
+    if len(selected) != EVALUATION_EXPECTED_CASES:
+        findings.append(
+            evaluation_finding(
+                "PM107",
+                COVERAGE_PATH.as_posix(),
+                f"coverage discovers {len(selected)} labelled-case evaluations; expected {EVALUATION_EXPECTED_CASES}",
+            )
+        )
+
+    valid_rows = {}
+    models = set()
+    run_paths = set()
+    for index, row in selected:
+        row_path = f"{COVERAGE_PATH.as_posix()}#rows[{index}]"
+        promise_id = row.get("promise_id")
+        evaluation = row.get("evaluation")
+        if (
+            not isinstance(promise_id, str)
+            or PROMISE_ID.fullmatch(promise_id) is None
+            or promise_id in valid_rows
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    row_path,
+                    "evaluation promise id is missing, malformed or repeated",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if (
+            not isinstance(row.get("group"), str)
+            or row["group"] not in {"prompt", "vendored"}
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    row_path,
+                    "labelled-case evaluation belongs to neither prompt nor vendored coverage",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if not closed_non_empty_scalar(row.get("skill_path")):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    f"{row_path}.skill_path",
+                    "labelled-case evaluation has no closed canonical skill path",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if (
+            not isinstance(evaluation, dict)
+            or set(evaluation) != EVALUATION_GATE_KEYS
+            or any(
+                not closed_non_empty_scalar(evaluation.get(key))
+                for key in EVALUATION_GATE_KEYS
+            )
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    f"{row_path}.evaluation",
+                    "evaluation row is not the closed gate, run, model, corpus and boundary record",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if (
+            evaluation["status"] != "recorded"
+            or EVALUATION_MODEL_ID.fullmatch(evaluation["model"]) is None
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM108",
+                    f"{row_path}.evaluation",
+                    "evaluation status is not recorded or its full model identity is malformed",
+                    promise_id=promise_id,
+                )
+            )
+        if evaluation["domain_evidence"] != EVALUATION_DOMAIN_BOUNDARY:
+            findings.append(
+                evaluation_finding(
+                    "PM110",
+                    f"{row_path}.evaluation.domain_evidence",
+                    "evaluation row does not require domain evidence separately",
+                    promise_id=promise_id,
+                )
+            )
+        valid_rows[promise_id] = row
+        models.add(evaluation["model"])
+        run_paths.add(evaluation["run"])
+
+    if len(models) != 1 or len(run_paths) != 1:
+        findings.append(
+            evaluation_finding(
+                "PM109",
+                COVERAGE_PATH.as_posix(),
+                "labelled-case rows do not bind one model identity and one run record",
+            )
+        )
+    if len(valid_rows) != EVALUATION_EXPECTED_CASES:
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    source_payloads = {COVERAGE_PATH.as_posix(): coverage_payload}
+    expected_source_paths = {
+        COVERAGE_PATH.as_posix(),
+        EVALUATION_TEMPLATE_PATH.as_posix(),
+    }
+    corpus_paths = set()
+    for promise_id, row in valid_rows.items():
+        evaluation = row["evaluation"]
+        corpus_paths.add(evaluation["corpus"])
+        source_paths = [row.get("skill_path"), evaluation["corpus"]]
+        if row.get("group") == "vendored":
+            source_paths.append(OVERLAY_PATH.as_posix())
+        expected_source_paths.update(source_paths)
+        for source_path in source_paths:
+            if source_path in source_payloads:
+                continue
+            payload, errors = read_evaluation_bytes(
+                root,
+                source_path,
+                f"evaluation input for {promise_id}",
+                MAX_RUNTIME_SOURCE_BYTES,
+                "PM109",
+            )
+            findings.extend(errors)
+            if payload is not None:
+                source_payloads[source_path] = payload
+    template_payload, template_findings = read_evaluation_bytes(
+        root,
+        EVALUATION_TEMPLATE_PATH.as_posix(),
+        "evaluation prompt template",
+        MAX_RUNTIME_SOURCE_BYTES,
+        "PM109",
+    )
+    findings.extend(template_findings)
+    if template_payload is not None:
+        source_payloads[EVALUATION_TEMPLATE_PATH.as_posix()] = template_payload
+        try:
+            template_text = template_payload.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    EVALUATION_TEMPLATE_PATH.as_posix(),
+                    f"evaluation prompt template is not UTF-8: {exc}",
+                )
+            )
+        else:
+            if any(
+                template_text.count(field) != 1
+                for field in EVALUATION_TEMPLATE_FIELDS
+            ):
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        EVALUATION_TEMPLATE_PATH.as_posix(),
+                        "evaluation prompt template does not carry each required field exactly once",
+                    )
+                )
+    if set(source_payloads) != expected_source_paths:
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    corpus_documents = {}
+    expected_answers = {}
+    for corpus_path in sorted(corpus_paths):
+        payload = source_payloads.get(corpus_path)
+        document = None
+        if payload is not None:
+            document, error = parse_json_object_bytes(
+                payload, f"evaluation corpus {corpus_path}"
+            )
+            if error is not None:
+                findings.append(evaluation_finding("PM107", corpus_path, error))
+        if document is None:
+            continue
+        corpus_documents[corpus_path] = document
+        assigned = {
+            promise_id
+            for promise_id, row in valid_rows.items()
+            if row["evaluation"]["corpus"] == corpus_path
+        }
+        cases = document.get("cases")
+        if (
+            set(document) != {"schema", "cases"}
+            or document.get("schema") != EVALUATION_CASE_SCHEMA
+            or not isinstance(cases, dict)
+            or set(cases) != assigned
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    corpus_path,
+                    "evaluation corpus schema or exact assigned promise set is wrong",
+                )
+            )
+            continue
+        for promise_id in sorted(assigned):
+            record = cases[promise_id]
+            if (
+                not isinstance(record, dict)
+                or set(record) != set(EVALUATION_CASE_CODES) | {"request"}
+                or record.get("request") != valid_rows[promise_id]["evaluation"]["prompt"]
+            ):
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        f"{corpus_path}#cases.{promise_id}",
+                        "evaluation case has an open shape or disagrees with its coverage request",
+                        promise_id=promise_id,
+                    )
+                )
+                continue
+            expected = {}
+            malformed = False
+            for scenario_id, code in zip(
+                EVALUATION_SCENARIO_IDS, EVALUATION_PROMPT_CASE_ORDER
+            ):
+                case = record.get(code)
+                if (
+                    not isinstance(case, dict)
+                    or set(case) != {"disposition", "scenario", "boundary"}
+                    or not isinstance(case.get("disposition"), str)
+                    or case["disposition"] not in EVALUATION_DISPOSITIONS
+                    or not closed_non_empty_scalar(case.get("scenario"))
+                    or not closed_non_empty_scalar(case.get("boundary"))
+                ):
+                    malformed = True
+                    break
+                expected[scenario_id] = case["disposition"]
+            if malformed:
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        f"{corpus_path}#cases.{promise_id}",
+                        "evaluation case has a missing or malformed P/M/S/O/R scenario",
+                        promise_id=promise_id,
+                    )
+                )
+            else:
+                expected_answers[promise_id] = expected
+
+    if set(expected_answers) != set(valid_rows):
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    inventory = [
+        {
+            "path": path,
+            "sha256": hashlib.sha256(source_payloads[path]).hexdigest(),
+        }
+        for path in sorted(source_payloads)
+    ]
+    tree_sha256 = evaluation_digest(inventory)
+    corpus_inventory = [
+        {
+            "path": path,
+            "sha256": hashlib.sha256(source_payloads[path]).hexdigest(),
+        }
+        for path in sorted(corpus_paths)
+    ]
+    corpus_sha256 = evaluation_digest(corpus_inventory)
+    prompt_template_sha256 = hashlib.sha256(template_payload).hexdigest()
+
+    answers_document, _, answer_findings = read_evaluation_json(
+        root,
+        EVALUATION_ANSWERS_PATH.as_posix(),
+        "evaluation raw answer sheet",
+        MAX_EVALUATION_ANSWERS_BYTES,
+        "PM109",
+    )
+    findings.extend(answer_findings)
+    raw_answers = {}
+    if answers_document is not None:
+        answers = answers_document.get("answers")
+        if (
+            set(answers_document) != {"contract", "answers"}
+            or answers_document.get("contract") != EVALUATION_ANSWERS_SCHEMA
+            or not isinstance(answers, dict)
+            or set(answers) != set(valid_rows)
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM109",
+                    EVALUATION_ANSWERS_PATH.as_posix(),
+                    "raw answer sheet has an open shape or the wrong exact case set",
+                )
+            )
+        else:
+            for promise_id in sorted(valid_rows):
+                raw = answers[promise_id]
+                encoded = raw.encode("utf-8") if isinstance(raw, str) else b""
+                parsed, error = parse_json_object_bytes(
+                    encoded, f"raw answer for {promise_id}"
+                )
+                if (
+                    not isinstance(raw, str)
+                    or not raw.strip()
+                    or raw.strip().lower() == "not-run"
+                    or len(encoded) > MAX_EVALUATION_ANSWER_BYTES
+                    or error is not None
+                    or set(parsed or {}) != set(EVALUATION_SCENARIO_IDS)
+                    or any(
+                        not isinstance(value, str)
+                        or value not in EVALUATION_DISPOSITIONS
+                        for value in (parsed or {}).values()
+                    )
+                ):
+                    findings.append(
+                        evaluation_finding(
+                            "PM109",
+                            f"{EVALUATION_ANSWERS_PATH.as_posix()}#answers.{promise_id}",
+                            "raw answer is absent, partial, duplicated, oversized, not-run or uses an open disposition",
+                            promise_id=promise_id,
+                        )
+                    )
+                else:
+                    raw_answers[promise_id] = (raw, parsed)
+
+    run_path = next(iter(run_paths)) if len(run_paths) == 1 else ""
+    run_document, run_payload, run_findings = read_evaluation_json(
+        root,
+        run_path,
+        "evaluation run record",
+        MAX_EVALUATION_RUN_BYTES,
+        "PM109",
+    )
+    findings.extend(run_findings)
+    if run_document is None or set(raw_answers) != set(valid_rows):
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    if run_document.get("domain_evidence") != EVALUATION_RUN_DOMAIN:
+        findings.append(
+            evaluation_finding(
+                "PM110",
+                f"{run_path}#domain_evidence",
+                "evaluation run claims or implies domain-operation evidence",
+            )
+        )
+    model = run_document.get("model")
+    date = run_document.get("date")
+    valid_date = False
+    if isinstance(date, str):
+        try:
+            valid_date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d") == date
+        except ValueError:
+            pass
+    if (
+        not isinstance(model, str)
+        or EVALUATION_MODEL_ID.fullmatch(model) is None
+        or model not in models
+        or not valid_date
+    ):
+        findings.append(
+            evaluation_finding(
+                "PM108",
+                run_path,
+                "run record has no matching full model identity or real YYYY-MM-DD date",
+            )
+        )
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    answer_records = []
+    failures = []
+    passed = 0
+    for promise_id in sorted(valid_rows):
+        raw, parsed = raw_answers[promise_id]
+        case_passed = 0
+        for scenario_id in EVALUATION_SCENARIO_IDS:
+            if parsed[scenario_id] == expected_answers[promise_id][scenario_id]:
+                case_passed += 1
+            else:
+                failures.append(
+                    {
+                        "case": promise_id,
+                        "scenario": scenario_id,
+                        "selected": parsed[scenario_id],
+                    }
+                )
+        passed += case_passed
+        encoded = raw.encode("utf-8")
+        answer_records.append(
+            {
+                "case": promise_id,
+                "sha256": hashlib.sha256(encoded).hexdigest(),
+                "bytes": len(encoded),
+                "passed": case_passed,
+                "failed": len(EVALUATION_SCENARIO_IDS) - case_passed,
+            }
+        )
+    expected_run = {
+        "contract": EVALUATION_RUN_SCHEMA,
+        "model": model,
+        "date": date,
+        "prompt_template_sha256": prompt_template_sha256,
+        "corpus_sha256": corpus_sha256,
+        "tree_sha256": tree_sha256,
+        "cases": sorted(valid_rows),
+        "answers": answer_records,
+        "counts": {
+            "answers": len(answer_records),
+            "cases": len(valid_rows),
+            "outcomes": len(valid_rows) * len(EVALUATION_SCENARIO_IDS),
+            "passed": passed,
+            "failed": len(failures),
+        },
+        "failures": failures,
+        "domain_evidence": EVALUATION_RUN_DOMAIN,
+    }
+    if run_document != expected_run or run_payload != evaluation_canonical(expected_run):
+        findings.append(
+            evaluation_finding(
+                "PM109",
+                run_path,
+                "run record does not match current inputs, raw answer identities and recomputed counts",
+            )
+        )
+    elif failures:
+        findings.append(
+            evaluation_finding(
+                "PM108",
+                run_path,
+                f"model evaluation has {len(failures)} failed labelled outcomes",
+            )
+        )
+    return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+
 def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
     findings: list[Finding] = []
     expected_records = promise_records(root, inventory)
@@ -6935,12 +7552,13 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             evaluation = row.get("evaluation")
             if (
                 not isinstance(evaluation, dict)
-                or set(evaluation) != EVALUATION_KEYS
-                or evaluation.get("status") not in {"recorded", "unknown"}
+                or set(evaluation) not in {frozenset(EVALUATION_KEYS), frozenset(EVALUATION_GATE_KEYS)}
+                or not isinstance(evaluation.get("status"), str)
+                or evaluation["status"] not in {"recorded", "unknown"}
                 or any(
                     not isinstance(evaluation.get(key), str)
                     or not evaluation[key].strip()
-                    for key in EVALUATION_KEYS - {"status"}
+                    for key in set(evaluation) - {"status"}
                 )
             ):
                 findings.append(
@@ -7925,6 +8543,7 @@ def parse_only(raw: str):
         "versions",
         "hosts",
         "coverage",
+        "evaluation",
         "composition",
         "licences",
         "obligations",
@@ -7953,7 +8572,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences,obligations,exceptions,imports,runtime,history"
+            "versions,hosts,coverage,evaluation,licences,obligations,exceptions,imports,runtime,history"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -8125,6 +8744,13 @@ def main(argv=None):
             stats["coverage_selected"] = coverage_selected
             stats["composition_relations"] = composition_relations
             findings.extend(coverage_findings)
+        if "evaluation" in only:
+            evaluation_cases, evaluation_outcomes, evaluation_findings = check_evaluation(
+                root
+            )
+            stats["evaluation_cases"] = evaluation_cases
+            stats["evaluation_outcomes"] = evaluation_outcomes
+            findings.extend(evaluation_findings)
         if "composition" in only and "coverage" not in only:
             composition_document, composition_read_findings = read_json(
                 root / COVERAGE_PATH,
