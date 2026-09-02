@@ -28,4 +28,4 @@ Elenchus verdict: passed
 | --- | --- | --- | --- | --- |
 | S1-R2-01 | low | .horos/boundary.json | The round-1 audit commit added audit/rounds/fiat-888-adr-merge-recovery.md and its synopsis after the boundary census was generated, leaving files_walked at 2468 while a fresh scan reported 2470. The root suite again failed tests.test_agent_instruction.AgentInstructionScaffoldTests.test_horos_boundary_is_current_for_the_scaffold and tests.test_boundary_currency.BoundaryCurrencyTests.test_the_committed_boundary_matches_a_fresh_scan; the classified entry set and all other scan counts were unchanged. | fixed in this commit |
 
-Leads not pursued: none
+Leads not pursued: two intervening root-suite attempts under host contention produced WAI-E-ADAPTER.TIMEOUT results in adapter fixture tests; after fixture warm-up and the competing suites clearing, the complete root suite passed 1116/1116, so those attempts are treated as environmental rather than product findings.
