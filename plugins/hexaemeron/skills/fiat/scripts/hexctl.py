@@ -4557,7 +4557,17 @@ def stale_body_report(bodies: list[dict]) -> dict:
     absent = malformed = carried = 0
     for entry in bodies:
         number = entry["number"]
-        span, faults = status_block_span(entry.get("body") or "", f"issue {number}")
+        body = entry.get("body")
+        title = entry.get("title")
+        # Hostile JSON reaches this parser. A wrong type used to surface as an
+        # AttributeError from deep inside the line reader, which is a traceback
+        # rather than a diagnosis; findings F-03 and F-04 in the plugin's own
+        # audit record are the same class, fixed the same way.
+        if body is not None and not isinstance(body, str):
+            die(f"issue {number} carries a body that is not text")
+        if title is not None and not isinstance(title, str):
+            die(f"issue {number} carries a title that is not text")
+        span, faults = status_block_span(body or "", f"issue {number}")
         if faults:
             malformed += 1
             state, detail = "malformed", faults[0]
@@ -4568,8 +4578,13 @@ def stale_body_report(bodies: list[dict]) -> dict:
             carried += 1
             continue
         rows.append({
+            # Titles come from GitHub and these rows are printed to a terminal,
+            # so an escape sequence in a crafted title would render raw. The
+            # carryover row reader refuses control characters by name; this one
+            # strips them, because a title is display text rather than a field
+            # any decision rests on.
             "number": number,
-            "title": entry.get("title") or "",
+            "title": "".join(c for c in (title or "") if c.isprintable()),
             "state": state,
             "detail": detail,
         })

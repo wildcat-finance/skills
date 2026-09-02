@@ -90,6 +90,27 @@ class StaleBodyReportTests(unittest.TestCase):
         self.assertEqual(report["malformed"], 1)
         self.assertEqual(report["rows"][0]["state"], "malformed")
 
+    def test_a_body_that_is_not_text_is_refused_by_name(self):
+        """Hostile JSON reaches this parser; a traceback is not a diagnosis."""
+        with self.assertRaises(SystemExit):
+            self.survey([{"number": 1, "title": "t", "body": {"not": "a string"}}])
+
+    def test_a_title_that_is_not_text_is_refused_by_name(self):
+        with self.assertRaises(SystemExit):
+            self.survey([{"number": 1, "title": 7, "body": "An issue.\n"}])
+
+    def test_a_control_character_in_a_title_is_stripped(self):
+        """Titles come from GitHub and are printed to a terminal.
+
+        The carryover row reader refuses control characters by name. This one
+        renders its rows, so an escape sequence in a crafted title would reach
+        the operator's terminal raw.
+        """
+        report = self.survey([
+            {"number": 1, "title": "esc\x1b[31mRED", "body": "An issue.\n"}])
+        self.assertNotIn("\x1b", report["rows"][0]["title"])
+        self.assertIn("RED", report["rows"][0]["title"])
+
     def test_the_survey_never_gates(self):
         """Report-only: the shape carries no exit code and no refusal."""
         report = self.survey([{"number": 11, "title": "none", "body": "An issue.\n"}])
