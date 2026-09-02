@@ -273,6 +273,7 @@ def evaluate_workflow(
     *,
     base: str,
     head: str,
+    preexisting: str | None = None,
 ) -> tuple[subprocess.CompletedProcess[bytes], str, str]:
     text = WORKFLOW.read_text(encoding="utf-8")
     blocks = workflow_run_blocks(text)
@@ -287,6 +288,9 @@ def evaluate_workflow(
         summary = temporary / "summary"
         output.touch()
         summary.touch()
+        if preexisting is not None:
+            target = temporary / f"adr-assignments-{preexisting}"
+            target.symlink_to(temporary / "not-created", target_is_directory=True)
         environment = clean_env(
             BASE_SHA=base,
             HEAD_SHA=head,
@@ -561,6 +565,70 @@ class WorkflowExecutionTests(unittest.TestCase):
         self.repo.plan("alpha-choice")
         candidate = self.repo.assignment(
             "alpha-choice", message="Assign without evidence trailers"
+        )
+        remote = self.repo.remote(candidate)
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("reason=assignment-evidence", output)
+
+    def test_malformed_final_path_is_a_fixed_refusal(self):
+        self.repo.product("alpha-choice")
+        write(
+            self.repo.source / "docs/decisions/ADR-061-Upper.md",
+            record("# ADR-061: Upper"),
+        )
+        git(self.repo.source, "add", ".")
+        git(self.repo.source, "commit", "--quiet", "-m", "malformed final")
+        candidate = git(self.repo.source, "rev-parse", "HEAD")
+        remote = self.repo.remote(candidate)
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("reason=path-shape", output)
+
+    def test_non_decision_change_has_no_assignment(self):
+        write(self.repo.source / "README.md", "A repository change.\n")
+        git(self.repo.source, "add", "README.md")
+        git(self.repo.source, "commit", "--quiet", "-m", "non-decision change")
+        candidate = git(self.repo.source, "rev-parse", "HEAD")
+        remote = self.repo.remote(candidate)
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("mapping_count=0", output)
+
+    def test_preexisting_repository_symlink_is_a_fixed_refusal(self):
+        write(self.repo.source / "README.md", "A repository change.\n")
+        git(self.repo.source, "add", "README.md")
+        git(self.repo.source, "commit", "--quiet", "-m", "non-decision change")
+        candidate = git(self.repo.source, "rev-parse", "HEAD")
+        remote = self.repo.remote(candidate)
+        result, output, _summary = evaluate_workflow(
+            remote,
+            base=self.repo.base,
+            head=candidate,
+            preexisting="candidate.git",
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("reason=workspace-state", output)
+
+    def test_assignment_trailers_must_be_the_terminal_block(self):
+        self.repo.product("alpha-choice")
+        report = self.repo.plan("alpha-choice")
+        trailers = [f"ADR-Assignment-Base: {report['base']}"]
+        trailers.extend(
+            f"ADR-Assignment: {row['identity']}=ADR-{row['number_text']}"
+            for row in report["mappings"]
+        )
+        candidate = self.repo.assignment(
+            "alpha-choice",
+            message="Assign decision\n\n"
+            + "\n".join(trailers)
+            + "\npostscript",
         )
         remote = self.repo.remote(candidate)
         result, output, _summary = evaluate_workflow(

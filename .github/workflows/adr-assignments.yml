@@ -83,8 +83,11 @@ jobs:
           policy_repository="$RUNNER_TEMP/adr-assignments-policy"
           safe_home="$RUNNER_TEMP/adr-assignments-home"
           remote_url="https://github.com/wildcat-finance/skills.git"
-          test ! -e "$candidate_repository" || refuse workspace-state
-          test ! -e "$policy_repository" || refuse workspace-state
+          test ! -e "$candidate_repository" &&
+            test ! -L "$candidate_repository" || refuse workspace-state
+          test ! -e "$policy_repository" &&
+            test ! -L "$policy_repository" || refuse workspace-state
+          test ! -e "$safe_home" && test ! -L "$safe_home" || refuse workspace-state
           install -d -m 700 "$safe_home"
 
           safe_git() {
@@ -168,7 +171,10 @@ jobs:
           import sys
 
           raw = Path(sys.argv[1]).read_bytes()
-          if not raw or raw[-1:] != b"\0":
+          if not raw:
+              Path(sys.argv[2]).write_text("[]\n", encoding="ascii")
+              raise SystemExit(0)
+          if raw[-1:] != b"\0":
               raise SystemExit(2)
           tokens = raw[:-1].split(b"\0")
           status_re = re.compile(br"[ACDMRTUXB][0-9]{0,3}")
@@ -191,9 +197,15 @@ jobs:
                   index += 1
               if any(not path or len(path) > 1024 for path in paths):
                   raise SystemExit(2)
-              target = paths[-1]
-              if final_re.fullmatch(target):
-                  finals.add(target.decode("ascii"))
+              final_candidates = [
+                  path for path in paths
+                  if path.startswith(b"docs/decisions/ADR-")
+                  and path.endswith(b".md")
+              ]
+              for path in final_candidates:
+                  if final_re.fullmatch(path) is None:
+                      raise SystemExit(2)
+                  finals.add(path.decode("ascii"))
           Path(sys.argv[2]).write_text(
               json.dumps(sorted(finals), separators=(",", ":")) + "\n",
               encoding="ascii",
@@ -322,7 +334,12 @@ jobs:
               (index for index, line in enumerate(lines) if not line),
               default=-1,
           )
-          if any(line not in lines[last_blank + 1:] for line in observed):
+          expected_trailers = [f"ADR-Assignment-Base: {base}"]
+          expected_trailers.extend(
+              f"ADR-Assignment: adr/{slug}=ADR-{number}"
+              for slug, number in mappings
+          )
+          if last_blank < 0 or lines[last_blank + 1:] != expected_trailers:
               raise SystemExit(2)
           if shape == "descendant":
               if second_parent != "none" or oid_re.fullmatch(first_parent) is None:
@@ -541,9 +558,7 @@ jobs:
               (index for index, line in enumerate(lines) if not line),
               default=-1,
           )
-          if observed != expected or any(
-              line not in lines[last_blank + 1:] for line in expected
-          ):
+          if last_blank < 0 or observed != expected or lines[last_blank + 1:] != expected:
               raise SystemExit("candidate trailers do not match the report")
           mapping = ",".join(
               f"{row['identity']}=ADR-{row['number_text']}"
