@@ -42,6 +42,9 @@ MAX_JSON_TOKENS = 1_000_000
 MAX_JSON_NUMBER_CHARS = 640
 MAX_MARKDOWN_LINK_OPENERS = 4_096
 MAX_MARKDOWN_LINE_CHARS = 16_384
+MAX_MARKDOWN_PHYSICAL_LINES = 16_384
+MAX_MARKDOWN_FENCE_EVENTS = 4_096
+MAX_MARKDOWN_LIST_DEPTH = 4_096
 EXPECTED_COUNTS = {
     "fixed_input": 3,
     "skill_contract": 32,
@@ -439,21 +442,87 @@ def _preflight_markdown_links(text: str, source: str) -> None:
     """Bound regex restart work before scanning one admitted Markdown source."""
     openers = 0
     line_chars = 0
+    pending_suffix = False
+    previous = ""
     for value in text:
         if value == "\n":
+            if pending_suffix:
+                raise Refusal(
+                    f"fixed-point Markdown link suffix crosses line boundary: {source}"
+                )
             line_chars = 0
+            pending_suffix = False
+            previous = ""
         else:
             line_chars += 1
             if line_chars > MAX_MARKDOWN_LINE_CHARS:
                 raise Refusal(
                     f"fixed-point Markdown line exceeds character limit: {source}"
                 )
+            if value == ")":
+                pending_suffix = False
+            elif value == "(" and previous == "]":
+                pending_suffix = True
+            previous = value
         if value == "[":
             openers += 1
             if openers > MAX_MARKDOWN_LINK_OPENERS:
                 raise Refusal(
                     f"fixed-point Markdown link opener count exceeds limit: {source}"
                 )
+    if pending_suffix:
+        raise Refusal(
+            f"fixed-point Markdown link suffix crosses line boundary: {source}"
+        )
+
+
+def _preflight_partition_markdown(data: bytes, source: str) -> None:
+    """Cap line and root-leading fence fanout before splitting source bytes."""
+    if len(data) > MAX_SOURCE_BYTES:
+        raise Refusal(f"partition Markdown exceeds byte limit: {source}")
+    line_count = 0
+    fence_events = 0
+    leading_spaces = True
+    ended_with_break = False
+    index = 0
+    while index < len(data):
+        value = data[index]
+        if value in (0x0A, 0x0D):
+            line_count += 1
+            if line_count > MAX_MARKDOWN_PHYSICAL_LINES:
+                raise Refusal(
+                    f"partition Markdown physical line count exceeds limit: {source}"
+                )
+            leading_spaces = True
+            ended_with_break = True
+            if value == 0x0D and index + 1 < len(data) and data[index + 1] == 0x0A:
+                index += 2
+            else:
+                index += 1
+            continue
+        ended_with_break = False
+        if leading_spaces:
+            if value != 0x20:
+                if (
+                    value in (0x60, 0x7E)
+                    and index + 2 < len(data)
+                    and data[index + 1] == value
+                    and data[index + 2] == value
+                ):
+                    fence_events += 1
+                    if fence_events > MAX_MARKDOWN_FENCE_EVENTS:
+                        raise Refusal(
+                            "partition Markdown root-leading fence event count "
+                            f"exceeds limit: {source}"
+                        )
+                leading_spaces = False
+        index += 1
+    if data and not ended_with_break:
+        line_count += 1
+        if line_count > MAX_MARKDOWN_PHYSICAL_LINES:
+            raise Refusal(
+                f"partition Markdown physical line count exceeds limit: {source}"
+            )
 FIXED_POINT_EXCLUDED_COMPONENTS = {
     "audit",
     "decisions",
@@ -4729,6 +4798,7 @@ def _partition_ranges(
                 "span_sha256": _sha256(data),
             }
         ]
+    _preflight_partition_markdown(data, path)
     lines = data.splitlines(keepends=True)
     inline_list_marker = re.compile(
         rb"(?:([*+-])|([0-9]{1,9})[.)])"
@@ -4913,6 +4983,10 @@ def _partition_ranges(
             )
             if content_indent <= parent:
                 break
+            if len(result) >= MAX_MARKDOWN_LIST_DEPTH:
+                raise Refusal(
+                    f"partition Markdown list container depth exceeds limit: {path}"
+                )
             if result is active:
                 result = list(active)
             result.append(content_indent)

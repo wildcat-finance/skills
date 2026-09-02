@@ -2612,6 +2612,35 @@ class CorpusManifestTests(unittest.TestCase):
                 derive(source)
             matcher.finditer.assert_not_called()
 
+    def test_markdown_link_scan_refuses_cross_line_suffixes_before_regex(self):
+        document = [{"path": "bounded.md", "document_class": "skill_contract"}]
+
+        def derive(data):
+            return AI._derive_operative_markdown_targets(
+                document,
+                source_overrides={"bounded.md": data},
+                tree_paths={"bounded.md"},
+            )
+
+        for label, source in {
+            "multiline-title": b"[label](target title\ncontinues)\n",
+            "unmatched-title": b"[label](target title\ncontinues\n",
+        }.items():
+            with self.subTest(label=label), mock.patch.object(
+                AI, "INLINE_MARKDOWN_LINK"
+            ) as matcher, self.assertRaisesRegex(
+                AI.Refusal, "Markdown link suffix crosses line boundary"
+            ):
+                derive(source)
+            matcher.finditer.assert_not_called()
+
+        for source in (
+            b"[first](target title [second](target title)\n",
+            b"[first](target title [second](target title))\n",
+        ):
+            with self.subTest(label="multiple-candidates-one-later-close"):
+                self.assertEqual(derive(source)["targets"], [])
+
     def test_extension_agnostic_fixed_point_and_runtime_anchor_mutations(self):
         derived = AI._derive_corpus_fixed_point(self.manifest["documents"])
         self.assertEqual(
@@ -5018,6 +5047,58 @@ class BytePartitionTests(unittest.TestCase):
             ),
             "governed_operative_semantics",
         )
+
+    def test_partition_preflight_caps_lines_and_fence_events_before_fanout(self):
+        for label, source in {
+            "line-limit": b"prose\n" * 16_384,
+            "cr-line-limit": b"prose\r" * 16_384,
+            "crlf-line-limit": b"prose\r\n" * 16_384,
+            "fence-event-limit": b"   ```\n" * 4_096,
+        }.items():
+            with self.subTest(label=label), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                AI._partition_ranges(f"{label}.md", generated=False)
+
+        for label, (source, message) in {
+            "line-over-limit": (
+                b"prose\n" * 16_385,
+                "Markdown physical line count exceeds limit",
+            ),
+            "cr-line-over-limit": (
+                b"prose\r" * 16_385,
+                "Markdown physical line count exceeds limit",
+            ),
+            "crlf-line-over-limit": (
+                b"prose\r\n" * 16_385,
+                "Markdown physical line count exceeds limit",
+            ),
+            "fence-event-over-limit": (
+                b"   ```\n" * 4_097,
+                "Markdown root-leading fence event count exceeds limit",
+            ),
+        }.items():
+            with self.subTest(label=label), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ), self.assertRaisesRegex(AI.Refusal, message):
+                AI._partition_ranges(f"{label}.md", generated=False)
+
+    def test_list_container_depth_is_capped_before_append(self):
+        at_limit = b"- " * 4_096 + b"item\n"
+        with mock.patch.object(AI, "_source_blob", return_value=at_limit):
+            ranges = AI._partition_ranges("list-depth-limit.md", generated=False)
+        self.assertEqual(
+            {item["classification"] for item in ranges},
+            {"governed_operative_semantics"},
+        )
+
+        over_limit = b"- " * 4_097 + b"item\n"
+        with mock.patch.object(
+            AI, "_source_blob", return_value=over_limit
+        ), self.assertRaisesRegex(
+            AI.Refusal, "Markdown list container depth exceeds limit"
+        ):
+            AI._partition_ranges("list-depth-over-limit.md", generated=False)
 
     def test_lazy_paragraph_continuation_retains_the_list_baseline(self):
         specimens = {
