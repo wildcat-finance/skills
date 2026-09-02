@@ -5,13 +5,15 @@ activity on Ethereum mainnet in blocks `25855441` through `25870892`, with the
 borrow and repay rows mapped to canonical event schema v2 and everything else
 preserved and counted but left unmapped.
 
-- **Release:** `aave-v4-mainnet-credit-window-v0`
-- **Adapter:** `aave-v4` 1.0.0, protocol generation `aave-v4`
-- **Source API:** The Graph, subgraph `2Gu5HCAnWrNk2pXidscdhNEQhrwLgMKmssuCe9JhZhAe`
-- **Evidence class:** `hosted-indexer-reported-block-window`
-- **Events:** 500 — 282 `borrowing`, 218 `repayment`
-- **Preserved and unmapped:** 376 `SUPPLY`, 264 `WITHDRAW`, 111 `SET_COLLATERAL`
-- **Canonical digest:** `a54a7ff15cfe9aa43639b00bb07036f0ebc2e832ac37f44fcee2b0dd0684daa4`
+| Field | Value |
+| --- | --- |
+| Release | `aave-v4-mainnet-credit-window-v0` |
+| Adapter | `aave-v4` 1.0.0, protocol generation `aave-v4` |
+| Source API | The Graph, subgraph `2Gu5HCAnWrNk2pXidscdhNEQhrwLgMKmssuCe9JhZhAe` |
+| Evidence class | `hosted-indexer-reported-block-window` |
+| Events | 500: 282 `borrowing`, 218 `repayment` |
+| Preserved and unmapped | 376 `SUPPLY`, 264 `WITHDRAW`, 111 `SET_COLLATERAL` |
+| Canonical digest | `a54a7ff15cfe9aa43639b00bb07036f0ebc2e832ac37f44fcee2b0dd0684daa4` |
 
 ## Where the rows came from
 
@@ -44,7 +46,7 @@ bytes.
 
 ## What this release does not establish
 
-`coverage.json` carries the full list. The load-bearing ones:
+`coverage.json` carries the full list. The ones that matter most:
 
 - The hosted indexer reported the block window. This release does not
   independently prove the chain boundary.

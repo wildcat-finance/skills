@@ -1701,7 +1701,7 @@
     "tabularium-o": {
       "claim": "The nearest tempting overclaim remains explicitly unavailable.",
       "path": "plugins/tabularium/tests/test_verify.py",
-      "selector": "test_indexed_block_must_match_source_metadata"
+      "selector": "test_capture_window_must_match_the_snapshot_window"
     },
     "tabularium-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
@@ -4460,9 +4460,9 @@
         "scope": "venue, chain, capture boundary and mapped selectors",
         "subject": "release directory, source digest and adapter version",
         "transition": "atomic build and verification status joined to the canonical Authorises field",
-        "unknowns": "unsupported entities, known gaps and unsigned publisher identity"
+        "unknowns": "unsupported activity types, known gaps and unsigned publisher identity"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+      "sha256": "3de7e74bc14eb70a1d3012e4bf4e82af2ffa2a35590f87f4468d8590bd9827ff",
       "source": "plugins/tabularium/scripts/tabularium.py"
     },
     "tabularium-release-verification": {
@@ -4474,9 +4474,9 @@
         "scope": "venue, capture boundary, paths and one-to-one source selectors",
         "subject": "release directory, source digest and adapter version",
         "transition": "zero-exit verification joined to the canonical Authorises field",
-        "unknowns": "publisher identity, chain proof and unmapped source entities"
+        "unknowns": "publisher identity, chain proof and unmapped source activity types"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+      "sha256": "3de7e74bc14eb70a1d3012e4bf4e82af2ffa2a35590f87f4468d8590bd9827ff",
       "source": "plugins/tabularium/scripts/tabularium.py"
     },
     "dokimasia-drafted-dispositions": {

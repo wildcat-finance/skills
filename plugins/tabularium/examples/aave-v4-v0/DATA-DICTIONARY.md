@@ -41,9 +41,9 @@ activity types populate different asset fields.
 | `REPAY` | `assets_repaid` | `totalAmountRepaid` | `null` |
 | `REPAY` | `shares` | `shares` | `null` |
 
-`asset` is `null` throughout. The rows name a `reserve` — the spoke address
-with the asset id appended — but never the underlying token, and resolving it
-across hubs by asset id could misattribute, so the adapter states nothing.
+`asset` is `null` throughout. The rows name a `reserve`, which is the spoke
+address with the asset id appended, but never the underlying token. Resolving
+it across hubs by asset id could misattribute, so the adapter states nothing.
 The reserve identifier is preserved in `native_record`.
 
 A `BORROW` carrying a repaid total, or a `REPAY` carrying a drawn amount, is
@@ -58,7 +58,7 @@ refused rather than mapped.
 | `source_entity` | `useractivities` |
 | `source_id` | the venue row `id` |
 | `source_selector` | `useractivities[id=<id>]` |
-| `supporting_selectors` | `[]` — no second collection was read |
+| `supporting_selectors` | `[]`, because no second collection was read |
 | `mapping_rule` | `aave-v4.borrow.v1` or `aave-v4.repay.v1` |
 | `adapter` / `adapter_version` | `aave-v4` / `1.0.0` |
 | `protocol_generation` | `aave-v4` |
