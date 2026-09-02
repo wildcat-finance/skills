@@ -110,3 +110,19 @@ Elenchus verdict: guarded
 | S3-R1-02 | low | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | A control character in an issue title reached the terminal unaltered, rendering as `esc^[[31mRED`. Titles come from GitHub and these rows are printed, so a crafted title would emit escape sequences into an operator's terminal. The carryover row reader refuses control characters by name; this printer did neither. | fixed in 2d90f2db450c810da13d0d19ecdc9eb0109dfa06 by stripping to printable characters, because a title is display text rather than a field a decision rests on |
 
 Leads not pursued: the five carried from earlier steps stand, unchanged: the committed-copy comparison, the per-commit digest multiplier, the lint-scope guard, the Atlas extractor obligation, and the round-2 test-count deviation. This step adds one. The documented fetch for the survey's input read one unpaginated page and yielded 59 rows against 138 open issues; the command was corrected to name its count `surveyed` and to document `--paginate`, but nothing checks that the file it is handed is complete, and the reader cannot know what was left out of it. Recorded rather than built, because a completeness check needs a transport this command deliberately does not have.
+
+## Step 3, round 2 -- 2026-09-02T02:20:54Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: body-size=reviewed; control-characters=reviewed; digest-drift=reviewed; fenced-decoy=reviewed; unclosed-block=reviewed; duplicate-block=reviewed; extractor-collision=not-applicable
+
+Not checked: the Atlas dependency extractor, unread and unrun across every round of this run, and delivered in the Atlas repository. No test exercises the survey's REST path; the demo path was run by hand against the live issue and its edit was checked with the reader before publication. No measurement was taken of the survey over 138 rows or over the 2048 the cap allows, so no performance claim is made about either.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1 recorded the two input caps as unexercised. This round exercised both, so that item is closed rather than carried: 2049 rows refuse against the 2048 cap, 2048 rows are accepted, and a 9 MiB file refuses against the 8 MiB cap, each by name. Six leads stand for the run's carryover block: the committed-copy comparison from step 1, the per-commit digest multiplier from step 2 round 1, the lint-scope guard from step 2 round 4, the Atlas extractor obligation from step 1, the test-count deviation from step 2 round 2, and the survey-completeness gap from step 3 round 1.
