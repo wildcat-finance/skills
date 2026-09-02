@@ -237,3 +237,20 @@ no claim of remote durability or distributed availability.
 Checkpoint archives can be large, and every exhausted loop creates another
 one. That cost is accepted in exchange for never pretending a reconstructed
 ledger is the original run.
+
+## Amendment: distributed layer reinstated (2026-09-02)
+
+The distributed checkpoint framework this record deferred is accepted again.
+[ADR-069](ADR-069-reinstate-the-distributed-checkpoint-layer-above-the-local-store.md)
+is the accepted change the mandatory local hand-off amendment above asked for.
+It reopens the layer above the local store rather than replacing it.
+
+This record stays Accepted and every clause above stands. The local checkpoint
+store remains the only current transport, the hand-off remains mandatory, and no
+checkpoint operation uploads, posts, commits or pushes until a later delivery
+accepts a transport that does. Reopening the layer authorises design records,
+not behaviour, and nothing in `hexctl` changes with it.
+
+ADR-029 through ADR-032 stay Retired. Each gains one standing successor that
+carries its decision forward rebased on `fiat-v5.49.1`, so this record's
+retirement of them is left as history rather than undone.
