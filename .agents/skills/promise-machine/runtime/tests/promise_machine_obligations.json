@@ -13,6 +13,76 @@
       "recovery": "restore the one promise-machine/v1 contract identity and rerun the obligation check"
     },
     {
+      "id": "law-composition-lemma-boundary",
+      "clause_sha256": "cfa8e9445e421a0ebcb176f8f8f9c8703fed5c1aa9b28974000759d81858ae1d",
+      "gate": "composition.lemma-retrieval-to-berean-corpus",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "admit source-linked chunks as retrieval input",
+      "recovery": "return to the cited source bytes"
+    },
+    {
+      "id": "law-composition-lazarus-boundary",
+      "clause_sha256": "85a7135e01ead8eee132472bcc426ca08868801609ad6e9a53a7863d47a2f181",
+      "gate": "composition.lazarus-rpc-to-berean-answer",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "admit recorded RPC evidence to the pinned answer evidence set",
+      "recovery": "run the named proof checker for the exact fixture"
+    },
+    {
+      "id": "law-composition-berean-boundary",
+      "clause_sha256": "014a5c68553e7f7654693dc08c0149b9c5d2ec8f1baf34e2a8af6c30cf693567",
+      "gate": "composition.berean-promotion-to-ariadne-capture",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "bind the promoted Berean release digest to its declared evidence",
+      "recovery": "inspect the pinned corpus, answers, and evaluation record"
+    },
+    {
+      "id": "law-composition-janus-boundary",
+      "clause_sha256": "4b25765f9a8d7c4fd116d9e58ba7975a501cc509fb152dbbf0b1ad7b86d7472e",
+      "gate": "composition.janus-bounded-to-ariadne-capture",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "bind the bounded Janus result to its host-specific evidence",
+      "recovery": "rerun against the named host adapter and bounded manifest"
+    },
+    {
+      "id": "law-composition-ariadne-boundary",
+      "clause_sha256": "e93b1f2112733c6406194f01674449d4e5649dd361ccf92fa7b55fa7629b4b2c",
+      "gate": "composition.ariadne-verification-to-fiat-delivery",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "consume the verified statement as an artefact-evidence binding",
+      "recovery": "run an external signature verifier bound to the statement"
+    },
+    {
+      "id": "law-composition-fiat-observation-boundary",
+      "clause_sha256": "48b93c6d57958d7c04f0ea69938a6d880fa91f8adbe28a0c29c107f089ea64a1",
+      "gate": "composition.fiat-observation-to-synkrisis-cohort",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "admit the checked observation prefix to the named comparison cohort",
+      "recovery": "return to the validator, capture, and bound receipt"
+    },
+    {
+      "id": "law-composition-synkrisis-boundary",
+      "clause_sha256": "e3e202d89778883c0dcf83ba6932eaad94b438e6649d1811bfd4d298bb8bc910",
+      "gate": "composition.synkrisis-verification-to-fiat-integration",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "consume the recomputable comparison as bounded integration evidence",
+      "recovery": "inspect the cohort, findings, report, counterevidence, and unknown runs"
+    },
+    {
       "id": "law-declaration-fields",
       "clause_sha256": "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
       "gate": "law.declaration-fields",

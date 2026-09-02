@@ -36,6 +36,7 @@ ROOT_FILES = (
     Path("scripts/promise_machine.py"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
+    Path("tests/promise_machine_coverage.json"),
     Path("tests/promise_machine_obligations.json"),
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
     Path("docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md"),
@@ -66,6 +67,7 @@ SEMANTIC_FIXTURE_FILES = tuple(
     Path(path)
     for path in (
         "tests/fixtures/promise-machine/consequences/authority.json",
+        "tests/fixtures/promise-machine/composition/cases.json",
         "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
         "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
         "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
@@ -88,10 +90,24 @@ SEMANTIC_FIXTURE_FILES = tuple(
         "tests/fixtures/promise-machine/exceptions/valid.json",
         "tests/fixtures/promise-machine/findings/missing-recovery.json",
         "tests/fixtures/promise-machine/imports/subprocess.json",
+        "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
     )
 )
 
 PORTABLE_TEST_FILES = (
+    Path("plugins/alexandria/tests/test_release.py"),
+    Path("plugins/ariadne/tests/test_examples.py"),
+    Path("plugins/ariadne/tests/test_gates.py"),
+    Path("plugins/berean/tests/test_corpus.py"),
+    Path("plugins/berean/tests/test_examples.py"),
+    Path("plugins/berean/tests/test_promote.py"),
+    Path("plugins/hexaemeron/tests/test_hexctl.py"),
+    Path("plugins/hexaemeron/tests/test_run_observation_binding.py"),
+    Path("plugins/lazarus/tests/test_capture.py"),
+    Path("plugins/lazarus/tests/test_verifier.py"),
+    Path("plugins/lemma/tests/test_markdown.py"),
+    Path("plugins/synkrisis/tests/test_cohort.py"),
+    Path("plugins/synkrisis/tests/test_verify.py"),
     Path(
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json"
     ),
@@ -140,8 +156,8 @@ OMISSIONS = (
         "exceptions": [path.as_posix() for path in PORTABLE_TEST_FILES],
         "reason": (
             "development suites and other fixtures remain in the full source "
-            "checkout; the listed closed model-proxy-v1 fixture set closes the "
-            "portable commands and vectors advertised by the copied reference"
+            "checkout; the listed composition evidence sources and closed "
+            "model-proxy-v1 fixture set close the portable gates and commands"
         ),
     },
     {

@@ -38,6 +38,8 @@ OBLIGATION_FIXTURES = FIXTURES / "obligations"
 CONSEQUENCE_FIXTURES = FIXTURES / "consequences"
 EXCEPTION_FIXTURES = FIXTURES / "exceptions"
 RUNTIME_FIXTURES = FIXTURES / "runtime"
+COMPOSITION_FIXTURES = FIXTURES / "composition"
+COMPOSITION_CASES = COMPOSITION_FIXTURES / "cases.json"
 PYTHON_RUNTIME_BINDINGS = {
     "promise_id": "adapter_output.binding.promise_id",
     "subject": "adapter_output.binding.subject",
@@ -56,10 +58,10 @@ DURABLE_OBLIGATION_RUNBOOK = (
     ROOT / "docs" / "promise-machine" / "obligation-gates" / "runbook.md"
 )
 RECEIPTED_OBLIGATION_STUDY_SHA256 = (
-    "964e97bf48a2c0fb88c1af7d2314f39c28ea177b8de56c2b665e3f7f8f55468b"
+    "cd39131e527cfd0a670757610e1e42016c7a7eede27b403d563c10b22b40ae1c"
 )
 RECEIPTED_OBLIGATION_RUNBOOK_SHA256 = (
-    "0f56413ab1501873dbb2205fd2a22ae5a646c86b9a83c0350bc0b41e56da0bbc"
+    "1a7569a9869ab4b05c2fd053721d99f5c2a867a533fb0dfd03cc7058a8c5ee49"
 )
 
 
@@ -109,6 +111,19 @@ def write_obligation_fixture(root):
     registry.parent.mkdir(parents=True)
     shutil.copy2(OBLIGATION_REGISTRY, registry)
     shutil.copytree(FIXTURES, root / "tests" / "fixtures" / "promise-machine")
+    composition = json.loads(COMPOSITION_CASES.read_text(encoding="utf-8"))
+    sources = {
+        reference["path"]
+        for relation in composition["relations"]
+        for role in ("producer", "consumer")
+        for reference in relation["positive"][role]["bindings"][
+            "evidence-references"
+        ]
+    }
+    for source in sources:
+        destination = root / source
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / source, destination)
     return registry
 
 
@@ -443,7 +458,7 @@ class PromiseObligationTests(unittest.TestCase):
         completed = run_cli("check", "--only", "obligations", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["obligations"], 11)
+        self.assertEqual(report["counts"]["obligations"], 18)
         self.assertEqual(report["findings"], [])
 
     def test_marked_structural_claims_match_their_production_gates(self):
@@ -481,6 +496,48 @@ class PromiseObligationTests(unittest.TestCase):
                 "> Obligation: Every level-two or level-three runtime promise resolves its\n"
                 "> native binding fields through a bounded source-bound reader; level three\n"
                 "> also resolves authority and independently inspectable evidence."
+            ),
+            "law-composition-lemma-boundary": (
+                "> Obligation: Relation `lemma-retrieval-to-berean-corpus` preserves its subject,\n"
+                "> scope, source links, chunk locations, evidence references and classes, time\n"
+                "> domain, unknowns, conflicts, refusals and recovery, and refuses answer truth."
+            ),
+            "law-composition-lazarus-boundary": (
+                "> Obligation: Relation `lazarus-rpc-to-berean-answer` preserves its subject,\n"
+                "> scope, block, RPC methods, proof relation, evidence references and classes,\n"
+                "> time domain, unknowns, conflicts, refusals and recovery, and refuses proof or\n"
+                "> answer truth that its recorded evidence did not establish."
+            ),
+            "law-composition-berean-boundary": (
+                "> Obligation: Relation `berean-promotion-to-ariadne-capture` preserves its\n"
+                "> subject, scope, release digests, evidence references and classes, time domain,\n"
+                "> unknowns, conflicts, refusals and recovery, and refuses answer truth and model\n"
+                "> quality."
+            ),
+            "law-composition-janus-boundary": (
+                "> Obligation: Relation `janus-bounded-to-ariadne-capture` preserves its subject,\n"
+                "> scope, adapter, manifest, recorder, bounded search, evidence references and\n"
+                "> classes, time domain, unknowns, conflicts, refusals and recovery, and refuses\n"
+                "> hook safety, complete liveness and cross-host conformance."
+            ),
+            "law-composition-ariadne-boundary": (
+                "> Obligation: Relation `ariadne-verification-to-fiat-delivery` preserves its\n"
+                "> subject, scope, artefact digest, predicate type, signature-verifier state,\n"
+                "> evidence references and classes, time domain, unknowns, conflicts, refusals\n"
+                "> and recovery, and refuses author identity without an external verifier."
+            ),
+            "law-composition-fiat-observation-boundary": (
+                "> Obligation: Relation `fiat-observation-to-synkrisis-cohort` preserves its\n"
+                "> subject, scope, validator, capture boundary, receipt, evidence references and\n"
+                "> classes, time domain, unknowns, conflicts, refusals and recovery, and refuses\n"
+                "> event truth and delivery evidence."
+            ),
+            "law-composition-synkrisis-boundary": (
+                "> Obligation: Relation `synkrisis-verification-to-fiat-integration` preserves\n"
+                "> its subject, scope, cohort, findings and report digests, counterevidence,\n"
+                "> unknown runs, evidence references and classes, time domain, unknowns,\n"
+                "> conflicts, refusals and recovery, and refuses cause, model quality and\n"
+                "> authority to act."
             ),
             "law-refusal-shape": (
                 "> Obligation: Every refusal report names the promise id, failed field or\n"
@@ -1522,6 +1579,333 @@ class PromiseObligationTests(unittest.TestCase):
             and finding.obligation_id == "law-governing-principle"
         ]
         self.assertEqual(len(failed), 1)
+
+
+class PromiseCompositionGateTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cases = json.loads(COMPOSITION_CASES.read_text(encoding="utf-8"))
+        cls.coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+    def relation(self, relation_id):
+        return next(
+            item for item in self.cases["relations"]
+            if item["relation_id"] == relation_id
+        )
+
+    def assert_positive(self, relation_id):
+        relation = self.relation(relation_id)
+        spec = promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        findings = promise_machine_module.validate_composition_record(
+            ROOT,
+            spec,
+            copy.deepcopy(relation["positive"]),
+            f"{COMPOSITION_CASES.relative_to(ROOT).as_posix()}#{relation_id}.positive",
+        )
+        self.assertEqual(findings, [])
+
+    def assert_negative(self, relation_id, index):
+        relation = self.relation(relation_id)
+        spec = promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        negative = relation["negative"][index]
+        mutated, error = promise_machine_module.apply_composition_mutations(
+            relation["positive"], negative["mutations"]
+        )
+        self.assertIsNone(error)
+        path = (
+            f"{COMPOSITION_CASES.relative_to(ROOT).as_posix()}#"
+            f"{relation_id}.negative[{index}]"
+        )
+        findings = promise_machine_module.validate_composition_record(
+            ROOT, spec, mutated, path
+        )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        finding = findings[0]
+        producer = relation["positive"]["producer"]["promise_id"]
+        consumer = relation["positive"]["consumer"]["promise_id"]
+        self.assertEqual(finding.promise_id, producer)
+        self.assertEqual(finding.obligation_id, relation["obligation_id"])
+        self.assertEqual(
+            finding.blocked_transition,
+            relation["positive"]["consumer"]["transition"],
+        )
+        for value in (relation_id, producer, consumer, negative["field"]):
+            self.assertIn(value, finding.message)
+        self.assertTrue(finding.recovery)
+
+    def test_lemma_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("lemma-retrieval-to-berean-corpus")
+
+    def test_lazarus_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("lazarus-rpc-to-berean-answer")
+
+    def test_berean_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("berean-promotion-to-ariadne-capture")
+
+    def test_janus_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("janus-bounded-to-ariadne-capture")
+
+    def test_ariadne_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("ariadne-verification-to-fiat-delivery")
+
+    def test_fiat_observation_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("fiat-observation-to-synkrisis-cohort")
+
+    def test_synkrisis_relation_accepts_its_bounded_positive_case(self):
+        self.assert_positive("synkrisis-verification-to-fiat-integration")
+
+    def test_lemma_relation_refuses_a_changed_producer_identity(self):
+        self.assert_negative("lemma-retrieval-to-berean-corpus", 0)
+
+    def test_lemma_relation_refuses_a_strengthened_consumer_transition(self):
+        self.assert_negative("lemma-retrieval-to-berean-corpus", 1)
+
+    def test_lazarus_relation_refuses_lost_evidence_references(self):
+        self.assert_negative("lazarus-rpc-to-berean-answer", 0)
+
+    def test_lazarus_relation_refuses_an_unproved_proof_claim(self):
+        self.assert_negative("lazarus-rpc-to-berean-answer", 1)
+
+    def test_berean_relation_refuses_dropped_unknowns(self):
+        self.assert_negative("berean-promotion-to-ariadne-capture", 0)
+
+    def test_berean_relation_refuses_answer_truth_overclaim(self):
+        self.assert_negative("berean-promotion-to-ariadne-capture", 1)
+
+    def test_janus_relation_refuses_dropped_conflicts(self):
+        self.assert_negative("janus-bounded-to-ariadne-capture", 0)
+
+    def test_janus_relation_refuses_broadened_scope(self):
+        self.assert_negative("janus-bounded-to-ariadne-capture", 1)
+
+    def test_ariadne_relation_refuses_a_changed_subject(self):
+        self.assert_negative("ariadne-verification-to-fiat-delivery", 0)
+
+    def test_ariadne_relation_refuses_a_weakened_consequence(self):
+        self.assert_negative("ariadne-verification-to-fiat-delivery", 1)
+
+    def test_fiat_observation_relation_refuses_delivery_evidence_overclaim(self):
+        self.assert_negative("fiat-observation-to-synkrisis-cohort", 0)
+
+    def test_fiat_observation_relation_refuses_lost_recovery(self):
+        self.assert_negative("fiat-observation-to-synkrisis-cohort", 1)
+
+    def test_synkrisis_relation_refuses_lost_counterevidence(self):
+        self.assert_negative("synkrisis-verification-to-fiat-integration", 0)
+
+    def test_synkrisis_relation_refuses_model_graded_domain_overclaim(self):
+        self.assert_negative("synkrisis-verification-to-fiat-integration", 1)
+
+    def test_repository_declares_exactly_the_seven_root_law_relations(self):
+        expected = {
+            "lemma-retrieval-to-berean-corpus",
+            "lazarus-rpc-to-berean-answer",
+            "berean-promotion-to-ariadne-capture",
+            "janus-bounded-to-ariadne-capture",
+            "ariadne-verification-to-fiat-delivery",
+            "fiat-observation-to-synkrisis-cohort",
+            "synkrisis-verification-to-fiat-integration",
+        }
+        self.assertEqual(set(promise_machine_module.COMPOSITION_RELATIONS), expected)
+        self.assertEqual(
+            {item["relation_id"] for item in self.cases["relations"]}, expected
+        )
+
+    def test_registered_composition_classes_are_owned_by_native_promises(self):
+        inventory, findings = promise_machine_module.discover_inventory(ROOT)
+        self.assertEqual(findings, [])
+        findings = promise_machine_module.validate_composition_registrations(
+            ROOT, inventory
+        )
+        self.assertEqual(findings, [])
+
+    def test_composition_refuses_an_undeclared_producer_class(self):
+        relation_id = "lemma-retrieval-to-berean-corpus"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["producer_classes"] = ("recorded", "attested")
+        spec["consumer_classes"] = ("recorded", "attested", "checked")
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("not declared by promise lemma-corpus-provenance", findings[0].message)
+
+    def test_composition_refuses_an_undeclared_consumer_addition(self):
+        relation_id = "berean-promotion-to-ariadne-capture"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["consumer_classes"] = (*spec["consumer_classes"], "attested")
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("not declared by promise ariadne-capture-statement", findings[0].message)
+
+    def test_composition_refuses_a_dropped_inherited_class(self):
+        relation_id = "synkrisis-verification-to-fiat-integration"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["consumer_classes"] = ("recorded",)
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("dropped producer classes ['recomputed']", findings[0].message)
+
+    def test_composition_refuses_an_unknown_native_promise_identity(self):
+        relation_id = "ariadne-verification-to-fiat-delivery"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["producer"] = "missing-native-promise"
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("resolves 0 times", findings[0].message)
+
+    def test_composition_obligation_evaluator_checks_native_promise_classes(self):
+        relation_id = "berean-promotion-to-ariadne-capture"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["consumer_classes"] = (*spec["consumer_classes"], "attested")
+        registry = json.loads(OBLIGATION_REGISTRY.read_text(encoding="utf-8"))
+        row = next(
+            item
+            for item in registry["obligations"]
+            if item["id"] == spec["obligation_id"]
+        )
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = (
+                promise_machine_module.validate_composition_obligation_specimen(
+                    ROOT,
+                    COMPOSITION_CASES.relative_to(ROOT),
+                    copy.deepcopy(self.cases),
+                    row,
+                    inventory=inventory,
+                )
+            )
+        self.assertEqual(semantic_codes(findings), ["PM089"])
+        self.assertIn("did not resolve its native promise boundary", findings[0].message)
+
+    def test_repository_composition_fixture_digest_is_coverage_bound(self):
+        count, findings = promise_machine_module.check_composition(
+            ROOT, self.coverage
+        )
+        self.assertEqual(count, 7)
+        self.assertEqual(findings, [])
+
+    def test_composition_cli_executes_all_seven_relations(self):
+        completed = run_cli("check", "--only", "composition", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertEqual(report["counts"]["composition_relations"], 7)
+        self.assertEqual(report["findings"], [])
+
+    def test_each_relation_has_one_positive_and_two_negative_cases(self):
+        self.assertEqual(len(self.cases["relations"]), 7)
+        for relation in self.cases["relations"]:
+            with self.subTest(relation=relation["relation_id"]):
+                self.assertEqual(set(relation), {
+                    "obligation_id", "relation_id", "positive", "negative"
+                })
+                self.assertEqual(len(relation["negative"]), 2)
+
+    def test_removing_each_relation_is_refused_by_stable_identity(self):
+        for removed in self.cases["relations"]:
+            with self.subTest(relation=removed["relation_id"]):
+                document = copy.deepcopy(self.cases)
+                document["relations"] = [
+                    item for item in document["relations"]
+                    if item["relation_id"] != removed["relation_id"]
+                ]
+                count, findings = promise_machine_module.validate_composition_cases(
+                    ROOT, document, COMPOSITION_CASES.relative_to(ROOT).as_posix()
+                )
+                self.assertEqual(count, 6)
+                self.assertEqual(semantic_codes(findings), ["PM097"])
+                self.assertEqual(findings[0].obligation_id, removed["obligation_id"])
+
+    def test_duplicate_relation_identity_is_refused(self):
+        document = copy.deepcopy(self.cases)
+        document["relations"].append(copy.deepcopy(document["relations"][0]))
+        _, findings = promise_machine_module.validate_composition_cases(
+            ROOT, document, COMPOSITION_CASES.relative_to(ROOT).as_posix()
+        )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("repeated", findings[0].message)
+
+    def test_unknown_relation_identity_is_refused(self):
+        document = copy.deepcopy(self.cases)
+        document["relations"][0]["relation_id"] = "unknown-relation"
+        _, findings = promise_machine_module.validate_composition_cases(
+            ROOT, document, COMPOSITION_CASES.relative_to(ROOT).as_posix()
+        )
+        self.assertIn("PM097", semantic_codes(findings))
+        self.assertTrue(any("unknown-relation" in item.message for item in findings))
+
+    def test_recorded_evidence_cannot_be_promoted_to_proved_by_composition(self):
+        relation = self.relation("lazarus-rpc-to-berean-answer")
+        record = copy.deepcopy(relation["positive"])
+        record["consumer"]["bindings"]["evidence-classes"] = [
+            "recorded", "checked", "proved"
+        ]
+        findings = promise_machine_module.validate_composition_record(
+            ROOT,
+            promise_machine_module.COMPOSITION_RELATIONS[relation["relation_id"]],
+            record,
+            "recorded-strengthening.json",
+        )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("evidence-classes", findings[0].message)
 
 
 class PromiseSemanticGateTests(unittest.TestCase):

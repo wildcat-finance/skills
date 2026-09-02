@@ -33,7 +33,7 @@ CONFIG = ROOT / "skills.sh.json"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
-MAX_FILES = 1_024
+MAX_FILES = 1_040
 MAX_BYTES = 25 * 1024 * 1024
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
@@ -45,6 +45,19 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
 PORTABLE_TEST_FILES = {
+    "plugins/alexandria/tests/test_release.py",
+    "plugins/ariadne/tests/test_examples.py",
+    "plugins/ariadne/tests/test_gates.py",
+    "plugins/berean/tests/test_corpus.py",
+    "plugins/berean/tests/test_examples.py",
+    "plugins/berean/tests/test_promote.py",
+    "plugins/hexaemeron/tests/test_hexctl.py",
+    "plugins/hexaemeron/tests/test_run_observation_binding.py",
+    "plugins/lazarus/tests/test_capture.py",
+    "plugins/lazarus/tests/test_verifier.py",
+    "plugins/lemma/tests/test_markdown.py",
+    "plugins/synkrisis/tests/test_cohort.py",
+    "plugins/synkrisis/tests/test_verify.py",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
@@ -66,6 +79,7 @@ OBLIGATION_FIXTURE_FILES = {
     "tests/fixtures/promise-machine/obligations/law-required-sections.json",
 }
 SEMANTIC_FIXTURE_FILES = {
+    "tests/fixtures/promise-machine/composition/cases.json",
     "tests/fixtures/promise-machine/consequences/authority.json",
     "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
     "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
@@ -89,6 +103,7 @@ SEMANTIC_FIXTURE_FILES = {
     "tests/fixtures/promise-machine/exceptions/valid.json",
     "tests/fixtures/promise-machine/findings/missing-recovery.json",
     "tests/fixtures/promise-machine/imports/subprocess.json",
+    "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
 }
 
 
@@ -246,13 +261,11 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-                if plugin.name != "hexaemeron":
-                    self.assertFalse((plugin / "tests").exists())
-        portable_tests = RUNTIME / "plugins/hexaemeron/tests"
+        portable_tests = RUNTIME / "plugins"
         self.assertEqual(
             {
                 path.relative_to(RUNTIME).as_posix()
-                for path in portable_tests.rglob("*")
+                for path in portable_tests.glob("*/tests/**/*")
                 if path.is_file() or path.is_symlink()
             },
             PORTABLE_TEST_FILES,

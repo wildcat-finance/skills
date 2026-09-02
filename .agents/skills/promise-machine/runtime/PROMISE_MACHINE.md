@@ -155,20 +155,62 @@ or recovery path.
 
 In particular:
 
+<!-- promise-machine-obligation: id=law-composition-lemma-boundary -->
+> Obligation: Relation `lemma-retrieval-to-berean-corpus` preserves its subject,
+> scope, source links, chunk locations, evidence references and classes, time
+> domain, unknowns, conflicts, refusals and recovery, and refuses answer truth.
+
 - Lemma chunks remain source-linked retrieval material; they do not establish
   answer truth.
+<!-- promise-machine-obligation: id=law-composition-lazarus-boundary -->
+> Obligation: Relation `lazarus-rpc-to-berean-answer` preserves its subject,
+> scope, block, RPC methods, proof relation, evidence references and classes,
+> time domain, unknowns, conflicts, refusals and recovery, and refuses proof or
+> answer truth that its recorded evidence did not establish.
+
 - Lazarus recorded RPC evidence remains recorded unless its named proof check
   established a narrower proved relation.
+<!-- promise-machine-obligation: id=law-composition-berean-boundary -->
+> Obligation: Relation `berean-promotion-to-ariadne-capture` preserves its
+> subject, scope, release digests, evidence references and classes, time domain,
+> unknowns, conflicts, refusals and recovery, and refuses answer truth and model
+> quality.
+
 - Berean citations, evaluations and promotion records establish their declared
   release gates; they do not establish factual truth or model quality.
+<!-- promise-machine-obligation: id=law-composition-janus-boundary -->
+> Obligation: Relation `janus-bounded-to-ariadne-capture` preserves its subject,
+> scope, adapter, manifest, recorder, bounded search, evidence references and
+> classes, time domain, unknowns, conflicts, refusals and recovery, and refuses
+> hook safety, complete liveness and cross-host conformance.
+
 - Janus results remain bound to the named host adapter, manifest, recorder and
   bounded search; they do not establish hook safety, complete liveness or
   cross-host conformance.
+<!-- promise-machine-obligation: id=law-composition-ariadne-boundary -->
+> Obligation: Relation `ariadne-verification-to-fiat-delivery` preserves its
+> subject, scope, artefact digest, predicate type, signature-verifier state,
+> evidence references and classes, time domain, unknowns, conflicts, refusals
+> and recovery, and refuses author identity without an external verifier.
+
 - Ariadne binds an artefact digest to declared evidence; without an external
   signature verifier it does not establish author identity.
+<!-- promise-machine-obligation: id=law-composition-fiat-observation-boundary -->
+> Obligation: Relation `fiat-observation-to-synkrisis-cohort` preserves its
+> subject, scope, validator, capture boundary, receipt, evidence references and
+> classes, time domain, unknowns, conflicts, refusals and recovery, and refuses
+> event truth and delivery evidence.
+
 - A Fiat run-observation binding preserves the observation validator and
   capture boundaries. It attaches only the checked prefix to one receipt; it
   does not make observation availability or event truth delivery evidence.
+<!-- promise-machine-obligation: id=law-composition-synkrisis-boundary -->
+> Obligation: Relation `synkrisis-verification-to-fiat-integration` preserves
+> its subject, scope, cohort, findings and report digests, counterevidence,
+> unknown runs, evidence references and classes, time domain, unknowns,
+> conflicts, refusals and recovery, and refuses cause, model quality and
+> authority to act.
+
 - Synkrisis contributes a checked cohort, bounded findings over it, a
   fixed-template report and a recomputation of all three. Verification
   establishes recomputability alone: it cannot turn repeated observations into
