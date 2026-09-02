@@ -85,6 +85,35 @@ receipt. A failed or unavailable check changes nothing and is not mentioned.
 This clause lives here for the same reason as the one above: the obligation
 belongs to the frontier run, not to any one held job's text.
 
+A frontier run reads controller state one field at a time and keeps the audit
+brief out of its own transcript. Where it needs a single value, use
+`hexctl status --field <path>` rather than `hexctl status --json`, which prints
+every step, receipt and audit round recorded so far and grows for the whole
+run: `--field phase` on resume, `--field observation_run_id` for a companion
+observation receipt. Where it delegates an audit round, pass
+`hexctl next --brief-out <path>` and hand the subagent that path, so the step
+markdown, risk register and design evidence reach the Warden without being
+printed into the controller's context first. An unknown field path is refused
+rather than answered, so a wrong path fails visibly instead of reading as
+absent.
+
+This clause lives here for a different reason from the two above. The
+instructions that would otherwise carry it are inside
+[fiat/SKILL.md](fiat/SKILL.md), which
+`tests/fixtures/agent-instruction-v1/manifest.json` binds by whole-file
+SHA-256; editing it invalidates a bound measurement record that only
+`scripts/agent_instruction.py measure` can reissue, and that measurement has no
+machine to run on. Both flags landed on `main` and are available now, so the
+saving is reachable from here while the bound document waits. Ordinary
+non-frontier runs still read whatever `fiat/SKILL.md` says and still pay for
+it; this is not a substitute for that edit, and it does not settle
+[skills#1066](https://github.com/wildcat-finance/skills/issues/1066)'s
+acceptance checks, which name the controller's transcript rather than a
+frontier run's conduct. See
+[skills#1030](https://github.com/wildcat-finance/skills/issues/1030) and
+[skills#1098](https://github.com/wildcat-finance/skills/issues/1098) for the
+reconciliation this defers.
+
 A mature frontier can reopen only when a maintainer supplies a new external
 failure, requirement, dependency change, or other evidence that invalidates
 the closure. Record that compatibility boundary as an epoch entry, with the
