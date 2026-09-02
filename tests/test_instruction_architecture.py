@@ -4765,6 +4765,163 @@ class BytePartitionTests(unittest.TestCase):
             "governed_operative_semantics",
         )
 
+    def test_fence_after_same_line_list_markers_uses_deepest_baseline(self):
+        specimens = {
+            "bullet-backtick": (b"- ", b"```", 2),
+            "ordered-tilde": (b"10. ", b"~~~", 4),
+            "nested-backtick": (b"- - ", b"```", 4),
+            "tab-padded-tilde": (b"-\t", b"~~~", 4),
+            "mixed-tab-backtick": (b"- \t", b"```", 4),
+            "ordered-tab-backtick": (b"10.\t", b"```", 4),
+            "indented-bullet-backtick": (b"   - ", b"```", 5),
+            "triple-nested-tilde": (b"1. - + ", b"~~~~", 7),
+        }
+        for name, (prefix, fence, baseline) in specimens.items():
+            for close_offset in range(4):
+                ranges = None
+                source = (
+                    prefix
+                    + fence
+                    + b"text\n"
+                    + b" " * baseline
+                    + b"body\n"
+                    + b" " * (baseline + close_offset)
+                    + fence
+                    + b"\nafter\n"
+                )
+                with self.subTest(
+                    name=name, close_offset=close_offset
+                ), mock.patch.object(AI, "_source_blob", return_value=source):
+                    try:
+                        ranges = AI._partition_ranges(
+                            f"{name}.md", generated=False
+                        )
+                    except AI.Refusal as exc:
+                        self.fail(
+                            f"valid same-line list fence was refused: {exc}"
+                        )
+                if ranges is None:
+                    continue
+                for needle in (prefix + fence, b"body"):
+                    position = source.index(needle)
+                    self.assertEqual(
+                        next(
+                            item["classification"]
+                            for item in ranges
+                            if item["start"] <= position < item["end"]
+                        ),
+                        "exact_literal_or_evidence",
+                    )
+                prose = source.index(b"after")
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= prose < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
+    def test_list_fences_allow_zero_to_three_spaces_after_the_baseline(self):
+        specimens = {
+            "bullet": (b"- item\n", 2),
+            "ordered": (b"10. item\n", 4),
+            "nested": (b"- - - item\n", 6),
+        }
+        for name, (prefix, baseline) in specimens.items():
+            for fence in (b"```", b"~~~~"):
+                for opening_offset, closing_offset in itertools.product(
+                    range(4), repeat=2
+                ):
+                    source = (
+                        prefix
+                        + b" " * (baseline + opening_offset)
+                        + fence
+                        + b"text\n"
+                        + b" " * baseline
+                        + b"body\n"
+                        + b" " * (baseline + closing_offset)
+                        + fence
+                        + b"\nafter\n"
+                    )
+                    with self.subTest(
+                        name=name,
+                        fence=fence,
+                        opening_offset=opening_offset,
+                        closing_offset=closing_offset,
+                    ), mock.patch.object(AI, "_source_blob", return_value=source):
+                        ranges = AI._partition_ranges(
+                            f"{name}.md", generated=False
+                        )
+                    literal = source.index(b"body")
+                    prose = source.index(b"after")
+                    self.assertEqual(
+                        next(
+                            item["classification"]
+                            for item in ranges
+                            if item["start"] <= literal < item["end"]
+                        ),
+                        "exact_literal_or_evidence",
+                    )
+                    self.assertEqual(
+                        next(
+                            item["classification"]
+                            for item in ranges
+                            if item["start"] <= prose < item["end"]
+                        ),
+                        "governed_operative_semantics",
+                    )
+
+    def test_invalid_same_line_marker_prefixes_do_not_open_a_fence(self):
+        specimens = {
+            "baseline-plus-four": (
+                b"-     ```text\n"
+                b"      body\n"
+                b"      ```\n"
+                b"after\n"
+            ),
+            "baseline-plus-four-tilde": (
+                b"+     ~~~text\n"
+                b"      body\n"
+                b"      ~~~\n"
+                b"after\n"
+            ),
+            "text-before-fence": (
+                b"- label ```text\n"
+                b"  body\n"
+                b"  label ```\n"
+                b"after\n"
+            ),
+            "ten-digit-ordered-marker": (
+                b"1234567890. ```text\n"
+                b"body\n"
+                b"end ```\n"
+                b"after\n"
+            ),
+            "missing-marker-padding": (
+                b"-```text\n"
+                b"body\n"
+                b"-```\n"
+                b"after\n"
+            ),
+        }
+        for name, source in specimens.items():
+            with self.subTest(name=name), mock.patch.object(
+                AI, "_source_blob", return_value=source
+            ):
+                ranges = AI._partition_ranges(f"{name}.md", generated=False)
+            opener = b"~~~text" if b"~~~text" in source else b"```text"
+            for needle in (opener, b"body"):
+                position = source.index(needle)
+                self.assertEqual(
+                    next(
+                        item["classification"]
+                        for item in ranges
+                        if item["start"] <= position < item["end"]
+                    ),
+                    "governed_operative_semantics",
+                )
+
     def test_same_line_nested_marker_plus_four_does_not_open_a_fence(self):
         source = (
             b"- - item\n"

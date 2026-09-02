@@ -4715,19 +4715,22 @@ def _partition_ranges(
             column += 1 if value == 0x20 else 4 - column % 4
         return column
 
-    def update_list_containers(line: bytes, active: list[int]) -> list[int]:
-        """Track absolute content indents for source-proved list containers."""
+    def update_list_containers(
+        line: bytes, active: list[int]
+    ) -> tuple[list[int], tuple[int, int] | None]:
+        """Track list baselines and the content start after same-line markers."""
         if not line.strip(b" \t\r\n"):
-            return active
+            return active, None
         indent = leading_spaces(line)
         result = list(active)
         while result and indent < result[-1]:
             result.pop()
         parent = result[-1] if result else 0
         if indent < parent or indent - parent > 3:
-            return result
+            return result, None
         byte_index = indent
         column = indent
+        content_start: tuple[int, int] | None = None
         while True:
             marker = re.match(
                 rb"(?:[*+-]|[0-9]{1,9}[.)])([ \t]+)", line[byte_index:]
@@ -4741,15 +4744,15 @@ def _partition_ranges(
             if content_indent <= parent:
                 break
             result.append(content_indent)
-            if padding > 4:
-                break
             byte_index += marker.end(1)
             column = whitespace_end
+            content_start = (byte_index, column)
+            if padding > 4:
+                break
             parent = content_indent
-        return result
+        return result, content_start
 
-    def fence_container(line: bytes, active: list[int]) -> int | None:
-        indent = leading_spaces(line)
+    def fence_container(indent: int, active: list[int]) -> int | None:
         list_container = next(
             (
                 container
@@ -4763,12 +4766,18 @@ def _partition_ranges(
         return 0 if indent <= 3 else None
 
     def fence_marker(
-        line: bytes, container_indent: int
+        line: bytes,
+        container_indent: int,
+        *,
+        byte_index: int = 0,
+        column: int = 0,
     ) -> tuple[bytes, bytes] | None:
-        match = re.match(rb"^( *)(`{3,}|~{3,})([^\r\n]*)", line)
+        match = re.match(
+            rb"^( *)(`{3,}|~{3,})([^\r\n]*)", line[byte_index:]
+        )
         if match is None:
             return None
-        indent = len(match.group(1))
+        indent = column + len(match.group(1))
         if not container_indent <= indent <= container_indent + 3:
             return None
         return match.group(2), match.group(3)
@@ -4806,9 +4815,14 @@ def _partition_ranges(
     pending_template: tuple[int, int] | None = None
     list_containers: list[int] = []
     for index, line in enumerate(lines):
+        content_start: tuple[int, int] | None = None
         if active_fence is None:
-            list_containers = update_list_containers(line, list_containers)
-            container_indent = fence_container(line, list_containers)
+            list_containers, content_start = update_list_containers(
+                line, list_containers
+            )
+            container_indent = fence_container(
+                leading_spaces(line), list_containers
+            )
         else:
             container_indent = active_fence[2]
         marker = (
@@ -4816,6 +4830,18 @@ def _partition_ranges(
             if container_indent is None
             else fence_marker(line, container_indent)
         )
+        if marker is None and content_start is not None:
+            byte_index, column = content_start
+            same_line_container = fence_container(column, list_containers)
+            if same_line_container is not None:
+                marker = fence_marker(
+                    line,
+                    same_line_container,
+                    byte_index=byte_index,
+                    column=column,
+                )
+                if marker is not None:
+                    container_indent = same_line_container
         classification = "governed_operative_semantics"
         if active_fence is not None:
             classification = "exact_literal_or_evidence"
