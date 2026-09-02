@@ -1,4 +1,5 @@
 import copy
+import importlib
 import json
 import hashlib
 import io
@@ -40,6 +41,8 @@ EXCEPTION_FIXTURES = FIXTURES / "exceptions"
 RUNTIME_FIXTURES = FIXTURES / "runtime"
 COMPOSITION_FIXTURES = FIXTURES / "composition"
 COMPOSITION_CASES = COMPOSITION_FIXTURES / "cases.json"
+PROMISE_ID_HISTORY = ROOT / "tests" / "promise_machine_id_history.json"
+FIAT_ENTRY_REF = "7e97b5195d5b0e43146b4200f26cd41b89003413"
 PYTHON_RUNTIME_BINDINGS = {
     "promise_id": "adapter_output.binding.promise_id",
     "subject": "adapter_output.binding.subject",
@@ -244,6 +247,86 @@ def run_cli(*arguments):
     )
 
 
+def fixture_promise_fields():
+    return {
+        "Promise": "The named check accepted the subject.",
+        "Evidence": "example check record",
+        "Evidence classes": "checked",
+        "Boundary": "No claim beyond the named rule.",
+        "Authorises": "Use of the checked result.",
+        "Consequence": "1",
+        "Refuses": "Use of a missing or failed result.",
+        "Recovery": "Repair the input and rerun the check.",
+        "Exceptions": "none",
+    }
+
+
+def promise_semantic_sha256(fields):
+    encoded = json.dumps(
+        {field: fields[field] for field in PROMISE_FIELDS},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def history_snapshot(skill_path, fields):
+    return {
+        "skill_path": skill_path,
+        "semantic_sha256": promise_semantic_sha256(fields),
+    }
+
+
+def history_row(
+    promise_id,
+    *,
+    entry=None,
+    current=None,
+    action="unchanged",
+    predecessors=(),
+    successors=(),
+):
+    return {
+        "promise_id": promise_id,
+        "entry": copy.deepcopy(entry),
+        "current": copy.deepcopy(current),
+        "continuity": {
+            "action": action,
+            "predecessors": list(predecessors),
+            "successors": list(successors),
+        },
+    }
+
+
+def write_history(root, entries, *, entry_ref=FIAT_ENTRY_REF):
+    entry_inventory = sorted(
+        (
+            {
+                "promise_id": row["promise_id"],
+                **copy.deepcopy(row["entry"]),
+            }
+            for row in entries
+            if row["entry"] is not None
+        ),
+        key=lambda row: row["promise_id"],
+    )
+    encoded = json.dumps(
+        entry_inventory, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    document = {
+        "contract": "promise-machine/v1",
+        "schema": "promise-machine-id-history/v1",
+        "entry_ref": entry_ref,
+        "entry_count": len(entry_inventory),
+        "entry_inventory_sha256": hashlib.sha256(encoded).hexdigest(),
+        "entries": copy.deepcopy(entries),
+    }
+    history = root / "tests" / "promise_machine_id_history.json"
+    history.parent.mkdir(parents=True, exist_ok=True)
+    history.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+    return history, document
+
+
 def make_plugin(root, name="example"):
     plugin = root / "plugins" / name
     for host in (".claude-plugin", ".codex-plugin"):
@@ -274,17 +357,7 @@ def make_licensed_plugin(root, name="example"):
 def write_skill(plugin, name="example", *, promise_id="example-check", fields=None):
     directory = plugin / "skills" / name
     directory.mkdir(parents=True)
-    values = {
-        "Promise": "The named check accepted the subject.",
-        "Evidence": "example check record",
-        "Evidence classes": "checked",
-        "Boundary": "No claim beyond the named rule.",
-        "Authorises": "Use of the checked result.",
-        "Consequence": "1",
-        "Refuses": "Use of a missing or failed result.",
-        "Recovery": "Repair the input and rerun the check.",
-        "Exceptions": "none",
-    }
+    values = fixture_promise_fields()
     if fields is not None:
         values = fields
     rows = "\n".join(f"- {field}: {value}" for field, value in values.items())
@@ -335,7 +408,13 @@ def write_overlay(root, skill, *, promise_id="hexaemeron-upstream-run", digest=N
         "# Hexaemeron Promise Machine overlays\n\n"
         f"### {promise_id}\n\n"
         f"- Path: `{path}`\n"
-        f"- SHA-256: `{digest}`\n"
+        "- Repository: `https://github.com/example/upstream.git`\n"
+        "- Commit: `0123456789abcdef0123456789abcdef01234567`\n"
+        "- Upstream path: `upstream/SKILL.md`\n"
+        f"- Upstream SHA-256: `{digest}`\n"
+        f"- Local SHA-256: `{digest}`\n"
+        "- Verification status: upstream-bytes-verified, "
+        "local-bytes-identical, publisher-authentication-unknown\n"
         "- Promise: The named vendored operation completed.\n"
         "- Evidence: The digest-matched instruction and operation record.\n"
         "- Evidence classes: checked, recorded\n"
@@ -3018,24 +3097,57 @@ class PromiseStructureTests(unittest.TestCase):
 class PromiseOverlayTests(unittest.TestCase):
     def test_repository_overlay_population_is_complete_and_digest_bound(self):
         expected = {
-            "plugins/hexaemeron/skills/fizz/SKILL.md":
+            "plugins/hexaemeron/skills/fizz/SKILL.md": (
+                "fizz/SKILL.md",
+                "fa706e94e9ec3456528985548f46461d44442d9223e26b2a0dbbb8b5f522172a",
                 "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
-            "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md":
+                "local-bytes-modified",
+            ),
+            "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md": (
+                "fizz/skills/fizz-convert/SKILL.md",
                 "59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7",
-            "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md":
+                "59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7",
+                "local-bytes-identical",
+            ),
+            "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md": (
+                "fizz/skills/fizz-sync/SKILL.md",
                 "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
-            "plugins/hexaemeron/skills/x-ray/SKILL.md":
+                "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
+                "local-bytes-identical",
+            ),
+            "plugins/hexaemeron/skills/x-ray/SKILL.md": (
+                "x-ray/SKILL.md",
                 "b23bb94517805c1b8ce717d0e1e0282b0b5c14c7b16f4c32e73940292d3d4a41",
-            "plugins/hexaemeron/skills/solidity-auditor/SKILL.md":
+                "b23bb94517805c1b8ce717d0e1e0282b0b5c14c7b16f4c32e73940292d3d4a41",
+                "local-bytes-identical",
+            ),
+            "plugins/hexaemeron/skills/solidity-auditor/SKILL.md": (
+                "solidity-auditor/SKILL.md",
                 "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
+                "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
+                "local-bytes-identical",
+            ),
         }
         text = (ROOT / "plugins" / "hexaemeron" / "PROMISES.md").read_text(
             encoding="utf-8"
         )
-        for path, digest in expected.items():
+        for path, (upstream_path, upstream_digest, local_digest, relation) in expected.items():
             with self.subTest(path=path):
                 self.assertIn(f"- Path: `{path}`", text)
-                self.assertIn(f"- SHA-256: `{digest}`", text)
+                self.assertIn(
+                    "- Repository: `https://github.com/pashov/skills.git`", text
+                )
+                self.assertIn(
+                    "- Commit: `aadee2ca49cae20246af378ef791d2d4f941e237`", text
+                )
+                self.assertIn(f"- Upstream path: `{upstream_path}`", text)
+                self.assertIn(f"- Upstream SHA-256: `{upstream_digest}`", text)
+                self.assertIn(f"- Local SHA-256: `{local_digest}`", text)
+                self.assertIn(
+                    "- Verification status: upstream-bytes-verified, "
+                    f"{relation}, publisher-authentication-unknown",
+                    text,
+                )
 
         completed = run_cli("check", "--only", "contracts,overlays", "--json")
         report = json.loads(completed.stdout)
@@ -3084,6 +3196,656 @@ class PromiseOverlayTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM055", [item["code"] for item in report["findings"]])
+
+    def test_missing_or_duplicate_provenance_field_is_refused(self):
+        mutations = {
+            "missing": lambda text: text.replace(
+                "- Repository: `https://github.com/example/upstream.git`\n", ""
+            ),
+            "duplicate": lambda text: text.replace(
+                "- Repository: `https://github.com/example/upstream.git`\n",
+                "- Repository: `https://github.com/example/upstream.git`\n" * 2,
+            ),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                plugin = make_plugin(target, "hexaemeron")
+                skill = write_vendored_skill(plugin)
+                overlay = write_overlay(target, skill)
+                overlay.write_text(
+                    mutate(overlay.read_text(encoding="utf-8")), encoding="utf-8"
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "overlays", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("PM054", [item["code"] for item in report["findings"]])
+
+    def test_overlay_fields_cannot_be_borrowed_from_a_later_section(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target, "hexaemeron")
+            skill = write_vendored_skill(plugin)
+            overlay = write_overlay(target, skill)
+            text = overlay.read_text(encoding="utf-8").replace(
+                "- Repository: `https://github.com/example/upstream.git`\n", ""
+            )
+            overlay.write_text(
+                text
+                + "\n## Unrelated example\n\n"
+                + "- Repository: `https://github.com/example/upstream.git`\n",
+                encoding="utf-8",
+            )
+            completed = run_cli(
+                "check", "--root", target, "--only", "overlays", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM054", [item["code"] for item in report["findings"]])
+
+    def test_container_hidden_overlay_declaration_is_refused(self):
+        wrappers = {
+            "fenced": ("```text\n", "```\n"),
+            "raw-html": ("<div>\n", "</div>\n"),
+        }
+        for name, (opening, closing) in wrappers.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                plugin = make_plugin(target, "hexaemeron")
+                skill = write_vendored_skill(plugin)
+                overlay = write_overlay(target, skill)
+                text = overlay.read_text(encoding="utf-8")
+                heading, declaration = text.split("\n\n", 1)
+                overlay.write_text(
+                    f"{heading}\n\n{opening}{declaration}{closing}",
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "overlays", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("PM052", [item["code"] for item in report["findings"]])
+
+    def test_unsafe_overlay_path_is_refused_before_filesystem_observation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target, "hexaemeron")
+            skill = write_vendored_skill(plugin)
+            overlay = write_overlay(target, skill)
+            declared = skill.relative_to(target).as_posix()
+            overlay.write_text(
+                overlay.read_text(encoding="utf-8").replace(
+                    f"- Path: `{declared}`", "- Path: `plugins/\x00/SKILL.md`"
+                ),
+                encoding="utf-8",
+            )
+            completed = run_cli(
+                "check", "--root", target, "--only", "overlays", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertIn("PM055", [item["code"] for item in report["findings"]])
+
+    def test_mutable_commit_and_switched_repository_host_are_refused(self):
+        mutations = {
+            "mutable-commit": (
+                "`0123456789abcdef0123456789abcdef01234567`",
+                "`v0.0.0`",
+                "PM061",
+            ),
+            "switched-host": (
+                "https://github.com/example/upstream.git",
+                "https://gitlab.example/example/upstream.git",
+                "PM060",
+            ),
+            "unsafe-upstream-path": (
+                "`upstream/SKILL.md`",
+                "`../outside/SKILL.md`",
+                "PM062",
+            ),
+            "malformed-digests": (
+                "`" + hashlib.sha256(
+                    (
+                        "---\nname: upstream\ndescription: A vendored fixture skill.\n"
+                        "---\n\n# upstream\n"
+                    ).encode("utf-8")
+                ).hexdigest() + "`",
+                "`not-a-digest`",
+                "PM056",
+            ),
+        }
+        for name, (old, new, code) in mutations.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                plugin = make_plugin(target, "hexaemeron")
+                skill = write_vendored_skill(plugin)
+                overlay = write_overlay(target, skill)
+                overlay.write_text(
+                    overlay.read_text(encoding="utf-8").replace(old, new),
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "overlays", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn(code, [item["code"] for item in report["findings"]])
+
+    def test_verification_status_preserves_unknown_and_matches_digests(self):
+        mutations = {
+            "strengthened-publisher": (
+                "publisher-authentication-unknown",
+                "publisher-authentication-verified",
+            ),
+            "false-modified-relation": (
+                "local-bytes-identical",
+                "local-bytes-modified",
+            ),
+        }
+        for name, (old, new) in mutations.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                plugin = make_plugin(target, "hexaemeron")
+                skill = write_vendored_skill(plugin)
+                overlay = write_overlay(target, skill)
+                overlay.write_text(
+                    overlay.read_text(encoding="utf-8").replace(old, new),
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "overlays", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("PM063", [item["code"] for item in report["findings"]])
+
+
+class VendoredUpstreamVerifierTests(unittest.TestCase):
+    class Response:
+        def __init__(self, payload=b"", *, status=200, headers=None):
+            self.status = status
+            self._stream = io.BytesIO(payload)
+            self._headers = headers or {}
+
+        def getheader(self, name):
+            return self._headers.get(name)
+
+        def read(self, size=-1):
+            return self._stream.read(size)
+
+    class Connection:
+        def __init__(self, response):
+            self.response = response
+            self.requested = []
+            self.closed = False
+
+        def request(self, method, target, *, headers):
+            self.requested.append((method, target, headers))
+
+        def getresponse(self):
+            return self.response
+
+        def close(self):
+            self.closed = True
+
+    def make_fixture(self, root):
+        plugin = make_plugin(root, "hexaemeron")
+        skill = write_vendored_skill(plugin)
+        write_overlay(root, skill)
+        return skill, skill.relative_to(root).as_posix()
+
+    def verifier(self):
+        return importlib.import_module("scripts.verify_vendored_provenance")
+
+    def test_exact_immutable_upstream_bytes_are_verified(self):
+        verifier = self.verifier()
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            skill, selected = self.make_fixture(target)
+            connection = self.Connection(self.Response(skill.read_bytes()))
+            calls = []
+
+            def factory(host, *, timeout, context):
+                calls.append((host, timeout, context))
+                return connection
+
+            verified, findings = verifier.verify_selected(
+                target, [selected], connection_factory=factory
+            )
+        self.assertEqual(findings, [])
+        self.assertEqual(len(verified), 1)
+        self.assertEqual(verified[0]["local_path"], selected)
+        self.assertEqual(verified[0]["publisher_authentication"], "unknown")
+        self.assertEqual(calls[0][0], "raw.githubusercontent.com")
+        self.assertEqual(
+            connection.requested[0][1],
+            "/example/upstream/0123456789abcdef0123456789abcdef01234567/"
+            "upstream/SKILL.md",
+        )
+        self.assertTrue(connection.closed)
+
+    def test_redirect_is_refused_without_following_it(self):
+        verifier = self.verifier()
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            _, selected = self.make_fixture(target)
+            connections = []
+
+            def factory(host, *, timeout, context):
+                connection = self.Connection(
+                    self.Response(
+                        status=302,
+                        headers={"Location": "https://evil.example/payload"},
+                    )
+                )
+                connections.append((host, connection))
+                return connection
+
+            verified, findings = verifier.verify_selected(
+                target, [selected], connection_factory=factory
+            )
+        self.assertEqual(verified, [])
+        self.assertEqual([item.code for item in findings], ["PV003"])
+        self.assertEqual([host for host, _ in connections], ["raw.githubusercontent.com"])
+        self.assertEqual(len(connections[0][1].requested), 1)
+
+    def test_oversized_or_digest_mismatched_upstream_bytes_are_refused(self):
+        verifier = self.verifier()
+        cases = {
+            "oversized": self.Response(
+                b"",
+                headers={"Content-Length": str(verifier.MAX_UPSTREAM_BYTES + 1)},
+            ),
+            "digest-mismatch": self.Response(b"wrong bytes"),
+        }
+        for name, response in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                _, selected = self.make_fixture(target)
+
+                def factory(host, *, timeout, context):
+                    return self.Connection(response)
+
+                verified, findings = verifier.verify_selected(
+                    target, [selected], connection_factory=factory
+                )
+            self.assertEqual(verified, [])
+            self.assertEqual(
+                [item.code for item in findings],
+                ["PV003" if name == "oversized" else "PV004"],
+            )
+
+    def test_selection_is_explicit_unique_and_declared(self):
+        verifier = self.verifier()
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            _, selected = self.make_fixture(target)
+            for selection in (
+                [],
+                [selected, selected],
+                ["plugins/hexaemeron/skills/other/SKILL.md"],
+            ):
+                with self.subTest(selection=selection):
+                    verified, findings = verifier.verify_selected(
+                        target,
+                        selection,
+                        connection_factory=mock.Mock(
+                            side_effect=AssertionError("network must not run")
+                        ),
+                    )
+                    self.assertEqual(verified, [])
+                    self.assertEqual([item.code for item in findings], ["PV001"])
+
+    def test_slow_final_read_cannot_cross_the_total_deadline(self):
+        verifier = self.verifier()
+
+        class Clock:
+            def __init__(self):
+                self.value = 0.0
+
+            def __call__(self):
+                return self.value
+
+        clock = Clock()
+
+        class SlowEOFResponse(self.Response):
+            def read(self, size=-1):
+                clock.value += verifier.TOTAL_TIMEOUT_SECONDS + 1.0
+                return b""
+
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            skill, selected = self.make_fixture(target)
+            overlay = target / "plugins" / "hexaemeron" / "PROMISES.md"
+            local_digest = hashlib.sha256(skill.read_bytes()).hexdigest()
+            empty_digest = hashlib.sha256(b"").hexdigest()
+            overlay.write_text(
+                overlay.read_text(encoding="utf-8")
+                .replace(
+                    f"- Upstream SHA-256: `{local_digest}`",
+                    f"- Upstream SHA-256: `{empty_digest}`",
+                )
+                .replace("local-bytes-identical", "local-bytes-modified"),
+                encoding="utf-8",
+            )
+            connection = self.Connection(SlowEOFResponse())
+
+            def factory(host, *, timeout, context):
+                return connection
+
+            verified, findings = verifier.verify_selected(
+                target,
+                [selected],
+                connection_factory=factory,
+                clock=clock,
+            )
+        self.assertEqual(verified, [])
+        self.assertEqual([item.code for item in findings], ["PV003"])
+
+
+class PromiseHistoryTests(unittest.TestCase):
+    def make_single_history(self, root):
+        plugin = make_plugin(root)
+        skill = write_skill(plugin)
+        snapshot = history_snapshot(
+            (skill / "SKILL.md").relative_to(root).as_posix(),
+            fixture_promise_fields(),
+        )
+        entries = [
+            history_row(
+                "example-check", entry=snapshot, current=snapshot, action="unchanged"
+            )
+        ]
+        history, document = write_history(root, entries)
+        return skill / "SKILL.md", history, document
+
+    def test_repository_history_is_seeded_and_complete(self):
+        document = json.loads(PROMISE_ID_HISTORY.read_text(encoding="utf-8"))
+        self.assertEqual(document["entry_ref"], FIAT_ENTRY_REF)
+        self.assertEqual(document["entry_count"], 80)
+        self.assertEqual(len(document["entries"]), 80)
+        self.assertEqual(
+            len({row["promise_id"] for row in document["entries"]}), 80
+        )
+        completed = run_cli("check", "--only", "history", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertEqual(report["counts"]["history_entries"], 80)
+        self.assertEqual(report["counts"]["active_history_ids"], 80)
+
+    def test_deleted_or_duplicated_history_id_is_refused(self):
+        for name in ("deleted", "duplicated"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                _, history, document = self.make_single_history(target)
+                if name == "deleted":
+                    document["entries"].clear()
+                    expected = "PM100"
+                else:
+                    document["entries"].append(copy.deepcopy(document["entries"][0]))
+                    expected = "PM102"
+                history.write_text(
+                    json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "history", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn(expected, [item["code"] for item in report["findings"]])
+
+    def test_malformed_entry_ref_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            _, history, document = self.make_single_history(target)
+            document["entry_ref"] = "v1"
+            history.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM101", [item["code"] for item in report["findings"]])
+
+    def test_non_object_history_returns_a_stable_finding(self):
+        for document in ([], None, "history"):
+            with self.subTest(document=document), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                _, history, _ = self.make_single_history(target)
+                history.write_text(
+                    json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "history", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1, completed.stderr)
+            self.assertIn("PM100", [item["code"] for item in report["findings"]])
+
+    def test_unhashable_continuity_action_returns_a_stable_finding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            _, history, document = self.make_single_history(target)
+            document["entries"][0]["continuity"]["action"] = []
+            history.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertIn("PM105", [item["code"] for item in report["findings"]])
+
+    def test_invalid_rename_shape_returns_a_stable_finding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target)
+            skill = write_skill(plugin, promise_id="replacement-check") / "SKILL.md"
+            snapshot = history_snapshot(
+                skill.relative_to(target).as_posix(), fixture_promise_fields()
+            )
+            entries = [
+                history_row(
+                    "example-check",
+                    entry=None,
+                    current=None,
+                    action="renamed",
+                    successors=("replacement-check",),
+                ),
+                history_row(
+                    "replacement-check",
+                    entry=None,
+                    current=snapshot,
+                    action="introduced",
+                    predecessors=("example-check",),
+                ),
+            ]
+            write_history(target, entries)
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertIn("PM105", [item["code"] for item in report["findings"]])
+
+    def test_missing_declaration_and_undeclared_active_id_are_refused(self):
+        mutations = ("missing-declaration", "undeclared-active")
+        for name in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                skill, history, document = self.make_single_history(target)
+                if name == "missing-declaration":
+                    skill.write_text(
+                        skill.read_text(encoding="utf-8").replace(
+                            "### example-check", "### replacement-check"
+                        ),
+                        encoding="utf-8",
+                    )
+                else:
+                    ghost = history_snapshot(
+                        "plugins/example/skills/ghost/SKILL.md",
+                        fixture_promise_fields(),
+                    )
+                    document["entries"].append(
+                        history_row(
+                            "ghost-check",
+                            entry=None,
+                            current=ghost,
+                            action="introduced",
+                        )
+                    )
+                    history.write_text(
+                        json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                    )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "history", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("PM103", [item["code"] for item in report["findings"]])
+
+    def test_unrecorded_retirement_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            _, history, document = self.make_single_history(target)
+            document["entries"][0]["current"] = None
+            history.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM105", [item["code"] for item in report["findings"]])
+
+    def test_explicit_rename_is_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target)
+            skill = write_skill(plugin, promise_id="replacement-check") / "SKILL.md"
+            snapshot = history_snapshot(
+                skill.relative_to(target).as_posix(), fixture_promise_fields()
+            )
+            entries = [
+                history_row(
+                    "example-check",
+                    entry=snapshot,
+                    current=None,
+                    action="renamed",
+                    successors=("replacement-check",),
+                ),
+                history_row(
+                    "replacement-check",
+                    entry=None,
+                    current=snapshot,
+                    action="introduced",
+                    predecessors=("example-check",),
+                ),
+            ]
+            write_history(target, entries)
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+
+    def test_explicit_split_is_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target)
+            left = write_skill(plugin, "left", promise_id="left-check") / "SKILL.md"
+            right = write_skill(plugin, "right", promise_id="right-check") / "SKILL.md"
+            entry = history_snapshot(
+                "plugins/example/skills/original/SKILL.md", fixture_promise_fields()
+            )
+            left_snapshot = history_snapshot(
+                left.relative_to(target).as_posix(), fixture_promise_fields()
+            )
+            right_snapshot = history_snapshot(
+                right.relative_to(target).as_posix(), fixture_promise_fields()
+            )
+            entries = [
+                history_row(
+                    "example-check",
+                    entry=entry,
+                    current=None,
+                    action="split",
+                    successors=("left-check", "right-check"),
+                ),
+                history_row(
+                    "left-check",
+                    entry=None,
+                    current=left_snapshot,
+                    action="introduced",
+                    predecessors=("example-check",),
+                ),
+                history_row(
+                    "right-check",
+                    entry=None,
+                    current=right_snapshot,
+                    action="introduced",
+                    predecessors=("example-check",),
+                ),
+            ]
+            write_history(target, entries)
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+
+    def test_broken_rename_edge_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target)
+            skill = write_skill(plugin, promise_id="replacement-check") / "SKILL.md"
+            snapshot = history_snapshot(
+                skill.relative_to(target).as_posix(), fixture_promise_fields()
+            )
+            entries = [
+                history_row(
+                    "example-check",
+                    entry=snapshot,
+                    current=None,
+                    action="renamed",
+                    successors=("replacement-check",),
+                ),
+                history_row(
+                    "replacement-check",
+                    entry=None,
+                    current=snapshot,
+                    action="introduced",
+                ),
+            ]
+            write_history(target, entries)
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM106", [item["code"] for item in report["findings"]])
+
+    def test_semantic_split_cannot_reuse_one_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            skill, history, document = self.make_single_history(target)
+            changed_fields = fixture_promise_fields()
+            changed_fields["Promise"] = "Two unrelated outcomes are now accepted."
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    fixture_promise_fields()["Promise"], changed_fields["Promise"]
+                ),
+                encoding="utf-8",
+            )
+            document["entries"][0]["current"] = history_snapshot(
+                skill.relative_to(target).as_posix(), changed_fields
+            )
+            history.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM104", [item["code"] for item in report["findings"]])
 
 
 class PromiseStructureValidationTests(unittest.TestCase):

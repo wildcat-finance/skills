@@ -33,7 +33,10 @@ CONFIG = ROOT / "skills.sh.json"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
-MAX_FILES = 1_040
+# Step 5 adds the offline id-history ledger and the separate upstream verifier
+# to the dependency-closed runtime. Keep the ceiling exact enough that another
+# unreviewed payload addition still fails.
+MAX_FILES = 1_042
 MAX_BYTES = 25 * 1024 * 1024
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",

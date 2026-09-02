@@ -92,6 +92,23 @@ The accepted study and runbook live under
 `docs/promise-machine/obligation-gates/`. They are the build contract for this
 framework change; this ADR is the standing reason for the interface choice.
 
+Promise ids are also an append-only interface. The committed
+`tests/promise_machine_id_history.json` starts at Fiat entry commit
+`7e97b5195d5b0e43146b4200f26cd41b89003413`. Its entry count and canonical
+digest bind all 80 original ids, paths, and semantic digests. A semantic
+digest covers the nine authored Promise Machine fields. Each id has one row
+with its entry snapshot, current snapshot, and one continuity action:
+`unchanged`, `introduced`, `retired`, `renamed`, or `split`.
+
+An unchanged row must preserve its entry path and semantic digest. Retirement
+has no successor. Rename has one active successor with the same semantic
+digest. Split has at least two active successors. Both sides of every rename
+or split edge name each other. Every current declaration has exactly one
+active row, and every active row resolves to exactly one current declaration.
+The offline core checks this file without reading Git history or running a
+command. Changing the entry anchor is therefore an explicit reviewed change,
+not a side effect of checking the working tree.
+
 ## Alternatives
 
 **Treat normative words as the obligation grammar.** Rejected. Words such as
@@ -113,6 +130,11 @@ validator can agree with its own specimen while production accepts the bad
 law, and an external engine adds a dependency and a second expression of the
 same rules.
 
+**Read Git history during every core check.** Rejected. A checkout may be
+shallow or packaged without its object database, and the core is required to
+remain offline and child-process free. The committed entry anchor and explicit
+continuity graph preserve the comparison boundary instead.
+
 ## Consequences
 
 A reader can move from an explicit clause to the gate, red specimen,
@@ -130,3 +152,8 @@ semantics already run.
 The registry and fixtures become dependencies of the portable Promise Machine
 runtime. Generated plugin law copies and the portable runtime are regenerated
 from authored inputs; they are never edited by hand.
+
+Removing a promise id now requires a retained retirement, rename, or split
+row. Reusing one unchanged id for different semantics fails even when its
+current digest is updated in the history file. A newly introduced id is
+visible as such and cannot silently replace an entry id.

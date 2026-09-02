@@ -75,7 +75,32 @@ SUPPORTED_EVIDENCE_CLASSES = {
 PROMISE_ID = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
 OVERLAY_PATH = Path("plugins/hexaemeron/PROMISES.md")
 OVERLAY_HEADING = "# Hexaemeron Promise Machine overlays"
-OVERLAY_FIELDS = ("Path", "SHA-256", *REQUIRED_FIELDS)
+OVERLAY_PROVENANCE_FIELDS = (
+    "Path",
+    "Repository",
+    "Commit",
+    "Upstream path",
+    "Upstream SHA-256",
+    "Local SHA-256",
+    "Verification status",
+)
+OVERLAY_FIELDS = (*OVERLAY_PROVENANCE_FIELDS, *REQUIRED_FIELDS)
+GITHUB_REPOSITORY_URI = re.compile(
+    r"https://github\.com/"
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,38})/"
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,99})\.git"
+)
+FULL_GIT_COMMIT = re.compile(r"[0-9a-f]{40}")
+SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+VERIFICATION_STATUS_PREFIX = "upstream-bytes-verified"
+VERIFICATION_LOCAL_RELATIONS = {
+    "local-bytes-identical",
+    "local-bytes-modified",
+}
+VERIFICATION_PUBLISHER_STATUS = "publisher-authentication-unknown"
+HISTORY_PATH = Path("tests/promise_machine_id_history.json")
+HISTORY_SCHEMA = "promise-machine-id-history/v1"
+HISTORY_ACTIONS = {"unchanged", "introduced", "retired", "renamed", "split"}
 COVERAGE_PATH = Path("tests/promise_machine_coverage.json")
 COVERAGE_SCHEMA = "promise-machine-coverage/v1"
 OBLIGATION_PATH = Path("tests/promise_machine_obligations.json")
@@ -3950,7 +3975,10 @@ def check_overlays(root: Path, inventory: Inventory):
     if loaded is None:
         return 0, findings
     _, text = loaded
-    lines = text.splitlines()
+    lines = [
+        line if isinstance(line, str) else ""
+        for line in markdown_unfenced_lines(text)
+    ]
     if lines.count(OVERLAY_HEADING) != 1:
         findings.append(
             Finding(
@@ -3999,7 +4027,7 @@ def check_overlays(root: Path, inventory: Inventory):
     seen_paths: dict[str, list[str]] = {}
     seen_ids: set[str] = set()
     for offset, block_start in enumerate(blocks):
-        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else len(lines)
+        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
         promise_id = lines[block_start][4:].strip()
         if not PROMISE_ID.fullmatch(promise_id):
             findings.append(
@@ -4040,7 +4068,7 @@ def check_overlays(root: Path, inventory: Inventory):
                     "structural",
                     expected_overlay,
                     f"overlay declaration contains unknown fields: {unknown!r}",
-                    "use only Path, SHA-256 and the nine promise fields",
+                    "use only the seven provenance fields and nine promise fields",
                     promise_id=promise_id or None,
                 )
             )
@@ -4103,17 +4131,17 @@ def check_overlays(root: Path, inventory: Inventory):
                         promise_id=promise_id or None,
                     )
                 )
-            digests = fields.get("SHA-256", [])
-            if len(digests) == 1:
-                digest = digests[0].strip("`")
-                if re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            local_digests = fields.get("Local SHA-256", [])
+            if len(local_digests) == 1:
+                local_digest = local_digests[0].strip("`")
+                if SHA256_HEX.fullmatch(local_digest) is None:
                     findings.append(
                         Finding(
                             "PM056",
                             "structural",
                             expected_overlay,
-                            "overlay SHA-256 is not 64 lowercase hexadecimal characters",
-                            "record the full lowercase SHA-256 of the vendored instruction bytes",
+                            "overlay Local SHA-256 is not 64 lowercase hexadecimal characters",
+                            "record the full lowercase SHA-256 of the local vendored instruction bytes",
                             promise_id=promise_id or None,
                         )
                     )
@@ -4127,17 +4155,127 @@ def check_overlays(root: Path, inventory: Inventory):
                         if target_loaded is not None
                         else ""
                     )
-                    if actual != digest:
+                    if actual != local_digest:
                         findings.append(
                             Finding(
                                 "PM057",
                                 "drift",
                                 declared,
-                                f"vendored instruction digest is {actual}; overlay records {digest}",
-                                "review the upstream change and update the first-party overlay deliberately",
+                                f"vendored instruction digest is {actual}; overlay records {local_digest}",
+                                "review the local change and update the first-party provenance deliberately",
                                 promise_id=promise_id or None,
                             )
                         )
+
+        repositories = fields.get("Repository", [])
+        if len(repositories) == 1:
+            repository = repositories[0].strip("`")
+            if GITHUB_REPOSITORY_URI.fullmatch(repository) is None:
+                findings.append(
+                    Finding(
+                        "PM060",
+                        "identity",
+                        expected_overlay,
+                        f"overlay repository is not an allowlisted HTTPS GitHub clone URI: {repository!r}",
+                        "record the exact https://github.com/owner/repository.git upstream URI",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        commits = fields.get("Commit", [])
+        if len(commits) == 1:
+            commit = commits[0].strip("`")
+            if FULL_GIT_COMMIT.fullmatch(commit) is None:
+                findings.append(
+                    Finding(
+                        "PM061",
+                        "identity",
+                        expected_overlay,
+                        f"overlay commit is not an immutable full lowercase commit: {commit!r}",
+                        "resolve the upstream tag or branch to its full 40-character commit",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        upstream_paths = fields.get("Upstream path", [])
+        if len(upstream_paths) == 1:
+            upstream_path = upstream_paths[0].strip("`")
+            parts = upstream_path.split("/")
+            if (
+                not upstream_path
+                or upstream_path.startswith("/")
+                or "\\" in upstream_path
+                or any(part in {"", ".", ".."} for part in parts)
+                or any(
+                    re.fullmatch(r"[A-Za-z0-9._-]+", part) is None
+                    for part in parts
+                )
+                or not upstream_path.endswith("SKILL.md")
+            ):
+                findings.append(
+                    Finding(
+                        "PM062",
+                        "identity",
+                        expected_overlay,
+                        f"overlay upstream path is not a safe repository-relative skill path: {upstream_path!r}",
+                        "record one confined repository-relative upstream SKILL.md path",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        upstream_digests = fields.get("Upstream SHA-256", [])
+        upstream_digest = ""
+        if len(upstream_digests) == 1:
+            upstream_digest = upstream_digests[0].strip("`")
+            if SHA256_HEX.fullmatch(upstream_digest) is None:
+                findings.append(
+                    Finding(
+                        "PM056",
+                        "structural",
+                        expected_overlay,
+                        "overlay Upstream SHA-256 is not 64 lowercase hexadecimal characters",
+                        "record the full lowercase SHA-256 of the immutable upstream bytes",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        local_digests = fields.get("Local SHA-256", [])
+        local_digest = (
+            local_digests[0].strip("`") if len(local_digests) == 1 else ""
+        )
+        statuses = fields.get("Verification status", [])
+        if len(statuses) == 1:
+            status = tuple(item.strip() for item in statuses[0].split(","))
+            status_is_valid = (
+                len(status) == 3
+                and status[0] == VERIFICATION_STATUS_PREFIX
+                and status[1] in VERIFICATION_LOCAL_RELATIONS
+                and status[2] == VERIFICATION_PUBLISHER_STATUS
+            )
+            relation_is_valid = (
+                SHA256_HEX.fullmatch(upstream_digest) is not None
+                and SHA256_HEX.fullmatch(local_digest) is not None
+                and (
+                    (status[1] == "local-bytes-identical" and upstream_digest == local_digest)
+                    or (
+                        status[1] == "local-bytes-modified"
+                        and upstream_digest != local_digest
+                    )
+                )
+                if status_is_valid
+                else False
+            )
+            if not status_is_valid or not relation_is_valid:
+                findings.append(
+                    Finding(
+                        "PM063",
+                        "identity",
+                        expected_overlay,
+                        "overlay verification status is unsupported or contradicts its two byte digests",
+                        "record verified upstream bytes, the exact local byte relation and publisher-authentication-unknown",
+                        promise_id=promise_id or None,
+                    )
+                )
 
         evidence_values = fields.get("Evidence classes", [])
         if len(evidence_values) == 1:
@@ -4240,7 +4378,10 @@ def promise_records(root: Path, inventory: Inventory):
         root / OVERLAY_PATH, root, missing_code="PM060", unsafe_code="PM060"
     )
     if loaded is not None:
-        lines = loaded[1].splitlines()
+        lines = [
+            line if isinstance(line, str) else ""
+            for line in markdown_unfenced_lines(loaded[1])
+        ]
         heading_index = lines.index(OVERLAY_HEADING) if OVERLAY_HEADING in lines else 0
         section_end = next(
             (
@@ -4256,7 +4397,7 @@ def promise_records(root: Path, inventory: Inventory):
             if lines[index].startswith("### ")
         ]
         for offset, block_start in enumerate(blocks):
-            block_end = blocks[offset + 1] if offset + 1 < len(blocks) else len(lines)
+            block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
             promise_id = lines[block_start][4:].strip()
             declared = ""
             evidence_classes: frozenset[str] = frozenset()
@@ -4281,6 +4422,526 @@ def promise_records(root: Path, inventory: Inventory):
                 )
             )
     return tuple(sorted(records, key=lambda item: item.promise_id))
+
+
+def declaration_field_blocks(text: str, heading: str):
+    lines = [
+        line if isinstance(line, str) else ""
+        for line in markdown_unfenced_lines(text)
+    ]
+    headings = [index for index, line in enumerate(lines) if line == heading]
+    if len(headings) != 1:
+        return []
+    heading_index = headings[0]
+    if heading.startswith("# "):
+        section_end = next(
+            (
+                index
+                for index in range(heading_index + 1, len(lines))
+                if lines[index].startswith("# ") or lines[index].startswith("## ")
+            ),
+            len(lines),
+        )
+    else:
+        section_end = next(
+            (
+                index
+                for index in range(heading_index + 1, len(lines))
+                if lines[index].startswith("## ")
+            ),
+            len(lines),
+        )
+    blocks = [
+        index
+        for index in range(heading_index + 1, section_end)
+        if lines[index].startswith("### ")
+    ]
+    declarations = []
+    for offset, block_start in enumerate(blocks):
+        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
+        fields: dict[str, list[str]] = {}
+        for line in lines[block_start + 1 : block_end]:
+            match = re.fullmatch(r"- \*\*([^*]+):\*\*\s*(.*)", line)
+            if match is None:
+                match = re.fullmatch(r"- ([^:]+):\s*(.*)", line)
+            if match is not None:
+                fields.setdefault(match.group(1).strip(), []).append(
+                    match.group(2).strip()
+                )
+        declarations.append((lines[block_start][4:].strip(), fields))
+    return declarations
+
+
+def semantic_promise_digest(fields: dict[str, list[str]]):
+    if any(
+        len(fields.get(field, [])) != 1 or not fields[field][0]
+        for field in REQUIRED_FIELDS
+    ):
+        return None
+    document = {field: fields[field][0] for field in REQUIRED_FIELDS}
+    encoded = json.dumps(
+        document, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def current_promise_snapshots(root: Path, inventory: Inventory):
+    snapshots: list[dict[str, str]] = []
+    findings: list[Finding] = []
+    for skill in inventory.skills:
+        if skill.governance != "first-party":
+            continue
+        loaded, read_findings = read_markdown(
+            root / skill.path,
+            root,
+            missing_code="PM100",
+            unsafe_code="PM100",
+        )
+        findings.extend(read_findings)
+        if loaded is None:
+            continue
+        for promise_id, fields in declaration_field_blocks(
+            loaded[1], "## Promise Machine contract"
+        ):
+            semantic_digest = semantic_promise_digest(fields)
+            if PROMISE_ID.fullmatch(promise_id) is None or semantic_digest is None:
+                findings.append(
+                    Finding(
+                        "PM100",
+                        "structural",
+                        skill.path,
+                        "current promise cannot be reduced to one stable id and nine semantic fields",
+                        "repair the declaration before recording its continuity",
+                        promise_id=promise_id or None,
+                    )
+                )
+                continue
+            snapshots.append(
+                {
+                    "promise_id": promise_id,
+                    "skill_path": skill.path,
+                    "semantic_sha256": semantic_digest,
+                }
+            )
+
+    vendored = any(skill.governance == "vendored" for skill in inventory.skills)
+    overlay_present = OVERLAY_PATH.as_posix() in inventory.overlays
+    if vendored or overlay_present:
+        loaded, read_findings = read_markdown(
+            root / OVERLAY_PATH,
+            root,
+            missing_code="PM100",
+            unsafe_code="PM100",
+        )
+        findings.extend(read_findings)
+        if loaded is not None:
+            for promise_id, fields in declaration_field_blocks(
+                loaded[1], OVERLAY_HEADING
+            ):
+                semantic_digest = semantic_promise_digest(fields)
+                paths = fields.get("Path", [])
+                if (
+                    PROMISE_ID.fullmatch(promise_id) is None
+                    or semantic_digest is None
+                    or len(paths) != 1
+                    or not paths[0]
+                ):
+                    findings.append(
+                        Finding(
+                            "PM100",
+                            "structural",
+                            OVERLAY_PATH.as_posix(),
+                            "current overlay promise cannot be reduced to one stable id, path and nine semantic fields",
+                            "repair the overlay declaration before recording its continuity",
+                            promise_id=promise_id or None,
+                        )
+                    )
+                    continue
+                snapshots.append(
+                    {
+                        "promise_id": promise_id,
+                        "skill_path": paths[0].strip("`"),
+                        "semantic_sha256": semantic_digest,
+                    }
+                )
+    return snapshots, findings
+
+
+def history_inventory_digest(rows):
+    encoded = json.dumps(
+        sorted(rows, key=lambda row: row["promise_id"]),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def check_history(root: Path, inventory: Inventory):
+    shown = HISTORY_PATH.as_posix()
+    document, findings = read_json(
+        root / HISTORY_PATH,
+        root,
+        max_bytes=MAX_COVERAGE_BYTES,
+        missing_code="PM100",
+        unsafe_code="PM100",
+        malformed_code="PM100",
+        noun="promise-id history",
+    )
+    if document is None:
+        return 0, 0, findings
+
+    required_root = {
+        "contract",
+        "schema",
+        "entry_ref",
+        "entry_count",
+        "entry_inventory_sha256",
+        "entries",
+    }
+    if set(document) != required_root:
+        findings.append(
+            Finding(
+                "PM100",
+                "structural",
+                shown,
+                f"promise-id history root fields are {sorted(document)!r}; expected {sorted(required_root)!r}",
+                "restore the closed promise-id history schema",
+            )
+        )
+    if document.get("contract") != CONTRACT_ID or document.get("schema") != HISTORY_SCHEMA:
+        findings.append(
+            Finding(
+                "PM100",
+                "identity",
+                shown,
+                "promise-id history contract or schema identity is unsupported",
+                f"record {CONTRACT_ID} with schema {HISTORY_SCHEMA}",
+            )
+        )
+    entry_ref = document.get("entry_ref")
+    if not isinstance(entry_ref, str) or FULL_GIT_COMMIT.fullmatch(entry_ref) is None:
+        findings.append(
+            Finding(
+                "PM101",
+                "identity",
+                shown,
+                f"history entry ref is not an immutable full lowercase commit: {entry_ref!r}",
+                "record the exact 40-character Fiat entry commit",
+            )
+        )
+    entries = document.get("entries")
+    if not isinstance(entries, list):
+        findings.append(
+            Finding(
+                "PM100",
+                "structural",
+                shown,
+                "promise-id history entries is not an array",
+                "restore the ordered history entry array",
+            )
+        )
+        return 0, 0, findings
+
+    rows: dict[str, dict] = {}
+    entry_inventory = []
+
+    def parse_snapshot(value, promise_id, label):
+        if value is None:
+            return None, True
+        if not isinstance(value, dict) or set(value) != {
+            "skill_path",
+            "semantic_sha256",
+        }:
+            findings.append(
+                Finding(
+                    "PM100",
+                    "structural",
+                    shown,
+                    f"{label} snapshot has unsupported fields",
+                    "record exactly skill_path and semantic_sha256",
+                    promise_id=promise_id,
+                )
+            )
+            return None, False
+        skill_path = value.get("skill_path")
+        digest = value.get("semantic_sha256")
+        path_parts = skill_path.split("/") if isinstance(skill_path, str) else []
+        if (
+            not isinstance(skill_path, str)
+            or not skill_path
+            or skill_path.startswith("/")
+            or "\\" in skill_path
+            or any(part in {"", ".", ".."} for part in path_parts)
+            or not skill_path.endswith("SKILL.md")
+            or not isinstance(digest, str)
+            or SHA256_HEX.fullmatch(digest) is None
+        ):
+            findings.append(
+                Finding(
+                    "PM100",
+                    "identity",
+                    shown,
+                    f"{label} snapshot path or semantic digest is malformed",
+                    "record one safe canonical skill path and full lowercase semantic digest",
+                    promise_id=promise_id,
+                )
+            )
+            return None, False
+        return {"skill_path": skill_path, "semantic_sha256": digest}, True
+
+    for index, row in enumerate(entries):
+        if not isinstance(row, dict) or set(row) != {
+            "promise_id",
+            "entry",
+            "current",
+            "continuity",
+        }:
+            findings.append(
+                Finding(
+                    "PM100",
+                    "structural",
+                    shown,
+                    f"history row {index} does not match the closed row schema",
+                    "record one id, entry snapshot, current snapshot and continuity object",
+                )
+            )
+            continue
+        promise_id = row.get("promise_id")
+        if not isinstance(promise_id, str) or PROMISE_ID.fullmatch(promise_id) is None:
+            findings.append(
+                Finding(
+                    "PM100",
+                    "identity",
+                    shown,
+                    f"history row {index} has an unstable promise id: {promise_id!r}",
+                    "use one lowercase hyphenated promise id",
+                )
+            )
+            continue
+        if promise_id in rows:
+            findings.append(
+                Finding(
+                    "PM102",
+                    "identity",
+                    shown,
+                    "promise id occurs more than once in history",
+                    "retain exactly one append-only row for the promise id",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        entry, entry_valid = parse_snapshot(row.get("entry"), promise_id, "entry")
+        current, current_valid = parse_snapshot(
+            row.get("current"), promise_id, "current"
+        )
+        continuity = row.get("continuity")
+        continuity_valid = (
+            isinstance(continuity, dict)
+            and set(continuity) == {"action", "predecessors", "successors"}
+            and isinstance(continuity.get("action"), str)
+            and continuity.get("action") in HISTORY_ACTIONS
+            and isinstance(continuity.get("predecessors"), list)
+            and isinstance(continuity.get("successors"), list)
+        )
+        predecessors = continuity.get("predecessors", []) if isinstance(continuity, dict) else []
+        successors = continuity.get("successors", []) if isinstance(continuity, dict) else []
+        if continuity_valid:
+            links = predecessors + successors
+            continuity_valid = (
+                all(
+                    isinstance(item, str) and PROMISE_ID.fullmatch(item) is not None
+                    for item in links
+                )
+                and len(set(predecessors)) == len(predecessors)
+                and len(set(successors)) == len(successors)
+                and promise_id not in links
+            )
+        if not continuity_valid:
+            findings.append(
+                Finding(
+                    "PM105",
+                    "structural",
+                    shown,
+                    "continuity action or its predecessor and successor ids are malformed",
+                    "record one supported action with unique stable related ids",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        action = continuity["action"]
+        shape_is_valid = {
+            "unchanged": entry is not None and current is not None and not predecessors and not successors,
+            "introduced": entry is None and current is not None and len(predecessors) <= 1 and not successors,
+            "retired": entry is not None and current is None and not predecessors and not successors,
+            "renamed": entry is not None and current is None and not predecessors and len(successors) == 1,
+            "split": entry is not None and current is None and not predecessors and len(successors) >= 2,
+        }[action]
+        if not entry_valid or not current_valid or not shape_is_valid:
+            findings.append(
+                Finding(
+                    "PM105",
+                    "structural",
+                    shown,
+                    f"continuity action {action!r} contradicts its entry and current snapshots or links",
+                    "record unchanged, introduced, retired, renamed or split with its required shape",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        rows[promise_id] = {
+            "entry": entry,
+            "current": current,
+            "action": action,
+            "predecessors": predecessors,
+            "successors": successors,
+        }
+        if entry is not None:
+            entry_inventory.append({"promise_id": promise_id, **entry})
+
+    entry_count = document.get("entry_count")
+    entry_digest = document.get("entry_inventory_sha256")
+    actual_entry_digest = history_inventory_digest(entry_inventory)
+    if (
+        type(entry_count) is not int
+        or entry_count < 0
+        or entry_count != len(entry_inventory)
+        or not isinstance(entry_digest, str)
+        or SHA256_HEX.fullmatch(entry_digest) is None
+        or entry_digest != actual_entry_digest
+    ):
+        findings.append(
+            Finding(
+                "PM100",
+                "drift",
+                shown,
+                f"entry inventory anchor does not match {len(entry_inventory)} retained entry rows and digest {actual_entry_digest}",
+                "restore every seeded entry row without rewriting its count or digest",
+            )
+        )
+
+    for promise_id, row in sorted(rows.items()):
+        action = row["action"]
+        if action == "unchanged" and row["entry"] != row["current"]:
+            findings.append(
+                Finding(
+                    "PM104",
+                    "identity",
+                    shown,
+                    "one unchanged promise id carries different entry and current semantics or paths",
+                    "keep the original semantics or retire, rename or split the id explicitly",
+                    promise_id=promise_id,
+                )
+            )
+        for successor in row["successors"]:
+            target = rows.get(successor)
+            if (
+                target is None
+                or target["action"] != "introduced"
+                or target["current"] is None
+                or promise_id not in target["predecessors"]
+            ):
+                findings.append(
+                    Finding(
+                        "PM106",
+                        "identity",
+                        shown,
+                        f"{action} successor {successor!r} does not link back as an active introduced id",
+                        "record both sides of the rename or split continuity edge",
+                        promise_id=promise_id,
+                    )
+                )
+            elif action == "renamed" and row["entry"]["semantic_sha256"] != target["current"]["semantic_sha256"]:
+                findings.append(
+                    Finding(
+                        "PM106",
+                        "identity",
+                        shown,
+                        "renamed promise changes its semantic digest",
+                        "use split for changed claims or preserve the renamed promise semantics",
+                        promise_id=promise_id,
+                    )
+                )
+        for predecessor in row["predecessors"]:
+            source = rows.get(predecessor)
+            if (
+                source is None
+                or source["action"] not in {"renamed", "split"}
+                or promise_id not in source["successors"]
+            ):
+                findings.append(
+                    Finding(
+                        "PM106",
+                        "identity",
+                        shown,
+                        f"introduced id predecessor {predecessor!r} does not link forward through rename or split",
+                        "record both sides of the continuity edge",
+                        promise_id=promise_id,
+                    )
+                )
+
+    declarations, declaration_findings = current_promise_snapshots(root, inventory)
+    findings.extend(declaration_findings)
+    declared: dict[str, dict[str, str]] = {}
+    for declaration in declarations:
+        promise_id = declaration["promise_id"]
+        if promise_id in declared:
+            findings.append(
+                Finding(
+                    "PM103",
+                    "identity",
+                    declaration["skill_path"],
+                    "current promise id is declared more than once",
+                    "retain one current declaration for each active history id",
+                    promise_id=promise_id,
+                )
+            )
+        else:
+            declared[promise_id] = declaration
+    active = {
+        promise_id: row["current"]
+        for promise_id, row in rows.items()
+        if row["current"] is not None
+    }
+    for promise_id in sorted(set(declared) - set(active)):
+        findings.append(
+            Finding(
+                "PM103",
+                "identity",
+                declared[promise_id]["skill_path"],
+                "current promise declaration has no active history row",
+                "add an introduced row or complete the explicit rename or split",
+                promise_id=promise_id,
+            )
+        )
+    for promise_id in sorted(set(active) - set(declared)):
+        findings.append(
+            Finding(
+                "PM103",
+                "identity",
+                shown,
+                "active history id has no current promise declaration",
+                "restore the declaration or record retirement, rename or split",
+                promise_id=promise_id,
+            )
+        )
+    for promise_id in sorted(set(active) & set(declared)):
+        expected = active[promise_id]
+        actual = {
+            "skill_path": declared[promise_id]["skill_path"],
+            "semantic_sha256": declared[promise_id]["semantic_sha256"],
+        }
+        if actual != expected:
+            findings.append(
+                Finding(
+                    "PM104",
+                    "drift",
+                    declared[promise_id]["skill_path"],
+                    "active promise path or semantic digest differs from its history record",
+                    "restore the recorded declaration or use an explicit continuity action",
+                    promise_id=promise_id,
+                )
+            )
+    return len(rows), len(active), findings
 
 
 def parse_groups(raw: str):
@@ -7176,6 +7837,8 @@ def report(
         "licensed_plugins": 0,
         "composition_relations": 0,
         "runtime_bindings": 0,
+        "history_entries": 0,
+        "active_history_ids": 0,
     }
     if stats:
         counts.update(stats)
@@ -7268,6 +7931,7 @@ def parse_only(raw: str):
         "exceptions",
         "imports",
         "runtime",
+        "history",
     }
     unknown = sorted(set(requested) - allowed)
     if unknown or not requested:
@@ -7289,7 +7953,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences,obligations,exceptions,imports,runtime"
+            "versions,hosts,coverage,licences,obligations,exceptions,imports,runtime,history"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -7403,6 +8067,7 @@ def main(argv=None):
             "coverage",
             "licences",
             "runtime",
+            "history",
         }
         if only & inventory_components:
             inventory, inventory_findings = discover_inventory(root)
@@ -7420,6 +8085,13 @@ def main(argv=None):
             overlay_promises, overlay_findings = check_overlays(root, inventory)
             promises += overlay_promises
             findings.extend(overlay_findings)
+        if "history" in only and inventory is not None:
+            history_entries, active_history_ids, history_findings = check_history(
+                root, inventory
+            )
+            stats["history_entries"] = history_entries
+            stats["active_history_ids"] = active_history_ids
+            findings.extend(history_findings)
         if "identity" in only and inventory is not None:
             findings.extend(check_identity(inventory))
         if "routers" in only and inventory is not None:

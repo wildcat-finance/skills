@@ -1,0 +1,14 @@
+{
+  "schema": "promise-machine-history-cases/v1",
+  "cases": [
+    {"name": "deleted-entry-row", "expected_finding": "PM100"},
+    {"name": "duplicate-history-id", "expected_finding": "PM102"},
+    {"name": "missing-current-declaration", "expected_finding": "PM103"},
+    {"name": "undeclared-active-id", "expected_finding": "PM103"},
+    {"name": "semantic-reuse", "expected_finding": "PM104"},
+    {"name": "unrecorded-retirement", "expected_finding": "PM105"},
+    {"name": "unhashable-continuity-action", "expected_finding": "PM105"},
+    {"name": "invalid-rename-shape", "expected_finding": "PM105"},
+    {"name": "broken-rename-or-split-edge", "expected_finding": "PM106"}
+  ]
+}

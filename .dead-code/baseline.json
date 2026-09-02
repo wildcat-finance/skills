@@ -2822,10 +2822,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:13174946566e13e186afec322bd20fd3a21bbc540615c9ff83ce9c9dedd6863d",
+      "id": "sha256:5d5acb2e5bbafb17f179f38dc25176cbf900c28f987255ddb89277f259cf9ead",
       "path": "scripts/promise_machine.py",
       "suppressed": false,
-      "symbol": "line:3505:constant-true"
+      "symbol": "line:3530:constant-true"
     },
     {
       "analyser_id": "python",
@@ -2906,6 +2906,20 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:7db1464a309521b0f6be5e8563570196b44c0dcb9e4d24534c81cb95f9b0ccbb",
+      "path": "scripts/verify_vendored_provenance.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0259603d207c3ebfcd9cb1100460806605eb89c8c58cce1263830ddb17e2c9b1",
+      "path": "scripts/verify_vendored_provenance.py",
+      "suppressed": false,
+      "symbol": "line:135:constant-true"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:77d805e2820f2e4e8580efda3f5f7e4b7245c98dc1423bb6ab3b0ad59e50c2f8",
       "path": "tests/emit_router_selection_report.py",
       "suppressed": false,
@@ -2955,10 +2969,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:6294cf62f0cefc7c349dd00829eae734c3f9bfe85fcdd7bbe0c07e70f03621e6",
+      "id": "sha256:8b818903456e3c1d1f8fcaeea79348c70c66d86cf604a477a4e704e1e4fe2371",
       "path": "tests/test_promise_machine_contract.py",
       "suppressed": false,
-      "symbol": "test_missing_root_licence_is_refused.plugin@2610"
+      "symbol": "test_missing_root_licence_is_refused.plugin@2689"
     },
     {
       "analyser_id": "python",
@@ -3076,10 +3090,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "d0cb805ec8cfc6de4929128229b824d16eaa7ac0",
-    "git_tree": "6ea6164305c71ef5a034a3e33c2d2cac389c36da"
+    "commit": "e092c11f70f6b924f7dffa77e9239b6d3365e407",
+    "git_tree": "8f8191c882fffa29d521677dfd700b8fdef7bd4a"
   },
   "universe": {
-    "id": "sha256:f3f2340a0020c39b362ce47a6a2c34d7a6b945da0ea71bb5f6c46187c805c3f8"
+    "id": "sha256:98865d43a4d0df4da535e92c921c97fbd6485d17362e5384d789a362fc2f0cfc"
   }
 }
