@@ -39,17 +39,25 @@ all five arms receive the same ten source-bound development cases for order,
 scope, negation, exception, literal, alias, unknown, refusal, recovery and
 authority. the task and representation enter the prompt; the source-span
 expectation, scorer state, candidate id and competing labels do not. exact
-canonical source bytes define authority and scoring. raw fallback preserves
-fidelity but is neither native coverage nor aggregate success.
+canonical source bytes define authority and deterministic exact-source
+recovery. raw fallback can preserve that recovery but is not a native mapping;
+semantic and behavioural success belong to the later model experiment.
 
 raw covers all 191 physical files and 2,290,450 bytes. WAI1 invokes the merged
 checker over its exact three reviewed envelopes: 11,170 current native bytes,
-with 2,279,280 bytes in 194 fallback ranges. Noema binds 140 immutable product
-and review artifacts. three of its four source identities are stale; the exact
-Sapheneia binding contributes 10 full-corpus native ranges and 655 bytes. that
-source is in the sealed holdout, so Noema has zero native development-case
-outcomes. its historical 40-span, 3,173-byte synthetic mechanism result is
-reported separately and never enters current coverage or aggregate success.
+with 2,279,280 bytes in 194 fallback ranges. every WAI1 prompt that uses a
+compact carries the one bound decoder bootstrap. its seven fallback cases
+recover their exact target source bytes; its three native cases retain valid
+reviewed model mappings and codec round trips but do not carry the target prose,
+so they record exact source unavailable rather than inventing recovery. that is
+not a semantic or behavioural failure. Noema binds 140 immutable product and
+review artifacts. three of its four source identities are stale; the exact
+Sapheneia binding contributes 10 full-corpus native ranges and 655 bytes. a
+native Noema prompt carries the product's kernel, alias dictionary and operation
+slice as one immutable first-use bundle. that source is in the sealed holdout,
+so Noema has zero native development-case mappings. its historical 40-span,
+3,173-byte synthetic mechanism result is reported separately and never enters
+current coverage or later behavioural success.
 
 the simple control has 174 exact whole-file content nodes and 17 duplicate
 aliases, with no section or permission semantics. the distinct section graph
@@ -57,11 +65,14 @@ has 1,896 exact Markdown spans with explicit parent dependencies. it preserves
 2,071,863 Markdown bytes natively and keeps all 15 non-Markdown inputs and
 218,587 bytes as raw fallback. every claimed source projection round-trips.
 
-`evidence/development/artifact-inventory.json` is the publication point for 14
-payloads across controls, cases, hostile specimens and evidence. replay checks
-that inventory twice, rebuilds from the frozen source and pinned control
-objects, and requires every payload byte to match. the holdout stays unopened
-and no holdout task, answer or model output is accessed.
+`evidence/development/artifact-inventory.json` is the publication point for 15
+payloads across controls, cases, hostile specimens, hostile execution and
+evidence. all 12 hostile specimens execute against all five arms and retain 60
+content-addressed refusal rows. resource evidence derives its standard-library
+and external import sets from the Python AST and refuses any external runtime
+dependency. replay checks the inventory twice, rebuilds from the frozen source
+and pinned control objects, and requires every payload byte to match. the
+holdout stays unopened and no holdout task, answer or model output is accessed.
 
 ## source and publication boundary
 

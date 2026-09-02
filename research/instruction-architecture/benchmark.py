@@ -9,6 +9,7 @@ sources recorded here.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import itertools
 import json
@@ -110,6 +111,7 @@ DEVELOPMENT_RECORD_PATHS = (
     "controls/wai1.json",
     "development/cases.json",
     "hostile/specimens.json",
+    "hostile/execution.json",
     "evidence/development/noema.json",
     "evidence/development/raw.json",
     "evidence/development/report.json",
@@ -141,9 +143,11 @@ MAX_PROMPT_BYTES = 4 * 1024 * 1024
 MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
-EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = "074b690821bcd0b8e5c1dde9194bed603d75d1d40b8219ec60c902ab35e8c3c4"
+EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
+    "235f80d084639d9f1da676a85046787f7c11650f2afd0d487b92b3b920f7ccf8"
+)
 EXPECTED_CONTROL_SHA256 = {
-    "noema": "e3c93bcc8785b13e220f5d23b5a56d7e1d7873132c1cb79ba0f66f21a60b8498",
+    "noema": "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
     "raw": "bfc416cc7fd3d9a1a569fea4eaa6e6577770bf89f77b68eb23378633d57da23e",
     "section-graph": "571a5c3cb26d832058511495e0bdce1207bcacf2601f68e6347cb8a25c88f5d4",
     "simple": "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
@@ -1100,10 +1104,7 @@ def _open_parent(
 
 def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result]:
     before = os.fstat(descriptor)
-    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
-        raise Refusal("input is not a single-link regular file")
-    if before.st_size > limit:
-        raise Refusal("input exceeds byte limit")
+    _validate_input_metadata(before.st_mode, before.st_nlink, before.st_size, limit)
     chunks: list[bytes] = []
     size = 0
     while True:
@@ -1115,9 +1116,22 @@ def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result
         if size > limit:
             raise Refusal("input exceeds byte limit")
     after = os.fstat(descriptor)
-    if _identity(before) != _identity(after):
-        raise Refusal("input changed during read")
+    _require_unchanged_input(_identity(before), _identity(after))
     return b"".join(chunks), after
+
+
+def _validate_input_metadata(mode: int, links: int, size: int, limit: int) -> None:
+    """Apply the regular-file and byte predicates used by every input read."""
+    if not stat.S_ISREG(mode) or links != 1:
+        raise Refusal("input is not a single-link regular file")
+    if size > limit:
+        raise Refusal("input exceeds byte limit")
+
+
+def _require_unchanged_input(before: tuple[int, ...], after: tuple[int, ...]) -> None:
+    """Keep the concurrent-change predicate independently exercisable."""
+    if before != after:
+        raise Refusal("input changed during read")
 
 
 def _read_regular(path: Path, limit: int) -> bytes:
@@ -1142,8 +1156,7 @@ def _read_regular(path: Path, limit: int) -> bytes:
         except OSError as exc:
             raise Refusal("input changed during read") from exc
         try:
-            if _identity(os.fstat(current)) != _identity(after):
-                raise Refusal("input changed during read")
+            _require_unchanged_input(_identity(after), _identity(os.fstat(current)))
         finally:
             os.close(current)
     finally:
@@ -6711,6 +6724,34 @@ def _wai1_checker() -> tuple[list[dict[str, Any]], str]:
     return records, _sha256(_canonical_json(records))
 
 
+def _wai1_decoder_bootstrap() -> tuple[str, bytes]:
+    manifest = _decode_record(
+        _git_blob_at(WAI1_CONTROL_REF, "tests/fixtures/agent-instruction-v1/manifest.json")
+    )
+    evidence = manifest.get("evidence")
+    if not isinstance(evidence, dict) or not isinstance(
+        evidence.get("decoder_bootstrap"), dict
+    ):
+        raise Refusal("WAI1 decoder bootstrap binding is malformed")
+    binding = evidence["decoder_bootstrap"]
+    path = binding.get("path")
+    if not isinstance(path, str):
+        raise Refusal("WAI1 decoder bootstrap path is malformed")
+    data = _git_blob_at(WAI1_CONTROL_REF, path)
+    if (
+        not data
+        or len(data) > 4_096
+        or not data.endswith(b"\n")
+        or binding.get("sha256") != _sha256(data)
+    ):
+        raise Refusal("WAI1 decoder bootstrap digest or shape drift")
+    try:
+        data.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal("WAI1 decoder bootstrap is not UTF-8") from exc
+    return path, data
+
+
 def _wai1_control(manifest: dict[str, Any]) -> dict[str, Any]:
     prefixes = (
         "docs/agent-instruction-language-v1.md",
@@ -6806,6 +6847,14 @@ def _wai1_control(manifest: dict[str, Any]) -> dict[str, Any]:
                 )
             )
     records, checker_sha = _wai1_checker()
+    bootstrap_path, bootstrap = _wai1_decoder_bootstrap()
+    if not any(
+        item["path"] == bootstrap_path
+        and item["sha256"] == _sha256(bootstrap)
+        and item["bytes"] == len(bootstrap)
+        for item in artifacts
+    ):
+        raise Refusal("WAI1 decoder bootstrap is absent from the immutable inventory")
     control = _base_control(
         "wai1",
         manifest,
@@ -6846,6 +6895,55 @@ def _wai1_control(manifest: dict[str, Any]) -> dict[str, Any]:
     return control
 
 
+def _noema_prompt_bundle(root: str) -> tuple[str, bytes]:
+    base = PurePosixPath("tests/fixtures/noema-v1") / PurePosixPath(root)
+    kernel_path = (base / "kernel.noe").as_posix()
+    profile_path = (base / "profile.json").as_posix()
+    projection_path = (base / "projection.json").as_posix()
+    kernel = _git_blob_at(NOEMA_PRODUCT_REF, kernel_path)
+    profile_raw = _git_blob_at(NOEMA_PRODUCT_REF, profile_path)
+    projection_raw = _git_blob_at(NOEMA_PRODUCT_REF, projection_path)
+    profile = _decode_record(profile_raw)
+    projection = _decode_record(projection_raw)
+    corpus = _decode_record(
+        _git_blob_at(NOEMA_PRODUCT_REF, "tests/fixtures/noema-v1/manifest.json")
+    )
+    bound = [
+        item
+        for item in corpus.get("specimens", [])
+        if isinstance(item, dict) and item.get("directory") == root
+    ]
+    if (
+        len(bound) != 1
+        or bound[0].get("kernel_sha256") != _sha256(kernel)
+        or bound[0].get("profile_sha256") != _sha256(profile_raw)
+        or bound[0].get("projection_sha256") != _sha256(projection_raw)
+    ):
+        raise Refusal("Noema first-use prompt leaves its immutable specimen binding")
+    aliases = profile.get("aliases")
+    text = projection.get("text")
+    if not isinstance(aliases, list) or not isinstance(text, str):
+        raise Refusal("Noema first-use prompt recipe is malformed")
+    try:
+        projection_text = text.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise Refusal("Noema operation slice is not Unicode scalar text") from exc
+    alias_dictionary = _canonical_json(
+        {"aliases": aliases, "schema": "noema-alias-dictionary/v1"}
+    )
+    bundle = (
+        b"NOEMA-KERNEL\n"
+        + kernel
+        + b"NOEMA-ALIAS-DICTIONARY\n"
+        + alias_dictionary
+        + b"NOEMA-OPERATION-SLICE\n"
+        + projection_text
+    )
+    if not bundle or len(bundle) > MAX_PROMPT_BYTES:
+        raise Refusal("Noema first-use prompt exceeds its byte limit")
+    return projection_path, bundle
+
+
 def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
     product_prefixes = (
         "docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md",
@@ -6870,6 +6968,7 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
         raise Refusal("Noema immutable specimen inventory drift")
     documents = {item["path"]: item for item in manifest["documents"]}
     current_by_path: dict[str, list[dict[str, Any]]] = {}
+    specimen_roots: dict[str, str] = {}
     stale_paths: set[str] = set()
     synthetic_spans = 0
     synthetic_bytes = 0
@@ -6922,10 +7021,12 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
         if identity.get("sha256") == _sha256(current) and identity.get("bytes") == len(current):
             current_sources += 1
             current_by_path[path] = normalized
+            specimen_roots[path] = root
         else:
             stale_paths.add(path)
 
     ranges: list[dict[str, Any]] = []
+    mappings: list[dict[str, Any]] = []
     for document in manifest["documents"]:
         data = _source_blob(document["path"])
         mapped_rows = current_by_path.get(document["path"])
@@ -6949,6 +7050,27 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
             continue
         for index, row in enumerate(mapped_rows):
             native = row["kind"] == "node"
+            identifier = (
+                f"noema:{document['path']}:{row['node']}:{index}"
+                if native
+                else f"raw:{document['sha256']}:{row['start']}:{row['end']}"
+            )
+            if native:
+                representation_path, representation = _noema_prompt_bundle(
+                    specimen_roots[document["path"]]
+                )
+                mappings.append(
+                    {
+                        "end": row["end"],
+                        "id": identifier,
+                        "path": document["path"],
+                        "representation_bytes": len(representation),
+                        "representation_path": representation_path,
+                        "representation_sha256": _sha256(representation),
+                        "source_sha256": _sha256(data[row["start"] : row["end"]]),
+                        "start": row["start"],
+                    }
+                )
             ranges.append(
                 _range_record(
                     document,
@@ -6957,13 +7079,10 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
                     row["end"],
                     "native" if native else "raw-fallback",
                     "" if native else "unsupported-by-noema-v1",
-                    (
-                        f"noema:{document['path']}:{row['node']}:{index}"
-                        if native
-                        else f"raw:{document['sha256']}:{row['start']}:{row['end']}"
-                    ),
+                    identifier,
                 )
             )
+    mappings.sort(key=lambda item: item["id"])
 
     synopsis_path = review_prefixes[1]
     synopsis = _git_blob_at(NOEMA_REVIEW_REF, synopsis_path)
@@ -6990,7 +7109,7 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
         review_ref=NOEMA_REVIEW_REF,
         artifacts=artifacts,
         checker=None,
-        native_mappings=[],
+        native_mappings=mappings,
         graph={"edges": [], "nodes": []},
         mechanism_evidence={
             "current_native_bytes": sum(
@@ -7527,16 +7646,21 @@ def _prompt_component(
     content: bytes,
     encoding: str,
     source: dict[str, Any] | None,
+    *,
+    kind: str | None = None,
 ) -> dict[str, Any]:
     try:
         text = content.decode("utf-8", errors="strict")
     except UnicodeDecodeError as exc:
         raise Refusal("prompt representation is not UTF-8") from exc
+    resolved_kind = kind or ("representation" if source is not None else "task")
+    if resolved_kind not in {"representation", "task"}:
+        raise Refusal("prompt component kind is malformed")
     return {
         "content": text,
         "encoding": encoding,
         "id": identifier,
-        "kind": "representation" if source is not None else "task",
+        "kind": resolved_kind,
         "source": source,
     }
 
@@ -7600,6 +7724,8 @@ def _assemble_prompt(
     else:
         ranges_by_path = _control_ranges(control)
         mappings = {item["id"]: item for item in control["native_mappings"]}
+        wai1_bootstrap_component: str | None = None
+        noema_components: dict[str, str] = {}
         for path in paths:
             data = _source_blob(path)
             rows = ranges_by_path.get(path)
@@ -7616,10 +7742,68 @@ def _assemble_prompt(
                     mapping = mappings.get(row["representation_id"])
                     if mapping is None:
                         raise Refusal("WAI1 prompt mapping is missing")
+                    if wai1_bootstrap_component is None:
+                        bootstrap_path, bootstrap = _wai1_decoder_bootstrap()
+                        wai1_bootstrap_component = f"representation-{len(components):04d}"
+                        components.append(
+                            _prompt_component(
+                                wai1_bootstrap_component,
+                                bootstrap,
+                                "wai1-decoder-bootstrap",
+                                None,
+                                kind="representation",
+                            )
+                        )
+                        if not any(
+                            item["path"] == bootstrap_path
+                            and item["sha256"] == _sha256(bootstrap)
+                            for item in control["binding"]["artifacts"]
+                        ):
+                            raise Refusal("WAI1 prompt bootstrap is outside its binding")
                     payload = _git_blob_at(WAI1_CONTROL_REF, mapping["representation_path"])
                     if _sha256(payload) != mapping["representation_sha256"]:
                         raise Refusal("WAI1 prompt representation digest drift")
                     encoding = "wai1-compact"
+                elif arm == "noema" and row["mode"] == "native":
+                    mapping = mappings.get(row["representation_id"])
+                    if mapping is None:
+                        raise Refusal("Noema prompt mapping is missing")
+                    key = mapping["representation_sha256"]
+                    component_id = noema_components.get(key)
+                    if component_id is None:
+                        root = PurePosixPath(mapping["representation_path"]).parent
+                        prefix = PurePosixPath("tests/fixtures/noema-v1")
+                        try:
+                            relative_root = root.relative_to(prefix).as_posix()
+                        except ValueError as exc:
+                            raise Refusal("Noema prompt mapping leaves its immutable root") from exc
+                        representation_path, payload = _noema_prompt_bundle(relative_root)
+                        if (
+                            representation_path != mapping["representation_path"]
+                            or len(payload) != mapping["representation_bytes"]
+                            or _sha256(payload) != mapping["representation_sha256"]
+                        ):
+                            raise Refusal("Noema first-use prompt representation drift")
+                        component_id = f"representation-{len(components):04d}"
+                        components.append(
+                            _prompt_component(
+                                component_id,
+                                payload,
+                                "noema-first-use",
+                                None,
+                                kind="representation",
+                            )
+                        )
+                        noema_components[key] = component_id
+                    trace.append(
+                        {
+                            "component_id": component_id,
+                            "mode": row["mode"],
+                            "original_paths": [path],
+                            "representation_id": row["representation_id"],
+                        }
+                    )
+                    continue
                 elif arm == "section-graph" and row["mode"] == "native":
                     encoding = "exact-source-section"
                 component_id = f"representation-{len(components):04d}"
@@ -7675,6 +7859,13 @@ def _case_native(control: dict[str, Any], case: dict[str, Any]) -> bool:
 
 
 def _validate_prompt(prompt: dict[str, Any]) -> None:
+    if isinstance(prompt, dict) and set(prompt) & {
+        "arm",
+        "candidate",
+        "expected_answer",
+        "scorer_key",
+    }:
+        raise Refusal("prompt contains an answer or candidate label")
     _require_fields(
         prompt,
         ("case_id", "components", "scenario_id", "schema", "sha256"),
@@ -7682,12 +7873,15 @@ def _validate_prompt(prompt: dict[str, Any]) -> None:
         "prompt",
     )
     components = prompt["components"]
-    if (
-        prompt["schema"] != f"{SCHEMA_PREFIX}-prompt/v1"
-        or not isinstance(components, list)
-        or not 2 <= len(components) <= MAX_PROMPT_COMPONENTS
+    if prompt["schema"] != f"{SCHEMA_PREFIX}-prompt/v1" or not isinstance(
+        components, list
     ):
-        raise Refusal("prompt identity or component count drift")
+        raise Refusal("prompt identity drift")
+    if len(components) > MAX_PROMPT_COMPONENTS:
+        raise Refusal("prompt component count exceeds its limit")
+    if len(components) < 2:
+        raise Refusal("prompt has too few components")
+    component_ids: set[str] = set()
     for index, component in enumerate(components):
         _require_fields(
             component,
@@ -7695,43 +7889,187 @@ def _validate_prompt(prompt: dict[str, Any]) -> None:
             ("content", "encoding", "id", "kind", "source"),
             "prompt component",
         )
-        if not isinstance(component["content"], str):
-            raise Refusal("prompt component content is malformed")
-        if index == 0:
-            if component["kind"] != "task" or component["source"] is not None:
-                raise Refusal("prompt task component drift")
-        elif component["kind"] != "representation" or not isinstance(
-            component["source"], dict
+        if (
+            not isinstance(component["content"], str)
+            or not isinstance(component["id"], str)
+            or not component["id"]
+            or component["id"] in component_ids
         ):
+            raise Refusal("prompt component content is malformed")
+        component_ids.add(component["id"])
+        if index == 0:
+            if (
+                component["kind"] != "task"
+                or component["source"] is not None
+                or component["encoding"] != "utf-8-task"
+            ):
+                raise Refusal("prompt task component drift")
+        elif component["kind"] != "representation":
             raise Refusal("prompt representation component drift")
+        elif component["source"] is None:
+            if component["encoding"] not in {
+                "noema-first-use",
+                "wai1-decoder-bootstrap",
+            }:
+                raise Refusal("unbound prompt representation component")
+        elif not isinstance(component["source"], dict):
+            raise Refusal("prompt representation source is malformed")
     body = {key: value for key, value in prompt.items() if key != "sha256"}
     if len(_canonical_json(body)) > MAX_PROMPT_BYTES:
         raise Refusal("prompt exceeds its byte limit")
     if prompt["sha256"] != _sha256(_canonical_json(body)):
         raise Refusal("prompt digest drift")
-    if set(prompt) & {"arm", "candidate", "expected_answer", "scorer_key"}:
-        raise Refusal("prompt contains an answer or candidate label")
-
-
 def _validate_score(score: dict[str, Any]) -> None:
     fields = (
-        "aggregate_success",
-        "exact_fidelity",
+        "exact_source_recovery",
         "fallback_used",
-        "native_success",
+        "native_exact_source_recovery",
+        "native_mapping_used",
         "trace_complete",
     )
     _require_fields(score, fields, fields, "deterministic score")
     if any(type(score[field]) is not bool for field in fields):
         raise Refusal("deterministic score fields are not Boolean")
-    if score["fallback_used"] and (
-        score["native_success"] or score["aggregate_success"]
+    if score["fallback_used"] == score["native_mapping_used"]:
+        raise Refusal("fallback and native mapping classification are not exclusive")
+    if score["native_exact_source_recovery"] and (
+        not score["native_mapping_used"] or not score["exact_source_recovery"]
     ):
-        raise Refusal("raw fallback was relabelled as native or aggregate success")
-    if score["aggregate_success"] and (
-        not score["native_success"] or not score["exact_fidelity"]
+        raise Refusal("native exact-source recovery lacks its required predicates")
+
+
+def _recover_case_source(
+    control: dict[str, Any],
+    case: dict[str, Any],
+    prompt: dict[str, Any],
+    trace: list[dict[str, Any]],
+) -> bytes | None:
+    """Recover a case oracle only from exact bytes carried by its prompt."""
+    source = case["source"]
+    components = {item["id"]: item for item in prompt["components"]}
+    ranges = {
+        (item["path"], item["representation_id"]): item
+        for item in control["coverage"]["ranges"]
+    }
+    segments: list[tuple[int, int, bytes | None]] = []
+    exact_encodings = {
+        "content-addressed-source",
+        "exact-source",
+        "exact-source-section",
+        "raw-source-fallback",
+    }
+    for row in trace:
+        if source["path"] not in row["original_paths"]:
+            continue
+        coverage = ranges.get((source["path"], row["representation_id"]))
+        component = components.get(row["component_id"])
+        if coverage is None or component is None:
+            raise Refusal("adapter selection trace does not resolve to its control")
+        content: bytes | None = None
+        if component["encoding"] in exact_encodings:
+            try:
+                candidate = component["content"].encode("utf-8", errors="strict")
+            except UnicodeEncodeError as exc:
+                raise Refusal("prompt representation is not Unicode scalar text") from exc
+            if (
+                len(candidate) != coverage["bytes"]
+                or _sha256(candidate) != coverage["sha256"]
+            ):
+                raise Refusal("exact prompt representation differs from its control span")
+            content = candidate
+        segments.append((coverage["start"], coverage["end"], content))
+
+    cursor = source["start"]
+    recovered: list[bytes] = []
+    for start, end, content in sorted(segments):
+        overlap_start = max(start, source["start"])
+        overlap_end = min(end, source["end"])
+        if overlap_end <= overlap_start:
+            continue
+        if overlap_start != cursor or content is None:
+            return None
+        recovered.append(content[overlap_start - start : overlap_end - start])
+        cursor = overlap_end
+        if cursor == source["end"]:
+            break
+    if cursor != source["end"]:
+        return None
+    return b"".join(recovered)
+
+
+def _case_score(
+    control: dict[str, Any], case: dict[str, Any], prompt: dict[str, Any], trace: list[dict[str, Any]]
+) -> tuple[dict[str, bool], bytes | None]:
+    _validate_prompt(prompt)
+    component_ids = {item["id"] for item in prompt["components"]}
+    if not trace or any(
+        not isinstance(row, dict)
+        or row.get("component_id") not in component_ids
+        or not row.get("original_paths")
+        for row in trace
     ):
-        raise Refusal("aggregate success lacks native exact fidelity")
+        raise Refusal("adapter selection trace is incomplete")
+    native = _case_native(control, case)
+    fallback = not native
+    recovered = _recover_case_source(control, case, prompt, trace)
+    exact = (
+        recovered is not None
+        and len(recovered) == case["source"]["end"] - case["source"]["start"]
+        and _sha256(recovered) == case["expectation"]["sha256"]
+    )
+    score = {
+        "exact_source_recovery": exact,
+        "fallback_used": fallback,
+        "native_exact_source_recovery": bool(exact and native),
+        "native_mapping_used": native,
+        "trace_complete": True,
+    }
+    _validate_score(score)
+    return score, recovered
+
+
+def _case_outcome(case: dict[str, Any], recovered: bytes | None) -> dict[str, Any]:
+    source = case["source"]
+    exact = recovered is not None and _sha256(recovered) == case["expectation"]["sha256"]
+    return {
+        "kind": case["response_shape"],
+        "recovery": (
+            {"bytes": len(recovered), "sha256": _sha256(recovered)}
+            if exact and recovered is not None
+            else None
+        ),
+        "source_expectation": {
+            "end": source["end"],
+            "path": source["path"],
+            "sha256": source["sha256"],
+            "start": source["start"],
+        },
+        "status": "exact-source-recovered" if exact else "exact-source-unavailable",
+    }
+
+
+def _adapter_correlation(
+    arm: str,
+    case_id: str,
+    scenario_id: str,
+    prompt_sha256: str,
+    outcome: dict[str, Any],
+) -> str:
+    return _sha256(
+        (
+            SOURCE_REF
+            + "\0"
+            + arm
+            + "\0"
+            + scenario_id
+            + "\0"
+            + case_id
+            + "\0"
+            + prompt_sha256
+            + "\0"
+            + _sha256(_canonical_json(outcome))
+        ).encode("utf-8")
+    )
 
 
 def _arm_results(
@@ -7744,43 +8082,14 @@ def _arm_results(
     results: list[dict[str, Any]] = []
     for case in cases_record["cases"]:
         prompt, trace = _assemble_prompt(arm, case, manifest, graph, control)
-        data = _source_blob(case["source"]["path"])
-        recovered = data[case["source"]["start"] : case["source"]["end"]]
-        exact = _sha256(recovered) == case["expectation"]["sha256"]
-        native = _case_native(control, case)
-        fallback = not native
-        score = {
-            "aggregate_success": bool(exact and native and not fallback),
-            "exact_fidelity": exact,
-            "fallback_used": fallback,
-            "native_success": bool(exact and native),
-            "trace_complete": all(row["original_paths"] for row in trace),
-        }
-        _validate_score(score)
-        outcome = {
-            "kind": case["response_shape"],
-            "recovered_source": {
-                "end": case["source"]["end"],
-                "path": case["source"]["path"],
-                "sha256": _sha256(recovered),
-                "start": case["source"]["start"],
-            },
-            "status": "exact-source-recovered" if exact else "refused",
-        }
-        correlation = _sha256(
-            (
-                SOURCE_REF
-                + "\0"
-                + arm
-                + "\0"
-                + case["scenario_id"]
-                + "\0"
-                + case["id"]
-                + "\0"
-                + prompt["sha256"]
-                + "\0"
-                + _sha256(_canonical_json(outcome))
-            ).encode("utf-8")
+        score, recovered = _case_score(control, case, prompt, trace)
+        outcome = _case_outcome(case, recovered)
+        correlation = _adapter_correlation(
+            arm,
+            case["id"],
+            case["scenario_id"],
+            prompt["sha256"],
+            outcome,
         )
         results.append(
             {
@@ -7795,17 +8104,19 @@ def _arm_results(
         )
         _validate_prompt(prompt)
     aggregate = {
-        "aggregate_success_cases": sum(
-            item["score"]["aggregate_success"] for item in results
-        ),
         "cases": len(results),
-        "exact_fidelity_cases": sum(item["score"]["exact_fidelity"] for item in results),
+        "exact_source_recovery_cases": sum(
+            item["score"]["exact_source_recovery"] for item in results
+        ),
         "fallback_cases": sum(item["score"]["fallback_used"] for item in results),
-        "native_success_cases": sum(item["score"]["native_success"] for item in results),
+        "native_exact_source_recovery_cases": sum(
+            item["score"]["native_exact_source_recovery"] for item in results
+        ),
+        "native_mapping_cases": sum(
+            item["score"]["native_mapping_used"] for item in results
+        ),
         "prompt_bytes": sum(len(_canonical_json(item["prompt"])) for item in results),
     }
-    if aggregate["aggregate_success_cases"] != aggregate["native_success_cases"]:
-        raise Refusal("aggregate success includes non-native results")
     record = {
         "aggregate": aggregate,
         "arm": arm,
@@ -7815,11 +8126,17 @@ def _arm_results(
         "schema": f"{SCHEMA_PREFIX}-adapter-results/v1",
         "source_ref": SOURCE_REF,
     }
-    _validate_adapter_results(record)
+    _validate_adapter_results(record, cases_record, manifest, graph, control)
     return record
 
 
-def _validate_adapter_results(record: dict[str, Any]) -> None:
+def _validate_adapter_results(
+    record: dict[str, Any],
+    cases_record: dict[str, Any],
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+) -> None:
     _require_fields(
         record,
         ("aggregate", "arm", "case_set_sha256", "control_sha256", "results", "schema", "source_ref"),
@@ -7830,9 +8147,19 @@ def _validate_adapter_results(record: dict[str, Any]) -> None:
         record["schema"] != f"{SCHEMA_PREFIX}-adapter-results/v1"
         or record["source_ref"] != SOURCE_REF
         or record["arm"] not in DEVELOPMENT_ARMS
+        or record["arm"] != control["arm"]
+        or record["case_set_sha256"] != _artifact_digest(cases_record)
+        or record["control_sha256"] != _artifact_digest(control)
         or not isinstance(record["results"], list)
     ):
         raise Refusal("adapter result identity drift")
+    if not all(isinstance(result, dict) for result in record["results"]):
+        raise Refusal("adapter result case order or coverage drift")
+    if [result.get("case_id") for result in record["results"]] != [
+        case["id"] for case in cases_record["cases"]
+    ]:
+        raise Refusal("adapter result case order or coverage drift")
+    cases_by_id = {item["id"]: item for item in cases_record["cases"]}
     for result in record["results"]:
         _require_fields(
             result,
@@ -7842,23 +8169,61 @@ def _validate_adapter_results(record: dict[str, Any]) -> None:
         )
         _validate_prompt(result["prompt"])
         _validate_score(result["score"])
+        if (
+            result["prompt"]["case_id"] != result["case_id"]
+            or result["prompt"]["scenario_id"] != result["scenario_id"]
+            or result["correlation_id"]
+            != _adapter_correlation(
+                record["arm"],
+                result["case_id"],
+                result["scenario_id"],
+                result["prompt"]["sha256"],
+                result["outcome"],
+            )
+        ):
+            raise Refusal("adapter result correlation drift")
+        case = cases_by_id.get(result["case_id"])
+        if case is None:
+            raise Refusal("adapter result names an unknown case")
+        expected_prompt, expected_trace = _assemble_prompt(
+            record["arm"], case, manifest, graph, control
+        )
+        expected_score, recovered = _case_score(
+            control, case, expected_prompt, expected_trace
+        )
+        expected_outcome = _case_outcome(case, recovered)
+        if (
+            result["scenario_id"] != case["scenario_id"]
+            or result["prompt"] != expected_prompt
+            or result["selection_trace"] != expected_trace
+            or result["score"] != expected_score
+            or result["outcome"] != expected_outcome
+        ):
+            raise Refusal("adapter result differs from its representation-bound derivation")
     aggregate = record["aggregate"]
     expected = {
-        "aggregate_success_cases": sum(item["score"]["aggregate_success"] for item in record["results"]),
         "cases": len(record["results"]),
-        "exact_fidelity_cases": sum(item["score"]["exact_fidelity"] for item in record["results"]),
+        "exact_source_recovery_cases": sum(
+            item["score"]["exact_source_recovery"] for item in record["results"]
+        ),
         "fallback_cases": sum(item["score"]["fallback_used"] for item in record["results"]),
-        "native_success_cases": sum(item["score"]["native_success"] for item in record["results"]),
+        "native_exact_source_recovery_cases": sum(
+            item["score"]["native_exact_source_recovery"]
+            for item in record["results"]
+        ),
+        "native_mapping_cases": sum(
+            item["score"]["native_mapping_used"] for item in record["results"]
+        ),
         "prompt_bytes": sum(len(_canonical_json(item["prompt"])) for item in record["results"]),
     }
-    if aggregate != expected or aggregate["aggregate_success_cases"] != aggregate["native_success_cases"]:
-        raise Refusal("adapter aggregate includes fallback or differs from case scores")
+    if aggregate != expected:
+        raise Refusal("adapter aggregate differs from case scores")
 
 
 def _hostile_specimens() -> dict[str, Any]:
     rows = [
         ("parser-differential", "unclosed-fence", "section source has an unclosed fenced block"),
-        ("stale-source", "changed-source-digest", "source drift"),
+        ("stale-source", "changed-source-digest", "development case source oracle drift"),
         ("malformed-input", "noncanonical-json", "record is not canonical JSON"),
         ("malformed-input", "duplicate-json-key", "duplicate JSON key"),
         ("missing-edge", "delete-scenario-edge", "missing or invented edge"),
@@ -7867,7 +8232,7 @@ def _hostile_specimens() -> dict[str, Any]:
         ("hostile-output", "oversized-model-output", "model output exceeds its limit"),
         ("resource-bound", "too-many-components", "prompt component count exceeds its limit"),
         ("path-boundary", "parent-traversal", "unsafe repository path"),
-        ("path-boundary", "symlink-input", "input is unavailable or unsafe"),
+        ("path-boundary", "symlink-input", "input is not a single-link regular file"),
         ("prompt-leak", "scorer-key-field", "prompt contains an answer or candidate label"),
     ]
     if len(rows) > MAX_HOSTILE_SPECIMENS:
@@ -7897,6 +8262,198 @@ def _validate_model_output(data: bytes) -> dict[str, Any]:
     return value
 
 
+def _hostile_recipe(
+    specimen: dict[str, Any],
+    arm: str,
+    case: dict[str, Any],
+    result: dict[str, Any],
+    control_sha256: str,
+) -> str:
+    return _sha256(
+        _canonical_json(
+            {
+                "arm": arm,
+                "case_id": case["id"],
+                "control_sha256": control_sha256,
+                "mutation": specimen["mutation"],
+                "prompt_sha256": result["prompt"]["sha256"],
+                "scenario_id": case["scenario_id"],
+                "specimen_sha256": _artifact_digest(specimen),
+            }
+        )
+    )
+
+
+def _exercise_hostile_specimen(
+    specimen: dict[str, Any],
+    arm: str,
+    cases: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+    arm_results: dict[str, Any],
+    control_sha256: str,
+) -> dict[str, Any]:
+    case = cases["cases"][0]
+    result = arm_results["results"][0]
+    mutation = specimen["mutation"]
+    try:
+        if mutation == "unclosed-fence":
+            _markdown_sections("hostile.md", b"# admitted\n```text\nnot closed\n")
+        elif mutation == "changed-source-digest":
+            changed = _decode_record(_canonical_json(cases))
+            changed["cases"][0]["source"]["source_sha256"] = "0" * 64
+            _validate_development_cases(changed, manifest, cohorts, graph)
+        elif mutation == "noncanonical-json":
+            _decode_record(b'{ "case_id": "hostile" }\n')
+        elif mutation == "duplicate-json-key":
+            _decode_record(b'{"case_id":"a","case_id":"b"}\n')
+        elif mutation == "delete-scenario-edge":
+            changed = _decode_record(_canonical_json(graph))
+            for index, edge in enumerate(changed["scenario_edges"]):
+                if (
+                    case["scenario_id"] in edge["active_scenarios"]
+                    and edge["target"] == case["source"]["path"]
+                ):
+                    changed["scenario_edges"].pop(index)
+                    break
+            else:
+                raise Refusal("hostile missing-edge recipe has no removable edge")
+            _scenario_paths(manifest, changed, case["scenario_id"])
+        elif mutation == "changed-span-digest":
+            changed = _decode_record(_canonical_json(control))
+            changed["coverage"]["ranges"][0]["sha256"] = "0" * 64
+            _coverage_summary(manifest, changed["coverage"]["ranges"])
+        elif mutation == "replace-open-input":
+            _require_unchanged_input((1, 2, 3), (1, 2, 4))
+        elif mutation == "oversized-model-output":
+            _validate_model_output(b"x" * (MAX_MODEL_OUTPUT_BYTES + 1))
+        elif mutation == "too-many-components":
+            changed = _decode_record(_canonical_json(result["prompt"]))
+            changed["components"] = [changed["components"][0]] * (
+                MAX_PROMPT_COMPONENTS + 1
+            )
+            _validate_prompt(changed)
+        elif mutation == "parent-traversal":
+            _safe_relative("../escape")
+        elif mutation == "symlink-input":
+            _validate_input_metadata(stat.S_IFLNK | 0o777, 1, 1, MAX_JSON_BYTES)
+        elif mutation == "scorer-key-field":
+            changed = _decode_record(_canonical_json(result["prompt"]))
+            changed["scorer_key"] = case["expectation"]["sha256"]
+            _validate_prompt(changed)
+        else:
+            raise Refusal("hostile mutation is not executable")
+    except Refusal as exc:
+        observed = str(exc)
+    else:
+        raise Refusal(
+            f"hostile specimen did not refuse for {arm}: {specimen['id']}"
+        )
+    if specimen["expected_refusal"] not in observed:
+        raise Refusal(
+            f"hostile specimen refused for the wrong reason: {arm}:{specimen['id']}"
+        )
+    mutation_sha256 = _hostile_recipe(
+        specimen, arm, case, result, control_sha256
+    )
+    refusal_sha256 = _sha256(observed.encode("utf-8", errors="strict"))
+    correlation_id = _sha256(
+        (
+            SOURCE_REF
+            + "\0"
+            + arm
+            + "\0"
+            + case["scenario_id"]
+            + "\0"
+            + case["id"]
+            + "\0"
+            + result["prompt"]["sha256"]
+            + "\0"
+            + mutation_sha256
+            + "\0"
+            + refusal_sha256
+        ).encode("utf-8")
+    )
+    return {
+        "arm": arm,
+        "case_id": case["id"],
+        "correlation_id": correlation_id,
+        "mutation_sha256": mutation_sha256,
+        "observed_refusal": observed,
+        "prompt_sha256": result["prompt"]["sha256"],
+        "refusal_sha256": refusal_sha256,
+        "risk_class": specimen["risk_class"],
+        "scenario_id": case["scenario_id"],
+        "specimen_id": specimen["id"],
+        "status": "refused",
+    }
+
+
+def _hostile_execution(
+    specimens: dict[str, Any],
+    cases: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+    results: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    control_digests = {
+        arm: _artifact_digest(controls[arm]) for arm in DEVELOPMENT_ARMS
+    }
+    rows = [
+        _exercise_hostile_specimen(
+            specimen,
+            arm,
+            cases,
+            manifest,
+            cohorts,
+            graph,
+            controls[arm],
+            results[arm],
+            control_digests[arm],
+        )
+        for arm in DEVELOPMENT_ARMS
+        for specimen in specimens["specimens"]
+    ]
+    record = {
+        "results": rows,
+        "schema": f"{SCHEMA_PREFIX}-mutation-results/v1",
+        "source_ref": SOURCE_REF,
+        "specimens_sha256": _artifact_digest(specimens),
+    }
+    if (
+        len(rows) != len(DEVELOPMENT_ARMS) * len(specimens["specimens"])
+        or any(item["status"] != "refused" for item in rows)
+    ):
+        raise Refusal("hostile execution does not close every arm/specimen pair")
+    return record
+
+
+def _runtime_dependency_modules(source: str) -> tuple[list[str], list[str]]:
+    """Classify every syntactic runtime import against the pinned stdlib."""
+    try:
+        tree = ast.parse(source, filename="research/instruction-architecture/benchmark.py")
+    except SyntaxError as exc:
+        raise Refusal("benchmark imports cannot be parsed") from exc
+    modules: set[str] = set()
+    external: set[str] = set()
+    standard: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name.split(".", 1)[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                external.add("." * node.level + (node.module or ""))
+            elif node.module:
+                modules.add(node.module.split(".", 1)[0])
+    for module in modules:
+        (standard if module in sys.stdlib_module_names else external).add(module)
+    return sorted(standard), sorted(external)
+
+
 def _resource_record(
     manifest: dict[str, Any], controls: dict[str, dict[str, Any]], payload_bytes: int
 ) -> dict[str, Any]:
@@ -7905,16 +8462,19 @@ def _resource_record(
         bool(line.strip()) and not line.lstrip().startswith("#")
         for line in source.splitlines()
     )
-    imported = sorted(
-        {
-            match.group(1).split(".")[0]
-            for line in source.splitlines()
-            if (match := re.match(r"(?:from|import)\s+([A-Za-z_][A-Za-z0-9_.]*)", line))
-        }
-    )
+    standard, external = _runtime_dependency_modules(source)
+    if external:
+        raise Refusal("benchmark has an unrecorded external runtime dependency")
     return {
         "artifact_payload_bytes": payload_bytes,
-        "dependency_count": {"external_runtime": 0, "standard_library_modules": len(imported)},
+        "dependency_count": {
+            "external_runtime": len(external),
+            "standard_library_modules": len(standard),
+        },
+        "dependency_modules": {
+            "external_runtime": external,
+            "standard_library": standard,
+        },
         "executable_loc": executable_loc,
         "limits": {
             "max_control_paths": MAX_CONTROL_PATHS,
@@ -7966,13 +8526,19 @@ def _development_report(
         mechanism = control["mechanism_evidence"]
         rows.append(
             {
-                "development_aggregate_success_cases": result["aggregate"]["aggregate_success_cases"],
                 "arm": arm,
                 "control_sha256": _artifact_digest(control),
                 "development_case_count": result["aggregate"]["cases"],
-                "development_exact_fidelity_cases": result["aggregate"]["exact_fidelity_cases"],
+                "development_exact_source_recovery_cases": result["aggregate"][
+                    "exact_source_recovery_cases"
+                ],
                 "development_fallback_cases": result["aggregate"]["fallback_cases"],
-                "development_native_success_cases": result["aggregate"]["native_success_cases"],
+                "development_native_exact_source_recovery_cases": result[
+                    "aggregate"
+                ]["native_exact_source_recovery_cases"],
+                "development_native_mapping_cases": result["aggregate"][
+                    "native_mapping_cases"
+                ],
                 "full_current_corpus_fallback_bytes": summary["fallback_physical_bytes"],
                 "full_current_corpus_native_bytes": summary["native_physical_bytes"],
                 "full_current_corpus_native_ranges": summary["native_ranges"],
@@ -8032,8 +8598,8 @@ def _validate_development_report(report: dict[str, Any]) -> None:
     if (
         noema["full_current_corpus_native_bytes"] != 655
         or noema["full_current_corpus_native_ranges"] != 10
-        or noema["development_native_success_cases"] != 0
-        or noema["development_aggregate_success_cases"] != 0
+        or noema["development_native_mapping_cases"] != 0
+        or noema["development_native_exact_source_recovery_cases"] != 0
         or wai1["full_current_corpus_native_bytes"] != 11_170
         or any(
             row["synthetic_in_aggregate_success"] is not False
@@ -8333,6 +8899,9 @@ def _development_payloads(
         for arm in DEVELOPMENT_ARMS
     }
     assembly_ns = time.perf_counter_ns() - phase_start
+    hostile_execution = _hostile_execution(
+        hostile, cases, manifest, cohorts, graph, controls, results
+    )
     report = _development_report(manifest, cohorts, cases, controls, results)
     values: dict[str, dict[str, Any]] = {
         "controls/noema.json": controls["noema"],
@@ -8342,6 +8911,7 @@ def _development_payloads(
         "controls/wai1.json": controls["wai1"],
         "development/cases.json": cases,
         "hostile/specimens.json": hostile,
+        "hostile/execution.json": hostile_execution,
         "evidence/development/noema.json": results["noema"],
         "evidence/development/raw.json": results["raw"],
         "evidence/development/report.json": report,

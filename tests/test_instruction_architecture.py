@@ -42,6 +42,7 @@ DEVELOPMENT_CASES = FIXTURES / "development/cases.json"
 DEVELOPMENT_REPORT = FIXTURES / "evidence/development/report.json"
 DEVELOPMENT_INVENTORY = FIXTURES / "evidence/development/artifact-inventory.json"
 HOSTILE_SPECIMENS = FIXTURES / "hostile/specimens.json"
+HOSTILE_EXECUTION = FIXTURES / "hostile/execution.json"
 DEVELOPMENT_CONTROLS = {
     arm: FIXTURES / "controls" / f"{arm}.json"
     for arm in ("raw", "wai1", "noema", "simple", "section-graph")
@@ -8235,6 +8236,18 @@ class DevelopmentFixtureMixin:
         cls.controls = {arm: load(path) for arm, path in DEVELOPMENT_CONTROLS.items()}
         cls.results = {arm: load(path) for arm, path in DEVELOPMENT_RESULTS.items()}
 
+    def validate_adapter_result(self, arm, record):
+        validator = AI._validate_adapter_results
+        if validator.__code__.co_argcount == 1:
+            return validator(record)
+        return validator(
+            record,
+            self.cases,
+            self.manifest,
+            self.graph,
+            self.controls[arm],
+        )
+
 
 class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
     def test_schema_covers_every_neutral_record_and_closes_objects(self):
@@ -8249,6 +8262,7 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
                 "#/$defs/controlFile",
                 "#/$defs/developmentInventory",
                 "#/$defs/mutationsFile",
+                "#/$defs/mutationResultsFile",
                 "#/$defs/prompt",
                 "#/$defs/resourceFile",
                 "#/$defs/score",
@@ -8267,6 +8281,7 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
             *DEVELOPMENT_CONTROLS.values(),
             DEVELOPMENT_CASES,
             HOSTILE_SPECIMENS,
+            HOSTILE_EXECUTION,
             DEVELOPMENT_REPORT,
             DEVELOPMENT_INVENTORY,
             FIXTURES / "evidence/development/resource-samples.json",
@@ -8274,6 +8289,7 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
         ]
         for path in paths:
             with self.subTest(path=path):
+                self.assertTrue(path.is_file())
                 raw = path.read_bytes()
                 value = AI._decode_record(raw)
                 self.assertEqual(raw, canonical(value))
@@ -8292,9 +8308,12 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
 
     def test_runtime_closes_cases_prompts_scores_and_reports(self):
         AI._validate_development_cases(self.cases, self.manifest, self.cohorts, self.graph)
-        AI._validate_development_report(self.report)
-        for result in self.results.values():
-            AI._validate_adapter_results(result)
+        try:
+            AI._validate_development_report(self.report)
+        except KeyError as err:
+            self.fail(f"development report validator crashed on its field contract: {err}")
+        for arm, result in self.results.items():
+            self.validate_adapter_result(arm, result)
 
 
 class RawAdapterTests(DevelopmentFixtureMixin, unittest.TestCase):
@@ -8367,16 +8386,55 @@ class Wai1ControlTests(DevelopmentFixtureMixin, unittest.TestCase):
             self.assertEqual(hashlib.sha256(source).hexdigest(), mapping["source_sha256"])
             self.assertEqual(hashlib.sha256(compact).hexdigest(), mapping["representation_sha256"])
 
-    def test_wai1_fallback_is_exact_but_not_native_success(self):
+    def test_wai1_only_claims_exact_recovery_for_prompt_carried_source_bytes(self):
         aggregate = self.results["wai1"]["aggregate"]
         self.assertEqual(
-            (aggregate["exact_fidelity_cases"], aggregate["native_success_cases"], aggregate["fallback_cases"]),
-            (10, 3, 7),
+            (
+                aggregate.get("exact_source_recovery_cases"),
+                aggregate.get("native_mapping_cases"),
+                aggregate.get("native_exact_source_recovery_cases"),
+                aggregate["fallback_cases"],
+            ),
+            (7, 3, 0, 7),
         )
         for result in self.results["wai1"]["results"]:
             if result["score"]["fallback_used"]:
-                self.assertFalse(result["score"]["native_success"])
-                self.assertFalse(result["score"]["aggregate_success"])
+                self.assertTrue(result["score"]["exact_source_recovery"])
+                self.assertFalse(result["score"]["native_mapping_used"])
+                self.assertFalse(result["score"]["native_exact_source_recovery"])
+            else:
+                self.assertTrue(result["score"]["native_mapping_used"])
+                self.assertFalse(result["score"]["exact_source_recovery"])
+                self.assertFalse(result["score"]["native_exact_source_recovery"])
+                self.assertEqual(result["outcome"]["status"], "exact-source-unavailable")
+                self.assertIsNone(result["outcome"]["recovery"])
+
+    def test_every_compact_prompt_carries_one_bound_decoder_bootstrap(self):
+        loader = getattr(AI, "_wai1_decoder_bootstrap", None)
+        self.assertIsNotNone(loader, "WAI1 compact prompts omit their decoder bootstrap")
+        bootstrap_path, bootstrap = loader()
+        self.assertTrue(
+            any(
+                item["path"] == bootstrap_path
+                and item["sha256"] == hashlib.sha256(bootstrap).hexdigest()
+                for item in self.controls["wai1"]["binding"]["artifacts"]
+            )
+        )
+        for result in self.results["wai1"]["results"]:
+            compact = [
+                item
+                for item in result["prompt"]["components"]
+                if item["encoding"] == "wai1-compact"
+            ]
+            bootstraps = [
+                item
+                for item in result["prompt"]["components"]
+                if item["encoding"] == "wai1-decoder-bootstrap"
+            ]
+            self.assertTrue(compact)
+            self.assertEqual(len(bootstraps), 1)
+            self.assertEqual(bootstraps[0]["content"].encode(), bootstrap)
+            self.assertIsNone(bootstraps[0]["source"])
 
 
 class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
@@ -8387,7 +8445,7 @@ class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
         self.assertEqual(len(control["binding"]["artifacts"]), 140)
         self.assertEqual(
             hashlib.sha256(DEVELOPMENT_CONTROLS["noema"].read_bytes()).hexdigest(),
-            "e3c93bcc8785b13e220f5d23b5a56d7e1d7873132c1cb79ba0f66f21a60b8498",
+            "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
         )
 
     def test_full_corpus_exact_binding_and_development_outcomes_are_separate(self):
@@ -8413,7 +8471,9 @@ class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
         self.assertTrue(native_paths <= set(self.cohorts["holdout"]["paths"]))
         case_paths = {case["source"]["path"] for case in self.cases["cases"]}
         self.assertFalse(native_paths & case_paths)
-        self.assertEqual(self.results["noema"]["aggregate"]["native_success_cases"], 0)
+        self.assertEqual(
+            self.results["noema"]["aggregate"].get("native_mapping_cases"), 0
+        )
 
     def test_synthetic_mechanism_evidence_is_never_current_or_aggregate_success(self):
         mechanism = self.controls["noema"]["mechanism_evidence"]
@@ -8431,8 +8491,8 @@ class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
             (
                 row["full_current_corpus_native_ranges"],
                 row["full_current_corpus_native_bytes"],
-                row["development_native_success_cases"],
-                row["development_aggregate_success_cases"],
+                row.get("development_native_mapping_cases"),
+                row.get("development_native_exact_source_recovery_cases"),
             ),
             (10, 655, 0, 0),
         )
@@ -8441,15 +8501,38 @@ class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
         for field, value in (
             ("full_current_corpus_native_bytes", 0),
             ("full_current_corpus_native_ranges", 0),
-            ("development_native_success_cases", 1),
-            ("development_aggregate_success_cases", 1),
+            ("development_native_mapping_cases", 1),
+            ("development_native_exact_source_recovery_cases", 1),
         ):
             with self.subTest(field=field):
                 changed = copy.deepcopy(self.report)
                 row = next(item for item in changed["arms"] if item["arm"] == "noema")
                 row[field] = value
-                with self.assertRaisesRegex(AI.Refusal, "relabels"):
-                    AI._validate_development_report(changed)
+                try:
+                    with self.assertRaisesRegex(AI.Refusal, "relabels"):
+                        AI._validate_development_report(changed)
+                except KeyError as err:
+                    self.fail(f"development report validator crashed on its field contract: {err}")
+
+    def test_native_spans_emit_one_immutable_noema_first_use_bundle(self):
+        control = self.controls["noema"]
+        self.assertEqual(len(control["native_mappings"]), 10)
+        result = self.results["noema"]["results"][0]
+        components = result["prompt"]["components"]
+        bundles = [item for item in components if item["encoding"] == "noema-first-use"]
+        self.assertEqual(len(bundles), 1)
+        self.assertIsNone(bundles[0]["source"])
+        self.assertNotIn(
+            "exact-source",
+            {
+                item["encoding"]
+                for item in components
+                if (item.get("source") or {}).get("path")
+                == "plugins/sapheneia/skills/sapheneia/SKILL.md"
+            },
+        )
+        expected = {item["representation_sha256"] for item in control["native_mappings"]}
+        self.assertEqual(expected, {hashlib.sha256(bundles[0]["content"].encode()).hexdigest()})
 
 
 class SimpleControlTests(DevelopmentFixtureMixin, unittest.TestCase):
@@ -8551,13 +8634,109 @@ class DevelopmentCaseTests(DevelopmentFixtureMixin, unittest.TestCase):
         self.assertFalse(seal["opened"])
         self.assertTrue(all(not case["id"].startswith("holdout-") for case in self.cases["cases"]))
 
-    def test_all_fifty_adapter_round_trips_are_exact(self):
+    def test_exact_source_recovery_requires_source_bytes_in_the_complete_prompt(self):
         self.assertEqual(
-            sum(record["aggregate"]["exact_fidelity_cases"] for record in self.results.values()),
-            50,
+            sum(
+                record["aggregate"].get("exact_source_recovery_cases", -1)
+                for record in self.results.values()
+            ),
+            47,
+        )
+        self.assertEqual(
+            {
+                arm: record["aggregate"].get("exact_source_recovery_cases")
+                for arm, record in self.results.items()
+            },
+            {"noema": 10, "raw": 10, "section-graph": 10, "simple": 10, "wai1": 7},
         )
         for record in self.results.values():
             self.assertTrue(all(item["score"]["trace_complete"] for item in record["results"]))
+
+    def test_scores_and_outcomes_are_rederived_from_the_complete_prompt(self):
+        changed = copy.deepcopy(self.results["wai1"])
+        result = changed["results"][0]
+        compact = next(
+            item for item in result["prompt"]["components"] if item["encoding"] == "wai1-compact"
+        )
+        compact["content"] = "corrupt-but-schema-valid"
+        body = {key: value for key, value in result["prompt"].items() if key != "sha256"}
+        result["prompt"]["sha256"] = hashlib.sha256(canonical(body)).hexdigest()
+        changed["aggregate"]["prompt_bytes"] = sum(
+            len(canonical(item["prompt"])) for item in changed["results"]
+        )
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "correlation|representation-bound")
+            refused = True
+        self.assertTrue(refused, "a compact prompt mutation retained its oracle-derived score")
+        for record in self.results.values():
+            for item in record["results"]:
+                self.assertNotIn("recovered_source", item["outcome"])
+                if item["score"]["exact_source_recovery"]:
+                    self.assertEqual(item["outcome"]["status"], "exact-source-recovered")
+                    self.assertEqual(
+                        item["outcome"]["recovery"]["sha256"],
+                        item["outcome"]["source_expectation"]["sha256"],
+                    )
+                else:
+                    self.assertEqual(
+                        item["outcome"]["status"], "exact-source-unavailable"
+                    )
+                    self.assertIsNone(item["outcome"].get("recovery"))
+
+    def test_adapter_result_identity_and_case_coverage_are_context_bound(self):
+        changed = copy.deepcopy(self.results["wai1"])
+        changed["case_set_sha256"] = "0" * 64
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "identity")
+            refused = True
+        self.assertTrue(refused, "adapter results accept a substituted case set")
+
+        changed = copy.deepcopy(self.results["wai1"])
+        changed["control_sha256"] = "0" * 64
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "identity")
+            refused = True
+        self.assertTrue(refused, "adapter results accept a substituted control")
+
+        changed = copy.deepcopy(self.results["wai1"])
+        changed["results"].pop()
+        changed["aggregate"] = {
+            "cases": len(changed["results"]),
+            "exact_source_recovery_cases": sum(
+                item["score"]["exact_source_recovery"]
+                for item in changed["results"]
+            ),
+            "fallback_cases": sum(
+                item["score"]["fallback_used"] for item in changed["results"]
+            ),
+            "native_exact_source_recovery_cases": sum(
+                item["score"]["native_exact_source_recovery"]
+                for item in changed["results"]
+            ),
+            "native_mapping_cases": sum(
+                item["score"]["native_mapping_used"]
+                for item in changed["results"]
+            ),
+            "prompt_bytes": sum(
+                len(canonical(item["prompt"])) for item in changed["results"]
+            ),
+        }
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "case order or coverage")
+            refused = True
+        self.assertTrue(refused, "adapter results accept incomplete case coverage")
 
 
 class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
@@ -8580,6 +8759,40 @@ class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
             <= risks
         )
 
+    def test_every_hostile_specimen_executes_and_refuses_on_all_five_arms(self):
+        builder = getattr(AI, "_hostile_execution", None)
+        self.assertIsNotNone(
+            builder, "hostile specimens are inventoried but never executed"
+        )
+        self.assertTrue(HOSTILE_EXECUTION.is_file())
+        committed = load(HOSTILE_EXECUTION)
+        specimens = load(HOSTILE_SPECIMENS)
+        self.assertEqual(len(committed["results"]), 60)
+        self.assertEqual(
+            {
+                (item["arm"], item["specimen_id"])
+                for item in committed["results"]
+            },
+            {
+                (arm, specimen["id"])
+                for arm in AI.DEVELOPMENT_ARMS
+                for specimen in specimens["specimens"]
+            },
+        )
+        self.assertTrue(all(item["status"] == "refused" for item in committed["results"]))
+        self.assertEqual(
+            committed,
+            builder(
+                specimens,
+                self.cases,
+                self.manifest,
+                self.cohorts,
+                self.graph,
+                self.controls,
+                self.results,
+            ),
+        )
+
     def test_duplicate_key_noncanonical_and_unicode_scalar_refuse(self):
         with self.assertRaisesRegex(AI.Refusal, "duplicate JSON key"):
             AI._decode_record(b'{"a":1,"a":2}\n')
@@ -8588,11 +8801,11 @@ class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "non-Unicode-scalar"):
             AI._canonical_json({"a": "\ud800"})
 
-    def test_fallback_cannot_be_relabelled_as_native_or_aggregate_success(self):
+    def test_fallback_cannot_be_relabelled_as_native_exact_source_recovery(self):
         changed = copy.deepcopy(self.results["noema"]["results"][0]["score"])
-        changed["native_success"] = True
-        changed["aggregate_success"] = True
-        with self.assertRaisesRegex(AI.Refusal, "relabelled"):
+        changed["native_mapping_used"] = True
+        changed["native_exact_source_recovery"] = True
+        with self.assertRaisesRegex(AI.Refusal, "exclusive|predicates"):
             AI._validate_score(changed)
 
     def test_missing_loader_edge_refuses(self):
@@ -8658,9 +8871,26 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
         record = load(FIXTURES / "evidence/development/resource-samples.json")
         self.assertEqual(record["dependency_count"]["external_runtime"], 0)
         self.assertGreater(record["dependency_count"]["standard_library_modules"], 0)
+        self.assertIn("dependency_modules", record)
+        self.assertEqual(record["dependency_modules"]["external_runtime"], [])
+        self.assertEqual(
+            record["dependency_count"]["standard_library_modules"],
+            len(record["dependency_modules"]["standard_library"]),
+        )
         self.assertGreater(record["executable_loc"], 0)
         self.assertGreater(record["artifact_payload_bytes"], 0)
         self.assertEqual([item["phase"] for item in record["samples"]], ["parse-validate", "select", "assemble"])
+
+    def test_dependency_counts_are_ast_derived_and_external_imports_fail_closed(self):
+        classifier = getattr(AI, "_runtime_dependency_modules", None)
+        self.assertIsNotNone(
+            classifier, "resource evidence hardcodes zero external dependencies"
+        )
+        standard, external = classifier(
+            "import os, requests\nfrom pathlib import Path\nfrom vendor.pkg import value\n"
+        )
+        self.assertEqual(standard, ["os", "pathlib"])
+        self.assertEqual(external, ["requests", "vendor"])
 
     def test_json_depth_and_model_output_byte_limits_refuse(self):
         deep = b'{"x":' + b"[" * (AI.MAX_JSON_DEPTH + 1) + b"0" + b"]" * (AI.MAX_JSON_DEPTH + 1) + b"}\n"
@@ -8690,10 +8920,10 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "component count"):
             AI._validate_prompt(prompt)
 
-    def test_committed_inventory_binds_all_fourteen_payloads(self):
+    def test_committed_inventory_binds_all_fifteen_payloads(self):
         inventory = load(DEVELOPMENT_INVENTORY)
         self.assertEqual(set(inventory["artifacts"]), set(AI.DEVELOPMENT_RECORD_PATHS))
-        self.assertEqual(len(inventory["artifacts"]), 14)
+        self.assertEqual(len(inventory["artifacts"]), 15)
         for relative, identity in inventory["artifacts"].items():
             path = FIXTURES / relative
             self.assertEqual(path.stat().st_size, identity["bytes"])
