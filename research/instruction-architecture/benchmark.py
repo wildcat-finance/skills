@@ -40,6 +40,8 @@ MAX_FROZEN_TREE_PATHS = 10_000
 MAX_JSON_DEPTH = 64
 MAX_JSON_TOKENS = 1_000_000
 MAX_JSON_NUMBER_CHARS = 640
+MAX_MARKDOWN_LINK_OPENERS = 4_096
+MAX_MARKDOWN_LINE_CHARS = 16_384
 EXPECTED_COUNTS = {
     "fixed_input": 3,
     "skill_contract": 32,
@@ -431,6 +433,27 @@ EXCLUDED_LINK_CLASSES = (
 INLINE_MARKDOWN_LINK = re.compile(
     r"(?<!!)\[[^\]\n]+\]\(\s*<?([^)\s>]+)>?(?:\s+[^)]*)?\)"
 )
+
+
+def _preflight_markdown_links(text: str, source: str) -> None:
+    """Bound regex restart work before scanning one admitted Markdown source."""
+    openers = 0
+    line_chars = 0
+    for value in text:
+        if value == "\n":
+            line_chars = 0
+        else:
+            line_chars += 1
+            if line_chars > MAX_MARKDOWN_LINE_CHARS:
+                raise Refusal(
+                    f"fixed-point Markdown line exceeds character limit: {source}"
+                )
+        if value == "[":
+            openers += 1
+            if openers > MAX_MARKDOWN_LINK_OPENERS:
+                raise Refusal(
+                    f"fixed-point Markdown link opener count exceeds limit: {source}"
+                )
 FIXED_POINT_EXCLUDED_COMPONENTS = {
     "audit",
     "decisions",
@@ -1556,6 +1579,7 @@ def _derive_operative_markdown_targets(
             text = data.decode("utf-8", errors="strict")
         except UnicodeDecodeError as exc:
             raise Refusal(f"fixed-point source is not UTF-8: {source}") from exc
+        _preflight_markdown_links(text, source)
         for match in INLINE_MARKDOWN_LINK.finditer(text):
             raw_target = match.group(1)
             repository_target = _same_repository_markdown_url(raw_target)
@@ -4721,28 +4745,49 @@ def _partition_ranges(
         return column
 
     def thematic_break(line: bytes) -> bool:
-        """Recognise the bounded thematic-break forms before list markers."""
-        return re.fullmatch(
-            rb" {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})",
-            line.rstrip(b"\r\n"),
-        ) is not None
+        """Recognise bounded thematic breaks with constant auxiliary state."""
+        end = len(line)
+        while end and line[end - 1] in b"\r\n":
+            end -= 1
+        index = 0
+        while index < end and line[index] == 0x20:
+            index += 1
+        if index > 3 or index == end or line[index] not in b"*-_":
+            return False
+        marker = line[index]
+        count = 0
+        while index < end:
+            value = line[index]
+            if value == marker:
+                count += 1
+            elif value not in b" \t":
+                return False
+            index += 1
+        return count >= 3
 
-    def thematic_suffix_starts(line: bytes) -> set[int]:
-        """Find homogeneous thematic suffixes in one backward pass."""
+    def thematic_suffix_window(line: bytes) -> tuple[int, int, int] | None:
+        """Bound homogeneous thematic suffixes with constant auxiliary state."""
         end = len(line)
         while end and line[end - 1] in b" \t\r\n":
             end -= 1
         if not end or line[end - 1] not in b"*-_":
-            return set()
+            return None
         marker = line[end - 1]
-        positions: list[int] = []
+        count = 0
+        earliest = end
+        third_from_end: int | None = None
         cursor = end - 1
         while cursor >= 0 and line[cursor] == marker:
-            positions.append(cursor)
+            count += 1
+            earliest = cursor
+            if count == 3:
+                third_from_end = cursor
             cursor -= 1
             while cursor >= 0 and line[cursor] in b" \t":
                 cursor -= 1
-        return set(positions[2:])
+        if third_from_end is None:
+            return None
+        return marker, earliest, third_from_end
 
     def list_block_marker(line: bytes) -> re.Match[bytes] | None:
         """Return a valid bounded list marker, with thematic precedence."""
@@ -4830,9 +4875,13 @@ def _partition_ranges(
         content_end = len(line)
         while content_end and line[content_end - 1] in b"\r\n":
             content_end -= 1
-        thematic_starts = thematic_suffix_starts(line)
+        thematic_window = thematic_suffix_window(line)
         while True:
-            if byte_index in thematic_starts:
+            if (
+                thematic_window is not None
+                and thematic_window[1] <= byte_index <= thematic_window[2]
+                and line[byte_index] == thematic_window[0]
+            ):
                 break
             marker = inline_list_marker.match(line, byte_index, content_end)
             if marker is None:

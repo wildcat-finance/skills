@@ -2579,6 +2579,39 @@ class CorpusManifestTests(unittest.TestCase):
             callable(getattr(AI, "_derive_operative_markdown_targets", None))
         )
 
+    def test_markdown_link_scan_caps_candidate_restarts_before_regex(self):
+        document = [{"path": "bounded.md", "document_class": "skill_contract"}]
+
+        def derive(data):
+            return AI._derive_operative_markdown_targets(
+                document,
+                source_overrides={"bounded.md": data},
+                tree_paths={"bounded.md"},
+            )
+
+        for label, source in {
+            "opener-at-limit": b"[" * 4_096,
+            "line-at-limit": b"x" * 16_384,
+        }.items():
+            with self.subTest(label=label):
+                self.assertEqual(derive(source)["targets"], [])
+
+        for label, (source, message) in {
+            "opener-over-limit": (
+                b"[" * 4_097,
+                "Markdown link opener count exceeds limit",
+            ),
+            "line-over-limit": (
+                b"x" * 16_385,
+                "Markdown line exceeds character limit",
+            ),
+        }.items():
+            with self.subTest(label=label), mock.patch.object(
+                AI, "INLINE_MARKDOWN_LINK"
+            ) as matcher, self.assertRaisesRegex(AI.Refusal, message):
+                derive(source)
+            matcher.finditer.assert_not_called()
+
     def test_extension_agnostic_fixed_point_and_runtime_anchor_mutations(self):
         derived = AI._derive_corpus_fixed_point(self.manifest["documents"])
         self.assertEqual(
@@ -4902,6 +4935,73 @@ class BytePartitionTests(unittest.TestCase):
             ranges = AI._partition_ranges("mixed-list.md", generated=False)
         literal = source.index(b"body")
         prose = source.index(b"after")
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= literal < item["end"]
+            ),
+            "exact_literal_or_evidence",
+        )
+        self.assertEqual(
+            next(
+                item["classification"]
+                for item in ranges
+                if item["start"] <= prose < item["end"]
+            ),
+            "governed_operative_semantics",
+        )
+
+    def test_thematic_precedence_does_not_expand_per_marker(self):
+        """One admitted line needs constant thematic-suffix state."""
+        marker_count = 32_768
+        source = b"* " * (marker_count - 1) + b"*\n"
+        real_set = set
+        real_fullmatch = AI.re.fullmatch
+        materialized_items = 0
+        regex_input_bytes = 0
+
+        def counted_set(value=()):
+            nonlocal materialized_items
+            items = list(value)
+            materialized_items += len(items)
+            return real_set(items)
+
+        def counted_fullmatch(pattern, value, *args, **kwargs):
+            nonlocal regex_input_bytes
+            regex_input_bytes += len(value)
+            return real_fullmatch(pattern, value, *args, **kwargs)
+
+        with mock.patch.object(
+            AI, "_source_blob", return_value=source
+        ), mock.patch.object(
+            AI, "set", side_effect=counted_set, create=True
+        ), mock.patch.object(
+            AI.re, "fullmatch", side_effect=counted_fullmatch
+        ):
+            ranges = AI._partition_ranges(
+                "thematic-expansion.md", generated=False
+            )
+        self.assertEqual(
+            {item["classification"] for item in ranges},
+            {"governed_operative_semantics"},
+        )
+        self.assertLessEqual(materialized_items, 4)
+        self.assertLessEqual(regex_input_bytes, 4)
+
+        separated = (
+            b"* x * * *\n"
+            b"    ```text\n"
+            b"  body\n"
+            b"    ```\n"
+            b"after\n"
+        )
+        with mock.patch.object(AI, "_source_blob", return_value=separated):
+            ranges = AI._partition_ranges(
+                "thematic-separated-prefix.md", generated=False
+            )
+        literal = separated.index(b"body")
+        prose = separated.index(b"after")
         self.assertEqual(
             next(
                 item["classification"]
