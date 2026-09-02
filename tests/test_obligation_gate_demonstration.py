@@ -101,9 +101,82 @@ ISSUE_GATE_CLASSES = (
     "no-side-effect",
 )
 
+# Where each ``negative_cases.kind`` gets its count.  The classification is
+# closed: a kind in none of these three groups fails rather than passing as an
+# unchecked declaration.
+NEGATIVE_CASE_COUNT_SOURCES = {
+    "runtime binding rows": "runtime_rows",
+    "composition relations": "composition_relations",
+    "declared provenance cases": "provenance_rows",
+    "declared history cases": "history_cases",
+}
+NEGATIVE_CASE_SPECIMEN_KINDS = frozenset(
+    {
+        "law obligation specimens",
+        "exception specimen",
+        "finding specimen",
+        "consequence specimen",
+        "import specimen",
+    }
+)
+# The one count no local input recomputes.  Level-3 separation is exercised by
+# four consequence specimens that no registry row, declared inventory or
+# checker count enumerates, so it stays declared evidence and is held only to
+# the specimens its own rows name.
+NEGATIVE_CASE_DECLARED_KINDS = frozenset({"consequence specimens"})
+
+# Every ``counts`` key appears once in the evidence report's own table, so the
+# half a reader quotes cannot drift away from the half the digests bind.
+REPORT_COUNT_SUBJECTS = {
+    "Obligation markers in `PROMISE_MACHINE.md`": "obligation_markers",
+    "Obligation registry rows": "registry_rows",
+    "Distinct negative specimen files": "negative_specimens",
+    "Runtime binding rows": "runtime_rows",
+    "Composition relations": "composition_relations",
+    "Promise-id history rows": "history_rows",
+    "Active history ids": "active_history_ids",
+    "Declared history cases": "history_cases",
+    "Declared upstream-provenance cases": "provenance_rows",
+    "Evaluation cases": "evaluation_cases",
+    "Evaluation outcomes": "evaluation_outcomes",
+    "Issue-listed gate classes": "gate_classes",
+    "Declared promises": "promises",
+    "Coverage rows": "coverage_rows",
+    "Selected repository scopes": "repository_scopes",
+    "Selected repository checks": "repository_checks",
+}
+REPORT_COUNT_ROW = re.compile(r"^\| ([^|]+?) \| (\d+) \|$", re.MULTILINE)
+REPORT_INPUT_ROW = re.compile(
+    r"^- `([^`]+)`, SHA-256 `([0-9a-f]{64})`, (\d+) bytes$", re.MULTILINE
+)
+
 
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def confined(relative: str) -> Path:
+    """Resolve a record-supplied path under the repository root, or refuse it.
+
+    ``ROOT / "/etc/passwd"`` is ``/etc/passwd``: pathlib discards the left side
+    of the join the moment the right side is absolute.  Every path the record
+    names is repository-relative by contract, and a digest mismatch afterwards
+    would not undo a read that had already left the checkout, so the contract
+    is checked here rather than assumed.
+    """
+    if not relative or relative.strip() != relative:
+        raise AssertionError(f"path is empty or padded: {relative!r}")
+    if relative.startswith("/") or "\\" in relative or "\x00" in relative:
+        raise AssertionError(f"path is not repository-relative: {relative!r}")
+    candidate = ROOT / relative
+    if candidate.is_symlink():
+        raise AssertionError(f"path is a symlink: {relative!r}")
+    resolved = candidate.resolve()
+    if not resolved.is_relative_to(ROOT.resolve()):
+        raise AssertionError(f"path escapes the repository root: {relative!r}")
+    if not resolved.is_file():
+        raise AssertionError(f"path is not a regular file: {relative!r}")
+    return resolved
 
 
 def checker_counts() -> dict:
@@ -211,7 +284,7 @@ class DemonstrationRecordTests(unittest.TestCase):
         for entry in self.record["inputs"]:
             with self.subTest(path=entry["path"]):
                 self.assertEqual(set(entry), {"bytes", "path", "sha256"})
-                raw = (ROOT / entry["path"]).read_bytes()
+                raw = confined(entry["path"]).read_bytes()
                 self.assertEqual(entry["bytes"], len(raw))
                 self.assertEqual(entry["sha256"], hashlib.sha256(raw).hexdigest())
 
@@ -281,7 +354,36 @@ class GateClassCoverageTests(unittest.TestCase):
                     entry["recovery_actions"], sorted({row["recovery"] for row in rows})
                 )
                 for specimen in entry["specimens"]:
-                    self.assertTrue((ROOT / specimen).is_file(), specimen)
+                    confined(specimen)
+
+    def test_every_negative_case_count_is_joined_to_its_source(self) -> None:
+        """A per-class exercise count must recompute, not merely be positive.
+
+        ``negative_cases.count`` is this record's claim about how much each
+        gate class actually exercises, and four of the ten name inventories
+        ``counts`` already recomputes from the live tree.  Asserting only that
+        they were positive left every one of them free: the composition class
+        could claim ninety-nine relations, or the result-binding class one
+        runtime row, and this module stayed green.  That is the
+        declaration-only defect #884 exists to close, reproduced one level up
+        in the record that reports on closing it.
+        """
+        counts = self.record["counts"]
+        for entry in self.record["gate_classes"]:
+            kind = entry["negative_cases"]["kind"]
+            count = entry["negative_cases"]["count"]
+            with self.subTest(gate_class=entry["class"], kind=kind):
+                if kind in NEGATIVE_CASE_COUNT_SOURCES:
+                    self.assertEqual(count, counts[NEGATIVE_CASE_COUNT_SOURCES[kind]])
+                elif kind in NEGATIVE_CASE_SPECIMEN_KINDS:
+                    self.assertEqual(count, len(entry["specimens"]))
+                else:
+                    self.assertIn(
+                        kind,
+                        NEGATIVE_CASE_DECLARED_KINDS,
+                        "an unclassified negative-case kind recomputes from nothing",
+                    )
+                    self.assertGreaterEqual(count, len(entry["specimens"]))
 
     def test_every_recorded_finding_code_can_be_emitted_by_the_checker(self) -> None:
         emitted = set(FINDING_CODE.findall(CHECKER.read_text(encoding="utf-8")))
@@ -407,6 +509,61 @@ class RecordedObservationTests(unittest.TestCase):
         for entry in self.record["gate_classes"]:
             with self.subTest(gate_class=entry["class"]):
                 self.assertIn(entry["class"], text)
+
+    def test_the_report_count_table_repeats_every_recorded_count(self) -> None:
+        """The human half of the record must not drift away from the bound half.
+
+        ``demonstration-evidence.md`` opens by saying every count in the run
+        record recomputes in this module.  Nothing joined the report's own
+        tables to that record, so it could say thirty-six runtime binding rows
+        against the record's thirty-five and stay green -- and the report is
+        the half a reader quotes.  The subject map is total in both
+        directions, so a new count with no row, and a row naming no count,
+        both fail.
+        """
+        text = EVIDENCE_REPORT.read_text(encoding="utf-8")
+        observed = {subject: int(n) for subject, n in REPORT_COUNT_ROW.findall(text)}
+        self.assertEqual(set(observed), set(REPORT_COUNT_SUBJECTS))
+        self.assertEqual(set(REPORT_COUNT_SUBJECTS.values()), set(self.record["counts"]))
+        for subject, key in REPORT_COUNT_SUBJECTS.items():
+            with self.subTest(subject=subject):
+                self.assertEqual(observed[subject], self.record["counts"][key])
+
+    def test_the_report_gate_table_repeats_every_recorded_gate_class(self) -> None:
+        """Rows, negative cases and test counts are joined cell by cell.
+
+        The report's gate table restates three numbers the record already
+        carries.  Checking only that each class name appeared somewhere in the
+        prose let all three drift silently.
+        """
+        text = EVIDENCE_REPORT.read_text(encoding="utf-8")
+        for entry in self.record["gate_classes"]:
+            with self.subTest(gate_class=entry["class"]):
+                pattern = re.compile(
+                    r"^\| `" + re.escape(entry["class"]) + r"` \|(.+)\|$", re.MULTILINE
+                )
+                match = pattern.search(text)
+                self.assertIsNotNone(match, "the class has no row in the report")
+                cells = [cell.strip() for cell in match.group(1).split("|")]
+                self.assertEqual(len(cells), 6, cells)
+                ids = entry["obligation_ids"]
+                self.assertEqual(cells[2], str(len(ids)) if ids else "none")
+                negative = entry["negative_cases"]
+                self.assertIn(f"{negative['count']} {negative['kind']}", cells[3])
+                self.assertEqual(cells[5], str(len(entry["tests"])))
+
+    def test_the_report_repeats_every_bound_input_digest(self) -> None:
+        """A quoted digest is evidence, so it is compared rather than trusted."""
+        text = EVIDENCE_REPORT.read_text(encoding="utf-8")
+        observed = {
+            path: (digest, int(size))
+            for path, digest, size in REPORT_INPUT_ROW.findall(text)
+        }
+        recorded = {
+            entry["path"]: (entry["sha256"], entry["bytes"])
+            for entry in self.record["inputs"]
+        }
+        self.assertEqual(observed, recorded)
 
 
 if __name__ == "__main__":
