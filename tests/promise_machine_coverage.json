@@ -4361,7 +4361,7 @@
         "transition": "zero-exit replay joined to the canonical Authorises field",
         "unknowns": "commit signature, hosted exact-head status and repository admission policy"
       },
-      "sha256": "d6c2b2e82e51f3f46acc8a99a3a1d17498da1d25472303a00ba6ae565e16279b",
+      "sha256": "6b70f852feef71106de1ef7c08510847f9646803d26957ae6e8fd69ed24a216c",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
     },
     "hypomnema-record-placement": {
