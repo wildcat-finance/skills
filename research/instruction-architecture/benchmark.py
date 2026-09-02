@@ -1512,12 +1512,24 @@ def _frozen_tree_paths() -> tuple[str, ...]:
     if _source_mode() == "inventory":
         return _inventory_source_snapshot()["tree_paths"]
     raw = _git(["ls-tree", "-r", "-z", "--name-only", SOURCE_REF])
+    path_count = raw.count(b"\0")
+    if (
+        not raw
+        or not raw.endswith(b"\0")
+        or raw.startswith(b"\0")
+        or b"\0\0" in raw
+    ):
+        raise Refusal("Git tree path inventory is not canonical")
+    if path_count > MAX_FROZEN_TREE_PATHS:
+        raise Refusal("Git tree path inventory exceeds its path count limit")
     try:
         names = [
-            item.decode("utf-8", errors="strict") for item in raw.split(b"\0") if item
+            item.decode("utf-8", errors="strict") for item in raw.split(b"\0")[:-1]
         ]
     except UnicodeDecodeError as exc:
         raise Refusal("Git tree contains a non-UTF-8 path") from exc
+    if not names or len(names) != path_count or len(names) > MAX_FROZEN_TREE_PATHS:
+        raise Refusal("Git tree path inventory exceeds its path count limit")
     if names != sorted(set(names)):
         raise Refusal("Git tree path inventory is not canonical")
     for name in names:

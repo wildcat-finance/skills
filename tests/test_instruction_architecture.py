@@ -3132,6 +3132,36 @@ class CorpusManifestTests(unittest.TestCase):
                 AI._source_blob("AGENTS.md")
             self.assertEqual(live_read.call_count, 2)
 
+    def test_git_tree_path_count_and_record_shape_are_capped_before_split(self):
+        self.addCleanup(clear_source_cache)
+
+        def tree(count: int) -> bytes:
+            return b"".join(f"p/{index:05d}\0".encode() for index in range(count))
+
+        at_limit = tree(AI.MAX_FROZEN_TREE_PATHS)
+        over_limit = tree(AI.MAX_FROZEN_TREE_PATHS + 1)
+        specimens = (
+            (over_limit, "path count limit"),
+            (b"p/00000", "not canonical"),
+            (b"p/00000\0\0p/00001\0", "not canonical"),
+            (b"", "not canonical"),
+        )
+        with (
+            mock.patch.object(AI, "_source_mode", return_value="git"),
+            mock.patch.object(AI, "_git", return_value=at_limit),
+        ):
+            AI._frozen_tree_paths.cache_clear()
+            self.assertEqual(len(AI._frozen_tree_paths()), AI.MAX_FROZEN_TREE_PATHS)
+        for raw, reason in specimens:
+            with (
+                self.subTest(reason=reason, raw_bytes=len(raw)),
+                mock.patch.object(AI, "_source_mode", return_value="git"),
+                mock.patch.object(AI, "_git", return_value=raw),
+            ):
+                AI._frozen_tree_paths.cache_clear()
+                with self.assertRaisesRegex(AI.Refusal, reason):
+                    AI._frozen_tree_paths()
+
     def test_independent_oracle_cache_never_skips_live_source_drift_check(self):
         clear_source_cache()
         self.addCleanup(clear_source_cache)
