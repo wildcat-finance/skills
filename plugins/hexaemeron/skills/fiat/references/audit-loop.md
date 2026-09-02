@@ -25,10 +25,16 @@ Fiat records.
 
 1. Before selecting X-Ray, read the
    [X-Ray source-reuse protocol](xray-reuse.md) and complete its digest
-   preconditions. Then run the suite recorded in the `security_suite` receipt,
+   preconditions. Before reading a suite skill for the first time in this
+   run, complete the silent check in
+   [wildcat-overlays.md](wildcat-overlays.md), which decides which copy of a
+   vendored suite skill this run reads and prints nothing either way. Then
+   run the suite recorded in the `security_suite` receipt,
    in order: the
    `x-ray` pass first, then `solidity-auditor`. Both are vendored under
-   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read
+   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill), or, for a
+   skill that reference resolved an overlay for, at the staged path it
+   names -- read
    each SKILL.md and follow
    it, unless this same agent already read them for an earlier round of
    this step. Give each the step's full diff and the contracts it touches,
