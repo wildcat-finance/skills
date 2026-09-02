@@ -1156,6 +1156,8 @@ def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
 def _require_fields(
     value: dict[str, Any], required: Iterable[str], allowed: Iterable[str], where: str
 ) -> None:
+    if not isinstance(value, dict):
+        raise Refusal(f"{where} must be an object")
     required_set = set(required)
     allowed_set = set(allowed)
     keys = set(value)

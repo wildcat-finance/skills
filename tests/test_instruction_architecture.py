@@ -4873,6 +4873,55 @@ class InvocationProfileTests(unittest.TestCase):
         )
         self.assertEqual(self.profiles["counts"], AI.EXPECTED_PROFILE_COUNTS)
 
+    def test_direct_profile_validator_refuses_non_object_records_without_crashing(self):
+        tracked = oracle_guard_module().AI
+        nested_profile = copy.deepcopy(self.profiles)
+        nested_profile["profiles"][0] = [
+            "id",
+            "selected_skill",
+            "phase",
+            "applicability",
+            "branch_state",
+            "exclusive_group",
+            "required_documents",
+            "worker_prompts",
+            "fixed_inputs",
+            "source_evidence",
+        ]
+        nested_profile["projection_sha256"] = tracked._sha256(
+            tracked._canonical_json(nested_profile["profiles"])
+        )
+        specimens = (
+            None,
+            [
+                "schema",
+                "source_ref",
+                "counts",
+                "totals",
+                "projection_sha256",
+                "profiles",
+            ],
+            nested_profile,
+        )
+        with mock.patch.object(
+            tracked,
+            "EXPECTED_PROFILE_PROJECTION_SHA256",
+            nested_profile["projection_sha256"],
+        ):
+            for specimen in specimens:
+                with self.subTest(specimen=type(specimen).__name__):
+                    try:
+                        tracked._validate_invocation_profiles(specimen)
+                    except tracked.Refusal as exc:
+                        self.assertRegex(str(exc), "must be an object")
+                    except Exception as exc:
+                        self.fail(
+                            "non-object invocation profiles crashed with "
+                            f"{type(exc).__name__}"
+                        )
+                    else:
+                        self.fail("non-object invocation profiles were accepted")
+
     def test_independent_source_owned_profile_and_route_oracle(self):
         oracle_validate_profiles_and_routes(self.profiles, self.graph)
 
