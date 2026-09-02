@@ -134,9 +134,10 @@ behind replaceable compute), ADR-031 (signed acceptance fence) and ADR-032
 (lineage DAG) are each Retired on the same date with their bodies preserved as
 historical rationale. Each also records that PR #569 first published it under a
 number between ADR-024 and ADR-027, and that the collision was resolved by
-moving the five records to ADR-028 through ADR-032. That is why ADR-026 and
-ADR-027 do not exist on disk; the gap is a scar from the renumber, not a free
-slot. The highest record present is ADR-068. Confirmed by listing
+moving the five records to ADR-028 through ADR-032. #569 does not resolve, so
+that attribution is carried from the retired record bodies rather than from the
+pull request. That is why ADR-026 and ADR-027 do not exist on disk; the gap is a
+scar from the renumber, not a free slot. The highest record present is ADR-068. Confirmed by listing
 `docs/decisions/`: 66 files, numbered to 068, missing only 026 and 027.
 
 `docs/hexaemeron-checkpoint-programme-study.md` and
@@ -426,7 +427,7 @@ banner-inversion | the two historical programme documents once the fresh pair ex
 - `docs/hexaemeron-checkpoint-programme-study.md` and `docs/hexaemeron-checkpoint-programme-runbook.md`.
 - `docs/fiat-controller-checkpoint-study.md` and `docs/fiat-controller-checkpoint-runbook.md`, digest-pinned by `tests/test_fiat_checkpoint_decision_record.py`.
 - `plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md`.
-- `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `cmd_checkpoint_export` line 12629, `cmd_checkpoint_restore` line 13754, subparsers at line 14801.
+- `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `cmd_checkpoint_export` line 12629, `cmd_checkpoint_restore` line 13754, subparsers at line 14803.
 - `plugins/hexaemeron/skills/fiat/EVOLUTION.md`, rows `fiat-v5.35.1`, `fiat-v5.43.1`, `fiat-v5.44.1`, current `fiat-v5.49.1`.
 - `tests/test_decision_records.py`, `tests/test_fiat_checkpoint_decision_record.py`, `tests/test_shipped_prose_lints.py`.
 - Issues #859, #860, #861, #862, #863, #864, #865, #866, #867, #508, #899, #901 in `wildcat-finance/skills`, each read on 2026-09-02. #547 does not resolve.
