@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/instruction-architecture/invocation-profile-v1.schema.json",
+  "title": "framework-74 source-owned invocation profiles",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["counts", "profiles", "projection_sha256", "schema", "source_ref", "totals"],
+  "properties": {
+    "schema": {"const": "wildcat-instruction-architecture-invocation-profiles/v1"},
+    "source_ref": {"$ref": "#/$defs/gitOid"},
+    "counts": {"$ref": "#/$defs/counts"},
+    "totals": {"$ref": "#/$defs/totals"},
+    "projection_sha256": {"$ref": "#/$defs/sha256"},
+    "profiles": {
+      "type": "array",
+      "minItems": 519,
+      "maxItems": 519,
+      "items": {"$ref": "#/$defs/profile"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)(?!.*\\/$)[\\u0020-\\u007e]+(?![\\s\\S])"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alexandria", "anamnesis", "ariadne", "berean", "brevitas", "elenchus", "ephoros", "fiat", "fizz", "fizz-convert", "fizz-sync", "hermes", "homologia", "horos", "hypomnema", "imprimatur", "janus", "kronos", "lazarus", "lemma", "metron", "pandects", "phylax", "probitas", "protasis", "sapheneia", "solidity-auditor", "synkrisis", "tabularium", "vulgate", "x-ray"],
+      "properties": {
+        "alexandria": {"const": 3},
+        "anamnesis": {"const": 3},
+        "ariadne": {"const": 7},
+        "berean": {"const": 2},
+        "brevitas": {"const": 2},
+        "elenchus": {"const": 3},
+        "ephoros": {"const": 2},
+        "fiat": {"const": 415},
+        "fizz": {"const": 6},
+        "fizz-convert": {"const": 1},
+        "fizz-sync": {"const": 1},
+        "hermes": {"const": 2},
+        "homologia": {"const": 2},
+        "horos": {"const": 2},
+        "hypomnema": {"const": 2},
+        "imprimatur": {"const": 2},
+        "janus": {"const": 2},
+        "kronos": {"const": 26},
+        "lazarus": {"const": 5},
+        "lemma": {"const": 3},
+        "metron": {"const": 3},
+        "pandects": {"const": 2},
+        "phylax": {"const": 3},
+        "probitas": {"const": 3},
+        "protasis": {"const": 3},
+        "sapheneia": {"const": 2},
+        "solidity-auditor": {"const": 1},
+        "synkrisis": {"const": 4},
+        "tabularium": {"const": 4},
+        "vulgate": {"const": 2},
+        "x-ray": {"const": 1}
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_skills_roots", "normalized_profiles", "repository_roots", "scenario_roots", "standalone_roots"],
+      "properties": {
+        "agent_skills_roots": {"const": 1038},
+        "normalized_profiles": {"const": 519},
+        "repository_roots": {"const": 1038},
+        "scenario_roots": {"const": 2595},
+        "standalone_roots": {"const": 519}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["end", "obligation", "path", "source_sha256", "span_sha256", "start"],
+      "properties": {
+        "end": {"type": "integer", "minimum": 1},
+        "obligation": {"$ref": "#/$defs/path"},
+        "path": {"$ref": "#/$defs/path"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "span_sha256": {"$ref": "#/$defs/sha256"},
+        "start": {"type": "integer", "minimum": 0}
+      }
+    },
+    "fixedInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["load_semantics", "path"],
+      "properties": {
+        "load_semantics": {"enum": ["agent-or-prompt", "mandatory-executable"]},
+        "path": {"$ref": "#/$defs/path"}
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicability", "branch_state", "exclusive_group", "fixed_inputs", "id", "phase", "required_documents", "selected_skill", "source_evidence", "worker_prompts"],
+      "properties": {
+        "applicability": {"type": "string", "pattern": "^bounded-operation:[^:]+:.+$"},
+        "branch_state": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "exclusive_group": {"type": "string", "minLength": 1},
+        "fixed_inputs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/fixedInput"}},
+        "id": {"type": "string", "minLength": 3},
+        "phase": {"type": "string", "minLength": 1},
+        "required_documents": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+        "selected_skill": {"enum": ["alexandria", "anamnesis", "ariadne", "berean", "brevitas", "elenchus", "ephoros", "fiat", "fizz", "fizz-convert", "fizz-sync", "hermes", "homologia", "horos", "hypomnema", "imprimatur", "janus", "kronos", "lazarus", "lemma", "metron", "pandects", "phylax", "probitas", "protasis", "sapheneia", "solidity-auditor", "synkrisis", "tabularium", "vulgate", "x-ray"]},
+        "source_evidence": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/evidence"}},
+        "worker_prompts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/path"}}
+      }
+    }
+  }
+}

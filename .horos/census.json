@@ -1,129 +1,141 @@
 {
   "rows": [
     {
-      "boundary_bytes": 35315027,
-      "bytes": 35315027,
-      "files": 71,
+      "boundary_bytes": 26584973,
+      "bytes": 26584973,
+      "files": 40,
       "suffix": ".png"
     },
     {
-      "boundary_bytes": 17298484,
-      "bytes": 17298484,
+      "boundary_bytes": 17299019,
+      "bytes": 17299019,
       "files": 2,
       "suffix": ".pdf"
     },
     {
-      "boundary_bytes": 3395842,
-      "bytes": 16330361,
-      "files": 1114,
+      "boundary_bytes": 1485,
+      "bytes": 13968855,
+      "files": 803,
       "suffix": ".md"
     },
     {
-      "boundary_bytes": 2660414,
-      "bytes": 14235386,
-      "files": 706,
+      "boundary_bytes": 64487,
+      "bytes": 12525923,
+      "files": 601,
       "suffix": ".json"
     },
     {
-      "boundary_bytes": 3599278,
-      "bytes": 12552133,
-      "files": 688,
+      "boundary_bytes": 73,
+      "bytes": 9889572,
+      "files": 499,
       "suffix": ".py"
     },
     {
-      "boundary_bytes": 8046967,
-      "bytes": 8251515,
-      "files": 137,
+      "boundary_bytes": 7844971,
+      "bytes": 8061042,
+      "files": 106,
       "suffix": "(no suffix)"
     },
     {
-      "boundary_bytes": 2582914,
-      "bytes": 5847230,
-      "files": 75,
+      "boundary_bytes": 0,
+      "bytes": 3266721,
+      "files": 52,
       "suffix": ".jsonl"
     },
     {
-      "boundary_bytes": 521625,
-      "bytes": 1043336,
-      "files": 182,
+      "boundary_bytes": 949,
+      "bytes": 522660,
+      "files": 94,
       "suffix": ".sol"
     },
     {
-      "boundary_bytes": 183643,
-      "bytes": 367052,
-      "files": 26,
+      "boundary_bytes": 117,
+      "bytes": 183526,
+      "files": 13,
       "suffix": ".js"
     },
     {
-      "boundary_bytes": 33767,
-      "bytes": 67534,
-      "files": 4,
+      "boundary_bytes": 58214,
+      "bytes": 58214,
+      "files": 1,
+      "suffix": ".webp"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 33767,
+      "files": 2,
       "suffix": ".graphql"
     },
     {
-      "boundary_bytes": 18483,
-      "bytes": 36966,
-      "files": 6,
+      "boundary_bytes": 0,
+      "bytes": 31950,
+      "files": 13,
+      "suffix": ".yml"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 18483,
+      "files": 3,
       "suffix": ".sh"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 28230,
-      "files": 12,
-      "suffix": ".yml"
-    },
-    {
-      "boundary_bytes": 10643,
-      "bytes": 22652,
-      "files": 59,
+      "bytes": 12122,
+      "files": 33,
       "suffix": ".yaml"
     },
     {
-      "boundary_bytes": 1483,
-      "bytes": 9473,
-      "files": 11,
+      "boundary_bytes": 0,
+      "bytes": 7990,
+      "files": 10,
       "suffix": ".ts"
     },
     {
-      "boundary_bytes": 2497,
-      "bytes": 4994,
-      "files": 2,
-      "suffix": ".mjs"
+      "boundary_bytes": 0,
+      "bytes": 6694,
+      "files": 6,
+      "suffix": ".wai"
     },
     {
-      "boundary_bytes": 2252,
-      "bytes": 4504,
+      "boundary_bytes": 0,
+      "bytes": 3012,
       "files": 4,
-      "suffix": ".sql"
-    },
-    {
-      "boundary_bytes": 1367,
-      "bytes": 2734,
-      "files": 2,
-      "suffix": ".hpp"
-    },
-    {
-      "boundary_bytes": 1026,
-      "bytes": 2428,
-      "files": 8,
-      "suffix": ".toml"
-    },
-    {
-      "boundary_bytes": 1139,
-      "bytes": 2278,
-      "files": 2,
-      "suffix": ".go"
-    },
-    {
-      "boundary_bytes": 142,
-      "bytes": 1480,
-      "files": 3,
       "suffix": ".txt"
     },
     {
-      "boundary_bytes": 738,
-      "bytes": 1260,
-      "files": 6,
+      "boundary_bytes": 0,
+      "bytes": 2497,
+      "files": 1,
+      "suffix": ".mjs"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 2252,
+      "files": 2,
+      "suffix": ".sql"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 1402,
+      "files": 5,
+      "suffix": ".toml"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 1367,
+      "files": 1,
+      "suffix": ".hpp"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 1139,
+      "files": 1,
+      "suffix": ".go"
+    },
+    {
+      "boundary_bytes": 108,
+      "bytes": 630,
+      "files": 3,
       "suffix": ".lock"
     },
     {
@@ -133,44 +145,44 @@
       "suffix": ".asc"
     },
     {
-      "boundary_bytes": 292,
-      "bytes": 292,
-      "files": 2,
+      "boundary_bytes": 146,
+      "bytes": 146,
+      "files": 1,
       "suffix": ".sum"
     },
     {
-      "boundary_bytes": 138,
-      "bytes": 276,
-      "files": 2,
+      "boundary_bytes": 0,
+      "bytes": 138,
+      "files": 1,
       "suffix": ".svg"
     },
     {
-      "boundary_bytes": 65,
-      "bytes": 130,
-      "files": 2,
+      "boundary_bytes": 0,
+      "bytes": 65,
+      "files": 1,
       "suffix": ".sha256"
     },
     {
-      "boundary_bytes": 106,
-      "bytes": 106,
-      "files": 2,
+      "boundary_bytes": 53,
+      "bytes": 53,
+      "files": 1,
       "suffix": ".map"
     },
     {
-      "boundary_bytes": 34,
-      "bytes": 34,
-      "files": 2,
+      "boundary_bytes": 17,
+      "bytes": 17,
+      "files": 1,
       "suffix": ".woff2"
     },
     {
-      "boundary_bytes": 11,
-      "bytes": 22,
-      "files": 2,
+      "boundary_bytes": 0,
+      "bytes": 11,
+      "files": 1,
       "suffix": ".bin"
     }
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 111426366,
-  "total_files": 3133
+  "total_bytes": 92484689,
+  "total_files": 2302
 }

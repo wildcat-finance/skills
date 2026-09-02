@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/instruction-architecture/source-bound-v1.schema.json",
+  "title": "framework-74 source-bound research records",
+  "oneOf": [
+    {"$ref": "#/$defs/manifest"},
+    {"$ref": "#/$defs/loaderGraph"},
+    {"$ref": "#/$defs/partition"},
+    {"$ref": "#/$defs/cohorts"},
+    {"$ref": "#/$defs/holdoutSeal"},
+    {"$ref": "#/$defs/artifactInventory"}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)(?!.*\\/$)[\\u0020-\\u007e]+(?![\\s\\S])"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "repository_paths", "tree_sha256"],
+      "properties": {
+        "ref": {"$ref": "#/$defs/gitOid"},
+        "repository_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "tree_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixed_input", "frontier_ledger", "frontier_policy", "identity_contract", "identity_roster", "markdown_reference", "operation_reference", "overlay_contract", "promise_machine_contract", "router_install_contract", "runtime_contract", "skill_contract", "structured_reference", "worker_prompt"],
+      "properties": {
+        "fixed_input": {"type": "integer", "minimum": 0},
+        "frontier_ledger": {"type": "integer", "minimum": 0},
+        "frontier_policy": {"type": "integer", "minimum": 0},
+        "identity_contract": {"type": "integer", "minimum": 0},
+        "identity_roster": {"type": "integer", "minimum": 0},
+        "markdown_reference": {"type": "integer", "minimum": 0},
+        "operation_reference": {"type": "integer", "minimum": 0},
+        "overlay_contract": {"type": "integer", "minimum": 0},
+        "promise_machine_contract": {"type": "integer", "minimum": 0},
+        "router_install_contract": {"type": "integer", "minimum": 0},
+        "runtime_contract": {"type": "integer", "minimum": 0},
+        "skill_contract": {"type": "integer", "minimum": 0},
+        "structured_reference": {"type": "integer", "minimum": 0},
+        "worker_prompt": {"type": "integer", "minimum": 0}
+      }
+    },
+    "corpusTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["physical_bytes", "physical_files", "unique_bytes", "unique_files"],
+      "properties": {
+        "physical_bytes": {"type": "integer", "minimum": 0},
+        "physical_files": {"type": "integer", "minimum": 0},
+        "unique_bytes": {"type": "integer", "minimum": 0},
+        "unique_files": {"type": "integer", "minimum": 0}
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["admission_kind", "authority_tier", "bytes", "canonical_content_path", "canonical_owner", "document_class", "exact_duplicate_group", "external_runtime_owner", "load_semantics", "loader_roots", "logical_document", "path", "runtime_evidence", "scenario_reachability", "sha256", "source_evidence"],
+      "properties": {
+        "admission_kind": {"enum": ["credential-identity", "fixed-agent-input", "frontier-gate", "identity-contract", "installed-route", "issue-census", "mandatory-rule-data", "operation-branch", "structured-reference", "vendored-overlay", "worker-dispatch"]},
+        "authority_tier": {"enum": ["canonical_skill", "conditional_reference", "fixed_input", "frontier_ledger", "frontier_policy", "generated_copy", "identity_roster", "plugin_overlay", "plugin_runtime", "router", "router_install", "suite_identity", "suite_law", "suite_runtime", "worker_prompt"]},
+        "bytes": {"type": "integer", "minimum": 1},
+        "canonical_content_path": {"$ref": "#/$defs/path"},
+        "canonical_owner": {"$ref": "#/$defs/path"},
+        "document_class": {"enum": ["fixed_input", "frontier_ledger", "frontier_policy", "identity_contract", "identity_roster", "markdown_reference", "operation_reference", "overlay_contract", "promise_machine_contract", "router_install_contract", "runtime_contract", "skill_contract", "structured_reference", "worker_prompt"]},
+        "exact_duplicate_group": {"type": ["string", "null"]},
+        "external_runtime_owner": {"enum": ["upstream-pashov", null]},
+        "load_semantics": {"enum": ["agent-or-prompt", "mandatory-executable", "reference-only"]},
+        "loader_roots": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "logical_document": {"type": "string", "minLength": 1},
+        "path": {"$ref": "#/$defs/path"},
+        "runtime_evidence": {"$ref": "#/$defs/evidenceOrNull"},
+        "scenario_reachability": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "source_evidence": {"$ref": "#/$defs/evidenceOrNull"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"load_semantics": {"const": "reference-only"}}},
+          "then": {
+            "properties": {
+              "loader_roots": {"maxItems": 0},
+              "runtime_evidence": {"type": "null"},
+              "scenario_reachability": {"maxItems": 0},
+              "source_evidence": {"$ref": "#/$defs/evidence"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"load_semantics": {"const": "mandatory-executable"}}},
+          "then": {
+            "properties": {
+              "loader_roots": {"minItems": 1},
+              "runtime_evidence": {"$ref": "#/$defs/evidence"},
+              "scenario_reachability": {"minItems": 1},
+              "source_evidence": {"$ref": "#/$defs/evidence"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"load_semantics": {"const": "agent-or-prompt"}}},
+          "then": {
+            "properties": {
+              "loader_roots": {"minItems": 1},
+              "runtime_evidence": {"type": "null"},
+              "scenario_reachability": {"minItems": 1},
+              "source_evidence": {"$ref": "#/$defs/evidenceOrNull"}
+            }
+          }
+        }
+      ]
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["counts", "documents", "schema", "source", "totals"],
+      "properties": {
+        "schema": {"const": "wildcat-instruction-architecture-corpus-manifest/v1"},
+        "source": {"$ref": "#/$defs/source"},
+        "counts": {"$ref": "#/$defs/counts"},
+        "totals": {"$ref": "#/$defs/corpusTotals"},
+        "documents": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/document"}}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["end", "path", "source_sha256", "span_sha256", "start"],
+      "properties": {
+        "end": {"type": "integer", "minimum": 1},
+        "path": {"$ref": "#/$defs/path"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "span_sha256": {"$ref": "#/$defs/sha256"},
+        "start": {"type": "integer", "minimum": 0}
+      }
+    },
+    "evidenceOrNull": {
+      "oneOf": [
+        {"$ref": "#/$defs/evidence"},
+        {"type": "null"}
+      ]
+    },
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "id", "mode", "node"],
+      "properties": {
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "id": {"type": "string", "minLength": 1},
+        "mode": {"const": "unconditional"},
+        "node": {"$ref": "#/$defs/path"}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active_roots", "evidence", "id", "kind", "load_type", "reason", "runtime_evidence", "source", "target"],
+      "properties": {
+        "active_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "id": {"type": "string", "pattern": "^edge-[0-9]{4}$"},
+        "kind": {"enum": ["conditional", "credential-identity", "fixed-agent-input", "frontier-gate", "installed-route", "mandatory-executable", "operation-branch", "unconditional", "vendored-overlay", "worker-dispatch"]},
+        "load_type": {"enum": ["agent-or-prompt", "mandatory-executable"]},
+        "reason": {"type": "string", "minLength": 1},
+        "runtime_evidence": {"$ref": "#/$defs/evidenceOrNull"},
+        "source": {"$ref": "#/$defs/path"},
+        "target": {"$ref": "#/$defs/path"}
+      },
+      "allOf": [{
+        "if": {"properties": {"load_type": {"const": "mandatory-executable"}}},
+        "then": {"properties": {"kind": {"const": "mandatory-executable"}, "runtime_evidence": {"$ref": "#/$defs/evidence"}}},
+        "else": {"properties": {"runtime_evidence": {"type": "null"}}}
+      }]
+    },
+    "scenarioEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active_scenarios", "condition", "eligible_base_scenarios", "evidence", "id", "kind", "load_type", "reason", "runtime_evidence", "source", "target"],
+      "properties": {
+        "active_scenarios": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "condition": {"type": ["string", "null"], "minLength": 1},
+        "eligible_base_scenarios": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "id": {"type": "string", "pattern": "^scenario-edge-[0-9]{5}$"},
+        "kind": {"enum": ["conditional", "credential-identity", "fixed-agent-input", "frontier-gate", "installed-route", "mandatory-executable", "operation-branch", "unconditional", "vendored-overlay", "worker-dispatch"]},
+        "load_type": {"enum": ["agent-or-prompt", "mandatory-executable"]},
+        "reason": {"type": "string", "minLength": 1},
+        "runtime_evidence": {"$ref": "#/$defs/evidenceOrNull"},
+        "source": {"$ref": "#/$defs/path"},
+        "target": {"$ref": "#/$defs/path"}
+      },
+      "allOf": [{
+        "if": {"properties": {"load_type": {"const": "mandatory-executable"}}},
+        "then": {"properties": {"kind": {"const": "mandatory-executable"}, "runtime_evidence": {"$ref": "#/$defs/evidence"}}},
+        "else": {"properties": {"runtime_evidence": {"type": "null"}}}
+      }]
+    },
+    "scenarioRoot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_scenario", "conditions", "credential", "evidence", "id", "mode", "node", "profile_id", "route", "selected_skill"],
+      "properties": {
+        "base_scenario": {"type": "string", "minLength": 1},
+        "conditions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "credential": {"enum": ["absent", "github-contributor"]},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "id": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["conditional", "unconditional"]},
+        "node": {"$ref": "#/$defs/path"},
+        "profile_id": {"type": "string", "minLength": 1},
+        "route": {"enum": ["agent-skills", "repository", "standalone"]},
+        "selected_skill": {"type": "string", "minLength": 1}
+      }
+    },
+    "excludedLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "evidence", "path", "reason"],
+      "properties": {
+        "class": {"enum": ["dynamic_target", "example_or_evidence", "generated_reader", "historical_record", "human_or_background", "unavailable_operation"]},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "path": {"$ref": "#/$defs/path"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "referenceOnly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_owner", "path", "reason", "source_evidence"],
+      "properties": {
+        "canonical_owner": {"$ref": "#/$defs/path"},
+        "path": {"$ref": "#/$defs/path"},
+        "reason": {"type": "string", "minLength": 1},
+        "source_evidence": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "loaderConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["complete_scenario_routes", "condition_vectors_closed", "conditional_references_require_source_span", "file_presence_creates_edge", "fixed_agent_inputs_are_not_executed", "fixtures_excluded", "invocation_profiles_are_source_owned", "mandatory_executable_edges_have_runtime_evidence", "manifest_reachability_is_graph_derived", "potential_edges_have_scenario_witnesses", "profile_route_product_is_exact", "recursive_required_loads_closed", "reference_only_records_have_zero_reachability", "same_repository_urls_require_exact_match", "sibling_branches_are_exclusive", "skills_runtime_excluded", "synkrisis_rule_operations_are_exclusive", "wildcard_scenario_conditions_forbidden"],
+      "properties": {
+        "complete_scenario_routes": {"const": true},
+        "condition_vectors_closed": {"const": true},
+        "conditional_references_require_source_span": {"const": true},
+        "file_presence_creates_edge": {"const": false},
+        "fixed_agent_inputs_are_not_executed": {"const": true},
+        "fixtures_excluded": {"const": true},
+        "invocation_profiles_are_source_owned": {"const": true},
+        "mandatory_executable_edges_have_runtime_evidence": {"const": true},
+        "manifest_reachability_is_graph_derived": {"const": true},
+        "potential_edges_have_scenario_witnesses": {"const": true},
+        "profile_route_product_is_exact": {"const": true},
+        "recursive_required_loads_closed": {"const": true},
+        "reference_only_records_have_zero_reachability": {"const": true},
+        "same_repository_urls_require_exact_match": {"const": true},
+        "sibling_branches_are_exclusive": {"const": true},
+        "skills_runtime_excluded": {"const": true},
+        "synkrisis_rule_operations_are_exclusive": {"const": true},
+        "wildcard_scenario_conditions_forbidden": {"const": true}
+      }
+    },
+    "loaderGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["constraints", "edges", "excluded_links", "invocation_profiles_sha256", "manifest_sha256", "reference_only", "roots", "scenario_edges", "scenario_roots", "schema", "source_ref"],
+      "properties": {
+        "schema": {"const": "wildcat-instruction-architecture-loader-graph/v1"},
+        "source_ref": {"$ref": "#/$defs/gitOid"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "invocation_profiles_sha256": {"$ref": "#/$defs/sha256"},
+        "roots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/root"}},
+        "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+        "scenario_roots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/scenarioRoot"}},
+        "scenario_edges": {"type": "array", "items": {"$ref": "#/$defs/scenarioEdge"}},
+        "excluded_links": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/excludedLink"}},
+        "reference_only": {"type": "array", "minItems": 12, "maxItems": 12, "items": {"$ref": "#/$defs/referenceOnly"}},
+        "constraints": {"$ref": "#/$defs/loaderConstraints"}
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "end", "span_sha256", "start"],
+      "properties": {
+        "classification": {"enum": ["exact_literal_or_evidence", "generated_duplicate", "governed_operative_semantics", "human_only_explanation_or_rationale", "unsupported_or_unknown"]},
+        "end": {"type": "integer", "minimum": 1},
+        "span_sha256": {"$ref": "#/$defs/sha256"},
+        "start": {"type": "integer", "minimum": 0}
+      }
+    },
+    "partitionFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "path", "ranges", "source_sha256"],
+      "properties": {
+        "bytes": {"type": "integer", "minimum": 1},
+        "path": {"$ref": "#/$defs/path"},
+        "ranges": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/range"}},
+        "source_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "partitionTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exact_literal_or_evidence", "generated_duplicate", "governed_operative_semantics", "human_only_explanation_or_rationale", "unsupported_or_unknown"],
+      "properties": {
+        "exact_literal_or_evidence": {"type": "integer", "minimum": 0},
+        "generated_duplicate": {"type": "integer", "minimum": 0},
+        "governed_operative_semantics": {"type": "integer", "minimum": 0},
+        "human_only_explanation_or_rationale": {"type": "integer", "minimum": 0},
+        "unsupported_or_unknown": {"type": "integer", "minimum": 0}
+      }
+    },
+    "partition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classifications", "files", "manifest_sha256", "schema", "source_ref", "totals", "unsupported_operative_bytes"],
+      "properties": {
+        "schema": {"const": "wildcat-instruction-architecture-byte-partition/v1"},
+        "source_ref": {"$ref": "#/$defs/gitOid"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "classifications": {"type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": {"type": "string"}},
+        "unsupported_operative_bytes": {"type": "integer", "minimum": 0},
+        "totals": {"$ref": "#/$defs/partitionTotals"},
+        "files": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/partitionFile"}}
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["excluded_from_holdout", "method", "seed"],
+      "properties": {
+        "excluded_from_holdout": {"type": "array", "items": {"type": "string"}},
+        "method": {"type": "string", "minLength": 1},
+        "seed": {"type": "string", "minLength": 1}
+      }
+    },
+    "development": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority_tiers", "constructs", "document_classes", "logical_skills", "paths", "size_deciles", "unique_byte_ratio", "unique_bytes"],
+      "properties": {
+        "authority_tiers": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "constructs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "document_classes": {"type": "array", "minItems": 14, "maxItems": 14, "uniqueItems": true, "items": {"type": "string"}},
+        "logical_skills": {"type": "array", "minItems": 12, "uniqueItems": true, "items": {"type": "string"}},
+        "paths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+        "size_deciles": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 9}},
+        "unique_byte_ratio": {"type": "string", "pattern": "^0\\.[0-9]{6}$"},
+        "unique_bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "caseSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "logical_skill", "response_shape", "semantic_class"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^holdout-[0-9]{2}$"},
+        "logical_skill": {"type": "string", "minLength": 1},
+        "response_shape": {"enum": ["decision", "recovery", "refusal", "structured-plan", "tool-invocation"]},
+        "semantic_class": {"enum": ["authority", "cross-document", "exact-literal", "failure", "recovery"]}
+      }
+    },
+    "holdout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_slots", "logical_skills", "paths", "semantic_classes", "unique_byte_ratio", "unique_bytes"],
+      "properties": {
+        "case_slots": {"type": "array", "minItems": 16, "maxItems": 16, "items": {"$ref": "#/$defs/caseSlot"}},
+        "logical_skills": {"type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": {"type": "string"}},
+        "paths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+        "semantic_classes": {"type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": {"type": "string"}},
+        "unique_byte_ratio": {"type": "string", "pattern": "^0\\.[0-9]{6}$"},
+        "unique_bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "cohorts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["development", "generated_duplicates_excluded", "holdout", "manifest_sha256", "schema", "selection", "source_ref"],
+      "properties": {
+        "schema": {"const": "wildcat-instruction-architecture-cohorts/v1"},
+        "source_ref": {"$ref": "#/$defs/gitOid"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "selection": {"$ref": "#/$defs/selection"},
+        "development": {"$ref": "#/$defs/development"},
+        "holdout": {"$ref": "#/$defs/holdout"},
+        "generated_duplicates_excluded": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/path"}}
+      }
+    },
+    "membership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logical_skills", "paths"],
+      "properties": {
+        "logical_skills": {"type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": {"type": "string"}},
+        "paths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/path"}}
+      }
+    },
+    "caseEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["forbidden_until_open", "slots"],
+      "properties": {
+        "forbidden_until_open": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"enum": ["expected_answer", "model_output", "prompt", "scorer_key"]}},
+        "slots": {"type": "array", "minItems": 16, "maxItems": 16, "items": {"$ref": "#/$defs/caseSlot"}}
+      }
+    },
+    "holdoutSeal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_envelope_sha256", "closed_future_case_envelope", "cohorts_sha256", "commitment_sha256", "invocation_profiles_sha256", "loader_graph_sha256", "manifest_sha256", "membership", "membership_sha256", "opened", "schema", "selection_seed", "source_ref"],
+      "properties": {
+        "case_envelope_sha256": {"$ref": "#/$defs/sha256"},
+        "closed_future_case_envelope": {"$ref": "#/$defs/caseEnvelope"},
+        "cohorts_sha256": {"$ref": "#/$defs/sha256"},
+        "commitment_sha256": {"$ref": "#/$defs/sha256"},
+        "invocation_profiles_sha256": {"$ref": "#/$defs/sha256"},
+        "loader_graph_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "membership": {"$ref": "#/$defs/membership"},
+        "membership_sha256": {"$ref": "#/$defs/sha256"},
+        "opened": {"const": false},
+        "schema": {"const": "wildcat-instruction-architecture-holdout-seal/v1"},
+        "selection_seed": {"type": "string", "minLength": 1},
+        "source_ref": {"$ref": "#/$defs/gitOid"}
+      }
+    },
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "sha256"],
+      "properties": {
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "artifactInventoryEntries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["byte-partition.json", "cohorts.json", "corpus-manifest.json", "holdout-seal.json", "invocation-profiles.json", "loader-graph.json"],
+      "properties": {
+        "byte-partition.json": {"$ref": "#/$defs/artifactRecord"},
+        "cohorts.json": {"$ref": "#/$defs/artifactRecord"},
+        "corpus-manifest.json": {"$ref": "#/$defs/artifactRecord"},
+        "holdout-seal.json": {"$ref": "#/$defs/artifactRecord"},
+        "invocation-profiles.json": {"$ref": "#/$defs/artifactRecord"},
+        "loader-graph.json": {"$ref": "#/$defs/artifactRecord"}
+      }
+    },
+    "artifactInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts", "reconciliation", "schema", "source_ref", "source_tree_sha256"],
+      "properties": {
+        "artifacts": {"$ref": "#/$defs/artifactInventoryEntries"},
+        "reconciliation": {"$ref": "#/$defs/artifactRecord"},
+        "schema": {"const": "wildcat-instruction-architecture-artifact-inventory/v1"},
+        "source_ref": {"$ref": "#/$defs/gitOid"},
+        "source_tree_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

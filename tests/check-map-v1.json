@@ -300,6 +300,7 @@
     {"path": "PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "README.md", "scope": "root"},
     {"path": "pyproject.toml", "scope": "root"},
+    {"path": "research/instruction-architecture", "scope": "root"},
     {"path": "skills.sh.json", "scope": "root"},
     {"path": "SHOGGOTH.md", "scope": "root"},
     {"path": "assets", "scope": "root"},
