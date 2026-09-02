@@ -98,6 +98,15 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
 
+# The status block ADR-014's amendment authorises: one span at the top of an open
+# issue's body recording its current status, supersession, or changed
+# requirement. The census reads bodies, so a correction that lands only in the
+# comment thread is a correction nobody compiling the queue will see. Absence is
+# ordinary and not a fault; a body that opens two blocks, or opens one and never
+# closes it, has made no statement and refuses.
+STATUS_BLOCK_START = "<!-- status:start -->"
+STATUS_BLOCK_END = "<!-- status:end -->"
+
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
 STEP_PHASES = ["issue", "implement", "audit", "prose", "push"]
@@ -4574,6 +4583,136 @@ def carryover_triage(text: str, label: str) -> tuple[list[dict], list[str]]:
     return parsed, [f"{label}: {fault}" for fault in faults]
 
 
+def status_block_span(
+    text: str, label: str
+) -> tuple[tuple[int, int] | None, list[str]]:
+    """The status block one issue body carries, and every fault in it.
+
+    Read outside fenced code, so a body quoting the delimiters as an example
+    carries no block. That is the rule which lets the decision record show its
+    own markers. Line numbers count the unfenced stream, because that is the
+    only sequence both this reader and a downstream consumer can agree on.
+
+    Absence returns ``(None, [])``. Most bodies carry no block, and a refusal
+    there would make the ordinary case the loud one.
+    """
+    opened = closed = None
+    faults: list[str] = []
+    lines = _unfenced_markdown_lines(text)
+    for number, physical in enumerate(lines, start=1):
+        line = physical.rstrip("\r\n").strip()
+        if line == STATUS_BLOCK_START:
+            if opened is not None:
+                return None, [
+                    f"{label} opens more than one status block, so no statement "
+                    f"in it is authoritative"
+                ]
+            opened = number
+        elif line == STATUS_BLOCK_END:
+            # An unmatched closer is refused wherever it sits, including after a
+            # block that already closed. A body carrying one is mid-edit, and
+            # reporting it clean tells the editor the opposite.
+            if opened is None or closed is not None:
+                return None, [
+                    f"{label} has a status block closed before it opened"
+                ]
+            closed = number
+    if opened is None:
+        return None, []
+    if closed is None:
+        return None, [
+            f"{label} opens a status block that is never closed, so the rest of "
+            f"the body would be read as its content"
+        ]
+    # The record puts the block above the filing prose, so a reader coming top to
+    # bottom meets the current statement before the original one. The rule
+    # protects what a reader sees, so blank lines and whole-line HTML comments do
+    # not count: 92 of the 137 issues open at the time this was written begin with
+    # the invisible `wildcat-origin` marker, and refusing the arrangement those
+    # bodies produce would make the contract unusable on the corpus it governs.
+    for physical in lines[:opened - 1]:
+        line = physical.strip()
+        if not line or (line.startswith("<!--") and line.endswith("-->")):
+            continue
+        return None, [
+            f"{label} opens its status block below the filing prose, so a "
+            f"reader meets the original requirement before the correction"
+        ]
+    content = lines[opened:closed - 1]
+    for offset, physical in enumerate(content, start=opened + 1):
+        if _contains_nonprinting_character(physical.rstrip("\r\n")):
+            faults.append(
+                f"{label} status block line {offset} contains a control character"
+            )
+    if faults:
+        return None, faults
+    return (opened, closed), []
+
+
+STALE_BODY_REPORT_SCHEMA = "fiat-stale-body-report/v1"
+STALE_BODY_INPUT_BYTES_MAX = 8 * 1024 * 1024
+STALE_BODY_ROWS_MAX = 2048
+
+
+def stale_body_report(bodies: list[dict]) -> dict:
+    """Which open issues carry no status block, and which carry a broken one.
+
+    Report-only, following ADR-053's posture for dead-code discovery: it counts
+    and names, and nothing here refuses. An absent block is the ordinary case
+    rather than a defect, so a gate on this number would be a gate on almost
+    every issue in the repository.
+
+    An absence and a malformed block are separated deliberately. A body nobody
+    has touched needs somebody to decide whether its requirement still holds; a
+    body mid-edit needs its own delimiters finished, which is a different job
+    for a different person.
+    """
+    rows = []
+    absent = malformed = carried = 0
+    for entry in bodies:
+        number = entry["number"]
+        body = entry.get("body")
+        title = entry.get("title")
+        # Hostile JSON reaches this parser. A wrong type used to surface as an
+        # AttributeError from deep inside the line reader, which is a traceback
+        # rather than a diagnosis; findings F-03 and F-04 in the plugin's own
+        # audit record are the same class, fixed the same way.
+        if body is not None and not isinstance(body, str):
+            die(f"issue {number} carries a body that is not text")
+        if title is not None and not isinstance(title, str):
+            die(f"issue {number} carries a title that is not text")
+        span, faults = status_block_span(body or "", f"issue {number}")
+        if faults:
+            malformed += 1
+            state, detail = "malformed", faults[0]
+        elif span is None:
+            absent += 1
+            state, detail = "absent", "no status block"
+        else:
+            carried += 1
+            continue
+        rows.append({
+            # Titles come from GitHub and these rows are printed to a terminal,
+            # so an escape sequence in a crafted title would render raw. The
+            # carryover row reader refuses control characters by name; this one
+            # strips them, because a title is display text rather than a field
+            # any decision rests on.
+            "number": number,
+            "title": "".join(c for c in (title or "") if c.isprintable()),
+            "state": state,
+            "detail": detail,
+        })
+    rows.sort(key=lambda row: row["number"])
+    return {
+        "schema": STALE_BODY_REPORT_SCHEMA,
+        "surveyed": len(bodies),
+        "with_block": carried,
+        "without_block": absent,
+        "malformed": malformed,
+        "rows": rows,
+    }
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -4614,12 +4753,14 @@ def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
     """
     value, value_faults = fiat_required_value(text, label)
     carryover, carryover_faults = carryover_triage(text, label)
+    status, status_faults = status_block_span(text, label)
     record = {
         "fiat_required": None if value is None else int(value),
         "carryover": carryover,
+        "status_block": None if status is None else [status[0], status[1]],
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
     }
-    return record, [*value_faults, *carryover_faults]
+    return record, [*value_faults, *carryover_faults, *status_faults]
 
 
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
@@ -5394,6 +5535,64 @@ def cmd_record(args) -> None:
     state["receipts"][args.key] = value
     commit(args.dir, state, "record", {"key": args.key, "value": value})
     print(f"recorded {args.key}")
+
+
+def cmd_stale_bodies(args) -> None:
+    """Report which open issues carry no status block, or a broken one.
+
+    Report-only. It prints what it found and exits zero whatever that is,
+    following ADR-053's posture for dead-code discovery. Almost every issue in
+    a repository lacks a block, so a gate on this count would refuse nearly
+    everything and teach the reader to bypass it.
+
+    The bodies come from a file rather than the network, because the survey a
+    person acts on is one they can rerun on the same input and get the same
+    answer. Produce that file with the reader's own transport, and pass
+    `--paginate`: the issues endpoint returns pull requests alongside issues,
+    so one unpaginated page of 100 yielded 59 issues out of 138 here and the
+    survey could not tell it had seen well under half of them.
+
+        gh api --paginate "repos/OWNER/NAME/issues?state=open&per_page=100" \
+          --jq '.[] | select(.pull_request == null) | {number, title, body}'
+
+    Collect those objects into one JSON array before passing the file in. The
+    counts describe the file and never the repository: this reader is handed a
+    set and cannot know what was left out of it, so it reports `surveyed`
+    rather than `open` and leaves the completeness claim to whoever produced
+    the file.
+    """
+    try:
+        with open(args.bodies, "rb") as handle:
+            raw = handle.read(STALE_BODY_INPUT_BYTES_MAX + 1)
+    except OSError as exc:
+        die(f"{args.bodies} cannot be read ({exc})")
+    if len(raw) > STALE_BODY_INPUT_BYTES_MAX:
+        die(f"{args.bodies} is above the {STALE_BODY_INPUT_BYTES_MAX}-byte cap "
+            f"this reader will parse")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        die(f"{args.bodies} is not readable JSON ({exc})")
+    if not isinstance(payload, list):
+        die(f"{args.bodies} must hold a JSON array of issues")
+    if len(payload) > STALE_BODY_ROWS_MAX:
+        die(f"{args.bodies} holds {len(payload)} issues, above the "
+            f"{STALE_BODY_ROWS_MAX} this reader will survey")
+    bodies = []
+    for index, entry in enumerate(payload):
+        if not isinstance(entry, dict) or not isinstance(entry.get("number"), int):
+            die(f"{args.bodies} entry {index} carries no integer issue number")
+        bodies.append(entry)
+    report = stale_body_report(bodies)
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print(f"{report['surveyed']} issue(s) surveyed: {report['with_block']} carry a "
+          f"status block, {report['without_block']} carry none, "
+          f"{report['malformed']} carry a broken one")
+    for row in report["rows"]:
+        print(f"  #{row['number']} {row['state']}: {row['title']}")
+    print("report-only; nothing here refuses")
 
 
 def cmd_issue_check(args) -> None:
@@ -15868,6 +16067,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--body", help="path to the candidate issue body")
     sp.add_argument("--issue", help="canonical GitHub issue URL to read")
     sp.set_defaults(fn=cmd_issue_check)
+
+    sp = sub.add_parser(
+        "stale-bodies",
+        help="report which open issues carry no status block (report-only)",
+    )
+    sp.add_argument("--bodies", required=True,
+                    help="path to a JSON array of {number, title, body}")
+    sp.add_argument("--json", action="store_true", help="emit the report as JSON")
+    sp.set_defaults(fn=cmd_stale_bodies)
 
     sp = sub.add_parser("next", help="emit the single next action as JSON")
     sp.add_argument(
