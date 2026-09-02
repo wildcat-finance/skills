@@ -5,10 +5,10 @@ Lazarus plan v3 can bind a full ordered receipt witness to the
 relations without upgrading the rest of the recorded JSON-RPC response.
 
 The shipped fixture is
-[`examples/goldfinch-v1`](../examples/goldfinch-v1). It fixes Ethereum mainnet
-block `0xc7da16`, reconstructs the root from 224 consensus receipts, selects
-transaction index `0xbf`, checks that receipt's 110 consensus logs, and checks
-the exact five-log projection declared by the fixed-block filter. The fixture
+[`examples/aave-v4-spoke-v1`](../examples/aave-v4-spoke-v1). It fixes Ethereum mainnet
+block `0x18ac22c`, reconstructs the root from 177 consensus receipts, selects
+transaction index `0x3f`, checks that receipt's 4 consensus logs, and checks
+the exact two-log projection declared by the fixed-block filter. The fixture
 reports exactly two `receipt_trie_proved` relations.
 
 ## Verify and demonstrate offline
@@ -18,10 +18,10 @@ an RPC URL or opens a network connection:
 
 ```bash
 python3 plugins/lazarus/scripts/lazarus.py verify \
-  plugins/lazarus/examples/goldfinch-v1
+  plugins/lazarus/examples/aave-v4-spoke-v1
 python3 plugins/lazarus/scripts/lazarus.py verify-release \
-  plugins/lazarus/examples/goldfinch-v1-release
-python3 plugins/lazarus/examples/goldfinch-v1/demo.py
+  plugins/lazarus/examples/aave-v4-spoke-v1-release
+python3 plugins/lazarus/examples/aave-v4-spoke-v1/demo.py
 ```
 
 The demonstration verifies the fixture and the state-fixture/v2 release,
@@ -72,7 +72,7 @@ from local bytes.
 
 Plan v1 and v2, manifest v1, state-fixture/v1 and release v1 remain supported
 byte for byte. The historical
-[`goldfinch-v0`](../examples/goldfinch-v0) fixture and its release stay at writer
+[`aave-v4-spoke-v0`](../examples/aave-v4-spoke-v0) fixture and its release stay at writer
 0.1.0; new output uses writer 0.2.0. Empty blocks remain the next explicit
 frontier: receipt-witness/v1 requires a non-empty ordered sequence and a scoped
 target relation.

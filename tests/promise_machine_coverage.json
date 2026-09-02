@@ -1365,12 +1365,12 @@
     },
     "lazarus-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
-      "path": "plugins/lazarus/tests/test_goldfinch.py",
+      "path": "plugins/lazarus/tests/test_aave_v4.py",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance"
     },
     "lazarus-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
-      "path": "plugins/lazarus/tests/test_goldfinch.py",
+      "path": "plugins/lazarus/tests/test_aave_v4.py",
       "selector": "test_demo_command_runs_the_complete_application_check"
     },
     "lazarus-s": {

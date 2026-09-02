@@ -44,12 +44,12 @@ A working prototype will ship as `plugins/lazarus` and will:
   parameters for every miss; and
 - verify and replay with network access disabled and without the capture URL.
 
-The demonstration lives at `plugins/lazarus/examples/goldfinch-v0/`. Its plan
-uses the Ethereum mainnet Goldfinch market
-`0x8bbd80f88e662e56b918c353da635e210ece93c6`, already named by the first row
-of Tabularium's checked-in Goldfinch release. It captures the account proof,
+The demonstration lives at `plugins/lazarus/examples/aave-v4-spoke-v0/`. Its plan
+uses the Ethereum mainnet Aave v4 market
+`0x973a023a77420ba610f06b3858ad991df6d85a08`, already named by the first row
+of Tabularium's checked-in Aave v4 release. It captures the account proof,
 contract code, storage slot `0x0`, the cited transaction receipt
-`0xa46a744d6d52528a660c1d99a4edde403504fe7a308118c7cc947819583ce699`,
+`0xdaa7ebd15335bf809ee414876846df98d40736e7d29e3eeaca8b434653b9313e`,
 and a small log query at the fixed fixture block. The demo check is:
 
 1. verify the checked-in fixture offline;
@@ -62,8 +62,8 @@ and a small log query at the fixed fixture block. The demo check is:
 6. rebuild the manifest from the same captured files and obtain identical
    bytes and digests.
 
-The Goldfinch address is a concrete replay subject, not a claim that slot
-`0x0` has a particular business meaning. Interpreting Goldfinch storage is
+The Aave v4 address is a concrete replay subject, not a claim that slot
+`0x0` has a particular business meaning. Interpreting Aave v4 storage is
 outside this first test. The chosen reading of "replay" is exact request replay,
 not arbitrary EVM execution from a partial world state. Exact replay is enough
 to remove the original RPC from an application test and makes the finite
@@ -80,9 +80,9 @@ fixture format and proof verifier are stable.
   unbuilt specification on the starting ref.
 - `specs/preservation-runbook.md` places Lazarus between an archive node and a
   published preservation release. It says state-derived values need
-  `eth_getProof` while events remain source records. It names Goldfinch as the
+  `eth_getProof` while events remain source records. It names Aave v4 as the
   first preservation case.
-- `plugins/tabularium/examples/goldfinch-v0/` is a complete offline-verifiable
+- `plugins/tabularium/examples/aave-v4-spoke-v0/` is a complete offline-verifiable
   event release with 34 borrow rows and 477 repay rows. Its
   `coverage.json` names the exact gap Lazarus should close: block 25,764,670 is
   reported by a hosted indexer, individual events lack independently checked
@@ -112,7 +112,7 @@ not part of `main` and is not a dependency of this build.
 The recovered OpenCode archive session
 `ses_ff5057204ffe26V8p4QM5Kh9PL`, titled "Lazarus prior-art spike research",
 contains the unfinished research run shown by the user. It had collected much
-of the Foundry, EELS, tracing, proof and Goldfinch evidence below but had not
+of the Foundry, EELS, tracing, proof and Aave v4 evidence below but had not
 produced a final report. Every technical conclusion from that archive was
 checked again against the named source before inclusion here.
 
@@ -123,7 +123,7 @@ checked again against the named source before inclusion here.
 - Wildcat protocol tests use Foundry forks for historical integration. Their
   practical need is the application boundary Lazarus serves: a small set of
   calls and storage reads, not an exported Ethereum database.
-- Tabularium and Probitas already expose the cost of endpoint loss. Goldfinch
+- Tabularium and Probitas already expose the cost of endpoint loss. Aave v4
   wound down, its checked-in source came from a served Graph deployment, and
   the release records that hosted indexer's block as a limitation. Lazarus can
   preserve the state reads a later release cannot derive from logs.
@@ -287,7 +287,7 @@ The prototype does not:
 - collect private keys, sign transactions or hold a signing key;
 - silently use a live provider during replay;
 - publish, sign or merge a Mnemosyne release;
-- rewrite Tabularium's existing Goldfinch release; or
+- rewrite Tabularium's existing Aave v4 release; or
 - provide a Foundry state backend in the first step.
 
 The supported replay allowlist should begin with `eth_chainId`,
@@ -507,7 +507,7 @@ write methods even if a malformed fixture contains one.
 - `laurenceday/wildcat-skills-todo`, starting commit
   `83fef6634a560860b930a532861dbfff8cbb3442`: `specs/lazarus.md`,
   `specs/preservation-runbook.md`, `specs/ariadne.md`,
-  `plugins/tabularium/examples/goldfinch-v0/`, `plugins/ariadne/`,
+  `plugins/tabularium/examples/aave-v4-spoke-v0/`, `plugins/ariadne/`,
   `plugins/probitas/`, root `AGENTS.md` and `tests/test_portable_skills.py`.
 - Unmerged local/remote branch `codex/mnemosyne-synthesis`, commit `0d929a0`:
   `specs/mnemosyne.md` and `mnemosyne/README.md`.

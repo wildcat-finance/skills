@@ -74,8 +74,8 @@ class ReplayTests(unittest.TestCase):
             )
 
     def test_receipt_proof_fixture_replays_recorded_block_receipts_exactly(self):
-        root = support.FIXTURES / "receipt-proof-v1"
-        plan = support.load_json("tests/fixtures/receipt-proof-v1/plan.json")
+        root = support.FIXTURES / "aave-v4-receipt-proof-v1"
+        plan = support.load_json("tests/fixtures/aave-v4-receipt-proof-v1/plan.json")
         request = next(
             item
             for item in plan["requests"]
@@ -98,7 +98,7 @@ class ReplayTests(unittest.TestCase):
             response,
             {"jsonrpc": "2.0", "id": 383, **record["outcome"]},
         )
-        self.assertEqual(len(response["result"]), 224)
+        self.assertEqual(len(response["result"]), 177)
 
     def test_exact_values_and_omitted_params_are_not_coerced(self):
         with tempfile.TemporaryDirectory() as directory:

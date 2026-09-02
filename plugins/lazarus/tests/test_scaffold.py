@@ -88,18 +88,24 @@ class ScaffoldTests(unittest.TestCase):
         self.assertNotEqual(package, support.skill_version())
         self.assertNotEqual(package, __version__)
 
-    def test_writer_0_2_0_applies_only_to_new_artifacts(self):
-        """Historical provenance stays historical when the writer advances."""
+    def test_writer_0_2_0_stamps_every_shipped_artifact(self):
+        """Both shipped fixtures were written by the current writer.
+
+        The repository previously kept one writer-0.1.0 artefact so the
+        manifest-v1 path had a shipped example. Both fixtures were recaptured
+        with 0.2.0, so that example is gone; manifest-v1 and manifest-v2
+        coexistence is still proved by schema_version below.
+        """
         self.assertEqual(__version__, "0.2.0")
-        legacy_manifest = support.load_json("examples/goldfinch-v0/manifest.json")
+        legacy_manifest = support.load_json("examples/aave-v4-spoke-v0/manifest.json")
         legacy_release = support.load_json(
-            "examples/goldfinch-v0-release/release.json"
+            "examples/aave-v4-spoke-v0-release/release.json"
         )
-        self.assertEqual(legacy_manifest["tool_version"], "0.1.0")
-        self.assertEqual(legacy_release["tool_version"], "0.1.0")
-        receipt_manifest = support.load_json("examples/goldfinch-v1/manifest.json")
+        self.assertEqual(legacy_manifest["tool_version"], __version__)
+        self.assertEqual(legacy_release["tool_version"], __version__)
+        receipt_manifest = support.load_json("examples/aave-v4-spoke-v1/manifest.json")
         receipt_release = support.load_json(
-            "examples/goldfinch-v1-release/release.json"
+            "examples/aave-v4-spoke-v1-release/release.json"
         )
         self.assertEqual(receipt_manifest["tool_version"], __version__)
         self.assertEqual(receipt_release["tool_version"], __version__)
@@ -163,18 +169,18 @@ class ScaffoldTests(unittest.TestCase):
             "- Frontier revision: `empty-block-receipt-witnesses`",
         ):
             self.assertIn(line, ledger)
-        self.assertIn("Goldfinch v1 demonstration", ledger)
+        self.assertIn("Aave v4 demonstration", ledger)
         self.assertIn("empty block cannot yet be represented", ledger)
 
     def test_receipt_inclusion_proof_guide_is_discoverable(self):
         guide = support.PLUGIN_ROOT / "docs" / "receipt-inclusion-proofs.md"
         text = guide.read_text(encoding="utf-8")
         for term in (
-            "goldfinch-v1",
-            "224 consensus receipts",
-            "transaction index `0xbf`",
-            "110 consensus logs",
-            "five-log projection",
+            "aave-v4-spoke-v1",
+            "177 consensus receipts",
+            "transaction index `0x3f`",
+            "4 consensus logs",
+            "two-log projection",
             "receipt_trie_proved",
             "Transaction hashes are RPC decorations",
             "writer 0.2.0",
@@ -241,14 +247,14 @@ class ScaffoldTests(unittest.TestCase):
         )[-1]
         self.assertIn(
             "--capture-command python3 --capture-command "
-            "plugins/lazarus/examples/goldfinch-v1/demo.py --capture-command "
+            "plugins/lazarus/examples/aave-v4-spoke-v1/demo.py --capture-command "
             "build-fixture --capture-command=--out --capture-command "
-            "tmp/goldfinch-v1-rebuild",
+            "tmp/aave-v4-spoke-v1-rebuild",
             latest_amendment,
         )
         self.assertNotIn(
             "--capture-command lazarus --capture-command capture "
-            "--capture-command goldfinch-v1",
+            "--capture-command aave-v4-spoke-v1",
             latest_amendment,
         )
 
@@ -284,13 +290,13 @@ class ScaffoldTests(unittest.TestCase):
         self.assertTrue(study.startswith("# Lazarus study\n"))
         self.assertIn("## Selected format and verification details", study)
         self.assertTrue(runbook.startswith("# Lazarus implementation runbook\n"))
-        self.assertIn("## Step 6: Ship and run the Goldfinch demonstration", runbook)
+        self.assertIn("## Step 6: Ship and run the Aave v4 demonstration", runbook)
 
     def test_multi_provider_anchor_specification_copies_are_exact(self):
         root = support.REPO_ROOT / "docs" / "lazarus-multi-provider-chain-anchor"
         expected = {
-            "study.md": "f16d14e2182f872d95e56b4485218a264286a845f80b2857960dcd32c14442fd",
-            "runbook.md": "e6ad38a1b934a7d61ee81ce6b01341a863d79e4841bec7b75ca84c29f6f8d8d7",
+            "study.md": "6bf3442ecf32a3b875a9711b2660783cbe02806cc19d96978969cc7ab49a94ef",
+            "runbook.md": "fd25aba20a8d21b49e1c3d48aead7a345c122fce22cbbe1995b641848dc651ef",
         }
         for name, digest in expected.items():
             with self.subTest(name=name):
@@ -304,11 +310,11 @@ class ScaffoldTests(unittest.TestCase):
         source_study = study.replace("](../../", "](../")
         self.assertEqual(
             hashlib.sha256(source_study.encode("utf-8")).hexdigest(),
-            "f8dd4bad531e8dbc236fec0bf0580d4a6a3a6284ce293a57a4d37af8555f9b79",
+            "4b84aefc50ce34c15a523ad931888930ba2186ac2bc0497e0a24f6e89630f25e",
         )
         self.assertEqual(
             hashlib.sha256((root / "runbook.md").read_bytes()).hexdigest(),
-            "8df93f70a40df951238dfa881d70638f88d2971043f04590eb7c8299aba0c459",
+            "08da441e7dd2a0293c5f466d6c691d50d67b5c742fe6907e48d54261da6ec0a4",
         )
 
     def test_receipt_proof_decision_is_discoverable(self):

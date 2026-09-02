@@ -60,7 +60,7 @@ jobs:
         run: |
           test ! -e .lazarus-ci
           python3 plugins/lazarus/tests/run_tests.py --elenchus-report .lazarus-ci/lazarus-darwin-tests.json
-      - name: Goldfinch fixture and default-temporary release
+      - name: Aave v4 fixture and default-temporary release
         run: |
           python3 - <<'PY'
           import hashlib
@@ -187,14 +187,14 @@ jobs:
           if not environment["architecture"]:
               raise AssertionError("the Darwin architecture is unavailable")
 
-          demo = root / "plugins" / "lazarus" / "examples" / "goldfinch-v1" / "demo.py"
+          demo = root / "plugins" / "lazarus" / "examples" / "aave-v4-spoke-v1" / "demo.py"
           checked_fixture = demo.parent
           checked_statement = (
               root
               / "plugins"
               / "lazarus"
               / "examples"
-              / "goldfinch-v1-release"
+              / "aave-v4-spoke-v1-release"
               / "statement.json"
           )
           with tempfile.TemporaryDirectory() as directory:
@@ -213,18 +213,18 @@ jobs:
                   check=False,
               )
               if built.returncode != 0:
-                  raise AssertionError("the Goldfinch fixture rebuild failed")
+                  raise AssertionError("the Aave v4 fixture rebuild failed")
               try:
                   fixture_event = json.loads(built.stdout)
               except (json.JSONDecodeError, TypeError):
-                  raise AssertionError("the Goldfinch fixture event is malformed") from None
+                  raise AssertionError("the Aave v4 fixture event is malformed") from None
               if (
-                  fixture_event.get("event") != "goldfinch_fixture_build"
+                  fixture_event.get("event") != "aave_v4_fixture_build"
                   or fixture_event.get("stage") != "complete"
               ):
-                  raise AssertionError("the Goldfinch fixture rebuild is incomplete")
+                  raise AssertionError("the Aave v4 fixture rebuild is incomplete")
               if _tree_bytes(rebuilt_fixture) != _tree_bytes(checked_fixture):
-                  raise AssertionError("the rebuilt Goldfinch fixture bytes changed")
+                  raise AssertionError("the rebuilt Aave v4 fixture bytes changed")
 
               statement = workspace / "statement.json"
               shutil.copyfile(checked_statement, statement)

@@ -29,8 +29,8 @@ from lazarus_lib.verifier import verify_fixture
 from . import support
 
 
-FIXTURE = support.FIXTURES / "receipt-proof-v1"
-FIXED_ROOT = "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e"
+FIXTURE = support.FIXTURES / "aave-v4-receipt-proof-v1"
+FIXED_ROOT = "0x7d3403cc37d77546db4005e06876a204372b0ef52a703cc88577a96dc4befb1a"
 SMALL_ROOT = "0x19d164adced738c05eb7a37ae987233ccd63f4a3f754042b27a13a929050278b"
 
 
@@ -273,7 +273,7 @@ class ReceiptRelationTests(unittest.TestCase):
 
     def test_consensus_log_order_is_committed_by_the_fixed_root(self):
         material = fixed_material()
-        logs = material["receipt_witness"]["receipts"][0xBF]["logs"]
+        logs = material["receipt_witness"]["receipts"][0x3F]["logs"]
         logs[0], logs[1] = logs[1], logs[0]
         with self.assertRaisesRegex(IntegrityError, "reconstructed receipt trie root"):
             verify_material(material)
@@ -324,7 +324,7 @@ class ReceiptRelationTests(unittest.TestCase):
     def test_filtered_projection_refuses_omission_extra_reorder_and_payload_mutation(self):
         for action in ("omit", "extra", "reorder", "payload", "position"):
             material = fixed_material()
-            logs = named_record(material, "goldfinch-block-logs")["outcome"]["result"]
+            logs = named_record(material, "aave-prime-block-logs")["outcome"]["result"]
             if action == "omit":
                 logs.pop()
             elif action == "extra":
@@ -412,12 +412,12 @@ class FixedReceiptFixtureTests(unittest.TestCase):
         )
         self.assertEqual(rebuilt, expected)
 
-    def test_fixed_224_receipt_vector_reconstructs_the_captured_root(self):
+    def test_fixed_177_receipt_vector_reconstructs_the_captured_root(self):
         witness = load(FIXTURE / "receipt-witness.json")
         receipts = witness["receipts"]
-        self.assertEqual(len(receipts), 224)
-        self.assertEqual(witness["target_receipt"]["transaction_index"], "0xbf")
-        self.assertEqual(len(receipts[0xBF]["logs"]), 110)
+        self.assertEqual(len(receipts), 177)
+        self.assertEqual(witness["target_receipt"]["transaction_index"], "0x3f")
+        self.assertEqual(len(receipts[0x3F]["logs"]), 4)
         root = receipt_trie_root(receipts)
         self.assertEqual(encode_hex(root), FIXED_ROOT)
         independent = HexaryTrie({})
@@ -433,18 +433,18 @@ class FixedReceiptFixtureTests(unittest.TestCase):
         self.assertEqual(
             report["evidence_counts"],
             {
-                "proof_backed": 2,
+                "proof_backed": 7,
                 "header_bound": 1,
-                "recorded_rpc": 5,
+                "recorded_rpc": 10,
                 "receipt_trie_proved": 2,
             },
         )
         relation = report["receipt_trie_proved"]
         self.assertEqual(relation["computed_root"], FIXED_ROOT)
-        self.assertEqual(relation["receipt_count"], 224)
-        self.assertEqual(relation["target_transaction_index"], "0xbf")
-        self.assertEqual(relation["target_log_count"], 110)
-        self.assertEqual(relation["filtered_log_count"], 5)
+        self.assertEqual(relation["receipt_count"], 177)
+        self.assertEqual(relation["target_transaction_index"], "0x3f")
+        self.assertEqual(relation["target_log_count"], 4)
+        self.assertEqual(relation["filtered_log_count"], 2)
         self.assertEqual(relation["transaction_hash_attribution"], "recorded_rpc")
 
 

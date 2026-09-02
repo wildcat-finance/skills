@@ -178,8 +178,8 @@ class ManifestTests(unittest.TestCase):
     def test_manifest_v1_fixture_digests_remain_unchanged(self):
         fixtures = (
             (
-                support.PLUGIN_ROOT / "examples" / "goldfinch-v0",
-                "d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49",
+                support.PLUGIN_ROOT / "examples" / "aave-v4-spoke-v0",
+                "986287699f6e327be412b1503b7dfacec34faeff77b3bbb763215f274dc6f59f",
             ),
             (
                 support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0",

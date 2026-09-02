@@ -110,7 +110,7 @@ def sample_statement():
             {"name": "header.json", "digest": {"sha256": "a" * 64}},
             {"name": "plan.json", "digest": {"sha256": "b" * 64}},
             {"name": "proofs.jsonl", "digest": {"sha256": "c" * 64}},
-            {"name": "goldfinch-block-13097494", "digest": {"sha256": "d" * 64}},
+            {"name": "aave-v4-block-25870892", "digest": {"sha256": "d" * 64}},
         ],
     }
 
