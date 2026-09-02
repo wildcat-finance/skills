@@ -259,3 +259,28 @@ obligation the Atlas extractor inherits.
 is 31 digest bindings per change. That belongs in the same record rather than a
 second one, because a reader asking why the slow host was chosen is asking about
 the marker contract's owner. Hypomnema owns which decisions earn a record.
+
+### Amendment -- 2026-09-01
+
+**What changed.** The digest-binding count is 11, not 31. Item 4 and the
+`digest-drift` risk-register line both say 31, which was the number of times
+`hexctl.py` is named anywhere in the digest manifests. The bindings an edit
+actually invalidates are the ones carrying its whole-file SHA-256: ten `.sha256`
+fields in `tests/promise_machine_coverage.json`, nine under `runtime.*` and one
+under `run_observation_binding.controller`, plus `INTEGRATED_CONTROLLER_SHA256`
+in `plugins/hexaemeron/tests/test_issue_429_recovery.py`. The design matrix cell
+that recorded 31 is unchanged and remains the receipted selection evidence; this
+corrects the prose that described it, not the measurement the selection rested
+on, and 11 against 0 and 11 leaves the ordering between the three candidates
+exactly as it was.
+
+**Why.** Step 2 reconciled the bindings four times and each pass touched the same
+eleven. A study that overstates a cost by a factor of three teaches the next
+reader the wrong lesson about editing the controller, and the real lesson is
+sharper: the cost is per-commit rather than per-step, so an audit loop multiplies
+eleven by the number of rounds that touch the file. Step 2 paid 44 hand edits
+across four commits.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.
