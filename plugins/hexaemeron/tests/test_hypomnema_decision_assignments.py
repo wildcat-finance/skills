@@ -394,6 +394,24 @@ class DecisionAssignments(unittest.TestCase):
         self.assert_refused(result, "repository-filter")
         self.assertFalse(sentinel.exists())
 
+    def test_apply_refuses_a_worktree_filter_without_executing_it(self):
+        self.plan()
+        sentinel = self.repo.path / "worktree-filter-ran"
+        run_git(self.repo.path, "config", "extensions.worktreeConfig", "true")
+        run_git(
+            self.repo.path,
+            "config",
+            "--worktree",
+            "filter.hostile.clean",
+            f"touch {sentinel}",
+        )
+        (self.repo.path / ".git/info/attributes").write_text(
+            "* filter=hostile\n", encoding="utf-8"
+        )
+        result = run_assignment(self.repo, "apply")
+        self.assert_refused(result, "repository-filter")
+        self.assertFalse(sentinel.exists())
+
     def test_git_input_and_output_are_drained_concurrently(self):
         oid = run_git(
             self.repo.path,
@@ -496,6 +514,63 @@ class DecisionAssignments(unittest.TestCase):
         for row in report["mappings"]:
             self.assertFalse((self.repo.path / row["final_path"]).exists())
 
+    def test_backup_cleanup_failure_restores_every_draft(self):
+        report = self.plan()
+        sources = [self.repo.path / row["draft_path"] for row in report["mappings"]]
+        targets = [self.repo.path / row["final_path"] for row in report["mappings"]]
+        before = [source.read_bytes() for source in sources]
+        repo = assignments.repository(str(self.repo.path))
+        checked = assignments.checked_replay(repo, self.repo.path / self.repo.report)
+        path_type = type(self.repo.path)
+        unlink = path_type.unlink
+        backup_unlinks = 0
+
+        def fail_second_backup(path, *args, **kwargs):
+            nonlocal backup_unlinks
+            if path.name.startswith(".hypomnema-backup-"):
+                backup_unlinks += 1
+                if backup_unlinks == 2:
+                    raise OSError("backup cleanup fixture failure")
+            return unlink(path, *args, **kwargs)
+
+        with mock.patch.object(
+            path_type, "unlink", autospec=True, side_effect=fail_second_backup
+        ):
+            with self.assertRaises(assignments.AssignmentError) as caught:
+                assignments.apply_report(repo, checked)
+        self.assertEqual(caught.exception.code, "apply-io")
+        self.assertTrue(all(source.exists() for source in sources))
+        self.assertEqual([source.read_bytes() for source in sources], before)
+        self.assertFalse([target for target in targets if target.exists()])
+        self.assertFalse(list((self.repo.path / "docs/decisions").rglob(".hypomnema-*")))
+
+    def test_an_interrupted_install_restores_every_draft(self):
+        report = self.plan()
+        sources = [self.repo.path / row["draft_path"] for row in report["mappings"]]
+        targets = [self.repo.path / row["final_path"] for row in report["mappings"]]
+        before = [source.read_bytes() for source in sources]
+        repo = assignments.repository(str(self.repo.path))
+        checked = assignments.checked_replay(repo, self.repo.path / self.repo.report)
+        replace = os.replace
+        calls = 0
+
+        def interrupt_fourth_replace(source, target):
+            nonlocal calls
+            calls += 1
+            if calls == 4:
+                raise KeyboardInterrupt
+            return replace(source, target)
+
+        with mock.patch.object(
+            assignments.os, "replace", side_effect=interrupt_fourth_replace
+        ):
+            with self.assertRaises(KeyboardInterrupt):
+                assignments.apply_report(repo, checked)
+        self.assertTrue(all(source.exists() for source in sources))
+        self.assertEqual([source.read_bytes() for source in sources], before)
+        self.assertFalse([target for target in targets if target.exists()])
+        self.assertFalse(list((self.repo.path / "docs/decisions").rglob(".hypomnema-*")))
+
     def test_a_non_exact_first_heading_is_refused(self):
         repo = Repository(drafts=())
         try:
@@ -515,6 +590,18 @@ class DecisionAssignments(unittest.TestCase):
             self.repo, "plan", base=self.repo.base, product=unrelated
         )
         self.assert_refused(result, "object-ancestry")
+
+    def test_grafts_cannot_make_an_unrelated_product_look_descended(self):
+        tree = run_git(self.repo.path, "rev-parse", f"{self.repo.product}^{{tree}}")
+        unrelated = run_git(self.repo.path, "commit-tree", tree, "-m", "unrelated")
+        run_git(self.repo.path, "config", "advice.graftFileDeprecated", "false")
+        (self.repo.path / ".git/info/grafts").write_text(
+            f"{unrelated} {self.repo.base}\n", encoding="ascii"
+        )
+        result = run_assignment(
+            self.repo, "plan", base=self.repo.base, product=unrelated
+        )
+        self.assert_refused(result, "repository-graft")
 
     def test_a_draft_already_in_the_base_is_refused(self):
         self.repo.base = self.repo.product
