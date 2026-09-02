@@ -147,6 +147,25 @@ REPORT_COUNT_SUBJECTS = {
     "Selected repository scopes": "repository_scopes",
     "Selected repository checks": "repository_checks",
 }
+# List fields whose entries name distinct things.  Distinctness had been
+# falling out of whichever comparison happened to sort them into a set, so
+# ``tests`` -- the one list no comparison sorted -- could carry a repeat and
+# inflate the count the report restates beside it.  Classified here instead, so
+# a list field added later has to be placed in one of these two groups.
+DISTINCT_GATE_CLASS_LISTS = (
+    "obligation_ids",
+    "specimens",
+    "blocked_transitions",
+    "recovery_actions",
+    "finding_codes",
+    "network_findings",
+    "tests",
+)
+# Prose lists, where a repeat is redundant rather than false.
+PROSE_RECORD_LISTS = ("unknowns", "non_goals")
+# Lists of objects, each with its own identity rule already asserted.
+OBJECT_RECORD_LISTS = ("inputs", "commands", "gate_classes")
+
 REPORT_COUNT_ROW = re.compile(r"^\| ([^|]+?) \| (\d+) \|$", re.MULTILINE)
 REPORT_INPUT_ROW = re.compile(
     r"^- `([^`]+)`, SHA-256 `([0-9a-f]{64})`, (\d+) bytes$", re.MULTILINE
@@ -327,7 +346,23 @@ def checker_only_values() -> set[str]:
                 and sub.targets[0].id == "allowed"
                 and isinstance(sub.value, ast.Set)
             ):
-                return {e.value for e in sub.value.elts if isinstance(e, ast.Constant)}
+                # Total, not filtered.  Skipping the elements it cannot read
+                # returned a silently partial set: one starred element and this
+                # reported eighteen of nineteen values while claiming to hold
+                # the checker's exact literal.  An extractor that under-reports
+                # and says nothing teaches people to weaken the test it feeds.
+                values = set()
+                for element in sub.value.elts:
+                    if not (
+                        isinstance(element, ast.Constant)
+                        and isinstance(element.value, str)
+                    ):
+                        raise AssertionError(
+                            "the checker's --only literal holds an element this "
+                            f"cannot read: {ast.dump(element)[:80]}"
+                        )
+                    values.add(element.value)
+                return values
     raise AssertionError(
         "the checker no longer declares its --only values where this reads them"
     )
@@ -658,6 +693,40 @@ class GateClassCoverageTests(unittest.TestCase):
             with self.subTest(gate_class=entry["class"]):
                 declared = {row["finding"] for row in claimed_rows(self.rows, entry)}
                 self.assertTrue(declared <= set(entry["finding_codes"]))
+
+    def test_every_distinct_list_field_is_free_of_duplicates(self) -> None:
+        """Distinctness is asserted for every such list, not wherever it fell out.
+
+        ``specimens``, ``blocked_transitions`` and ``recovery_actions`` were
+        compared against a sorted set, so a repeat in them already failed.
+        ``tests`` was compared only by length, against a report cell restating
+        that same length: duplicating a selector and bumping the cell to agree
+        left both halves claiming fifteen contract-suite methods exercise a
+        class that has fourteen distinct ones, with this module green.  The
+        classification below is total over the shape's list fields, so a list
+        added later cannot arrive unclassified.
+        """
+        declared = {
+            name
+            for name, shape in RECORD_SHAPE.items()
+            if isinstance(shape, list)
+        }
+        self.assertEqual(declared, set(PROSE_RECORD_LISTS) | set(OBJECT_RECORD_LISTS))
+        gate_lists = {
+            name
+            for name, shape in RECORD_SHAPE["gate_classes"][0].items()
+            if isinstance(shape, list)
+        }
+        self.assertEqual(gate_lists, set(DISTINCT_GATE_CLASS_LISTS))
+        for entry in self.record["gate_classes"]:
+            for name in DISTINCT_GATE_CLASS_LISTS:
+                with self.subTest(gate_class=entry["class"], field=name):
+                    values = entry[name]
+                    self.assertEqual(
+                        sorted(values),
+                        sorted(set(values)),
+                        f"{name} repeats an entry",
+                    )
 
     def test_every_recorded_pointer_resolves_where_the_record_points(self) -> None:
         """``checker_function`` and ``evaluator`` are pointers, so they resolve.
