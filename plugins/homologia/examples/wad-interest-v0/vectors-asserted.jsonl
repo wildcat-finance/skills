@@ -1,0 +1,1 @@
+{"expected":{"integer":"1000000000000000001","provenance":{"author":"Wildcat Labs Homologia example","class":"asserted"}},"id":"one-wei-rounding","inputs":{"periods":"1","principal":"1000000000000000000","rate":"1"},"tolerance":{"absolute":"1"}}

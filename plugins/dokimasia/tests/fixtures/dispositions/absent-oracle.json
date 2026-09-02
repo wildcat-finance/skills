@@ -1,0 +1,97 @@
+{
+  "dispositions": [
+    {
+      "confirmed": true,
+      "disposition": "excluded",
+      "item": "action:src/actions/update-market.ts",
+      "reason": "the action is exercised only through the routes above"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "api:src/app/api/health/route.ts",
+      "oracle": "ZZZ-99"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "api:src/app/api/markets/[marketId]/route.ts",
+      "oracle": "ADM-04"
+    },
+    {
+      "confirmed": true,
+      "disposition": "manual",
+      "item": "case:ADM-01",
+      "reason": "the row is owned by the reviewer who wrote it"
+    },
+    {
+      "confirmed": true,
+      "disposition": "manual",
+      "item": "case:ADM-02",
+      "reason": "the row is owned by the reviewer who wrote it"
+    },
+    {
+      "confirmed": true,
+      "disposition": "manual",
+      "item": "case:ADM-04",
+      "reason": "the row is owned by the reviewer who wrote it"
+    },
+    {
+      "confirmed": true,
+      "disposition": "manual",
+      "item": "case:M2-03",
+      "reason": "the row is owned by the reviewer who wrote it"
+    },
+    {
+      "confirmed": true,
+      "disposition": "manual",
+      "item": "guard:src/components/RequireAuth.tsx",
+      "reason": "the gate is checked by a person against the access matrix"
+    },
+    {
+      "confirmed": true,
+      "disposition": "manual",
+      "item": "guard:src/middleware.ts",
+      "reason": "the gate is checked by a person against the access matrix"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "route:src/app/(marketing)/about/page.tsx",
+      "oracle": "ADM-01"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "route:src/app/@modal/login/page.tsx",
+      "oracle": "M2-03"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "route:src/app/docs/[...slug]/page.tsx",
+      "oracle": "ADM-04"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "route:src/app/markets/[marketId]/lenders/page.tsx",
+      "oracle": "ADM-01"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "route:src/app/markets/[marketId]/page.tsx",
+      "oracle": "M2-03"
+    },
+    {
+      "confirmed": true,
+      "disposition": "covered",
+      "item": "route:src/app/page.tsx",
+      "oracle": "ADM-04"
+    }
+  ],
+  "inventory_sha256": "130675b93b92e29657b6564faf53d54d07ed9c0f65b2a56b12181f89492cac6a",
+  "schema": "dokimasia-dispositions/v1",
+  "workbook_sha256": "9ff1e5c476ad150598c29f0121a6b81d3c0b553cfffcb7d20f724852802898a8"
+}

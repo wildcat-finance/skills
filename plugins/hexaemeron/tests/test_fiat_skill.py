@@ -158,12 +158,12 @@ class FiatSkillContractTests(unittest.TestCase):
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
-            "surveyor": "`topic`, `target_dir`, `base_ref`, and `output_path`",
-            "mason": "`runbook_step`, `branch`, and `branch_from`",
+            "surveyor": "`topic`, `target_dir`, `base_ref`, `output_path`, and `design_output_path`",
+            "mason": "`runbook_step`, `design_evidence`, `branch`, and `branch_from`",
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
-                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, and "
-                "`runbook_step`"
+                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, "
+                "`runbook_step`, and `design_evidence`"
             ),
             "scribe": "`files`, `pr_base`, `pr_draft_path`, and `plugin_root`",
         }
@@ -237,6 +237,35 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("post those exact checked bytes verbatim", push)
         self.assertIn("read the remote comment back", push)
         self.assertIn("does not make the comment controller-attested", push)
+
+    def test_step_checkpoint_is_unconditional_local_agent_work(self):
+        section = self.push_discipline.split("## Step checkpoint", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        flat = " ".join(section.split())
+        required = (
+            "Every successful `done push` boundary",
+            "mandatory controller work",
+            "cannot be waived",
+            "must not ask the user",
+            "<origin>/.hexaemeron/checkpoints/<run-worktree-name>/",
+            "A save failure blocks the next directive",
+            "Do not upload the checkpoint",
+            "direct agent-to-agent hand-off",
+            "absolute archive path",
+            "outer SHA-256",
+            "controller-manifest SHA-256",
+        )
+        missing = [item for item in required if item not in flat]
+        self.assertEqual([], missing)
+        self.assertNotIn("HexaemeronCheckpoints Drive", section)
+        self.assertNotIn("Anyone directing a run may waive", section)
+        self.assertNotIn("Post a note on the run's task issue", section)
+
+        fiat = " ".join(self.fiat.split())
+        self.assertIn("fixed local checkpoint store", fiat)
+        self.assertIn("mandatory controller work", fiat)
+        self.assertIn("do not ask the user whether to save it", fiat)
 
     def test_provenance_is_verified_without_reclassifying_human_work(self):
         # Flattened: these assert what the instruction says, and a reflow of the
@@ -435,7 +464,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
 
-    def test_issue_556_generation_records_use_the_declared_relation(self):
+    def test_issue_556_generation_records_retain_the_declared_relation(self):
         ledgers = {
             "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
             "protasis-v4.9.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
@@ -1061,6 +1090,7 @@ class TestRunbookAmendments(HexctlCase):
         runbook = self.write("runbook.md", original)
         steps = self.write("steps.json", '["Core", "Finish"]')
         self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        original = Path(os.path.join(self.target, runbook)).read_text(encoding="utf-8")
         valid = self.write("candidate.md", original + self.runbook_amendment())
         self.run_ctl("amend", "runbook", "--artifact", valid)
 

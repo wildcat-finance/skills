@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/interval-checkpoint-v1.schema.json",
+  "title": "Alexandria interval checkpoint v1",
+  "description": "Working state naming where a collection may resume. Not release truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "plan_sha256",
+    "next_shard",
+    "last_accepted",
+    "offsets",
+    "records",
+    "history"
+  ],
+  "properties": {
+    "format": {
+      "const": "alexandria-interval-checkpoint/v1"
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "next_shard": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4096
+    },
+    "last_accepted": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "block_number",
+            "block_hash"
+          ],
+          "properties": {
+            "block_number": {
+              "type": "string",
+              "maxLength": 19,
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            "block_hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          }
+        }
+      ]
+    },
+    "offsets": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 16,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9._-]{0,127}$": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "records": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "history": {
+      "type": "array",
+      "maxItems": 16,
+      "description": "The bounded rewind trail: accepted boundaries a reorg may be walked back to.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "shard",
+          "block_number",
+          "block_hash",
+          "offsets",
+          "records"
+        ],
+        "properties": {
+          "shard": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          },
+          "block_number": {
+            "type": "string",
+            "maxLength": 19,
+            "pattern": "^(0|[1-9][0-9]*)$"
+          },
+          "block_hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "offsets": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 16,
+            "additionalProperties": false,
+            "patternProperties": {
+              "^[a-z0-9][a-z0-9._-]{0,127}$": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "records": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

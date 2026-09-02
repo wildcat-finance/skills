@@ -1,9 +1,0 @@
-{
-  "schema": "promise-machine-obligation-specimen/v1",
-  "obligation_id": "law-generated-copy-identity",
-  "mutation": {
-    "operation": "replace_once",
-    "old": "<!-- promise-machine: contract=promise-machine/v1; canonical=PROMISE_MACHINE.md; copies=generated -->",
-    "new": "<!-- promise-machine: contract=promise-machine/v1; canonical=PROMISE_MACHINE.md -->"
-  }
-}

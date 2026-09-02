@@ -1,4 +1,0 @@
-{
-  "schema": "promise-machine-import-specimen/v1",
-  "source": "import subprocess\nsubprocess.run(['fixture'])\n"
-}

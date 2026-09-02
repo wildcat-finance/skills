@@ -4,7 +4,7 @@
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
   },
-  "description": "Wildcat Labs Skills, governed by the Promise Machine evidence and transition contract.",
+  "description": "Wildcat Labs Skills is the installable Shoggoth collective: specialised crypto R&D agents governed by the Promise Machine evidence and transition contract.",
   "plugins": [
     {
       "name": "hermes",
@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.12",
+      "version": "1.6.20",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -53,8 +53,8 @@
       "name": "homologia",
       "displayName": "Homologia",
       "source": "./plugins/homologia",
-      "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
-      "version": "0.1.0",
+      "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
+      "version": "1.1.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -69,6 +69,28 @@
         "rounding",
         "evidence",
         "parity"
+      ]
+    },
+    {
+      "name": "dokimasia",
+      "displayName": "Dokimasia",
+      "source": "./plugins/dokimasia",
+      "description": "Compiles a frontend's routes, actions and guards into a coverage denominator, imports a reviewed UAT workbook without losing a row, drafts a disposition set a reviewer edits rather than authors, and counts only the entries a person confirmed; a closure ratio states that nothing is unaccounted for, never that anything passed.",
+      "version": "2.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/dokimasia",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "testing",
+        "coverage",
+        "uat",
+        "frontend",
+        "evidence",
+        "dispositions"
       ]
     },
     {
@@ -140,7 +162,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-      "version": "0.1.3",
+      "version": "0.2.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -269,8 +291,8 @@
       "name": "alexandria",
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
-      "description": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
-      "version": "0.3.1",
+      "description": "Digest-bound lending-data releases with a resumable Ethereum USDC interval collector, unsigned evidence statements, reviewed credit views and address queries.",
+      "version": "0.4.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -292,7 +314,7 @@
       "displayName": "Brevitas",
       "source": "./plugins/brevitas",
       "description": "Evidence-preserving budgets for engineering prose.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -335,7 +357,7 @@
       "displayName": "Synkrisis",
       "source": "./plugins/synkrisis",
       "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -350,6 +372,27 @@
         "comparison",
         "promise-machine",
         "agents"
+      ]
+    },
+    {
+      "name": "anamnesis",
+      "displayName": "Anamnesis",
+      "source": "./plugins/anamnesis",
+      "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+      "version": "0.3.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/anamnesis",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "audit",
+        "findings",
+        "remediation",
+        "corpus",
+        "provenance"
       ]
     }
   ]

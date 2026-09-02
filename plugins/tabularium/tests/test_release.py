@@ -146,7 +146,7 @@ class CheckedInReleaseTests(unittest.TestCase):
         for prose in (plugin, skill):
             self.assertIn("goldfinch-v0", prose)
         self.assertIn("[Tabularium](./plugins/tabularium)", root)
-        commons = root.split("## Wildcat Commons", 1)[1].split("\n## ", 1)[0]
+        commons = root.split("### Lending and credit records", 1)[1].split("\n### ", 1)[0]
         for protocol in ("Compound", "Euler", "Goldfinch"):
             self.assertNotIn(protocol, commons)
 

@@ -67,8 +67,9 @@ reaches. Combined with `--fixtures` or `--live` it adds the archive route
 beside the adapter route, and every coverage row then names which of the two
 produced it. A venue no requested route reached is reported as a gap.
 
-`collect`, `render` and `verify` write only where `--out` points. Nothing else
-in the plugin writes outside its own directory.
+`collect`, `render` and `verify` write only where `--out` and
+`--statement-out` point. Nothing else in the plugin writes outside its own
+directory.
 
 ## What this skill must refuse
 

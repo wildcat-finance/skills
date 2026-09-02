@@ -12,6 +12,17 @@ Pandects supplies executable credit laws, each paired with a deliberately broken
 **Next Fiat job.** Use /hexaemeron:fiat to widen the search-record runner to the Echidna and Medusa campaigns, so every engine result ships as a record carrying its engine, configuration, sequence length and corpus digest, with a seed where the engine exposes one and a stated absence where it does not. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Pandects when a credit protocol needs economic properties a fuzz engine can
+actually execute. Every law includes its scope, executable component, broken
+specimen, and reduced counterexample so a passing campaign cannot hide a law
+that never had the power to fail.
+
+Pandects is a law catalogue, not a whole-protocol audit. Structured campaign
+records currently cover Foundry; Echidna and Medusa results still survive only
+as audit prose.
+
 ## Place in the collective
 
 Pandects states economic properties a credit system should preserve. Fizz or
@@ -218,7 +229,12 @@ python3 scripts/pandects.py run --out search-record.json
 
 The record names the engine, the argv, the determinism class, the
 configuration read out of `foundry.toml` rather than restated, the sequence
-length, and a digest of the corpus that was searched.
+length, and a digest of the corpus that was searched. Each Foundry command
+also lists the catalogue laws its readable test summaries exercise and the
+declared surfaces that support them. A passed surface attributes every law it
+maps to. A failed surface attributes a law only when it maps to that law alone.
+Evaluation counts for passing `invariant_*` functions and positive succession
+call counts appear only when the output exposes them.
 
 `run` knows one engine, and it is Foundry. It emits no entry for Echidna or
 Medusa, and an engine that did not run is absent from a record rather than

@@ -1,16 +1,14 @@
 ---
 name: homologia
 description: >
-  Check whether an on-chain computation and its off-chain reimplementation
-  agree, integer for integer, over declared vectors. Use when a TypeScript SDK
-  or a Python job re-derives a balance, an accrued interest figure, a rate or a
-  withdrawal amount that a contract also computes, when a rounding direction,
-  ray or wad scale or token-decimal convention is applied by hand off-chain, or
-  when a displayed or signed number has to match the chain. Do not use it to
-  fuzz one implementation for defects, which is fizz, or to judge economic laws,
-  which is pandects. Never report agreement as correctness.
+  Validate one closed Homologia manifest and its declared JSONL vector sets
+  into deterministic, cap-bounded checked inputs. Expected integers retain a
+  proved, recorded or asserted provenance form; a proved form requires a
+  repository-relative Lazarus artefact reference. Mirror execution, comparison
+  and verdicts have not shipped, so never report agreement or divergence. Fizz
+  owns vector generation and Pandects owns economic laws.
 metadata:
-  version: "0.1.0"
+  version: "1.1.0"
 ---
 
 # Homologia
@@ -25,10 +23,12 @@ frontier pass after that ledger becomes mature.
 <!-- marketplace-context:start -->
 ## Where this sits
 
-Homologia compares one pinned on-chain computation with one pinned off-chain mirror over declared vectors, and preserves every divergence as a specimen.
+Homologia defines the boundary for comparing one pinned on-chain computation and one pinned off-chain mirror. It now checks the pair declaration and evidence-classed expected answers, but performs no comparison.
 
-**Current frontier.** Homologia ships its contracts, packaging and a help-only command. No manifest is checked, no mirror is executed and no verdict is produced, so nothing yet establishes that a pair agrees.
+**Current frontier.** `check` admits one closed, cap-bounded manifest and its declared vectors into a deterministic checked-inputs record. It executes no mirror and produces no verdict, so nothing yet establishes that a pair agrees.
 <!-- marketplace-context:end -->
+
+Never report agreement as correctness.
 
 The name comes from *homologia*, agreement. Agreement between two
 implementations is the whole subject, and it is a narrower claim than either
@@ -81,41 +81,52 @@ law, which is pandects, and makes no performance claim, which is metron. It
 compares two implementations at one pinned revision each, never two runs over
 time, which is synkrisis.
 
-## Promises, and why the three domain ones are not here
+## Promises at this frontier
 
-This scaffold declares one promise, about its own packaging, and none about
-numeric agreement.
+This generation declares its packaging promise and the checked expected-answer
+provenance promise. It declares nothing about mirror execution or numeric
+agreement.
 
 A promise says what a successful operation establishes and names the evidence
-behind it. Nothing here compares anything: every verb refuses with exit 3.
-Declaring the three promises the study designs would put three claims in the
-contract with no case that could support them, and the root law's first sentence
-refuses exactly that. What this version can show is that it is installed under
-one identity and that it refuses, so that is what it claims.
+behind it. `check` can establish that declared bytes passed the closed shape,
+path, cap, scale, tolerance and provenance rules and were bound into one
+canonical record. It cannot establish that a referenced artefact proves the
+answer, that a mirror ran or that two implementations agree.
 
-Each of the three lands in the step that builds its behaviour, together with its
-coverage row and its own positive, missing, overclaim and recovery cases:
+The remaining two promises land with the step that builds their behaviour,
+together with their own coverage rows and cases:
 
 | Promise | Arrives with |
 | --- | --- |
-| `homologia-expected-answer-provenance` | Manifest, vector and provenance checking |
 | `homologia-mirror-execution` | The pinned subprocess adapter protocol |
 | `homologia-parity-verdict` | Comparison, rendering and verification |
 
-The full text of all three is in
+The planned text is in
 [the study](../../docs/homologia-study.md), under design options, where it is a
-plan rather than a claim.
+plan rather than a current claim.
 
 ## Promise Machine contract
 
 ### homologia-scaffold-identity
 
-- Promise: This plugin's declared identity is one value across both host manifests and the suite marketplace, its canonical contract points at its ledger, its installed root-law copy is byte-identical to the suite law, and every command verb refuses instead of answering.
-- Evidence: The two host manifests, the marketplace entry, the canonical contract and ledger bytes, a byte comparison against the suite's `PROMISE_MACHINE.md`, and the exit status and streams of each verb.
+- Promise: This plugin's declared identity is one value across both host manifests and the suite marketplace, its canonical contract points at its ledger, its installed root-law copy is byte-identical to the suite law, and every operation that has not shipped refuses instead of answering.
+- Evidence: The two host manifests, the marketplace entry, the canonical contract and ledger bytes, a byte comparison against the suite's `PROMISE_MACHINE.md`, and the exit status and streams of each unavailable verb.
 - Evidence classes: checked
-- Boundary: This establishes packaging and refusal consistency. It establishes nothing about a manifest, a vector, a mirror or agreement between implementations, because nothing here compares anything.
-- Authorises: Installing and selecting the skill, and building the checking behaviour of the next step on top of it.
+- Boundary: This establishes packaging and unavailable-operation refusal consistency. It establishes nothing about a mirror answer or agreement between implementations.
+- Authorises: Installing and selecting the skill, then invoking only the operations whose own promises have shipped.
 - Consequence: 0
-- Refuses: A version that differs between the manifests and the marketplace, a contract with no ledger link, a drifted installed root-law copy, and a verb that exits zero as though it had compared something.
+- Refuses: A version that differs between the manifests and the marketplace, a contract with no ledger link, a drifted installed root-law copy, or an unavailable verb that exits zero as though it had produced an answer.
 - Recovery: Repair the named file and rerun the plugin suite.
+- Exceptions: none
+
+### homologia-expected-answer-provenance
+
+- Promise: A successful `check` establishes that one version-1 manifest and every declared vector set passed the closed pair, scale, path, cap, tolerance and expected-answer provenance rules and were bound by source digest into one canonical checked-inputs record.
+- Evidence: The manifest and vector source bytes and SHA-256 digests, the canonical checked record, stable success summary, published version-1 schemas, focused positive and hostile-input cases, and byte equality from checking the committed example twice.
+- Evidence classes: checked, recorded
+- Boundary: Admission preserves the supplied `proved`, `recorded` or `asserted` form. Homologia checks that a proved form names a safe Lazarus artefact reference but does not open or verify it, execute an EVM or mirror, establish that an expected integer is correct, or produce an agreement verdict.
+- Authorises: Using the checked record as the declared chain-side input to the later mirror-execution step for exactly the pair, vector sets and source digests it names.
+- Consequence: 1
+- Refuses: An unknown or incomplete provenance form, bare `proved`, missing recorded chain or block identity, missing asserted author, unsafe or repeated path, duplicate id or key, malformed JSON, non-canonical integer, missing or unequal scale, undeclared tolerance, any fixed cap breach, changed input identity, or partial output on failure.
+- Recovery: Repair the named manifest field or vector, keep every path inside its declared directory, reduce the input below the named cap, remove the stale destination only if desired, and rerun `check`; do not strengthen the evidence class during recovery.
 - Exceptions: none

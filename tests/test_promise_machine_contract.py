@@ -3011,6 +3011,7 @@ class PromiseStructureTests(unittest.TestCase):
                 "probitas-evidence-collection",
                 "probitas-dossier-rendering",
                 "probitas-dossier-verification",
+                "probitas-statement-emission",
             },
             "plugins/sapheneia/skills/sapheneia/SKILL.md": {
                 "sapheneia-session-shape",
@@ -3057,6 +3058,7 @@ class PromiseStructureTests(unittest.TestCase):
             "ephoros": {"ephoros-mechanical-gate", "ephoros-observability-review"},
             "fiat": {
                 "fiat-controller-checkpoint",
+                "fiat-design-evidence",
                 "fiat-study-amendment",
                 "fiat-runbook-amendment",
                 "fiat-run-observation-binding",
@@ -4359,7 +4361,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "source_digest",
         }
         level_three_fields = {"authority", "inspectable_evidence"}
-        self.assertEqual(len(records), 35)
+        self.assertEqual(len(records), 45)
         self.assertEqual(set(coverage["runtime"]), set(records))
         native_maps = set()
         for promise_id, binding in coverage["runtime"].items():

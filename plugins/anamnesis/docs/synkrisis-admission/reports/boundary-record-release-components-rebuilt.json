@@ -1,0 +1,9 @@
+{
+  "candidate": "boundary-record",
+  "command": "python3 .hexaemeron/reports/resolve.py release-components-rebuilt",
+  "criterion": "release-components-rebuilt",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

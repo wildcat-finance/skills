@@ -25,44 +25,83 @@ os.environ["TMPDIR"] = tempfile.tempdir
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / ".agents" / "skills" / "promise-machine"
-RUNTIME = PACKAGE / "runtime"
-MANIFEST = RUNTIME / "MANIFEST.json"
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
-CONFIG = ROOT / "skills.sh.json"
+DISTRIBUTION = ROOT / "distribution" / "skills-runtime" / "sync.yml"
+
+# The package guarantees below are asserted against a tree the generator builds
+# during this run, not against a copy committed here. That keeps them true of
+# what is actually published now that this repository no longer carries the
+# payload.
+_PACKAGE_TMP: tempfile.TemporaryDirectory | None = None
+GENERATED = None
+PACKAGE = None
+RUNTIME = None
+MANIFEST = None
+
+
+def build_package(destination):
+    """Generate a complete package into `destination` and return its root."""
+    result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+        [sys.executable, str(GENERATOR), "package", "--out", str(destination)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise AssertionError(result.stdout + result.stderr)
+    return Path(destination)
+
+
+def setUpModule():
+    global _PACKAGE_TMP, GENERATED, PACKAGE, RUNTIME, MANIFEST
+    _PACKAGE_TMP = tempfile.TemporaryDirectory(prefix="skills-sh-package.")
+    GENERATED = build_package(Path(_PACKAGE_TMP.name) / "package")
+    PACKAGE = GENERATED / ".agents" / "skills" / "promise-machine"
+    RUNTIME = PACKAGE / "runtime"
+    MANIFEST = RUNTIME / "MANIFEST.json"
+
+
+def tearDownModule():
+    if _PACKAGE_TMP is not None:
+        _PACKAGE_TMP.cleanup()
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
-# Step 6 adds the isolated evaluation driver, inputs and recorded evidence to
-# the dependency-closed runtime. Keep the ceiling exact enough that another
-# unreviewed payload addition still fails.
-MAX_FILES = 1_048
+# The skills CLI's SKILLS_EXTRACT_MAX_FILES and SKILLS_EXTRACT_MAX_BYTES
+# defaults.  They gate its `well-known` and `download` source types, which are
+# direct SKILL.md and archive URLs; the `github` type this repository installs
+# through never consults them.  Held anyway so the package stays installable by
+# every route the CLI offers.  See ADR-054.
+#
+# At sixteen plugins the payload sat at 995 files, five short of the CLI's
+# default. Adding a seventeenth crossed it, and no per-plugin trim closes a
+# repository-wide gap: the pressure is structural. The generated package now
+# lives in `wildcat-finance/skills-runtime`, outside this source tree. Raising
+# the file cap here accommodates that package; it does not claim that the
+# `well-known` and `download` routes fit while the payload exceeds 1,000 files.
+# The byte cap is untouched and still binds. Do not trim shipped package content
+# merely to hold the old file count.
+#
+# An eighteenth plugin crossed 1,100 the same way, at 1,124 files, so the cap
+# moves again under the reasoning above rather than by trimming Dokimasia. What
+# has changed since that reasoning was written is the byte cap: the payload now
+# measures 23,160,342 bytes, 88.3% of the 25 MiB the CLI allows. That one is the
+# CLI's own default and cannot be raised here, so it, and not the file count,
+# is what a nineteenth plugin has to answer for.
+MAX_FILES = 1_200
 MAX_BYTES = 25 * 1024 * 1024
+
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
+    "plugins/anamnesis/specimens/**",
     "plugins/*/tests/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
 PORTABLE_TEST_FILES = {
-    "plugins/alexandria/tests/test_release.py",
-    "plugins/ariadne/tests/test_examples.py",
-    "plugins/ariadne/tests/test_gates.py",
-    "plugins/berean/tests/test_corpus.py",
-    "plugins/berean/tests/test_examples.py",
-    "plugins/berean/tests/test_promote.py",
-    "plugins/hexaemeron/tests/test_hexctl.py",
-    "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-    "plugins/hexaemeron/tests/test_run_observation_binding.py",
-    "plugins/lazarus/tests/test_capture.py",
-    "plugins/lazarus/tests/test_verifier.py",
-    "plugins/lemma/tests/test_markdown.py",
-    "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-    "plugins/synkrisis/tests/test_cohort.py",
-    "plugins/synkrisis/tests/test_verify.py",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
@@ -76,43 +115,6 @@ PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
 }
-OBLIGATION_FIXTURE_FILES = {
-    "tests/fixtures/promise-machine/obligations/law-contract-identity.json",
-    "tests/fixtures/promise-machine/obligations/law-declaration-fields.json",
-    "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
-    "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
-    "tests/fixtures/promise-machine/obligations/law-required-sections.json",
-}
-EVALUATION_FIXTURE_FILES = {
-    "tests/fixtures/promise-machine/evaluation/prompt-template.txt",
-}
-SEMANTIC_FIXTURE_FILES = {
-    "tests/fixtures/promise-machine/composition/cases.json",
-    "tests/fixtures/promise-machine/consequences/authority.json",
-    "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
-    "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
-    "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
-    "tests/fixtures/promise-machine/consequences/declarations/level-3.json",
-    "tests/fixtures/promise-machine/consequences/evidence/content.json",
-    "tests/fixtures/promise-machine/consequences/evidence/independent.json",
-    "tests/fixtures/promise-machine/consequences/evidence/negative.json",
-    "tests/fixtures/promise-machine/consequences/evidence/provenance.json",
-    "tests/fixtures/promise-machine/consequences/evidence/recovery.json",
-    "tests/fixtures/promise-machine/consequences/evidence/structure.json",
-    "tests/fixtures/promise-machine/consequences/evidence/tests.json",
-    "tests/fixtures/promise-machine/consequences/level-0.json",
-    "tests/fixtures/promise-machine/consequences/level-1.json",
-    "tests/fixtures/promise-machine/consequences/level-2.json",
-    "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
-    "tests/fixtures/promise-machine/consequences/level-3.json",
-    "tests/fixtures/promise-machine/consequences/unknown.json",
-    "tests/fixtures/promise-machine/exceptions/expired.json",
-    "tests/fixtures/promise-machine/exceptions/reason.md",
-    "tests/fixtures/promise-machine/exceptions/valid.json",
-    "tests/fixtures/promise-machine/findings/missing-recovery.json",
-    "tests/fixtures/promise-machine/imports/subprocess.json",
-    "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
-}
 
 
 def load_manifest():
@@ -120,91 +122,12 @@ def load_manifest():
 
 
 class SkillsShPackageTests(unittest.TestCase):
-    def test_skills_sh_groups_only_the_supported_collective_install(self):
-        config = json.loads(CONFIG.read_text(encoding="utf-8"))
-        self.assertEqual(
-            config["$schema"], "https://skills.sh/schemas/skills.sh.schema.json"
-        )
-        self.assertEqual(config["notGrouped"], "bottom")
-        self.assertEqual(
-            [skill for group in config["groupings"] for skill in group["skills"]],
-            ["promise-machine"],
-        )
-
-    def test_generated_runtime_is_current(self):
-        result = subprocess.run(  # phylax: allow subprocess: fixed local checker
-            [sys.executable, str(GENERATOR), "check"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-    def test_generated_runtime_carries_the_complete_evaluation_gate(self):
-        checker = RUNTIME / "scripts" / "promise_machine.py"
-        result = subprocess.run(  # phylax: allow subprocess: fixed installed checker
-            [
-                sys.executable,
-                str(checker),
-                "check",
-                "--root",
-                str(RUNTIME),
-                "--only",
-                "evaluation",
-                "--json",
-            ],
-            cwd=RUNTIME,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        report = json.loads(result.stdout)
-        self.assertEqual(report["counts"]["evaluation_cases"], 11)
-        self.assertEqual(report["counts"]["evaluation_outcomes"], 55)
-
-        driver = RUNTIME / "tests" / "promise_evaluation_driver.py"
-        answers = (
-            RUNTIME
-            / "docs/promise-machine/obligation-gates/evaluation-answers.json"
-        )
-        run = RUNTIME / "docs/promise-machine/obligation-gates/evaluation-run.json"
-        with tempfile.TemporaryDirectory() as directory:
-            packet = Path(directory) / "packet"
-            emitted = subprocess.run(  # phylax: allow subprocess: fixed installed driver
-                [sys.executable, str(driver), "emit", "--out", str(packet)],
-                cwd=RUNTIME,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(
-                emitted.returncode, 0, emitted.stdout + emitted.stderr
-            )
-            verified = subprocess.run(  # phylax: allow subprocess: fixed installed driver
-                [
-                    sys.executable,
-                    str(driver),
-                    "verify",
-                    "--packet",
-                    str(packet),
-                    "--answers",
-                    str(answers),
-                    "--run",
-                    str(run),
-                ],
-                cwd=RUNTIME,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(
-                verified.returncode, 0, verified.stdout + verified.stderr
-            )
-
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
         self.assertEqual(manifest["schema"], SCHEMA)
         self.assertEqual(manifest["contract"], CONTRACT)
         self.assertEqual(manifest["file_count"], len(manifest["files"]))
-        self.assertLessEqual(manifest["file_count"], MAX_FILES)
+        self.assertLess(manifest["file_count"], MAX_FILES)
         self.assertLess(manifest["total_bytes"], MAX_BYTES)
         self.assertEqual(
             {entry["pattern"] for entry in manifest["omissions"]},
@@ -261,23 +184,6 @@ class SkillsShPackageTests(unittest.TestCase):
             (PACKAGE / "SKILL.md").read_bytes(),
         )
 
-    def test_no_manifested_runtime_file_is_gitignored(self):
-        paths = [
-            (
-                Path(".agents/skills/promise-machine/runtime") / row["path"]
-            ).as_posix()
-            for row in load_manifest()["files"]
-        ]
-        result = subprocess.run(  # phylax: allow subprocess: fixed git ignore query
-            ["git", "-C", str(ROOT), "check-ignore", "--no-index", "--stdin"],
-            input="\n".join(paths) + "\n",
-            capture_output=True,
-            text=True,
-        )
-        ignored = result.stdout.splitlines()
-        self.assertIn(result.returncode, (0, 1), result.stderr)
-        self.assertEqual(ignored, [])
-
     def test_runtime_contracts_reach_every_copied_canonical_skill(self):
         plugins = RUNTIME / "plugins"
         for plugin in sorted(path for path in plugins.iterdir() if path.is_dir()):
@@ -328,25 +234,16 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-        portable_tests = RUNTIME / "plugins"
+                if plugin.name != "hexaemeron":
+                    self.assertFalse((plugin / "tests").exists())
+        portable_tests = RUNTIME / "plugins/hexaemeron/tests"
         self.assertEqual(
             {
                 path.relative_to(RUNTIME).as_posix()
-                for path in portable_tests.glob("*/tests/**/*")
+                for path in portable_tests.rglob("*")
                 if path.is_file() or path.is_symlink()
             },
             PORTABLE_TEST_FILES,
-        )
-        promise_machine_fixtures = RUNTIME / "tests/fixtures/promise-machine"
-        self.assertEqual(
-            {
-                path.relative_to(RUNTIME).as_posix()
-                for path in promise_machine_fixtures.rglob("*")
-                if path.is_file() or path.is_symlink()
-            },
-            OBLIGATION_FIXTURE_FILES
-            | EVALUATION_FIXTURE_FILES
-            | SEMANTIC_FIXTURE_FILES,
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())
@@ -419,6 +316,205 @@ class SkillsShPackageTests(unittest.TestCase):
                 json.loads(conformance.stdout)["outcome"],
                 "conformance_checked",
             )
+
+
+    def test_package_action_writes_a_complete_installable_tree(self):
+        """A generated package carries its own grouping, README and runtime."""
+        config = json.loads((GENERATED / "skills.sh.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            [skill for group in config["groupings"] for skill in group["skills"]],
+            ["promise-machine"],
+        )
+        readme = (GENERATED / "README.md").read_text(encoding="utf-8")
+        commit = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        self.assertIn(commit, readme)
+        self.assertIn("wildcat-finance/skills-runtime", readme)
+        for relative in (
+            ".agents/plugins/marketplace.json",
+            ".agents/skills/promise-machine/SKILL.md",
+            ".agents/skills/promise-machine/PORTABLE.md",
+            ".agents/skills/promise-machine/scripts/verify_runtime.py",
+        ):
+            self.assertTrue((GENERATED / relative).is_file(), relative)
+
+    def test_package_preserves_the_executable_bit(self):
+        """A script executable in the source is still executable once published.
+
+        The package republishes the payload under a prefix, so a package key is
+        not a source path.  Reading the origin mode back through the package key
+        found nothing at all and left the whole tree at 0644, which breaks the
+        entries that are run as ./name rather than through an interpreter.
+        """
+        listing = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            ["git", "-C", str(ROOT), "ls-tree", "-r", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        executable = [
+            line.partition("\t")[2]
+            for line in listing.splitlines()
+            if line.split(maxsplit=1)[0] == "100755"
+        ]
+        self.assertTrue(executable, "the source tracks no executable file")
+        # The payload omits most tests and every repository script, so an
+        # executable source file need not appear here; one that does must keep
+        # the bit.
+        checked = 0
+        for relative in executable:
+            published = RUNTIME / relative
+            if not published.is_file():
+                continue
+            self.assertTrue(
+                os.access(published, os.X_OK),
+                f"{relative} is executable in the source but not in the package",
+            )
+            checked += 1
+        self.assertGreater(checked, 0, "no executable source file reached the package")
+
+    def test_generated_package_verifies_itself_offline(self):
+        verifier = PACKAGE / "scripts" / "verify_runtime.py"
+        result = subprocess.run(  # phylax: allow subprocess: fixed local verifier argv
+            [sys.executable, str(verifier)],
+            cwd=GENERATED,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_package_refuses_an_unsafe_output_directory(self):
+        with tempfile.TemporaryDirectory() as raw:
+            base = Path(raw)
+            real = base / "real"
+            real.mkdir()
+            link = base / "link"
+            link.symlink_to(real)
+            plain = base / "plain"
+            plain.write_text("", encoding="utf-8")
+            cases = {
+                link: "symlink",
+                plain: "not a directory",
+                base / "absent" / "deep": "output parent is not a directory",
+            }
+            for destination, expected in cases.items():
+                with self.subTest(destination=destination.name):
+                    result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+                        [
+                            sys.executable,
+                            str(GENERATOR),
+                            "package",
+                            "--out",
+                            str(destination),
+                        ],
+                        cwd=ROOT,
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(expected, result.stdout + result.stderr)
+            self.assertEqual(sorted(path.name for path in real.iterdir()), [])
+
+
+    def test_package_refuses_to_clear_a_directory_it_did_not_write(self):
+        """--out replaces the whole directory, so an occupied one is refused."""
+        with tempfile.TemporaryDirectory() as raw:
+            occupied = Path(raw) / "occupied"
+            (occupied / "precious").mkdir(parents=True)
+            keep = occupied / "precious" / "data.txt"
+            keep.write_text("irreplaceable", encoding="utf-8")
+            result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+                [sys.executable, str(GENERATOR), "package", "--out", str(occupied)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not a generated package", result.stdout + result.stderr)
+            self.assertEqual(keep.read_text(encoding="utf-8"), "irreplaceable")
+
+            empty = Path(raw) / "empty"
+            empty.mkdir()
+            self.assertEqual(build_package(empty), empty)
+            self.assertEqual(build_package(empty), empty)
+
+
+    def test_published_workflow_copy_stays_narrow(self):
+        """The destination's job is authored here, and its powers are bounded.
+
+        The job commits to its own repository with GITHUB_TOKEN. Two properties
+        keep that safe to leave running: it may write contents and nothing else,
+        and it never writes a path under .github/workflows/, which is the one
+        place a token could widen what runs next. A third keeps it honest: it
+        refuses to run when it has drifted from this copy.
+        """
+        text = DISTRIBUTION.read_text(encoding="utf-8")
+        self.assertIn("permissions:\n  contents: write\n", text)
+        for scope in ("actions:", "packages:", "id-token:", "pull-requests:"):
+            self.assertNotIn(scope, text)
+        self.assertIn(
+            "if: github.repository == 'wildcat-finance/skills-runtime'", text
+        )
+        self.assertIn(
+            "git clone --depth=1 https://github.com/wildcat-finance/skills.git", text
+        )
+        body = text.split("jobs:", 1)[1]
+        writes = re.findall(r"(?:cp|mv|rm|tee|>>?)\s+[^\n]*\.github/workflows", body)
+        self.assertEqual(writes, [])
+        self.assertIn("source/distribution/skills-runtime/sync.yml", text)
+        self.assertIn("verify_runtime.py", text)
+        # The job executes a generator cloned from another repository. A
+        # push-capable credential must not be sitting in .git/config while that
+        # runs, so the checkout drops it and the push supplies one explicitly.
+        self.assertIn("persist-credentials: false", text)
+        self.assertIn("x-access-token:${GITHUB_TOKEN}", text)
+        # An unparsed README would otherwise commit "…/skills@" and read as a
+        # successful rebuild of nothing identifiable.
+        self.assertIn("the generated README names no source commit", text)
+
+
+    def test_the_generated_runtime_is_not_tracked_here(self):
+        """The payload is published elsewhere; a local sync must not re-add it."""
+        tracked = subprocess.run(  # phylax: allow subprocess: fixed git listing
+            ["git", "-C", str(ROOT), "ls-files", ".agents"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+        self.assertEqual(
+            sorted(tracked),
+            [
+                ".agents/plugins/marketplace.json",
+                ".agents/skills/promise-machine/PORTABLE.md",
+                ".agents/skills/promise-machine/SKILL.md",
+                ".agents/skills/promise-machine/scripts/verify_runtime.py",
+            ],
+        )
+        ignored = subprocess.run(  # phylax: allow subprocess: fixed git ignore query
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "check-ignore",
+                ".agents/skills/promise-machine/runtime/MANIFEST.json",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(ignored.returncode, 0, "the generated runtime is not ignored")
+
+    def test_this_repository_advertises_no_skills_sh_install(self):
+        """It cannot serve one: the runtime it would need is not carried here."""
+        self.assertFalse((ROOT / "skills.sh.json").exists())
+        for document in (ROOT / "INSTALL.md", ROOT / "README.md"):
+            text = document.read_text(encoding="utf-8")
+            for line in text.splitlines():
+                if "npx skills add" in line:
+                    self.assertIn("wildcat-finance/skills-runtime", line, document.name)
 
 
 if __name__ == "__main__":

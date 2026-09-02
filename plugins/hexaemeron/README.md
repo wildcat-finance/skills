@@ -14,6 +14,17 @@ Hexaemeron carries an explicit, receipted delivery from study to one merged chan
 
 Let there be light.
 
+## Start here
+
+Use Hexaemeron when you want one repository issue carried through the complete
+controlled delivery, not merely edited. Its Fiat controller orders study,
+runbook, implementation, audit, prose, push, and integration, and records each
+accepted transition in durable state.
+
+Fiat is explicit-only. It does not start because a task sounds like delivery.
+Its checkpoints survive local context loss at completed boundaries; they are
+not arbitrary mid-step snapshots or a distributed cross-machine service.
+
 ## Place in the collective
 
 Hexaemeron is the delivery system, not a general replacement for the other
@@ -28,10 +39,10 @@ contracts by path; Hexaemeron does not rewrite or absorb them. Domain work such
 as gas optimisation, credit laws, evidence preservation, or source chunking
 stays with Hermes, Pandects, Lazarus or Alexandria, and Lemma respectively.
 
-Synkrisis sits outside the delivery controller. It is intended to compare
-validated observations from several completed runs, but its present scaffold
-refuses every operation. It cannot select work, steer a worker, file an issue,
-or dispatch Fiat.
+Synkrisis sits outside the delivery controller. Its four operations compare
+validated observations from several runs, emit bounded findings and a fixed
+report, and verify the path from the original inputs. It cannot select work,
+steer a worker, file an issue, or dispatch Fiat.
 
 One explicit Fiat request takes a topic through a study and runbook, then
 implements, audits, documents, pushes, and integrates each runbook step. The
@@ -49,7 +60,7 @@ Let there be light. A deterministic controller (`hexctl`) decides what comes nex
 
 1. Study the topic and write a linted study file.
 2. Derive a runbook of discrete, self-contained steps.
-3. Implement the least complicated construction that satisfies each runbook step.
+3. Implement the checked candidate bound into the runbook, one step at a time.
 4. Run the vendored Pashov suite (`x-ray`, `solidity-auditor`, `fizz`) in rounds until a round comes back clean or the remaining leads are judged not worth another pass, shape each audit record through Sapheneia, and put fixes on a stacked branch.
 5. Rewrite every shipped document and the PR text through the bundled `imprimatur` lint and `vulgate` voice mask.
 6. Push the step branch, open its pull request against the step below it, and move to the next step.
@@ -67,7 +78,7 @@ exactly one merge per run.
 - the executable [`hexctl.py`](./skills/fiat/scripts/hexctl.py) controller with a tamper-evident ledger (`verify` proves both chain and state);
 - the [`imprimatur`](./skills/imprimatur) three-tier prose lint and the [`vulgate`](./skills/vulgate) voice mask, invokable on their own;
 - [`kronos`](./skills/kronos), which ranks eligible held frontier jobs and loops complete Fiat runs until none remain;
-- six phase disciplines; all six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
+- six phase disciplines; all six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer and whether the evidence due for their chosen design is present, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
 - the Pashov Audit Group suite vendored verbatim (MIT; `LICENSE` and `NOTICE.md` in each skill directory);
 - Codex metadata for explicit or automatic invocation; and
 - the controller, contract, practice-check and lint test suite, plus a fuzz-audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) covering the controller's own surfaces.
@@ -176,7 +187,11 @@ recorded; every round records the exact checked operator declaration
 `--audit-filter sapheneia:sapheneia`, which is not semantic proof of the pass;
 a prose receipt missing either configured skill is rejected; and a push receipt
 requires the final head and a pull request aimed at the step below it in the
-stack, and refuses a merge commit outright. Merges are the integrate phase's
+stack, and refuses a merge commit outright. It does adopt one it observes: a
+pull request already merged into that base is receipted when the recorded head
+still matches and the merge is reachable from the base, and the step is then
+completed from that record instead of merging again, provided the run branch
+carries the work. Merges the run performs are the integrate phase's
 business: the controller hands them out one step at a time, in order, and the
 run is not done until the run branch has landed on the base and any recorded
 task issue is closed. Its closing comment follows Sapheneia, Imprimatur,

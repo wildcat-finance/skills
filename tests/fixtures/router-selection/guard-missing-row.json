@@ -401,6 +401,38 @@
         "text": "Homologia compares one pinned contract computation with one pinned off-chain"
       },
       "not_established": "Selecting Homologia does not establish that either implementation is correct; two implementations of the same misunderstanding agree."
+    },
+    {
+      "id": "RS-39",
+      "family": "plugin-row",
+      "request": "I want the findings from our past audit rounds and the changes that answered them kept somewhere I can query later.",
+      "expect": {
+        "outcome": "select",
+        "canonical": "anamnesis"
+      },
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Anamnesis keeps custody of audit findings and the"
+      },
+      "not_established": "Selecting Anamnesis does not establish that a preserved finding was real, that its remedy worked, or that a corpus figure describes anything beyond the records it counted."
+    },
+    {
+      "id": "RS-40",
+      "family": "plugin-row",
+      "request": "We have a UAT spreadsheet for the next frontend release. Tell me which of the app's routes, actions and access guards nobody has written a test expectation for.",
+      "expect": {
+        "outcome": "select",
+        "canonical": "dokimasia"
+      },
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Dokimasia compiles a frontend's routes, actions and guards into a coverage denominator"
+      },
+      "not_established": "Selecting Dokimasia does not establish that anything passed; a closure ratio of one means every scoped item carries a disposition, not that the application works."
     }
   ],
   "runs": []

@@ -861,6 +861,8 @@ def discover_sources(root):
             continue
         kept = []
         for name in sorted(names):
+            if directory == root and name == "tmp":
+                continue
             candidate = os.path.join(directory, name)
             try:
                 info = os.lstat(candidate)

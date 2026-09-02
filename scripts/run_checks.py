@@ -1636,7 +1636,11 @@ def _place_entry(target: Path, kind_tag: str, rel: str, kind: str, body: bytes, 
 
 
 def make_snapshot(
-    root: Path, nonce: str, expected_identity: str | None = None
+    root: Path,
+    nonce: str,
+    expected_identity: str | None = None,
+    *,
+    share_objects: bool = False,
 ) -> Path:
     """Build the attempt tree from exactly the bytes the identity binds.
 
@@ -1647,14 +1651,27 @@ def make_snapshot(
     through S2-R8-13).  The capture that wrote the tree must match
     ``expected_identity`` where the caller bound one, and a second full
     capture must reproduce the first, so a source that moved before or during
-    construction refuses instead of being accepted (S2-R8-14).
+    construction refuses instead of being accepted (S2-R8-14). General check
+    execution receives isolated object storage. A caller that only runs fixed
+    read paths may request shared content-addressed objects; new objects still
+    land in the disposable clone and a missing alternate makes that attempt
+    refuse rather than changing the source repository.
     """
     parent = root / RUNNER_PARENT / nonce
     try:
         _create_owned_parent(root, nonce)
         target = parent / "snapshot"
+        clone_storage = "--shared" if share_objects else "--no-hardlinks"
         proc = subprocess.run(
-            ["git", "clone", "--quiet", "--no-hardlinks", "--local", str(root), str(target)],
+            [
+                "git",
+                "clone",
+                "--quiet",
+                clone_storage,
+                "--local",
+                str(root),
+                str(target),
+            ],
             env=_git_env(),
             capture_output=True,
             shell=False,
@@ -1713,6 +1730,8 @@ def make_snapshot(
                 "unstable-source",
                 "the source moved while the snapshot was being constructed",
             )
+        if ownership is not None:
+            ownership["source_identity"] = built
         return target
     except OSError as exc:
         raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc}") from exc
@@ -1722,6 +1741,18 @@ def make_snapshot(
         # the caller's `except SnapshotError`, so the parent directory and its
         # sentinel are never removed and a whole clone is leaked on disk.
         raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc.message}") from exc
+
+
+def snapshot_source_identity(root: Path, nonce: str) -> str:
+    """Return the exact source identity accepted by one completed snapshot."""
+    recorded = _SNAPSHOT_OWNERSHIP.get((str(root), nonce))
+    identity = None if recorded is None else recorded.get("source_identity")
+    if not isinstance(identity, str) or not re.fullmatch(r"[0-9a-f]{64}", identity):
+        raise SnapshotError(
+            "snapshot-error",
+            "the completed snapshot has no valid source identity",
+        )
+    return identity
 
 
 def verify_snapshot_sources(root: Path, nonce: str, snapshot: Path) -> dict[str, Any]:

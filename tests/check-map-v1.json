@@ -17,12 +17,26 @@
       "kind": "suite",
       "script": "tests/test_dead_code.py"
     },
+    "dead-code-suppressions-check": {
+      "title": "Current dead-code suppression validation",
+      "argv": ["python3", "scripts/dead_code.py", "suppressions", "--check"],
+      "cwd": ".",
+      "kind": "command",
+      "script": "scripts/dead_code.py"
+    },
     "alexandria-suite": {
       "title": "Alexandria suite",
       "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/alexandria/tests", "-t", "plugins/alexandria"],
       "cwd": ".",
       "kind": "suite",
       "script": "plugins/alexandria/tests"
+    },
+    "anamnesis-suite": {
+      "title": "Anamnesis suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/anamnesis/tests", "-t", "plugins/anamnesis"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/anamnesis/tests"
     },
     "ariadne-suite": {
       "title": "Ariadne suite",
@@ -44,6 +58,13 @@
       "cwd": ".",
       "kind": "suite",
       "script": "plugins/brevitas/tests"
+    },
+    "dokimasia-suite": {
+      "title": "Dokimasia suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/dokimasia/tests", "-t", "plugins/dokimasia"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/dokimasia/tests"
     },
     "hermes-suite": {
       "title": "Hermes suite",
@@ -197,7 +218,7 @@
     },
     "dead-code": {
       "title": "Report-only dead-code discovery",
-      "checks": ["dead-code-suite"]
+      "checks": ["dead-code-suite", "dead-code-suppressions-check"]
     },
     "repo-lints": {
       "title": "Repository-wide tree lints",
@@ -224,9 +245,11 @@
       "checks": []
     },
     "alexandria": {"title": "Alexandria plugin", "checks": ["alexandria-suite"]},
+    "anamnesis": {"title": "Anamnesis plugin", "checks": ["anamnesis-suite"]},
     "ariadne": {"title": "Ariadne plugin", "checks": ["ariadne-suite"]},
     "berean": {"title": "Berean plugin", "checks": ["berean-suite"]},
     "brevitas": {"title": "Brevitas plugin", "checks": ["brevitas-suite"]},
+    "dokimasia": {"title": "Dokimasia plugin", "checks": ["dokimasia-suite"]},
     "hermes": {"title": "Hermes plugin", "checks": ["hermes-suite"]},
     "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite"]},
     "homologia": {"title": "Homologia plugin", "checks": ["homologia-suite"]},
@@ -249,9 +272,11 @@
     "marketplace": ["root", "repo-lints"],
     "ci": ["root"],
     "alexandria": ["repo-lints"],
+    "anamnesis": ["repo-lints"],
     "ariadne": ["repo-lints"],
     "berean": ["repo-lints"],
     "brevitas": ["repo-lints", "root"],
+    "dokimasia": ["repo-lints"],
     "hermes": ["repo-lints"],
     "hexaemeron": ["repo-lints", "root"],
     "homologia": ["repo-lints"],
@@ -287,17 +312,24 @@
     {"path": "pyproject.toml", "scope": "root"},
     {"path": "skills.sh.json", "scope": "root"},
     {"path": "SHOGGOTH.md", "scope": "root"},
+    {"path": "SOURCES.md", "scope": "root"},
+    {"path": "VENUES.json", "scope": "root"},
     {"path": "assets", "scope": "root"},
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
     {"path": "docs/dead-code", "scope": "dead-code"},
+    {"path": "docs/dead-code-checkout-suppressions", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
-    {"path": "docs/decisions/ADR-066-bind-promise-obligations-to-gates.md", "scope": "promise-machine"},
-    {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
+    {"path": "docs/decisions/ADR-069-bind-promise-obligations-to-gates.md", "scope": "promise-machine"},
     {"path": "docs/promise-machine/obligation-gates", "scope": "promise-machine"},
+    {"path": "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
+    {"path": "docs/decisions/ADR-064-check-current-dead-code-suppressions-separately.md", "scope": "dead-code"},
+    {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
+    {"path": "distribution/skills-runtime", "scope": "root"},
     {"path": "repo_contract.py", "scope": "root"},
     {"path": "schemas", "scope": "schemas"},
     {"path": "schemas/dead-code-report-v1.schema.json", "scope": "dead-code"},
+    {"path": "schemas/dead-code-report-v2.schema.json", "scope": "dead-code"},
     {"path": "schemas/dead-code-suppressions-v1.schema.json", "scope": "dead-code"},
     {"path": "scripts", "scope": "root"},
     {"path": "scripts/dead_code.py", "scope": "dead-code"},
@@ -334,9 +366,11 @@
     {"path": "plugins/synkrisis/PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "plugins/tabularium/PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "plugins/alexandria", "scope": "alexandria"},
+    {"path": "plugins/anamnesis", "scope": "anamnesis"},
     {"path": "plugins/ariadne", "scope": "ariadne"},
     {"path": "plugins/berean", "scope": "berean"},
     {"path": "plugins/brevitas", "scope": "brevitas"},
+    {"path": "plugins/dokimasia", "scope": "dokimasia"},
     {"path": "plugins/hermes", "scope": "hermes"},
     {"path": "plugins/hexaemeron", "scope": "hexaemeron"},
     {"path": "plugins/homologia", "scope": "homologia"},

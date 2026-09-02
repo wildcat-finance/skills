@@ -120,6 +120,224 @@ class TestLifecycle(HexctlCase):
         self.assertEqual(out["title"], "Scaffold")
 
 
+class TestDesignEvidenceLifecycle(HexctlCase):
+    def controller_bytes(self):
+        root = os.path.join(self.target, ".hexaemeron")
+        return tuple(
+            Path(os.path.join(root, name)).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+    def record(self):
+        path = os.path.join(self.target, ".hexaemeron", "design-evidence.json")
+        with open(path, encoding="utf-8") as handle:
+            return path, json.load(handle)
+
+    def write_record(self, path, record):
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(record, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+
+    def study(self):
+        study = self.write(
+            "study.md",
+            "# Study\n\n```risk-register\none | boundary | check\n```\n",
+        )
+        self.run_ctl("done", "study", "--artifact", study)
+        return study
+
+    def test_study_lock_requires_the_fixed_checked_record_without_mutation(self):
+        self.init()
+        os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
+        before = self.controller_bytes()
+        study = self.write("study.md", "# Study\n")
+        refused = self.run_ctl(
+            "done", "study", "--artifact", study, expect=2
+        )
+        self.assertIn("design-evidence artefact is unavailable", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_selection_pending_names_the_exact_recovery_and_cannot_lock(self):
+        self.init()
+        path, record = self.record()
+        result = next(
+            item for item in record["results"]
+            if item["candidate"] == "bounded" and item["criterion"] == "peak-space"
+        )
+        result.clear()
+        result.update({
+            "candidate": "bounded",
+            "criterion": "peak-space",
+            "state": "pending",
+            "resolver": "python3 measure-space.py",
+            "report": "design-reports/bounded-peak-space-later.json",
+            "blocks": "design-lock",
+        })
+        self.write_record(path, record)
+        before = self.controller_bytes()
+        study = self.write("study.md", "# Study\n")
+        refused = self.run_ctl(
+            "done", "study", "--artifact", study, expect=2
+        )
+        self.assertIn("D007", refused.stderr)
+        self.assertIn("python3 measure-space.py", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_runbook_must_bind_the_exact_design_lock(self):
+        self.init()
+        self.study()
+        self.auto_design_lock = False
+        body = "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n"
+        runbook = self.write("runbook.md", body)
+        steps = self.write("steps.json", '["Core"]')
+        before = self.controller_bytes()
+        missing = self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps,
+            expect=2,
+        )
+        self.assertIn("requires a design-lock block", missing.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+        wrong = self.design_lock_block().replace(
+            self.state()["receipts"]["study"]["design_evidence"]["sha256"],
+            "f" * 64,
+        )
+        self.write("runbook.md", wrong + "\n" + body)
+        mismatch = self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps,
+            expect=2,
+        )
+        self.assertIn("does not match the receipted", mismatch.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+        self.write("runbook.md", self.design_lock_block() + "\n" + body)
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        receipt = self.state()["receipts"]["runbook"]
+        self.assertEqual(receipt["design_lock"]["candidate"], "bounded")
+
+    def test_pending_conformance_blocks_only_its_named_step(self):
+        self.init()
+        path, record = self.record()
+        criterion = next(
+            item for item in record["criteria"] if item["id"] == "restart-safe"
+        )
+        criterion["stage"] = "conformance"
+        criterion["blocks"] = "step:2"
+        result = next(
+            item for item in record["results"]
+            if item["candidate"] == "bounded" and item["criterion"] == "restart-safe"
+        )
+        result.clear()
+        result.update({
+            "candidate": "bounded",
+            "criterion": "restart-safe",
+            "state": "pending",
+            "resolver": "python3 prove-restart.py",
+            "report": "design-reports/bounded-restart-later.json",
+            "blocks": "step:2",
+        })
+        self.write_record(path, record)
+        study = self.study()
+        runbook = self.write(
+            "runbook.md",
+            "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n\n"
+            "## Step 2: Finish\n\n**Goal.** Finish.\n",
+        )
+        steps = self.write("steps.json", '["Core", "Finish"]')
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-m", "fixture")
+        state = self.state()
+        for step in state["steps"]:
+            self.git("branch", self.step_branch(step["n"], state))
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        before = self.controller_bytes()
+        push_args = (
+            "done", "push", "--pr-url",
+            "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", self.fake_sha("head1"),
+            "--pr-base", self.step_base(1),
+        )
+        refused = self.run_ctl(*push_args, expect=2)
+        self.assertIn("D008", refused.stderr)
+        self.assertIn("bounded/restart-safe", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+        payload = {
+            "schema": "protasis-design-report/v1",
+            "candidate": "bounded",
+            "criterion": "restart-safe",
+            "value": True,
+            "unit": "boolean",
+            "command": "python3 prove-restart.py",
+            "exit": 0,
+        }
+        report = os.path.join(
+            self.target, ".hexaemeron", "design-reports",
+            "bounded-restart-later.json",
+        )
+        with open(report, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, sort_keys=True)
+            handle.write("\n")
+        self.run_ctl(*push_args)
+        state = self.state()
+        self.assertEqual(state["current_step"], 2)
+        transition = state["receipts"]["study"]["design_evidence"]["transitions"][-1]
+        self.assertEqual(transition["transition"], "step:2")
+        self.assertEqual(
+            [(item["candidate"], item["criterion"]) for item in transition["reports"]],
+            [("bounded", "restart-safe")],
+        )
+
+    def test_verify_replays_report_receipts_and_detects_tampering(self):
+        self.to_steps(("Core",))
+        self.run_ctl("verify")
+        report = os.path.join(
+            self.target, ".hexaemeron", "design-reports", "bounded-warm-time.json"
+        )
+        with open(report, "a", encoding="utf-8") as handle:
+            handle.write(" ")
+        refused = self.run_ctl("verify", expect=2)
+        self.assertIn("report digest does not match", refused.stderr)
+
+    def test_legacy_state_continues_without_fabricated_design_evidence(self):
+        self.init()
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        state.pop("contracts")
+        hexctl_module().commit(
+            self.target, state, "fixture:legacy-design-contract", {}
+        )
+        os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
+        study = self.write("study.md", "# Legacy study\n")
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self.write(
+            "runbook.md", "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n"
+        )
+        steps = self.write("steps.json", '["Core"]')
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        self.assertNotIn(
+            "design_evidence", self.state()["receipts"]["study"]
+        )
+
+
 class TestDelegationPackets(HexctlCase):
     def assert_packet(self, directive, agent, fields):
         self.assertEqual(directive["agent"], agent)
@@ -135,7 +353,7 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             out,
             "surveyor",
-            ("topic", "target_dir", "base_ref", "output_path"),
+            ("topic", "target_dir", "base_ref", "output_path", "design_output_path"),
         )
         self.assertEqual(out["brief"]["topic"], "packet work")
         self.assertEqual(out["brief"]["target_dir"], os.path.realpath(self.target))
@@ -143,6 +361,12 @@ class TestDelegationPackets(HexctlCase):
         self.assertEqual(
             out["brief"]["output_path"],
             os.path.realpath(os.path.join(self.target, ".hexaemeron", "study.md")),
+        )
+        self.assertEqual(
+            out["brief"]["design_output_path"],
+            os.path.realpath(
+                os.path.join(self.target, ".hexaemeron", "design-evidence.json")
+            ),
         )
         self.assertEqual(out["state_sha256"], hashlib.sha256(
             json.dumps(self.state(), sort_keys=True, separators=(",", ":")).encode()
@@ -170,7 +394,15 @@ class TestDelegationPackets(HexctlCase):
         self.git("branch", self.step_branch(1, state))
 
         mason = self.next_json()
-        self.assert_packet(mason, "mason", ("runbook_step", "branch", "branch_from"))
+        self.assert_packet(
+            mason,
+            "mason",
+            ("runbook_step", "branch", "branch_from", "design_evidence"),
+        )
+        self.assertEqual(
+            set(mason["brief"]["design_evidence"]),
+            {"schema", "path", "sha256", "selected"},
+        )
         source = mason["brief"]["runbook_step"]
         self.assertEqual(
             set(source),
@@ -198,7 +430,7 @@ class TestDelegationPackets(HexctlCase):
             "warden",
             ("step_branch", "stacked_branch", "security_suite", "plugin_root",
              "audit_log_path", "round", "audit_filter", "risk_register",
-             "runbook_step"),
+             "runbook_step", "design_evidence"),
         )
         risk = warden["brief"]["risk_register"]
         self.assertEqual(set(risk), {"markdown", "path", "sha256"})
@@ -215,13 +447,11 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             scribe, "scribe", ("files", "pr_base", "pr_draft_path", "plugin_root")
         )
-        self.assertEqual(
-            scribe["brief"]["files"],
-            [
-                "audit/rounds/fiat-test-topic.md",
-                "audit/rounds/fiat-test-topic.synopsis.md",
-            ],
-        )
+        # The harness commits the audit records on the run branch, so they
+        # reach this step's diff as deletions.  A removed path carries no prose
+        # to rewrite and the packet no longer names one; the positive case is
+        # test_hexctl_prose_packet_bounds.
+        self.assertEqual(scribe["brief"]["files"], [])
         self.run_ctl("done", "prose", "--files", "1", "--skills",
                      "hexaemeron:imprimatur,hexaemeron:vulgate")
         push = self.next_json()
@@ -420,7 +650,7 @@ class TestDelegationPackets(HexctlCase):
         proc = self.run_ctl("next", expect=2)
         self.assertIn("runbook artefact is not a regular file", proc.stderr)
 
-    def test_scribe_diff_is_sorted_and_capped_at_500_entries(self):
+    def test_scribe_diff_is_sorted_and_holds_only_the_retained_paths(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
@@ -431,22 +661,15 @@ class TestDelegationPackets(HexctlCase):
             self.write(name, name)
         self.git("add", "zeta.md", "alpha.md")
         self.git("commit", "-m", "step")
+        # The two audit records sit on the run branch rather than this one, so
+        # they arrive as deletions and the packet drops them.  The ceiling that
+        # remains is PROSE_PATHS_MAX, exercised over a mocked path list in
+        # test_hexctl_prose_packet_bounds rather than by writing four thousand
+        # files through this fixture.
         self.assertEqual(
             self.next_json()["brief"]["files"],
-            [
-                "alpha.md",
-                "audit/rounds/fiat-test-topic.md",
-                "audit/rounds/fiat-test-topic.synopsis.md",
-                "zeta.md",
-            ],
+            ["alpha.md", "zeta.md"],
         )
-
-        for number in range(499):
-            self.write(f"many/{number:03d}.md", "x")
-        self.git("add", "many")
-        self.git("commit", "-m", "too many")
-        proc = self.run_ctl("next", expect=2)
-        self.assertIn("more than 500 paths", proc.stderr)
 
     def test_git_output_and_returned_path_caps_refuse(self):
         module = hexctl_module()
@@ -475,6 +698,65 @@ class TestDelegationPackets(HexctlCase):
                 module.bounded_git(self.dir, ["diff"])
         self.assertIn("2097152-byte output cap", error.getvalue())
 
+
+    def test_brief_out_diverts_the_body_and_leaves_the_directive_readable(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        inline = self.next_json()
+        self.assertTrue(inline["brief"])
+        diverted = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(diverted["brief"], {})
+        self.assertEqual(
+            diverted["brief_path"],
+            os.path.realpath(os.path.join(self.target, ".hexaemeron", "brief.json")),
+        )
+        with open(diverted["brief_path"], encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), inline["brief"])
+        for key in ("do", "agent", "step", "round", "state_sha256", "audit_filter"):
+            self.assertEqual(diverted.get(key), inline.get(key))
+
+    def test_brief_out_refuses_a_path_outside_the_target(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("next", "--brief-out", "../escape.json", expect=2)
+
+    def test_brief_out_leaves_an_inline_directive_alone(self):
+        self.init("packet work")
+        self.run_ctl("halt", "--reason", "waiting on the user")
+        out = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(out["do"], "halted")
+        self.assertNotIn("brief_path", out)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.target, ".hexaemeron", "brief.json"))
+        )
+
+    def test_status_field_returns_one_value_not_the_state(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        one = self.run_ctl("status", "--field", "observation_run_id").stdout
+        self.assertEqual(json.loads(one), whole["observation_run_id"])
+        self.assertLess(len(one), len(json.dumps(whole)))
+        for absent in ("steps", "receipts", "config"):
+            self.assertNotIn(absent, one)
+
+    def test_status_field_walks_a_dotted_path(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        out = self.run_ctl("status", "--field", "config.audit.max_rounds").stdout
+        self.assertEqual(json.loads(out), whole["config"]["audit"]["max_rounds"])
+
+    def test_status_field_refuses_an_unknown_path(self):
+        self.to_audit()
+        self.run_ctl("status", "--field", "config.audit.nope", expect=2)
+        self.run_ctl("status", "--field", "not_a_key", expect=2)
+
+    def test_status_field_and_json_are_mutually_exclusive(self):
+        self.to_audit()
+        self.run_ctl("status", "--json", "--field", "observation_run_id", expect=2)
 
 class XRayReuseStateSeparationTests(HexctlCase):
     FORBIDDEN_FIELDS = frozenset(
@@ -663,48 +945,46 @@ class TestStudyAmendments(HexctlCase):
         with open(os.path.join(self.target, "study.md"), encoding="utf-8") as handle:
             self.assertEqual(handle.read(), original)
 
-    def test_date_and_four_field_shape_are_exact(self):
+    def test_protasis_owns_shape_before_record_or_mutation(self):
+        original = self.to_amendable_steps()
+        paths = [Path(self.target, name) for name in (
+            ".hexaemeron/state.json", ".hexaemeron/ledger.jsonl", "study.md"
+        )]
+        before = [path.read_bytes() for path in paths]
+        why = "**Why.** The receipted baseline disproved it.\n"
+        what = "**What changed.** The fixture assumption was corrected.\n"
         cases = {
-            "invalid date": (self.amendment(date="2026-02-30"), "invalid calendar date"),
-            "missing field": (
-                self.amendment().replace(
-                    "**Why.** The receipted baseline disproved it.\n", ""
-                ),
-                "field 'Why' must occur exactly once",
+            "invalid date": self.amendment(date="2026-02-30"),
+            "missing field": self.amendment().replace(why, ""),
+            "duplicate field": self.amendment().replace(
+                why, "**Why.** First.\n**Why.** Second.\n"
             ),
-            "duplicate field": (
-                self.amendment().replace(
-                    "**Why.** The receipted baseline disproved it.\n",
-                    "**Why.** First.\n**Why.** Second.\n",
-                ),
-                "field 'Why' must occur exactly once",
-            ),
-            "empty field": (
-                self.amendment(what=""), "field 'What changed' must not be empty"
-            ),
-            "wrong order": (
-                self.amendment().replace(
-                    "**What changed.** The fixture assumption was corrected.\n"
-                    "**Why.** The receipted baseline disproved it.\n",
-                    "**Why.** The receipted baseline disproved it.\n"
-                    "**What changed.** The fixture assumption was corrected.\n",
-                ),
-                "accepted four-field order",
-            ),
+            "empty field": self.amendment(what=""),
+            "wrong order": self.amendment().replace(what + why, why + what),
         }
-        for label, (suffix, message) in cases.items():
+        for label, suffix in cases.items():
             with self.subTest(label=label):
-                other = HexctlCase(methodName="runTest")
-                other.setUp()
-                try:
-                    original = other.to_amendable_steps()
-                    candidate = other.write("candidate.md", original + suffix)
-                    proc = other.run_ctl(
-                        "amend", "study", "--artifact", candidate, expect=2
-                    )
-                    self.assertIn(message, proc.stderr)
-                finally:
-                    other.tearDown()
+                candidate = self.write("candidate.md", original + suffix)
+                proc = self.run_ctl(
+                    "amend", "study", "--artifact", candidate, expect=2
+                )
+                self.assertIn("Protasis rejected the amendment candidate", proc.stderr)
+
+        module = hexctl_module()
+        with (
+            mock.patch.object(
+                module,
+                "_study_amendment_record",
+                side_effect=AssertionError,
+            ),
+            redirect_stderr(StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            module.cmd_amend_study(argparse.Namespace(
+                dir=self.target, artifact=os.path.join(self.target, candidate)
+            ))
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(Path(self.target, ".hexaemeron/study-amendment-pending.json").exists())
 
     def test_every_unbuilt_step_gets_one_unambiguous_entry_and_exit_verdict(self):
         cases = {
@@ -845,7 +1125,11 @@ class TestStudyAmendments(HexctlCase):
 
         for label, suffix, message in (
             ("duplicate", self.amendment() + self.amendment(), "more than one"),
-            ("trailing", self.amendment() + "\n## Notes\n\nLater.\n", "final section"),
+            (
+                "trailing",
+                self.amendment() + "\n## Notes\n\nLater.\n",
+                "Protasis rejected the amendment candidate",
+            ),
         ):
             with self.subTest(label=label):
                 other = HexctlCase(methodName="runTest")
@@ -1992,6 +2276,15 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertEqual(sync["revalidation"]["affected_paths"], [
             "shared.json", "upstream.py",
         ])
+        self.assertEqual(
+            sync["resolution_guard"],
+            {
+                "schema": "fiat-sync-resolution-guard/v1",
+                "side_selected_paths": [],
+                "superseded_intersection_paths": [],
+                "acknowledged_paths": [],
+            },
+        )
         status = self.run_ctl("status").stdout
         self.assertIn("product eeeeeeeeeeee preserved", status)
         self.assertIn("1 integration revalidation check(s) recorded", status)
@@ -2771,7 +3064,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.assertEqual(mason_first, mason_second)
         self.assertEqual(
             set(mason_first["brief"]),
-            {"runbook_step", "branch", "branch_from"},
+            {"runbook_step", "branch", "branch_from", "design_evidence"},
         )
         expected_markdown = "## Step 1: Core\n\n**Goal.** Ship Core.\n"
         expected_source = {
@@ -2781,9 +3074,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             "amendments": [],
             "effective_sha256": hashlib.sha256(expected_markdown.encode()).hexdigest(),
             "path": os.path.realpath(os.path.join(self.target, "runbook.md")),
-            "sha256": hashlib.sha256(
-                ("# Runbook\n\n" + expected_markdown).encode()
-            ).hexdigest(),
+            "sha256": self.state()["receipts"]["runbook"]["sha256"],
             "number": 1,
             "title": "Core",
         }
@@ -2806,8 +3097,12 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             {
                 "step_branch", "stacked_branch", "security_suite", "plugin_root",
                 "audit_log_path", "round", "audit_filter", "risk_register",
-                "runbook_step",
+                "runbook_step", "design_evidence",
             },
+        )
+        self.assertEqual(
+            warden_first["brief"]["design_evidence"],
+            mason_first["brief"]["design_evidence"],
         )
 
     def test_a_legacy_absent_key_survives_every_reader_and_later_round(self):
@@ -3234,12 +3529,31 @@ class TestProseAndPush(HexctlCase):
         proc = self.run_ctl(*args, expect=2)
         self.assertIn("nothing under it", proc.stderr)
 
+        # Prose that names the item but disposes of nothing. The section is not
+        # empty, so the older check passed it; the item still has no issue.
         self.write_run_pr(carried="- no CI workflow for this plugin yet\n")
+        proc = self.run_ctl(*args, expect=2)
+        self.assertIn("carries no `carryover` block", proc.stderr)
+        self.assertIn("Integration cannot proceed", proc.stderr)
+
+        self.write_run_pr(
+            rows="plugin-ci-workflow | filed | "
+                 "https://github.com/wildcat-finance/skills/issues/1041\n"
+                 "xray-source-drift | duplicate | "
+                 "https://github.com/wildcat-finance/skills/issues/842\n"
+                 "comment-density-nit | none | fixed in the same commit\n"
+        )
         self.run_ctl(*args)
         receipt = self.state()["receipts"]["integrate"]["carried_forward"]
-        self.assertEqual(receipt["lines"], 1)
+        self.assertEqual(receipt["lines"], 5)
         self.assertEqual(receipt["path"], ".hexaemeron/run-pr.md")
         self.assertEqual(len(receipt["sha256"]), 64)
+        self.assertEqual(receipt["filed"], ["plugin-ci-workflow"])
+        self.assertEqual(receipt["duplicates"], ["xray-source-drift"])
+        self.assertEqual(
+            [row["id"] for row in receipt["carryover"]],
+            ["plugin-ci-workflow", "xray-source-drift", "comment-density-nit"],
+        )
         self.run_ctl("verify")
 
     def test_reset_refuses_a_run_whose_stack_has_not_landed(self):
@@ -5153,15 +5467,11 @@ class GitHubSignerDiagnosis(unittest.TestCase):
 
 
 class RewrittenStackRefusal(unittest.TestCase):
-    """The stack rewrite is caught at the first merge-step after it happens.
+    """A waiting non-ancestor is refused before another merge is receipted.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Before this
-    check, the first symptom was an invalid local signature at a later
-    merge-step, which reads as a broken signing setup, and by then several steps
-    had already merged. The check compares each waiting step's remote tip with
-    the head its push receipt names, so the rewrite is named before any further
-    merge is receipted.
+    This synthetic fixture supplies native ancestry status 1 for unequal tips.
+    The controller can therefore name the observed branch and relation without
+    asserting which external operation caused the history to move.
     """
 
     def setUp(self):
@@ -5194,6 +5504,7 @@ class RewrittenStackRefusal(unittest.TestCase):
         with mock.patch.object(module, "step_branch_name",
                                side_effect=lambda _s, step: f"branch-{step['n']}"), \
              mock.patch.object(module, "remote_branch_tip", side_effect=tip), \
+             mock.patch.object(module, "_native_ancestry_status", return_value=1), \
              redirect_stderr(captured):
             try:
                 module.refuse_rewritten_stack(".", state, current_step)
@@ -5207,19 +5518,23 @@ class RewrittenStackRefusal(unittest.TestCase):
         )
         self.assertIsNone(message)
 
-    def test_a_rewritten_waiting_branch_is_refused_and_the_rewrite_named(self):
+    def test_a_nonancestor_waiting_branch_is_refused_without_a_cause_claim(self):
         message = self._refusal(
             self._state(), 2, {"branch-3": "d" * 40}
         )
-        self.assertIsNotNone(message, "a rewritten waiting branch was not refused")
-        self.assertIn("has been rewritten since it was pushed", message)
+        self.assertIsNotNone(message, "a non-ancestor waiting branch was not refused")
+        self.assertIn("no longer contains its receipted head", message)
+        self.assertIn("is not an ancestor", message)
         self.assertIn("branch-3", message)
-        self.assertIn("stacked-pull-request", message)
+        self.assertIn("c" * 40, message)
+        self.assertIn("d" * 40, message)
         self.assertIn(
             "do not import GitHub's public key",
             message,
             "the wrong repair is the obvious one and must be ruled out in the message",
         )
+        self.assertNotIn("GitHub's stacked-pull-request flow", message)
+        self.assertNotIn("re-signs", message)
 
     def test_the_step_being_merged_is_never_queried(self):
         """The current step's branch may legitimately differ from its receipt

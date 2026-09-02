@@ -1,5 +1,6 @@
 """The checked-in Goldfinch fixture runs and remains offline reproducible."""
 
+import ast
 import ipaddress
 from io import StringIO
 import os
@@ -27,6 +28,10 @@ ANCHOR_FIXTURE = support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0"
 DEMO_PATH = FIXTURE / "demo.py"
 RECEIPT_DEMO_PATH = RECEIPT_FIXTURE / "demo.py"
 RECEIPTS_ROOT = "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e"
+# The complete demo contains five RPC calls with 5-second socket timeouts and a
+# 2-second thread join, followed by CPU-bound fixture checks. Keep its outer
+# compatibility ceiling explicit; only a hosted run establishes wall-clock fit.
+LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS = 60
 
 
 def load_demo():
@@ -83,7 +88,7 @@ class GoldfinchDemoTests(unittest.TestCase):
             text=True,
             capture_output=True,
             check=False,
-            timeout=20,
+            timeout=LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("replayed code bytes: 45", result.stdout)
@@ -91,6 +96,66 @@ class GoldfinchDemoTests(unittest.TestCase):
         self.assertIn("slot 0x1 miss: -32070", result.stdout)
         self.assertIn("one-nibble proof mutation: rejected", result.stdout)
         self.assertIn("manifest rebuild: identical", result.stdout)
+
+    def test_complete_demo_timeout_exceeds_its_inner_fail_closed_bounds(self):
+        tree = ast.parse(DEMO_PATH.read_text(encoding="utf-8"))
+        rpc_calls = sum(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "rpc_call"
+            for node in ast.walk(tree)
+        )
+        connection_timeouts = [
+            keyword.value.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "HTTPConnection"
+            for keyword in node.keywords
+            if keyword.arg == "timeout" and isinstance(keyword.value, ast.Constant)
+        ]
+        join_timeouts = [
+            keyword.value.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "join"
+            for keyword in node.keywords
+            if keyword.arg == "timeout" and isinstance(keyword.value, ast.Constant)
+        ]
+        self.assertEqual(rpc_calls, 5)
+        self.assertEqual(connection_timeouts, [5])
+        self.assertEqual(join_timeouts, [2])
+        self.assertGreater(
+            LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
+            rpc_calls * connection_timeouts[0] + join_timeouts[0],
+        )
+
+    def test_complete_demo_invocation_uses_the_named_outer_bound(self):
+        self.assertEqual(LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS, 60)
+        command = [sys.executable, str(DEMO_PATH)]
+        completed = subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=(
+                "replayed code bytes: 45\n"
+                "replayed logs: 5\n"
+                "slot 0x1 miss: -32070\n"
+                "one-nibble proof mutation: rejected\n"
+                "manifest rebuild: identical\n"
+            ),
+            stderr="",
+        )
+        with mock.patch.object(subprocess, "run", return_value=completed) as runner:
+            self.test_demo_command_runs_the_complete_application_check()
+        runner.assert_called_once_with(
+            command,
+            cwd=support.REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=LEGACY_DEMO_SUBPROCESS_TIMEOUT_SECONDS,
+        )
 
     def test_manifest_rebuild_is_byte_identical(self):
         demo = load_demo()
@@ -152,7 +217,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
         report = verify_fixture(RECEIPT_FIXTURE)
         self.assertEqual(
             report["fixture_digest"],
-            "06043f4c4e7f62701d55cc0acb948f9330ec218ae50d786daa43ffefb6079eb2",
+            "aadf1b809ae45946967e17f2132ae4d73b06026345b0e8c7f1ca4c3c0add9535",
         )
         self.assertEqual(
             report["evidence_counts"],
@@ -276,6 +341,101 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             with self.assertRaises(LazarusError):
                 load_receipt_demo().build_fixture(RECEIPT_FIXTURE / "nested")
             self.assertFalse((RECEIPT_FIXTURE / "nested").exists())
+
+    def test_release_verify_command_emits_one_bounded_offline_event(self):
+        demo = load_receipt_demo()
+        output = StringIO()
+        error = StringIO()
+        with mock.patch.object(
+            demo.socket.socket,
+            "connect",
+            side_effect=AssertionError("network access"),
+        ), mock.patch.object(
+            demo.socket,
+            "create_connection",
+            side_effect=AssertionError("network access"),
+        ), mock.patch("sys.stdout", output), mock.patch("sys.stderr", error):
+            code = demo.main(
+                [
+                    "verify-release",
+                    "--release",
+                    str(demo.SHIPPED_RELEASE),
+                ]
+            )
+        self.assertEqual(code, 0, error.getvalue())
+        self.assertEqual(error.getvalue(), "")
+        self.assertEqual(
+            loads(output.getvalue().encode("utf-8")),
+            {
+                "event": "goldfinch_release_verify",
+                "stage": "complete",
+                "fixture_digest": (
+                    "aadf1b809ae45946967e17f2132ae4d73b06026345b0e8c7f1ca4c3c0add9535"
+                ),
+                "release_digest": (
+                    "701fa846f81c28ede5ab9539c0c19815dfe7435eca45ba663219c0c88c3bdb74"
+                ),
+            },
+        )
+
+    def test_builder_does_not_require_a_descriptor_filesystem_path(self):
+        """The open fixture directory is the authority on every POSIX host."""
+
+        demo = load_receipt_demo()
+        real_stat = Path.stat
+
+        def refuse_descriptor_filesystem(path, *args, **kwargs):
+            spelling = os.fspath(path)
+            if spelling.startswith("/proc/self/fd/") or spelling.startswith(
+                "/dev/fd/"
+            ):
+                raise OSError("descriptor filesystem is not traversable")
+            return real_stat(path, *args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(
+            Path,
+            "stat",
+            refuse_descriptor_filesystem,
+        ):
+            output = Path(directory) / "fixture"
+            try:
+                report = demo.build_fixture(output)
+            except LazarusError as exc:
+                self.fail(f"builder required a descriptor filesystem path: {exc}")
+            self.assertEqual(
+                report["fixture_digest"],
+                verify_fixture(output)["fixture_digest"],
+            )
+            self.assertEqual(
+                demo._tree_bytes(output),
+                demo._tree_bytes(RECEIPT_FIXTURE),
+            )
+
+    def test_builder_refuses_a_missing_descriptor_inventory_capability(self):
+        demo = load_receipt_demo()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "fixture"
+            error = StringIO()
+            with mock.patch.object(
+                demo.os,
+                "scandir",
+                side_effect=NotImplementedError("private host detail"),
+            ), mock.patch("sys.stderr", error):
+                try:
+                    code = demo.main(["build-fixture", "--out", str(output)])
+                except NotImplementedError as exception:
+                    self.fail(
+                        "builder leaked an unsupported descriptor operation: "
+                        f"{exception}"
+                    )
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                error.getvalue(),
+                "refused: platform lacks secure fixture directory operations\n",
+            )
+            self.assertFalse(output.exists())
+            self.assertEqual(list(output.parent.glob(".*.stage-*")), [])
+            self.assertNotIn("private host detail", error.getvalue())
 
     def test_builder_refuses_a_missing_parent_inside_source_without_creating_it(self):
         demo = load_receipt_demo()

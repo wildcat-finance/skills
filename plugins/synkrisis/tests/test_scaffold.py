@@ -26,7 +26,7 @@ LEDGER = PLUGIN / "skills" / "synkrisis" / "EVOLUTION.md"
 
 class HostSurfaceTests(unittest.TestCase):
     def test_manifest_versions_agree_across_hosts_and_marketplace(self):
-        assert_version_agreement(self, "synkrisis", expected="0.5.0")
+        assert_version_agreement(self, "synkrisis", expected="0.5.1")
 
     def test_host_descriptions_agree(self):
         assert_host_descriptions_agree(self, "synkrisis")

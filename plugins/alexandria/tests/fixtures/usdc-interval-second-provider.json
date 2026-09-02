@@ -1,0 +1,29 @@
+{
+  "boundary_hash_overrides": {
+    "2": "0x9999999999999999999999999999999999999999999999999999999999999999"
+  },
+  "extra_logs": {
+    "1": [
+      {
+        "address": "0xc3d688b66703497daa19211eedff47f25384cdc3",
+        "blockHash": "0x36994ced25371c26b362bfc0ee58f82ac984d8466c578b8220dc3882ac27e994",
+        "blockNumber": "0xe9f116",
+        "data": "0x1212121212121212121212121212121212121212121212121212121212121212",
+        "logIndex": "0x9",
+        "removed": false,
+        "topics": [
+          "0x3434343434343434343434343434343434343434343434343434343434343434"
+        ],
+        "transactionHash": "0xb2eeec9fc63c2455a8272563ac013645957b6dec652cbc7b63e1e0ca66d00e73",
+        "transactionIndex": "0x9"
+      }
+    ]
+  },
+  "note": "The second provider's view of the same synthetic interval. Three deliberate disagreements are recorded here so the reconciler has something to find: shard 1 holds one extra log, shard 2's boundary hash differs, and shard 3's boundary reports its transactions in another order.",
+  "transaction_orders": {
+    "3": [
+      "0x628b49d96dcde97a430dd4f597705899e09a968f793491e4b704cae33a40dc02",
+      "0x512f26ada3c3d634ac3c6b12b7b33cb50bb0963c3f6d9924241619c84ec78ff2"
+    ]
+  }
+}

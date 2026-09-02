@@ -1,8 +1,0 @@
-{
-  "schema": "promise-machine-transition-authority/v1",
-  "id": "fixture-authority",
-  "promise_id": "fixture-promise",
-  "gate": "fixture.gate",
-  "subject": "fixture-subject",
-  "scope": "fixture-scope"
-}

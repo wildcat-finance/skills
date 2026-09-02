@@ -18,6 +18,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+import lazarus_lib.release as release_module
 from lazarus_lib.binding import CHECKS
 from lazarus_lib.canonical import dump, dumps, loads
 from lazarus_lib.errors import (
@@ -642,6 +643,279 @@ class RefusedReleaseTests(unittest.TestCase):
                 prepared, PathError, statement=link / "statement.json"
             )
             self.assertIn("symlink", str(error))
+
+    def test_each_exact_darwin_root_alias_records_its_bounded_class(self):
+        aliases = {
+            "etc": b"private/etc",
+            "tmp": b"private/tmp",
+            "var": b"private/var",
+        }
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        for alias, link_text in aliases.items():
+            with tempfile.TemporaryDirectory() as directory, self.subTest(
+                accepted_alias=alias
+            ):
+                root = Path(directory)
+                physical = root / "private" / alias
+                physical.mkdir(parents=True)
+                (root / alias).symlink_to(os.fsdecode(link_text))
+                root_fd = os.open(root, flags)
+                opened = None
+                try:
+                    with mock.patch.object(release_module.sys, "platform", "darwin"):
+                        opened = release_module._open_darwin_root_alias(
+                            root_fd,
+                            alias,
+                            flags,
+                            Path(f"/{alias}/statement.json"),
+                        )
+                        self.assertIsNotNone(opened)
+                        target_fd, guard = opened
+                        self.assertEqual(guard[0], alias)
+                        self.assertEqual(guard[1], link_text)
+                        self.assertEqual(
+                            (os.fstat(target_fd).st_dev, os.fstat(target_fd).st_ino),
+                            guard[3],
+                        )
+                        release_module._recheck_darwin_root_alias(
+                            root_fd,
+                            guard,
+                            flags,
+                            Path(f"/{alias}/statement.json"),
+                        )
+                finally:
+                    if opened is not None:
+                        os.close(opened[0])
+                    os.close(root_fd)
+
+    def test_a_wrong_darwin_root_alias_target_is_refused(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "private" / "elsewhere").mkdir(parents=True)
+            (root / "var").symlink_to("private/elsewhere")
+            root_fd = os.open(root, flags)
+            try:
+                with mock.patch.object(
+                    release_module.sys, "platform", "darwin"
+                ), self.assertRaisesRegex(PathError, "symlink or non-directory"):
+                    release_module._open_darwin_root_alias(
+                        root_fd,
+                        "var",
+                        flags,
+                        Path("/var/statement.json"),
+                    )
+            finally:
+                os.close(root_fd)
+
+    def test_a_darwin_root_alias_replaced_by_a_directory_is_refused(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "var").mkdir()
+            root_fd = os.open(root, flags)
+            try:
+                with mock.patch.object(
+                    release_module.sys, "platform", "darwin"
+                ), self.assertRaisesRegex(PathError, "symlink or non-directory"):
+                    release_module._open_darwin_root_alias(
+                        root_fd,
+                        "var",
+                        flags,
+                        Path("/var/statement.json"),
+                    )
+            finally:
+                os.close(root_fd)
+
+    def test_a_changed_darwin_root_target_identity_is_refused(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "private" / "var"
+            target.mkdir(parents=True)
+            (root / "var").symlink_to("private/var")
+            root_fd = os.open(root, flags)
+            opened = None
+            try:
+                with mock.patch.object(release_module.sys, "platform", "darwin"):
+                    opened = release_module._open_darwin_root_alias(
+                        root_fd,
+                        "var",
+                        flags,
+                        Path("/var/statement.json"),
+                    )
+                    self.assertIsNotNone(opened)
+                    target.rename(root / "private" / "former-var")
+                    target.mkdir()
+                    with self.assertRaisesRegex(
+                        PathError, "symlink or non-directory"
+                    ):
+                        release_module._recheck_darwin_root_alias(
+                            root_fd,
+                            opened[1],
+                            flags,
+                            Path("/var/statement.json"),
+                        )
+            finally:
+                if opened is not None:
+                    os.close(opened[0])
+                os.close(root_fd)
+
+    def test_darwin_root_alias_drift_between_checks_is_refused(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "private" / "var").mkdir(parents=True)
+            (root / "private" / "other").mkdir()
+            alias = root / "var"
+            alias.symlink_to("private/var")
+            root_fd = os.open(root, flags)
+            opened = None
+            try:
+                with mock.patch.object(release_module.sys, "platform", "darwin"):
+                    opened = release_module._open_darwin_root_alias(
+                        root_fd,
+                        "var",
+                        flags,
+                        Path("/var/statement.json"),
+                    )
+                    self.assertIsNotNone(opened)
+                    alias.unlink()
+                    alias.symlink_to("private/other")
+                    with self.assertRaisesRegex(
+                        PathError, "symlink or non-directory"
+                    ):
+                        release_module._recheck_darwin_root_alias(
+                            root_fd,
+                            opened[1],
+                            flags,
+                            Path("/var/statement.json"),
+                        )
+            finally:
+                if opened is not None:
+                    os.close(opened[0])
+                os.close(root_fd)
+
+    def test_a_darwin_root_alias_removed_before_the_recheck_is_refused(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "private" / "var").mkdir(parents=True)
+            alias = root / "var"
+            alias.symlink_to("private/var")
+            root_fd = os.open(root, flags)
+            opened = None
+            try:
+                with mock.patch.object(release_module.sys, "platform", "darwin"):
+                    opened = release_module._open_darwin_root_alias(
+                        root_fd,
+                        "var",
+                        flags,
+                        Path("/var/statement.json"),
+                    )
+                    self.assertIsNotNone(opened)
+                    alias.unlink()
+                    with self.assertRaisesRegex(
+                        PathError, "symlink or non-directory"
+                    ):
+                        release_module._recheck_darwin_root_alias(
+                            root_fd,
+                            opened[1],
+                            flags,
+                            Path("/var/statement.json"),
+                        )
+            finally:
+                if opened is not None:
+                    os.close(opened[0])
+                os.close(root_fd)
+
+    def test_a_fixed_shaped_alias_below_root_is_still_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            physical = prepared.root / "private" / "var"
+            physical.mkdir(parents=True)
+            nested = prepared.root / "var"
+            nested.symlink_to("private/var")
+            (physical / "statement.json").write_bytes(
+                prepared.statement.read_bytes()
+            )
+
+            error = self.refuse(
+                prepared,
+                PathError,
+                statement=nested / "statement.json",
+            )
+            self.assertIn("symlink", str(error))
+
+    @unittest.skipUnless(
+        sys.platform == "darwin",
+        "macOS root aliases exist only on Darwin",
+    )
+    def test_a_parent_segment_cannot_normalise_into_a_darwin_root_alias(self):
+        with tempfile.TemporaryDirectory(
+            prefix="fiat881-alias-parent-"
+        ) as directory:
+            root = Path(directory)
+            deep = root / "elsewhere" / "deep"
+            deep.mkdir(parents=True)
+            (root / "gate").symlink_to(deep, target_is_directory=True)
+            filename = f"{root.name}-statement.json"
+            kernel_path = root / filename
+            normalised_path = root.parent / filename
+            kernel_path.write_bytes(b"kernel-path-bytes")
+            with normalised_path.open("xb") as handle:
+                handle.write(b"normalised-path-bytes")
+            handed = root / "gate" / ".." / ".." / filename
+            try:
+                self.assertNotEqual(
+                    os.path.realpath(handed),
+                    os.path.abspath(handed),
+                )
+                with self.assertRaisesRegex(PathError, "parent segment"):
+                    release_module._read_statement(handed)
+            finally:
+                normalised_path.unlink(missing_ok=True)
+
+    def test_linux_does_not_enter_the_darwin_root_alias_exception(self):
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "private" / "var").mkdir(parents=True)
+            (root / "var").symlink_to("private/var")
+            root_fd = os.open(root, flags)
+            try:
+                with mock.patch.object(release_module.sys, "platform", "linux"):
+                    self.assertIsNone(
+                        release_module._open_darwin_root_alias(
+                            root_fd,
+                            "var",
+                            flags,
+                            Path("/var/statement.json"),
+                        )
+                    )
+            finally:
+                os.close(root_fd)
+
+    @unittest.skipUnless(
+        sys.platform == "darwin",
+        "default macOS temporary roots exist only on Darwin",
+    )
+    def test_default_macos_temporary_statement_writes_and_verifies_a_release(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            accepted_alias = Path(directory).parts[1]
+            self.assertIn(accepted_alias, release_module._DARWIN_ROOT_ALIASES)
+            written = prepared.release()
+            verified = verify_release(prepared.out)
+
+            self.assertEqual(
+                written["statement"]["sha256"],
+                verified["statement_sha256"],
+            )
+            self.assertEqual(
+                written["release_digest"],
+                verified["release_digest"],
+            )
 
     def test_a_checked_statement_cannot_be_swapped_to_a_symlink_before_read(self):
         with tempfile.TemporaryDirectory() as directory:

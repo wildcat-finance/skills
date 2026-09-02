@@ -1,9 +1,0 @@
-{
-  "schema": "promise-machine-obligation-specimen/v1",
-  "obligation_id": "law-required-sections",
-  "mutation": {
-    "operation": "replace_once",
-    "old": "## Contract identity",
-    "new": "## Contract identity changed"
-  }
-}

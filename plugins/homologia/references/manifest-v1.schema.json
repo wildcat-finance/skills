@@ -1,0 +1,149 @@
+{
+  "$defs": {
+    "identifier": {
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "pattern": "^(?!/)(?![\\s\\S]*(?:^|/)\\.{1,2}(?:/|$))(?![\\s\\S]*[\\u0000-\\u001f\\u007f])(?![\\s\\S]*\\\\)(?![\\s\\S]*//)(?![\\s\\S]*/$)[\\s\\S]+(?![\\s\\S])",
+      "type": "string"
+    },
+    "scale": {
+      "additionalProperties": false,
+      "properties": {
+        "decimals": {
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "id": {
+          "$ref": "#/$defs/identifier"
+        }
+      },
+      "required": [
+        "id",
+        "decimals"
+      ],
+      "type": "object"
+    },
+    "tolerance": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute": {
+          "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "absolute"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://wildcat.finance/schemas/homologia/manifest-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "pair": {
+      "additionalProperties": false,
+      "properties": {
+        "chain": {
+          "additionalProperties": false,
+          "properties": {
+            "contract": {
+              "pattern": "^0x[0-9A-Fa-f]{40}(?![\\s\\S])",
+              "type": "string"
+            },
+            "function": {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "[^\\u0009-\\u000d\\u001c-\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]",
+              "type": "string"
+            },
+            "id": {
+              "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "contract",
+            "function"
+          ],
+          "type": "object"
+        },
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "mirror": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/identifier"
+            },
+            "revision": {
+              "pattern": "^sha256:[0-9a-f]{64}(?![\\s\\S])",
+              "type": "string"
+            },
+            "scale": {
+              "$ref": "#/$defs/scale"
+            }
+          },
+          "required": [
+            "id",
+            "revision",
+            "scale"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "chain",
+        "mirror"
+      ],
+      "type": "object"
+    },
+    "schema": {
+      "const": "homologia-manifest/v1"
+    },
+    "vector_sets": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "path": {
+            "$ref": "#/$defs/path"
+          },
+          "scale": {
+            "$ref": "#/$defs/scale"
+          },
+          "tolerance": {
+            "$ref": "#/$defs/tolerance"
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "scale"
+        ],
+        "type": "object"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema",
+    "pair",
+    "vector_sets"
+  ],
+  "title": "Homologia manifest version 1",
+  "type": "object"
+}

@@ -14,6 +14,7 @@ packages are trustworthy or free of advisories.
 """
 
 from pathlib import Path
+import json
 import re
 import sys
 import tomllib
@@ -32,16 +33,18 @@ EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
     "contributors.yml",
     "dead-code.yml",
+    "identity.yml",
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
+    "plugins.yml",
     "repo.yml",
     "synkrisis.yml",
 }
-PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
-# The root gate carries no path filter, so it has no filter to inspect.
-ROOT_GATE = "repo.yml"
-PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - {ROOT_GATE}
+PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml", "identity.yml"}
+# Required gates carry no path filter, so they have no filter to inspect.
+UNFILTERED_GATES = {"plugins.yml", "repo.yml"}
+PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - UNFILTERED_GATES
 BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "janus-forge.yml",
     "pandects-forge.yml",
@@ -189,7 +192,18 @@ def is_current_runtime_prose(path):
     name = relative.name.lower()
     if parts[:4] == (".agents", "skills", "promise-machine", "runtime"):
         return False
+    # Controller state and scratch, both gitignored. A Fiat run's receipts and
+    # pull-request drafts quote the records they describe, including their
+    # runtime versions, and `tmp/` is the documented run-worktree home where
+    # scripts/run_checks.py stages its disposable snapshot. Scanning either made
+    # this case fail for anybody with a delivery or a check run in flight.
+    if parts[0] in {".hexaemeron", "tmp"}:
+        return False
     if "audit" in parts or "baseline" in parts:
+        return False
+    # A specimen is preserved input. Editing one to satisfy a later pin changes
+    # what the specimen is, and breaks the digest the preserving policy declares.
+    if "specimens" in parts:
         return False
     if "tests" in parts and "fixtures" in parts:
         return False
@@ -294,8 +308,8 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 with self.subTest(workflow=name, event=event):
                     self.assertEqual(workflow_event_paths(text, event), expected)
 
-    def test_root_gate_carries_no_path_filter(self):
-        """The gate main requires must run on every pull request.
+    def test_required_gates_carry_no_path_filter(self):
+        """Every gate main requires must run on every pull request.
 
         A required status check that a pull request never produces blocks that
         pull request with no way to clear it, and the suite already asserts
@@ -303,11 +317,108 @@ class PythonRuntimeContractTests(unittest.TestCase):
         CONTRIBUTORS.md, LICENSE and .gitignore. Both reasons say the root
         gate is unfiltered, so no filter may reappear on either event.
         """
-        text = (WORKFLOWS / ROOT_GATE).read_text(encoding="utf-8")
-        for event in ("push", "pull_request"):
-            with self.subTest(event=event):
-                with self.assertRaises(ValueError):
-                    workflow_event_paths(text, event)
+        for name in sorted(UNFILTERED_GATES):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            for event in ("push", "pull_request"):
+                with self.subTest(workflow=name, event=event):
+                    with self.assertRaises(ValueError):
+                        workflow_event_paths(text, event)
+
+    def test_complete_plugin_gate_shards_the_one_declared_graph(self):
+        workflow = WORKFLOWS / "plugins.yml"
+        self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual(text.count("  plugins:\n"), 1)
+        self.assertIn("permissions:\n  contents: read\n", text)
+        self.assertEqual(text.count("fetch-depth: 0"), 1)
+        self.assertIn("uses: actions/setup-node@v7", text)
+        self.assertIn('node-version: "26.6.0"', text)
+        self.assertIn("uses: foundry-rs/foundry-toolchain@v1", text)
+        self.assertIn("version: v1.7.1", text)
+        self.assertIn(
+            "run: python3 -m pip install --requirement "
+            "plugins/lazarus/requirements.lock",
+            text,
+        )
+        historical_key = (
+            ROOT
+            / "plugins"
+            / "hexaemeron"
+            / "tests"
+            / "fixtures"
+            / "signing-keys"
+            / "shoggoth-636ec19d.asc"
+        )
+        self.assertTrue(historical_key.is_file())
+        self.assertIn(
+            "EXPECTED_GPG_FINGERPRINT: "
+            "636EC19DE45DF10F3CE6206F57742DA1ABED6F46",
+            text,
+        )
+        self.assertIn(
+            "gpg --batch --import \"$key_path\"",
+            text,
+        )
+        # One shard per declared scope, each running the committed graph for
+        # that scope alone. The graph stays the only definition of a check, and
+        # no command is copied into the workflow. The budget is explicit because
+        # the automatic one grants the nested suite coordinator a single worker
+        # on a four-core runner, which no longer finishes inside the per-check
+        # timeout; it is a capacity flag and names no check.
+        self.assertEqual(
+            text.count(
+                "python3 scripts/run_checks.py\n"
+                "          --scope ${{ matrix.scope }}\n"
+                "          --jobs 14\n"
+                "          --report tmp/checks/${{ matrix.scope }}.json"
+            ),
+            1,
+        )
+        declared = set(
+            json.loads((ROOT / "tests" / "check-map-v1.json").read_text())["scopes"]
+        )
+        block = text[text.index("        scope:\n") : text.index("    runs-on:")]
+        sharded = set(re.findall(r"^\s+- ([a-z][a-z-]*)$", block, re.MULTILINE))
+        self.assertEqual(
+            sharded,
+            declared,
+            "every declared scope needs exactly one shard, and no shard may "
+            "name a scope the graph does not declare",
+        )
+        # The aggregate job is the required context and is green only when
+        # every shard reached terminal success.
+        self.assertIn("    needs: scope\n", text)
+        self.assertIn('test "$SHARDS" = success', text)
+        self.assertIn("fail-fast: false", text)
+        self.assertIn("if: always()", text)
+        self.assertIn("uses: actions/upload-artifact@v4", text)
+        self.assertIn("path: tmp/checks/${{ matrix.scope }}.json", text)
+        self.assertNotIn("continue-on-error", text)
+        self.assertNotIn("github.event.pull_request", text)
+        self.assertNotIn("--full", text)
+
+    def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
+        graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
+        plugins = {
+            path.name for path in (ROOT / "plugins").iterdir() if path.is_dir()
+        }
+        owners = {
+            item["path"].removeprefix("plugins/"): item["scope"]
+            for item in graph["owners"]
+            if item["path"].startswith("plugins/")
+            and "/" not in item["path"][8:]
+        }
+        self.assertEqual(set(owners), plugins)
+        for plugin in sorted(plugins):
+            with self.subTest(plugin=plugin):
+                self.assertEqual(owners[plugin], plugin)
+                self.assertIn(plugin, graph["scopes"])
+                self.assertIn(plugin, graph["dependencies"])
+                checks = [
+                    graph["checks"][check_id]
+                    for check_id in graph["scopes"][plugin]["checks"]
+                ]
+                self.assertTrue(any(check["kind"] == "suite" for check in checks))
 
     def test_readme_points_to_both_contract_layers_and_the_decision(self):
         text = README.read_text(encoding="utf-8")
@@ -315,6 +426,23 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
         self.assertIn("[ADR-042]", text)
+
+    def test_gitignored_run_state_is_outside_the_prose_scan(self):
+        """A run in flight must not fail this case.
+
+        `tmp/` is Fiat's documented worktree home and where run_checks.py stages
+        its disposable snapshot; `.hexaemeron/` is controller state. Both are
+        gitignored, and both hold copies of prose that quote whatever runtime
+        version the records they describe named.
+        """
+        for relative in (
+            "tmp/check-runner/abc/snapshot/docs/promise-machine/evidence/x.md",
+            "tmp/fiat/run/.hexaemeron/steps/1/pr.md",
+            ".hexaemeron/steps/1/pr.md",
+        ):
+            with self.subTest(path=relative):
+                self.assertFalse(is_current_runtime_prose(ROOT / relative))
+        self.assertTrue(is_current_runtime_prose(ROOT / "README.md"))
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):

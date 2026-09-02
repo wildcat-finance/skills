@@ -1,9 +1,0 @@
-{
-  "schema": "promise-machine-obligation-specimen/v1",
-  "obligation_id": "law-governing-principle",
-  "mutation": {
-    "operation": "replace_once",
-    "old": "No skill may claim more than its evidence establishes",
-    "new": "No skill may claim more than its evidence records"
-  }
-}

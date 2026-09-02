@@ -5621,8 +5621,8 @@ class ConformanceTests(unittest.TestCase):
         skill_root = PLUGIN_ROOT / "skills" / "phylax"
         skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
         evolution = (skill_root / "EVOLUTION.md").read_text(encoding="utf-8")
-        self.assertIn('metadata:\n  version: "1.4.0"', skill)
-        self.assertIn("- Current version: `phylax-v1.4.0`", evolution)
+        self.assertIn('metadata:\n  version: "1.5.0"', skill)
+        self.assertIn("- Current version: `phylax-v1.5.0`", evolution)
         for unchanged in (
             "- Frontier status: `mature`",
             "- Frontier revision: `off-chain-boundary-controls`",
@@ -5676,7 +5676,7 @@ class ConformanceTests(unittest.TestCase):
             for entry in agents_marketplace["plugins"]
             if entry["name"] == "hexaemeron"
         )
-        self.assertEqual({"1.6.12"}, set(package_versions.values()))
+        self.assertEqual({"1.6.20"}, set(package_versions.values()))
         self.assertNotEqual("1.4.0", package_versions["claude_manifest"])
 
         coverage = json.loads(
@@ -5695,15 +5695,6 @@ class ConformanceTests(unittest.TestCase):
             hashlib.sha256((repository / phylax_source).read_bytes()).hexdigest(),
         )
 
-        portable_root = (
-            repository
-            / ".agents"
-            / "skills"
-            / "promise-machine"
-            / "runtime"
-            / "plugins"
-            / "hexaemeron"
-        )
         copied = (
             "README.md",
             "skills/phylax/SKILL.md",
@@ -5726,23 +5717,42 @@ class ConformanceTests(unittest.TestCase):
             "tests/fixtures/model-proxy-v1/provider-cases.json",
             "tests/fixtures/model-proxy-v1/rejections.json",
         )
-        portable_manifest = json.loads(
-            (
-                repository
-                / ".agents/skills/promise-machine/runtime/MANIFEST.json"
-            ).read_text(encoding="utf-8")
-        )
-        manifested = {row["path"]: row for row in portable_manifest["files"]}
-        for relative in copied:
-            with self.subTest(portable=relative):
-                canonical = (PLUGIN_ROOT / relative).read_bytes()
-                self.assertEqual(canonical, (portable_root / relative).read_bytes())
-                path = f"plugins/hexaemeron/{relative}"
-                self.assertEqual(path, manifested[path]["source"])
-                self.assertEqual(
-                    hashlib.sha256(canonical).hexdigest(),
-                    manifested[path]["sha256"],
-                )
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / "package"
+            generated = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+                [
+                    sys.executable,
+                    str(repository / "scripts/portable_promise_machine.py"),
+                    "package",
+                    "--out",
+                    str(package),
+                ],
+                cwd=repository,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                generated.returncode, 0, generated.stdout + generated.stderr
+            )
+            runtime = package / ".agents/skills/promise-machine/runtime"
+            portable_root = runtime / "plugins/hexaemeron"
+            portable_manifest = json.loads(
+                (runtime / "MANIFEST.json").read_text(encoding="utf-8")
+            )
+            manifested = {row["path"]: row for row in portable_manifest["files"]}
+            for relative in copied:
+                with self.subTest(portable=relative):
+                    canonical = (PLUGIN_ROOT / relative).read_bytes()
+                    self.assertEqual(
+                        canonical, (portable_root / relative).read_bytes()
+                    )
+                    path = f"plugins/hexaemeron/{relative}"
+                    self.assertEqual(path, manifested[path]["source"])
+                    self.assertEqual(
+                        hashlib.sha256(canonical).hexdigest(),
+                        manifested[path]["sha256"],
+                    )
 
 
 if __name__ == "__main__":

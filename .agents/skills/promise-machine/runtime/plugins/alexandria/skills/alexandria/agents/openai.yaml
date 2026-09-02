@@ -1,4 +1,0 @@
-interface:
-  display_name: "Alexandria"
-  short_description: "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries."
-  default_prompt: "Use Alexandria to ingest or verify a lending-data release, emit its unsigned in-toto statement, derive its reviewed credit view, query a verified address index, or build and check the bounded Compound v3 Phase 0 method release without hiding coverage gaps."

@@ -12,6 +12,18 @@ Janus checks a contract hook at the host threshold it crosses: the observations 
 **Next Fiat job.** Use /hexaemeron:fiat to ship a second host adapter for a different callback model, added only after the Wildcat adapter's suite passes, so the manifest format is shown host-neutral rather than asserted; accept it when the second adapter's honest hook passes, its hostile hooks are each caught, and the shared harness runs both adapters green. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Janus when a protocol lets hooks or callbacks run around a host action and
+the ABI alone does not say what those modules may observe or change. A manifest
+and host adapter turn that policy into seven bounded conformance gates and
+Markdown or SARIF findings.
+
+The current implementation is proved against the Wildcat v2.5 hook seam and
+modelled hostile hooks. No second host adapter yet establishes that the same
+manifest model generalises to another callback design, and a passing Janus run
+is not a whole-protocol security verdict.
+
 ## Place in the collective
 
 Janus owns the hook-to-host effect boundary. Pandects can supply economic laws
@@ -60,8 +72,8 @@ one dimension carried through. A `staticcall` entry admits nothing
 state-changing, though its symbol must still resolve.
 
 Resolution fails closed. A missing or duplicated action, an unresolvable
-symbol, a blank account symbol, a zero address, and a name with more than one
-reading each abort with a named error, because a permitted set that silently
+symbol, a blank account symbol, a zero address, and a name with more than one reading
+each abort with a named error, because a permitted set that silently
 lost an entry would reject everything and read as a passing gate.
 
 ## What it ships

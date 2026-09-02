@@ -1,10 +1,8 @@
-"""Scaffold tests: the packaging and contracts exist and agree.
+"""Packaging and contract tests for the checked-input generation.
 
 Nothing here compares an implementation to a mirror, because nothing does that
-yet. These check the claims the scaffold itself makes: that both hosts can
-discover the plugin, that its declared version is one value everywhere, that the
-canonical contract declares the three promises the study specifies, and that the
-command refuses every verb rather than answering.
+yet. These check that both hosts discover one version, the canonical contract
+declares only shipped promises, and every later verb still refuses.
 """
 
 from __future__ import annotations
@@ -22,9 +20,8 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "homologia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "homologia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "homologia.py"
-VERSION = "0.1.0"
-PROMISES = (
-    "homologia-expected-answer-provenance",
+VERSION = "1.1.0"
+DEFERRED_PROMISES = (
     "homologia-mirror-execution",
     "homologia-parity-verdict",
 )
@@ -79,20 +76,19 @@ class ContractTests(unittest.TestCase):
     def test_the_canonical_skill_points_at_its_ledger(self):
         self.assertIn("[EVOLUTION.md](EVOLUTION.md)", SKILL.read_text(encoding="utf-8"))
 
-    def test_the_scaffold_declares_only_what_the_packaging_evidences(self):
-        # A promise with no case that could support it is the overclaim the root
-        # law refuses. The scaffold has packaging to show and nothing else, so
-        # identity is the one promise it declares; each domain promise arrives
-        # with the step that builds the behaviour behind it.
+    def test_the_contract_declares_only_the_two_shipped_promises(self):
         declared = re.findall(r"^### (homologia-[a-z-]+)$", SKILL.read_text(encoding="utf-8"), re.M)
-        self.assertEqual(declared, ["homologia-scaffold-identity"])
-        for promise in PROMISES:
+        self.assertEqual(
+            declared,
+            ["homologia-scaffold-identity", "homologia-expected-answer-provenance"],
+        )
+        for promise in DEFERRED_PROMISES:
             with self.subTest(promise=promise):
                 self.assertNotIn(promise, declared)
 
     def test_the_contract_names_the_step_each_promise_arrives_with(self):
         text = SKILL.read_text(encoding="utf-8")
-        for promise in PROMISES:
+        for promise in DEFERRED_PROMISES:
             with self.subTest(promise=promise):
                 self.assertIn(f"`{promise}`", text)
 
@@ -102,11 +98,11 @@ class ContractTests(unittest.TestCase):
         self.assertIn("never states that either implementation is correct", text)
         self.assertIn("Never report agreement as correctness.", text)
 
-    def test_the_ledger_opens_the_first_frontier(self):
+    def test_the_ledger_advances_to_mirror_execution(self):
         text = LEDGER.read_text(encoding="utf-8")
-        self.assertIn("Current version: `homologia-v0.1.0`", text)
+        self.assertIn("Current version: `homologia-v1.1.0`", text)
         self.assertIn("Frontier status: `open`", text)
-        self.assertIn("Frontier revision: `first-parity-verdict`", text)
+        self.assertIn("Frontier revision: `mirror-execution`", text)
 
     def test_the_installed_promise_machine_copy_matches_the_suite_law(self):
         self.assertEqual(
@@ -149,7 +145,7 @@ class IdentityTests(unittest.TestCase):
 
     def test_a_refusal_names_where_the_behaviour_will_come_from(self):
         stderr = run("compare").stderr
-        self.assertIn("homologia-v0.1.0", stderr)
+        self.assertIn("homologia-v1.1.0", stderr)
         self.assertIn("homologia-runbook.md", stderr)
 
 
@@ -169,19 +165,26 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("usage: homologia", result.stdout)
 
-    def test_every_verb_refuses_rather_than_answering(self):
-        for verb in ("check", "run-mirror", "compare", "render", "verify"):
+    def test_every_later_verb_refuses_rather_than_answering(self):
+        for verb in ("run-mirror", "compare", "render", "verify"):
             with self.subTest(verb=verb):
                 result = run(verb)
                 self.assertEqual(result.returncode, 3, result.stdout)
                 self.assertIn("not built yet", result.stderr)
                 self.assertEqual(result.stdout, "")
 
-    def test_the_version_flag_reports_the_scaffold(self):
+    def test_check_requires_explicit_manifest_and_output_paths(self):
+        result = run("check")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--manifest", result.stderr)
+        self.assertIn("--out", result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_the_version_flag_reports_the_checked_input_generation(self):
         result = run("--version")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(VERSION, result.stdout)
-        self.assertIn("scaffold", result.stdout)
+        self.assertNotIn("scaffold", result.stdout)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,27 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {"id": "closed-bridge-block", "summary": "Check one closed bridge block."},
+    {"id": "section-link-inference", "summary": "Infer a bridge from prose links."}
+  ],
+  "criteria": [
+    {"id": "selected-id-binding", "concern": "correctness", "kind": "gate", "stage": "selection", "owner": "hypomnema", "unit": "boolean", "comparator": "equals", "threshold": true, "blocks": "design-lock"},
+    {"id": "bounded-input-reads", "concern": "time", "kind": "metric", "stage": "selection", "owner": "phylax", "unit": "count", "comparator": "minimise", "threshold": null, "blocks": "design-lock"},
+    {"id": "declaration-fields", "concern": "space", "kind": "metric", "stage": "selection", "owner": "hypomnema", "unit": "count", "comparator": "minimise", "threshold": null, "blocks": "design-lock"},
+    {"id": "legacy-walk-preserved", "concern": "compatibility", "kind": "gate", "stage": "selection", "owner": "hypomnema", "unit": "boolean", "comparator": "equals", "threshold": true, "blocks": "design-lock"},
+    {"id": "visible-refusal-recovery", "concern": "recovery", "kind": "gate", "stage": "selection", "owner": "elenchus", "unit": "boolean", "comparator": "equals", "threshold": true, "blocks": "design-lock"}
+  ],
+  "results": [
+    {"candidate": "closed-bridge-block", "criterion": "selected-id-binding", "state": "pass", "report": {"path": "reports/a.json", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+    {"candidate": "closed-bridge-block", "criterion": "bounded-input-reads", "state": "pass", "report": {"path": "reports/b.json", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}},
+    {"candidate": "closed-bridge-block", "criterion": "declaration-fields", "state": "pass", "report": {"path": "reports/c.json", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}},
+    {"candidate": "closed-bridge-block", "criterion": "legacy-walk-preserved", "state": "pass", "report": {"path": "reports/d.json", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}},
+    {"candidate": "closed-bridge-block", "criterion": "visible-refusal-recovery", "state": "pass", "report": {"path": "reports/e.json", "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}},
+    {"candidate": "section-link-inference", "criterion": "selected-id-binding", "state": "fail", "report": {"path": "reports/f.json", "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}},
+    {"candidate": "section-link-inference", "criterion": "bounded-input-reads", "state": "pass", "report": {"path": "reports/g.json", "sha256": "1111111111111111111111111111111111111111111111111111111111111111"}},
+    {"candidate": "section-link-inference", "criterion": "declaration-fields", "state": "pass", "report": {"path": "reports/h.json", "sha256": "2222222222222222222222222222222222222222222222222222222222222222"}},
+    {"candidate": "section-link-inference", "criterion": "legacy-walk-preserved", "state": "pass", "report": {"path": "reports/i.json", "sha256": "3333333333333333333333333333333333333333333333333333333333333333"}},
+    {"candidate": "section-link-inference", "criterion": "visible-refusal-recovery", "state": "pass", "report": {"path": "reports/j.json", "sha256": "4444444444444444444444444444444444444444444444444444444444444444"}}
+  ],
+  "selection": {"candidate": "closed-bridge-block", "rule": "unique-frontier", "policy_ref": null}
+}

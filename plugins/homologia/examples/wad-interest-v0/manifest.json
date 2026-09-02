@@ -1,0 +1,40 @@
+{
+  "pair": {
+    "chain": {
+      "contract": "0x2222222222222222222222222222222222222222",
+      "function": "accrue(uint256,uint256,uint256)",
+      "id": "1"
+    },
+    "id": "wad-interest-v0",
+    "mirror": {
+      "id": "wad-interest-reference",
+      "revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "scale": {
+        "decimals": 18,
+        "id": "wad"
+      }
+    }
+  },
+  "schema": "homologia-manifest/v1",
+  "vector_sets": [
+    {
+      "id": "recorded-mainnet",
+      "path": "vectors-recorded.jsonl",
+      "scale": {
+        "decimals": 18,
+        "id": "wad"
+      }
+    },
+    {
+      "id": "asserted-rounding",
+      "path": "vectors-asserted.jsonl",
+      "scale": {
+        "decimals": 18,
+        "id": "wad"
+      },
+      "tolerance": {
+        "absolute": "1"
+      }
+    }
+  ]
+}

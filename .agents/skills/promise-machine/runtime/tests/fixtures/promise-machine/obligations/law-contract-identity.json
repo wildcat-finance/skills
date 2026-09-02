@@ -1,9 +1,0 @@
-{
-  "schema": "promise-machine-obligation-specimen/v1",
-  "obligation_id": "law-contract-identity",
-  "mutation": {
-    "operation": "replace_once",
-    "old": "The shared contract identity is `promise-machine/v1`",
-    "new": "The shared contract identity is `promise-machine/v2`"
-  }
-}

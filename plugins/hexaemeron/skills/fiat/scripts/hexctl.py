@@ -14,7 +14,17 @@ The integrate phase merges the stack into the run branch in step order, then
 merges the run branch into the recorded base exactly once and closes any
 recorded task issue.
 
+A run called against an issue is gated on what that issue filed. `init` reads
+the issue's `Fiat-Required` line over REST and refuses to create any state,
+worktree or branch when it says 0, because that filing decided the work is one
+independent pull request rather than a run. The same read requires the issue's
+`carryover` block, and `done integrate` requires it of the run's own pull
+request body, so an outstanding item is either filed as its own issue, pointed
+at the issue that already carries it, or refused with a stated reason.
+`issue-check` runs that contract over a candidate body before anything is filed.
+
 Exit codes: 0 success, 2 validation/usage error, 1 unexpected failure.
+`issue-check` exits 1 on findings, which is a report rather than a crash.
 Stdout from `next` and `status --json` is a single JSON object; everything
 human-facing goes to plain text or stderr.
 """
@@ -61,6 +71,41 @@ RUN_PR_FILE = "run-pr.md"
 WORKTREE_FILE = "worktree"
 """The one line the origin checkout keeps, naming the tree the run works in."""
 CARRIED_FORWARD_HEADING = "## Carried forward"
+
+# What a run leaves unfinished, and what an issue leaves untriaged, are the same
+# question asked at two moments, so they take one grammar rather than two. Each
+# row is `id | disposition | reference`, and the disposition says what the item
+# now has: an issue of its own, an existing issue that already carries it, or a
+# stated reason it earns neither. Prose under the heading could say all three
+# and be read by nobody; a row cannot be half written.
+CARRYOVER_INFO = "carryover"
+CARRYOVER_FILED = "filed"
+CARRYOVER_DUPLICATE = "duplicate"
+CARRYOVER_NONE = "none"
+CARRYOVER_DISPOSITIONS = (CARRYOVER_FILED, CARRYOVER_DUPLICATE, CARRYOVER_NONE)
+CARRYOVER_REFERENCE_DISPOSITIONS = (CARRYOVER_FILED, CARRYOVER_DUPLICATE)
+CARRYOVER_ROWS_MAX = 128
+CARRYOVER_REASON_BYTES_MAX = 512
+
+# The filing decision an issue carries: 1 when the work needs a Fiat run, 0 when
+# one independent pull request will do. `init` reads it and refuses to start a
+# run the filer already decided does not need one, because a runbook written for
+# a wonky regular expression costs more than the fix.
+FIAT_REQUIRED_KEY = "Fiat-Required"
+FIAT_REQUIRED_LINE_RE = re.compile(
+    r"^ {0,3}(?:[-*+]\s+|>\s*)?\*{0,2}Fiat-Required\*{0,2}\s*:\s*(?P<value>.*?)\s*$"
+)
+FIAT_REQUIRED_VALUES = ("0", "1")
+ISSUE_BODY_BYTES_MAX = 262144
+
+# The status block ADR-014's amendment authorises: one span at the top of an open
+# issue's body recording its current status, supersession, or changed
+# requirement. The census reads bodies, so a correction that lands only in the
+# comment thread is a correction nobody compiling the queue will see. Absence is
+# ordinary and not a fault; a body that opens two blocks, or opens one and never
+# closes it, has made no statement and refuses.
+STATUS_BLOCK_START = "<!-- status:start -->"
+STATUS_BLOCK_END = "<!-- status:end -->"
 
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
@@ -216,10 +261,18 @@ SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
-# Integration revalidation reads a surface that grows with the base, so it
-# carries its own ceiling. GIT_PATHS_MAX still bounds the commit range, the
-# prose diff and the checkpoint ref set, none of which grow that way.
+# Two surfaces grow with work the count is not about, so each carries its own
+# ceiling. Integration revalidation grows with the base, because the
+# composition delta spans everything that landed since the final step merge.
+# The prose packet grows with one step's change, because a step may remove,
+# vendor or rename a generated tree. GIT_PATHS_MAX still bounds the commit
+# range, measured in commits, and the checkpoint ref set; neither grows that
+# way.
 INTEGRATION_PATHS_MAX = 4096
+# The prose packet already drops every deleted path, so this bounds the files a
+# prose pass could actually act on. It is separate from INTEGRATION_PATHS_MAX
+# because the two surfaces answer to different work and may diverge.
+PROSE_PATHS_MAX = 4096
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
 INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
@@ -231,6 +284,17 @@ INTEGRATION_COMMAND_BYTES_MAX = 2048
 INTEGRATION_CHECK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 INTEGRATION_SYNC_SUPERSESSIONS_MAX = 8
 INTEGRATION_SYNC_REASON_BYTES_MAX = 1024
+SYNC_RESOLUTION_GUARD_SCHEMA = "fiat-sync-resolution-guard/v1"
+SYNC_RESOLUTION_GUARD_KEYS = frozenset(
+    {
+        "schema",
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    }
+)
+SYNC_TREE_PATH_BATCH_MAX = 64
+SYNC_TREE_ARG_BYTES_MAX = 64 * 1024
 GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
 GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
 GENERATOR_AGGREGATE_REGISTRY = {
@@ -255,6 +319,7 @@ RESOLUTION_SYNC_KEYS = frozenset(
         "github_verified",
         "product_evidence",
         "revalidation",
+        "resolution_guard",
     }
 )
 RESOLUTION_REVALIDATION_KEYS = frozenset(
@@ -306,6 +371,25 @@ CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
 CHECKPOINT_JSON_DEPTH_MAX = 128
 CHECKPOINT_IO_CHUNK = 64 * 1024
+CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
+    {
+        "fiat-v5.35.1",
+        "fiat-v5.36.1",
+        "fiat-v5.37.1",
+        "fiat-v5.38.1",
+        "fiat-v5.39.1",
+        "fiat-v5.40.1",
+        "fiat-v5.41.1",
+        "fiat-v5.42.1",
+        "fiat-v5.43.1",
+        "fiat-v5.44.1",
+        "fiat-v5.45.1",
+        "fiat-v5.46.1",
+        "fiat-v5.47.1",
+        "fiat-v5.48.1",
+        "fiat-v5.49.1",
+    }
+)
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
 VERSION_RELATIONS_INFO = "version-relations"
 VERSION_RELATION = "next-generation-after-integration-base"
@@ -339,6 +423,13 @@ VERSION_RELATION_TARGET_KEYS = frozenset(
 VERSION_RELATION_KEYS = frozenset(
     {"schema", "source_sha256", "anchor_commit", "targets"}
 )
+DESIGN_EVIDENCE_SCHEMA = "protasis-design-evidence/v1"
+DESIGN_EVIDENCE_FILE = os.path.join(STATE_DIR_NAME, "design-evidence.json")
+DESIGN_LOCK_INFO = "design-lock"
+DESIGN_LOCK_KEYS = frozenset({"schema", "sha256", "candidate"})
+DESIGN_CONTRACT_KEYS = frozenset({"design_evidence"})
+DESIGN_TRANSITIONS_MAX = 502
+DESIGN_CONSUMED_MAX = 128
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
 VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
 VERSION_RESOLUTIONS_MAX = 8
@@ -1392,6 +1483,103 @@ def validate_version_resolution_history(value, path: str) -> list[dict]:
     return value
 
 
+def _design_state_fault(path: str, reason: str) -> None:
+    die(f"state design evidence key '{path}' {reason}", 1)
+
+
+def validate_design_evidence_receipt_shape(value, path: str) -> dict:
+    """Validate the additive receipt spine without redoing Protasis's verdict."""
+    keys = {"schema", "artifact", "sha256", "selected", "transitions"}
+    if not isinstance(value, dict) or set(value) != keys:
+        _design_state_fault(path, "has an unsupported field set")
+    if value.get("schema") != DESIGN_EVIDENCE_SCHEMA:
+        _design_state_fault(f"{path}.schema", "is not supported")
+    artifact = value.get("artifact")
+    if not isinstance(artifact, str) or artifact != DESIGN_EVIDENCE_FILE:
+        _design_state_fault(f"{path}.artifact", "is not the fixed record path")
+    digest = value.get("sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        _design_state_fault(f"{path}.sha256", "is malformed")
+    selected = value.get("selected")
+    if (
+        not isinstance(selected, str)
+        or VERSION_RELATION_SKILL_RE.fullmatch(selected) is None
+    ):
+        _design_state_fault(f"{path}.selected", "is malformed")
+    transitions = value.get("transitions")
+    if (
+        not isinstance(transitions, list)
+        or not transitions
+        or len(transitions) > DESIGN_TRANSITIONS_MAX
+    ):
+        _design_state_fault(f"{path}.transitions", "is not a bounded array")
+    seen = set()
+    for index, transition in enumerate(transitions):
+        transition_path = f"{path}.transitions[{index}]"
+        if not isinstance(transition, dict) or set(transition) != {
+            "transition", "reports"
+        }:
+            _design_state_fault(transition_path, "has an unsupported field set")
+        name = transition.get("transition")
+        if not isinstance(name, str) or not (
+            name in {"design-lock", "integration"}
+            or re.fullmatch(r"step:[1-9][0-9]{0,3}", name)
+        ):
+            _design_state_fault(f"{transition_path}.transition", "is malformed")
+        if name in seen:
+            _design_state_fault(f"{path}.transitions", "repeats a transition")
+        seen.add(name)
+        reports = transition.get("reports")
+        if not isinstance(reports, list) or len(reports) > DESIGN_CONSUMED_MAX:
+            _design_state_fault(f"{transition_path}.reports", "is not a bounded array")
+        prior = None
+        for report_index, report in enumerate(reports):
+            report_path = f"{transition_path}.reports[{report_index}]"
+            if not isinstance(report, dict) or set(report) != {
+                "candidate", "criterion", "path", "sha256"
+            }:
+                _design_state_fault(report_path, "has an unsupported field set")
+            identity = (report.get("candidate"), report.get("criterion"))
+            if any(
+                not isinstance(part, str)
+                or VERSION_RELATION_SKILL_RE.fullmatch(part) is None
+                for part in identity
+            ):
+                _design_state_fault(report_path, "has a malformed identity")
+            if prior is not None and identity <= prior:
+                _design_state_fault(
+                    f"{transition_path}.reports", "is not uniquely identity-sorted"
+                )
+            prior = identity
+            supplied = report.get("path")
+            if (
+                not isinstance(supplied, str)
+                or not supplied
+                or os.path.isabs(supplied)
+                or "\\" in supplied
+                or any(part in ("", ".", "..") for part in supplied.split("/"))
+            ):
+                _design_state_fault(f"{report_path}.path", "is malformed")
+            report_digest = report.get("sha256")
+            if (
+                not isinstance(report_digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", report_digest) is None
+            ):
+                _design_state_fault(f"{report_path}.sha256", "is malformed")
+    names = [transition["transition"] for transition in transitions]
+    if names[0] != "design-lock":
+        _design_state_fault(f"{path}.transitions", "does not start at design-lock")
+    step_names = [name for name in names[1:] if name != "integration"]
+    expected_steps = [
+        f"step:{number}" for number in range(1, len(step_names) + 1)
+    ]
+    if step_names != expected_steps:
+        _design_state_fault(f"{path}.transitions", "does not carry contiguous steps")
+    if "integration" in names and names[-1] != "integration":
+        _design_state_fault(f"{path}.transitions", "does not end at integration")
+    return value
+
+
 def validate_state_shape(state) -> dict:
     """Validate the version-1 container spine in one deterministic order.
 
@@ -1399,12 +1587,29 @@ def validate_state_shape(state) -> dict:
     checks. This boundary establishes only the containers every reader traverses.
     """
     root = require_state_container(state, "$", dict)
+    contracts = root.get("contracts")
+    if contracts is not None:
+        contracts = require_state_container(contracts, "contracts", dict)
+        if set(contracts) != DESIGN_CONTRACT_KEYS:
+            die("state key 'contracts' has an unsupported field set", 1)
+        if contracts.get("design_evidence") != DESIGN_EVIDENCE_SCHEMA:
+            die("state key 'contracts.design_evidence' is not supported", 1)
     config = require_state_container(root.get("config"), "config", dict)
     for section in ("skills", "audit", "git"):
         require_state_container(
             config.get(section), f"config.{section}", dict
         )
     receipts = require_state_container(root.get("receipts"), "receipts", dict)
+    study = receipts.get("study")
+    if isinstance(study, dict) and "design_evidence" in study:
+        if contracts is None:
+            die(
+                "state receipt 'study.design_evidence' has no run contract",
+                1,
+            )
+        validate_design_evidence_receipt_shape(
+            study["design_evidence"], "receipts.study.design_evidence"
+        )
     runbook = receipts.get("runbook")
     if isinstance(runbook, dict) and "version_relations" in runbook:
         validate_version_relations_shape(
@@ -1439,6 +1644,19 @@ def validate_state_shape(state) -> dict:
                 dict,
             )
     return root
+
+
+def design_evidence_required(state: dict) -> bool:
+    """Whether this run was initialised under the design-lock contract.
+
+    Absence is the compatibility boundary: states whose study was receipted by
+    an older controller continue without invented evidence.
+    """
+    contracts = state.get("contracts")
+    return (
+        isinstance(contracts, dict)
+        and contracts.get("design_evidence") == DESIGN_EVIDENCE_SCHEMA
+    )
 
 
 def amendment_pending_path(base_dir: str, subject: str) -> str:
@@ -2251,11 +2469,37 @@ def cmd_init(args) -> None:
     worktree = check_worktree_path(repo_root, candidate)
     refuse_checked_out_branch(args.dir, run_branch)
 
-    # The currency observation is the last pre-mutation check because it is
-    # the only one that may wait on the network: every cheaper refusal has
-    # already had its chance. A proven-behind controller stops the run here,
-    # while a refusal still costs nothing; anything the observation could not
-    # prove proceeds as `unknown` with the nulls recorded rather than guessed.
+    # The two network reads are the last pre-mutation checks, because every
+    # cheaper refusal has already had its chance. The filing decision goes
+    # first: whether this work earned a run at all precedes any question about
+    # the controller that would run it, and a `0` verdict must cost the operator
+    # nothing but the read. A run naming no issue reads no decision, and says so
+    # rather than passing quietly for the same reason the carried-forward
+    # heading is mandatory: an absent answer cannot be told apart from a
+    # question nobody asked.
+    if args.task_issue is not None:
+        task_issue_contract = read_task_issue_contract(args.dir, args.task_issue)
+    else:
+        task_issue_contract = {
+            "issue": None,
+            "repository": None,
+            "number": None,
+            "fiat_required": None,
+            "carryover": [],
+            "sha256": None,
+            "reason": "this run named no task issue, so no filing decision was read",
+        }
+        print(
+            "hexctl: warning: this run names no task issue, so no filed "
+            f"`{FIAT_REQUIRED_KEY}` decision was read and the receipt records "
+            "the nulls. The gate binds a run called against an issue; nothing "
+            "here says this work earned a run rather than one pull request.",
+            file=sys.stderr,
+        )
+
+    # A proven-behind controller stops the run here, while a refusal still costs
+    # nothing; anything the observation could not prove proceeds as `unknown`
+    # with the nulls recorded rather than guessed.
     currency = observe_controller_currency()
     if currency["verdict"] == "behind" and waiver is None:
         die(
@@ -2316,13 +2560,17 @@ def cmd_init(args) -> None:
         remove_run_worktree(args.dir, worktree)
         die(f"could not write the run's state into {root}")
 
-    receipts = {"controller_currency": provenance}
+    receipts = {
+        "controller_currency": provenance,
+        "task_issue_contract": task_issue_contract,
+    }
     if args.task_issue is not None:
         receipts["task_issue"] = args.task_issue
 
     state = {
         "version": 1,
         "controller": "hexctl",
+        "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA},
         "topic": args.topic,
         "base": args.base,
         "run_branch": run_branch,
@@ -2342,7 +2590,9 @@ def cmd_init(args) -> None:
         "topic": args.topic,
         "base": args.base,
         "run_branch": run_branch,
+        "contracts": state["contracts"],
         "controller_currency": provenance,
+        "task_issue_contract": task_issue_contract,
         "starting_commit": starting_commit,
     }
     if args.task_issue is not None:
@@ -2532,6 +2782,72 @@ def _first_unfenced_step(lines: list[str]) -> int | None:
     return None
 
 
+def parse_design_lock_source(text: str) -> dict | None:
+    """Extract one closed Protasis design-lock block from a runbook."""
+    lines = text.splitlines(keepends=True)
+    blocks = []
+    open_mark = None
+    open_length = None
+    design_open = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = info.split()
+            design_open = (
+                (index, info == DESIGN_LOCK_INFO)
+                if words and words[0] == DESIGN_LOCK_INFO
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not info:
+            if design_open is not None:
+                opening, exact_info = design_open
+                blocks.append((opening, index, exact_info, True))
+            open_mark, open_length, design_open = None, None, None
+    if design_open is not None:
+        opening, exact_info = design_open
+        blocks.append((opening, len(lines) - 1, exact_info, False))
+    if not blocks:
+        return None
+    if len(blocks) != 1:
+        die("runbook carries more than one design-lock block")
+    opening, closing, exact_info, closed = blocks[0]
+    if not exact_info:
+        die("design-lock fence must carry only that exact info string")
+    if not closed:
+        die("design-lock block is not closed")
+    first_step = _first_unfenced_step(lines)
+    if first_step is not None and opening >= first_step:
+        die("design-lock block must occur before Step 1")
+    rows = [line.rstrip("\r\n") for line in lines[opening + 1 : closing]]
+    if len(rows) != 3:
+        die("design-lock block must carry schema, sha256 and candidate rows once in order")
+    parsed = {}
+    for expected, row in zip(("schema", "sha256", "candidate"), rows):
+        if _contains_nonprinting_character(row):
+            die("design-lock row contains a control character")
+        fields = [field.strip() for field in row.split("|")]
+        if len(fields) != 2 or any(not field for field in fields) or fields[0] != expected:
+            die("design-lock rows must be schema, sha256 and candidate once in order")
+        parsed[fields[0]] = fields[1]
+    if set(parsed) != DESIGN_LOCK_KEYS:
+        die("design-lock block has an unsupported field set")
+    if parsed["schema"] != DESIGN_EVIDENCE_SCHEMA:
+        die("design-lock schema is unsupported")
+    if re.fullmatch(r"[0-9a-f]{64}", parsed["sha256"]) is None:
+        die("design-lock sha256 is malformed")
+    if VERSION_RELATION_SKILL_RE.fullmatch(parsed["candidate"]) is None:
+        die("design-lock candidate is not kebab-case")
+    return parsed
+
+
 def parse_version_relation_source(text: str) -> dict | None:
     """Extract one closed Protasis relation block without opening its paths."""
     lines = text.splitlines(keepends=True)
@@ -2632,10 +2948,8 @@ def parse_version_relation_source(text: str) -> dict | None:
     }
 
 
-def _native_relation_git(
-    base_dir: str, argv: list[str], refusal: str
-) -> bytes:
-    """Read native local objects without inherited Git substitution state."""
+def _native_relation_environment() -> dict[str, str]:
+    """A Git environment that cannot substitute for the repository relation."""
     environment = {
         name: value
         for name, value in os.environ.items()
@@ -2650,13 +2964,50 @@ def _native_relation_git(
             "GIT_TERMINAL_PROMPT": "0",
         }
     )
+    return environment
+
+
+def _native_relation_git(
+    base_dir: str, argv: list[str], refusal: str
+) -> bytes:
+    """Read native local objects without inherited Git substitution state."""
     return bounded_tool(
         base_dir,
         "git",
         ["--no-replace-objects", *argv],
         refusal,
-        environment=environment,
+        environment=_native_relation_environment(),
     )
+
+
+def _native_ancestry_status(
+    base_dir: str, candidate: str, descendant: str
+) -> int | None:
+    """Return Git's native ancestry answer, or ``None`` when it gave none.
+
+    This is topology admission only. It deliberately reads no signature,
+    attribution, or GitHub evidence; ``done merge-step`` owns those checks over
+    the exact current range. ``bounded_probe`` keeps startup, time, and output
+    failures inside the same unknown result instead of exposing child output or
+    turning an unavailable answer into a non-ancestor claim.
+    """
+    candidate = require_full_sha(candidate, "waiting step recorded head")
+    descendant = require_full_sha(descendant, "waiting step observed tip")
+    status, _output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "merge-base",
+            "--is-ancestor",
+            candidate,
+            descendant,
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in (0, 1):
+        return None
+    return status
 
 
 def _native_relation_commit(base_dir: str, ref: str, label: str) -> str:
@@ -3737,6 +4088,15 @@ def _require_resolution_sync(
         die("version resolution sync checks do not cover every affected path")
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
+    previous_sync = _active_sync_predecessor(
+        as_dict(state.get("integrate")), head_commit
+    )
+    _require_sync_resolution_guard(
+        base_dir,
+        sync,
+        product_head,
+        previous_sync=previous_sync,
+    )
 
 
 def _resolution_without_timestamp(receipt: dict) -> dict:
@@ -3923,8 +4283,8 @@ def version_resolution_status(base_dir: str, state: dict) -> dict:
     return {"status": "active", **common, "reason": None}
 
 
-def carried_forward_lines(text: str) -> list[str] | None:
-    """The lines under the carried-forward heading, or None when it is absent.
+def carried_forward_section(text: str) -> str | None:
+    """The text under the carried-forward heading, or None when it is absent.
 
     Reading stops at the next heading, so a later section cannot stand in for
     this one.
@@ -3933,23 +4293,454 @@ def carried_forward_lines(text: str) -> list[str] | None:
     for index, line in enumerate(lines):
         if line.strip() != CARRIED_FORWARD_HEADING:
             continue
-        said = []
+        body = []
         for candidate in lines[index + 1:]:
             if candidate.startswith("#"):
                 break
-            if candidate.strip():
-                said.append(candidate.strip())
-        return said
+            body.append(candidate)
+        return "\n".join(body) + "\n"
     return None
+
+
+def carried_forward_lines(text: str) -> list[str] | None:
+    """The non-blank lines under the carried-forward heading, or None."""
+    section = carried_forward_section(text)
+    if section is None:
+        return None
+    return [line.strip() for line in section.splitlines() if line.strip()]
+
+
+def fenced_block_rows(text: str, info: str) -> tuple[list[str] | None, str | None]:
+    """The rows inside the one fenced block whose info string is exactly `info`.
+
+    Returns ``(rows, fault)``. ``rows`` is None only when no block carrying that
+    info string opened at all, which is a different answer from a block that
+    opened and holds nothing: an absent block cannot be told apart from a
+    question nobody asked, and an empty one is a filer who started the sentence.
+
+    A block opened under another info string is content, so an example quoted
+    inside a Markdown fence earns no verdict. The scan is the one
+    ``parse_design_lock_source`` uses, for the same reason: two fence trackers
+    drift, and the one that drifts is the one nothing exercises.
+    """
+    lines = text.splitlines(keepends=True)
+    blocks = []
+    open_mark = None
+    open_length = None
+    opened = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        fence_info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = fence_info.split()
+            opened = (
+                (index, fence_info == info)
+                if words and words[0] == info
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not fence_info:
+            if opened is not None:
+                blocks.append((*opened, index, True))
+            open_mark, open_length, opened = None, None, None
+    if opened is not None:
+        blocks.append((*opened, len(lines) - 1, False))
+    if not blocks:
+        return None, None
+    if len(blocks) != 1:
+        return None, f"carries more than one `{info}` block, so no row is authoritative"
+    opening, exact_info, closing, closed = blocks[0]
+    if not exact_info:
+        return None, f"the `{info}` fence must carry only that exact info string"
+    if not closed:
+        return None, f"the `{info}` block is not closed"
+    return [line.rstrip("\r\n") for line in lines[opening + 1:closing]], None
+
+
+def carryover_reference_fault(disposition: str, reference: str) -> str | None:
+    """Why one row's third field does not answer its disposition, or None."""
+    if disposition in CARRYOVER_REFERENCE_DISPOSITIONS:
+        if github_issue_identity(reference) is None:
+            return (
+                f"a `{disposition}` row must point at one canonical GitHub issue "
+                f"URL, and {reference!r} is not one"
+            )
+        return None
+    if not reference:
+        return "a `none` row must say why the item earns no issue of its own"
+    if len(reference.encode("utf-8")) > CARRYOVER_REASON_BYTES_MAX:
+        return (
+            f"a `none` row's reason is longer than "
+            f"{CARRYOVER_REASON_BYTES_MAX} bytes"
+        )
+    return None
+
+
+def carryover_row_faults(rows: list[str]) -> tuple[list[dict], list[str]]:
+    """Parse carryover triage rows, returning what parsed and what is wrong.
+
+    The shape is read, never the judgement. A row that files a real concern
+    against the wrong issue passes here, and so does a `none` reason nobody
+    should have accepted. Whether an item deserved an issue stays with the
+    reviewer; whether the filer answered the question at all is settled here.
+    """
+    entries = [row for row in rows if row.strip()]
+    if not entries:
+        return [], [
+            f"the `{CARRYOVER_INFO}` block holds no rows; give every outstanding "
+            f"item a row, or write the single row "
+            f"`none | none | <why nothing is carried>`"
+        ]
+    if len(entries) > CARRYOVER_ROWS_MAX:
+        return [], [
+            f"the `{CARRYOVER_INFO}` block holds {len(entries)} rows, above the "
+            f"{CARRYOVER_ROWS_MAX} this check will track, so the tail went "
+            f"unchecked"
+        ]
+    parsed: list[dict] = []
+    faults: list[str] = []
+    seen: set[str] = set()
+    for number, row in enumerate(entries, start=1):
+        text = row.strip()
+        if _contains_nonprinting_character(text):
+            faults.append(f"row {number} contains a control character")
+            continue
+        fields = [field.strip() for field in text.split("|")]
+        if len(fields) != 3:
+            faults.append(
+                f"row {number} carries {len(fields)} field(s), not the three the "
+                f"shape fixes (id | disposition | reference)"
+            )
+            continue
+        item, disposition, reference = fields
+        row_faults = []
+        if item == CARRYOVER_NONE:
+            if len(entries) != 1 or disposition != CARRYOVER_NONE:
+                row_faults.append(
+                    f"row {number} uses the reserved id `none`, which is only "
+                    f"valid as the sole row and only with the `none` disposition"
+                )
+        elif VERSION_RELATION_SKILL_RE.fullmatch(item) is None:
+            row_faults.append(f"row {number} id {item!r} is not kebab-case")
+        elif item in seen:
+            row_faults.append(
+                f"row {number} repeats the id {item!r}, so no disposition on it "
+                f"is authoritative"
+            )
+        else:
+            seen.add(item)
+        if disposition not in CARRYOVER_DISPOSITIONS:
+            row_faults.append(
+                f"row {number} disposition {disposition!r} is not one of "
+                + ", ".join(f"`{value}`" for value in CARRYOVER_DISPOSITIONS)
+            )
+        else:
+            reference_fault = carryover_reference_fault(disposition, reference)
+            if reference_fault:
+                row_faults.append(f"row {number}: {reference_fault}")
+        if row_faults:
+            faults.extend(row_faults)
+            continue
+        parsed.append({
+            "id": item,
+            "disposition": disposition,
+            "reference": reference,
+        })
+    return parsed, faults
+
+
+def carryover_triage(text: str, label: str) -> tuple[list[dict], list[str]]:
+    """The triage rows one document carries, and every fault in them."""
+    rows, fault = fenced_block_rows(text, CARRYOVER_INFO)
+    if fault:
+        return [], [f"{label} {fault}"]
+    if rows is None:
+        return [], [
+            f"{label} carries no `{CARRYOVER_INFO}` block. Every outstanding, "
+            f"carried-forward or unaddressed item needs its own issue or a "
+            f"pointer at the issue that already carries it, and this is where "
+            f"that decision is recorded"
+        ]
+    parsed, faults = carryover_row_faults(rows)
+    return parsed, [f"{label}: {fault}" for fault in faults]
+
+
+def status_block_span(
+    text: str, label: str
+) -> tuple[tuple[int, int] | None, list[str]]:
+    """The status block one issue body carries, and every fault in it.
+
+    Read outside fenced code, so a body quoting the delimiters as an example
+    carries no block. That is the rule which lets the decision record show its
+    own markers. Line numbers count the unfenced stream, because that is the
+    only sequence both this reader and a downstream consumer can agree on.
+
+    Absence returns ``(None, [])``. Most bodies carry no block, and a refusal
+    there would make the ordinary case the loud one.
+    """
+    opened = closed = None
+    faults: list[str] = []
+    lines = _unfenced_markdown_lines(text)
+    for number, physical in enumerate(lines, start=1):
+        line = physical.rstrip("\r\n").strip()
+        if line == STATUS_BLOCK_START:
+            if opened is not None:
+                return None, [
+                    f"{label} opens more than one status block, so no statement "
+                    f"in it is authoritative"
+                ]
+            opened = number
+        elif line == STATUS_BLOCK_END:
+            # An unmatched closer is refused wherever it sits, including after a
+            # block that already closed. A body carrying one is mid-edit, and
+            # reporting it clean tells the editor the opposite.
+            if opened is None or closed is not None:
+                return None, [
+                    f"{label} has a status block closed before it opened"
+                ]
+            closed = number
+    if opened is None:
+        return None, []
+    if closed is None:
+        return None, [
+            f"{label} opens a status block that is never closed, so the rest of "
+            f"the body would be read as its content"
+        ]
+    # The record puts the block above the filing prose, so a reader coming top to
+    # bottom meets the current statement before the original one. The rule
+    # protects what a reader sees, so blank lines and whole-line HTML comments do
+    # not count: 92 of the 137 issues open at the time this was written begin with
+    # the invisible `wildcat-origin` marker, and refusing the arrangement those
+    # bodies produce would make the contract unusable on the corpus it governs.
+    for physical in lines[:opened - 1]:
+        line = physical.strip()
+        if not line or (line.startswith("<!--") and line.endswith("-->")):
+            continue
+        return None, [
+            f"{label} opens its status block below the filing prose, so a "
+            f"reader meets the original requirement before the correction"
+        ]
+    content = lines[opened:closed - 1]
+    for offset, physical in enumerate(content, start=opened + 1):
+        if _contains_nonprinting_character(physical.rstrip("\r\n")):
+            faults.append(
+                f"{label} status block line {offset} contains a control character"
+            )
+    if faults:
+        return None, faults
+    return (opened, closed), []
+
+
+STALE_BODY_REPORT_SCHEMA = "fiat-stale-body-report/v1"
+STALE_BODY_INPUT_BYTES_MAX = 8 * 1024 * 1024
+STALE_BODY_ROWS_MAX = 2048
+
+
+def stale_body_report(bodies: list[dict]) -> dict:
+    """Which open issues carry no status block, and which carry a broken one.
+
+    Report-only, following ADR-053's posture for dead-code discovery: it counts
+    and names, and nothing here refuses. An absent block is the ordinary case
+    rather than a defect, so a gate on this number would be a gate on almost
+    every issue in the repository.
+
+    An absence and a malformed block are separated deliberately. A body nobody
+    has touched needs somebody to decide whether its requirement still holds; a
+    body mid-edit needs its own delimiters finished, which is a different job
+    for a different person.
+    """
+    rows = []
+    absent = malformed = carried = 0
+    for entry in bodies:
+        number = entry["number"]
+        body = entry.get("body")
+        title = entry.get("title")
+        # Hostile JSON reaches this parser. A wrong type used to surface as an
+        # AttributeError from deep inside the line reader, which is a traceback
+        # rather than a diagnosis; findings F-03 and F-04 in the plugin's own
+        # audit record are the same class, fixed the same way.
+        if body is not None and not isinstance(body, str):
+            die(f"issue {number} carries a body that is not text")
+        if title is not None and not isinstance(title, str):
+            die(f"issue {number} carries a title that is not text")
+        span, faults = status_block_span(body or "", f"issue {number}")
+        if faults:
+            malformed += 1
+            state, detail = "malformed", faults[0]
+        elif span is None:
+            absent += 1
+            state, detail = "absent", "no status block"
+        else:
+            carried += 1
+            continue
+        rows.append({
+            # Titles come from GitHub and these rows are printed to a terminal,
+            # so an escape sequence in a crafted title would render raw. The
+            # carryover row reader refuses control characters by name; this one
+            # strips them, because a title is display text rather than a field
+            # any decision rests on.
+            "number": number,
+            "title": "".join(c for c in (title or "") if c.isprintable()),
+            "state": state,
+            "detail": detail,
+        })
+    rows.sort(key=lambda row: row["number"])
+    return {
+        "schema": STALE_BODY_REPORT_SCHEMA,
+        "surveyed": len(bodies),
+        "with_block": carried,
+        "without_block": absent,
+        "malformed": malformed,
+        "rows": rows,
+    }
+
+
+def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
+    """The filing decision one issue body declares, and every fault in it.
+
+    Read outside fenced code, so a body quoting the line as an example does not
+    decide anything. More than one declaration is a fault rather than a
+    precedence rule: an issue carrying both answers has made no decision.
+    """
+    declarations = []
+    for physical in _unfenced_markdown_lines(text):
+        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
+        if match is not None:
+            declarations.append(match.group("value"))
+    if not declarations:
+        return None, [
+            f"{label} declares no `{FIAT_REQUIRED_KEY}` line. Add exactly one "
+            f"`{FIAT_REQUIRED_KEY}: 1` when the work needs a Fiat run, or "
+            f"`{FIAT_REQUIRED_KEY}: 0` when one independent pull request will do"
+        ]
+    if len(declarations) != 1:
+        return None, [
+            f"{label} declares `{FIAT_REQUIRED_KEY}` {len(declarations)} times, "
+            f"so it has made no decision"
+        ]
+    value = declarations[0]
+    if value not in FIAT_REQUIRED_VALUES:
+        return None, [
+            f"{label} declares `{FIAT_REQUIRED_KEY}: {value}`, which is neither "
+            f"1 (a Fiat run) nor 0 (one independent pull request)"
+        ]
+    return value, []
+
+
+def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
+    """Everything the filing contract asks of one candidate issue body.
+
+    Both questions are asked, and both answers are reported, so a filer fixing
+    one does not discover the other on the next attempt.
+    """
+    value, value_faults = fiat_required_value(text, label)
+    carryover, carryover_faults = carryover_triage(text, label)
+    status, status_faults = status_block_span(text, label)
+    record = {
+        "fiat_required": None if value is None else int(value),
+        "carryover": carryover,
+        "status_block": None if status is None else [status[0], status[1]],
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    }
+    return record, [*value_faults, *carryover_faults, *status_faults]
+
+
+def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
+    """The filing decisions one GitHub issue carries, read over REST.
+
+    Fail-closed in both directions. A body that declares nothing refuses, and so
+    does a tracker this reader cannot open, because a run that starts on an
+    unread decision is exactly the run this gate exists to stop. A request
+    GitHub never answered refuses in the transport shape ``github_rest``
+    already owns, which says nothing about whether the work earned a run.
+    """
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        # `task_issue` deliberately accepts other HTTP issue trackers, and this
+        # reader cannot open one. Refusing every such run would delete a
+        # capability the rule does not reach: the four repositories the filing
+        # contract governs keep their issues on GitHub, so a tracker that is not
+        # GitHub is out of its scope rather than evading it. The gap is recorded
+        # and said out loud rather than passed over, because a null nobody
+        # mentioned reads as a 1.
+        print(
+            f"hexctl: warning: --task-issue {issue_url} is not a GitHub issue, "
+            f"so no `{FIAT_REQUIRED_KEY}` line could be read and the receipt "
+            "records the nulls. Nothing here says this work earned a run rather "
+            "than one pull request.",
+            file=sys.stderr,
+        )
+        return {
+            "issue": issue_url,
+            "repository": None,
+            "number": None,
+            "fiat_required": None,
+            "carryover": [],
+            "sha256": None,
+            "reason": "the task issue is not a GitHub issue, so no filing "
+                      "decision could be read",
+        }
+    repository, number = identity
+    label = f"task issue {repository}#{number}"
+    payload = github_rest(
+        base_dir, f"repos/{repository}/issues/{number}", label
+    )
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(
+            label,
+            f"repos/{repository}/issues/{number}",
+            "returned a body that is not text",
+        )
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            f"reader will parse, so its filing decisions went unread"
+        )
+    record, faults = issue_contract_faults(body, label)
+    if faults:
+        die(
+            "the filing contract is not satisfied: "
+            + "; ".join(faults)
+            + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
+            f"line and one `{CARRYOVER_INFO}` block, then start the run again"
+        )
+    if record["fiat_required"] == 0:
+        die(
+            f"{label} declares `{FIAT_REQUIRED_KEY}: 0`: the filer decided this "
+            f"work does not need a Fiat run. No run state, worktree or branch "
+            f"was created. Do the work as one independent pull request, point "
+            f"the issue at that pull request, and close it there. If that "
+            f"decision was wrong, change the issue to "
+            f"`{FIAT_REQUIRED_KEY}: 1` and say why in the issue before "
+            f"starting a run.",
+            1,
+        )
+    return {
+        "issue": issue_url,
+        "repository": repository,
+        "number": number,
+        **record,
+    }
 
 
 def carried_forward_fault(path: str) -> str | None:
     """Why this run has not said what it leaves unfinished, or None.
 
     A run that gives up on something records it in the body of the last pull
-    request it lands, because that is what the next study reads. A run that
-    finished everything still writes the section: an absent heading cannot be
-    told apart from a question nobody asked.
+    request it lands, because that is what the next study reads, and each item
+    records what it now has: an issue of its own, the existing issue that
+    already carries it, or a stated reason it earns neither. A run that finished
+    everything still writes the section: an absent heading cannot be told apart
+    from a question nobody asked.
     """
     try:
         with open(path, encoding="utf-8") as fh:
@@ -3959,16 +4750,26 @@ def carried_forward_fault(path: str) -> str | None:
                 f"({exc}); the prose phase writes it and the integration pull "
                 f"request is opened from it")
 
-    said = carried_forward_lines(text)
-    if said is None:
+    section = carried_forward_section(text)
+    if section is None:
         return (f"{path} has no '{CARRIED_FORWARD_HEADING}' section; name every "
                 f"lead left unpursued, finding accepted rather than fixed, "
                 f"boundary refused and claim left unverified, or say plainly "
                 f"that this run leaves none")
-    if not said:
+    if not section.strip():
         return (f"{path} carries a '{CARRIED_FORWARD_HEADING}' heading with "
                 f"nothing under it; say what is unfinished, or say that "
                 f"nothing is")
+    _, faults = carryover_triage(
+        section, f"the '{CARRIED_FORWARD_HEADING}' section of {path}"
+    )
+    if faults:
+        return (
+            "; ".join(faults)
+            + f". Integration cannot proceed until every outstanding item under "
+            f"'{CARRIED_FORWARD_HEADING}' has been considered for an issue of "
+            f"its own and compared against what is already filed"
+        )
     return None
 
 
@@ -3976,10 +4777,17 @@ def carried_forward_record(path: str) -> dict:
     """What the receipt keeps about the section, once it has passed."""
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
+    section = carried_forward_section(text) or ""
+    rows, _ = carryover_triage(section, path)
     return {
         "path": os.path.join(STATE_DIR_NAME, RUN_PR_FILE),
         "lines": len(carried_forward_lines(text) or []),
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "carryover": rows,
+        "filed": [row["id"] for row in rows
+                  if row["disposition"] == CARRYOVER_FILED],
+        "duplicates": [row["id"] for row in rows
+                       if row["disposition"] == CARRYOVER_DUPLICATE],
     }
 
 
@@ -4585,6 +5393,14 @@ def cmd_record(args) -> None:
         # rewrite would replace the recorded verdict and waiver with a
         # value nothing observed (S2-R1-01).
         die("controller_currency is init's observation; only `hexctl init` writes it")
+    if args.key == "task_issue_contract":
+        # Protected for the same reason and more sharply: a run that could
+        # rewrite this receipt could start against `Fiat-Required: 0` and then
+        # record that it had read a 1.
+        die(
+            "task_issue_contract is init's read of the filed decision; only "
+            "`hexctl init` writes it"
+        )
     if state.get("halted") and args.key != "halt_note":
         # Recording context while halted is allowed; progress commands are not.
         pass
@@ -4602,6 +5418,137 @@ def cmd_record(args) -> None:
     state["receipts"][args.key] = value
     commit(args.dir, state, "record", {"key": args.key, "value": value})
     print(f"recorded {args.key}")
+
+
+def cmd_stale_bodies(args) -> None:
+    """Report which open issues carry no status block, or a broken one.
+
+    Report-only. It prints what it found and exits zero whatever that is,
+    following ADR-053's posture for dead-code discovery. Almost every issue in
+    a repository lacks a block, so a gate on this count would refuse nearly
+    everything and teach the reader to bypass it.
+
+    The bodies come from a file rather than the network, because the survey a
+    person acts on is one they can rerun on the same input and get the same
+    answer. Produce that file with the reader's own transport, and pass
+    `--paginate`: the issues endpoint returns pull requests alongside issues,
+    so one unpaginated page of 100 yielded 59 issues out of 138 here and the
+    survey could not tell it had seen well under half of them.
+
+        gh api --paginate "repos/OWNER/NAME/issues?state=open&per_page=100" \
+          --jq '.[] | select(.pull_request == null) | {number, title, body}'
+
+    Collect those objects into one JSON array before passing the file in. The
+    counts describe the file and never the repository: this reader is handed a
+    set and cannot know what was left out of it, so it reports `surveyed`
+    rather than `open` and leaves the completeness claim to whoever produced
+    the file.
+    """
+    try:
+        with open(args.bodies, "rb") as handle:
+            raw = handle.read(STALE_BODY_INPUT_BYTES_MAX + 1)
+    except OSError as exc:
+        die(f"{args.bodies} cannot be read ({exc})")
+    if len(raw) > STALE_BODY_INPUT_BYTES_MAX:
+        die(f"{args.bodies} is above the {STALE_BODY_INPUT_BYTES_MAX}-byte cap "
+            f"this reader will parse")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        die(f"{args.bodies} is not readable JSON ({exc})")
+    if not isinstance(payload, list):
+        die(f"{args.bodies} must hold a JSON array of issues")
+    if len(payload) > STALE_BODY_ROWS_MAX:
+        die(f"{args.bodies} holds {len(payload)} issues, above the "
+            f"{STALE_BODY_ROWS_MAX} this reader will survey")
+    bodies = []
+    for index, entry in enumerate(payload):
+        if not isinstance(entry, dict) or not isinstance(entry.get("number"), int):
+            die(f"{args.bodies} entry {index} carries no integer issue number")
+        bodies.append(entry)
+    report = stale_body_report(bodies)
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print(f"{report['surveyed']} issue(s) surveyed: {report['with_block']} carry a "
+          f"status block, {report['without_block']} carry none, "
+          f"{report['malformed']} carry a broken one")
+    for row in report["rows"]:
+        print(f"  #{row['number']} {row['state']}: {row['title']}")
+    print("report-only; nothing here refuses")
+
+
+def cmd_issue_check(args) -> None:
+    """Check one candidate or filed issue body against the filing contract.
+
+    Stateless, so it runs before an issue exists and outside any run. Both
+    questions are reported together: the `Fiat-Required` decision, and whether
+    every outstanding item has been considered for an issue of its own and
+    compared against what is already filed.
+
+    Shape alone. A `duplicate` row pointing at a real issue about something else
+    passes here, an issue that exists is never opened, and a `none` reason
+    nobody should have accepted still counts as an answer. Whether the
+    disposition was the right one stays with the reviewer; whether the filer
+    answered at all is settled here.
+    """
+    if bool(args.body) == bool(args.issue):
+        die("issue-check needs exactly one of --body <path> or --issue <url>")
+    if args.body:
+        label = args.body
+        try:
+            with open(args.body, "rb") as handle:
+                raw = handle.read(ISSUE_BODY_BYTES_MAX + 1)
+        except OSError as exc:
+            die(f"{args.body} cannot be read ({exc})")
+        if len(raw) > ISSUE_BODY_BYTES_MAX:
+            die(f"{args.body} is above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+                f"reader will parse")
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            die(f"{args.body} is not UTF-8")
+    else:
+        identity = github_issue_identity(args.issue)
+        if identity is None:
+            die(f"--issue {args.issue} is not a canonical GitHub issue URL")
+        repository, number = identity
+        label = f"{repository}#{number}"
+        payload = github_rest(
+            args.dir, f"repos/{repository}/issues/{number}", f"issue {label}"
+        )
+        text = payload.get("body") or ""
+        if not isinstance(text, str):
+            github_unreachable(
+                f"issue {label}",
+                f"repos/{repository}/issues/{number}",
+                "returned a body that is not text",
+            )
+
+    record, faults = issue_contract_faults(text, label)
+    for fault in faults:
+        print(f"{label}: {fault}" if not fault.startswith(label) else fault,
+              file=sys.stderr)
+    if faults:
+        print(
+            f"{len(faults)} finding(s); this issue is not ready to file",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    route = "a Fiat run" if record["fiat_required"] == 1 else \
+        "one independent pull request"
+    filed = [row for row in record["carryover"]
+             if row["disposition"] == CARRYOVER_FILED]
+    duplicates = [row for row in record["carryover"]
+                  if row["disposition"] == CARRYOVER_DUPLICATE]
+    print(f"{label}: clean")
+    print(f"{FIAT_REQUIRED_KEY}: {record['fiat_required']} ({route})")
+    print(
+        f"carryover: {len(record['carryover'])} row(s), {len(filed)} filed, "
+        f"{len(duplicates)} pointing at an existing issue"
+    )
+    for row in record["carryover"]:
+        print(f"  {row['id']} | {row['disposition']} | {row['reference']}")
 
 
 def ledger_entries(base_dir: str) -> list[dict]:
@@ -5004,23 +5951,255 @@ def _require_file(path: str, label: str) -> str:
     return path
 
 
+def _portable_receipt_artifact(base_dir: str, path: str) -> str:
+    """Store a verified source as one portable target-relative path."""
+    try:
+        relative = os.path.relpath(path, os.path.realpath(base_dir))
+    except (OSError, TypeError, ValueError):
+        die("source artefact path is not portable")
+    portable = relative.replace(os.sep, "/")
+    return _checkpoint_safe_relative(tuple(portable.split("/")))
+
+
+def _design_checker_receipt(
+    base_dir: str, artifact: str, transition: str
+) -> dict:
+    """Run the canonical checker and admit only its closed receipt output."""
+    checker = os.path.join(
+        plugin_root(), "skills", "protasis", "scripts", "design_evidence.py"
+    )
+    returncode, output = bounded_run(
+        base_dir,
+        sys.executable,
+        [checker, artifact, "--transition", transition, "--format", "receipt"],
+    )
+    try:
+        payload = json.loads(
+            output.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError):
+        die("Protasis design-evidence checker returned malformed output", 1)
+    if not isinstance(payload, dict) or set(payload) != {
+        "schema", "transition", "selected", "consumed", "findings"
+    }:
+        die("Protasis design-evidence checker returned an unsupported receipt", 1)
+    findings = payload.get("findings")
+    if not isinstance(findings, list):
+        die("Protasis design-evidence checker returned malformed findings", 1)
+    if returncode != 0 or findings:
+        first = findings[0] if findings else {}
+        code = first.get("code") if isinstance(first, dict) else None
+        message = first.get("message") if isinstance(first, dict) else None
+        if (
+            isinstance(code, str)
+            and re.fullmatch(r"D[0-9]{3}", code)
+            and isinstance(message, str)
+            and message
+            and len(message.encode("utf-8", errors="ignore")) <= 4096
+            and not _contains_nonprinting_character(message)
+        ):
+            die(f"Protasis design evidence refused {transition}: {code} {message}")
+        die(f"Protasis design evidence refused {transition}")
+    if payload.get("schema") != DESIGN_EVIDENCE_SCHEMA:
+        die("Protasis design-evidence checker returned the wrong schema", 1)
+    if payload.get("transition") != transition:
+        die("Protasis design-evidence checker returned the wrong transition", 1)
+    selected = payload.get("selected")
+    if (
+        not isinstance(selected, str)
+        or VERSION_RELATION_SKILL_RE.fullmatch(selected) is None
+    ):
+        die("Protasis design-evidence checker returned no selected candidate", 1)
+    consumed = payload.get("consumed")
+    if not isinstance(consumed, list) or len(consumed) > DESIGN_CONSUMED_MAX:
+        die("Protasis design-evidence checker returned too many reports", 1)
+    prior = None
+    for report in consumed:
+        if not isinstance(report, dict) or set(report) != {
+            "candidate", "criterion", "path", "sha256"
+        }:
+            die("Protasis design-evidence checker returned a malformed report", 1)
+        identity = (report.get("candidate"), report.get("criterion"))
+        if any(
+            not isinstance(part, str)
+            or VERSION_RELATION_SKILL_RE.fullmatch(part) is None
+            for part in identity
+        ):
+            die("Protasis design-evidence checker returned a malformed identity", 1)
+        if prior is not None and identity <= prior:
+            die("Protasis design-evidence checker returned unordered reports", 1)
+        prior = identity
+        supplied = report.get("path")
+        if (
+            not isinstance(supplied, str)
+            or not supplied
+            or os.path.isabs(supplied)
+            or "\\" in supplied
+            or any(part in ("", ".", "..") for part in supplied.split("/"))
+        ):
+            die("Protasis design-evidence checker returned an unsafe report path", 1)
+        digest = report.get("sha256")
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            die("Protasis design-evidence checker returned a malformed report digest", 1)
+    return {"selected": selected, "reports": consumed}
+
+
+def _checked_design_transition(
+    base_dir: str,
+    transition: str,
+    *,
+    expected_sha256: str | None = None,
+    expected_selected: str | None = None,
+) -> dict:
+    """Check captured record bytes, then prove the named source stayed fixed."""
+    lexical_artifact = os.path.join(
+        os.path.realpath(base_dir), DESIGN_EVIDENCE_FILE
+    )
+    try:
+        artifact_stat = os.lstat(lexical_artifact)
+    except OSError:
+        die("design-evidence artefact is unavailable")
+    if stat.S_ISLNK(artifact_stat.st_mode) or not stat.S_ISREG(artifact_stat.st_mode):
+        die("design-evidence artefact must be a non-symlink regular file")
+    artifact_path, first = read_bounded_source(
+        base_dir, DESIGN_EVIDENCE_FILE, "design-evidence artefact"
+    )
+    digest = hashlib.sha256(first).hexdigest()
+    if expected_sha256 is not None and digest != expected_sha256:
+        die(
+            "design-evidence artefact digest changed: expected "
+            f"{expected_sha256}, got {digest}; restore the receipted bytes or halt the run"
+        )
+    descriptor, temporary = tempfile.mkstemp(
+        prefix="checked-design-evidence-", suffix=".json", dir=state_root(base_dir)
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(first)
+            handle.flush()
+            os.fsync(handle.fileno())
+        checked = _design_checker_receipt(base_dir, temporary, transition)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
+    _, second = read_bounded_source(
+        base_dir, DESIGN_EVIDENCE_FILE, "design-evidence artefact"
+    )
+    if second != first:
+        die("design-evidence artefact changed while it was being checked")
+    if expected_selected is not None and checked["selected"] != expected_selected:
+        die("design-evidence selected candidate changed after design-lock")
+    return {
+        "artifact": _portable_receipt_artifact(base_dir, artifact_path),
+        "sha256": digest,
+        "selected": checked["selected"],
+        "transition": {
+            "transition": transition,
+            "reports": checked["reports"],
+        },
+    }
+
+
+def _design_receipt(state: dict) -> dict:
+    receipt = as_dict(as_dict(state.get("receipts")).get("study"))
+    design = receipt.get("design_evidence")
+    if not isinstance(design, dict):
+        die("run requires a receipted Protasis design-evidence record")
+    validate_design_evidence_receipt_shape(
+        design, "receipts.study.design_evidence"
+    )
+    return design
+
+
+def receipted_design_evidence(base_dir: str, state: dict) -> dict | None:
+    """Return the compact, source-bound design input delegated to later roles."""
+    if not design_evidence_required(state):
+        return None
+    design = _design_receipt(state)
+    path, data = read_bounded_source(
+        base_dir, design["artifact"], "design-evidence artefact"
+    )
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != design["sha256"]:
+        die(
+            "design-evidence artefact digest changed: expected "
+            f"{design['sha256']}, got {digest}; restore the receipted bytes or halt the run"
+        )
+    return {
+        "schema": design["schema"],
+        "path": path,
+        "sha256": design["sha256"],
+        "selected": design["selected"],
+    }
+
+
+def _prepare_design_transition(base_dir: str, state: dict, transition: str) -> dict | None:
+    if not design_evidence_required(state):
+        return None
+    design = _design_receipt(state)
+    if any(
+        item.get("transition") == transition
+        for item in design.get("transitions", [])
+        if isinstance(item, dict)
+    ):
+        die(f"design-evidence transition {transition} is already receipted", 1)
+    checked = _checked_design_transition(
+        base_dir,
+        transition,
+        expected_sha256=design["sha256"],
+        expected_selected=design["selected"],
+    )
+    return checked["transition"]
+
+
+def _append_design_transition(state: dict, transition: dict | None) -> None:
+    if transition is None:
+        return
+    design = _design_receipt(state)
+    design["transitions"].append(transition)
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "study artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "study artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
+    design = None
+    if design_evidence_required(state):
+        checked_design = _checked_design_transition(args.dir, "design-lock")
+        if checked_design["artifact"] != DESIGN_EVIDENCE_FILE:
+            die("design-evidence checker did not bind the fixed artefact path", 1)
+        design = {
+            "schema": DESIGN_EVIDENCE_SCHEMA,
+            "artifact": checked_design["artifact"],
+            "sha256": checked_design["sha256"],
+            "selected": checked_design["selected"],
+            "transitions": [checked_design["transition"]],
+        }
     state["receipts"]["study"] = {
         "artifact": artifact,
         "sha256": digest,
         "skills": skills,
     }
+    if design is not None:
+        state["receipts"]["study"]["design_evidence"] = design
     state["phase"] = "runbook"
+    event = {"artifact": artifact, "sha256": digest, "skills": skills}
+    if design is not None:
+        event["design_evidence"] = design
     commit(
         args.dir,
         state,
         "done:study",
-        {"artifact": artifact, "sha256": digest, "skills": skills},
+        event,
     )
     print("study receipted; phase -> runbook")
 
@@ -5028,8 +6207,25 @@ def done_study(args, state: dict) -> None:
 def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "runbook artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "runbook artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     artifact_text = decoded_source(artifact_bytes, "runbook artefact")
+    design_lock = parse_design_lock_source(artifact_text)
+    design_transition = None
+    if design_evidence_required(state):
+        design = _design_receipt(state)
+        if design_lock is None:
+            die("runbook requires a design-lock block before Step 1")
+        if design_lock != {
+            "schema": design["schema"],
+            "sha256": design["sha256"],
+            "candidate": design["selected"],
+        }:
+            die("runbook design-lock does not match the receipted design evidence")
+    elif design_lock is not None:
+        die("runbook declares a design-lock without a receipted design record")
     relation_source = parse_version_relation_source(artifact_text)
     version_relations = None
     if relation_source is not None:
@@ -5059,6 +6255,8 @@ def done_runbook(args, state: dict) -> None:
             die("each step must be a string or an object with a 'title'")
     if any(not title.strip() for title in titles):
         die("step titles must be non-empty")
+    if design_evidence_required(state):
+        design_transition = _prepare_design_transition(args.dir, state, "step:1")
     state["steps"] = [
         {
             "n": i + 1,
@@ -5081,6 +6279,12 @@ def done_runbook(args, state: dict) -> None:
         "sha256": digest,
         "step_count": len(titles),
     }
+    if design_lock is not None:
+        state["receipts"]["runbook"]["design_lock"] = design_lock
+        receipt["design_lock"] = design_lock
+    _append_design_transition(state, design_transition)
+    if design_transition is not None:
+        receipt["design_transition"] = design_transition
     if version_relations is not None:
         state["receipts"]["runbook"]["version_relations"] = version_relations
         receipt["version_relations"] = version_relations
@@ -5739,6 +6943,19 @@ def done_push(args, state: dict) -> None:
                 "--closed-issue-url does not match the recorded task_issue "
                 f"({expected_issue})"
             )
+    remaining = [item for item in state["steps"] if item["status"] == "pending"]
+    next_transition = None
+    if remaining:
+        next_transition = f"step:{remaining[0]['n']}"
+    elif not stacked:
+        # New runs are stacked. Keep the old unstacked compatibility path
+        # terminal by checking its only available integration boundary here.
+        next_transition = "integration"
+    design_transition = (
+        _prepare_design_transition(args.dir, state, next_transition)
+        if next_transition is not None
+        else None
+    )
     range_base = args.pr_base if stacked else state["base"]
     branch = (
         step_branch_name(state, step)
@@ -5762,7 +6979,22 @@ def done_push(args, state: dict) -> None:
         expected_head_sha=verified_commits[-1],
         expected_merge_sha=args.merge_commit,
         expected_closing_issue=(expected_issue if not stacked else None),
+        adopt_early_merge=stacked,
     )
+    # A step pull request merged before integrate. The head already matched the
+    # verified range above, so what remains is whether the merge is still in the
+    # base it targeted, and whether GitHub verifies it like any other commit the
+    # run receipts. Recorded explicitly, so a reader is never left inferring an
+    # early merge from which fields happen to be populated.
+    early_merge = None
+    if pr_record.get("early_merge"):
+        adopted = require_full_sha(pr_record["merge_sha"], "adopted merge")
+        early_merge = {
+            "merge_commit": adopted,
+            "reachable_from": args.pr_base,
+            "base_tip": adopted_merge_base_tip(args.dir, adopted, args.pr_base),
+            "github_verified": verify_github_commits(args.dir, [adopted]),
+        }
     github_verified, attribution = verified_github_attribution(
         args.dir, verified_commits
     )
@@ -5779,7 +7011,14 @@ def done_push(args, state: dict) -> None:
         # steps phase, and the ledger is append-only.
         "head_commit": supplied_head,
         "pr_base": args.pr_base,
+        # These two record what the arguments carried, which for a stacked step
+        # is nothing: `done push` refuses `--merge-commit` there. An adopted
+        # merge is an observation rather than an argument, so it and its own
+        # GitHub verification live in `early_merge` and are not folded in here.
+        # Reading `github_merge_verified` as "no merge was verified" is
+        # therefore wrong whenever `early_merge` is present.
         "merge_commit": args.merge_commit,
+        "early_merge": early_merge,
         "closed_issue_url": args.closed_issue_url,
         "verified_commits": verified_commits,
         "github_verified": github_verified,
@@ -5792,7 +7031,6 @@ def done_push(args, state: dict) -> None:
     }
     step["status"] = "done"
     step["phase"] = "done"
-    remaining = [s for s in state["steps"] if s["status"] == "pending"]
     if remaining:
         nxt = remaining[0]
         nxt["status"] = "open"
@@ -5808,11 +7046,15 @@ def done_push(args, state: dict) -> None:
         else:
             state["phase"] = "done"
             tail = "all steps done"
+    _append_design_transition(state, design_transition)
+    event = {"step": step["n"], **step["receipts"]["push"]}
+    if design_transition is not None:
+        event["design_transition"] = design_transition
     commit(
         args.dir,
         state,
         "done:push",
-        {"step": step["n"], **step["receipts"]["push"]},
+        event,
     )
     if stacked:
         print(
@@ -5835,20 +7077,37 @@ def _integrate_directive(
     for step in state["steps"]:
         if step["n"] in merged:
             continue
-        pr_url = as_dict(step["receipts"].get("push")).get("pr_url")
-        return {
+        push_receipt = as_dict(step["receipts"].get("push"))
+        pr_url = push_receipt.get("pr_url")
+        # A step adopted at push has already merged, so the directive names the
+        # commit that carried it instead of a merge command. Saying so here is
+        # what stops the integrate phase's silence about that step reading as an
+        # omission, and it saves the caller looking the SHA up.
+        adopted = as_dict(push_receipt.get("early_merge")).get("merge_commit")
+        adopted = adopted if isinstance(adopted, str) else None
+        directive = {
             "do": "merge-step",
             "step": step["n"],
             "title": step["title"],
             "branch": step_branch_name(state, step),
             "pr_url": pr_url,
             "into": run_branch,
-            "merge": step_merge_command(pr_url),
+            "merge": (
+                step_merge_command(pr_url, run_branch)
+                if adopted is None
+                else (
+                    f"already merged early as {adopted}; adopted at push and "
+                    "not merged again"
+                )
+            ),
             "then": (
                 f"hexctl done merge-step --step {step['n']} "
-                "--merge-commit <sha>"
+                f"--merge-commit {adopted if adopted else '<sha>'}"
             ),
         }
+        if adopted is not None:
+            directive["adopted_merge"] = adopted
+        return directive
     then = "hexctl done integrate --pr-url <url> --merge-commit <sha>"
     task_issue = expected_task_issue(state)
     if task_issue:
@@ -5863,7 +7122,8 @@ def _integrate_directive(
     sync_then = (
         "hexctl done sync-run --commit <signed-merge-sha> "
         "--base-commit <remote-base-sha> "
-        f"--revalidation {INTEGRATION_REVALIDATION_FILE}"
+        f"--revalidation {INTEGRATION_REVALIDATION_FILE} "
+        "[--acknowledge-sync-path <exact-risk-path> ...]"
     )
     sync_recovery = "sync-run-and-revalidate"
     if sync:
@@ -5908,9 +7168,19 @@ def _integrate_directive(
             "recovery": sync_recovery,
             "artifact": INTEGRATION_REVALIDATION_FILE,
             "then": sync_then,
+            "resolution_guard": {
+                "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+                "flag": "--acknowledge-sync-path",
+                "rule": (
+                    "repeat the flag for the exact sorted paths named by the "
+                    "controller; acknowledgement records inspection and does "
+                    "not replace revalidation"
+                ),
+            },
             "boundary": (
-                "base advancement alone does not authorise a carryover or "
-                "invalidate the exact-tree product evidence"
+                "base advancement alone does not authorise a carryover, "
+                "invalidate the exact-tree product evidence, or permit a "
+                "whole-side or unreviewed rebuilt resolution"
             ),
         },
         "attribution": {
@@ -5920,6 +7190,28 @@ def _integrate_directive(
                 "from the base; a squash or rebase merge rewrites them, and "
                 "then the merge commit itself has to carry each identity as "
                 "author or in a Co-authored-by trailer"
+            ),
+        },
+        "carried_forward": {
+            "path": os.path.join(STATE_DIR_NAME, RUN_PR_FILE),
+            "heading": CARRIED_FORWARD_HEADING,
+            "block": CARRYOVER_INFO,
+            "row": "<id> | <disposition> | <reference>",
+            "dispositions": list(CARRYOVER_DISPOSITIONS),
+            "rule": (
+                "one row per outstanding, carried-forward or unaddressed item; "
+                "`filed` and `duplicate` each point at one canonical GitHub "
+                "issue URL, the item's own new issue or the existing issue that "
+                "already carries it, and `none` states why the item earns "
+                "neither. Compare against what is already open before filing a "
+                "second copy, and never file an issue merely to fill a row. A "
+                "run that leaves nothing writes the single row "
+                "`none | none | <why nothing is carried>`"
+            ),
+            "gate": (
+                "done integrate reads the section and refuses prose that "
+                "disposes of nothing, so integration does not proceed on "
+                "leftovers nothing was decided about"
             ),
         },
         **({"version_resolution": resolution} if resolution is not None else {}),
@@ -6054,6 +7346,199 @@ def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[
         if allowed is not None and path not in allowed:
             die(f"{label} names a path outside the computed integration delta")
     return value
+
+
+def _sync_tree_path_batches(paths: list[str]) -> list[list[str]]:
+    """Keep literal ls-tree argv below one explicit path and byte envelope."""
+    batches = []
+    current = []
+    current_bytes = 0
+    for path in paths:
+        token_bytes = len(f":(literal){path}".encode("utf-8")) + 1
+        if current and (
+            len(current) >= SYNC_TREE_PATH_BATCH_MAX
+            or current_bytes + token_bytes > SYNC_TREE_ARG_BYTES_MAX
+        ):
+            batches.append(current)
+            current = []
+            current_bytes = 0
+        current.append(path)
+        current_bytes += token_bytes
+    if current:
+        batches.append(current)
+    return batches
+
+
+def _sync_tree_entries(
+    base_dir: str, commit_sha: str, paths: list[str], label: str
+) -> dict[str, str | None]:
+    """Read exact tree-entry identities for literal paths at one native commit."""
+    commit_sha = require_full_sha(commit_sha, f"{label} commit")
+    paths = _manifest_paths(paths, f"{label} paths")
+    identities = {path: None for path in paths}
+    for batch in _sync_tree_path_batches(paths):
+        literal_pathspecs = [f":(literal){path}" for path in batch]
+        raw = _native_relation_git(
+            base_dir,
+            ["ls-tree", "-z", "--full-tree", commit_sha, "--", *literal_pathspecs],
+            f"{label} tree entries cannot be read",
+        )
+        batch_set = set(batch)
+        seen = set()
+        for record in raw.split(b"\0"):
+            if not record:
+                continue
+            metadata, separator, path_bytes = record.partition(b"\t")
+            fields = metadata.split()
+            try:
+                path = path_bytes.decode("utf-8")
+                mode, kind, object_id = [field.decode("ascii") for field in fields]
+            except (UnicodeDecodeError, ValueError):
+                die(f"{label} tree entries are malformed")
+            if (
+                separator != b"\t"
+                or path not in batch_set
+                or path in seen
+                or re.fullmatch(r"[0-7]{6}", mode) is None
+                or kind not in {"blob", "tree", "commit"}
+                or COMMIT_RE.fullmatch(object_id) is None
+            ):
+                die(f"{label} tree entries are malformed")
+            seen.add(path)
+            identities[path] = f"{mode} {kind} {object_id}"
+    return identities
+
+
+def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
+    """Return the sync immediately superseded by the active receipt."""
+    history = integrate.get("superseded_syncs") or []
+    if not isinstance(history, list):
+        die("recorded superseded integration syncs are malformed")
+    if not history:
+        return None
+    tail = history[-1]
+    previous = tail.get("sync") if isinstance(tail, dict) else None
+    if (
+        not isinstance(previous, dict)
+        or tail.get("superseded_by") != active_commit
+    ):
+        die("active integration sync is not joined to its supersession history")
+    return previous
+
+
+def sync_resolution_guard_record(
+    base_dir: str,
+    product_head: str,
+    base_head: str,
+    sync_head: str,
+    *,
+    current_sync: dict | None,
+    acknowledgements: list[str],
+) -> dict:
+    """Expose whole-side and rebuild-loss paths before a sync is receipted."""
+    product_head = require_full_sha(product_head, "sync resolution product head")
+    base_head = require_full_sha(base_head, "sync resolution base head")
+    sync_head = require_full_sha(sync_head, "sync resolution sync head")
+    acknowledgements = _manifest_paths(
+        acknowledgements, "--acknowledge-sync-path values"
+    )
+
+    base_before = merge_base_commit(base_dir, product_head, base_head)
+    product_paths = git_diff_paths(base_dir, base_before, product_head)
+    base_paths = git_diff_paths(base_dir, base_before, base_head)
+    overlap_paths = sorted(set(product_paths) & set(base_paths))
+    product_entries = _sync_tree_entries(
+        base_dir, product_head, overlap_paths, "sync resolution product"
+    )
+    base_entries = _sync_tree_entries(
+        base_dir, base_head, overlap_paths, "sync resolution base"
+    )
+    sync_entries = _sync_tree_entries(
+        base_dir, sync_head, overlap_paths, "sync resolution result"
+    )
+    side_selected_paths = [
+        path
+        for path in overlap_paths
+        if product_entries[path] != base_entries[path]
+        and sync_entries[path] in {product_entries[path], base_entries[path]}
+    ]
+
+    superseded_intersection_paths = []
+    if current_sync is not None:
+        if not isinstance(current_sync, dict):
+            die("active integration sync is malformed")
+        old_sync = require_full_sha(
+            current_sync.get("commit"), "active recorded sync commit"
+        )
+        old_base = require_full_sha(
+            current_sync.get(SYNC_BASE_HEAD_KEY), "active recorded sync base"
+        )
+        if _native_relation_parents(
+            base_dir, old_sync, "active recorded sync commit"
+        ) != [product_head, old_base]:
+            die("active recorded sync parents do not match product and old base")
+        old_composition_paths = git_diff_paths(base_dir, product_head, old_sync)
+        base_advance_paths = git_diff_paths(base_dir, old_base, base_head)
+        superseded_intersection_paths = sorted(
+            set(old_composition_paths) & set(base_advance_paths)
+        )
+
+    required = sorted(
+        set(side_selected_paths) | set(superseded_intersection_paths)
+    )
+    if acknowledgements != required:
+        missing = sorted(set(required) - set(acknowledgements))
+        extra = sorted(set(acknowledgements) - set(required))
+        die(
+            "integration sync resolution acknowledgements do not match; "
+            f"missing {json.dumps(missing, ensure_ascii=False)}; "
+            f"extra {json.dumps(extra, ensure_ascii=False)}; repeat "
+            "--acknowledge-sync-path once for each required path in this "
+            f"exact order: {json.dumps(required, ensure_ascii=False)}"
+        )
+    return {
+        "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+        "side_selected_paths": side_selected_paths,
+        "superseded_intersection_paths": superseded_intersection_paths,
+        "acknowledged_paths": acknowledgements,
+    }
+
+
+def _require_sync_resolution_guard(
+    base_dir: str,
+    sync: dict,
+    product_head: str,
+    *,
+    previous_sync: dict | None,
+) -> dict:
+    """Recompute one stored guard from its immutable Git objects."""
+    guard = sync.get("resolution_guard")
+    if (
+        not isinstance(guard, dict)
+        or set(guard) != SYNC_RESOLUTION_GUARD_KEYS
+        or guard.get("schema") != SYNC_RESOLUTION_GUARD_SCHEMA
+    ):
+        die(
+            "active integration sync has no current resolution guard; "
+            "supersede it with a fresh signed and revalidated sync"
+        )
+    for field in (
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    ):
+        _manifest_paths(guard.get(field), f"sync resolution guard {field}")
+    expected = sync_resolution_guard_record(
+        base_dir,
+        product_head,
+        sync.get(SYNC_BASE_HEAD_KEY),
+        sync.get("commit"),
+        current_sync=previous_sync,
+        acknowledgements=guard["acknowledged_paths"],
+    )
+    if guard != expected:
+        die("active integration sync resolution guard does not replay")
+    return expected
 
 
 def _sha256_value(value, label: str) -> str:
@@ -6810,7 +8295,7 @@ def integration_revalidation_record(
     }
 
 
-def step_merge_command(pr_url: object) -> str:
+def step_merge_command(pr_url: object, into: str) -> str:
     """The exact invocation that merges the pull request the directive names.
 
     The directive already carried the URL and the receipt command, and left the
@@ -6821,6 +8306,16 @@ def step_merge_command(pr_url: object) -> str:
 
     Built from the URL rather than a number and a repository flag, so nothing has
     to be transcribed. Printed, never executed.
+
+    The retarget is the whole reason this is two commands and not one. A step's
+    pull request is opened against the step below it, because that is the diff a
+    reviewer needs to read. Integration merges it into the run branch instead,
+    which `into` names. `gh pr merge` merges a pull request into its own base and
+    takes no target, so the printed command alone landed steps 2 upward on their
+    parent step branches while this directive's own `into` field said the run
+    branch. Issue 1085. Step 1 is already based on the run branch and the edit is
+    a no-op there, so the sequence is the same for every step rather than
+    something the operator has to decide per step.
     """
     if not isinstance(pr_url, str) or GITHUB_PR_RE.fullmatch(pr_url) is None:
         die(
@@ -6828,7 +8323,14 @@ def step_merge_command(pr_url: object) -> str:
             "merge command cannot be built from it; repair the receipt rather "
             "than merging a pull request the directive did not name"
         )
-    return f"gh pr merge {pr_url.rstrip('/')} --merge"
+    if not isinstance(into, str) or not into:
+        die(
+            "the merge command needs the branch the step merges into, and the "
+            "directive named none; a merge with no stated target is the failure "
+            "this command exists to prevent"
+        )
+    url = pr_url.rstrip("/")
+    return f"gh pr edit {url} --base {into} && gh pr merge {url} --merge"
 
 
 def expected_run_branch_tip(state: dict):
@@ -6927,23 +8429,19 @@ def refuse_unreceipted_run_branch_movement(
 
 
 def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> None:
-    """Refuse when a step branch that is still waiting has moved since its push.
+    """Refuse when a waiting branch no longer contains its receipted head.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Author and
-    the provenance trailers survive; the local signature does not.
-
-    Without this check the first symptom is an invalid local signature at a later
-    merge-step, which reads as a broken signing setup rather than as a branch
-    rewrite, and by then several steps have already merged. Comparing each
-    waiting step's remote tip against the head its push receipt names finds the
-    rewrite at the first merge-step after it happened, and says what happened.
+    Equality is the zero-query path. A moved tip receives one bounded native
+    ancestry query: status 0 admits topology only, status 1 establishes that the
+    receipted head is absent, and every other outcome is unknown. Signatures,
+    provenance, GitHub verification, and attribution remain mandatory over the
+    exact live range at ``done merge-step``.
 
     A step whose branch cannot be read is reported rather than skipped: an absent
     downstream branch during integration is not a normal state.
     """
     merged = as_dict(state.get("integrate")).get("merged") or []
-    moved, unreadable = [], []
+    nonancestors, unknown, unreadable = [], [], []
     for step in state["steps"]:
         number = step["n"]
         if number == current_step or number in merged:
@@ -6958,7 +8456,9 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
-        if tip != recorded and len(recorded) < 40:
+        if tip == recorded:
+            continue
+        if len(recorded) < 40:
             # An abbreviated receipt is an older receipt format, not a moved
             # branch: `--head-commit` accepts any ref git resolves, and receipts
             # written before that value was stored resolved hold whatever was
@@ -6967,33 +8467,50 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
             # match. Only reached when they differ, so a full-length receipt
             # never shells out.
             try:
-                recorded = resolved_commit(
+                recorded = _native_relation_commit(
                     base_dir, recorded, f"step {number} recorded push head"
                 )
             except SystemExit:
                 unreadable.append(f"step {number} ('{branch}', recorded {recorded})")
                 continue
-        if tip != recorded:
-            moved.append(
-                f"step {number} ('{branch}') is at {tip} and its push receipt "
-                f"names {recorded}"
-            )
+            if tip == recorded:
+                continue
+        relation = _native_ancestry_status(base_dir, recorded, tip)
+        observation = (
+            f"step {number} ('{branch}') recorded head {recorded} and observed "
+            f"tip {tip}"
+        )
+        if relation == 0:
+            continue
+        if relation == 1:
+            nonancestors.append(observation)
+        else:
+            unknown.append(observation)
     if unreadable:
         die(
             "a step branch still waiting to merge could not be read: "
             + "; ".join(unreadable)
             + ". Integration cannot proceed while a downstream branch is missing."
         )
-    if moved:
+    if unknown:
         die(
-            "a step branch still waiting to merge has been rewritten since it was "
-            "pushed: " + "; ".join(moved) + ". GitHub's stacked-pull-request flow "
-            "rebases downstream branches on each merge and re-signs them with its "
-            "own key, which keeps the author and the provenance trailers and "
-            "discards the local signature. The range these receipts describe is no "
-            "longer the range on the remote. Land the run from a branch holding the "
-            "original commits rather than merging the rewritten stack, and do not "
-            "import GitHub's public key to make the signature check pass."
+            "a step branch still waiting to merge has unknown ancestry: "
+            + "; ".join(unknown)
+            + ". Its ancestry could not be determined from bounded native local "
+            "objects. Restore readable native objects and repository history, then "
+            "retry; integration cannot proceed on an unanswered relation."
+        )
+    if nonancestors:
+        die(
+            "a step branch still waiting to merge no longer contains its receipted "
+            "head: "
+            + "; ".join(nonancestors)
+            + ". Each recorded head is not an ancestor of its observed tip. The "
+            "controller has not established why the history moved, and the push "
+            "receipt no longer describes the current remote range. Land the run "
+            "from a branch holding the original commits rather than merging this "
+            "stack, and do not import GitHub's public key to make the signature "
+            "check pass."
         )
 
 
@@ -7021,11 +8538,54 @@ def done_merge_step(args, state: dict) -> None:
     refuse_rewritten_stack(args.dir, state, args.step)
     step = state["steps"][args.step - 1]
     push_receipt = as_dict(step["receipts"].get("push"))
+    # A step whose pull request merged before integrate was adopted at push,
+    # with its merge already reachable from the base it targeted and already
+    # GitHub-verified. Merging again is not available and not needed: the
+    # expectation here is that GitHub still reports that same merge, into the
+    # base the pull request actually had, rather than the run branch the
+    # directive names for a step that has yet to merge.
+    adoption = recorded_adoption(push_receipt)
+    if adoption is None:
+        expected_merge_base = pending["into"]
+    else:
+        if args.merge_commit != adoption["merge_commit"]:
+            die(
+                f"step {args.step} was adopted at push with merge "
+                f"{adoption['merge_commit']}; --merge-commit must name that "
+                "exact commit, because this step does not merge again"
+            )
+        # An early merge landed in the base the pull request targeted, which for
+        # a step above the bottom of the stack is the step below it rather than
+        # the run branch. Whether the run branch carries this step's work then
+        # depends on an order nobody chose: it does when the lower step merged
+        # after this one, and does not when it merged before. Only reachability
+        # answers that, and a step whose work is not on the run branch is not
+        # satisfied, however completely its adoption was recorded.
+        run_tip = remote_branch_tip(
+            args.dir, pending["into"], f"run branch '{pending['into']}' tip"
+        )
+        if not commit_is_ancestor(
+            args.dir,
+            adoption["merge_commit"],
+            run_tip,
+            f"adopted merge for step {args.step} on '{pending['into']}'",
+        ):
+            die(
+                f"adopted merge {adoption['merge_commit']} for step {args.step} "
+                f"is not reachable from '{pending['into']}' at {run_tip}. The "
+                f"early merge landed in '{adoption['reachable_from']}', and the "
+                "run branch does not carry this step's work, so the step is not "
+                "satisfied by that record. Its own pull request is closed and "
+                "cannot supply the merge: bring the work onto the run branch "
+                "through a replacement pull request, then halt and finish by "
+                "hand rather than receipting a landing that did not happen"
+            )
+        expected_merge_base = adoption["reachable_from"]
     pr_record = inspect_pull_request(
         args.dir,
         pending["pr_url"],
         expected_head=pending["branch"],
-        expected_base=pending["into"],
+        expected_base=expected_merge_base,
         expected_head_sha=None,
         expected_merge_sha=args.merge_commit,
     )
@@ -7075,6 +8635,11 @@ def done_merge_step(args, state: dict) -> None:
             "attribution": {"commits": repaired_attribution},
         }
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
+    design_transition = None
+    if args.step == len(state["steps"]):
+        design_transition = _prepare_design_transition(
+            args.dir, state, "integration"
+        )
     integrate = state.setdefault("integrate", {"merged": [], "merges": {}})
     integrate.setdefault("merged", []).append(args.step)
     integrate.setdefault("merges", {})[str(args.step)] = {
@@ -7084,20 +8649,28 @@ def done_merge_step(args, state: dict) -> None:
         "github_verified": github_verified,
         "pull_request": pr_record,
         "effective_push": effective_push,
+        "satisfied_by": ("adopted-early-merge" if adoption else "merge"),
+        "adopted_merge": adoption,
     }
+    _append_design_transition(state, design_transition)
+    event = {
+        "step": args.step,
+        "branch": pending["branch"],
+        "into": pending["into"],
+        "merge_commit": args.merge_commit,
+        "github_verified": github_verified,
+        "pull_request": pr_record,
+        "effective_push": effective_push,
+        "satisfied_by": ("adopted-early-merge" if adoption else "merge"),
+        "adopted_merge": adoption,
+    }
+    if design_transition is not None:
+        event["design_transition"] = design_transition
     commit(
         args.dir,
         state,
         "done:merge-step",
-        {
-            "step": args.step,
-            "branch": pending["branch"],
-            "into": pending["into"],
-            "merge_commit": args.merge_commit,
-            "github_verified": github_verified,
-            "pull_request": pr_record,
-            "effective_push": effective_push,
-        },
+        event,
     )
     remaining = len(state["steps"]) - len(integrate["merged"])
     tail = f"{remaining} step(s) left in the stack" if remaining else "stack merged"
@@ -7209,6 +8782,16 @@ def done_sync_run(args, state: dict) -> None:
     revalidation = integration_revalidation_record(
         args.dir, args.revalidation, recorded_tip, base_tip, sync_tip
     )
+    resolution_guard = sync_resolution_guard_record(
+        args.dir,
+        recorded_tip,
+        base_tip,
+        sync_tip,
+        current_sync=(current_sync if current_sync else None),
+        acknowledgements=list(
+            getattr(args, "acknowledge_sync_paths", None) or []
+        ),
+    )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
     _require_native_relation_history(args.dir)
@@ -7223,6 +8806,7 @@ def done_sync_run(args, state: dict) -> None:
         "github_verified": github_verified,
         "product_evidence": product_evidence,
         "revalidation": revalidation,
+        "resolution_guard": resolution_guard,
     }
     if current_sync:
         superseded_sync = {
@@ -7246,8 +8830,9 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} superseded integration sync "
             f"{superseded_sync['sync']['commit']} with {sync_tip}; "
             f"product evidence preserved; {len(revalidation['checks'])} "
-            "integration revalidation check(s) recorded; integration may "
-            "continue"
+            "integration revalidation check(s) recorded; "
+            f"{len(resolution_guard['acknowledged_paths'])} sync resolution "
+            "path(s) acknowledged; integration may continue"
         )
     else:
         commit(args.dir, state, "done:sync-run", new_sync)
@@ -7255,7 +8840,8 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} synced with {integration_base} at "
             f"{base_tip}; product evidence preserved; "
             f"{len(revalidation['checks'])} integration revalidation check(s) "
-            "recorded; integration may continue"
+            f"recorded; {len(resolution_guard['acknowledged_paths'])} sync "
+            "resolution path(s) acknowledged; integration may continue"
         )
 
 
@@ -7597,6 +9183,15 @@ def done_integrate(args, state: dict) -> None:
             state, recorded_tip
         ):
             die("recorded product evidence changed after the integration sync")
+        previous_sync = _active_sync_predecessor(
+            integrate, sync.get("commit")
+        )
+        _require_sync_resolution_guard(
+            args.dir,
+            sync,
+            recorded_tip,
+            previous_sync=previous_sync,
+        )
         expected_tip = require_full_sha(sync.get("commit"), "recorded run sync commit")
     if remote_tip != expected_tip:
         if sync:
@@ -7858,7 +9453,11 @@ def markdown_lines(text: str):
 
 
 def _study_amendment_boundary(
-    text: str, expected: str, subject: str = "study"
+    text: str,
+    expected: str,
+    subject: str = "study",
+    *,
+    shape_already_accepted: bool = False,
 ) -> tuple[int, int, str]:
     """Find the one real final amendment whose byte prefix has the receipt hash."""
     headings = []
@@ -7892,10 +9491,11 @@ def _study_amendment_boundary(
     later = [start for start, _ in headings if start > heading_start]
     if later:
         die("amendment candidate appends more than one final amendment block")
-    try:
-        datetime.date.fromisoformat(date_text)
-    except ValueError:
-        die(f"amendment heading has an invalid calendar date: {date_text}")
+    if not shape_already_accepted:
+        try:
+            datetime.date.fromisoformat(date_text)
+        except ValueError:
+            die(f"amendment heading has an invalid calendar date: {date_text}")
     return boundary, heading_start, date_text
 
 
@@ -7939,6 +9539,37 @@ def _study_amendment_fields(
         if not value:
             die(f"amendment field '{name}' must not be empty")
         values[name] = value
+    return values
+
+
+def _accepted_study_amendment_fields(
+    text: str, heading_start: int
+) -> dict[str, str]:
+    """Extract controller-owned values after Protasis accepted the shape.
+
+    Protasis owns the dated four-field grammar. Fiat needs only the two fields
+    that join the accepted suffix to controller state, so this extractor makes
+    no second cardinality, ordering, name, or non-empty-value verdict.
+    """
+    fields = []
+    for start, end, line, in_fence, _ in markdown_lines(text):
+        if start <= heading_start or in_fence:
+            continue
+        match = ANY_AMENDMENT_FIELD_RE.fullmatch(line)
+        if match:
+            name, _, first_line = line[2:].partition(".**")
+            fields.append((start, end, name, first_line.strip()))
+
+    values = {}
+    for index, (_, end, name, first_line) in enumerate(fields):
+        stop = fields[index + 1][0] if index + 1 < len(fields) else len(text)
+        value = " ".join((first_line + "\n" + text[end:stop]).split())
+        if name in ("Steps touched", "Still holding"):
+            values[name] = value
+
+    missing = [name for name in ("Steps touched", "Still holding") if name not in values]
+    if missing:
+        die("Protasis accepted a study amendment Fiat could not consume", 1)
     return values
 
 
@@ -8172,10 +9803,12 @@ def _replace_runbook_bytes(path: str, data: bytes) -> None:
 def _study_amendment_record(
     state: dict, expected: str, candidate: bytes
 ) -> dict:
-    """Validate captured candidate bytes and return only bounded receipt data."""
+    """Join Protasis-accepted bytes to bounded controller receipt data."""
     text = decoded_source(candidate, "study amendment candidate")
-    boundary, heading_start, date_text = _study_amendment_boundary(text, expected)
-    fields = _study_amendment_fields(text, heading_start)
+    boundary, heading_start, date_text = _study_amendment_boundary(
+        text, expected, shape_already_accepted=True
+    )
+    fields = _accepted_study_amendment_fields(text, heading_start)
     touched, verdicts = _study_step_verdicts(fields, state)
     prefix_bytes = text[:boundary].encode("utf-8")
     amendment_bytes = candidate[len(prefix_bytes):]
@@ -8340,8 +9973,8 @@ def _recover_study_amendment(
             1,
         )
 
-    recovered = _study_amendment_record(state, prior, canonical)
     _check_amended_study(base_dir, canonical)
+    recovered = _study_amendment_record(state, prior, canonical)
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
     existing_history = receipt.get("amendments")
@@ -8398,8 +10031,8 @@ def cmd_amend_study(args) -> None:
                 "restore the receipted bytes or halt the run"
             )
 
-    amendment = _study_amendment_record(state, expected, candidate)
     _check_amended_study(args.dir, candidate)
+    amendment = _study_amendment_record(state, expected, candidate)
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -9623,6 +11256,98 @@ def commit_is_ancestor(
     return status == 0
 
 
+def _ancestry_answer(base_dir: str, candidate: str, descendant: str) -> bool | None:
+    """Git's ancestry answer, or ``None`` when it gave none.
+
+    `merge-base --is-ancestor` answers 0 for yes and 1 for no. Any other status
+    means the question was not answered: a missing object, an unreadable
+    repository, a killed process. Reading one of those as a no would turn a
+    broken call into a finding about a person.
+    """
+    status = bounded_tool_status(
+        base_dir, "git", ["merge-base", "--is-ancestor", candidate, descendant]
+    )
+    return None if status not in (0, 1) else status == 0
+
+
+def recorded_adoption(push_receipt: dict) -> dict | None:
+    """One complete adopted-merge record, or ``None`` when the step has none.
+
+    A recorded fact is about to stand in for an action, so a partial record is
+    refused rather than read around: the merge commit, the ref it was reachable
+    from, that ref's observed tip and GitHub's verification of the merge all
+    have to be present, and the verification has to name the merge itself.
+    Anything less means the adoption was never completed, and the step still
+    owes a merge.
+    """
+    early = as_dict(push_receipt.get("early_merge"))
+    if not early:
+        return None
+    merge_sha = early.get("merge_commit")
+    base_ref = early.get("reachable_from")
+    base_tip = early.get("base_tip")
+    verified = early.get("github_verified")
+    if (
+        not isinstance(merge_sha, str)
+        or COMMIT_RE.fullmatch(merge_sha) is None
+        or not isinstance(base_ref, str)
+        or not base_ref
+        or not isinstance(base_tip, str)
+        or COMMIT_RE.fullmatch(base_tip) is None
+        or not isinstance(verified, list)
+        or merge_sha not in verified
+    ):
+        die(
+            "recorded early merge is incomplete; a step is satisfied from an "
+            "adoption only when its merge commit, base ref, base tip and "
+            "GitHub verification of that merge are all recorded"
+        )
+    return {
+        "merge_commit": merge_sha,
+        "reachable_from": base_ref,
+        "base_tip": base_tip,
+        "github_verified": verified,
+    }
+
+
+def adopted_merge_base_tip(base_dir: str, merge_sha: str, base_ref: str) -> str:
+    """The recorded base's remote tip, once an early merge is proven to be in it.
+
+    The distinction this protects is the whole point of the gate. A merge still
+    in its base is an early merge, which the run did not perform and can adopt.
+    A merge no longer in its base means the base was rewritten under it, which
+    is the case the original refusal exists for, and it stays refused.
+
+    A merge somebody else performed is created on the remote, so the local
+    object graph may not hold it. One bounded fetch of the recorded base is the
+    only thing that can turn an unanswerable question into an answered one, and
+    it runs only after the question has actually come back unanswered. A second
+    silence is a refusal rather than another retry.
+    """
+    merge_sha = require_full_sha(merge_sha, "adopted merge")
+    tip = remote_branch_tip(base_dir, base_ref, f"recorded base '{base_ref}' tip")
+    answer = _ancestry_answer(base_dir, merge_sha, tip)
+    if answer is None:
+        bounded_git(
+            base_dir,
+            ["fetch", "--no-tags", "--quiet", "origin", f"refs/heads/{base_ref}"],
+            f"recorded base '{base_ref}' could not be read to answer reachability",
+        )
+        answer = _ancestry_answer(base_dir, merge_sha, tip)
+    if answer is None:
+        die(
+            f"reachability of adopted merge {merge_sha} in '{base_ref}' could "
+            "not be determined"
+        )
+    if not answer:
+        die(
+            f"adopted merge {merge_sha} is not reachable from the recorded base "
+            f"'{base_ref}' at {tip}; a merge that has left its base is a "
+            "rewritten ref, not an early merge"
+        )
+    return tip
+
+
 def signing_key(base_dir: str, commit_sha: str) -> str:
     """The long key id a commit was signed with, or the empty string.
 
@@ -9919,6 +11644,7 @@ def inspect_pull_request(
     expected_merge_sha: str | None,
     expected_head_label: str = "verified pushed branch tip",
     expected_closing_issue: str | None = None,
+    adopt_early_merge: bool = False,
 ) -> dict:
     head_sha = (
         require_full_sha(expected_head_sha, "pull request head")
@@ -9980,7 +11706,22 @@ def inspect_pull_request(
     head_ref = head.get("ref") if isinstance(head, dict) else None
     base_ref = base.get("ref") if isinstance(base, dict) else None
     if head_ref != expected_head or base_ref != expected_base:
-        die("pull request topology does not match the expected head and base")
+        # Naming both sides is the difference between a refusal an operator can
+        # act on and one they have to reverse-engineer. A base that is still the
+        # step below is the ordinary case: the pull request was opened for review
+        # and never retargeted, and `gh pr edit --base` fixes it while the pull
+        # request is open. Issue 1085.
+        detail = (
+            f"expected head {expected_head!r} into base {expected_base!r}; "
+            f"found head {head_ref!r} into base {base_ref!r}"
+        )
+        remedy = ""
+        if head_ref == expected_head and base_ref != expected_base:
+            remedy = (
+                f". Retarget it before merging: gh pr edit {url} --base "
+                f"{expected_base}"
+            )
+        die(f"pull request topology does not match: {detail}{remedy}")
     returned_head = head.get("sha")
     if not isinstance(returned_head, str) or not COMMIT_RE.fullmatch(returned_head):
         die("pull request topology has no full head SHA")
@@ -9994,11 +11735,19 @@ def inspect_pull_request(
     # commit, so an open one records none.
     merge_commit = payload.get("merge_commit_sha")
     returned_merge = merge_commit if merged and isinstance(merge_commit, str) else None
+    early_merge = False
     if merge_sha is not None:
         if not merged or returned_merge != merge_sha:
             die("pull request is not the expected merged topology")
     elif merged:
-        die("step pull request was already merged before integrate")
+        if not adopt_early_merge:
+            die("step pull request was already merged before integrate")
+        # Adoption is offered, so the merge is a value the caller has to check
+        # rather than a reason to stop. It still has to be a nameable commit:
+        # `merged` without a full merge SHA is an answer we cannot receipt.
+        if returned_merge is None or not COMMIT_RE.fullmatch(returned_merge):
+            die("early-merged pull request did not return a full merge SHA")
+        early_merge = True
     record = {
         "url": url,
         "head": expected_head,
@@ -10008,6 +11757,8 @@ def inspect_pull_request(
         "merge_sha": returned_merge,
         "author_login": author_login,
     }
+    if early_merge:
+        record["early_merge"] = True
     if closing_issue is not None:
         record["closing_issue"] = closing_issue
     return record
@@ -10268,17 +12019,43 @@ def verify_github_commits(base_dir: str, commits: list[str]) -> list[str]:
 
 
 def scribe_files(base_dir: str, pr_base: str, branch: str) -> list[str]:
+    """The step's changed paths that a prose pass could act on.
+
+    Deletions are excluded on the read's argv rather than filtered afterwards,
+    so the grammar and scope refusals below still run over every path this
+    returns. A removed path carries no prose to rewrite, and excluding it is
+    what lets a step that drops a generated tree reach its prose phase at all:
+    the count that stopped it was a count of files with no prose in them.
+    Everything the step added, modified, renamed or copied is retained, so no
+    prose artefact is lost, and a rename keeps its new name.
+    """
     check_branch_name(pr_base)
     check_branch_name(branch)
-    raw = bounded_git(base_dir, ["diff", "--name-only", "-z", f"{pr_base}..{branch}", "--"])
+    raw = bounded_git(
+        base_dir,
+        [
+            "diff",
+            "--name-only",
+            "-z",
+            "--diff-filter=d",
+            f"{pr_base}..{branch}",
+            "--",
+        ],
+    )
     try:
         decoded = raw.decode("utf-8")
     except UnicodeDecodeError:
         die("git diff path list is not UTF-8")
     paths = [path for path in decoded.split("\0") if path]
     unique = sorted(set(paths))
-    if len(unique) > GIT_PATHS_MAX:
-        die(f"git diff returned more than {GIT_PATHS_MAX} paths")
+    if len(unique) > PROSE_PATHS_MAX:
+        die(
+            "the prose packet names every path this step changed that a prose "
+            f"pass could act on, and this step changed {len(unique)}, above "
+            f"the {PROSE_PATHS_MAX}-path prose ceiling; deleted paths are "
+            "already excluded, so this is authored surface rather than a "
+            "removed tree"
+        )
     for path in unique:
         if os.path.isabs(path) or path in (".", ".."):
             die(f"git diff returned an unsafe path: {path}")
@@ -10305,6 +12082,9 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "output_path": scoped_path(
                 root, os.path.join(STATE_DIR_NAME, "study.md"), "study output"
             ),
+            "design_output_path": scoped_path(
+                root, DESIGN_EVIDENCE_FILE, "design-evidence output"
+            ),
         }
         return packet
 
@@ -10321,6 +12101,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         # the four new briefs, so it retains an explicit inline directive.
         return packet
     version_relations = receipted_version_relations(root, runbook, state=state)
+    design_evidence = receipted_design_evidence(root, state)
 
     step = current_step(state)
     plan = branch_plan(state, step)
@@ -10336,6 +12117,8 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
         }
+        if design_evidence is not None:
+            packet["brief"]["design_evidence"] = design_evidence
         return packet
 
     root_plugin = plugin_root()
@@ -10368,6 +12151,8 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
                 version_relations=version_relations,
             ),
         }
+        if design_evidence is not None:
+            packet["brief"]["design_evidence"] = design_evidence
         return packet
 
     pr_base = plan["pr_base"]
@@ -11232,8 +13017,43 @@ def _checkpoint_restore_source_receipt(
     if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
         die(f"checkpoint {name} receipt has an invalid sha256")
     artifact = receipt.get("artifact")
-    if not isinstance(artifact, str) or not artifact or os.path.isabs(artifact):
+    if not isinstance(artifact, str) or not artifact:
         die(f"checkpoint {name} artefact path is not relocatable")
+    if os.path.isabs(artifact):
+        old_origin = configured_git_path(state, "origin")
+        old_worktree = configured_git_path(state, "worktree")
+        run_branch = run_branch_of(state)
+        paths = (old_origin, old_worktree, artifact)
+        for path in paths:
+            try:
+                encoded = path.encode("utf-8") if isinstance(path, str) else b""
+            except UnicodeEncodeError:
+                encoded = b""
+            if (
+                not encoded
+                or not os.path.isabs(path)
+                or path.replace("\\", "/") != path
+                or os.path.normpath(path) != path
+                or any(
+                    ord(character) < 32 or ord(character) == 127
+                    for character in path
+                )
+            ):
+                die(f"checkpoint {name} artefact path is not relocatable")
+        if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        expected_worktree = os.path.join(
+            old_origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if old_worktree != expected_worktree:
+            die(f"checkpoint {name} artefact path is not relocatable")
+        try:
+            relative = os.path.relpath(artifact, old_worktree).replace(os.sep, "/")
+        except (OSError, TypeError, ValueError):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        artifact = _checkpoint_safe_relative(tuple(relative.split("/")))
+        if os.path.join(old_worktree, *artifact.split("/")) != receipt["artifact"]:
+            die(f"checkpoint {name} artefact path is not relocatable")
     if artifact.replace("\\", "/") != artifact:
         die(f"checkpoint {name} artefact path is unsafe")
     if _checkpoint_safe_relative(tuple(artifact.split("/"))) != artifact:
@@ -11409,12 +13229,19 @@ def _checkpoint_restore_capsule(
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
     )
-    if canonical(controller) != canonical(
-        {
-            "name": state.get("controller"),
-            "state_version": state.get("version"),
-            "version": current_version,
-        }
+    controller_identity = {
+        "name": controller["name"],
+        "state_version": controller["state_version"],
+    }
+    state_identity = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+    }
+    if (
+        canonical(controller_identity) != canonical(state_identity)
+        or not isinstance(controller["version"], str)
+        or controller["version"] not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        or current_version not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
     ):
         die("checkpoint controller identity does not match this controller")
     last_entry = None
@@ -11843,10 +13670,17 @@ def _checkpoint_restore_state(
     manifest: dict,
     manifest_digest: str,
 ) -> tuple[dict, dict]:
-    """Relocate only the controller's two path fields and shape its receipt."""
+    """Relocate controller paths and shape the same-ledger receipt."""
     state = json.loads(json.dumps(imported))
     old_origin = configured_git_path(state, "origin")
     old_worktree = configured_git_path(state, "worktree")
+    for name in ("study", "runbook"):
+        source_receipt = _checkpoint_restore_source_receipt(state, name)
+        if source_receipt is None:
+            continue
+        artifact, _ = source_receipt
+        receipt = as_dict(as_dict(state.get("receipts")).get(name))
+        receipt["artifact"] = artifact
     state.pop("origin", None)
     state.pop("worktree", None)
     state["config"]["git"]["origin"] = origin
@@ -12394,7 +14228,87 @@ def cmd_next(args) -> None:
         refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
     out = delegation_packet(args.dir, state, directive)
+    brief_out = getattr(args, "brief_out", None)
+    if brief_out is not None and out["brief"]:
+        # The controller delegates this packet rather than reading it, so the
+        # brief body costs it a transcript it never uses. Writing the body out
+        # and naming its path leaves the directive readable and gives the
+        # delegate the exact same bytes. An inline directive carries no brief,
+        # so there is nothing to divert and the packet is left alone.
+        path = scoped_path(args.dir, brief_out, "brief output path")
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(out["brief"], handle, sort_keys=True, indent=2)
+        except OSError:
+            die(f"could not write the brief to {brief_out}")
+        out = dict(out)
+        out["brief"] = {}
+        out["brief_path"] = path
     print(json.dumps(out))
+
+
+CHECK_MAP_RELPATH = "tests/check-map-v1.json"
+"""Where a repository declares its own checks, when it declares any.
+
+The schema belongs to the wildcat-skills check graph (ADR-045); a repository
+that does not keep one simply has no discoverable suite here.
+"""
+
+CHECK_MAP_SCHEMA = "wildcat.check-map.v1"
+CHECK_MAP_ROOT_CHECK = "root-suite"
+CHECK_MAP_BYTES_MAX = 1024 * 1024
+
+
+def repository_check_command(base_dir: str | None) -> dict | None:
+    """The repository's own declared suite, when one is discoverable.
+
+    Reads the check map in the run worktree and returns its root check for
+    the audit-round directive to carry beside the log path and the lint
+    flags, so a round that owes the repository's suite hears about it from
+    the directive rather than from memory (issue 1067). Discovery is
+    informational and fail-open: no map, an oversized or unreadable file, a
+    foreign schema, or a root check without a usable argv all return None
+    without refusing the directive. Carriage does not assert the command
+    ran; the round's own record still owes that evidence.
+    """
+    if base_dir is None:
+        return None
+    path = os.path.join(base_dir, CHECK_MAP_RELPATH)
+    try:
+        if os.path.getsize(path) > CHECK_MAP_BYTES_MAX:
+            return None
+        with open(path, "rb") as handle:
+            document = json.loads(
+                handle.read().decode("utf-8", "strict"),
+                object_pairs_hook=_strict_json_object,
+            )
+    except (OSError, UnicodeDecodeError, ValueError):
+        return None
+    if not isinstance(document, dict):
+        return None
+    if document.get("schema") != CHECK_MAP_SCHEMA:
+        return None
+    checks = document.get("checks")
+    if not isinstance(checks, dict):
+        return None
+    check = checks.get(CHECK_MAP_ROOT_CHECK)
+    if not isinstance(check, dict):
+        return None
+    argv = check.get("argv")
+    if not isinstance(argv, list) or not argv:
+        return None
+    if not all(isinstance(part, str) and part for part in argv):
+        return None
+    cwd = check.get("cwd", ".")
+    if not isinstance(cwd, str) or not cwd:
+        return None
+    return {
+        "source": CHECK_MAP_RELPATH,
+        "check": CHECK_MAP_ROOT_CHECK,
+        "argv": list(argv),
+        "cwd": cwd,
+    }
 
 
 def _next_directive(state: dict, base_dir: str | None = None) -> dict:
@@ -12460,6 +14374,9 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
         }
         if lints_owed:
             owed["lints"] = [f"--{lint}-exit" for lint in LINTS]
+        repo_suite = repository_check_command(base_dir)
+        if repo_suite is not None:
+            owed["repo_suite"] = repo_suite
         if not rounds:
             return {**base, "do": "audit-round", "round": 1, **owed}
         last = rounds[-1]
@@ -12509,12 +14426,25 @@ def cmd_status(args) -> None:
             )
             if version_relations is not None:
                 resolution_state = version_resolution_status(args.dir, state)
-    if args.json:
+    field = getattr(args, "field", None)
+    if args.json or field is not None:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
         if resolution_state is not None:
             payload["version_resolution_status"] = resolution_state
-        print(json.dumps(payload, indent=2))
+        if field is None:
+            print(json.dumps(payload, indent=2))
+            return
+        # Reading one value should not cost the whole state. The state grows
+        # a step, a receipt and a round at a time, and a caller after
+        # `observation_run_id` wants twenty bytes of it. The walk matches
+        # `config get`, over the same payload `--json` would have printed.
+        node = payload
+        for part in field.split("."):
+            if not isinstance(node, dict) or part not in node:
+                die(f"status field not found: {field}")
+            node = node[part]
+        print(json.dumps(node))
         return
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
@@ -12591,6 +14521,7 @@ def cmd_status(args) -> None:
         sync = as_dict(as_dict(state.get("integrate")).get("sync"))
         product = as_dict(sync.get("product_evidence"))
         revalidation = as_dict(sync.get("revalidation"))
+        resolution_guard = as_dict(sync.get("resolution_guard"))
         if product:
             print(
                 "evidence: product "
@@ -12598,6 +14529,21 @@ def cmd_status(args) -> None:
                 f"{len(revalidation.get('checks') or [])} integration "
                 "revalidation check(s) recorded"
             )
+            if resolution_guard:
+                print(
+                    "evidence: sync resolution "
+                    f"{len(resolution_guard.get('side_selected_paths') or [])} "
+                    "whole-side path(s), "
+                    f"{len(resolution_guard.get('superseded_intersection_paths') or [])} "
+                    "superseded-intersection path(s), "
+                    f"{len(resolution_guard.get('acknowledged_paths') or [])} "
+                    "acknowledged"
+                )
+            else:
+                print(
+                    "evidence: sync resolution guard missing; supersede with "
+                    "a fresh signed and revalidated sync"
+                )
             superseded = as_dict(state.get("integrate")).get(
                 "superseded_syncs"
             ) or []
@@ -12638,6 +14584,91 @@ def cmd_resume(args) -> None:
     print("resumed")
 
 
+def verify_design_evidence(
+    base_dir: str,
+    state: dict,
+    *,
+    study_event: dict | None,
+    transition_events: list[dict],
+) -> None:
+    """Replay every admitted Protasis transition against its exact reports."""
+    if not design_evidence_required(state):
+        return
+    study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
+    if study_receipt.get("sha256") is None:
+        if state.get("phase") != "study":
+            die("design-evidence run has no study receipt", 1)
+        if transition_events:
+            die("design-evidence transitions exist before study receipt", 1)
+        return
+
+    design = _design_receipt(state)
+    transitions = design["transitions"]
+    expected_names = ["design-lock"]
+    runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    if runbook_receipt.get("sha256") is not None:
+        if state.get("phase") == "steps":
+            current = state.get("current_step")
+            if not isinstance(current, int) or isinstance(current, bool):
+                die("design-evidence run has no current step", 1)
+            expected_names.extend(f"step:{number}" for number in range(1, current + 1))
+        elif state.get("phase") in ("integrate", "done"):
+            expected_names.extend(
+                f"step:{number}" for number in range(1, len(state.get("steps", [])) + 1)
+            )
+            merged = as_dict(state.get("integrate")).get("merged") or []
+            if state.get("phase") == "done" or len(merged) == len(state.get("steps", [])):
+                expected_names.append("integration")
+        elif state.get("phase") != "runbook":
+            die("design-evidence run has an unsupported phase", 1)
+
+    observed_names = [item.get("transition") for item in transitions]
+    if observed_names != expected_names:
+        die(
+            "design-evidence transition spine does not match controller progress: "
+            f"expected {expected_names}, got {observed_names}",
+            1,
+        )
+
+    event_design = as_dict(study_event).get("design_evidence")
+    expected_study_design = {
+        "schema": design["schema"],
+        "artifact": design["artifact"],
+        "sha256": design["sha256"],
+        "selected": design["selected"],
+        "transitions": [transitions[0]],
+    }
+    if event_design != expected_study_design:
+        die("done:study ledger event does not match the design lock", 1)
+    if transition_events != transitions[1:]:
+        die("controller ledger events do not match design transitions", 1)
+
+    for transition in transitions:
+        checked = _checked_design_transition(
+            base_dir,
+            transition["transition"],
+            expected_sha256=design["sha256"],
+            expected_selected=design["selected"],
+        )
+        if checked["transition"] != transition:
+            die(
+                "design-evidence report receipt changed at transition "
+                f"{transition['transition']}",
+                1,
+            )
+
+    if runbook_receipt.get("sha256") is not None:
+        runbook = receipted_source(base_dir, state, "runbook")
+        observed_lock = parse_design_lock_source(runbook["text"])
+        expected_lock = {
+            "schema": design["schema"],
+            "sha256": design["sha256"],
+            "candidate": design["selected"],
+        }
+        if observed_lock != expected_lock or runbook_receipt.get("design_lock") != expected_lock:
+            die("receipted runbook does not bind the active design lock", 1)
+
+
 def verify_run(
     base_dir: str,
     *,
@@ -12655,7 +14686,9 @@ def verify_run(
     prev = "genesis"
     count = 0
     last_state = None
+    study_event = None
     runbook_event = None
+    design_transition_events = []
     resolution_events = []
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
@@ -12681,6 +14714,11 @@ def verify_run(
                 die(f"ledger chain broken at line {i}", 1)
             if entry.get("event") == "done:runbook":
                 runbook_event = entry.get("data")
+            if entry.get("event") == "done:study":
+                study_event = entry.get("data")
+            event_data = entry.get("data")
+            if isinstance(event_data, dict) and "design_transition" in event_data:
+                design_transition_events.append(event_data.get("design_transition"))
             if entry.get("event") == "done:version-resolution":
                 resolution_events.append(entry.get("data"))
             prev = entry["hash"]
@@ -12694,6 +14732,12 @@ def verify_run(
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
+    verify_design_evidence(
+        base_dir,
+        state,
+        study_event=study_event,
+        transition_events=design_transition_events,
+    )
     runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     version_relations = None
     if runbook_receipt.get("sha256") is not None:
@@ -12806,7 +14850,7 @@ def cmd_reset(args) -> None:
         suffix += 1
     os.makedirs(destination)
 
-    preserved = {".gitignore", "archive", "lock"}
+    preserved = {".gitignore", "archive", "checkpoints", "lock"}
     for entry in os.listdir(root):
         if entry in preserved:
             continue
@@ -12864,7 +14908,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_init)
 
     sp = sub.add_parser("status", help="show run state")
-    sp.add_argument("--json", action="store_true")
+    shape = sp.add_mutually_exclusive_group()
+    shape.add_argument("--json", action="store_true")
+    shape.add_argument(
+        "--field",
+        metavar="PATH",
+        help=(
+            "print one dotted path out of the state --json would print, "
+            "such as observation_run_id"
+        ),
+    )
     sp.set_defaults(fn=cmd_status)
 
     sp = sub.add_parser(
@@ -12874,7 +14927,32 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(fn=cmd_currency)
 
+    sp = sub.add_parser(
+        "issue-check",
+        help="check one candidate or filed issue against the filing contract",
+    )
+    sp.add_argument("--body", help="path to the candidate issue body")
+    sp.add_argument("--issue", help="canonical GitHub issue URL to read")
+    sp.set_defaults(fn=cmd_issue_check)
+
+    sp = sub.add_parser(
+        "stale-bodies",
+        help="report which open issues carry no status block (report-only)",
+    )
+    sp.add_argument("--bodies", required=True,
+                    help="path to a JSON array of {number, title, body}")
+    sp.add_argument("--json", action="store_true", help="emit the report as JSON")
+    sp.set_defaults(fn=cmd_stale_bodies)
+
     sp = sub.add_parser("next", help="emit the single next action as JSON")
+    sp.add_argument(
+        "--brief-out",
+        metavar="PATH",
+        help=(
+            "write the delegated brief to PATH and name it in brief_path, "
+            "instead of printing its body"
+        ),
+    )
     sp.set_defaults(fn=cmd_next)
 
     sp = sub.add_parser("record", help="store a named receipt")
@@ -12927,6 +15005,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
+    sp.add_argument(
+        "--acknowledge-sync-path",
+        dest="acknowledge_sync_paths",
+        action="append",
+        default=[],
+    )
     sp.add_argument("--tests")
     sp.add_argument("--no-further-leads", dest="no_further_leads", action="store_true")
     sp.add_argument("--reason")

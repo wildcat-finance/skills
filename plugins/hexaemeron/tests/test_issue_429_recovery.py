@@ -42,8 +42,11 @@ INTEGRATED_HEXAEMERON_VERSION = "1.6.1"
 PRODUCT_CONTROLLER_SHA256 = (
     "2c29f696f2b368a334eb4a880e745fa3cd468cc9c385e36346000aed7c91ba9f"
 )
+RECOVERY_GENERATOR_SHA256 = (
+    "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75"
+)
 INTEGRATED_CONTROLLER_SHA256 = (
-    "a4ea86cdd550f300e2ed103ce6e7862d0c6c2273e5fa264498530fd96faeeddd"
+    "0b60bd18b93347a4757f5c5d1aeb61ee111e9c360530aa41b078ed87779bb684"
 )
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
@@ -224,6 +227,15 @@ class Issue429RecoveryTests(unittest.TestCase):
     def test_release_proof_binds_the_composed_runtime_and_generations(self):
         self.assertTrue(PROOF.is_file(), f"missing release proof: {PROOF}")
         self.assertEqual(sha256(PROOF), PROOF_SHA256)
+        recovered_generator = git(
+            "show",
+            f"{STEP_ONE_PRE_PROSE_HEAD}:"
+            "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
+        )
+        self.assertEqual(
+            hashlib.sha256(recovered_generator).hexdigest(),
+            RECOVERY_GENERATOR_SHA256,
+        )
         proof = PROOF.read_text(encoding="utf-8")
         for value in (
             PRODUCT_HEAD,
@@ -233,7 +245,7 @@ class Issue429RecoveryTests(unittest.TestCase):
             RUNBOOK_SHA256,
             sha256(COMPOSITION_MANIFEST),
             PRODUCT_CONTROLLER_SHA256,
-            sha256(GENERATOR),
+            RECOVERY_GENERATOR_SHA256,
             f"fiat-v{PRODUCT_FIAT_VERSION}",
             f"Hexaemeron {PRODUCT_HEXAEMERON_VERSION}",
         ):
@@ -269,6 +281,17 @@ class Issue429RecoveryTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        digests = [coverage["run_observation_binding"]["controller"]["sha256"]]
+        for promise in (
+            "fiat-design-evidence",
+            "fiat-final-integration",
+            "fiat-local-retirement",
+            "fiat-receipted-delivery",
+            "fiat-study-amendment",
+            "fiat-runbook-amendment",
+            "fiat-run-observation-binding",
+        ):
+            digests.append(coverage["runtime"][promise]["sha256"])
         self.assertEqual(sha256(CONTROLLER), INTEGRATED_CONTROLLER_SHA256)
         self.assertEqual(
             coverage["run_observation_binding"]["controller"],

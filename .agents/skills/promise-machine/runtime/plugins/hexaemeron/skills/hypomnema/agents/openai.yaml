@@ -1,4 +1,0 @@
-interface:
-  display_name: "Hypomnema"
-  short_description: "Decides what gets recorded and where"
-  default_prompt: "Use $hexaemeron:hypomnema to record the reason behind a decision and put it where it will be found."

@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Lemma",
     "shortDescription": "Source-linked JSONL chunks from Solidity compiler inputs and Markdown documents.",
-    "longDescription": "Runs one of two standard-library Python chunkers: Solidity from solc standard JSON input, or Markdown from a document tree. The output uses a shared schema that separates source text used for quotation from model and embedding text. Lemma does not embed, index, retrieve, or answer from the chunks.",
+    "longDescription": "Lemma turns Solidity compiler standard JSON input or a Markdown tree into validated JSONL chunks with source locations and separate quotation, model, and embedding text. It stops before embedding, indexing, retrieval, answering, or evaluation. Callable-surface ABI validation does not yet independently check return types or state mutability.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

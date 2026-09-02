@@ -1,8 +1,8 @@
 {
   "name": "homologia",
   "displayName": "Homologia",
-  "version": "0.1.0",
-  "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+  "version": "1.1.0",
+  "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

@@ -177,6 +177,24 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             except (OSError, ValueError):
                 state = None
         if (
+            args[:2] == ("done", "runbook")
+            and state is not None
+            and getattr(self, "auto_design_lock", True)
+        ):
+            design = (
+                state.get("receipts", {})
+                .get("study", {})
+                .get("design_evidence")
+            )
+            if isinstance(design, dict):
+                artifact = args[args.index("--artifact") + 1]
+                path = artifact if os.path.isabs(artifact) else os.path.join(self.target, artifact)
+                with open(path, encoding="utf-8") as handle:
+                    source = handle.read()
+                if "```design-lock" not in source:
+                    with open(path, "w", encoding="utf-8") as handle:
+                        handle.write(self.design_lock_block(state) + "\n" + source)
+        if (
             args[:1] == ("audit-round",)
             and expect == 0
             and getattr(self, "auto_audit_records", True)
@@ -380,6 +398,7 @@ if candidate and candidate[0] in (
     "show",
     "diff",
     "merge-base",
+    "ls-tree",
     "ls-remote",
 ):
     args = candidate
@@ -529,6 +548,18 @@ import time
 
 args = sys.argv[1:]
 mode = os.environ.get("FAKE_GH_MODE", "valid")
+# The filing contract every fixture issue satisfies unless a case replaces it.
+# Written here rather than in each test so a case that is not about the contract
+# does not have to restate it.
+DEFAULT_ISSUE_BODY = (
+    "A fixture issue.\\n"
+    "\\n"
+    "Fiat-Required: 1\\n"
+    "\\n"
+    "```carryover\\n"
+    "none | none | this fixture carries nothing forward\\n"
+    "```\\n"
+)
 if os.environ.get("FAKE_GH_LOG"):
     with open(os.environ["FAKE_GH_LOG"], "a", encoding="utf-8") as log:
         log.write(json.dumps(args) + "\\n")
@@ -547,6 +578,20 @@ path = args[-1]
 if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
     print(json.dumps({"full_name": repository}))
+    raise SystemExit(0)
+issue = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/issues/(?P<number>[0-9]+)", path)
+if issue:
+    url = "https://github.com/%s/issues/%s" % (issue.group("repo"), issue.group("number"))
+    bodies = json.loads(os.environ.get("FAKE_GH_ISSUES", "{}"))
+    if mode == "issue-missing":
+        raise SystemExit(4)
+    if url in bodies:
+        body = bodies[url]
+    else:
+        body = os.environ.get("FAKE_GH_ISSUE_BODY", DEFAULT_ISSUE_BODY)
+    if mode == "issue-body-not-text":
+        body = 17
+    print(json.dumps({"number": int(issue.group("number")), "body": body}))
     raise SystemExit(0)
 pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
 if pull:
@@ -665,11 +710,22 @@ print(json.dumps(payload))
             fh.write(content)
         return name
 
-    def write_run_pr(self, carried="- nothing outstanding\n"):
-        """The run-level pull request body the integrate receipt reads."""
+    CARRYOVER_NONE_ROW = "none | none | this run leaves nothing unfinished\n"
+
+    def carryover_block(self, rows=None):
+        """One triage block in the shape `done integrate` requires."""
+        return "```carryover\n" + (rows or self.CARRYOVER_NONE_ROW) + "```\n"
+
+    def write_run_pr(self, carried=None, rows=None):
+        """The run-level pull request body the integrate receipt reads.
+
+        `rows` gives the triage rows; `carried` replaces the whole section body,
+        which is how a case exercises a section that answers nothing.
+        """
         body = "Run body.\n"
-        if carried is not None:
-            body += "\n## Carried forward\n\n" + carried
+        section = self.carryover_block(rows) if carried is None else carried
+        if section is not None:
+            body += "\n## Carried forward\n\n" + section
         return self.write(os.path.join(".hexaemeron", "run-pr.md"), body)
 
     def init(self, topic="test topic", task_issue=None, base=None):
@@ -679,6 +735,95 @@ print(json.dumps(payload))
         if base is not None:
             args += ["--base", base]
         self.run_ctl(*args)
+        self.write_design_evidence()
+
+    def write_design_evidence(self, target=None):
+        """Write the smallest fully resolved evidence matrix used by fixtures."""
+        target = target or self.target
+        report_dir = os.path.join(target, ".hexaemeron", "design-reports")
+        os.makedirs(report_dir, exist_ok=True)
+        candidates = (
+            ("bounded", "Process one bounded unit at a time."),
+            ("buffered", "Hold the complete input before processing."),
+        )
+        criteria = (
+            ("works", "correctness", "gate", "boolean", "equals", True),
+            ("warm-time", "time", "metric", "milliseconds", "minimise", None),
+            ("peak-space", "space", "metric", "bytes", "minimise", None),
+            ("plugin-safe", "compatibility", "gate", "boolean", "equals", True),
+            ("restart-safe", "recovery", "gate", "boolean", "equals", True),
+        )
+        criterion_records = []
+        for identifier, concern, kind, unit, comparator, threshold in criteria:
+            criterion_records.append({
+                "id": identifier,
+                "concern": concern,
+                "kind": kind,
+                "stage": "selection",
+                "owner": "fixture",
+                "unit": unit,
+                "comparator": comparator,
+                "threshold": threshold,
+                "blocks": "design-lock",
+            })
+        results = []
+        for candidate, _ in candidates:
+            for identifier, _, kind, unit, _, _ in criteria:
+                value = True
+                if kind == "metric":
+                    value = 10 if candidate == "bounded" else 20
+                payload = {
+                    "schema": "protasis-design-report/v1",
+                    "candidate": candidate,
+                    "criterion": identifier,
+                    "value": value,
+                    "unit": unit,
+                    "command": f"fixture measure {candidate} {identifier}",
+                    "exit": 0,
+                }
+                data = (json.dumps(payload, sort_keys=True) + "\n").encode()
+                name = f"{candidate}-{identifier}.json"
+                with open(os.path.join(report_dir, name), "wb") as handle:
+                    handle.write(data)
+                results.append({
+                    "candidate": candidate,
+                    "criterion": identifier,
+                    "state": "pass",
+                    "report": {
+                        "path": f"design-reports/{name}",
+                        "sha256": hashlib.sha256(data).hexdigest(),
+                    },
+                })
+        record = {
+            "schema": "protasis-design-evidence/v1",
+            "candidates": [
+                {"id": identifier, "summary": summary}
+                for identifier, summary in candidates
+            ],
+            "criteria": criterion_records,
+            "results": results,
+            "selection": {
+                "candidate": "bounded",
+                "rule": "unique-frontier",
+                "policy_ref": None,
+            },
+        }
+        path = os.path.join(target, ".hexaemeron", "design-evidence.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(record, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        return path
+
+    def design_lock_block(self, state=None):
+        state = state or self.state()
+        design = state["receipts"]["study"]["design_evidence"]
+        return (
+            "```design-lock\n"
+            f"schema | {design['schema']}\n"
+            f"sha256 | {design['sha256']}\n"
+            f"candidate | {design['selected']}\n"
+            "```\n"
+        )
 
     @staticmethod
     def integration_base(state):
@@ -880,7 +1025,8 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         self.run_ctl(
             "done", "runbook", "--artifact", runbook, "--steps-file", steps
         )
-        return study_text, runbook_text
+        with open(os.path.join(self.target, runbook), encoding="utf-8") as handle:
+            return study_text, handle.read()
 
     @staticmethod
     def amendment(
