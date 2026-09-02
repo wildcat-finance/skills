@@ -1,18 +1,1 @@
-{
-  "dataset": "minimal-goldfinch-fixture",
-  "source": {"chain": "ethereum-mainnet"},
-  "captured": {
-    "indexed_block": 100,
-    "indexed_block_timestamp": 200,
-    "deployment": "fixture"
-  },
-  "entities": {
-    "borrows": 1,
-    "repays": 1,
-    "creditLines": 1,
-    "tranchedPools": 2,
-    "callableLoans": 0
-  },
-  "sha256": "55ea322672afd761fa6ad272a579b1b68143e734a7aca70d0e0fbd2bcf2462f5",
-  "bytes": 1092
-}
+{"adapter":{"name":"aave-v4","version":"1.0.0"},"captured_at":"2026-09-02T00:00:00.000Z","endpoint":"https://gateway.thegraph.com","protocol_generation":"aave-v4","release":"fixture-v1","request":{"method":"POST","path":"/api/subgraphs/id/FixtureSubgraphIdAaveV4Minimal","query":{"entity":"userActivities","first":"1000","orderBy":"id","where":"block_gte:100,block_lte:110"}},"schema_version":2,"scope":{"activity_types":["BORROW","REPAY","SET_COLLATERAL","SUPPLY","WITHDRAW"],"chain":"ethereum-mainnet","from_block":100,"to_block":110},"source":{"bytes":2268,"sha256":"55be07a1d35f82058f510f54705e3b19391aeb81b7f0ddd9ccb54f6431a81a92"},"source_api":"the-graph"}

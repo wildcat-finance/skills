@@ -85,30 +85,30 @@ class OfflineVerificationTests(unittest.TestCase):
 
     def test_altered_canonical_bytes_fail_even_with_an_updated_digest(self):
         rows = self.rows()
-        rows[0]["amount"]["base_units"] = "999"
+        rows[0]["amounts"][0]["base_units"] = "999"
         self.write_rows(rows)
         with self.assertRaisesRegex(TabulariumError, "offline source rebuild"):
             verify(self.manifest_path)
 
     def test_included_count_drift_fails(self):
         manifest = self.manifest()
-        manifest["coverage"]["included_entities"]["borrows"] = 2
+        manifest["coverage"]["included_events"]["borrow"] = 2
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "included entity counts"):
+        with self.assertRaisesRegex(TabulariumError, "included event counts"):
             verify(self.manifest_path)
 
     def test_unsupported_count_drift_fails(self):
         manifest = self.manifest()
-        manifest["coverage"]["unsupported_entities"]["creditLines"] = 0
+        manifest["coverage"]["unsupported_events"]["SUPPLY"] = 0
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "unsupported entity counts"):
+        with self.assertRaisesRegex(TabulariumError, "unsupported event counts"):
             verify(self.manifest_path)
 
     def test_omitted_source_kind_fails_manifest_shape(self):
         manifest = self.manifest()
-        del manifest["coverage"]["unsupported_entities"]["_meta"]
+        del manifest["coverage"]["unsupported_events"]["SUPPLY"]
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "missing field"):
+        with self.assertRaisesRegex(TabulariumError, "unsupported event counts"):
             verify(self.manifest_path)
 
     def test_duplicate_source_selectors_fail(self):
@@ -126,28 +126,28 @@ class OfflineVerificationTests(unittest.TestCase):
 
     def test_unsupported_event_schema_version_fails(self):
         rows = self.rows()
-        rows[0]["schema_version"] = 2
+        rows[0]["schema_version"] = 3
         self.write_rows(rows)
-        with self.assertRaisesRegex(TabulariumError, "unsupported event schema"):
+        with self.assertRaisesRegex(TabulariumError, "canonical event schema v2"):
             verify(self.manifest_path)
 
     def test_unsupported_row_mapping_version_fails(self):
         rows = self.rows()
-        rows[0]["provenance"]["mapping_rule"] = "goldfinch.repay.v2"
+        rows[0]["provenance"]["mapping_rule"] = "aave-v4.repay.v2"
         self.write_rows(rows)
-        with self.assertRaisesRegex(TabulariumError, "unsupported mapping-rule"):
+        with self.assertRaisesRegex(TabulariumError, "canonical bytes do not match"):
             verify(self.manifest_path)
 
     def test_unsupported_manifest_event_version_fails(self):
         manifest = self.manifest()
-        manifest["versions"]["event_schema"] = 2
+        manifest["versions"]["event_schema"] = 3
         self.write_manifest(manifest)
         with self.assertRaisesRegex(TabulariumError, "unsupported event schema"):
             verify(self.manifest_path)
 
     def test_unsupported_manifest_mapping_versions_fail(self):
         manifest = self.manifest()
-        manifest["versions"]["mapping_rules"] = ["goldfinch.borrow.v2"]
+        manifest["versions"]["mapping_rules"] = ["aave-v4.borrow.v2"]
         self.write_manifest(manifest)
         with self.assertRaisesRegex(TabulariumError, "unsupported mapping-rule"):
             verify(self.manifest_path)
@@ -251,7 +251,7 @@ class OfflineVerificationTests(unittest.TestCase):
 
     def test_capture_source_digest_is_checked_after_capture_rebinding(self):
         capture = json.loads(self.capture.read_text())
-        capture["sha256"] = "0" * 64
+        capture["source"]["sha256"] = "0" * 64
         self.capture.write_bytes(canonical_json(capture) + b"\n")
         manifest = self.manifest()
         self.update_claim(manifest, "capture_manifest", self.capture)
@@ -259,35 +259,25 @@ class OfflineVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(TabulariumError, "source digest"):
             verify(self.manifest_path)
 
-    def test_indexed_block_must_match_source_metadata(self):
+    def test_capture_window_must_match_the_snapshot_window(self):
         capture = json.loads(self.capture.read_text())
-        capture["captured"]["indexed_block"] = 101
+        capture["scope"]["to_block"] = 111
+        capture["request"]["query"]["where"] = "block_gte:100,block_lte:111"
         self.capture.write_bytes(canonical_json(capture) + b"\n")
         manifest = self.manifest()
         self.update_claim(manifest, "capture_manifest", self.capture)
-        manifest["source"]["indexed_block"] = 101
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "indexed block"):
+        with self.assertRaisesRegex(TabulariumError, "window does not match"):
             verify(self.manifest_path)
 
-    def test_indexed_block_timestamp_must_match_source_metadata(self):
+    def test_capture_request_must_name_the_snapshot_subgraph(self):
         capture = json.loads(self.capture.read_text())
-        capture["captured"]["indexed_block_timestamp"] = 201
+        capture["request"]["path"] = "/api/subgraphs/id/AnotherSubgraphIdentifier"
         self.capture.write_bytes(canonical_json(capture) + b"\n")
         manifest = self.manifest()
         self.update_claim(manifest, "capture_manifest", self.capture)
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "indexed block timestamp"):
-            verify(self.manifest_path)
-
-    def test_deployment_must_match_source_metadata(self):
-        capture = json.loads(self.capture.read_text())
-        capture["captured"]["deployment"] = "other-deployment"
-        self.capture.write_bytes(canonical_json(capture) + b"\n")
-        manifest = self.manifest()
-        self.update_claim(manifest, "capture_manifest", self.capture)
-        self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "deployment"):
+        with self.assertRaisesRegex(TabulariumError, "request does not match"):
             verify(self.manifest_path)
 
     def test_known_gap_omission_fails(self):

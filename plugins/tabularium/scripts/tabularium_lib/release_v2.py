@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import re
 
-from .adapters import euler_v1, euler_v2
+from .adapters import aave_v4, euler_v1, euler_v2
 from .core import TabulariumError, safe_integer, sha256_bytes
 
 
@@ -11,14 +11,24 @@ MANIFEST_SCHEMA_VERSION = 2
 EVENT_SCHEMA_VERSION = 2
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 ADAPTERS = {
+    aave_v4.ADAPTER: aave_v4,
     euler_v1.ADAPTER: euler_v1,
     euler_v2.ADAPTER: euler_v2,
 }
 EVIDENCE_CLASSES = {
+    aave_v4.ADAPTER: "hosted-indexer-reported-block-window",
     euler_v1.ADAPTER: "hosted-rpc-reported-log-scope",
     euler_v2.ADAPTER: "hosted-indexer-reported-query-scope",
 }
 KNOWN_GAPS = {
+    aave_v4.ADAPTER: (
+        "the hosted indexer reported the block window; this release does not independently prove the chain boundary",
+        "the block window is not complete Aave v4 history, and its bounds were chosen for this release",
+        "activity rows report no block hash, transaction index or underlying token address, so every amount leg names a null asset",
+        "a REPAY reports no drawn amount, so its asset leg reads the total repaid and no drawn value is reconstructed",
+        "SET_COLLATERAL, SUPPLY and WITHDRAW rows are preserved and counted but not mapped as credit events",
+        "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity",
+    ),
     euler_v1.ADAPTER: (
         "the public RPC reported the block and logs; this release does not independently prove the chain boundary",
         "the one-block borrower scope is not the borrower's complete Euler v1 history",
@@ -148,6 +158,45 @@ def validate_capture(capture, source, source_bytes, expected_adapter=None):
         }
         if capture["request"] != expected_request:
             raise TabulariumError("capture request does not match the Euler v1 scope")
+    elif module is aave_v4:
+        _exact(
+            scope,
+            ("chain", "from_block", "to_block", "activity_types"),
+            "capture manifest.scope",
+        )
+        first = safe_integer(scope["from_block"], "capture manifest.scope.from_block")
+        last = safe_integer(scope["to_block"], "capture manifest.scope.to_block")
+        if first > last:
+            raise TabulariumError("capture block scope is reversed")
+        if scope["activity_types"] != sorted(aave_v4.EXPECTED_TYPES):
+            raise TabulariumError("capture activity types are incomplete or unsupported")
+        if capture["endpoint"] != "https://gateway.thegraph.com":
+            raise TabulariumError("capture endpoint is not The Graph gateway")
+        expected_request = {
+            "method": "POST",
+            "path": "/api/subgraphs/id/%s"
+            % _text(
+                _object(source["_meta"], "Aave v4 snapshot._meta").get("subgraph_id"),
+                "Aave v4 snapshot._meta.subgraph_id",
+            ),
+            "query": {
+                "entity": "userActivities",
+                "orderBy": "id",
+                "first": "1000",
+                "where": "block_gte:%d,block_lte:%d" % (first, last),
+            },
+        }
+        if capture["request"] != expected_request:
+            raise TabulariumError("capture request does not match the Aave v4 scope")
+        window = _object(
+            _object(source["_meta"], "Aave v4 snapshot._meta").get("window"),
+            "Aave v4 snapshot._meta.window",
+        )
+        if (
+            safe_integer(window.get("first_block"), "window.first_block") != first
+            or safe_integer(window.get("last_block"), "window.last_block") != last
+        ):
+            raise TabulariumError("snapshot window does not match the capture scope")
     else:
         _exact(scope, ("chain", "owner", "from_timestamp", "to_timestamp", "event_types"), "capture manifest.scope")
         if str(scope["owner"]).lower() != scope["owner"] or not re.fullmatch(r"0x[0-9a-f]{40}", scope["owner"]):

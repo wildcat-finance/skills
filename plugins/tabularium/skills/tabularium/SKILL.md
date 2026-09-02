@@ -5,7 +5,7 @@ description: >
   with venue-native records, mapping provenance and explicit coverage. Use
   when the user names Tabularium, asks to preserve a credit-event record, or
   wants to rebuild or verify a Tabularium release offline. This version maps
-  preserved Goldfinch, Euler v1 and Euler V2 credit events and rebuilds a
+  preserved Aave v4, Euler v1 and Euler V2 credit events and rebuilds a
   non-canonical Compound v3 Phase 0 execution witness. Do not use it to collect
   live data, infer who controls an address, rate a counterparty, authenticate a
   publisher or claim an independently proved chain boundary.
@@ -71,7 +71,7 @@ not become a verdict about the borrower.
 ## Start with the checked-in releases
 
 The built prototype ships
-[`goldfinch-v0`](../../examples/goldfinch-v0/README.md): unchanged source and
+[`aave-v4-v0`](../../examples/aave-v4-v0/README.md): unchanged source and
 capture bytes, 511 canonical rows, a coverage manifest, a data dictionary and
 a temporary rebuild demonstration.
 
@@ -84,7 +84,7 @@ generation; `Euler V3` names the hosted API. Keep those fields separate.
 From the repository root:
 
 ```bash
-python3 plugins/tabularium/examples/goldfinch-v0/rebuild.py
+python3 plugins/tabularium/examples/aave-v4-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v1-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v2-v0/rebuild.py
 python3 plugins/tabularium/examples/compound-v3-phase0-v0/rebuild.py
@@ -98,11 +98,11 @@ does not rewrite the example.
 ## Build and verify
 
 Keep the four files of any release together and select its adapter explicitly.
-Goldfinch remains the default for old commands:
+Aave v4 remains the default for old commands:
 
 ```bash
 python3 scripts/tabularium.py build \
-  --adapter <goldfinch|euler-v1|euler-v2> \
+  --adapter <aave-v4|euler-v1|euler-v2> \
   --source <release-dir>/source.json \
   --capture-manifest <release-dir>/capture.json \
   --out <release-dir>/events.jsonl \
@@ -118,8 +118,8 @@ source response. It rejects
 duplicate source identifiers, unsafe numeric values, paths outside the release
 directory and outputs that alias preserved input.
 
-The Goldfinch adapter maps `borrows` to `goldfinch.borrow` and `repays` to
-`goldfinch.repay`. Each row carries the complete native entity, a stable source
+The Aave v4 adapter maps `borrows` to `aave-v4.borrow` and `repays` to
+`aave-v4.repay`. Each row carries the complete native entity, a stable source
 selector, the source contract, adapter version and mapping rule. The builder
 reports `_meta`, `callableLoans`, `creditLines` and `tranchedPools` as
 unsupported rather than treating silence as coverage.
@@ -160,7 +160,7 @@ remain Phase 1 work.
 
 ## What the result means
 
-A Goldfinch repayment row means the source recorded a repayment amount. It
+A Aave v4 repayment row means the source recorded a repayment amount. It
 does not by itself prove that every obligation was paid, the facility closed or
 the borrower's whole debt was settled.
 

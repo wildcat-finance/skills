@@ -77,7 +77,7 @@ Tabularium tests.
 
 The fixes reject reversed coverage and reconcile shared block and transaction
 metadata before ordering or serialising events. Both release rebuilds remain
-byte-identical, and all prior Goldfinch artifacts remain unchanged.
+byte-identical, and all prior Aave v4 artifacts remain unchanged.
 
 Leads not pursued: none.
 
@@ -108,7 +108,7 @@ rebinding, unknown event types, path and artifact tampering, offline read-only
 verification and deterministic order.
 
 The 14 root and 123 Tabularium tests passed. Each Euler release rebuilt twice
-to its committed bytes. The four Goldfinch artifacts retained their fixed
+to its committed bytes. The four Aave v4 artifacts retained their fixed
 digests.
 
 | id | severity | file | finding | status |
@@ -121,7 +121,7 @@ Leads not pursued: none.
 
 Scope:
 `issue-74-scaffold-tabularium...ca4d8e85f916dce351b6c5364d4c60dd987750f0`.
-Reviewed canonical serialisation, numeric bounds, Goldfinch source validation,
+Reviewed canonical serialisation, numeric bounds, Aave v4 source validation,
 mapping semantics, output ordering, source preservation, the event and
 coverage schemas, CLI failure behaviour and all tests. Reproduced the 511-row
 build twice at SHA-256
@@ -159,7 +159,7 @@ Leads not pursued: none.
 ## Step 3, round 1 -- 2026-08-16
 
 Scope:
-`issue-77-event-model-goldfinch--audit...508f0426d5b21e1e44c0e8ad81a2be37477c239e`.
+`issue-77-event-model-aave-v4--audit...508f0426d5b21e1e44c0e8ad81a2be37477c239e`.
 Reviewed release construction, manifest binding, path confinement, source and
 capture preservation, canonical reconstruction, unsupported-version refusal,
 tamper cases, offline operation and read-only verification. Rebuilt the real
@@ -180,7 +180,7 @@ Leads not pursued: none.
 ## Step 3, round 2 -- 2026-08-16
 
 Scope:
-`issue-77-event-model-goldfinch--audit...02267b631a8063c5c1bba922f9c48d6157ffef19`,
+`issue-77-event-model-aave-v4--audit...02267b631a8063c5c1bba922f9c48d6157ffef19`,
 including the round 1 fix. Re-ran both test suites, compiled the Python sources,
 parsed the schemas, compared separate real builds, verified a read-only release
 offline and exercised source and canonical tampering. The 511-row canonical and
@@ -201,7 +201,7 @@ Leads not pursued: none.
 ## Step 3, round 3 -- 2026-08-16
 
 Scope:
-`issue-77-event-model-goldfinch--audit...9393ff7e4a351958cad980b2eda20669d2d69fe0`,
+`issue-77-event-model-aave-v4--audit...9393ff7e4a351958cad980b2eda20669d2d69fe0`,
 including both earlier rounds of fixes. Re-read the release and verifier paths,
 ran 10 root and 77 Tabularium tests, compiled the Python sources and exercised
 NUL paths, FIFOs, directories, symlinks, hardlink aliases, malformed JSON,
