@@ -1,0 +1,1 @@
+{"authority":["operator"],"facts":[{"evidence_sha256":"6ca494a033a5670adb19c1f7aa5657fe2252f017b841228ebd0562c90298465e","id":"fact.f762f0108496de277f49a2dba167db9edd9ada8bf563ce92712018f78b257c38","value":"false"}],"operation":"beta","state":"blocked","target":"repository","tools":[]}

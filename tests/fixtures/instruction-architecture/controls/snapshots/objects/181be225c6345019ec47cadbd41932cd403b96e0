@@ -1,0 +1,36 @@
+N0 a0 core msg exact lint pm brevitas
+^ brevitas prose.structure
+- performs brevitas *4 delivery solidity_review finding.validity fact.change
+< preserve.evidence satisfy.budget
+! exact.keep *6 address txhash fileline number counterexample repro
+! keep establishment_limit
+? ~ fit evidence budget_limits ! yield budget_limits
+? &2 irreducible finding compression_drops protected ! exception.use $evidence_exception
+? exception.use $evidence_exception ;4 ! adjacent_before $evidence_exception finding ! line.extra *4 evidence counterexample repro establishment_limit - line.extra connective - exception.use connective_retention
+! msg.front Answer *2 answer result
+;2 - restate request - intro answer
+! budget direct_nonblank_before_list_or_fence 6
+! budget finding_prose_lines 5
+! budget code_fence_content_lines 40
+! schema finding *5 field.claim field.location field.mechanism field.impact field.fix
+! order *5 field.claim field.location field.mechanism field.impact field.fix
+! render.with finding $finding_shape
+! severity.word_only
+- severity.justification
+! adjacent findings
+- between findings *3 transition preamble summary
+? table T ! &2 ge rows T 3 ge data_cols T 3
+? headings Doc ! ge sections_excluding_title Doc 3
+! le qualifiers field.claim 1
+- prose *8 request_restate list_preamble postlist_summary process_narration bold_label_colon trailing_offer nextstep_menu stacked_hedge
+- phrase $forbidden_phrases
+- reprint visible_code
+! quote defect_lines_only
+< lint.run draft.send
+? target chat ! run $cmd.stdin
+? mode direct ! lint.mode $mode_answer
+? diag any ;2 ! fix all ! rerun until_exit0
+@ outside draft_lint + host.status_commentary
+? host.requires status_commentary ! emit status_commentary
+- change *4 lexicon tone register accessibility
+P brevitas.structure Draft conforms Draft selected_mode *4 draft_bytes selected_mode diagnostics exit_status *1 checked *6 factual_accuracy evidence_completeness severity_correct voice accessibility completeness_spec *1 present Draft *4 lint_unrun diagnostic wrong_mode exclusion_class *4 select_mode preserve.evidence fix_structure action.rerun 0

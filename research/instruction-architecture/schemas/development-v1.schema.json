@@ -12,11 +12,13 @@
     {"$ref": "#/$defs/resourceFile"},
     {"$ref": "#/$defs/aggregateReport"},
     {"$ref": "#/$defs/controlFile"},
+    {"$ref": "#/$defs/controlSnapshotFile"},
     {"$ref": "#/$defs/developmentInventory"}
   ],
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "gitCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "gitBlob": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "path": {
       "type": "string",
       "minLength": 1,
@@ -265,8 +267,9 @@
     "artifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["bytes", "path", "ref", "sha256"],
+      "required": ["blob_oid", "bytes", "path", "ref", "sha256"],
       "properties": {
+        "blob_oid": {"$ref": "#/$defs/gitBlob"},
         "bytes": {"type": "integer", "minimum": 1},
         "path": {"$ref": "#/$defs/path"},
         "ref": {"$ref": "#/$defs/gitCommit"},
@@ -473,6 +476,49 @@
         "source_ref": {"$ref": "#/$defs/gitCommit"}
       }
     },
+    "controlSnapshotObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "oid", "sha256"],
+      "properties": {
+        "bytes": {"type": "integer", "minimum": 1, "maximum": 2097152},
+        "oid": {"$ref": "#/$defs/gitBlob"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "controlSnapshotArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blob_oid", "bytes", "path", "ref", "sha256"],
+      "properties": {
+        "blob_oid": {"$ref": "#/$defs/gitBlob"},
+        "bytes": {"type": "integer", "minimum": 1, "maximum": 2097152},
+        "path": {"$ref": "#/$defs/path"},
+        "ref": {"$ref": "#/$defs/gitCommit"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "controlSnapshotFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts", "object_format", "objects", "schema", "totals"],
+      "properties": {
+        "artifacts": {"type": "array", "minItems": 172, "maxItems": 172, "uniqueItems": true, "items": {"$ref": "#/$defs/controlSnapshotArtifact"}},
+        "object_format": {"const": "sha1"},
+        "objects": {"type": "array", "minItems": 157, "maxItems": 157, "uniqueItems": true, "items": {"$ref": "#/$defs/controlSnapshotObject"}},
+        "schema": {"const": "wildcat-instruction-architecture-control-snapshot/v1"},
+        "totals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifact_records", "object_bytes", "objects"],
+          "properties": {
+            "artifact_records": {"const": 172},
+            "object_bytes": {"const": 2095430},
+            "objects": {"const": 157}
+          }
+        }
+      }
+    },
     "resourceSample": {
       "type": "object",
       "additionalProperties": false,
@@ -499,9 +545,22 @@
     "resourceFile": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["artifact_payload_bytes", "dependency_count", "dependency_modules", "disk_bytes", "executable_loc", "executable_sources", "limits", "samples", "schema", "source_ref", "timing_policy"],
+      "required": ["artifact_payload_bytes", "control_snapshot", "dependency_count", "dependency_modules", "disk_bytes", "executable_loc", "executable_sources", "limits", "samples", "schema", "source_ref", "timing_policy"],
       "properties": {
         "artifact_payload_bytes": {"type": "integer", "minimum": 1},
+        "control_snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifact_records", "manifest_bytes", "manifest_sha256", "object_bytes", "objects", "published_bytes"],
+          "properties": {
+            "artifact_records": {"const": 172},
+            "manifest_bytes": {"type": "integer", "minimum": 1},
+            "manifest_sha256": {"$ref": "#/$defs/sha256"},
+            "object_bytes": {"const": 2095430},
+            "objects": {"const": 157},
+            "published_bytes": {"type": "integer", "minimum": 2095431}
+          }
+        },
         "dependency_count": {
           "type": "object",
           "additionalProperties": false,

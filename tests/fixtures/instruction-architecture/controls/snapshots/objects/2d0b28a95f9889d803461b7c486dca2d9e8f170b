@@ -1,0 +1,8 @@
+NOE1
+["import","core","df97b7f39b31fcad8d75fe6d7079b12ee7c8326bd4ec1758a6577764ad1b6b76"]
+["literal","cmd.status","command","10","git status"]
+["literal","path.release","path","16","release/plan.txt"]
+["definition","local.ready",[["state","state"]],["core.ready",["%","state"]]]
+["rule","rule.deploy",["?",["core.authorized",[":","actor","operator"],[":","effect","deploy"]],["+",["core.effect_on",[":","effect","deploy"],[":","artifact","release"]]]],["src","tests/fixtures/noema-v1/codec/bound-source.txt","34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac","0","10"]]
+["rule","rule.inspect",["+",["core.invokes",[":","effect","inspect"],["$","cmd.status"]]],["src","tests/fixtures/noema-v1/codec/bound-source.txt","34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac","10","20"]]
+["precedence","rule.deploy","rule.inspect",[":","actor","reviewer"],[":","scope","repository"],[":","evidence","approval"]]

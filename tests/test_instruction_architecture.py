@@ -15,6 +15,7 @@ import posixpath
 import re
 import selectors
 import signal
+import shutil
 import stat
 import subprocess
 import sys
@@ -43,6 +44,7 @@ DEVELOPMENT_REPORT = FIXTURES / "evidence/development/report.json"
 DEVELOPMENT_INVENTORY = FIXTURES / "evidence/development/artifact-inventory.json"
 HOSTILE_SPECIMENS = FIXTURES / "hostile/specimens.json"
 HOSTILE_EXECUTION = FIXTURES / "hostile/execution.json"
+CONTROL_SNAPSHOT_MANIFEST = FIXTURES / "controls/snapshots/manifest.json"
 DEVELOPMENT_CONTROLS = {
     arm: FIXTURES / "controls" / f"{arm}.json"
     for arm in ("raw", "wai1", "noema", "simple", "section-graph")
@@ -180,6 +182,9 @@ def sha256(path: Path) -> str:
 
 def clear_source_cache() -> None:
     for name in (
+        "_control_ref_mode",
+        "_control_snapshot",
+        "_git_blob_at",
         "_source_mode",
         "_inventory_source_snapshot",
         "_source_object",
@@ -8260,6 +8265,7 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
                 "#/$defs/aggregateReport",
                 "#/$defs/casesFile",
                 "#/$defs/controlFile",
+                "#/$defs/controlSnapshotFile",
                 "#/$defs/developmentInventory",
                 "#/$defs/mutationsFile",
                 "#/$defs/mutationResultsFile",
@@ -8279,6 +8285,7 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
     def test_every_committed_record_is_canonical_closed_json(self):
         paths = [
             *DEVELOPMENT_CONTROLS.values(),
+            CONTROL_SNAPSHOT_MANIFEST,
             DEVELOPMENT_CASES,
             HOSTILE_SPECIMENS,
             HOSTILE_EXECUTION,
@@ -8321,6 +8328,341 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
             self.fail(f"development report validator crashed on its field contract: {err}")
         for arm, result in self.results.items():
             self.validate_adapter_result(arm, result)
+
+
+class ControlSnapshotTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest_raw = CONTROL_SNAPSHOT_MANIFEST.read_bytes()
+        cls.manifest = json.loads(cls.manifest_raw)
+
+    def test_snapshot_manifest_and_every_object_are_self_bound(self):
+        self.assertEqual(
+            hashlib.sha256(self.manifest_raw).hexdigest(),
+            AI.EXPECTED_CONTROL_SNAPSHOT_SHA256,
+        )
+        self.assertEqual(
+            self.manifest["totals"], AI.EXPECTED_CONTROL_SNAPSHOT_COUNTS
+        )
+        artifacts = self.manifest["artifacts"]
+        objects = self.manifest["objects"]
+        self.assertEqual(
+            [(item["ref"], item["path"]) for item in artifacts],
+            sorted({(item["ref"], item["path"]) for item in artifacts}),
+        )
+        self.assertEqual(
+            [item["oid"] for item in objects],
+            sorted({item["oid"] for item in objects}),
+        )
+        by_oid = {item["oid"]: item for item in objects}
+        observed = {}
+        for oid, record in by_oid.items():
+            data = (CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / oid).read_bytes()
+            self.assertEqual(len(data), record["bytes"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), record["sha256"])
+            self.assertEqual(oracle_blob_oid(data, len(oid)), oid)
+            observed[oid] = data
+        for record in artifacts:
+            source = by_oid[record["blob_oid"]]
+            self.assertEqual(record["bytes"], source["bytes"])
+            self.assertEqual(record["sha256"], source["sha256"])
+        self.assertEqual(set(observed), {item["blob_oid"] for item in artifacts})
+
+    def test_snapshot_manifest_regenerates_byte_identically_from_its_objects(self):
+        objects = {
+            item["oid"]: (
+                CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / item["oid"]
+            ).read_bytes()
+            for item in self.manifest["objects"]
+        }
+        rebuilt = AI._control_snapshot_manifest(self.manifest["artifacts"], objects)
+        self.assertEqual(canonical(rebuilt), self.manifest_raw)
+
+    def test_available_control_refs_retain_stronger_commit_path_binding(self):
+        shallow = oracle_git("rev-parse", "--is-shallow-repository", limit=16)
+        self.assertEqual(shallow.returncode, 0)
+        self.assertIn(shallow.stdout, {b"true\n", b"false\n"})
+        by_ref = {}
+        for record in self.manifest["artifacts"]:
+            by_ref.setdefault(record["ref"], []).append(record)
+        for ref, records in by_ref.items():
+            expression = f"{ref}^{{commit}}"
+            probe = oracle_git(
+                "cat-file",
+                "--batch-check=%(objectname) %(objecttype)",
+                input_data=f"{expression}\n".encode("ascii"),
+                limit=128,
+            )
+            self.assertEqual(probe.returncode, 0)
+            if probe.stdout == f"{expression} missing\n".encode("ascii"):
+                self.assertEqual(shallow.stdout, b"true\n")
+                continue
+            self.assertEqual(probe.stdout, f"{ref} commit\n".encode("ascii"))
+            for record in records:
+                self.assertEqual(
+                    oracle_parent_blob_oid(ref, record["path"]),
+                    record["blob_oid"],
+                )
+
+    def test_snapshot_mode_reads_no_git_object_or_network_fallback(self):
+        record = self.manifest["artifacts"][0]
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_control_ref_mode", return_value="snapshot"),
+                mock.patch.object(
+                    AI, "_git", side_effect=AssertionError("snapshot escaped to Git")
+                ),
+            ):
+                data = AI._git_blob_at(record["ref"], record["path"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), record["sha256"])
+        finally:
+            clear_source_cache()
+
+    def test_control_ref_snapshot_admission_fails_closed(self):
+        ref = AI.WAI1_CONTROL_REF
+        expression = f"{ref}^{{commit}}"
+
+        def missing_complete(arguments, limit=AI.MAX_GIT_OUTPUT, **kwargs):
+            if arguments[0] == "cat-file":
+                return f"{expression} missing\n".encode("ascii")
+            if arguments == ["rev-parse", "--is-shallow-repository"]:
+                return b"false\n"
+            raise AssertionError(f"unexpected Git probe: {arguments}")
+
+        def ambiguous(arguments, limit=AI.MAX_GIT_OUTPUT, **kwargs):
+            if arguments[0] == "cat-file":
+                return b"ambiguous\n"
+            raise AssertionError(f"unexpected Git probe: {arguments}")
+
+        for fake, message in (
+            (missing_complete, "absent from a non-shallow"),
+            (ambiguous, "unexpected control identity"),
+        ):
+            with self.subTest(message=message):
+                AI._control_ref_mode.cache_clear()
+                with (
+                    mock.patch.object(AI, "_git", side_effect=fake),
+                    self.assertRaisesRegex(AI.Refusal, message),
+                ):
+                    AI._control_ref_mode(ref)
+        AI._control_ref_mode.cache_clear()
+
+    def test_existing_control_path_mismatch_does_not_fall_back(self):
+        record = self.manifest["artifacts"][0]
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_control_ref_mode", return_value="git"),
+                mock.patch.object(AI, "_git_blob_identity_at", return_value="0" * 40),
+                self.assertRaisesRegex(AI.Refusal, "differs from its snapshot"),
+            ):
+                AI._git_blob_at(record["ref"], record["path"])
+        finally:
+            clear_source_cache()
+
+    def test_snapshot_object_byte_drift_refuses(self):
+        oid = self.manifest["objects"][0]["oid"]
+        target = CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / oid
+        original_read = AI._read_regular
+
+        def corrupt(path: Path, limit: int) -> bytes:
+            data = original_read(path, limit)
+            if path == target:
+                return bytes([data[0] ^ 1]) + data[1:]
+            return data
+
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_read_regular", side_effect=corrupt),
+                self.assertRaisesRegex(AI.Refusal, "size, digest, or blob identity"),
+            ):
+                AI._control_snapshot()
+        finally:
+            clear_source_cache()
+
+    def test_snapshot_object_directory_is_closed(self):
+        with scratch_directory("control-snapshot-extra-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            shutil.copytree(CONTROL_SNAPSHOT_MANIFEST.parent, snapshot)
+            (snapshot / "objects" / ("0" * 40)).write_bytes(b"unlisted")
+            relative = PurePosixPath(snapshot.relative_to(ROOT).as_posix())
+            clear_source_cache()
+            try:
+                with (
+                    mock.patch.object(AI, "CONTROL_SNAPSHOT_ROOT", relative),
+                    mock.patch.object(
+                        AI,
+                        "CONTROL_SNAPSHOT_MANIFEST",
+                        relative / "manifest.json",
+                    ),
+                    self.assertRaisesRegex(
+                        AI.Refusal, "object directory differs from its manifest"
+                    ),
+                ):
+                    AI._control_snapshot()
+            finally:
+                clear_source_cache()
+
+    def _one_commit_shallow_checkout(self, *, development: bool):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        checkout = Path(temporary.name) / "repo"
+        checkout.mkdir()
+        script_target = checkout / SCRIPT.relative_to(ROOT)
+        script_target.parent.mkdir(parents=True)
+        shutil.copy2(SCRIPT, script_target)
+        if development:
+            shutil.copytree(FIXTURES, checkout / FIXTURES.relative_to(ROOT))
+            live_paths = set(oracle_inventory_sources())
+            live_paths.add("docs/instruction-architecture/corpus-reconciliation.md")
+            live_paths.update(
+                record["path"]
+                for record in self.manifest["artifacts"]
+                if record["ref"] == ORACLE_SOURCE_REF
+            )
+            for relative in sorted(live_paths):
+                source = ROOT / relative
+                destination = checkout / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        else:
+            shutil.copytree(
+                CONTROL_SNAPSHOT_MANIFEST.parent,
+                checkout / CONTROL_SNAPSHOT_MANIFEST.parent.relative_to(ROOT),
+            )
+        git_environment = {
+            **ORACLE_GIT_ENV,
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00Z",
+            "GIT_AUTHOR_EMAIL": "shallow-guard@example.invalid",
+            "GIT_AUTHOR_NAME": "shallow guard",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00Z",
+            "GIT_COMMITTER_EMAIL": "shallow-guard@example.invalid",
+            "GIT_COMMITTER_NAME": "shallow guard",
+        }
+        initialise = subprocess.run(
+            [
+                "/usr/bin/git",
+                "init",
+                "--quiet",
+                str(checkout),
+            ],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env=git_environment,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(
+            initialise.returncode,
+            0,
+            initialise.stderr.decode(errors="replace"),
+        )
+        for arguments in (
+            ["add", "--all"],
+            ["commit", "--quiet", "--no-gpg-sign", "-m", "shallow guard"],
+        ):
+            result = subprocess.run(
+                ["/usr/bin/git", *arguments],
+                cwd=checkout,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                env=git_environment,
+                check=False,
+                timeout=30,
+            )
+            self.assertEqual(
+                result.returncode, 0, result.stderr.decode(errors="replace")
+            )
+        head = subprocess.run(
+            ["/usr/bin/git", "rev-parse", "HEAD"],
+            cwd=checkout,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env=git_environment,
+            check=False,
+            timeout=10,
+        )
+        self.assertEqual(head.returncode, 0, head.stderr.decode(errors="replace"))
+        (checkout / ".git/shallow").write_bytes(head.stdout)
+        self.assertEqual(
+            subprocess.run(
+                ["/usr/bin/git", "rev-list", "--count", "HEAD"],
+                cwd=checkout,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                env=git_environment,
+                check=False,
+                timeout=10,
+            ).stdout,
+            b"1\n",
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["/usr/bin/git", "rev-parse", "--is-shallow-repository"],
+                cwd=checkout,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                env=git_environment,
+                check=False,
+                timeout=10,
+            ).stdout,
+            b"true\n",
+        )
+        return checkout
+
+    def test_one_commit_shallow_checkout_reads_checked_control_snapshot(self):
+        checkout = self._one_commit_shallow_checkout(development=False)
+        checker = next(
+            record
+            for record in self.manifest["artifacts"]
+            if record["ref"] == ORACLE_SOURCE_REF
+            and record["path"] == "scripts/agent_instruction.py"
+        )
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import hashlib,importlib.util,pathlib;"
+                    "p=pathlib.Path('research/instruction-architecture/benchmark.py').resolve();"
+                    "s=importlib.util.spec_from_file_location('ai',p);"
+                    "m=importlib.util.module_from_spec(s);s.loader.exec_module(m);"
+                    "d=m._git_blob_at(m.WAI1_CONTROL_REF,'scripts/agent_instruction.py');"
+                    f"assert hashlib.sha256(d).hexdigest()=='{checker['sha256']}'"
+                ),
+            ],
+            cwd=checkout,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(probe.returncode, 0, probe.stderr.decode(errors="replace"))
+
+    def test_one_commit_shallow_checkout_replays_development_cli(self):
+        checkout = self._one_commit_shallow_checkout(development=True)
+        replay = subprocess.run(
+            [
+                sys.executable,
+                "research/instruction-architecture/benchmark.py",
+                "replay",
+                "--cohort",
+                "development",
+                "--evidence",
+                "tests/fixtures/instruction-architecture/evidence/development",
+            ],
+            cwd=checkout,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            check=False,
+            timeout=90,
+        )
+        self.assertEqual(replay.returncode, 0, replay.stderr.decode(errors="replace"))
+        self.assertIn(b'"command":"replay-development"', replay.stdout)
 
 
 class RawAdapterTests(DevelopmentFixtureMixin, unittest.TestCase):
@@ -8385,7 +8727,7 @@ class Wai1ControlTests(DevelopmentFixtureMixin, unittest.TestCase):
         path = DEVELOPMENT_CONTROLS["wai1"]
         self.assertEqual(
             hashlib.sha256(path.read_bytes()).hexdigest(),
-            "d296ad65805dacf9e9514e1e9517c0f61335ddcdc33a19b91a3fa1d8cfe8daab",
+            "d45599ba946cf515a72491310a105db6e257847d67541f218398877ea84e0ac1",
         )
         for mapping in self.controls["wai1"]["native_mappings"]:
             source = AI._source_blob(mapping["path"])[mapping["start"] : mapping["end"]]
@@ -8452,7 +8794,7 @@ class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
         self.assertEqual(len(control["binding"]["artifacts"]), 140)
         self.assertEqual(
             hashlib.sha256(DEVELOPMENT_CONTROLS["noema"].read_bytes()).hexdigest(),
-            "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
+            "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
         )
 
     def test_full_corpus_exact_binding_and_development_outcomes_are_separate(self):
@@ -9110,17 +9452,15 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
                 self.assertEqual(source.count(self_reference), 1)
                 digest_source = source.replace(self_reference, b"0" * 64)
                 digest_scope = "development-inventory-self-reference-normalised"
-            self.assertEqual(
-                row,
-                {
-                    "digest_scope": digest_scope,
-                    "kind": kind,
-                    "loc": executable_loc,
-                    "path": path,
-                    "ref": ref,
-                    "sha256": hashlib.sha256(digest_source).hexdigest(),
-                },
-            )
+            expected_row = {
+                "digest_scope": digest_scope,
+                "kind": kind,
+                "loc": executable_loc,
+                "path": path,
+                "ref": ref,
+                "sha256": hashlib.sha256(digest_source).hexdigest(),
+            }
+            self.assertEqual(row, expected_row)
         self.assertEqual(
             record["executable_loc"], sum(item["loc"] for item in sources)
         )
@@ -9152,6 +9492,17 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
         )
         self.assertGreater(record["executable_loc"], 0)
         self.assertGreater(record["artifact_payload_bytes"], 0)
+        snapshot = record["control_snapshot"]
+        self.assertEqual(snapshot["artifact_records"], 172)
+        self.assertEqual(snapshot["objects"], 157)
+        self.assertEqual(snapshot["object_bytes"], 2_095_430)
+        self.assertEqual(
+            snapshot["published_bytes"],
+            snapshot["manifest_bytes"] + snapshot["object_bytes"],
+        )
+        self.assertEqual(
+            snapshot["manifest_sha256"], AI.EXPECTED_CONTROL_SNAPSHOT_SHA256
+        )
         self.assertEqual([item["phase"] for item in record["samples"]], ["parse-validate", "select", "assemble"])
 
     def test_resource_record_reconciles_the_complete_published_generation(self):

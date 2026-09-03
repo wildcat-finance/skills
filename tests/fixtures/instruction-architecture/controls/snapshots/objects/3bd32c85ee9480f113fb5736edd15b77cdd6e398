@@ -1,0 +1,31 @@
+NK0 OWA FD
+V=T|F|U
+~:T=F,F=T,U=U
+&:F>U>T
+|:T>U>F
+d=!t|-t|+t|?t.d|/t.d|@t.d|^a.e|;n(d*)
+!p=req(p)
+-p=deny(p)
++p=allow(p)&~req(p)
+?g.d=T:d,F:0,U:block(d)
+/g.d=F:d,T:0,U:block(d)
+@s.d=scope(d,s)
+^a.e=owner(e,a)
+req(p)&deny(p)=>refuse
+allow(p)!=>req(p)
+lower!>higher
+cap!=auth!=done!=verified
+level(e)>=2&~auth(e)=>refuse
+R=(id,d)
+O=(auth,high,low,scope,ev)
+>=(id,machine,from,event,guard,to,effects)
+P=(id,subject,claim,evidence,classes,boundary,grants,refuses,recovery,level)
+H=(id,producer,consumer,subject,scope,evidence,classes,time,transform,gaps)
+X=(id,auth,gate,subject,scope,record,expiry,recovery)
+D=(name,args,pure_graph)
+I=(module,sha256)
+$=(kind,bytes); inert($); use(cmd|path|url)=>auth(effect)
+bad(op|arity|type|digest)=>refuse
+slice(U.guard)=keep
+slice(F.guard)=omit+proof
+closure(effect)=constraints+order+recovery

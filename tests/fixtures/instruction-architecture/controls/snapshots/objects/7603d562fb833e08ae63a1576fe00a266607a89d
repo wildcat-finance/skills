@@ -1,0 +1,2902 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/noema-v1.schema.json",
+  "title": "Noema version 1 shadow-prototype records",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/seedInventory"
+    },
+    {
+      "$ref": "#/$defs/module"
+    },
+    {
+      "$ref": "#/$defs/profile"
+    },
+    {
+      "$ref": "#/$defs/build"
+    },
+    {
+      "$ref": "#/$defs/projection"
+    },
+    {
+      "$ref": "#/$defs/semanticDiff"
+    },
+    {
+      "$ref": "#/$defs/lock"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    },
+    {
+      "$ref": "#/$defs/sliceProjection"
+    },
+    {
+      "$ref": "#/$defs/result"
+    },
+    {
+      "$ref": "#/$defs/evidence"
+    },
+    {
+      "$ref": "#/$defs/sourceIdentity"
+    },
+    {
+      "$ref": "#/$defs/sourceSpans"
+    },
+    {
+      "$ref": "#/$defs/literalSet"
+    },
+    {
+      "$ref": "#/$defs/questionSet"
+    },
+    {
+      "$ref": "#/$defs/answerSet"
+    },
+    {
+      "$ref": "#/$defs/mutationPlan"
+    },
+    {
+      "$ref": "#/$defs/mutationResults"
+    },
+    {
+      "$ref": "#/$defs/specimenCorpus"
+    },
+    {
+      "$ref": "#/$defs/externalProfiles"
+    },
+    {
+      "$ref": "#/$defs/measurement"
+    },
+    {
+      "$ref": "#/$defs/evaluationPacket"
+    },
+    {
+      "$ref": "#/$defs/evaluationAnswers"
+    },
+    {
+      "$ref": "#/$defs/evaluationReport"
+    },
+    {
+      "$ref": "#/$defs/corpusEvidence"
+    },
+    {
+      "$ref": "#/$defs/gitAnchorWitness"
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+      "not": { "pattern": "\\.\\." }
+    },
+    "nodeId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "pattern": "^(?:[A-Za-z][A-Za-z0-9_.-]{0,127}|precedence:[A-Za-z][A-Za-z0-9_.-]{0,127}>[A-Za-z][A-Za-z0-9_.-]{0,127})$"
+    },
+    "artifactLeaf": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[A-Za-z0-9](?:[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$"
+    },
+    "seedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "seedInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "archive",
+        "files"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-seed-inventory/v1"
+        },
+        "archive": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "url",
+            "bytes",
+            "sha256",
+            "root"
+          ],
+          "properties": {
+            "name": {
+              "const": "noema-v0-evidence.zip"
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "format": "uri"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "root": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/$"
+            }
+          }
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/seedFile"
+          }
+        }
+      }
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "path", "bytes", "sha256", "governed"],
+      "oneOf": [
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "brevitas" },
+            "path": { "const": "plugins/brevitas/skills/brevitas/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "fiat" },
+            "path": { "const": "plugins/hexaemeron/skills/fiat/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "phylax" },
+            "path": { "const": "plugins/hexaemeron/skills/phylax/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "sapheneia" },
+            "path": { "const": "plugins/sapheneia/skills/sapheneia/SKILL.md" }
+          }
+        }
+      ],
+      "properties": {
+        "schema": { "const": "noema-source-identity/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "governed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "const": 0 },
+            "end": { "type": "integer", "minimum": 1, "maximum": 1048576 }
+          }
+        }
+      }
+    },
+    "sourceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "kind", "node", "reason"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+        "end": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "kind": { "enum": ["node", "unsupported-remainder"] },
+        "node": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            { "const": "unsupported-by-noema-v1" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "sourceSpans": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "source", "source_sha256", "governed", "spans", "shadow"],
+      "properties": {
+        "schema": { "const": "noema-source-spans/v1" },
+        "source": { "$ref": "#/$defs/relativePath" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "governed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "const": 0 },
+            "end": { "type": "integer", "minimum": 1, "maximum": 1048576 }
+          }
+        },
+        "spans": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32768,
+          "items": { "$ref": "#/$defs/sourceSpan" }
+        },
+        "shadow": { "type": "boolean" }
+      }
+    },
+    "literalEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "bytes", "sha256", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 65000 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "type": "string", "maxLength": 65000 }
+      }
+    },
+    "literalSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "literals"],
+      "properties": {
+        "schema": { "const": "noema-literal-set/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "literals": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/literalEvidence" }
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "effect", "expected"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "effect": { "$ref": "#/$defs/identifier" },
+        "expected": { "$ref": "#/$defs/checkOutput" }
+      }
+    },
+    "questionSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "questions"],
+      "properties": {
+        "schema": { "const": "noema-question-set/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/question" }
+        }
+      }
+    },
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "result": { "$ref": "#/$defs/result" }
+      }
+    },
+    "answerSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "answers"],
+      "properties": {
+        "schema": { "const": "noema-answer-set/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "answers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/answer" }
+        }
+      }
+    },
+    "mutationCategory": {
+      "enum": [
+        "alias-collision",
+        "changed-exact-literal",
+        "consequence-3-bypass",
+        "dropped-negation",
+        "missing-authority",
+        "omitted-dependency",
+        "permission-for-prohibition",
+        "reordered-effects",
+        "stale-module",
+        "swapped-actor",
+        "unknown-guard-deletion",
+        "unknown-opcode",
+        "widened-scope"
+      ]
+    },
+    "mutationQuery": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "effect"],
+          "properties": {
+            "kind": { "const": "check" },
+            "effect": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "machine", "state", "event"],
+          "properties": {
+            "kind": { "const": "next" },
+            "machine": { "$ref": "#/$defs/identifier" },
+            "state": { "$ref": "#/$defs/identifier" },
+            "event": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id"],
+          "properties": {
+            "kind": { "const": "literal" },
+            "id": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "node"],
+          "properties": {
+            "kind": { "const": "explain" },
+            "node": { "$ref": "#/$defs/nodeId" }
+          }
+        }
+      ]
+    },
+    "mutationPlanEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "kind", "artifact", "query"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "category": { "$ref": "#/$defs/mutationCategory" },
+        "kind": { "enum": ["source", "profile"] },
+        "artifact": { "$ref": "#/$defs/relativePath" },
+        "query": { "$ref": "#/$defs/mutationQuery" }
+      }
+    },
+    "mutationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "mutations"],
+      "properties": {
+        "schema": { "const": "noema-mutation-plan/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "mutations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/mutationPlanEntry" }
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "specimen": { "const": "brevitas" },
+            "mutations": {
+              "minItems": 2,
+              "maxItems": 2,
+              "prefixItems": [
+                { "properties": { "id": { "const": "brevitas.alias-collision" }, "category": { "const": "alias-collision" } } },
+                { "properties": { "id": { "const": "brevitas.changed-exact-literal" }, "category": { "const": "changed-exact-literal" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "fiat" },
+            "mutations": {
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                { "properties": { "id": { "const": "fiat.dropped-negation" }, "category": { "const": "dropped-negation" } } },
+                { "properties": { "id": { "const": "fiat.missing-authority" }, "category": { "const": "missing-authority" } } },
+                { "properties": { "id": { "const": "fiat.reordered-effects" }, "category": { "const": "reordered-effects" } } },
+                { "properties": { "id": { "const": "fiat.stale-module" }, "category": { "const": "stale-module" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "phylax" },
+            "mutations": {
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                { "properties": { "id": { "const": "phylax.consequence-3-bypass" }, "category": { "const": "consequence-3-bypass" } } },
+                { "properties": { "id": { "const": "phylax.omitted-dependency" }, "category": { "const": "omitted-dependency" } } },
+                { "properties": { "id": { "const": "phylax.permission-for-prohibition" }, "category": { "const": "permission-for-prohibition" } } },
+                { "properties": { "id": { "const": "phylax.widened-scope" }, "category": { "const": "widened-scope" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "sapheneia" },
+            "mutations": {
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                { "properties": { "id": { "const": "sapheneia.swapped-actor" }, "category": { "const": "swapped-actor" } } },
+                { "properties": { "id": { "const": "sapheneia.unknown-guard-deletion" }, "category": { "const": "unknown-guard-deletion" } } },
+                { "properties": { "id": { "const": "sapheneia.unknown-opcode" }, "category": { "const": "unknown-opcode" } } }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "mutationRefusal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "status", "code", "field", "baseline_answer_sha256", "baseline_answer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "category": { "$ref": "#/$defs/mutationCategory" },
+        "status": { "const": "refused" },
+        "code": { "type": "string", "pattern": "^NOE-E-[A-Z0-9_.-]+$" },
+        "field": { "type": "string", "minLength": 1, "maxLength": 640 },
+        "baseline_answer_sha256": { "$ref": "#/$defs/sha256" },
+        "baseline_answer": { "$ref": "#/$defs/result" }
+      }
+    },
+    "mutationChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "status", "graph_sha256", "diff_sha256", "baseline_answer_sha256", "answer_sha256", "diff", "baseline_answer", "answer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "category": { "$ref": "#/$defs/mutationCategory" },
+        "status": { "const": "changed" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "diff_sha256": { "$ref": "#/$defs/sha256" },
+        "baseline_answer_sha256": { "$ref": "#/$defs/sha256" },
+        "answer_sha256": { "$ref": "#/$defs/sha256" },
+        "diff": { "$ref": "#/$defs/semanticDiff" },
+        "baseline_answer": { "$ref": "#/$defs/result" },
+        "answer": { "$ref": "#/$defs/result" }
+      }
+    },
+    "mutationResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "results"],
+      "properties": {
+        "schema": { "const": "noema-mutation-results/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "results": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/mutationRefusal" },
+              { "$ref": "#/$defs/mutationChange" }
+            ]
+          }
+        }
+      }
+    },
+    "specimenRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "directory", "source_identity_sha256", "source_sha256",
+        "canonical_sha256", "graph_sha256", "lock_sha256", "profile_sha256",
+        "kernel_sha256", "full_projection_sha256", "manifest_sha256",
+        "projection_sha256", "literals_sha256", "definitions_sha256",
+        "source_spans_sha256", "questions_sha256", "answers_sha256",
+        "mutation_plan_sha256", "mutations_sha256", "artifact_inventory_sha256", "mapped_spans",
+        "unsupported_remainders", "questions", "mutations", "shadow"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "directory": { "$ref": "#/$defs/relativePath" },
+        "source_identity_sha256": { "$ref": "#/$defs/sha256" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "canonical_sha256": { "$ref": "#/$defs/sha256" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "lock_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "kernel_sha256": { "$ref": "#/$defs/sha256" },
+        "full_projection_sha256": { "$ref": "#/$defs/sha256" },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" },
+        "literals_sha256": { "$ref": "#/$defs/sha256" },
+        "definitions_sha256": { "$ref": "#/$defs/sha256" },
+        "source_spans_sha256": { "$ref": "#/$defs/sha256" },
+        "questions_sha256": { "$ref": "#/$defs/sha256" },
+        "answers_sha256": { "$ref": "#/$defs/sha256" },
+        "mutation_plan_sha256": { "$ref": "#/$defs/sha256" },
+        "mutations_sha256": { "$ref": "#/$defs/sha256" },
+        "artifact_inventory_sha256": { "$ref": "#/$defs/sha256" },
+        "mapped_spans": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "unsupported_remainders": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "questions": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "mutations": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "shadow": { "const": true }
+      }
+    },
+    "criticalVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "mutations"],
+      "properties": {
+        "id": {
+          "enum": ["authority", "consequence-3", "exact-literal", "negation", "ordering", "permission-prohibition", "unknown-guard"]
+        },
+        "mutations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      },
+      "oneOf": [
+        { "properties": { "id": { "const": "authority" }, "mutations": { "const": ["fiat.missing-authority", "sapheneia.swapped-actor"] } } },
+        { "properties": { "id": { "const": "consequence-3" }, "mutations": { "const": ["phylax.consequence-3-bypass"] } } },
+        { "properties": { "id": { "const": "exact-literal" }, "mutations": { "const": ["brevitas.changed-exact-literal"] } } },
+        { "properties": { "id": { "const": "negation" }, "mutations": { "const": ["fiat.dropped-negation"] } } },
+        { "properties": { "id": { "const": "ordering" }, "mutations": { "const": ["fiat.reordered-effects"] } } },
+        { "properties": { "id": { "const": "permission-prohibition" }, "mutations": { "const": ["phylax.permission-for-prohibition"] } } },
+        { "properties": { "id": { "const": "unknown-guard" }, "mutations": { "const": ["sapheneia.unknown-guard-deletion"] } } }
+      ]
+    },
+    "specimenCorpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "seed", "specimens", "critical_vectors"],
+      "properties": {
+        "schema": { "const": "noema-specimen-corpus/v1" },
+        "seed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inventory", "reference", "mode", "archive_sha256", "inventory_sha256", "reference_sha256"],
+          "properties": {
+            "inventory": { "$ref": "#/$defs/relativePath" },
+            "reference": { "$ref": "#/$defs/artifactLeaf" },
+            "mode": { "const": "non-executable-reference-evidence" },
+            "archive_sha256": { "$ref": "#/$defs/sha256" },
+            "inventory_sha256": { "$ref": "#/$defs/sha256" },
+            "reference_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "specimens": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/specimenRecord" }
+        },
+        "critical_vectors": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/criticalVector" }
+        },
+        "evidence": {
+          "$ref": "#/$defs/corpusEvidence"
+        }
+      }
+    },
+    "moduleLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "source_sha256",
+        "graph_sha256",
+        "compiler_sha256",
+        "kernel_sha256",
+        "profile_sha256",
+        "modules"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-lock/v1"
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "graph_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "compiler_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "kernel_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "modules": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/moduleLock"
+          }
+        }
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "value",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^fact\\.[0-9a-f]{64}$"
+        },
+        "value": {
+          "enum": [
+            "true",
+            "false",
+            "unknown"
+          ]
+        },
+        "evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "omission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "reason",
+        "fact",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "reason": {
+          "enum": [
+            "not-reachable",
+            "checked-false-guard",
+            "checked-true-guard"
+          ]
+        },
+        "fact": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^fact\\.[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation",
+        "state",
+        "target",
+        "tools",
+        "authority",
+        "facts"
+      ],
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "state": {
+          "$ref": "#/$defs/identifier"
+        },
+        "target": {
+          "$ref": "#/$defs/identifier"
+        },
+        "tools": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "authority": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/fact"
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "graph_sha256",
+        "lock_sha256",
+        "compiler_sha256",
+        "kernel_sha256",
+        "profile_sha256",
+        "selection",
+        "selection_sha256",
+        "facts_sha256",
+        "included_ids",
+        "omitted",
+        "definitions",
+        "literals",
+        "tape",
+        "tape_sha256",
+        "projection_sha256",
+        "artifacts"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-manifest/v1"
+        },
+        "graph_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "lock_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "compiler_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "kernel_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "selection": {
+          "$ref": "#/$defs/selection"
+        },
+        "selection_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "facts_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "included_ids": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nodeId"
+          }
+        },
+        "omitted": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/omission"
+          }
+        },
+        "definitions": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "literals": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "tape": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sourceRecord"
+          }
+        },
+        "tape_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "projection_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "build",
+            "modules",
+            "profile",
+            "kernel",
+            "selection",
+            "projection"
+          ],
+          "properties": {
+            "build": { "$ref": "#/$defs/artifactLeaf" },
+            "modules": { "$ref": "#/$defs/artifactLeaf" },
+            "profile": { "$ref": "#/$defs/artifactLeaf" },
+            "kernel": { "$ref": "#/$defs/artifactLeaf" },
+            "selection": { "$ref": "#/$defs/artifactLeaf" },
+            "projection": { "$ref": "#/$defs/artifactLeaf" }
+          }
+        }
+      }
+    },
+    "sliceProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "graph_sha256",
+        "profile_sha256",
+        "selection_sha256",
+        "aliases_sha256",
+        "text"
+      ],
+      "properties": {
+        "schema": { "const": "noema-slice-projection/v1" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "selection_sha256": { "$ref": "#/$defs/sha256" },
+        "aliases_sha256": { "$ref": "#/$defs/sha256" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+      }
+    },
+    "digestSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "archive": {
+          "$ref": "#/$defs/sha256"
+        },
+        "inventory": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source": {
+          "$ref": "#/$defs/sha256"
+        },
+        "graph": {
+          "$ref": "#/$defs/sha256"
+        },
+        "build": {
+          "$ref": "#/$defs/sha256"
+        },
+        "cases": {
+          "$ref": "#/$defs/sha256"
+        },
+        "lock": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profile": {
+          "$ref": "#/$defs/sha256"
+        },
+        "kernel": {
+          "$ref": "#/$defs/sha256"
+        },
+        "projection": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "facts": {
+          "$ref": "#/$defs/sha256"
+        },
+        "receipts": {
+          "$ref": "#/$defs/sha256"
+        },
+        "output": {
+          "$ref": "#/$defs/sha256"
+        },
+        "before": {
+          "$ref": "#/$defs/sha256"
+        },
+        "after": {
+          "$ref": "#/$defs/sha256"
+        },
+        "diff": {
+          "$ref": "#/$defs/sha256"
+        },
+        "corpus": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profiles": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_set": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tree": {
+          "$ref": "#/$defs/sha256"
+        },
+        "answers": {
+          "$ref": "#/$defs/sha256"
+        },
+        "packet": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "countSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "members": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "modules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "aliases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "entries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "nodes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "included": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "omitted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "specimens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "mutations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "critical": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "remainders": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32768
+        },
+        "profiles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "prompts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "answers": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        }
+      }
+    },
+    "selectOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "manifest_sha256",
+        "projection_sha256",
+        "included_ids",
+        "omitted_ids",
+        "changed"
+      ],
+      "properties": {
+        "schema": { "const": "noema-select/v1" },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" },
+        "included_ids": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nodeId" }
+        },
+        "omitted_ids": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nodeId" }
+        },
+        "changed": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "checkOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "decision",
+        "effect",
+        "consequence",
+        "controlling_node",
+        "reason"
+      ],
+      "properties": {
+        "schema": { "const": "noema-check/v1" },
+        "decision": { "enum": ["permit", "refuse", "unknown"] },
+        "effect": { "$ref": "#/$defs/identifier" },
+        "consequence": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "controlling_node": { "$ref": "#/$defs/nodeId" },
+        "reason": {
+          "enum": [
+            "prohibition",
+            "failed-requirement",
+            "conflicting-requirements",
+            "authority-mismatch",
+            "invalid-exception",
+            "unestablished-guard",
+            "default-deny",
+            "applicable-policy",
+            "low-consequence-default",
+            "no-applicable-policy"
+          ]
+        }
+      }
+    },
+    "nextOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "transition",
+        "state",
+        "next_state",
+        "effects",
+        "controlling_node",
+        "reason"
+      ],
+      "properties": {
+        "schema": { "const": "noema-next/v1" },
+        "status": { "enum": ["transition", "stop"] },
+        "transition": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "state": { "$ref": "#/$defs/identifier" },
+        "next_state": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "effects": {
+          "type": "array",
+          "maxItems": 16384,
+          "items": { "$ref": "#/$defs/term" }
+        },
+        "controlling_node": { "$ref": "#/$defs/nodeId" },
+        "reason": {
+          "enum": [
+            "established-transition",
+            "unestablished-guard",
+            "no-enabled-transition"
+          ]
+        }
+      }
+    },
+    "literalOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "kind", "bytes", "sha256", "value"],
+      "properties": {
+        "schema": { "const": "noema-literal/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 65000 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "type": "string", "maxLength": 65000 }
+      }
+    },
+    "explainOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "authoritative", "node", "render"],
+      "properties": {
+        "schema": { "const": "noema-explanation/v1" },
+        "authoritative": { "const": false },
+        "node": { "$ref": "#/$defs/nodeId" },
+        "render": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+      }
+    },
+    "runtimeOutput": {
+      "oneOf": [
+        { "$ref": "#/$defs/selectOutput" },
+        { "$ref": "#/$defs/checkOutput" },
+        { "$ref": "#/$defs/nextOutput" },
+        { "$ref": "#/$defs/literalOutput" },
+        { "$ref": "#/$defs/explainOutput" }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "command",
+        "correlation_id",
+        "verdict",
+        "code",
+        "digests",
+        "counts"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-result/v1"
+        },
+        "command": {
+          "enum": [
+            "invalid",
+            "about",
+            "verify-seed",
+            "parse",
+            "format",
+            "project",
+            "semantic-diff",
+            "select",
+            "check",
+            "next",
+            "literal",
+            "explain",
+            "verify",
+            "mutations",
+            "measure",
+            "emit-evaluation",
+            "run-evaluation",
+            "tally-evaluation",
+            "self-test",
+            "runtime-self-test"
+          ]
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "verdict": {
+          "enum": [
+            "ok",
+            "refuse",
+            "unknown"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^NOE-(OK|I-[A-Z0-9_.-]+|E-[A-Z0-9_.-]+)$"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 640,
+          "pattern": "^[A-Za-z0-9_.\\[\\]-]+$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "digests": {
+          "$ref": "#/$defs/digestSet"
+        },
+        "counts": {
+          "$ref": "#/$defs/countSet"
+        },
+        "output": {
+          "$ref": "#/$defs/runtimeOutput"
+        }
+      }
+    },
+    "decimalString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20,
+      "pattern": "^(?:0|[1-9][0-9]*)$"
+    },
+    "qualifiedIdentifier": {
+      "allOf": [
+        { "$ref": "#/$defs/identifier" },
+        { "pattern": "\\." }
+      ]
+    },
+    "parameter": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/identifier" },
+        { "$ref": "#/$defs/identifier" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "sourceBinding": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "src" },
+        { "$ref": "#/$defs/relativePath" },
+        { "$ref": "#/$defs/sha256" },
+        { "$ref": "#/$defs/decimalString" },
+        { "$ref": "#/$defs/decimalString" }
+      ],
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "term": {
+      "oneOf": [
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "$" },
+            { "$ref": "#/$defs/identifier" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "%" },
+            { "$ref": "#/$defs/identifier" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": ":" },
+            { "$ref": "#/$defs/identifier" },
+            { "type": "string", "maxLength": 65000 }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "{}" },
+            { "$ref": "#/$defs/identifier" }
+          ],
+          "items": { "$ref": "#/$defs/term" },
+          "minItems": 2,
+          "maxItems": 4098
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": ["!", "-", "+", "~", "count"] },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": ["?", "/", "@", "^", "=", "=>", "<", "in", "subset", "lt", "le", "gt", "ge"] },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": [";", "&", "|"] }
+          ],
+          "items": { "$ref": "#/$defs/term" },
+          "minItems": 2,
+          "maxItems": 16385
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": ["all", "any", "one"] },
+            { "$ref": "#/$defs/parameter" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/qualifiedIdentifier" }
+          ],
+          "items": { "$ref": "#/$defs/term" },
+          "minItems": 1,
+          "maxItems": 65
+        }
+      ]
+    },
+    "sourceRecord": {
+      "oneOf": [
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "import" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/sha256" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "literal" },
+            { "$ref": "#/$defs/identifier" },
+            { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+            { "$ref": "#/$defs/decimalString" },
+            { "type": "string", "maxLength": 65000 }
+          ],
+          "minItems": 5,
+          "maxItems": 5
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "definition" },
+            { "$ref": "#/$defs/qualifiedIdentifier" },
+            {
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/parameter" }
+            },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "rule" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/sourceBinding" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "precedence" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 6,
+          "maxItems": 6
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "override" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 7,
+          "maxItems": 7
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "transition" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 8,
+          "maxItems": 8
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "promise" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "handoff" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "exception" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 9,
+          "maxItems": 9
+        }
+      ]
+    },
+    "typeDeclaration": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/qualifiedIdentifier" },
+        { "$ref": "#/$defs/identifier" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "signature": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/qualifiedIdentifier" },
+        {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        { "$ref": "#/$defs/identifier" }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "moduleDefinition": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/qualifiedIdentifier" },
+        {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/parameter" }
+        },
+        { "$ref": "#/$defs/term" }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "imports", "types", "signatures", "definitions"],
+      "properties": {
+        "schema": { "const": "noema-module/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "imports": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "$ref": "#/$defs/identifier" },
+              { "$ref": "#/$defs/sha256" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "types": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/typeDeclaration" }
+        },
+        "signatures": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/signature" }
+        },
+        "definitions": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/moduleDefinition" }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "alphabet", "tokenizer", "vocabulary_sha256", "kernel_sha256", "reserved", "aliases"],
+      "properties": {
+        "schema": { "const": "noema-profile/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "alphabet": { "const": "ascii-printable-v1" },
+        "tokenizer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "vocabulary_sha256": { "$ref": "#/$defs/sha256" },
+        "kernel_sha256": { "$ref": "#/$defs/sha256" },
+        "reserved": {
+          "const": ["!", "$", "%", "&", "+", "-", "/", ":", ";", "<", "=", "=>", "?", "@", "NOE1", "NT1", "^", "all", "any", "count", "definition", "exception", "ge", "gt", "handoff", "import", "in", "le", "literal", "lt", "one", "override", "precedence", "promise", "rule", "src", "subset", "transition", "{}", "|", "~"]
+        },
+        "aliases": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "string", "minLength": 1, "maxLength": 128 },
+              { "type": "string", "minLength": 1, "maxLength": 16, "pattern": "^[A-Za-z0-9!#$%&*+./:<=>?@^_|~-]+$" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "graphModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "$ref": "#/$defs/module" }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "source_sha256", "records", "modules"],
+      "properties": {
+        "schema": { "const": "noema-graph/v1" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "records": { "type": "array", "maxItems": 16384, "uniqueItems": true, "items": { "$ref": "#/$defs/sourceRecord" } },
+        "modules": { "type": "array", "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/$defs/graphModule" } }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "graph", "lock"],
+      "properties": {
+        "schema": { "const": "noema-build/v1" },
+        "graph": { "$ref": "#/$defs/graph" },
+        "lock": { "$ref": "#/$defs/lock" }
+      }
+    },
+    "projectionManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "graph_sha256", "lock_sha256", "profile_sha256", "aliases_sha256", "projection_sha256"],
+      "properties": {
+        "schema": { "const": "noema-projection-manifest/v1" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "lock_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "aliases_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "lock", "manifest", "text"],
+      "properties": {
+        "schema": { "const": "noema-projection/v1" },
+        "lock": { "$ref": "#/$defs/lock" },
+        "manifest": { "$ref": "#/$defs/projectionManifest" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "kind", "change", "before", "after"],
+      "properties": {
+        "node": { "type": "string", "minLength": 1, "maxLength": 268 },
+        "kind": { "enum": ["effect", "gate", "authority", "scope", "evidence_class", "literal", "transition", "precedence", "source_binding", "definition", "module", "promise", "handoff", "exception"] },
+        "change": { "enum": ["added", "removed", "modified"] },
+        "before": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "after": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+      }
+    },
+    "semanticDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "before_graph_sha256", "after_graph_sha256", "entries"],
+      "properties": {
+        "schema": { "const": "noema-semantic-diff/v1" },
+        "before_graph_sha256": { "$ref": "#/$defs/sha256" },
+        "after_graph_sha256": { "$ref": "#/$defs/sha256" },
+        "entries": { "type": "array", "maxItems": 65536, "uniqueItems": true, "items": { "$ref": "#/$defs/diffEntry" } }
+      }
+    },
+    "decimalAmount": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+    },
+    "gitObject": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "nullableSha256": {
+      "oneOf": [
+        { "$ref": "#/$defs/sha256" },
+        { "type": "null" }
+      ]
+    },
+    "profileFamily": {
+      "enum": ["anthropic", "google", "open-weight", "openai"]
+    },
+    "externalAcquisition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog_endpoint", "context_length", "endpoint_name", "endpoint_model",
+        "max_completion_tokens", "max_prompt_tokens", "model", "observed_on",
+        "pricing", "pricing_overrides", "provider", "provider_tag",
+        "quantization", "supported_parameters", "vocabulary_sha256"
+      ],
+      "properties": {
+        "catalog_endpoint": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "context_length": { "type": "integer", "minimum": 1, "maximum": 2000000 },
+        "endpoint_name": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "endpoint_model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "max_completion_tokens": { "type": "integer", "minimum": 1, "maximum": 2000000 },
+        "max_prompt_tokens": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1, "maximum": 2000000 },
+            { "type": "null" }
+          ]
+        },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "observed_on": { "type": "string", "format": "date" },
+        "pricing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["completion", "prompt", "request"],
+          "properties": {
+            "completion": { "$ref": "#/$defs/decimalAmount" },
+            "prompt": { "$ref": "#/$defs/decimalAmount" },
+            "request": { "$ref": "#/$defs/decimalAmount" }
+          }
+        },
+        "pricing_overrides": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["completion", "min_prompt_tokens", "prompt"],
+            "properties": {
+              "completion": { "$ref": "#/$defs/decimalAmount" },
+              "min_prompt_tokens": { "type": "integer", "minimum": 1, "maximum": 2000000 },
+              "prompt": { "$ref": "#/$defs/decimalAmount" }
+            }
+          }
+        },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "provider_tag": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[a-z0-9-]+(?:/[a-z0-9.-]+)*$"
+        },
+        "quantization": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "supported_parameters": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "vocabulary_sha256": { "$ref": "#/$defs/nullableSha256" }
+      }
+    },
+    "providerPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allow_fallbacks", "data_collection", "max_price", "only",
+        "require_parameters", "zdr"
+      ],
+      "properties": {
+        "allow_fallbacks": { "const": false },
+        "data_collection": { "const": "deny" },
+        "max_price": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["completion", "prompt", "request"],
+          "properties": {
+            "completion": { "$ref": "#/$defs/decimalAmount" },
+            "prompt": { "$ref": "#/$defs/decimalAmount" },
+            "request": { "$ref": "#/$defs/decimalAmount" }
+          }
+        },
+        "only": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "require_parameters": { "const": true },
+        "zdr": { "const": true }
+      }
+    },
+    "externalProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition", "acquisition_sha256", "adapter", "argv", "context",
+        "endpoint", "endpoint_model", "environment_allowlist",
+        "evaluation_output_tokens", "evaluation_seed", "executable", "executable_sha256", "family",
+        "fixed_environment", "id", "invocation_files", "max_stderr_bytes",
+        "max_stdout_bytes", "max_token_parameter", "measurement_output_tokens",
+        "model", "provider", "provider_policy", "roles", "schema",
+        "timeout_seconds", "tokenizer", "tokenizer_identity", "vocabulary_sha256",
+        "vocabulary_status"
+      ],
+      "properties": {
+        "acquisition": { "$ref": "#/$defs/externalAcquisition" },
+        "acquisition_sha256": { "$ref": "#/$defs/sha256" },
+        "adapter": { "enum": ["noema-openrouter-chat/v1", "noema-process-json/v1"] },
+        "argv": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "type": "string", "minLength": 1, "maxLength": 1024 }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["examples", "messages", "mode", "repository_instructions", "tools"],
+          "properties": {
+            "examples": { "const": 0 },
+            "messages": { "const": 1 },
+            "mode": { "const": "fresh-process" },
+            "repository_instructions": { "const": 0 },
+            "tools": { "const": 0 }
+          }
+        },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "endpoint_model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "environment_allowlist": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" }
+        },
+        "evaluation_output_tokens": { "type": "integer", "minimum": 1, "maximum": 2048 },
+        "evaluation_seed": {
+          "oneOf": [
+            { "const": 0 },
+            { "type": "null" }
+          ]
+        },
+        "executable": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "executable_sha256": { "$ref": "#/$defs/sha256" },
+        "family": { "$ref": "#/$defs/profileFamily" },
+        "fixed_environment": {
+          "type": "object",
+          "maxProperties": 16,
+          "propertyNames": { "pattern": "^[A-Z][A-Z0-9_]{0,63}$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "id": { "$ref": "#/$defs/identifier" },
+        "invocation_files": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "$ref": "#/$defs/relativePath" },
+              "sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "max_stderr_bytes": { "type": "integer", "minimum": 1, "maximum": 8192 },
+        "max_stdout_bytes": { "type": "integer", "minimum": 1, "maximum": 65536 },
+        "max_token_parameter": { "enum": ["max_completion_tokens", "max_tokens"] },
+        "measurement_output_tokens": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "provider_policy": { "$ref": "#/$defs/providerPolicy" },
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["evaluation", "measurement"] }
+        },
+        "schema": { "const": "noema-external-profile/v1" },
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 600 },
+        "tokenizer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "tokenizer_identity": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "vocabulary_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "vocabulary_status": { "enum": ["exact", "provider-private"] }
+      }
+    },
+    "externalProfiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_on", "profiles", "schema"],
+      "properties": {
+        "observed_on": { "type": "string", "format": "date" },
+        "profiles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/externalProfile" }
+        },
+        "schema": { "const": "noema-external-profiles/v1" }
+      }
+    },
+    "ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["denominator", "limit_percent", "numerator", "passes", "percent_milli"],
+      "properties": {
+        "denominator": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+        "limit_percent": { "enum": [40, 55, 70] },
+        "numerator": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "passes": { "type": "boolean" },
+        "percent_milli": { "type": "integer", "minimum": 0, "maximum": 1000000000 }
+      }
+    },
+    "measurementGateSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["complete_canonical", "first_use", "steady_state"],
+      "properties": {
+        "complete_canonical": { "$ref": "#/$defs/ratio" },
+        "first_use": { "$ref": "#/$defs/ratio" },
+        "steady_state": { "$ref": "#/$defs/ratio" }
+      }
+    },
+    "measuredComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "observation_sha256", "prompt_tokens", "sha256", "tokens"],
+      "properties": {
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+        "observation_sha256": { "$ref": "#/$defs/sha256" },
+        "prompt_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 }
+      }
+    },
+    "byteTokenCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "tokens"],
+      "properties": {
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 4194304 },
+        "tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 }
+      }
+    },
+    "measurementComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alias_dictionary", "canonical", "first_use", "full_projection", "kernel",
+        "literals", "operation_slice", "reachable_definitions", "source", "steady_state"
+      ],
+      "properties": {
+        "alias_dictionary": { "$ref": "#/$defs/measuredComponent" },
+        "canonical": { "$ref": "#/$defs/measuredComponent" },
+        "first_use": { "$ref": "#/$defs/measuredComponent" },
+        "full_projection": { "$ref": "#/$defs/measuredComponent" },
+        "kernel": { "$ref": "#/$defs/measuredComponent" },
+        "literals": { "$ref": "#/$defs/measuredComponent" },
+        "operation_slice": { "$ref": "#/$defs/measuredComponent" },
+        "reachable_definitions": { "$ref": "#/$defs/measuredComponent" },
+        "source": { "$ref": "#/$defs/measuredComponent" },
+        "steady_state": { "$ref": "#/$defs/measuredComponent" }
+      }
+    },
+    "measurementTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alias_dictionary", "canonical", "first_use", "full_projection", "kernel",
+        "literals", "operation_slice", "reachable_definitions", "source", "steady_state"
+      ],
+      "properties": {
+        "alias_dictionary": { "$ref": "#/$defs/byteTokenCount" },
+        "canonical": { "$ref": "#/$defs/byteTokenCount" },
+        "first_use": { "$ref": "#/$defs/byteTokenCount" },
+        "full_projection": { "$ref": "#/$defs/byteTokenCount" },
+        "kernel": { "$ref": "#/$defs/byteTokenCount" },
+        "literals": { "$ref": "#/$defs/byteTokenCount" },
+        "operation_slice": { "$ref": "#/$defs/byteTokenCount" },
+        "reachable_definitions": { "$ref": "#/$defs/byteTokenCount" },
+        "source": { "$ref": "#/$defs/byteTokenCount" },
+        "steady_state": { "$ref": "#/$defs/byteTokenCount" }
+      }
+    },
+    "measurementDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["components", "gates", "id"],
+      "properties": {
+        "components": { "$ref": "#/$defs/measurementComponents" },
+        "gates": { "$ref": "#/$defs/measurementGateSet" },
+        "id": { "enum": ["brevitas", "fiat", "phylax", "sapheneia"] }
+      }
+    },
+    "measurementAmortised": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document_count", "first_use", "gate", "source"],
+      "properties": {
+        "document_count": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "first_use": { "$ref": "#/$defs/measuredComponent" },
+        "gate": { "$ref": "#/$defs/ratio" },
+        "source": { "$ref": "#/$defs/measuredComponent" }
+      }
+    },
+    "adapterAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_code", "attempt", "context_nonce", "request_sha256", "status"
+      ],
+      "properties": {
+        "answer_code": { "type": "string", "pattern": "^NOE-(OK|E-[A-Z0-9_.-]+)$" },
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "context_nonce": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "request_sha256": { "$ref": "#/$defs/sha256" },
+        "status": { "enum": ["recorded", "refused", "unknown"] }
+      }
+    },
+    "adapterRequestAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt", "context_nonce", "sha256"],
+      "properties": {
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "context_nonce": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "adapterAttemptLog": {
+      "type": "array", "minItems": 1, "maxItems": 387,
+      "items": { "$ref": "#/$defs/adapterAttempt" }
+    },
+    "measurementTransport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cost_usd", "finish_reason", "generation_id", "input_tokens",
+        "output_tokens", "prompt_bytes", "prompt_sha256", "request_sha256",
+        "sequence"
+      ],
+      "properties": {
+        "cost_usd": { "$ref": "#/$defs/decimalAmount" },
+        "finish_reason": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "generation_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "input_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "output_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "prompt_bytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "prompt_sha256": { "$ref": "#/$defs/sha256" },
+        "request_sha256": { "$ref": "#/$defs/sha256" },
+        "sequence": { "const": 0 }
+      }
+    },
+    "measurementObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bytes", "cost_usd", "finish_reason", "generation_id", "input_tokens",
+        "observation_sha256", "output_tokens", "request_sha256", "sequence",
+        "sha256", "tokens"
+      ],
+      "properties": {
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+        "cost_usd": { "$ref": "#/$defs/decimalAmount" },
+        "finish_reason": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "generation_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "input_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "observation_sha256": { "$ref": "#/$defs/sha256" },
+        "output_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "request_sha256": { "$ref": "#/$defs/sha256" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 }
+      }
+    },
+    "recordedMeasurementProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition_sha256", "amortised", "attempts", "cost_usd", "documents", "family", "gates",
+        "id", "model", "observations", "profile_sha256", "provider",
+        "source_baseline_sequence", "status", "tokenizer", "tokenizer_identity",
+        "totals", "transport", "unknowns", "vocabulary_sha256", "vocabulary_status"
+      ],
+      "properties": {
+        "acquisition_sha256": { "$ref": "#/$defs/sha256" },
+        "amortised": {
+          "type": "array", "minItems": 4, "maxItems": 4,
+          "items": { "$ref": "#/$defs/measurementAmortised" }
+        },
+        "attempts": { "$ref": "#/$defs/adapterAttemptLog" },
+        "cost_usd": { "$ref": "#/$defs/decimalAmount" },
+        "documents": {
+          "type": "array", "minItems": 4, "maxItems": 4,
+          "items": { "$ref": "#/$defs/measurementDocument" }
+        },
+        "family": { "$ref": "#/$defs/profileFamily" },
+        "gates": { "$ref": "#/$defs/measurementGateSet" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "observations": {
+          "type": "array", "minItems": 1, "maxItems": 128,
+          "uniqueItems": true, "items": { "$ref": "#/$defs/measurementObservation" }
+        },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "source_baseline_sequence": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "status": { "const": "recorded" },
+        "tokenizer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "tokenizer_identity": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "totals": { "$ref": "#/$defs/measurementTotals" },
+        "transport": { "$ref": "#/$defs/measurementTransport" },
+        "unknowns": {
+          "type": "array", "maxItems": 1, "uniqueItems": true,
+          "items": { "const": "vocabulary_sha256" }
+        },
+        "vocabulary_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "vocabulary_status": { "enum": ["exact", "provider-private"] }
+      }
+    },
+    "unknownMeasurementProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition_sha256", "attempts", "family", "id", "model", "profile_sha256", "provider",
+        "refusal_code", "status", "tokenizer", "unknowns", "vocabulary_sha256",
+        "vocabulary_status"
+      ],
+      "properties": {
+        "acquisition_sha256": { "$ref": "#/$defs/sha256" },
+        "attempts": { "$ref": "#/$defs/adapterAttemptLog" },
+        "family": { "$ref": "#/$defs/profileFamily" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "refusal_code": { "type": "string", "pattern": "^NOE-E-[A-Z0-9_.-]+$" },
+        "status": { "const": "unknown" },
+        "tokenizer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "unknowns": { "const": ["counts"] },
+        "vocabulary_sha256": { "$ref": "#/$defs/nullableSha256" },
+        "vocabulary_status": { "enum": ["exact", "provider-private"] }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "corpus_sha256", "critical_vectors", "observed_on", "profile_set_sha256",
+        "profiles", "repository_commit", "repository_tree", "schema", "summary"
+      ],
+      "properties": {
+        "corpus_sha256": { "$ref": "#/$defs/sha256" },
+        "critical_vectors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "required", "status", "vectors"],
+          "properties": {
+            "passed": { "type": "integer", "minimum": 0, "maximum": 7 },
+            "required": { "const": 7 },
+            "status": { "enum": ["failed", "passed"] },
+            "vectors": {
+              "const": [
+                "authority", "consequence-3", "exact-literal", "negation", "ordering",
+                "permission-prohibition", "unknown-guard"
+              ]
+            }
+          }
+        },
+        "observed_on": { "type": "string", "format": "date" },
+        "profile_set_sha256": { "$ref": "#/$defs/sha256" },
+        "profiles": {
+          "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/recordedMeasurementProfile" },
+              { "$ref": "#/$defs/unknownMeasurementProfile" }
+            ]
+          }
+        },
+        "repository_commit": { "$ref": "#/$defs/gitObject" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "schema": { "const": "noema-measurement/v1" },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "critical_vectors", "failed_profiles", "measured_profiles",
+            "required_profiles", "status", "unknown_profiles"
+          ],
+          "properties": {
+            "critical_vectors": { "enum": ["failed", "passed"] },
+            "failed_profiles": { "type": "integer", "minimum": 0, "maximum": 4 },
+            "measured_profiles": { "type": "integer", "minimum": 0, "maximum": 4 },
+            "required_profiles": { "const": 4 },
+            "status": { "enum": ["accepted", "rejected", "unknown"] },
+            "unknown_profiles": { "type": "integer", "minimum": 0, "maximum": 4 }
+          }
+        }
+      }
+    },
+    "answerView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "command", "verdict"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^NOE-(OK|I-[A-Z0-9_.-]+|E-[A-Z0-9_.-]+)$" },
+        "command": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "output": { "$ref": "#/$defs/runtimeOutput" },
+        "verdict": { "enum": ["ok", "refuse", "unknown"] }
+      }
+    },
+    "evaluationQuery": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["effect", "kind"],
+          "properties": {
+            "effect": { "$ref": "#/$defs/identifier" },
+            "kind": { "const": "check" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "node"],
+          "properties": {
+            "kind": { "const": "explain" },
+            "node": { "$ref": "#/$defs/nodeId" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "kind"],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "kind": { "const": "literal" }
+          }
+        }
+      ]
+    },
+    "evaluationFamilyProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acquisition_sha256", "family", "id", "model", "profile_sha256", "provider"],
+      "properties": {
+        "acquisition_sha256": { "$ref": "#/$defs/sha256" },
+        "family": { "$ref": "#/$defs/profileFamily" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "evaluationFactContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_sha256", "id", "proposition", "value"],
+      "properties": {
+        "evidence_sha256": { "$ref": "#/$defs/sha256" },
+        "id": { "type": "string", "pattern": "^fact\\.[0-9a-f]{64}$" },
+        "proposition": { "$ref": "#/$defs/term" },
+        "value": { "enum": ["true", "false", "unknown"] }
+      }
+    },
+    "evaluationRuntimeContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "facts", "operation", "state", "target", "tools"],
+      "properties": {
+        "authority": {
+          "type": "array", "maxItems": 256, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "facts": {
+          "type": "array", "maxItems": 4096, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationFactContext" }
+        },
+        "operation": { "$ref": "#/$defs/identifier" },
+        "state": { "$ref": "#/$defs/identifier" },
+        "target": { "$ref": "#/$defs/identifier" },
+        "tools": {
+          "type": "array", "maxItems": 256, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "evaluationCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "value": { "$ref": "#/$defs/answerView" }
+      }
+    },
+    "evaluationPrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "context_nonce", "mode", "path", "requests", "sha256"],
+      "properties": {
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "context_nonce": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "mode": { "enum": ["noema", "source"] },
+        "path": { "$ref": "#/$defs/artifactLeaf" },
+        "requests": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["attempts", "family_id"],
+            "properties": {
+              "attempts": {
+                "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true,
+                "items": { "$ref": "#/$defs/adapterRequestAttempt" }
+              },
+              "family_id": { "$ref": "#/$defs/identifier" }
+            }
+          }
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evaluationCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_answers", "case_sha256", "category", "graph_sha256", "id",
+        "kernel_sha256", "mutation_id", "projection_profile_sha256",
+        "projection_sha256", "prompts", "query", "required_answer_id",
+        "runtime_context", "source_excerpt", "source_identity_sha256", "source_sha256", "specimen", "vector"
+      ],
+      "properties": {
+        "candidate_answers": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationCandidate" }
+        },
+        "case_sha256": { "$ref": "#/$defs/sha256" },
+        "category": {
+          "enum": [
+            "changed-exact-literal", "consequence-3-bypass", "dropped-negation",
+            "missing-authority", "permission-for-prohibition", "reordered-effects",
+            "swapped-actor", "unknown-guard-deletion"
+          ]
+        },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "kernel_sha256": { "$ref": "#/$defs/sha256" },
+        "mutation_id": { "$ref": "#/$defs/identifier" },
+        "projection_profile_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" },
+        "prompts": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationPrompt" }
+        },
+        "query": { "$ref": "#/$defs/evaluationQuery" },
+        "required_answer_id": { "$ref": "#/$defs/identifier" },
+        "runtime_context": { "$ref": "#/$defs/evaluationRuntimeContext" },
+        "source_excerpt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["end", "node", "sha256", "start", "text"],
+          "properties": {
+            "end": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+            "node": { "$ref": "#/$defs/nodeId" },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "start": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+            "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+          }
+        },
+        "source_identity_sha256": { "$ref": "#/$defs/sha256" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "specimen": { "enum": ["brevitas", "fiat", "phylax", "sapheneia"] },
+        "vector": {
+          "enum": [
+            "authority", "consequence-3", "exact-literal", "negation", "ordering",
+            "permission-prohibition", "unknown-guard"
+          ]
+        }
+      }
+    },
+    "evaluationPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_set_sha256", "cases", "corpus_sha256", "family_profiles",
+        "profile_set_sha256", "repository_commit", "repository_tree", "schema"
+      ],
+      "properties": {
+        "case_set_sha256": { "$ref": "#/$defs/sha256" },
+        "cases": {
+          "type": "array", "minItems": 8, "maxItems": 8, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationCase" }
+        },
+        "corpus_sha256": { "$ref": "#/$defs/sha256" },
+        "family_profiles": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationFamilyProfile" }
+        },
+        "profile_set_sha256": { "$ref": "#/$defs/sha256" },
+        "repository_commit": { "$ref": "#/$defs/gitObject" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "schema": { "const": "noema-evaluation-packet/v1" }
+      }
+    },
+    "answerProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempts", "cost_usd", "finish_reason", "generation_id", "input_tokens",
+        "output_tokens", "request_sha256"
+      ],
+      "properties": {
+        "attempts": {
+          "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/adapterAttempt" }
+        },
+        "cost_usd": { "$ref": "#/$defs/decimalAmount" },
+        "finish_reason": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "generation_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "input_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "output_tokens": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+        "request_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evaluationAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition_sha256", "answer_code", "answer_id", "case_id", "context_nonce",
+        "family", "family_id", "id", "mode", "model", "profile_sha256",
+        "prompt_sha256", "provider", "provenance", "status"
+      ],
+      "properties": {
+        "acquisition_sha256": { "$ref": "#/$defs/sha256" },
+        "answer_code": { "type": "string", "pattern": "^NOE-(OK|E-[A-Z0-9_.-]+)$" },
+        "answer_id": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "case_id": { "$ref": "#/$defs/identifier" },
+        "context_nonce": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "family": { "$ref": "#/$defs/profileFamily" },
+        "family_id": { "$ref": "#/$defs/identifier" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "mode": { "enum": ["noema", "source"] },
+        "model": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "prompt_sha256": { "$ref": "#/$defs/sha256" },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "provenance": { "$ref": "#/$defs/answerProvenance" },
+        "status": { "enum": ["recorded", "unknown"] }
+      }
+    },
+    "evaluationAnswers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answers", "case_set_sha256", "packet_sha256", "profile_set_sha256",
+        "repository_tree", "schema", "summary"
+      ],
+      "properties": {
+        "answers": {
+          "type": "array", "minItems": 32, "maxItems": 32, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationAnswer" }
+        },
+        "case_set_sha256": { "$ref": "#/$defs/sha256" },
+        "packet_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_set_sha256": { "$ref": "#/$defs/sha256" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "schema": { "const": "noema-evaluation-answers/v1" },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expected", "recorded", "status", "unknown"],
+          "properties": {
+            "expected": { "const": 32 },
+            "recorded": { "type": "integer", "minimum": 0, "maximum": 32 },
+            "status": { "enum": ["recorded", "unknown"] },
+            "unknown": { "type": "integer", "minimum": 0, "maximum": 32 }
+          }
+        }
+      }
+    },
+    "evaluationReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_record_sha256", "case_set_sha256", "critical_vectors", "family_ids",
+        "packet_sha256", "repository_tree", "required_classes", "results", "schema", "summary"
+      ],
+      "properties": {
+        "answer_record_sha256": { "$ref": "#/$defs/sha256" },
+        "case_set_sha256": { "$ref": "#/$defs/sha256" },
+        "critical_vectors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "required", "status", "vectors"],
+          "properties": {
+            "passed": { "type": "integer", "minimum": 0, "maximum": 7 },
+            "required": { "const": 7 },
+            "status": { "enum": ["failed", "passed"] },
+            "vectors": {
+              "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true,
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["id", "status"],
+                "properties": {
+                  "id": {
+                    "enum": [
+                      "authority", "consequence-3", "exact-literal", "negation", "ordering",
+                      "permission-prohibition", "unknown-guard"
+                    ]
+                  },
+                  "status": { "enum": ["failed", "passed"] }
+                }
+              }
+            }
+          }
+        },
+        "family_ids": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "packet_sha256": { "$ref": "#/$defs/sha256" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "required_classes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["decision", "refusal", "unknown"],
+          "properties": {
+            "decision": { "type": "integer", "minimum": 0, "maximum": 16 },
+            "refusal": { "type": "integer", "minimum": 0, "maximum": 16 },
+            "unknown": { "type": "integer", "minimum": 0, "maximum": 16 }
+          }
+        },
+        "results": {
+          "type": "array", "minItems": 16, "maxItems": 16, "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_id", "family", "family_id", "noema_answer_id", "refusal_codes",
+              "required_answer_id", "required_class", "source_answer_id", "status", "vector"
+            ],
+            "properties": {
+              "case_id": { "$ref": "#/$defs/identifier" },
+              "family": { "$ref": "#/$defs/profileFamily" },
+              "family_id": { "$ref": "#/$defs/identifier" },
+              "noema_answer_id": {
+                "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+              },
+              "refusal_codes": {
+                "type": "array", "maxItems": 16, "uniqueItems": true,
+                "items": { "type": "string", "pattern": "^NOE-E-[A-Z0-9_.-]+$" }
+              },
+              "required_answer_id": { "$ref": "#/$defs/identifier" },
+              "required_class": { "enum": ["decision", "refusal", "unknown"] },
+              "source_answer_id": {
+                "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+              },
+              "status": { "enum": ["failed", "passed"] },
+              "vector": {
+                "enum": [
+                  "authority", "consequence-3", "exact-literal", "negation", "ordering",
+                  "permission-prohibition", "unknown-guard"
+                ]
+              }
+            }
+          }
+        },
+        "schema": { "const": "noema-evaluation/v1" },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["failed", "pairs", "passed", "status"],
+          "properties": {
+            "failed": { "type": "integer", "minimum": 0, "maximum": 16 },
+            "pairs": { "const": 16 },
+            "passed": { "type": "integer", "minimum": 0, "maximum": 16 },
+            "status": { "enum": ["accepted", "rejected"] }
+          }
+        }
+      }
+    },
+    "gitWitnessObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_base64", "oid", "type"],
+      "properties": {
+        "data_base64": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 174764,
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+        },
+        "oid": { "$ref": "#/$defs/gitObject" },
+        "type": { "enum": ["commit", "tree"] }
+      }
+    },
+    "gitAnchorWitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "carrier_commit", "objects", "repository_commit", "repository_tree", "schema"
+      ],
+      "properties": {
+        "carrier_commit": { "$ref": "#/$defs/gitObject" },
+        "objects": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/gitWitnessObject" }
+        },
+        "repository_commit": { "$ref": "#/$defs/gitObject" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "schema": { "const": "noema-git-anchor-witness/v1" }
+      }
+    },
+    "corpusEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answers", "answers_sha256", "case_set_sha256", "evaluation",
+        "evaluation_sha256", "measurement", "measurement_sha256", "packet_sha256",
+        "profile_set_sha256", "profiles", "repository_commit", "repository_tree",
+        "repository_witness", "repository_witness_sha256", "schema"
+      ],
+      "properties": {
+        "answers": { "const": "evidence/answers.json" },
+        "answers_sha256": { "$ref": "#/$defs/sha256" },
+        "case_set_sha256": { "$ref": "#/$defs/sha256" },
+        "evaluation": { "const": "evidence/evaluation.json" },
+        "evaluation_sha256": { "$ref": "#/$defs/sha256" },
+        "measurement": { "const": "evidence/measurement.json" },
+        "measurement_sha256": { "$ref": "#/$defs/sha256" },
+        "packet_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_set_sha256": { "$ref": "#/$defs/sha256" },
+        "profiles": { "const": "profiles/measurement.json" },
+        "repository_commit": { "$ref": "#/$defs/gitObject" },
+        "repository_tree": { "$ref": "#/$defs/gitObject" },
+        "repository_witness": { "const": "evidence/git-anchor-witness.json" },
+        "repository_witness_sha256": { "$ref": "#/$defs/sha256" },
+        "schema": { "const": "noema-corpus-evidence/v1" }
+      }
+    },
+    "profileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "family",
+        "identity",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "family": {
+          "enum": [
+            "openai",
+            "anthropic",
+            "google",
+            "open-weight"
+          ]
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "status": {
+          "enum": [
+            "measured",
+            "recorded",
+            "unknown"
+          ]
+        },
+        "executable_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "vocabulary_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "kind",
+        "tree_sha256",
+        "manifest_sha256",
+        "status",
+        "profiles"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-evidence/v1"
+        },
+        "kind": {
+          "enum": [
+            "measurement",
+            "evaluation"
+          ]
+        },
+        "tree_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "status": {
+          "enum": [
+            "measured",
+            "recorded",
+            "unknown"
+          ]
+        },
+        "profiles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/profileEvidence"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schema": "noema-seed-inventory/v1",
+  "archive": {
+    "name": "noema-v0-evidence.zip",
+    "url": "https://github.com/user-attachments/files/31608611/noema-v0-evidence.zip",
+    "bytes": 24907,
+    "sha256": "1e1eb5e9908551f1337b7ec58a37ae7f37fd97e41d5ac424bc4992eb1d11b540",
+    "root": "noema-v0.28VEy4/"
+  },
+  "files": [
+    {
+      "path": "bootstrap.txt",
+      "bytes": 1776,
+      "sha256": "e8a56f59a9b3a97180362e839ef33140db6651c4d293a7d540924b60c9a8a5bf"
+    },
+    {
+      "path": "brevitas-answer-literals.txt",
+      "bytes": 413,
+      "sha256": "ee82614410094ddd7fbaaf7a623bb160a030d764d2dcc054049a8ba1aa051f14"
+    },
+    {
+      "path": "brevitas-answer.nt",
+      "bytes": 2105,
+      "sha256": "bbfb62267630c3de24ce8e9b7e78a2d6deb4fae75b7c73b99b95dd129a1652ed"
+    },
+    {
+      "path": "brevitas-coverage.md",
+      "bytes": 2812,
+      "sha256": "72fb20d1f0c9b267b74638e9100846061edba1ddc25cdd9eda828692d3a63ab3"
+    },
+    {
+      "path": "brevitas-full.nt",
+      "bytes": 3729,
+      "sha256": "65b5199bd84dd6c5ef2be8183aa784188624af8ba0c692e66ef80e56fe2ee3f5"
+    },
+    {
+      "path": "brevitas-literals.txt",
+      "bytes": 713,
+      "sha256": "e3bfb6b7eae7bb399cbbb4e57b1e87accc6239c93e46043f9fc85078d292a4a9"
+    },
+    {
+      "path": "comprehension-vectors.md",
+      "bytes": 1933,
+      "sha256": "4d03569f9e7c638c9bd95ca4e1f223b52256852bd1819d578a8cf5a79b73c886"
+    },
+    {
+      "path": "coverage.md",
+      "bytes": 2196,
+      "sha256": "fa659edef7339a001ef85405164790e65d4fca2c65a33dd6796bba316ba2e585"
+    },
+    {
+      "path": "criteria.md",
+      "bytes": 2372,
+      "sha256": "4cdbdb438a0ee0774070e3b4a05700fd0219b304ad79b41acb155c947c0aac62"
+    },
+    {
+      "path": "demo-fiat-hard.nt",
+      "bytes": 1010,
+      "sha256": "0ebda824a20b1f1c6978b8746393c9d4acad761e29fe694a3415b24fa548caa6"
+    },
+    {
+      "path": "demo-phylax.nt",
+      "bytes": 833,
+      "sha256": "e3118a3ae613bd42649bd9b9e0abe5c0fee5a1c2b2576e2871c03bb6d7ef6e10"
+    },
+    {
+      "path": "demo-sapheneia.nt",
+      "bytes": 753,
+      "sha256": "63e86276c5ac5bdaf90cd98905c0a60c0e78c35a10f7d573bdb2e4e7571e1923"
+    },
+    {
+      "path": "kernel.nk",
+      "bytes": 828,
+      "sha256": "7da37c32a8e56cd5b119da2556bff61d076ab63ca6937c0d56714ac485d357d2"
+    },
+    {
+      "path": "noema-v0.md",
+      "bytes": 16892,
+      "sha256": "535d767f11163fec5187ac664cb4d13e0f84fd08af3b281d27120fc206bb33ed"
+    },
+    {
+      "path": "reachable-defs.nt",
+      "bytes": 509,
+      "sha256": "5f0bff8b78d0c69682eab8bf75efe6ca8fffd4d5d10205af4a5097b225214fce"
+    },
+    {
+      "path": "test_noema.py",
+      "bytes": 4228,
+      "sha256": "7509c5b0addc96c7d3b966697afcacd1a710b3586fe41a15d8afdc76699b1df8"
+    },
+    {
+      "path": "validate.py",
+      "bytes": 9974,
+      "sha256": "acb3f30aec3c9aba686caf770d7a7ce07a45a97354b639cb54ec89f10faedb52"
+    }
+  ]
+}

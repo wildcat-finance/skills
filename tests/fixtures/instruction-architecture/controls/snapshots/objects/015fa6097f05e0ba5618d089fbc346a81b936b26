@@ -1,0 +1,22 @@
+WAI1
+D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
+  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:3bf9cf49cdeb86527621b247cbb8a21962c4aef4cbd515f5143ca8ff564ab912
+  H i9:fiat-loop t8:The\sloop
+    R i11:study-phase t115:Research\sthe\stopic\sand\swrite\sthe\sstudy\sand\schecked\sdesign\srecord\sunder\sProtasis,\sthen\sreceipt\sthem\swith\sdone\sstudy.
+    R i24:marketplace-reassessment t306:After\sa\ssuccessful\sstudy\sreceipt,\sperform\sthe\spost-spec\smarketplace\sreassessment\sbefore\sasking\sfor\sthe\srunbook\sdirective.\sThis\sis\sthe\sfirst\spoint\sat\swhich\sa\smissing\smarketplace\splugin\smay\sbe\sinstalled.\sRefresh\sskills\sonly\safter\sselected\sinstalls\sfinish,\sand\sresume\sin\sa\snew\schat\swhen\sthe\shost\srequires\sone.
+      W t35:the\slabs_marketplace\sreceipt\sexists
+    R i13:runbook-phase t103:Derive\sdiscrete\ssteps\sfrom\sthe\sreceipted\sstudy\sunder\sProtasis,\sthen\sreceipt\sthe\srunbook\sand\ssteps\sfile.
+      W t24:the\sstudy\sreceipt\sexists
+    R i15:implement-phase t104:Build\sthe\sselected\sdesign\sfor\sthe\ssource-bound\srunbook\sstep,\sthen\sreceipt\sits\sbranch,\scommit,\sand\stests.
+    X i16:receipt-boundary t120:A\sphase\swhose\sreceipt\scommand\sexits\snon-zero\sis\snot\sdone;\srepair\sthe\snamed\sfailure\sbefore\sasking\sfor\sthe\snext\sdirective.
+  < i24:marketplace-reassessment i13:runbook-phase
+  < i13:runbook-phase i15:implement-phase
+  < i11:study-phase i24:marketplace-reassessment
+  < i11:study-phase i13:runbook-phase
+  B i4:fiat i9:fiat-loop 18445 18456 i8:shoggoth
+  B i4:fiat i24:fiat-study-runbook-phase 18445 18456 i8:shoggoth
+  B i4:fiat i11:study-phase 18699 18857 i8:shoggoth
+  B i4:fiat i13:runbook-phase 18858 19000 i8:shoggoth
+  B i4:fiat i15:implement-phase 19001 19176 i8:shoggoth
+  B i4:fiat i16:receipt-boundary 22174 22315 i8:shoggoth
+  B i4:fiat i24:marketplace-reassessment 22317 22771 i8:shoggoth

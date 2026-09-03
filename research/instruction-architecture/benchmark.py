@@ -150,6 +150,38 @@ SHARED_BEHAVIORAL_PATHS = (
 WAI1_CONTROL_REF = SOURCE_REF
 NOEMA_PRODUCT_REF = "07ee0475d1559a2b09488f925645a83f786d1f3c"
 NOEMA_REVIEW_REF = "7344de8874f9de8a2a2ef78a31f7e760f56e491e"
+CONTROL_SNAPSHOT_ROOT = DEVELOPMENT_FIXTURE_ROOT / "controls/snapshots"
+CONTROL_SNAPSHOT_MANIFEST = CONTROL_SNAPSHOT_ROOT / "manifest.json"
+WAI1_CONTROL_PREFIXES = (
+    "docs/agent-instruction-language-v1.md",
+    "schemas/agent-instruction-v1.schema.json",
+    "scripts/agent_instruction.py",
+    "tests/fixtures/agent-instruction-v1",
+)
+NOEMA_PRODUCT_PREFIXES = (
+    "docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md",
+    "docs/noema-v1.md",
+    "schemas/noema-v1.schema.json",
+    "scripts/noema.py",
+    "tests/fixtures/noema-v1",
+)
+NOEMA_REVIEW_PREFIXES = (
+    "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.md",
+    "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.synopsis.md",
+)
+CONTROL_SNAPSHOT_GROUPS = (
+    (WAI1_CONTROL_REF, WAI1_CONTROL_PREFIXES),
+    (NOEMA_PRODUCT_REF, NOEMA_PRODUCT_PREFIXES),
+    (NOEMA_REVIEW_REF, NOEMA_REVIEW_PREFIXES),
+)
+EXPECTED_CONTROL_SNAPSHOT_SHA256 = (
+    "696d67a87f3c564b9c02d68fb8630132ffad2f98d2319af76390cfd80a28fc7a"
+)
+EXPECTED_CONTROL_SNAPSHOT_COUNTS = {
+    "artifact_records": 172,
+    "object_bytes": 2_095_430,
+    "objects": 157,
+}
 MAX_CONTROL_PATHS = 1_024
 MAX_DEVELOPMENT_CASES = 128
 MAX_PROMPT_COMPONENTS = 8_192
@@ -158,14 +190,14 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "0e32f86d67a35a7153fa32bb28cec2cfdb877da71b8f3ba699601455abd54da3"
+    "64720f3013bf95ae394c3cdd3a1f9a4c0f016c42b8c3569325d7bc3ad91f42b4"
 )
 EXPECTED_CONTROL_SHA256 = {
-    "noema": "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
+    "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
     "raw": "bfc416cc7fd3d9a1a569fea4eaa6e6577770bf89f77b68eb23378633d57da23e",
     "section-graph": "64f62560d56b65c782c792854a7803e90c864cb7fa590e75618f2f744c8d40a1",
     "simple": "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
-    "wai1": "d296ad65805dacf9e9514e1e9517c0f61335ddcdc33a19b91a3fa1d8cfe8daab",
+    "wai1": "d45599ba946cf515a72491310a105db6e257847d67541f218398877ea84e0ac1",
 }
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
@@ -6437,24 +6469,44 @@ NEUTRAL_CONTRACT = {
 }
 
 
+def _git_blob_oid(data: bytes, object_format: str = "sha1") -> str:
+    """Compute the repository-format Git identity for exact blob bytes."""
+    header = f"blob {len(data)}\0".encode("ascii")
+    if object_format == "sha1":
+        hasher = hashlib.sha1(usedforsecurity=False)
+    elif object_format == "sha256":
+        hasher = hashlib.sha256()
+    else:
+        raise Refusal("control snapshot object format is unsupported")
+    hasher.update(header)
+    hasher.update(data)
+    return hasher.hexdigest()
+
+
 @lru_cache(maxsize=4)
-def _pinned_commit(ref: str) -> str:
+def _control_ref_mode(ref: str) -> str:
+    """Require a typed commit or its exact absence in a shallow repository."""
     if re.fullmatch(r"[0-9a-f]{40}", ref) is None:
         raise Refusal("control ref is not an exact commit id")
-    raw = _git(["rev-parse", "--verify", f"{ref}^{{commit}}"], 64)
-    if raw != f"{ref}\n".encode("ascii"):
-        raise Refusal("control commit identity drift")
-    return ref
+    expression = f"{ref}^{{commit}}"
+    probe = _git(
+        ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        128,
+        input_data=f"{expression}\n".encode("ascii"),
+    )
+    if probe == f"{ref} commit\n".encode("ascii"):
+        return "git"
+    if probe != f"{expression} missing\n".encode("ascii"):
+        raise Refusal("bounded Git read returned an unexpected control identity")
+    shallow = _git(["rev-parse", "--is-shallow-repository"], 16)
+    if shallow != b"true\n":
+        raise Refusal("control commit is absent from a non-shallow repository")
+    return "snapshot"
 
 
-def _git_blob_at(ref: str, path: str) -> bytes:
-    _pinned_commit(ref)
-    _safe_relative(path)
-    return _git(["cat-file", "blob", f"{ref}:{path}"], MAX_SOURCE_BYTES)
-
-
-def _control_paths_at(ref: str, prefixes: tuple[str, ...]) -> list[str]:
-    _pinned_commit(ref)
+def _git_control_paths(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+    if _control_ref_mode(ref) != "git":
+        raise Refusal("control snapshot generation requires the pinned commit")
     if not prefixes:
         raise Refusal("control inventory has no admitted prefixes")
     for prefix in prefixes:
@@ -6481,6 +6533,288 @@ def _control_paths_at(ref: str, prefixes: tuple[str, ...]) -> list[str]:
     return paths
 
 
+def _git_blob_identity_at(ref: str, path: str) -> str:
+    _safe_relative(path)
+    expression = f"{ref}:{path}"
+    probe = _git(
+        ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        128,
+        input_data=f"{expression}\n".encode("ascii"),
+    )
+    match = re.fullmatch(rb"([0-9a-f]{40}) blob\n", probe)
+    if match is None:
+        raise Refusal("control commit path does not resolve to a typed blob")
+    return match.group(1).decode("ascii")
+
+
+def _control_snapshot_manifest(
+    artifacts: list[dict[str, Any]], objects: dict[str, bytes]
+) -> dict[str, Any]:
+    return {
+        "artifacts": artifacts,
+        "object_format": "sha1",
+        "objects": [
+            {
+                "bytes": len(objects[oid]),
+                "oid": oid,
+                "sha256": _sha256(objects[oid]),
+            }
+            for oid in sorted(objects)
+        ],
+        "schema": f"{SCHEMA_PREFIX}-control-snapshot/v1",
+        "totals": {
+            "artifact_records": len(artifacts),
+            "object_bytes": sum(len(data) for data in objects.values()),
+            "objects": len(objects),
+        },
+    }
+
+
+def snapshot_controls(args: argparse.Namespace) -> bytes:
+    """Materialise immutable control objects while every pinned ref is present."""
+    output = _confined_output(
+        args.output,
+        "control snapshot output",
+        exact=(CONTROL_SNAPSHOT_ROOT,),
+        roots=(SCRATCH_ROOT,),
+    )
+    object_format = _git(["rev-parse", "--show-object-format"], 16)
+    if object_format != b"sha1\n":
+        raise Refusal("control refs require a SHA-1 object-format repository")
+    artifacts: list[dict[str, Any]] = []
+    objects: dict[str, bytes] = {}
+    for ref, prefixes in CONTROL_SNAPSHOT_GROUPS:
+        for path in _git_control_paths(ref, prefixes):
+            oid = _git_blob_identity_at(ref, path)
+            data = _git(["cat-file", "blob", oid], MAX_SOURCE_BYTES)
+            if _git_blob_oid(data) != oid:
+                raise Refusal("Git returned control bytes with another blob identity")
+            existing = objects.get(oid)
+            if existing is not None and existing != data:
+                raise Refusal("two control objects share an identity but not bytes")
+            objects[oid] = data
+            artifacts.append(
+                {
+                    "blob_oid": oid,
+                    "bytes": len(data),
+                    "path": path,
+                    "ref": ref,
+                    "sha256": _sha256(data),
+                }
+            )
+    artifacts.sort(key=lambda item: (item["ref"], item["path"]))
+    manifest = _control_snapshot_manifest(artifacts, objects)
+    if manifest["totals"] != EXPECTED_CONTROL_SNAPSHOT_COUNTS:
+        raise Refusal("control snapshot resource totals drift")
+    manifest_bytes = _canonical_json(manifest)
+    relative_output = _repository_relative(output, "control snapshot output")
+    if (
+        relative_output == CONTROL_SNAPSHOT_ROOT
+        and EXPECTED_CONTROL_SNAPSHOT_SHA256 is not None
+        and _sha256(manifest_bytes) != EXPECTED_CONTROL_SNAPSHOT_SHA256
+    ):
+        raise Refusal("control snapshot manifest differs from its frozen digest")
+    for oid in sorted(objects):
+        _atomic_write(output / "objects" / oid, objects[oid])
+    _atomic_write(output / "manifest.json", manifest_bytes)
+    return _result(
+        "snapshot-controls",
+        manifest_bytes,
+        dict(EXPECTED_CONTROL_SNAPSHOT_COUNTS),
+    )
+
+
+@lru_cache(maxsize=1)
+def _control_snapshot() -> dict[str, Any]:
+    manifest_path = ROOT / Path(*CONTROL_SNAPSHOT_MANIFEST.parts)
+    raw = _read_regular(manifest_path, MAX_JSON_BYTES)
+    if (
+        not isinstance(EXPECTED_CONTROL_SNAPSHOT_SHA256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", EXPECTED_CONTROL_SNAPSHOT_SHA256) is None
+        or _sha256(raw) != EXPECTED_CONTROL_SNAPSHOT_SHA256
+    ):
+        raise Refusal("control snapshot manifest differs from its frozen digest")
+    manifest = _decode_record(raw)
+    _require_fields(
+        manifest,
+        ("artifacts", "object_format", "objects", "schema", "totals"),
+        ("artifacts", "object_format", "objects", "schema", "totals"),
+        "control snapshot manifest",
+    )
+    if (
+        manifest["schema"] != f"{SCHEMA_PREFIX}-control-snapshot/v1"
+        or manifest["object_format"] != "sha1"
+        or not isinstance(manifest["artifacts"], list)
+        or not isinstance(manifest["objects"], list)
+        or manifest["totals"] != EXPECTED_CONTROL_SNAPSHOT_COUNTS
+        or len(manifest["artifacts"])
+        != EXPECTED_CONTROL_SNAPSHOT_COUNTS["artifact_records"]
+        or len(manifest["objects"]) != EXPECTED_CONTROL_SNAPSHOT_COUNTS["objects"]
+    ):
+        raise Refusal("control snapshot manifest identity or totals drift")
+
+    object_records: dict[str, dict[str, Any]] = {}
+    object_order: list[str] = []
+    for record in manifest["objects"]:
+        _require_fields(
+            record, ("bytes", "oid", "sha256"), ("bytes", "oid", "sha256"),
+            "control snapshot object",
+        )
+        oid = record["oid"]
+        size = record["bytes"]
+        digest = record["sha256"]
+        if (
+            not isinstance(oid, str)
+            or re.fullmatch(r"[0-9a-f]{40}", oid) is None
+            or type(size) is not int
+            or not 0 < size <= MAX_SOURCE_BYTES
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            or oid in object_records
+        ):
+            raise Refusal("control snapshot object identity is malformed")
+        object_records[oid] = record
+        object_order.append(oid)
+    if object_order != sorted(object_order):
+        raise Refusal("control snapshot objects are not canonically ordered")
+
+    object_directory = CONTROL_SNAPSHOT_ROOT / "objects"
+    directory, _ = _open_parent(
+        object_directory / ".entry", create=False, label="control snapshot objects"
+    )
+    object_bytes: dict[str, bytes] = {}
+    try:
+        directory_before = os.fstat(directory)
+        try:
+            entries_before = os.listdir(directory)
+        except OSError as exc:
+            raise Refusal("control snapshot object inventory is unavailable") from exc
+        if (
+            len(entries_before) != len(object_records)
+            or set(entries_before) != set(object_records)
+        ):
+            raise Refusal("control snapshot object directory differs from its manifest")
+        for oid, record in object_records.items():
+            data = _read_regular(
+                ROOT / Path(*(object_directory / oid).parts), MAX_SOURCE_BYTES
+            )
+            if (
+                len(data) != record["bytes"]
+                or _sha256(data) != record["sha256"]
+                or _git_blob_oid(data, manifest["object_format"]) != oid
+            ):
+                raise Refusal(
+                    "control snapshot object size, digest, or blob identity drift"
+                )
+            object_bytes[oid] = data
+        try:
+            entries_after = os.listdir(directory)
+        except OSError as exc:
+            raise Refusal("control snapshot object inventory changed") from exc
+        if (
+            sorted(entries_after) != sorted(entries_before)
+            or _identity(os.fstat(directory)) != _identity(directory_before)
+        ):
+            raise Refusal("control snapshot object inventory changed")
+    finally:
+        os.close(directory)
+
+    prefixes_by_ref = {ref: prefixes for ref, prefixes in CONTROL_SNAPSHOT_GROUPS}
+    artifacts: dict[tuple[str, str], dict[str, Any]] = {}
+    artifact_order: list[tuple[str, str]] = []
+    for record in manifest["artifacts"]:
+        _require_fields(
+            record,
+            ("blob_oid", "bytes", "path", "ref", "sha256"),
+            ("blob_oid", "bytes", "path", "ref", "sha256"),
+            "control snapshot artifact",
+        )
+        ref = record["ref"]
+        path = record["path"]
+        oid = record["blob_oid"]
+        prefixes = prefixes_by_ref.get(ref)
+        if (
+            prefixes is None
+            or not isinstance(path, str)
+            or not isinstance(oid, str)
+            or re.fullmatch(r"[0-9a-f]{40}", oid) is None
+        ):
+            raise Refusal("control snapshot artifact identity is malformed")
+        _safe_relative(path)
+        if not any(
+            path == prefix or path.startswith(prefix.rstrip("/") + "/")
+            for prefix in prefixes
+        ):
+            raise Refusal("control snapshot artifact escaped its admitted prefixes")
+        key = (ref, path)
+        source = object_records.get(oid)
+        if (
+            key in artifacts
+            or source is None
+            or record["bytes"] != source["bytes"]
+            or record["sha256"] != source["sha256"]
+        ):
+            raise Refusal("control snapshot artifact binding drift")
+        artifacts[key] = record
+        artifact_order.append(key)
+    if artifact_order != sorted(artifact_order):
+        raise Refusal("control snapshot artifacts are not canonically ordered")
+    if set(object_records) != {record["blob_oid"] for record in artifacts.values()}:
+        raise Refusal("control snapshot contains an unreferenced or absent object")
+    if sum(len(data) for data in object_bytes.values()) != EXPECTED_CONTROL_SNAPSHOT_COUNTS[
+        "object_bytes"
+    ]:
+        raise Refusal("control snapshot object byte total drift")
+    if _read_regular(manifest_path, MAX_JSON_BYTES) != raw:
+        raise Refusal("control snapshot manifest changed during verification")
+    return {
+        "artifacts": artifacts,
+        "manifest": manifest,
+        "manifest_bytes": raw,
+        "objects": object_bytes,
+    }
+
+
+@lru_cache(maxsize=512)
+def _git_blob_at(ref: str, path: str) -> bytes:
+    _safe_relative(path)
+    snapshot = _control_snapshot()
+    record = snapshot["artifacts"].get((ref, path))
+    if record is None:
+        raise Refusal("control artifact is absent from the checked snapshot")
+    data = snapshot["objects"][record["blob_oid"]]
+    if _control_ref_mode(ref) == "git":
+        observed_oid = _git_blob_identity_at(ref, path)
+        if observed_oid != record["blob_oid"]:
+            raise Refusal("control commit path differs from its snapshot blob identity")
+        if _git(["cat-file", "blob", observed_oid], MAX_SOURCE_BYTES) != data:
+            raise Refusal("control Git bytes differ from the checked snapshot")
+    return data
+
+
+def _control_paths_at(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+    if not prefixes:
+        raise Refusal("control inventory has no admitted prefixes")
+    for prefix in prefixes:
+        _safe_relative(prefix)
+    snapshot_paths = sorted(
+        path
+        for (artifact_ref, path) in _control_snapshot()["artifacts"]
+        if artifact_ref == ref
+        and any(
+            path == prefix or path.startswith(prefix.rstrip("/") + "/")
+            for prefix in prefixes
+        )
+    )
+    if not snapshot_paths or len(snapshot_paths) > MAX_CONTROL_PATHS:
+        raise Refusal("control snapshot inventory is empty or oversized")
+    if _control_ref_mode(ref) == "git":
+        git_paths = _git_control_paths(ref, prefixes)
+        if git_paths != snapshot_paths:
+            raise Refusal("control commit inventory differs from its checked snapshot")
+    return snapshot_paths
+
+
 def _control_inventory(
     ref: str,
     prefixes: tuple[str, ...],
@@ -6490,6 +6824,7 @@ def _control_inventory(
     records: list[dict[str, Any]] = []
     for path in _control_paths_at(ref, prefixes):
         data = _git_blob_at(ref, path)
+        snapshot = _control_snapshot()["artifacts"][(ref, path)]
         if require_live_match:
             live = _read_regular(
                 ROOT / Path(*PurePosixPath(path).parts), MAX_SOURCE_BYTES
@@ -6497,7 +6832,13 @@ def _control_inventory(
             if live != data:
                 raise Refusal(f"immutable control differs from its entry bytes: {path}")
         records.append(
-            {"bytes": len(data), "path": path, "ref": ref, "sha256": _sha256(data)}
+            {
+                "blob_oid": snapshot["blob_oid"],
+                "bytes": len(data),
+                "path": path,
+                "ref": ref,
+                "sha256": _sha256(data),
+            }
         )
     return records
 
@@ -6767,13 +7108,9 @@ def _wai1_decoder_bootstrap() -> tuple[str, bytes]:
 
 
 def _wai1_control(manifest: dict[str, Any]) -> dict[str, Any]:
-    prefixes = (
-        "docs/agent-instruction-language-v1.md",
-        "schemas/agent-instruction-v1.schema.json",
-        "scripts/agent_instruction.py",
-        "tests/fixtures/agent-instruction-v1",
+    artifacts = _control_inventory(
+        WAI1_CONTROL_REF, WAI1_CONTROL_PREFIXES, require_live_match=True
     )
-    artifacts = _control_inventory(WAI1_CONTROL_REF, prefixes, require_live_match=True)
     wai_manifest = _decode_record(
         _git_blob_at(WAI1_CONTROL_REF, "tests/fixtures/agent-instruction-v1/manifest.json")
     )
@@ -6959,20 +7296,11 @@ def _noema_prompt_bundle(root: str) -> tuple[str, bytes]:
 
 
 def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
-    product_prefixes = (
-        "docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md",
-        "docs/noema-v1.md",
-        "schemas/noema-v1.schema.json",
-        "scripts/noema.py",
-        "tests/fixtures/noema-v1",
-    )
-    review_prefixes = (
-        "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.md",
-        "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.synopsis.md",
-    )
     artifacts = _control_inventory(
-        NOEMA_PRODUCT_REF, product_prefixes, require_live_match=False
-    ) + _control_inventory(NOEMA_REVIEW_REF, review_prefixes, require_live_match=False)
+        NOEMA_PRODUCT_REF, NOEMA_PRODUCT_PREFIXES, require_live_match=False
+    ) + _control_inventory(
+        NOEMA_REVIEW_REF, NOEMA_REVIEW_PREFIXES, require_live_match=False
+    )
     artifacts.sort(key=lambda item: (item["ref"], item["path"]))
     noema_manifest = _decode_record(
         _git_blob_at(NOEMA_PRODUCT_REF, "tests/fixtures/noema-v1/manifest.json")
@@ -7098,7 +7426,7 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
             )
     mappings.sort(key=lambda item: item["id"])
 
-    synopsis_path = review_prefixes[1]
+    synopsis_path = NOEMA_REVIEW_PREFIXES[1]
     synopsis = _git_blob_at(NOEMA_REVIEW_REF, synopsis_path)
     first_line = synopsis.splitlines()[0].decode("ascii", errors="strict")
     match = re.fullmatch(
@@ -7106,10 +7434,10 @@ def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
         r"source_sha256=([0-9a-f]{64}) \| h2_count=([0-9]+)",
         first_line,
     )
-    review = _git_blob_at(NOEMA_REVIEW_REF, review_prefixes[0])
+    review = _git_blob_at(NOEMA_REVIEW_REF, NOEMA_REVIEW_PREFIXES[0])
     if (
         match is None
-        or match.group(1) != review_prefixes[0]
+        or match.group(1) != NOEMA_REVIEW_PREFIXES[0]
         or match.group(2) != _sha256(review)
         or int(match.group(3)) != 44
     ):
@@ -8781,6 +9109,9 @@ def _resource_executable_sources(
     ]
     checker = source_blobs[1][3]
     expected_checker = {
+        "blob_oid": _control_snapshot()["artifacts"][(WAI1_CONTROL_REF, checker_path)][
+            "blob_oid"
+        ],
         "bytes": len(checker),
         "path": checker_path,
         "ref": WAI1_CONTROL_REF,
@@ -8832,6 +9163,20 @@ def _resource_executable_sources(
     return rows, texts
 
 
+def _control_snapshot_resources() -> dict[str, Any]:
+    snapshot = _control_snapshot()
+    manifest_bytes = snapshot["manifest_bytes"]
+    object_bytes = sum(len(data) for data in snapshot["objects"].values())
+    return {
+        "artifact_records": len(snapshot["artifacts"]),
+        "manifest_bytes": len(manifest_bytes),
+        "manifest_sha256": _sha256(manifest_bytes),
+        "object_bytes": object_bytes,
+        "objects": len(snapshot["objects"]),
+        "published_bytes": len(manifest_bytes) + object_bytes,
+    }
+
+
 def _resource_record(
     manifest: dict[str, Any],
     controls: dict[str, dict[str, Any]],
@@ -8853,6 +9198,7 @@ def _resource_record(
         raise Refusal("bounded Git dependency identity drift")
     return {
         "artifact_payload_bytes": disk_bytes["artifact_payloads"],
+        "control_snapshot": _control_snapshot_resources(),
         "dependency_count": {
             "external_runtime": len(external_runtime),
             "standard_library_modules": len(standard),
@@ -9623,6 +9969,14 @@ def parser() -> argparse.ArgumentParser:
         default=ROOT / "docs/instruction-architecture/corpus-reconciliation.md",
     )
     build.set_defaults(handler=build_baseline)
+
+    snapshot = subparsers.add_parser("snapshot-controls")
+    snapshot.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / Path(*CONTROL_SNAPSHOT_ROOT.parts),
+    )
+    snapshot.set_defaults(handler=snapshot_controls)
 
     development = subparsers.add_parser("build-development")
     development.add_argument("--manifest", type=_path, required=True)

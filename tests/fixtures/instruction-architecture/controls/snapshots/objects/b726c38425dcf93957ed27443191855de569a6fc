@@ -1,0 +1,1 @@
+{"authority":[],"facts":[{"evidence_sha256":"b7c88f096ba32c64024c161baf7408c18a7d26fc6412ae52f2ef37ce7cbf91c8","id":"fact.1ec843cf9778003c8ae2d336b9cbac37c6650531f27604634335abe8f9583a96","value":"unknown"}],"operation":"shadow-evaluate","state":"detached","target":"fixture","tools":["stdlib-parser"]}

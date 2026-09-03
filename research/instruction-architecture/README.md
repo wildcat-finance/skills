@@ -33,6 +33,13 @@ uv run --no-project --python "$(cat .python-version)" python research/instructio
 uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py replay --cohort development --evidence tests/fixtures/instruction-architecture/evidence/development
 ```
 
+refresh the immutable WAI1 and Noema control snapshot only from a checkout that
+contains all three pinned commits:
+
+```text
+uv run --no-project --python "$(cat .python-version)" python research/instruction-architecture/benchmark.py snapshot-controls
+```
+
 ## neutral development contract
 
 all five arms receive the same ten source-bound development cases for order,
@@ -82,11 +89,13 @@ workbench executes, derives their union of standard-library imports from the
 AST, refuses any external Python import and records bounded Git as its one
 out-of-process runtime dependency. the workbench-source digest zeroes only the
 inventory-digest literal to avoid a cryptographic self-reference; its enclosing
-commit binds the literal itself. it reconciles 13,793,942 payload bytes plus the
-2,409-byte inventory to the complete 13,796,351-byte published generation; command results emit the
-observed wall times and peak RSS, while Step 3 owns repeated p50/p95 samples.
-replay checks the inventory twice, rebuilds from the frozen source and pinned
-control objects, and requires every payload byte to match. the
+commit binds the literal itself. it reconciles 13,803,445 payload bytes plus the
+2,409-byte inventory to the complete 13,805,854-byte generated publication. the
+separate control snapshot publishes a 67,069-byte manifest and 2,095,430 unique
+object bytes. command results emit the observed wall times and peak RSS, while
+Step 3 owns repeated p50/p95 samples. replay checks the inventory twice,
+rebuilds from the frozen source and checked control snapshot, and requires every
+payload byte to match. the
 holdout stays unopened and no holdout task, answer or model output is accessed.
 
 ## source and publication boundary
@@ -111,6 +120,18 @@ refuses. Git runs from a closed set of absolute system-owned paths with lazy
 fetch, replacement objects, global and system configuration, prompts and the
 ambient environment disabled. stdin is capped at 4 KiB, stdout at 4 MiB,
 stderr at 64 KiB and each process at 20 seconds.
+
+WAI1 and Noema use a distinct content-addressed control snapshot inside the
+Step-2 fixture boundary. its frozen manifest maps all 172 admitted
+commit-and-path identities to 157 unique objects and binds each object by byte
+length, SHA-256 and its Git blob id; the object directory must contain exactly
+those 157 names before and after verification. when a pinned commit exists,
+replay also requires its complete admitted path inventory, every `commit:path` blob id and
+every Git blob byte to equal the snapshot. snapshot-only use is admitted solely
+when that exact commit is absent and Git reports the repository as shallow.
+missing commits in a complete repository, ambiguous probes, path or inventory
+drift, malformed manifests, and object size, digest or blob-id drift refuse. no
+runtime fetch or history expansion is attempted.
 
 the supplemental parent-classification test resolves one immutable commit and
 loads its test and benchmark blobs only from that object's verified blob ids.
