@@ -45,6 +45,210 @@ def body(decision="Fiat-Required: 1", rows="none | none | nothing is carried\n",
     return text
 
 
+class StaleBodyReportTests(unittest.TestCase):
+    """The report-only survey of open issues carrying no status block.
+
+    Report-only, following ADR-053's posture for dead-code discovery: it names
+    what it found and never gates. A body with no block is the ordinary case,
+    so the report is a count somebody reads rather than a refusal somebody
+    works around.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.hexctl = hexctl_module()
+
+    def survey(self, bodies):
+        return self.hexctl.stale_body_report(bodies)
+
+    def test_every_body_without_a_block_is_named_once(self):
+        report = self.survey([
+            {"number": 11, "title": "no block", "body": "An issue.\n"},
+            {"number": 12, "title": "also none", "body": "Another.\n"},
+        ])
+        self.assertEqual(report["surveyed"], 2)
+        self.assertEqual(report["without_block"], 2)
+        self.assertEqual([row["number"] for row in report["rows"]], [11, 12])
+        self.assertEqual(len({row["number"] for row in report["rows"]}), 2)
+
+    def test_a_body_carrying_a_block_is_not_reported(self):
+        report = self.survey([
+            {"number": 11, "title": "has one",
+             "body": "<!-- status:start -->\nSuperseded.\n<!-- status:end -->\n\nAn issue.\n"},
+            {"number": 12, "title": "has none", "body": "Another.\n"},
+        ])
+        self.assertEqual(report["without_block"], 1)
+        self.assertEqual([row["number"] for row in report["rows"]], [12])
+
+    def test_a_malformed_block_is_reported_as_a_fault_not_an_absence(self):
+        """A body mid-edit is a different problem from a body nobody has touched."""
+        report = self.survey([
+            {"number": 11, "title": "mid-edit",
+             "body": "<!-- status:start -->\nStill open.\n\nAn issue.\n"},
+        ])
+        self.assertEqual(report["without_block"], 0)
+        self.assertEqual(report["malformed"], 1)
+        self.assertEqual(report["rows"][0]["state"], "malformed")
+
+    def test_a_body_that_is_not_text_is_refused_by_name(self):
+        """Hostile JSON reaches this parser; a traceback is not a diagnosis."""
+        with self.assertRaises(SystemExit):
+            self.survey([{"number": 1, "title": "t", "body": {"not": "a string"}}])
+
+    def test_a_title_that_is_not_text_is_refused_by_name(self):
+        with self.assertRaises(SystemExit):
+            self.survey([{"number": 1, "title": 7, "body": "An issue.\n"}])
+
+    def test_a_control_character_in_a_title_is_stripped(self):
+        """Titles come from GitHub and are printed to a terminal.
+
+        The carryover row reader refuses control characters by name. This one
+        renders its rows, so an escape sequence in a crafted title would reach
+        the operator's terminal raw.
+        """
+        report = self.survey([
+            {"number": 1, "title": "esc\x1b[31mRED", "body": "An issue.\n"}])
+        self.assertNotIn("\x1b", report["rows"][0]["title"])
+        self.assertIn("RED", report["rows"][0]["title"])
+
+    def test_the_survey_never_gates(self):
+        """Report-only: the shape carries no exit code and no refusal."""
+        report = self.survey([{"number": 11, "title": "none", "body": "An issue.\n"}])
+        self.assertNotIn("exit", report)
+        self.assertEqual(report["schema"], "fiat-stale-body-report/v1")
+
+
+def with_status(block, rest="An issue.\n\nFiat-Required: 1\n"):
+    """One candidate body carrying the given status-block text above its prose."""
+    return block + "\n" + rest
+
+
+class StatusBlockTests(unittest.TestCase):
+    """The status block ADR-014's amendment authorises, read directly.
+
+    The block records an open issue's current status where a census reads it.
+    Its shape is checked and its content is not: a block claiming the issue is
+    superseded when it is not passes here, exactly as a `none` carryover row
+    nobody should have accepted passes. What cannot happen is a body that opens
+    a block and never closes it, opens two, or is judged to carry one because it
+    quoted the markers as an example.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.hexctl = hexctl_module()
+
+    def span(self, text):
+        return self.hexctl.status_block_span(text, "candidate")
+
+    def test_a_well_formed_block_reports_its_span(self):
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nSuperseded in part by #1030.\n<!-- status:end -->\n"))
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(span, (1, 3))
+
+    def test_a_body_with_no_block_is_not_a_fault(self):
+        """Most bodies carry none, so absence is ordinary rather than a refusal."""
+        span, faults = self.span("An issue.\n\nFiat-Required: 1\n")
+        self.assertEqual(faults, [])
+        self.assertIsNone(span)
+
+    def test_markers_inside_a_fence_carry_no_block(self):
+        """A body quoting the delimiters as an example decides nothing."""
+        span, faults = self.span(
+            "An issue.\n\n```text\n<!-- status:start -->\n<!-- status:end -->\n```\n")
+        self.assertEqual(faults, [])
+        self.assertIsNone(span)
+
+    def test_an_unterminated_block_is_refused(self):
+        """It must not consume the rest of the body in silence."""
+        span, faults = self.span(with_status("<!-- status:start -->\nStill open.\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("never closed" in fault for fault in faults), faults)
+
+    def test_two_opened_blocks_are_no_statement(self):
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nOne.\n<!-- status:end -->\n"
+            "<!-- status:start -->\nTwo.\n<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("more than one" in fault for fault in faults), faults)
+
+    def test_a_closer_without_an_opener_is_refused(self):
+        span, faults = self.span(with_status("<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("closed before it opened" in fault for fault in faults), faults)
+
+    def test_a_stray_closer_after_a_closed_block_is_refused(self):
+        """The rule holds past the first block, not only before it.
+
+        An unmatched delimiter left in a body is the shape a half-finished edit
+        leaves behind, and reporting it clean tells the editor the opposite.
+        """
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nOne.\n<!-- status:end -->\n\nProse.\n"
+            "<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("closed before it opened" in fault for fault in faults), faults)
+
+    def test_a_block_below_the_filing_prose_is_refused(self):
+        """The record puts the block at the top so the current statement is met first.
+
+        A block buried under the filing prose still parses, and a reader coming
+        top to bottom meets the stale requirement before the correction. That is
+        the failure #837 records inside documents, and the position rule is the
+        part of this contract that prevents it.
+        """
+        span, faults = self.span(
+            "An issue filed a while ago.\n\nFiling prose.\n\n"
+            "<!-- status:start -->\nSuperseded by #1030.\n<!-- status:end -->\n")
+        self.assertIsNone(span)
+        self.assertTrue(any("below the filing prose" in fault for fault in faults), faults)
+
+    def test_blank_lines_above_the_block_are_not_prose(self):
+        span, faults = self.span(
+            "\n\n<!-- status:start -->\nOne.\n<!-- status:end -->\n\nProse.\n")
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(span, (3, 5))
+
+    def test_an_html_comment_above_the_block_is_not_prose(self):
+        """92 of 137 open issues open on the wildcat-origin marker.
+
+        The position rule protects what a reader meets first. An HTML comment is
+        invisible to a reader, so it cannot cause that failure, and refusing the
+        arrangement those bodies naturally produce would make the contract
+        unusable on the corpus it governs.
+        """
+        span, faults = self.span(
+            "<!-- wildcat-origin: shoggoth -->\n\n"
+            "<!-- status:start -->\nSuperseded by #1030.\n<!-- status:end -->\n\n"
+            "An issue.\n")
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(span, (3, 5))
+
+    def test_visible_prose_above_the_block_is_still_refused(self):
+        """The comment exemption does not widen to anything a reader can see."""
+        span, faults = self.span(
+            "<!-- wildcat-origin: shoggoth -->\nAn issue.\n\n"
+            "<!-- status:start -->\nOne.\n<!-- status:end -->\n")
+        self.assertIsNone(span)
+        self.assertTrue(any("below the filing prose" in fault for fault in faults), faults)
+
+    def test_a_control_character_in_the_block_is_refused(self):
+        """Matching the carryover row reader, which refuses them by name."""
+        span, faults = self.span(with_status(
+            "<!-- status:start -->\nSuperseded\x07 by #1030.\n<!-- status:end -->\n"))
+        self.assertIsNone(span)
+        self.assertTrue(any("control character" in fault for fault in faults), faults)
+
+    def test_the_block_reaches_the_contract_record(self):
+        record, faults = self.hexctl.issue_contract_faults(with_status(
+            "<!-- status:start -->\nSuperseded in part by #1030.\n<!-- status:end -->\n",
+            rest=body(),
+        ), "candidate")
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(record["status_block"], [1, 3])
+
+
 class ContractParserTests(unittest.TestCase):
     """The grammar, read directly. No network, no state, no run."""
 

@@ -699,6 +699,65 @@ class TestDelegationPackets(HexctlCase):
         self.assertIn("2097152-byte output cap", error.getvalue())
 
 
+    def test_brief_out_diverts_the_body_and_leaves_the_directive_readable(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        inline = self.next_json()
+        self.assertTrue(inline["brief"])
+        diverted = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(diverted["brief"], {})
+        self.assertEqual(
+            diverted["brief_path"],
+            os.path.realpath(os.path.join(self.target, ".hexaemeron", "brief.json")),
+        )
+        with open(diverted["brief_path"], encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), inline["brief"])
+        for key in ("do", "agent", "step", "round", "state_sha256", "audit_filter"):
+            self.assertEqual(diverted.get(key), inline.get(key))
+
+    def test_brief_out_refuses_a_path_outside_the_target(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("next", "--brief-out", "../escape.json", expect=2)
+
+    def test_brief_out_leaves_an_inline_directive_alone(self):
+        self.init("packet work")
+        self.run_ctl("halt", "--reason", "waiting on the user")
+        out = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(out["do"], "halted")
+        self.assertNotIn("brief_path", out)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.target, ".hexaemeron", "brief.json"))
+        )
+
+    def test_status_field_returns_one_value_not_the_state(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        one = self.run_ctl("status", "--field", "observation_run_id").stdout
+        self.assertEqual(json.loads(one), whole["observation_run_id"])
+        self.assertLess(len(one), len(json.dumps(whole)))
+        for absent in ("steps", "receipts", "config"):
+            self.assertNotIn(absent, one)
+
+    def test_status_field_walks_a_dotted_path(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        out = self.run_ctl("status", "--field", "config.audit.max_rounds").stdout
+        self.assertEqual(json.loads(out), whole["config"]["audit"]["max_rounds"])
+
+    def test_status_field_refuses_an_unknown_path(self):
+        self.to_audit()
+        self.run_ctl("status", "--field", "config.audit.nope", expect=2)
+        self.run_ctl("status", "--field", "not_a_key", expect=2)
+
+    def test_status_field_and_json_are_mutually_exclusive(self):
+        self.to_audit()
+        self.run_ctl("status", "--json", "--field", "observation_run_id", expect=2)
+
 class XRayReuseStateSeparationTests(HexctlCase):
     FORBIDDEN_FIELDS = frozenset(
         {
@@ -1998,7 +2057,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_prs[url] = self.fake_pr(
             url,
             state["run_branch"],
-            state["base"],
+            self.integration_base(state),
             self.fake_refs[state["run_branch"]],
             "f" * 40,
         )
@@ -2039,7 +2098,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_prs[url] = self.fake_pr(
             url,
             state["run_branch"],
-            state["base"],
+            self.integration_base(state),
             divergent_tip,
             "f" * 40,
         )
@@ -3306,13 +3365,21 @@ class TestProseAndPush(HexctlCase):
         with open(state_path, encoding="utf-8") as handle:
             state = json.load(handle)
         state["receipts"]["task_issue"] = issue
+        state["receipts"].pop("run_anchor")
         with open(ledger_path, encoding="utf-8") as handle:
             entries = [json.loads(line) for line in handle if line.strip()]
         controller = hexctl_module()
-        entry = entries[-1]
-        entry.pop("hash")
-        entry["state"] = controller.state_fingerprint(state)
-        entry["hash"] = hashlib.sha256(controller.canonical(entry).encode()).hexdigest()
+        entries[0]["data"].pop("run_anchor_sha256")
+        previous = "genesis"
+        for index, entry in enumerate(entries):
+            entry["prev"] = previous
+            entry.pop("hash")
+            if index == len(entries) - 1:
+                entry["state"] = controller.state_fingerprint(state)
+            entry["hash"] = hashlib.sha256(
+                controller.canonical(entry).encode()
+            ).hexdigest()
+            previous = entry["hash"]
         with open(state_path, "w", encoding="utf-8") as handle:
             json.dump(state, handle, indent=2)
             handle.write("\n")
