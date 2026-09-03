@@ -65,7 +65,7 @@ class LexerTests(unittest.TestCase):
 
     def test_the_newline_guard_reclassifies_a_false_regex(self):
         source = "const a = x /\n  y;\nconst s = 'safe';\n"
-        spans, errors = ts.lex(source)
+        _spans, errors = ts.lex(source)
         self.assertEqual(errors, [])
         self.assertEqual(only(source, "regex"), [])
         self.assertEqual(only(source, "string"), ["'safe'"])

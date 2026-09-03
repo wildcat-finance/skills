@@ -98,7 +98,7 @@ class PluginVersionPropagationTests(unittest.TestCase):
                 )
 
     def test_the_three_manifests_agree(self):
-        for name, directory in plugin_dirs():
+        for name, _directory in plugin_dirs():
             with self.subTest(plugin=name):
                 assert_version_agreement(self, name)
 
