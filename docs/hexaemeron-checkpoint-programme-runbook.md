@@ -445,3 +445,15 @@ freshness evidence; metron: compare measured recovery/publication results to
 the recorded objectives without hiding misses; elenchus: any failure blocks
 closure until its cause and guard are complete; hypomnema: record any changed
 expensive decision before the demo is rerun, and keep all superseded evidence.
+
+## Forward pointer, 3 September 2026
+
+This runbook stays historical and its banner stands. The programme it sequences
+was reopened on 2026-09-02 by
+[ADR-069](decisions/ADR-069-reinstate-the-distributed-checkpoint-layer-above-the-local-store.md),
+and the sequence that governs now is
+[`wave-delta-checkpoint-programme-runbook.md`](wave-delta-checkpoint-programme-runbook.md),
+derived from
+[`wave-delta-checkpoint-programme-study.md`](wave-delta-checkpoint-programme-study.md).
+Read this document for the ten steps considered in August 2026, and the fresh
+runbook for the eight packets the programme now carries.
