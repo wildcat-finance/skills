@@ -310,3 +310,35 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: Nothing new was found. This record was written after its evidence was read, which is the correction S6-R3-01 demanded: the root suite reported `Ran 1116 tests`, `OK`, exit 0, with no skips and zero failure lines, and the three lints exited 0 over all four changed paths, before any of this text existed. That is the third consecutive green run on this tree. Every step-6 finding is a correction or an observation rather than a defect in the delivery, and none required a repair to it: S6-R1-01 corrected the implement receipt's test summary, S6-R1-02 recorded the empty read of #864, and S6-R3-01 corrected round 2. The delivery's own evidence is unchanged and was re-checked here: the nine published bodies match their drafted bytes, every `wave-atlas-original` section is present exactly once, the 26 August review survives under each new block, and the readback digests are recorded in `docs/wave-delta-issue-estate-2026-09-02.md`. Carried forward unchanged: S4-R1-02, S2-R1-03, and the 100-column line at `docs/wave-delta-reinstatement-study.md:154`.
+
+## Step 7, round 1 -- 2026-09-03T20:57:59Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: adr-number-collision=not-applicable; adr-028-clause-drift=reviewed; pinned-artefact-digest=reviewed; retired-body-drift=reviewed; capsule-overclaim=not-applicable; issue-body-publication=not-applicable; dead-issue-links=reviewed; scope-creep-to-code=reviewed; banner-inversion=reviewed
+
+Not checked: The recorded suite waiver excludes the Pashov pair; this step ships Python, and the waiver's reason, that the delivery has no Solidity and no Foundry or Hardhat project, still holds. GitHub verification of the step-7 commits waits on the push phase. `adr-number-collision`, `capsule-overclaim` and `issue-body-publication` have no surface: no record is added, no capability claim is made and no issue body is touched. The demo reads the estate from the on-disk record rather than from GitHub, deliberately and for the reason the runbook gives, so this round does not re-establish the live estate; step 6's exit did that and its readback digests stand. Whether the five conditions are the right five is the study's judgement, not this round's; the round checked that each is implemented as written and that the guard fails without the demo.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S7-R1-01 | low | tests/test_wave_delta_reinstatement.py | The broken-tree test's comment cited `ADR-032` by number from `tests/`, where hypomnema's pointer lint cannot resolve it. The lint reported H006, `comment cites ADR-032, which does not exist`, and exited 1. The record does exist; the citation is unresolvable from that directory, which is the case the lint is for. Caught by running the three lints over the changed paths rather than over the documents alone. | fixed in this round's commit; the comment now says what the test does without naming a record, and the test's behaviour is unchanged |
+
+Leads not pursued: Elenchus reports `guarded` for the fixes commit, detail `the runner report records a parent assertion failure`. That is the first guarded verdict in this run and it is the tool's own classification, recorded as it was returned rather than interpreted. The delivery's guard is the broken-tree test itself: it copies the records into a temporary directory, removes the lineage successor and requires the demo to exit non-zero naming the missing successor, so the demo cannot become a script that passes on anything. Evidence at this commit, all read before this record was written: the demo exits 0 over its five conditions; `tests.test_wave_delta_reinstatement` runs 6 tests OK; the root suite reports `Ran 1122 tests`, `OK`, exit 0, no skips and zero failure lines, six tests larger than every earlier step; the three lints exit 0 over all three changed paths; imprimatur scores 100.0/100 with 0 defects on the demo with `--include-code`; promise-machine reports 18 plugins and 94 of 94; and the `plugins/` scope guard exits 0. One root-suite run between the implement commit and this round errored on `test_fake_tokenizer_profile_verifies_exact_identity` in the accepted adapter-timeout family, and the two runs around it were green. `adr-028-clause-drift` and `retired-body-drift` are reviewed rather than not-applicable here for the first time since step 3, because the demo now checks them mechanically at every run: three pinned clauses of the mandatory local hand-off amendment must be present verbatim, ADR-028 must still read Accepted, and each of ADR-029 through ADR-032 must still read Retired and be named by exactly one standing successor. `dead-issue-links`: the carryover block in `.hexaemeron/run-pr.md` cites #1175, #1176, #899, #901 and #861; the first two were filed in this step and the last three were read on 2026-09-03. Carried forward unchanged: S4-R1-02, S2-R1-03 and the 100-column line at `docs/wave-delta-reinstatement-study.md:154`, each now with a disposition in the run pull request's carryover block.
+
+## Step 7, round 2 -- 2026-09-03T21:00:22Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: adr-number-collision=not-applicable; adr-028-clause-drift=reviewed; pinned-artefact-digest=reviewed; retired-body-drift=reviewed; capsule-overclaim=not-applicable; issue-body-publication=not-applicable; dead-issue-links=reviewed; scope-creep-to-code=reviewed; banner-inversion=reviewed
+
+Not checked: The recorded suite waiver excludes the Pashov pair and its reason still holds: this step ships Python but no Solidity and no Foundry or Hardhat project. GitHub verification of the step-7 commits waits on the push phase. Three concerns have no surface at this commit. The demo reads the estate from the on-disk record rather than from GitHub, deliberately, so this round does not re-establish the live estate. No trial merge into the advanced base was attempted; that belongs to integration, which follows this step.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Nothing new was found, and this record was written after its evidence was read. The root suite reported `Ran 1122 tests`, `OK`, exit 0, no skips and zero failure lines; the demo exited 0 over its five conditions; the three lints exited 0 over all three changed paths; and the carryover check for #899 and #901 in `.hexaemeron/run-pr.md` exited 0, before any of this text existed. That is the third consecutive green suite run on this step. The last delivery step closes with every finding this run raised either fixed on its branch or carrying a disposition in the run pull request's carryover block: two filed as #1175 and #1176, three pointing at #899, #901 and #861, and two refused with a stated reason. Nothing is left named in prose alone.
