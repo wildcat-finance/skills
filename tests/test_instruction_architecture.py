@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import copy
+from contextlib import contextmanager
 from functools import lru_cache
 import hashlib
 import importlib.util
@@ -2701,6 +2702,8 @@ class CorpusManifestTests(unittest.TestCase):
                     "tests.test_instruction_architecture.CorpusManifestTests.test_independent_markdown_fixed_point_detects_an_unclassified_directive",
                     "tests.test_instruction_architecture.InvocationProfileTests.test_independent_source_owned_profile_and_route_oracle",
                     "tests.test_instruction_architecture.LoaderGraphTests.test_independent_runtime_semantic_evidence_coverage_is_closed",
+                    "tests.test_instruction_architecture.ControlSnapshotTests.test_snapshot_generation_refuses_unowned_entries_before_writing",
+                    "tests.test_instruction_architecture.ControlSnapshotTests.test_snapshot_generation_completes_owned_partial_and_clean_refresh",
                     "-v",
                 ],
                 cwd=checkout,
@@ -8336,6 +8339,36 @@ class ControlSnapshotTests(unittest.TestCase):
         cls.manifest_raw = CONTROL_SNAPSHOT_MANIFEST.read_bytes()
         cls.manifest = json.loads(cls.manifest_raw)
 
+    @contextmanager
+    def _checked_generation_source(self):
+        """Isolate publication checks from the generator's full-ref precondition."""
+        paths_by_ref: dict[str, list[str]] = {}
+        oid_by_source: dict[tuple[str, str], str] = {}
+        expected_prefixes = dict(AI.CONTROL_SNAPSHOT_GROUPS)
+        for record in self.manifest["artifacts"]:
+            ref = record["ref"]
+            path = record["path"]
+            oid = record["blob_oid"]
+            paths_by_ref.setdefault(ref, []).append(path)
+            oid_by_source[(ref, path)] = oid
+
+        def control_paths(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+            if expected_prefixes.get(ref) != prefixes:
+                raise AssertionError("generation requested an unknown control source")
+            return sorted(paths_by_ref[ref])
+
+        def blob_identity(ref: str, path: str) -> str:
+            try:
+                return oid_by_source[(ref, path)]
+            except KeyError as exc:
+                raise AssertionError("generation requested an unknown control blob") from exc
+
+        with (
+            mock.patch.object(AI, "_git_control_paths", side_effect=control_paths),
+            mock.patch.object(AI, "_git_blob_identity_at", side_effect=blob_identity),
+        ):
+            yield
+
     def test_snapshot_manifest_and_every_object_are_self_bound(self):
         self.assertEqual(
             hashlib.sha256(self.manifest_raw).hexdigest(),
@@ -8538,6 +8571,7 @@ class ControlSnapshotTests(unittest.TestCase):
                     extra.parent.mkdir(parents=True, exist_ok=True)
                     extra.write_bytes(b"unowned")
                     with (
+                        self._checked_generation_source(),
                         mock.patch.object(AI, "_atomic_write") as write,
                         self.assertRaisesRegex(
                             AI.Refusal, "not closed|unowned entry"
@@ -8557,8 +8591,9 @@ class ControlSnapshotTests(unittest.TestCase):
                 objects / first_oid,
             )
             arguments = types.SimpleNamespace(output=snapshot)
-            first = AI.snapshot_controls(arguments)
-            second = AI.snapshot_controls(arguments)
+            with self._checked_generation_source():
+                first = AI.snapshot_controls(arguments)
+                second = AI.snapshot_controls(arguments)
             self.assertEqual(first, second)
             self.assertEqual(
                 {path.name for path in snapshot.iterdir()},
