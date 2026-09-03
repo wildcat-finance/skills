@@ -73,7 +73,8 @@ class BrokenTreeTests(unittest.TestCase):
                          "hexaemeron-checkpoint-programme-runbook.md"):
                 shutil.copy2(ROOT / "docs" / name, broken / "docs" / name)
             shutil.copy2(DEMO, broken / "docs" / DEMO.name)
-            # Undo one thing the reinstatement did: ADR-032 loses its successor.
+            # Undo one thing the reinstatement did: the lineage record loses its
+            # successor, so a retired decision ends with nowhere to go again.
             for path in (broken / "docs" / "decisions").glob("ADR-073-*.md"):
                 path.unlink()
 
