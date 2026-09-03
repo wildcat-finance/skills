@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16637857,
+    "bytes_blob": 16647388,
     "bytes_generated": 98
   },
   "entries": [
@@ -21,7 +21,7 @@
       "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
     },
     {
-      "bytes": 19303,
+      "bytes": 28834,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
