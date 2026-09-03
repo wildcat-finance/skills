@@ -262,3 +262,19 @@ Elenchus verdict: null
 | S6-R1-02 | low | the drafting reads against GitHub | The first fetch of #864's body returned an empty string with exit 0. A retry returned 10,755 bytes. An empty answer taken at face value would have produced a draft with no original filing and published it over the real one, which is precisely the failure the `wave-atlas-original` guard exists to prevent. The draft pipeline caught it because every body is byte-compared rather than length-checked, and because the per-issue byte counts were printed and read. | no repair needed; recorded so the control is visible, and the readback table is the standing evidence |
 
 Leads not pursued: The publication itself was denied to the agent by the session's permission boundary and run by the maintainer from the drafted bytes. The verification in this round is the agent's own: all nine bodies were re-read from GitHub and compared against the drafts, so the evidence does not rest on a report. All nine agree byte for byte, every `wave-atlas-original` section is present exactly once, the 26 August 2026 review survives under the new block, and the readback digests are recorded in `docs/wave-delta-issue-estate-2026-09-02.md`. `issue-body-publication` is therefore reviewed rather than not-applicable for the first time in this run. Bound checks: #899 and #901 carry no block from this grant and their `updated_at` is unchanged at `2026-09-02T05:52`. `dead-issue-links`: the nine numbers the record cites are the nine it edited, each read successfully in this round. `pinned-artefact-digest`: the digest-pinned checkpoint pair shows zero files differing across the run. `scope-creep-to-code`: the `plugins/` guard exits 0 and the repository diff for this step is the record plus the boundary counts. The three lints exit 0 over both changed paths and imprimatur scores 100.0/100 with 0 defects on the record. Carried forward unchanged: S4-R1-02, now with two more red observations and two more green ones; S2-R1-03, the BSD `wc` check; and the 100-column line at `docs/wave-delta-reinstatement-study.md:154`.
+
+## Step 6, round 2 -- 2026-09-03T20:13:14Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: adr-number-collision=not-applicable; adr-028-clause-drift=not-applicable; pinned-artefact-digest=reviewed; retired-body-drift=not-applicable; capsule-overclaim=not-applicable; issue-body-publication=reviewed; dead-issue-links=reviewed; scope-creep-to-code=reviewed; banner-inversion=not-applicable
+
+Not checked: The recorded suite waiver excludes the Pashov pair. GitHub verification of the step-6 commits waits on the push phase. Four concerns have no surface at this commit. GitHub's edit history was not queried; the bound evidence stays the unchanged `updated_at` on #899 and #901. Step 7 is not stood in for here.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Nothing new was found and neither round-1 finding needed a repair to the delivery. The correction S6-R1-01 carries is in the record above and cannot be written into the receipt it corrects, which is what an append-only ledger costs and buys. Carried forward unchanged: S4-R1-02, S2-R1-03 and the 100-column line at `docs/wave-delta-reinstatement-study.md:154`. Evidence at this commit: the three lints exit 0 over both changed paths; the root suite reports `Ran 1116 tests`, `OK`, exit 0, no skips, the second green run in a row; imprimatur holds 100.0/100 with 0 defects on the estate record; the digest-pinned checkpoint pair shows zero files differing; and the `plugins/` scope guard exits 0.
