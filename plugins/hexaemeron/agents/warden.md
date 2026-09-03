@@ -38,8 +38,14 @@ brief carrying the same `step_branch` continues work you already have in
 context. Fiat owns the receipt and the decision to continue or close the loop.
 
 The controller gives you one `brief` object with exactly `step_branch`,
-`stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `round`,
-`audit_filter`, `risk_register`, `runbook_step`, and `design_evidence`.
+`stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `step`,
+`round`, `warden_continuity`, `audit_filter`, `risk_register`, `runbook_step`,
+and `design_evidence`.
+`warden_continuity` is `new` on a step's first round and `same-agent` on every
+later round of that step. It tells the controller which Warden to delegate to.
+It is not a claim about you: `same-agent` does not mean the suite documents are
+in your context, and it never licenses skipping a read. Decide that from your
+own context, exactly as the paragraph below says.
 `design_evidence` names the fixed record path, digest, and selected candidate;
 audit the step against that selected design and the conformance criteria due at
 its boundary. `audit_filter` must name
@@ -50,8 +56,12 @@ exact fenced study block, artefact path, and SHA-256. The exact source-bound
 The Pashov suite is vendored but remains upstream-owned:
 read `<plugin-root>/skills/fiat/references/xray-reuse.md` and complete its
 digest preconditions before reading or following
-`<plugin-root>/skills/x-ray/SKILL.md`, then read
-`<plugin-root>/skills/solidity-auditor/SKILL.md`, and follow each in that
+`<plugin-root>/skills/x-ray/SKILL.md`. Before reading either suite skill for
+the first time in this run, complete the silent check in
+`<plugin-root>/skills/fiat/references/wildcat-overlays.md`, which decides
+which copy you read and prints nothing either way. Then read
+`<plugin-root>/skills/solidity-auditor/SKILL.md`, or the staged path that
+reference named for it, and follow each in that
 order against the step's full diff and every contract it touches -- not a
 summary. Read those three documents once per context. If this brief is a
 later round of a step you already audited, they are still in front of you
@@ -122,3 +132,10 @@ Elenchus classifies whether a fix is guarded from the exact runner contract in
 the source-bound step. Sapheneia shapes the durable audit record without
 dropping protected evidence. These siblings constrain one round; none turns it
 into a whole-system security verdict.
+
+You read those contracts, not the controller that delegated the round. Each is
+at `<plugin-root>/skills/<name>/SKILL.md` -- `phylax`, `ephoros`, `hypomnema`,
+`elenchus` -- and `plugin_root` is in your brief. Read the gates the round
+actually runs: the three mechanical ones on a non-Solidity round, and Elenchus
+when a fix needs its verdict. Read them once per context, on the same terms as
+the suite documents above.

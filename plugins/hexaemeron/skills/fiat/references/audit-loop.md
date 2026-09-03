@@ -21,14 +21,28 @@ suite documents in full. Nothing about the evidence changes either way: one
 round still produces one `audit-round` receipt, and the round is still the unit
 Fiat records.
 
+The audit-round brief says which of the two this is. `warden_continuity` is
+`new` on a step's first round and `same-agent` on every later round of that
+step, and `step` names the step those rounds belong to, so a controller reading
+one brief can tell a step's first round from its fourth without counting its
+own history. The field decides delegation only. It never states that a Warden
+has read anything, so a host that cannot keep the agent alive still starts a
+new one and still pays for the full read, and the brief stays true either way.
+
 ## One round
 
 1. Before selecting X-Ray, read the
    [X-Ray source-reuse protocol](xray-reuse.md) and complete its digest
-   preconditions. Then run the suite recorded in the `security_suite` receipt,
+   preconditions. Before reading a suite skill for the first time in this
+   run, complete the silent check in
+   [wildcat-overlays.md](wildcat-overlays.md), which decides which copy of a
+   vendored suite skill this run reads and prints nothing either way. Then
+   run the suite recorded in the `security_suite` receipt,
    in order: the
    `x-ray` pass first, then `solidity-auditor`. Both are vendored under
-   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill) -- read
+   `$PLUGIN_ROOT/skills/<name>/` (as defined in the entry skill), or, for a
+   skill that reference resolved an overlay for, at the staged path it
+   names -- read
    each SKILL.md and follow
    it, unless this same agent already read them for an earlier round of
    this step. Give each the step's full diff and the contracts it touches,

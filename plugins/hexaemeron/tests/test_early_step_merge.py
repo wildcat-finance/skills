@@ -20,10 +20,8 @@ controller actually writes it.
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import importlib.util
-import json
 import subprocess
 import sys
 import tempfile
@@ -197,7 +195,7 @@ class EarlyMergeAdoptionCase(AdoptionHarness):
     def test_a_head_that_moved_still_refuses_when_the_pull_request_merged(self):
         """The rewrite case the original refusal existed for."""
         self._to_push(1)
-        url, head, branch = self._pull_request(1, merge_sha="e" * 40)
+        url, head, _branch = self._pull_request(1, merge_sha="e" * 40)
         self.fake_prs[url]["head"]["sha"] = "9" * 40
         result = self._push(1, url, head, expect=2)
         self.assertIn("head", result.stderr)

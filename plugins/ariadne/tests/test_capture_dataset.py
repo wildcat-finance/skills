@@ -9,7 +9,7 @@ from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
-from ariadne_lib import envelope, registry, statement, verify  # noqa: E402
+from ariadne_lib import envelope, registry, verify  # noqa: E402
 import ariadne_lib.predicates  # noqa: F401,E402  (registers the shipped predicates)
 from ariadne_lib.capture import dataset as capture  # noqa: E402
 

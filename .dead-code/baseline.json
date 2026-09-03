@@ -22,31 +22,10 @@
   "findings": [
     {
       "analyser_id": "python",
-      "id": "sha256:855cac3940622e64d075c3f1525291d91d655e46cf527e641e5917e3f570771e",
-      "path": ".agents/skills/promise-machine/scripts/verify_runtime.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:8f0792d9f12adaf0d5e60fc8e40ee957b2f4ef606bc157d17cd4b4c6e32a7ee4",
-      "path": "plugins/alexandria/examples/credit-history-v0/demo.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:c9c871dc76b5768c7404d17275b17e8d59ce7bc2a71ded93850ba96ede352a37",
       "path": "plugins/alexandria/scripts/alexandria_lib/canonical.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c31b417403bf9773d2a5aa4b8ceb6e53c2af16674a98e1868a50d1e591af2b0e",
-      "path": "plugins/alexandria/scripts/alexandria_lib/canonical.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -57,13 +36,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:4dd968e85377fe132ca044912a214a45726bf335d9e6279276e1e1c78693b87d",
-      "path": "plugins/alexandria/scripts/alexandria_lib/compound_phase0.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:b12a47a35e18e399288083a5e8596119cef3f303ddb50211988c95c4f3725b7b",
       "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
       "suppressed": false,
@@ -71,24 +43,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:daa768304f4cc9bb790f1001a2a2e4a1a0023adb144db961a8559f13bba5109f",
-      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:2ecf14587fd9f449a437fb9a4ad6c4e4dbef1a42a6259ec831b52c3354665002",
       "path": "plugins/alexandria/scripts/alexandria_lib/derivation.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:d02a09b2ad6657ff84626ba092f45924cf39950819bb33e9950f6b45f1159794",
-      "path": "plugins/alexandria/scripts/alexandria_lib/derivation.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -106,17 +64,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:8b64b093605ba2b0f1f56d197ac63b93626c59c350d13c66191f040e5ff0e79a",
-      "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
+      "id": "sha256:5db8fa0b48c8587360432bd9d8710f26c1c486d8602e0cf0e57e5665834bb633",
+      "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
       "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:18062f3e44e2eee4a24848f6c1b9031e946287d47085df71feda92600030cc6f",
-      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/__init__.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
+      "symbol": "<module>"
     },
     {
       "analyser_id": "python",
@@ -127,24 +78,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:6ec2e913ad48e7694cbebe6b31231ef8e318c6daf18bb7470edd1c241e362949",
-      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:32c4d8de634cfffa9af7503cfadf06af370c1c481b1fb1cacd6e24279fdf029b",
       "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:6846a74ad626bf6e5ff51d98e9aba8cecad19be7f22d886b50c1f3c7712c2936",
-      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -155,24 +92,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:9626da1833f31d3cb7af24c31b1c2185ba9ab357fd2c80a5c99a97367f5195c4",
-      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/goldfinch.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:7fee5f4fec3f1119838af02991130130e68993a4907b5069f43bec35381a3670",
       "path": "plugins/alexandria/scripts/alexandria_lib/paths.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b10dd710a49aff873b18d5bcccd9888e6a43d1730815518a9349b7c269e7714d",
-      "path": "plugins/alexandria/scripts/alexandria_lib/paths.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -183,24 +106,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:22f5b829851cabd89f4912bc7f8d0fb6d2c53db392255103e9e8027ee972e664",
-      "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:afa8c843bddb8a2bc978401df37455e4486d612ed39401cf52dc82ab5afb49f1",
       "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2c036c1dd316ec888c89d169ff94afc0d1112f093eb5581025d1af211edb6152",
-      "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -211,24 +120,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:57d3657f55ba5f20855119cae208beae6c215a90bf08838aa068186abe61b367",
-      "path": "plugins/alexandria/scripts/alexandria_lib/release.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:8c8e2948bf92164ff3ddaf839dad650a923eb232faed7c973198fe0a54c43e9d",
       "path": "plugins/alexandria/scripts/alexandria_lib/rows.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a119caa4bcadbea219c129c8b7221c5ff580f9c22782db4cead45d9e584b1932",
-      "path": "plugins/alexandria/scripts/alexandria_lib/rows.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -239,10 +134,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:81f8861fe61383c41f5e231f9710832e7e1685a5ca2c78f3bf44e5ee0148a687",
-      "path": "plugins/alexandria/scripts/alexandria_lib/statement.py",
+      "id": "sha256:d30137d31906b9a5acff51f8003ee073349946639bd8318062d48e716c33d126",
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
       "suppressed": false,
-      "symbol": "annotations@3"
+      "symbol": "json@19"
     },
     {
       "analyser_id": "python",
@@ -253,10 +148,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:60c7ac00850f42419ab00cd046c61fb2441f672029dc4bacfbce7164c79c2d06",
-      "path": "plugins/alexandria/tests/test_release.py",
+      "id": "sha256:4e6917b4387b9adc7e22f2587431db969e19d9ef96f5cca00e2c1172ff984b0a",
+      "path": "plugins/anamnesis/tests/test_s3_consumers.py",
       "suppressed": false,
-      "symbol": "hashlib@4"
+      "symbol": "copy@5"
     },
     {
       "analyser_id": "python",
@@ -278,20 +173,6 @@
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:820cc14db506daa0e4db530737366b28166cf3538dc0db73fac98b0dcc748eab",
-      "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
-      "suppressed": false,
-      "symbol": "line:223:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:bbd6ef005a29c52e4f4719e9696d9a134f94c8c62338a6a55e187c3f7b87393b",
-      "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
-      "suppressed": false,
-      "symbol": "line:291:constant-true"
     },
     {
       "analyser_id": "python",
@@ -414,209 +295,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:aa5a29b51dcc45f82be7eea6df8bdca15cf60c96faefb6c31dca3157b95eaa38",
-      "path": "plugins/ariadne/tests/test_capture_dataset.py",
-      "suppressed": false,
-      "symbol": "ariadne_lib@13"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:bd0326d944619e07a862d2ce875aede75afe8861107c782e171b46db19b53ee4",
-      "path": "plugins/ariadne/tests/test_capture_dataset.py",
-      "suppressed": false,
-      "symbol": "statement@12"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:40260d32bed031f4e273d041d628b1353e5b3f724900562c7ff31af855879322",
-      "path": "plugins/ariadne/tests/test_capture_dataset.py",
-      "suppressed": false,
-      "symbol": "support@10"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2140b7c5455ea5d64a998b1418e8a5e788632c36967efb4f10d65499f1e9680f",
-      "path": "plugins/ariadne/tests/test_capture_foundry.py",
-      "suppressed": false,
-      "symbol": "support@16"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a1fbaa92079adb97b76f51809748c129cffb04ceb392843a0afe25700efa573f",
-      "path": "plugins/ariadne/tests/test_capture_scrubbing.py",
-      "suppressed": false,
-      "symbol": "support@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:58c985b6bfd386d73c5a30fd0c2709f7de046133a915bb589345a4f7a0247a0d",
-      "path": "plugins/ariadne/tests/test_capture_state_fixture.py",
-      "suppressed": false,
-      "symbol": "ariadne_lib@20"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e0669b66386c94531d682896afea9a7bb2494de6cada11c48ef58168bf8e6bc0",
-      "path": "plugins/ariadne/tests/test_cli.py",
-      "suppressed": false,
-      "symbol": "support@16"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:6ea9a413ac5071b1241191766b61c9c39d674caa1819b8ee872898f3112d5282",
-      "path": "plugins/ariadne/tests/test_conformance.py",
-      "suppressed": false,
-      "symbol": "ariadne_lib@18"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:18f1bb4de8cc04b09334f509de8fba5f7b5fdd860e9a966c243abba753f200e7",
-      "path": "plugins/ariadne/tests/test_conformance.py",
-      "suppressed": false,
-      "symbol": "support@15"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:72b3301fae3f40751913459a3f5499d7dcfd171e5d11729b4d506ec429eed012",
-      "path": "plugins/ariadne/tests/test_dataset.py",
-      "suppressed": false,
-      "symbol": "support@6"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a13c6dd01dcfee6f63ab9492ed58b834c5164d3e3356e035566b734cb2ae3a02",
-      "path": "plugins/ariadne/tests/test_deltas.py",
-      "suppressed": false,
-      "symbol": "support@5"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:1df770f2009cf0d5c423c4c30a880ce74929ffd9d588cba0d56ad41329a71170",
-      "path": "plugins/ariadne/tests/test_digests.py",
-      "suppressed": false,
-      "symbol": "support@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:30eb3593702b612aa7eb6c98e04e24f7137659d66516b54b6828cd1ea5dcdff4",
-      "path": "plugins/ariadne/tests/test_docs.py",
-      "suppressed": false,
-      "symbol": "support@12"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2f22b1396e44193f6895d77eb897aabb9fc218ad86125f07dd91e7220882f817",
-      "path": "plugins/ariadne/tests/test_envelope.py",
-      "suppressed": false,
-      "symbol": "support@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:d9a3b80d1b382ba9f737f347ba66410f47f1279f67596b1201a0c8d1913df603",
-      "path": "plugins/ariadne/tests/test_examples.py",
-      "suppressed": false,
-      "symbol": "ariadne_lib@11"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7a7b8d710f71a5bebb406ffc240f3b9c5e3f3547a2fd07308609e256314e0979",
-      "path": "plugins/ariadne/tests/test_examples.py",
-      "suppressed": false,
-      "symbol": "support@8"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:bb54b36f38e76a5e75ec543ba301f46bbc1dad1dc6579ae3f50562cbb19bfc8b",
-      "path": "plugins/ariadne/tests/test_gates.py",
-      "suppressed": false,
-      "symbol": "support@8"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:90705733844ddf93d55da0ee1d148b40f86efd2080961a93ba584487eb6d6626",
-      "path": "plugins/ariadne/tests/test_grounded_agent.py",
-      "suppressed": false,
-      "symbol": "support@17"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f8181f01b5e56899746b8a0b7ca02b7de8673299b0999cbe971831038a4b4cd5",
-      "path": "plugins/ariadne/tests/test_predicate_robustness.py",
-      "suppressed": false,
-      "symbol": "ariadne_lib@24"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7ae2fec7151bf5282beffc9394683ef77881dd1a7e64b11ef76d815bd38c88b1",
-      "path": "plugins/ariadne/tests/test_predicate_robustness.py",
-      "suppressed": false,
-      "symbol": "support@21"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c8d3cea0851b12d5272b5fd87861a6bd0e69f67eb35636143d55fe6107109373",
-      "path": "plugins/ariadne/tests/test_registry.py",
-      "suppressed": false,
-      "symbol": "support@5"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:0d087d37639bb2486a707b63c41a94bd3d01e5754355264754145416a14cc84e",
-      "path": "plugins/ariadne/tests/test_replay.py",
-      "suppressed": false,
-      "symbol": "support@13"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:99d29437bfb39eb4ecfe7a5d794540b4aa04fda62ecb49e5e5ec2fe9eba4cba4",
-      "path": "plugins/ariadne/tests/test_schema_agreement.py",
-      "suppressed": false,
-      "symbol": "ariadne_lib@26"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a5fa3debe26fe58178ebc8e231b4a469591d0a828b0e032422009e9196c8624d",
-      "path": "plugins/ariadne/tests/test_schema_agreement.py",
-      "suppressed": false,
-      "symbol": "support@23"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:1558084e609526d209a3c87982a57e816ea9e73a1136e8a5fe0a05d29f1ba935",
-      "path": "plugins/ariadne/tests/test_schema_drift.py",
-      "suppressed": false,
-      "symbol": "predicates@1151"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:faf7669c8708256f959b3d4b4e6bd9f53a5a183cab414b59c46fc4328563d715",
-      "path": "plugins/ariadne/tests/test_schema_drift.py",
-      "suppressed": false,
-      "symbol": "support@21"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:8b097ea3b58d125aaab5f42ce8eaa8b2bf2473cbba386f04a79b76afc285ed15",
-      "path": "plugins/ariadne/tests/test_statement.py",
-      "suppressed": false,
-      "symbol": "support@7"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:52ed50cee448f2c851d03f52015cca67b062df7448262a9a49583e50f4db845b",
-      "path": "plugins/ariadne/tests/test_untrusted_input.py",
-      "suppressed": false,
-      "symbol": "support@7"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2a60295d3c4d618a2a2ca1a147f22564241eec8e123de9fff89e98a50899e860",
-      "path": "plugins/ariadne/tests/test_verify.py",
-      "suppressed": false,
-      "symbol": "support@18"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:e4cb3ee718ea65c03c244dfdc8e7fd5790bafdb26e75adb1e8f1949310cb95ba",
       "path": "plugins/berean/scripts/berean_lib/answers.py",
       "suppressed": false,
@@ -666,13 +344,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:05049c94b154cae5ba42d7e57789a97718a7c870b26f640bd05bfb43e58f0b36",
-      "path": "plugins/berean/scripts/berean_lib/jsonio.py",
-      "suppressed": false,
-      "symbol": "digests@12"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:541fa7863227706825c73040390107f997922dd0a6fd54bd50e0ba551b26a995",
       "path": "plugins/berean/scripts/berean_lib/paths.py",
       "suppressed": false,
@@ -701,13 +372,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:91801d3f7c3b50bdc09533bd23f3932fce21f10bc1b9de263419d1eb4fc22cab",
-      "path": "plugins/berean/tests/emit_report.py",
-      "suppressed": false,
-      "symbol": "tests@21"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:edbac01f77d9f2b8926b85d153bd815975ad45f84c9e83a95b7f04e682103f23",
       "path": "plugins/berean/tests/release_fixture.py",
       "suppressed": false,
@@ -719,111 +383,6 @@
       "path": "plugins/berean/tests/support.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:55fff8c2813eb1640b9a5a8317c3d67a184d122227bb35b0f6eaab9883bb171e",
-      "path": "plugins/berean/tests/test_answers.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@8"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:17bfc414b6a71bc4abdc8879c45aa2fd302e9695b9ed075bc304d56856db6056",
-      "path": "plugins/berean/tests/test_canonical.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@5"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:3009e9771055cb8016bf5ef83ade77cb70ec38cc3a2310e47625666186a942a0",
-      "path": "plugins/berean/tests/test_citations.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@7"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f9db3753aafde11081fa1e1dd4c249eb9bf5f5f94284f76ae5970a0b1739dd1c",
-      "path": "plugins/berean/tests/test_corpus.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@8"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:cd5a9c9e5feba075289d3401be878960913ccef3126af6dec9a7d1332720dbe5",
-      "path": "plugins/berean/tests/test_digests.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@7"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:902c0bd2280c3bb8473584431a987f0806bd878017895cc844dda7cad8a42d96",
-      "path": "plugins/berean/tests/test_evals.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:cb78c8312c17428e4ddd5ceda5c43a287edcf053e4ff3729f1ddb9fa16f82cbc",
-      "path": "plugins/berean/tests/test_evals.py",
-      "suppressed": false,
-      "symbol": "release_fixture@12"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e6f70fcbd890a30942020298b846bb888c6b376178a05aae921c0d1265342442",
-      "path": "plugins/berean/tests/test_examples.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@10"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:fc10abb6bca72659222bf9e4116d1c8fdc6acd5e64ac38d6cbff21a68f95d154",
-      "path": "plugins/berean/tests/test_examples.py",
-      "suppressed": false,
-      "symbol": "promote@12"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:d8e2f5289ec795400d4f6ac96629fb57bbe8a309bd6b3345024da6d8a695a6eb",
-      "path": "plugins/berean/tests/test_promote.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@11"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:227b401a8d4c6775a3c1aea405d326a5ea10b2ac62339e939cac6dd993a3d7d1",
-      "path": "plugins/berean/tests/test_reads.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@7"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f868b8cb5c9eb9fac431d40534d1c09f545c30c59fc18d55a2cdb3fd3af52d20",
-      "path": "plugins/berean/tests/test_release.py",
-      "suppressed": false,
-      "symbol": "SCRIPTS@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:194a61dc3f0e41f27ee59fd09f1f751d0d4d122d886b76892adfb8d6283ad2d1",
-      "path": "plugins/berean/tests/test_release.py",
-      "suppressed": false,
-      "symbol": "jsonio_lib@179"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:9c21984a40423ea4c6f1698885b9870bfa5d563fdb4e3f408aab23ea6cdf54df",
-      "path": "plugins/berean/tests/test_release.py",
-      "suppressed": false,
-      "symbol": "test_the_digest_covers_every_identity_field.directory@37"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b66e3be08767704debcf7b715c7e992206a128acd458f540f592af8c6c65f6a8",
-      "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
     },
     {
       "analyser_id": "python",
@@ -848,38 +407,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d972c96a8f4430b75435e77325e7cbee657e986c85045851ebc38e3c8b4c3b42",
-      "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:93400088ae89c4fa5b65fac8c144839d71c54a819cc6ae235caa18e7ea49317e",
       "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
       "suppressed": false,
       "symbol": "validate_corpus.manifest_bytes@792"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:521286598058cba5e82bb7fec70d4d719607a3627b77bc497a416ade4517b2e9",
-      "path": "plugins/brevitas/skills/brevitas/scripts/run_evals.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:46288a7c7123a1d1bfdc67bd4fcb744182d1327e04e66b2be1dbd1f6c927ed39",
-      "path": "plugins/brevitas/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:daf45def0ae5b8ecc12181052049369aa709bc80dbb13cf265f2dfe014673db4",
-      "path": "plugins/brevitas/tests/test_brevitas.py",
-      "suppressed": false,
-      "symbol": "annotations@1"
     },
     {
       "analyser_id": "python",
@@ -890,31 +421,73 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:716880f9b7970130f3ef366622a55d3948dc16789b262b752d106bb1df439700",
-      "path": "plugins/brevitas/tests/test_held_corpus.py",
+      "id": "sha256:93bea7e3e36fadb8a5aa987d2d2553b257b81cb5589a80ae0363913f44470994",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/demonstrate.py",
       "suppressed": false,
-      "symbol": "annotations@1"
+      "symbol": "<module>"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:161a880e737ccd022b7aff7b03a509e79ac4d9af39793738777b132abedc935a",
-      "path": "plugins/brevitas/tests/test_runner.py",
+      "id": "sha256:7dc24e06f0a4eeb22c63a6c6a57cf37c80d7bb384183b9b9aff1b53bd3c4d7c7",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/inventory.py",
       "suppressed": false,
-      "symbol": "annotations@3"
+      "symbol": "<module>"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:5dd50f073cac8399b02d6f071698927d5e595baf5c8a9f709de7d166cb0389a5",
-      "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+      "id": "sha256:5d0806054a0667e1761a80ad4c6db2926384eb6fe303c2d62fc040c7a4703a14",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/lexer.py",
       "suppressed": false,
-      "symbol": "annotations@4"
+      "symbol": "<module>"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:2d0e1a88de0aca3e3f6db7f7e4ba4f43edafd889d5285a21203e995b0df6fd2e",
-      "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+      "id": "sha256:68183117a586db4ae48ac92ac9edb7062ac078abc4e483af522648f9ad6cfa4e",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/paths.py",
       "suppressed": false,
-      "symbol": "annotations@4"
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4226b435c2735f2b1982e3dd6cce2a678f42265db232fca54b387cb97799cde3",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/propose.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:03f35c113bdcf13022fedafaaccc1c2d3172c983e15c8b7f131726746d44125e",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/reconcile.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d0b75592ceae10600914cfaaac94920f863f2000fd6ffc3ca1f593273313481e",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/schema.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:31e4c215918dafab583be52591038fe009149521cab44098749b14e910858b4d",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/workbook.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e4ce9ecaeb63d054773fe9f34655919fb4bac2f5deafc67bb099ba57b02013b7",
+      "path": "plugins/dokimasia/scripts/dokimasia_lib/xlsx.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:255209e2ce3182052206f61fcc24626c70b2b4c78262f88f3185fb605343cd17",
+      "path": "plugins/dokimasia/tests/fixtures/workbooks/build.py",
+      "suppressed": false,
+      "symbol": "<module>"
     },
     {
       "analyser_id": "python",
@@ -925,136 +498,31 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:8bea720a71ce5b477dcfc545f2e852a80ba7fc97978b9e6df09d0514fabacd0f",
-      "path": "plugins/hexaemeron/lib/xray_reuse.py",
-      "suppressed": false,
-      "symbol": "annotations@17"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:10fc9dce9b7670e3bfd656cd77497977e0dbd68ee2c9f044f384e0f8f4089e06",
-      "path": "plugins/hexaemeron/lib/xray_reuse.py",
-      "suppressed": false,
-      "symbol": "line:166:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:57d5a1e3d6031a22729848a4c274b722ab8d14ef124c7ac398c121bf38ce20ee",
-      "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
-      "suppressed": false,
-      "symbol": "annotations@12"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:611a8f5dc940838af1f1b0d1d6bbaef8cdd6aa04a849e13b4ef9532ee95763ad",
-      "path": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py",
-      "suppressed": false,
-      "symbol": "annotations@19"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:63fe61bd990591a3f3a96417047c1ecc95ad4f208e8e7b1ce7a0bf6e5c867f22",
-      "path": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py",
-      "suppressed": false,
-      "symbol": "line:581:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e8942df34d495327ab980b24c35abda8b04caab1eafd9bd3d3a6b15075e50461",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
-      "suppressed": false,
-      "symbol": "line:583:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:45fe5081c117ab5fb96e95643b4a5a3babca6a0207089b04e122779e995bb1d8",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:1e492ef68739b0676322edb00c983ea1474d4f7da36678178f075345ab088735",
+      "id": "sha256:f107f6566e20eae116931972cbeb3096a50f3744ebf47587268e051ec8598a9e",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "Path@43"
+      "symbol": "Path@53"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:aca16539642254296928a890f90ad82e74e90aa3a17d38fdc3ac17dc1d16c3ca",
+      "id": "sha256:46ebdd863ba65d7c46ec790ab9a592339e7f8e6c7f5ad0b5c39b292367e567ea",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "_recover_runbook_amendment.canonical_path@8818"
+      "symbol": "_recover_runbook_amendment.canonical_path@10244"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:739fcb67faae3c65460020138d1f3e58ef6a76a71e5ae9415dc8a7cd420ebefd",
+      "id": "sha256:db2c600adf6e4fa6be3abee6fab070255998ebf7992e26a36f4c20e72eea3205",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "_recover_study_amendment.canonical_path@8674"
+      "symbol": "_recover_study_amendment.canonical_path@10100"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:2d544064f86e011d526b7a9070b9850678206d14a8ae41733653711834a41847",
+      "id": "sha256:c80cc0b82ccf4af90b39b75294262753231cf67fc151497f36b80ba89bde066a",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "cmd_checkpoint_restore.root@12548"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:dfeda4d2a690424b9780870c5410079eb2d5ed273c2a6f9d6cabf8957850692e",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "suppressed": false,
-      "symbol": "line:10895:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2025253592763b5dcb7850fd49da0ae37264f134871e745196a25375e04d0c1f",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "suppressed": false,
-      "symbol": "line:11067:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:68e4aed862795c38e1335821f270214877e019930928e0e6291a2952395a085c",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "suppressed": false,
-      "symbol": "line:12123:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:73cc328ab2d193dd35316226514c9ce8dd7ef0892d6130b36252e1bef9fccbd3",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "suppressed": false,
-      "symbol": "line:12217:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f959639830c4442fc81fbb8670bccfcb7e8c284446ebb2fa638f79742a728e27",
-      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "suppressed": false,
-      "symbol": "line:4268:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:251aba75141866439180c0cc707e7fc0d05433b63041fb6be89f7c3dff58676b",
-      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "suppressed": false,
-      "symbol": "annotations@58"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7bac061ca9e94c1663aec5272788cd73d764f12ab7f2eb47e89c7656869cbdc0",
-      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "suppressed": false,
-      "symbol": "line:421:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c28641838207af2ca49acfd7e138dc49594caf097a004f68401a55f477887d8b",
-      "path": "plugins/hexaemeron/skills/imprimatur/scripts/evaluate_labelled_corpus.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
+      "symbol": "cmd_checkpoint_restore.root@15111"
     },
     {
       "analyser_id": "python",
@@ -1065,66 +533,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:91f4006ff5b19ad3f28612e23b1ff4ea0df4a20ad7455f9725fb9d39c8beb0cc",
-      "path": "plugins/hexaemeron/skills/imprimatur/scripts/hook_gate.py",
-      "suppressed": false,
-      "symbol": "annotations@17"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:5546c45ad4eeca74331183aad9ceac3c8f59cf768ecdd97b937758d70d7bf162",
-      "path": "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
-      "suppressed": false,
-      "symbol": "annotations@16"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:fa38781629bd7fb3af88b839fa360ea869c48a98535208c0efcda274286354d7",
-      "path": "plugins/hexaemeron/skills/imprimatur/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "annotations@14"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a95b2958481df7f9b27a9063fac12354e110c4c0372f03e5f123c2dd8f4e3d5f",
-      "path": "plugins/hexaemeron/skills/imprimatur/tests/test_labelled_corpus.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:06a3d4c23151aebcacf27963c3c9ba96a9fc9f3f3651f6a0570b7159efd6d623",
-      "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-      "suppressed": false,
-      "symbol": "annotations@73"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a0e3883e039134404671d0f94648a13a94b79a63a03e39b75476d27cefe2adf2",
-      "path": "plugins/hexaemeron/skills/metron/scripts/metron.py",
-      "suppressed": false,
-      "symbol": "annotations@33"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f964796b619a052c887d406cfcf83297e227501e8709b46b3a208d2a20aa6b27",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:b4a95bed995a15395d2ddf426de17ef08d40d366d5c64d4e2c99ba5e4690f0a6",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c726aca026bd949e0b285cf0ae93a38308c3178fc9c1897637ac14e037709460",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -1142,24 +554,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:193035abe81fc22eb1c4392acb6833d576f73305afa7009ed59561aa8330ecda",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:a03ed6659fd7fe32d1726331033cd8fd77796c555aff695d5bafaaeaa52886e8",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2ad8550b626d0d7c5ce2c7a7e431b084e49ba73dfe4e677c2d7fcc6d95dad7ac",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -1170,13 +568,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:99cc3782fc038290f5226cf4bc2322628a5bd6b2f51242c4017f68d3cb505aba",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:1f2d64ba6fcbd796a9660e21aca58ff9eac2169255802c9ea9071b1a421090c0",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
       "suppressed": false,
@@ -1184,24 +575,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:c0efbb80f54d1675ca3232e7e7e727d45685ca286f91242471d6230d92f6c847",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:09f4cd371cf1f5e820215dd4f53664328ec5cd9f019a2546ac5d455ec844f068",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:2066d389c2366dfe3c95fc49aaa252dc0854d2bc9d4595553962e36a02bd7956",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -1226,13 +603,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:5cae258a9c328afc33599f3370227475cacef764e3f2fbec43a9d11c82097ff2",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:0f5bf50761ba4e4a856ab4276453a8ebe21633a75d9305dee8f1ef78dd236c04",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py",
       "suppressed": false,
@@ -1240,24 +610,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d0f50379fc52aeeedb6796c5f3097422c5d69c6bbd35c54bc052693f4bb0f781",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:25bb0fa25722b8239d6e82d0d001b5929fd37dec0a686d025efb6432ba3b2e0a",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b883964afbd3c9be50c31e636c078f42d53d0641fae87a7256c704abdbff0464",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -1275,45 +631,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:dfc6c5d3458df8130086026b5290d4ae5bb4424486510e6bef3bf01c9996dc22",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:df33f0387523ffd4fff534f5ffeaebe69ab739cd563dc64b904c1a0d1101521a",
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e39001060289e5449da446d3dbef14c40e47293f5ad6f68b82f7ec6cbdd965e3",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:09bd993fa4c5cfce644d6dc494834654ceb365cd8593ca5c7a353d1d4964ec3c",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
-      "suppressed": false,
-      "symbol": "line:496:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:45a4deb5b560b2602660a529e1878cdb64d555583111cc475bd20d2211473a0a",
-      "path": "plugins/hexaemeron/skills/phylax/scripts/phylax.py",
-      "suppressed": false,
-      "symbol": "annotations@19"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:956e04a31549de347fbd73f0f449b2ea7564c97f6c79961aad3ca3f920be4fc3",
-      "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
-      "suppressed": false,
-      "symbol": "annotations@64"
     },
     {
       "analyser_id": "python",
@@ -1328,13 +649,6 @@
       "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
       "suppressed": false,
       "symbol": "_count_sol_files.root@870"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f5c6576fd7b2e25ffc49a695878573dd4574528260f4dcc3250ff45772c82c56",
-      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
-      "suppressed": false,
-      "symbol": "annotations@13"
     },
     {
       "analyser_id": "python",
@@ -1408,20 +722,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:74659a36ad474f5ba87d8daa335b646583c6941654fa3911a9c3f3319051485c",
-      "path": "plugins/hexaemeron/tests/fixtures/xray-reuse/run_demo.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7c92b835718083b80594f41321f1b3305b978f0b55aeef122e77c446857ed479",
-      "path": "plugins/hexaemeron/tests/fixtures/xray-reuse/run_demo.py",
-      "suppressed": false,
-      "symbol": "execute.source_paths@152"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:4e2226062d4b20bdecfcebc10733208687f52880af52d797a35432419d44de57",
       "path": "plugins/hexaemeron/tests/hexctl_harness.py",
       "suppressed": false,
@@ -1485,73 +785,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:205d0eff3b9f20479787ecc3e7a3b1ec385ece3f080a1c30e1cfbad0cb5911ff",
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "line:1624:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7efac94a9ebe004fed73bc2289fcdf8a77a5024b0a3c0935f8277a08c2b29eae",
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "line:1753:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:0ab8d082a4962a437fdf2991de2d1800d357168d974878a8220f62c11b6dd508",
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "line:3037:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:37c1a093b8b611e492c6037f28e935e049e9e0f732bab1be93458db781cb00da",
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "line:3219:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:149a36cdd6cafe367ba631bf53992246d7258e1cb51fc5d31fa8454ffb925e88",
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "line:466:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:3f0058275aa188ec39fa0a071e5c6d9867231e61e5f1c3c21be979b079d49945",
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "suppressed": false,
-      "symbol": "line:493:constant-true"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:c040e95a0e2c051d6d08b59e244d7b4c61f99a6ef6816f02e9221e931698a64e",
       "path": "plugins/hexaemeron/tests/test_audit_log_path.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f3a88ee82a272a6e8dd751fc23b1895e03b33fb1cdac7509854f7b0af86f2a96",
-      "path": "plugins/hexaemeron/tests/test_audit_log_path.py",
-      "suppressed": false,
-      "symbol": "unittest@13"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:1ebd85a08bd2d51b8e4bb696092b1630ab7d45ccbef08d3bd57ab2318eafa46f",
-      "path": "plugins/hexaemeron/tests/test_check_runner.py",
-      "suppressed": false,
-      "symbol": "annotations@10"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:503f6b329a62c2c27171e3214463e7c44290000cee06e14900a1dfada33b910d",
-      "path": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -1639,17 +876,17 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:5d8c3d0dd19bd887faef21b14df38a59f9fd7adce429c03d544c4c64ae8bd7fe",
+      "id": "sha256:c77b1751c9cf01e9994311e56af93cfa685834d89ed22b5cc490ba2e26773e5a",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "suppressed": false,
-      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@1972"
+      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@2257"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d55fbebefee48fb74e5108b4629f0258f0956c9485ae63cf54c3b459a412c10d",
+      "id": "sha256:0812ed4212afdc24800e221054ae8c1ff6643a0bac3428fcafda588678dccd52",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "suppressed": false,
-      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@2334"
+      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@2619"
     },
     {
       "analyser_id": "python",
@@ -1681,38 +918,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:364ff99160c64dfedbc27fce37f3c14f5f5552a87c32f1b759c9dcdd5461feb7",
-      "path": "plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py",
-      "suppressed": false,
-      "symbol": "re@24"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:db93b970e6af557bc69b24a8f3ec977123ffadc68b3974580de808bffbd69dc7",
-      "path": "plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py",
-      "suppressed": false,
-      "symbol": "test_the_reader_and_the_writer_share_one_key.module@299"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:898c250cf924a44019da504e3c56f014be4d03f0aa0d8dc097b0b661198ae09d",
-      "path": "plugins/hexaemeron/tests/test_hexctl_generator_aggregates.py",
-      "suppressed": false,
-      "symbol": "annotations@8"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:2ac3adbbf0391e871f25c9cf5cc3fc58b6c6612393b37fd9bd4dd81466ed1b2f",
       "path": "plugins/hexaemeron/tests/test_hexctl_generator_aggregates.py",
       "suppressed": false,
       "symbol": "sys@15"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:1b5255f3746d6ebd8264b8a1e40d5e5e368d32d34f32f2b90020391424841f13",
-      "path": "plugins/hexaemeron/tests/test_hexctl_integration_path_bounds.py",
-      "suppressed": false,
-      "symbol": "annotations@14"
     },
     {
       "analyser_id": "python",
@@ -1723,13 +932,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:76aadca607dcbfbb3a10c512f5cbec96ab21851bc847458b1da6974a20ef91d9",
-      "path": "plugins/hexaemeron/tests/test_hexctl_sync_resolution_guard.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:7a83f2b2de9d7abc6613ea910c96b121c2ace40f158c7f7908ea5e4b4fc75a5d",
       "path": "plugins/hexaemeron/tests/test_phylax_model_proxy.py",
       "suppressed": false,
@@ -1737,38 +939,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:e4b75cb9c917f7fe5b4f295e19b8cae73f0d85a921669f8bebb635770847477d",
-      "path": "plugins/hexaemeron/tests/test_phylax_model_proxy.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:75b1a57b43bd7814176b9380c5176201f33a1c155d85b978eda9ae3b054a9906",
-      "path": "plugins/hexaemeron/tests/test_step_branch_extensions.py",
-      "suppressed": false,
-      "symbol": "annotations@16"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:51d4e5928d3199b488d06630ea9547978f92df8fa392564ccce3755c0dab63db",
       "path": "plugins/hexaemeron/tests/test_version_relations.py",
       "suppressed": false,
       "symbol": "test_555_collision_topology_requires_signed_sync_before_resolution.target_paths@415"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:0c61aa9b86cbe6fabcbf4b43c0ebe094d293f90fba8473c18ed9b63a95a63166",
-      "path": "plugins/homologia/scripts/homologia.py",
-      "suppressed": false,
-      "symbol": "annotations@11"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:446992cc06ea1398a18e1d7e9eeed9a88de41104e360efb05063cc4aacdf150b",
-      "path": "plugins/homologia/tests/test_scaffold.py",
-      "suppressed": false,
-      "symbol": "annotations@10"
     },
     {
       "analyser_id": "python",
@@ -1786,24 +960,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:0722ce8cfd430f831ea37ae8d884bf3e1e52cf84f964719eb618a4b85b44ce8e",
-      "path": "plugins/horos/skills/horos/scripts/horos.py",
-      "suppressed": false,
-      "symbol": "line:1065:constant-true"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:757a3e8617f0779056fca3b92958b3480b424c725b40a9ce9d0d2bd5a10a9ec3",
       "path": "plugins/horos/skills/horos/scripts/languages/cpp/cpp.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:58639b44c82cb99715e7ea42ef86fbcd67d31f67ff86a641685ed0db13ded597",
-      "path": "plugins/horos/skills/horos/scripts/languages/cpp/cpp.py",
-      "suppressed": false,
-      "symbol": "_scan_raw.n@179"
     },
     {
       "analyser_id": "python",
@@ -1842,59 +1002,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d7f4642796a15426b3d20055656f974be467c36fdb70c4b4e9bb8b35c2a705ab",
-      "path": "plugins/horos/tests/test_ts_lexer.py",
-      "suppressed": false,
-      "symbol": "test_the_newline_guard_reclassifies_a_false_regex.spans@68"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:01206cf11cc22816d18a4b6a5d6f4965494237590c3ca18f56ffe00aad641f18",
       "path": "plugins/horos/tests/test_universe.py",
       "suppressed": false,
       "symbol": "json@6"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7c0c9175349b574c7ca3bd120ad120181925a380a43288ac16c9bc4d25d82970",
-      "path": "plugins/janus/scripts/janus.py",
-      "suppressed": false,
-      "symbol": "annotations@11"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e42dac1e7b337f9363712393441db9f8e513fc6319bdcd5fbac05e6bc0aa2a02",
-      "path": "plugins/janus/scripts/run_forge_tests.py",
-      "suppressed": false,
-      "symbol": "annotations@12"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:50da22cf822f69d227703c95b2faf67982797b103204eb4a0d9877e351fa497f",
-      "path": "plugins/janus/scripts/run_fuzz_campaigns.py",
-      "suppressed": false,
-      "symbol": "annotations@45"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:4c815d672973c5ee76f8a93a7b9e64b5f7301955a9a20f99265e78a7150f91f8",
-      "path": "plugins/lazarus/examples/goldfinch-v0-release/fixture/demo.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:8470b356cd5f2ef6aea11a27f817ba4ef13f51109b5689e2b24b45e473f3bcf9",
-      "path": "plugins/lazarus/examples/goldfinch-v0/demo.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f71001ed789c6291ce012715aa800f91b6a7fbdc738153abdb7ee07b47e8dfca",
-      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
     },
     {
       "analyser_id": "python",
@@ -1905,31 +1016,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:e6885fafaf153bea4fcd4d1e905c344bb203fe13f37d94a7214a4d410e72be4f",
-      "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:e2127ed4c5093792d7ffb7275d0ae7e0cff036c13fdcc09ff225178eea1c3c5c",
       "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
       "suppressed": false,
       "symbol": "release_digest@52"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b0d4f784684b7f23da2f817a6bdbc0ffac72feca522b6e9ba2266bf5d49dbe5a",
-      "path": "plugins/lazarus/examples/preservation-release-demo.py",
-      "suppressed": false,
-      "symbol": "annotations@29"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:5692b105ab038a6933803a4fdcd0fbcf67c16144ad0038d36cd1bc4e40ae726d",
-      "path": "plugins/lazarus/scripts/lazarus.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
     },
     {
       "analyser_id": "python",
@@ -1940,13 +1030,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:c59fed00bf8cd6a63eb498fa13b180519ced838cf91281aba4ea3b9264388179",
-      "path": "plugins/lazarus/scripts/lazarus_lib/binding.py",
-      "suppressed": false,
-      "symbol": "annotations@34"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:1bce7b2ec1c940e41b8f4316c9f94d1a3ab650fabe8797b1fa178a0ce24974b7",
       "path": "plugins/lazarus/scripts/lazarus_lib/canonical.py",
       "suppressed": false,
@@ -1954,24 +1037,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:ca0c067e0c3a6390d2b78a367040df32f9999587cc7ebe42085a2e71e21cf68e",
-      "path": "plugins/lazarus/scripts/lazarus_lib/canonical.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:ba9ad2d9044a9b5e5490afecec9234df89c21502c344cb43d6bf60329a5d9f6f",
       "path": "plugins/lazarus/scripts/lazarus_lib/capture.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:80a795a0ffb472caef6a41505353b1483ed1dc2e3f141623a36791954a61f59d",
-      "path": "plugins/lazarus/scripts/lazarus_lib/capture.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -1989,24 +1058,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:0b042ce7e2aa90addcb3e78439d09eb9ea592d06a944319d60c055a5a10dd8a4",
-      "path": "plugins/lazarus/scripts/lazarus_lib/header.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:b021f1f338f7b701a8ed1e229463dbb78bd4e4ae76e878e52d2128b7022c5030",
       "path": "plugins/lazarus/scripts/lazarus_lib/hexvalue.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:206e7a46cc4cc821642f9625c501ab4deb6e1a55cec3f961e262bf28b2fffba5",
-      "path": "plugins/lazarus/scripts/lazarus_lib/hexvalue.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2017,24 +1072,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:657e6dce2efdbebf1a08721ee74b4648befd92a610395341231735906d65ab6d",
-      "path": "plugins/lazarus/scripts/lazarus_lib/limits.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:85958df86e97abb60011fbeae0e052c2bf2891960b8837c9409fcf4bbd5f17c2",
       "path": "plugins/lazarus/scripts/lazarus_lib/manifest.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:da8a5e0e87baeb522145ae4c50e2dbbf81955b58c3b2c4f80e46b6645b97fccc",
-      "path": "plugins/lazarus/scripts/lazarus_lib/manifest.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2045,24 +1086,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:b2a0549346caaa4dbd03ddea4d845f6eab05e30014e8173c493ec33565a07b45",
-      "path": "plugins/lazarus/scripts/lazarus_lib/paths.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:9a7184d081454a13b45891145d2c06caabd236df574f2e6d122592504d63cd77",
       "path": "plugins/lazarus/scripts/lazarus_lib/proofs.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:95dc9b1cc1479d67fab7bdd5611b9dd5361bf93ee8e4dbd02750cd8e478bcc5f",
-      "path": "plugins/lazarus/scripts/lazarus_lib/proofs.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2073,24 +1100,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:95617230e1eb0be70b7e1b5fd262f178109f49100743cd1153fbfa02ca642f4d",
-      "path": "plugins/lazarus/scripts/lazarus_lib/receipts.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:3de15a87cab23dd0cc182a4886e19564dfe378323c11c8d1bd7ae44bd9f7b833",
       "path": "plugins/lazarus/scripts/lazarus_lib/records.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f50dc6e161b464d9b942f4a4f33f2cfea00c9cba5cde9b1033833b93c2d71185",
-      "path": "plugins/lazarus/scripts/lazarus_lib/records.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2101,24 +1114,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:f4b76f45f79c5a7e13abf15a6df97c458c14d05da76dfddda4fe32344f3a2257",
-      "path": "plugins/lazarus/scripts/lazarus_lib/release.py",
-      "suppressed": false,
-      "symbol": "annotations@27"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:e5c7782c812ad1acd634f5e439cf75dac2fc5d1df7ed5032f091a3d95b282e33",
       "path": "plugins/lazarus/scripts/lazarus_lib/replay.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b82041be56ae77a8fdad53351bec50eb8b764f4395541f0dedfc3bb4e131e13f",
-      "path": "plugins/lazarus/scripts/lazarus_lib/replay.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2129,24 +1128,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:86de037c619b1ac69ede7f5ddfb20af49b1ca8b34d3f972d5746c9a2d05dccdc",
-      "path": "plugins/lazarus/scripts/lazarus_lib/rlp.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:0bda8010f4645579bb202046771fd11c0199284ef47a9167e94dc41f8e60f8f4",
       "path": "plugins/lazarus/scripts/lazarus_lib/rpc.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:cefcc04dc5841c74df75711858cd75f50f66c4b8c2f287bf3fbbbd640009f268",
-      "path": "plugins/lazarus/scripts/lazarus_lib/rpc.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2157,24 +1142,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:fa109a5310ebfc7d5f16a0cb7bc951ab9ebc705d536e14de1957e7c8fff8613d",
-      "path": "plugins/lazarus/scripts/lazarus_lib/schemas.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:bc1a928896883a6e71df9bc8535d9f675f005c47835464f252e52f62f4624867",
       "path": "plugins/lazarus/scripts/lazarus_lib/scrub.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:653401b50c24afd81c669b7d6682b3176a94b0084fb24b1eaa52163f5a6d90b9",
-      "path": "plugins/lazarus/scripts/lazarus_lib/scrub.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2185,24 +1156,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:1a403fe40fc766ad7bbafcf08ae7797cef795379672866aee7c3ba58bd52443b",
-      "path": "plugins/lazarus/scripts/lazarus_lib/server.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:281cbd272fe40f1dd537637a1462069e07dafbdb171d72b3b87fa2a039f5e766",
       "path": "plugins/lazarus/scripts/lazarus_lib/text.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b6c8530f9e83d79d6128feaa4f6681ba01393c0790bd0fdd1426d349202cb64b",
-      "path": "plugins/lazarus/scripts/lazarus_lib/text.py",
-      "suppressed": false,
-      "symbol": "annotations@26"
     },
     {
       "analyser_id": "python",
@@ -2213,20 +1170,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:404269d73b345a77beec589e0d03c6c789817d87363cdd6642f2cf604dbcd0c2",
-      "path": "plugins/lazarus/scripts/lazarus_lib/trieproof.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:007d37f9e3cd71d97550e54d3aab288991756e34ad2f6ef0ef107204b0598974",
-      "path": "plugins/lazarus/scripts/lazarus_lib/trieproof.py",
-      "suppressed": false,
-      "symbol": "line:174:constant-true"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:21562e0eb35374164461fcc766c0b01cfd38348e9a0bdffb8da711a87daa5d10",
       "path": "plugins/lazarus/scripts/lazarus_lib/verifier.py",
       "suppressed": false,
@@ -2234,31 +1177,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:94af9f61d8b5348977cda3d6406320ca45fa006f09bd3ee17142d32f338c3d88",
-      "path": "plugins/lazarus/scripts/lazarus_lib/verifier.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:2c2aa9fc44dda2a72910350c3f196752c37c5fae94beb778229a8c655d003a9c",
       "path": "plugins/lazarus/scripts/lazarus_lib/version.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c511a138f837ebc2123283b7ea3492c0ac5a3d908e6c22149147fa810a54ac1f",
-      "path": "plugins/lazarus/tests/fake_rpc.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a67685fd87b1f0129e6188627cf64fd74481115151b611c9f0f4fc3e4a5684ce",
-      "path": "plugins/lazarus/tests/run_receipt_delivery_tests.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
     },
     {
       "analyser_id": "python",
@@ -2276,87 +1198,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:39cd24f64d5675e2bc3a34f7b8a0ca6eaf19d59c6b8166553f0edf2f0b54cf4b",
-      "path": "plugins/lemma/baseline/standard_input.py",
-      "suppressed": false,
-      "symbol": "annotations@24"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:9534ae87703a5d26d88452b4c61513cc5088e586bce0d85e6f321204493bc9fb",
-      "path": "plugins/lemma/chunkers/markdown.py",
-      "suppressed": false,
-      "symbol": "annotations@31"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f49eb722b84a42525292b617c4d51718fb1d31c63fcc31fde71a879e6e54f43b",
-      "path": "plugins/lemma/chunkers/markdown.py",
-      "suppressed": false,
-      "symbol": "fnmatch@34"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:6919071a7ee3e48a89b773ff20c69e9c54ec378354c70d299858954e6e9cec0f",
-      "path": "plugins/lemma/chunkers/markdown.py",
-      "suppressed": false,
-      "symbol": "line:293:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:063f018630c6b629398165899fa2033174e706e4d06c5b2b86f8a2eda49ae11c",
-      "path": "plugins/lemma/chunkers/solidity.py",
-      "suppressed": false,
-      "symbol": "annotations@24"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:8e05ad1e9f5acec09c9ef88cb4a3670bac0b9af17cd0cd32e37b0dc6823bbf81",
-      "path": "plugins/lemma/chunkers/solidity.py",
-      "suppressed": false,
-      "symbol": "line:755:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f9ca73a9c82ae718c8b1943a034416d3ca7d6c6b765b986ca605220733a4540b",
-      "path": "plugins/lemma/chunkers/solidity.py",
-      "suppressed": false,
-      "symbol": "resolve_inheritance.cid@653"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:49ff33f890f71909191aea4a52a1bfc799aef768da1f0cef3f84356801f5904c",
       "path": "plugins/lemma/schema.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:448e40b73719465d6aba266016b5190f62118c3b246ddde810007c862aef7e19",
-      "path": "plugins/lemma/schema.py",
-      "suppressed": false,
-      "symbol": "annotations@32"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:0b62a20ebcdd5cd1273766cc539caffa83a0d9af571d15da2fdf7b4518844e20",
-      "path": "plugins/lemma/tests/test_markdown.py",
-      "suppressed": false,
-      "symbol": "annotations@15"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:265f28c39e0f7dc37b8f2efd241bfc93adabf9dfb546986c46e6b1edac616637",
-      "path": "plugins/lemma/tests/test_solidity.py",
-      "suppressed": false,
-      "symbol": "annotations@16"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c44e170368d8a715424d897f1306059f6089c3ea77e8b32e0090f1ad287da61d",
-      "path": "plugins/lemma/tools/verify_anchors.py",
-      "suppressed": false,
-      "symbol": "annotations@30"
     },
     {
       "analyser_id": "python",
@@ -2392,48 +1237,6 @@
       "path": "plugins/pandects/scripts/pandects_lib/safejson.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:d11e76e9c35aa9c047f22464750604e05204f03aa27fa67d5f5f01cb50c642b7",
-      "path": "plugins/pandects/tests/test_catalogue.py",
-      "suppressed": false,
-      "symbol": "support@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:bbea83bd9c2f96de19050f68df92d0e228f4ab480dc05f925fcca53099b4f3b5",
-      "path": "plugins/pandects/tests/test_checker.py",
-      "suppressed": false,
-      "symbol": "json@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c62c00c0eeaa4500fbbb642a49fec144f406a2d7c6d78a0a436c7a38cbadb404",
-      "path": "plugins/pandects/tests/test_checker.py",
-      "suppressed": false,
-      "symbol": "support@15"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:28dc5017888ff2e4ef7c10ceacab7f229b909db5efb70f2e35687dc61bcc133c",
-      "path": "plugins/pandects/tests/test_cli.py",
-      "suppressed": false,
-      "symbol": "support@11"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:3999c9d0d5a2df0137e58002aa2d5488bfd14c0a0ed84248ac3a16be15d5d0a3",
-      "path": "plugins/pandects/tests/test_documents.py",
-      "suppressed": false,
-      "symbol": "support@14"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:30943e3cc21fd3e70627736f59f9f128793672f9cabc380ce72e340fb2aba8ae",
-      "path": "plugins/pandects/tests/test_search_record.py",
-      "suppressed": false,
-      "symbol": "support@15"
     },
     {
       "analyser_id": "python",
@@ -2535,45 +1338,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:e9cc230f955f11449bf716611e8959c4207c789b49fc3903772055c8abbe3eaa",
-      "path": "plugins/probitas/tests/test_graphql.py",
+      "id": "sha256:c5f7287cdfa938180e911d8dcc251734ac4fb320121fac01303f69ca06e1a449",
+      "path": "plugins/probitas/scripts/probitas_lib/statement.py",
       "suppressed": false,
-      "symbol": "support@15"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:af13e7b2a8d0346822cdbe8c5e1a3bed378d0a531eecf0183bda91a4c956d9c8",
-      "path": "plugins/probitas/tests/test_registry.py",
-      "suppressed": false,
-      "symbol": "support@6"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:67c65416627e1aab2d3d71d007b0e9c9f9124502defd3fac33681b9a7713d046",
-      "path": "plugins/probitas/tests/test_registry.py",
-      "suppressed": false,
-      "symbol": "test_record_count_comes_from_the_records.records@92"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:0033b711e1e20912da236e1a3747d7ef5f90eb176a2296bc67b4feedb0f252a1",
-      "path": "plugins/probitas/tests/test_sanitise.py",
-      "suppressed": false,
-      "symbol": "support@5"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:5c97bcbe1868da993bc215386e6eacf24c69d7ba6cb9145abb57c508a22b6b86",
-      "path": "plugins/synkrisis/scripts/bench_synkrisis.py",
-      "suppressed": false,
-      "symbol": "annotations@13"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:5ede1051a3c03f50ad1f031a621c14275d4d1c9fb653b2dff519a2b7e155077f",
-      "path": "plugins/synkrisis/scripts/synkrisis.py",
-      "suppressed": false,
-      "symbol": "annotations@14"
+      "symbol": "<module>"
     },
     {
       "analyser_id": "python",
@@ -2581,55 +1349,6 @@
       "path": "plugins/synkrisis/tests/support.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:de48f05ba9527f8aa4a56e5305ab75ee2ad8f9f71bc9767bd156a5fe040a6ad8",
-      "path": "plugins/synkrisis/tests/support.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f34c2a7fca334b848c73fb87c2e45d9f1fa7fcee8a8757015ec3492dd900ec4b",
-      "path": "plugins/synkrisis/tests/test_bench.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b2005817bc3c3107fc325b53dd5241131dace1a571cdd804b5e9c9630aad0d01",
-      "path": "plugins/synkrisis/tests/test_cohort.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:42ad57013110025ca7ba1386f7a2a764294ed1ab5fd1347e290bfbcbb6740b58",
-      "path": "plugins/synkrisis/tests/test_diagnose.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:7d3f2486a5fd385aba48205e8d2170ab53a65eb601c1de8c454d57e7e1d514e9",
-      "path": "plugins/synkrisis/tests/test_render.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:6faf658f5a0f9b4bf13f7c5f844fc570cd228def76e22e10a65bda335632a874",
-      "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:8b8fd058d08ee2241c3f8414bbb52345d4ae15aeac89b5a3b597d864ddb6f5c8",
-      "path": "plugins/synkrisis/tests/test_verify.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -2675,13 +1394,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:e3c5e58d4988410aa0dc7fe3d92f4d3a80ef6ac10abb3f83b5a81e786b42c22c",
-      "path": "plugins/tabularium/scripts/tabularium_lib/compound_witness.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:2f7f0239a6f750334d01f56be49385e9072898f9801b0b0bdd4b72736fe067d3",
       "path": "plugins/tabularium/scripts/tabularium_lib/core.py",
       "suppressed": false,
@@ -2707,13 +1419,6 @@
       "path": "plugins/tabularium/scripts/tabularium_lib/release.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:ca0787c3a75ae105a635ec962ab0e9d7df36355ff919bb3e6886a578dcef715d",
-      "path": "plugins/tabularium/scripts/tabularium_lib/release.py",
-      "suppressed": false,
-      "symbol": "MAX_SAFE_INTEGER@7"
     },
     {
       "analyser_id": "python",
@@ -2780,31 +1485,24 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:c25db2ebff090885999e653716e7235eb161c51b8a9e7cb85a0ee11062833abf",
-      "path": "scripts/build_contributor_guide.py",
+      "id": "sha256:10e36960368d912a78c4372e2ea99cbdf69fdb32f03dcea15b8f9726fe849347",
+      "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "annotations@12"
+      "symbol": "Path@14"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:1b083d7ec048e9621e899cc804e9b5498a5dcb9d81aacd1b1122914f5e2ff7ab",
-      "path": "scripts/check_commit_identity.py",
+      "id": "sha256:bb6d948c552a3889a30df19db03e134b8d7857374b56e168e9372f362f496baa",
+      "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "annotations@4"
+      "symbol": "_validate_measurement_record.model_tokens@2843"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d85dcde843934c95ea913c74a246952be827e64b9b7efbcc3c3b7259fae4fd41",
-      "path": "scripts/contributors.py",
+      "id": "sha256:62134cf15f9a0a125adee86c01f072cd7c2e08c91c52c04617756bee1d752d5f",
+      "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "annotations@22"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:18507165ce6f4c12ec452871d50d9be75f0fc31a7b50f85de5049e9a5ecebfe5",
-      "path": "scripts/dead_code.py",
-      "suppressed": false,
-      "symbol": "annotations@11"
+      "symbol": "parse.depth@1083"
     },
     {
       "analyser_id": "python",
@@ -2815,104 +1513,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:8b63ccc5fe31108c893c5b807fe606f4c53d347f42e726bd17458d0953a69d66",
-      "path": "scripts/dead_code_monitoring/sitecustomize.py",
-      "suppressed": false,
-      "symbol": "annotations@8"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:89f98eb043744377759ff1d5190eb3466a6863fde9b738cf78e879072866dcff",
-      "path": "scripts/portable_promise_machine.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:b4a29e8c64bbea74a42dc3caf21826c0d4151d02ffb9be34a2d120182b5d4d1d",
-      "path": "scripts/promise_machine.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:ad26d8312a20256938ba66ae641330eb169e73a0353a7187624bb6b0d0ab81af",
-      "path": "scripts/promise_machine.py",
-      "suppressed": false,
-      "symbol": "line:592:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a00ccac32187d80e3a898df86302e20e068565974478c3b2fa41cb3caf52ad16",
-      "path": "scripts/run_checks.py",
-      "suppressed": false,
-      "symbol": "annotations@17"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f63fc68f78de9a3312a2eae67a62232164a995aca047dba03d3baf93541015f9",
-      "path": "scripts/run_checks.py",
-      "suppressed": false,
-      "symbol": "line:1199:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f80d6cd750aea6cfd51340ad6eae8711d2c13c0dd84e70466e5a39579ee679e2",
-      "path": "scripts/run_checks.py",
-      "suppressed": false,
-      "symbol": "line:2063:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:c624fa086783199eddbd3e1276a6d76c1b3fed7e1fa2b430937f7a5ecadb4af0",
-      "path": "scripts/run_checks.py",
-      "suppressed": false,
-      "symbol": "line:2438:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:0ab86140bcb3abdbeccb27af939741260d8dd2e38117afd4b991f4467a054cd5",
-      "path": "scripts/run_checks.py",
-      "suppressed": false,
-      "symbol": "line:841:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a87d7fb18677e8a8c50416968dbde7a9ab7ead9e1d6d710a21e18f45828fe4c7",
-      "path": "scripts/run_checks.py",
-      "suppressed": false,
-      "symbol": "line:934:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:279468ee2b7ba34a166128699026a1199135ee4c7b269ff8110b90f328a31493",
-      "path": "scripts/run_observation.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:15ee8dba5a75076ada0e927e42c1cac074bc1b498e63e11e552442df5b223331",
-      "path": "scripts/run_observation.py",
-      "suppressed": false,
-      "symbol": "line:1020:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a543a1dcca7346610517c1b02487a541d199d4143128e015d1899d56e74b6d97",
-      "path": "scripts/run_observation.py",
-      "suppressed": false,
-      "symbol": "line:841:constant-true"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e97f263c0e7f586051bb31dd51221abbfd676529b9e2cb31c0ec61049fdaf936",
-      "path": "scripts/run_observation_capture.py",
-      "suppressed": false,
-      "symbol": "annotations@9"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:13549cef9edc79c28a968d00d78429b5cefb35ab3bf77b7dbf75d0450d6817a2",
       "path": "scripts/run_observation_capture.py",
       "suppressed": false,
@@ -2920,52 +1520,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:77d805e2820f2e4e8580efda3f5f7e4b7245c98dc1423bb6ab3b0ad59e50c2f8",
-      "path": "tests/emit_router_selection_report.py",
+      "id": "sha256:9d8278c8a4b55ff65a70648541385b820349f1d01efd76871bf7004cea75d10f",
+      "path": "tests/test_agent_instruction.py",
       "suppressed": false,
-      "symbol": "annotations@23"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a93eac382cdf6941a7d1bbee4a09913f7fc3570d25760be796864b1a5023b625",
-      "path": "tests/emit_run_observation_capture_report.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:00502dbf12bbd20a4ede790b5d6c9cbce6aec6d01d503b501261f41bac574dc5",
-      "path": "tests/router_selection_driver.py",
-      "suppressed": false,
-      "symbol": "annotations@21"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:4f0b837327d1ff85c5c33532f506a53ddbc8b483744987f9d8f6feac3727ca2e",
-      "path": "tests/test_commit_identity.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:1c5f40729f5a24f8fe9c7c44a5b2445ed2953a8d41ce840149b897c57575b942",
-      "path": "tests/test_contributors.py",
-      "suppressed": false,
-      "symbol": "annotations@10"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:e92307baa7ffc56509465d5ef7620a34e405153e05749f164ae553a93435f872",
-      "path": "tests/test_decision_records.py",
-      "suppressed": false,
-      "symbol": "annotations@15"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:5227e46494fc09a846118e22d3ac7afeca335cae92748927dea349c9950eee25",
-      "path": "tests/test_fiat_checkpoint_decision_record.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
+      "symbol": "test_governed_node_shrink_with_rebound_derivatives_refuses.compact_path@1821"
     },
     {
       "analyser_id": "python",
@@ -2973,55 +1531,6 @@
       "path": "tests/test_promise_machine_contract.py",
       "suppressed": false,
       "symbol": "test_missing_root_licence_is_refused.plugin@295"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:ea41c3dfe0b287dc9d3e71602511d80b4d6387eed6b12e7f610cf7648d1886f4",
-      "path": "tests/test_router_selection.py",
-      "suppressed": false,
-      "symbol": "annotations@33"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:f33b554a2910a8d1f151765b765f905bd4ad06c34e2c185700f9ce0a25b0bb0f",
-      "path": "tests/test_router_selection_driver.py",
-      "suppressed": false,
-      "symbol": "annotations@10"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:02d0fcb07aa121122ade910d02835fc4b6eae5cfcba8295187dbc111be5e4dd3",
-      "path": "tests/test_run_observation_capture.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:4eadaa74c4d401eb9d498552290352aca37d2fe50d6cab2ab4814aefeb045753",
-      "path": "tests/test_run_observation_capture.py",
-      "suppressed": false,
-      "symbol": "io@7"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:d5fbafe6f3b6c588e1602e8a76cd0b769847f14c9a4f36420a47bad7ba20b053",
-      "path": "tests/test_run_observation_capture.py",
-      "suppressed": false,
-      "symbol": "os@9"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:eef4b07c0c2131d21c848d905e60483bcd3655715c53b1f38af5d20e175db981",
-      "path": "tests/test_run_observation_capture.py",
-      "suppressed": false,
-      "symbol": "redirect_stdout@16"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:228b381a3ddca97e097beff6d570e1bd1d4c8555aab82a86721f0379fbc954b2",
-      "path": "tests/test_run_observation_capture_inoculation.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
     },
     {
       "analyser_id": "python",
@@ -3036,48 +1545,6 @@
       "path": "tests/test_run_observation_inoculation.py",
       "suppressed": false,
       "symbol": "tempfile@14"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:558a815b60ecadfd5f051781197b5e7ad7d57be19832bd2d3f168418fb487756",
-      "path": "tests/test_scratch_quiescence.py",
-      "suppressed": false,
-      "symbol": "annotations@18"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:171a3c821679d92b3e4db1e068fb0081300dff57930e5a0715afcb0a03bc9413",
-      "path": "tests/test_skills_sh_package.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:28c1d58c7c36d47f6fe90fd38123d9ca34a9306575516119e3a48fccaf3c6514",
-      "path": "tests/test_unique_identifiers.py",
-      "suppressed": false,
-      "symbol": "annotations@19"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:4ff383839cd1062d18b5f41916495922c2c1ded462e8f6695a372c91f512da54",
-      "path": "tests/test_unique_identifiers.py",
-      "suppressed": false,
-      "symbol": "bound_promise_ids.key@82"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:cf7ec627fc8a0e36e3610de93559641cd586a3d99ef21976876a33992cab314d",
-      "path": "tests/test_unique_identifiers.py",
-      "suppressed": false,
-      "symbol": "test_no_two_coverage_entries_share_an_id.key@124"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:02569d311fc0fcac6b65a6663fb48759bedb7610e6499e00c8fccdaa2df48625",
-      "path": "tests/test_version_propagation.py",
-      "suppressed": false,
-      "symbol": "test_the_three_manifests_agree.directory@99"
     }
   ],
   "schema": "dead-code-baseline/v1",
@@ -3090,10 +1557,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "2ecc1c837c1a46f5ee9e071df5d517d7e837fbac",
-    "git_tree": "b557cd09640c81680e693283a493f6662d1f18ac"
+    "commit": "73355fef57c03096f310e606493839bcbb426773",
+    "git_tree": "7a4e2c3f41e743163a690d29134d8be30a22bf65"
   },
   "universe": {
-    "id": "sha256:196919a70f210bde7f120011e256496d8f8a9c6ac1364be7905d36670e25cf9a"
+    "id": "sha256:5f783d447521efb9340c8ce6b423ce58c0724bbd13fa7477dfb53a751bca7c5d"
   }
 }

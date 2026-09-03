@@ -4,7 +4,7 @@ import re
 
 from . import ADAPTER_VERSION, EVENT_SCHEMA_VERSION
 from .adapters.goldfinch import CHAIN, MAPPINGS
-from .core import MAX_SAFE_INTEGER, TabulariumError, safe_integer, sha256_bytes
+from .core import TabulariumError, safe_integer, sha256_bytes
 
 
 MANIFEST_SCHEMA_VERSION = 1

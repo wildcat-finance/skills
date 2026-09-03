@@ -650,7 +650,7 @@ def resolve_inheritance(out: dict, chunks: list[Chunk]) -> list[Chunk]:
     exposure: dict[tuple[str, str], list[str]] = {}
     overridden: set[tuple[str, str]] = set()
 
-    for cid, contract in by_id.items():
+    for _cid, contract in by_id.items():
         if contract.get("contractKind") != "contract" or contract.get("abstract"):
             continue                      # only concrete contracts have a surface
         seen: set[tuple[str, str]] = set()
