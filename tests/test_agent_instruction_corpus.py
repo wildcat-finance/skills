@@ -481,6 +481,68 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                 "a refused candidate still wrote a design report",
             )
 
+    def test_the_projection_covers_only_the_source_quarter_of_the_bound_set(self):
+        """Where step 1's enumeration and step 2's projection disagree.
+
+        `bound_digests` is the prover's one enumeration of everything the
+        manifest binds, and the constructor's self-consistency check and the
+        `--report` guard both read it, so it is the authoritative list. It
+        holds six digests per fixture: the whole-file source digest and five
+        artefact digests. Three of those five -- `model`, `source_spans` and
+        `compact` -- embed the source digest, which is why `manifest-artifacts`
+        is a mechanical pass in its own right: they move whenever the source
+        digest inside them moves. `mutations` and `questions` embed none, so
+        they are the control and stay put either way.
+
+        `digest_neutral_projection` neutralises the source digest and none of
+        the five. That is the whole of S2-R1-01, stated against step 1's list
+        rather than a list rewritten here, so the two halves cannot drift into
+        disagreeing about what "bound" means.
+
+        The consequence is step 3's: `_corpus_sha256` digests a subject
+        carrying `fixtures`, so it carries all four. Switching that subject
+        onto the projection without widening it to the artefact digests leaves
+        the corpus digest moving on an out-of-span edit, which is the refusal
+        skills#1098 reports. Widening it is proved safe -- an in-span edit
+        still moves `span_sha256`, which the projection never substitutes -- so
+        step 3 inverts this case rather than working around it.
+        """
+        manifest = self.work.manifest
+        bound = self.prover.bound_digests(manifest)
+        sources = {entry["source"]["sha256"] for entry in manifest["fixtures"]}
+        artifacts = {
+            artifact["sha256"]
+            for entry in manifest["fixtures"]
+            for artifact in entry["artifacts"].values()
+        }
+        self.assertEqual(len(manifest["fixtures"]) * 6, len(bound))
+        self.assertEqual(sources | artifacts, {expected for _, expected in bound})
+        embedding = {
+            entry["artifacts"][name]["sha256"]
+            for entry in manifest["fixtures"]
+            for name in ("model", "source_spans", "compact")
+        }
+        self.assertEqual(len(manifest["fixtures"]) * 3, len(embedding))
+
+        # One buffer carrying every bound digest, so the projection is asked
+        # about the whole enumeration at once rather than a chosen slice.
+        probe = b"\n".join(expected.encode("ascii") for _, expected in bound)
+        projected = self.checker.digest_neutral_projection(manifest, probe)
+        marker = self.checker.CORPUS_SOURCE_DIGEST_PLACEHOLDER.encode("ascii")
+
+        for digest in sorted(sources):
+            with self.subTest(kind="source", digest=digest):
+                self.assertNotIn(digest.encode("ascii"), projected)
+        for digest in sorted(artifacts):
+            with self.subTest(kind="artifact", digest=digest):
+                self.assertIn(
+                    digest.encode("ascii"),
+                    projected,
+                    "the projection now reaches the artefact digests: step 3's "
+                    "widening has landed and this case is the one to invert",
+                )
+        self.assertEqual(len(sources), projected.count(marker))
+
 
 if __name__ == "__main__":
     unittest.main()
