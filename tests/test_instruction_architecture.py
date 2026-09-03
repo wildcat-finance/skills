@@ -8531,12 +8531,26 @@ class ControlSnapshotTests(unittest.TestCase):
                         relative / "manifest.json",
                     ),
                     self.assertRaisesRegex(
-                        AI.Refusal, "object directory differs from its manifest"
+                        AI.Refusal,
+                        "object inventory exceeds its bound|object directory differs from its manifest",
                     ),
                 ):
                     AI._control_snapshot()
             finally:
                 clear_source_cache()
+
+    def test_snapshot_directory_inventory_refuses_at_its_count_bound(self):
+        with scratch_directory("control-snapshot-inventory-bound-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            objects = snapshot / "objects"
+            objects.mkdir(parents=True)
+            (objects / "owned").write_bytes(b"owned")
+            (objects / "unowned").write_bytes(b"unowned")
+            relative = PurePosixPath(snapshot.relative_to(ROOT).as_posix())
+            with self.assertRaisesRegex(
+                AI.Refusal, "control snapshot object inventory exceeds its bound"
+            ):
+                AI._preflight_snapshot_publication(relative, {"owned"})
 
     def test_snapshot_root_directory_is_closed(self):
         with scratch_directory("control-snapshot-root-extra-") as temporary:
@@ -8554,7 +8568,8 @@ class ControlSnapshotTests(unittest.TestCase):
                         relative / "manifest.json",
                     ),
                     self.assertRaisesRegex(
-                        AI.Refusal, "root directory is not closed"
+                        AI.Refusal,
+                        "root inventory exceeds its bound|root directory is not closed",
                     ),
                 ):
                     AI._control_snapshot()

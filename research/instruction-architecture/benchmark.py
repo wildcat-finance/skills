@@ -190,7 +190,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "412e9f351b1e1dcf21ea935d595d7961a7841b9bc3223311d34a6ea76150dd36"
+    "5c2d75f64fa661772f915a0abba6b443c247774be8b77271ce87c97ba87a6b51"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -6570,13 +6570,20 @@ def _control_snapshot_manifest(
     }
 
 
-def _snapshot_entries(descriptor: int, label: str) -> list[str]:
+def _snapshot_entries(descriptor: int, label: str, limit: int) -> list[str]:
+    entries: list[str] = []
+    seen: set[str] = set()
     try:
-        entries = os.listdir(descriptor)
+        with os.scandir(descriptor) as iterator:
+            for entry in iterator:
+                if len(entries) >= limit:
+                    raise Refusal(f"{label} inventory exceeds its bound")
+                if entry.name in seen:
+                    raise Refusal(f"{label} inventory is duplicated")
+                entries.append(entry.name)
+                seen.add(entry.name)
     except OSError as exc:
         raise Refusal(f"{label} inventory is unavailable") from exc
-    if len(entries) != len(set(entries)):
-        raise Refusal(f"{label} inventory is duplicated")
     return entries
 
 
@@ -6616,7 +6623,7 @@ def _open_snapshot_directories(
     objects = -1
     try:
         expected = {"manifest.json", "objects"}
-        entries = set(_snapshot_entries(directory, "control snapshot root"))
+        entries = set(_snapshot_entries(directory, "control snapshot root", 2))
         if (exact_root and entries != expected) or (
             not exact_root and not entries <= expected
         ):
@@ -6636,7 +6643,7 @@ def _open_snapshot_directories(
             objects = os.open("objects", _directory_flags(), dir_fd=directory)
         except OSError as exc:
             raise Refusal("control snapshot object directory is unavailable or unsafe") from exc
-        final_entries = set(_snapshot_entries(directory, "control snapshot root"))
+        final_entries = set(_snapshot_entries(directory, "control snapshot root", 2))
         if (exact_root and final_entries != expected) or (
             not exact_root and not final_entries <= expected
         ):
@@ -6657,7 +6664,9 @@ def _preflight_snapshot_publication(
         output, create=True, exact_root=False
     )
     try:
-        entries = set(_snapshot_entries(objects, "control snapshot object"))
+        entries = set(
+            _snapshot_entries(objects, "control snapshot object", len(object_names))
+        )
         if not entries <= object_names:
             raise Refusal("control snapshot object directory contains an unowned entry")
         for name in entries:
@@ -6680,12 +6689,19 @@ def _verify_snapshot_publication(
     expected_objects = set(objects)
     directory_before = os.fstat(directory)
     objects_before = os.fstat(object_directory)
-    if set(_snapshot_entries(directory, "control snapshot root")) != {
+    if set(_snapshot_entries(directory, "control snapshot root", 2)) != {
         "manifest.json",
         "objects",
     }:
         raise Refusal("control snapshot root directory is not closed")
-    if set(_snapshot_entries(object_directory, "control snapshot object")) != expected_objects:
+    if (
+        set(
+            _snapshot_entries(
+                object_directory, "control snapshot object", len(expected_objects)
+            )
+        )
+        != expected_objects
+    ):
         raise Refusal("control snapshot object directory differs from its manifest")
     manifest_read, manifest_identity = _snapshot_read_entry(
         directory, "manifest.json", MAX_JSON_BYTES, "control snapshot manifest"
@@ -6701,9 +6717,13 @@ def _verify_snapshot_publication(
             raise Refusal("published control snapshot object drift")
         object_identities[oid] = identity
     if (
-        set(_snapshot_entries(directory, "control snapshot root"))
+        set(_snapshot_entries(directory, "control snapshot root", 2))
         != {"manifest.json", "objects"}
-        or set(_snapshot_entries(object_directory, "control snapshot object"))
+        or set(
+            _snapshot_entries(
+                object_directory, "control snapshot object", len(expected_objects)
+            )
+        )
         != expected_objects
         or _identity(os.fstat(directory)) != _identity(directory_before)
         or _identity(os.fstat(object_directory)) != _identity(objects_before)
@@ -6729,7 +6749,11 @@ def _verify_snapshot_publication(
             != _directory_identity(directory_before)
             or _directory_identity(os.fstat(routed_objects))
             != _directory_identity(objects_before)
-            or set(_snapshot_entries(routed_objects, "control snapshot object"))
+            or set(
+                _snapshot_entries(
+                    routed_objects, "control snapshot object", len(expected_objects)
+                )
+            )
             != expected_objects
         ):
             raise Refusal("control snapshot publication path changed")
@@ -6872,10 +6896,9 @@ def _control_snapshot() -> dict[str, Any]:
     object_bytes: dict[str, bytes] = {}
     try:
         directory_before = os.fstat(directory)
-        try:
-            entries_before = os.listdir(directory)
-        except OSError as exc:
-            raise Refusal("control snapshot object inventory is unavailable") from exc
+        entries_before = _snapshot_entries(
+            directory, "control snapshot object", len(object_records)
+        )
         if (
             len(entries_before) != len(object_records)
             or set(entries_before) != set(object_records)
@@ -6894,10 +6917,9 @@ def _control_snapshot() -> dict[str, Any]:
                     "control snapshot object size, digest, or blob identity drift"
                 )
             object_bytes[oid] = data
-        try:
-            entries_after = os.listdir(directory)
-        except OSError as exc:
-            raise Refusal("control snapshot object inventory changed") from exc
+        entries_after = _snapshot_entries(
+            directory, "control snapshot object", len(object_records)
+        )
         if (
             sorted(entries_after) != sorted(entries_before)
             or _identity(os.fstat(directory)) != _identity(directory_before)
