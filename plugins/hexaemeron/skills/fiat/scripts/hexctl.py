@@ -12415,6 +12415,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "design_output_path": scoped_path(
                 root, DESIGN_EVIDENCE_FILE, "design-evidence output"
             ),
+            # Surveyor applies Protasis and Mason applies five more siblings.
+            # Neither could resolve a path to them, so each brief carries the
+            # plugin root the way Warden's and Scribe's already do.
+            "plugin_root": plugin_root(),
         }
         return packet
 
@@ -12435,6 +12439,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
 
     step = current_step(state)
     plan = branch_plan(state, step)
+    root_plugin = plugin_root()
     if action == "implement":
         packet["agent"] = "mason"
         packet["brief"] = {
@@ -12446,12 +12451,12 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             ),
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
+            "plugin_root": root_plugin,
         }
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
 
-    root_plugin = plugin_root()
     if action == "audit-round":
         audit = as_dict(as_dict(state.get("config")).get("audit"))
         log = configured_audit_log(state)

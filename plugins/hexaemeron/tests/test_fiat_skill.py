@@ -234,8 +234,14 @@ class FiatSkillContractTests(unittest.TestCase):
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
-            "surveyor": "`topic`, `target_dir`, `base_ref`, `output_path`, and `design_output_path`",
-            "mason": "`runbook_step`, `design_evidence`, `branch`, and `branch_from`",
+            "surveyor": (
+                "`topic`, `target_dir`, `base_ref`, `output_path`, "
+                "`design_output_path`, and `plugin_root`"
+            ),
+            "mason": (
+                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+                "and `plugin_root`"
+            ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
                 "`audit_log_path`, `step`, `round`, `warden_continuity`, "

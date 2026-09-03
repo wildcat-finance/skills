@@ -353,7 +353,8 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             out,
             "surveyor",
-            ("topic", "target_dir", "base_ref", "output_path", "design_output_path"),
+            ("topic", "target_dir", "base_ref", "output_path",
+             "design_output_path", "plugin_root"),
         )
         self.assertEqual(out["brief"]["topic"], "packet work")
         self.assertEqual(out["brief"]["target_dir"], os.path.realpath(self.target))
@@ -397,7 +398,8 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             mason,
             "mason",
-            ("runbook_step", "branch", "branch_from", "design_evidence"),
+            ("runbook_step", "branch", "branch_from", "design_evidence",
+             "plugin_root"),
         )
         self.assertEqual(
             set(mason["brief"]["design_evidence"]),
@@ -3065,7 +3067,8 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.assertEqual(mason_first, mason_second)
         self.assertEqual(
             set(mason_first["brief"]),
-            {"runbook_step", "branch", "branch_from", "design_evidence"},
+            {"runbook_step", "branch", "branch_from", "design_evidence",
+             "plugin_root"},
         )
         expected_markdown = "## Step 1: Core\n\n**Goal.** Ship Core.\n"
         expected_source = {

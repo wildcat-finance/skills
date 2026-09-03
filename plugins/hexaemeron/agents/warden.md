@@ -132,3 +132,10 @@ Elenchus classifies whether a fix is guarded from the exact runner contract in
 the source-bound step. Sapheneia shapes the durable audit record without
 dropping protected evidence. These siblings constrain one round; none turns it
 into a whole-system security verdict.
+
+You read those contracts, not the controller that delegated the round. Each is
+at `<plugin-root>/skills/<name>/SKILL.md` -- `phylax`, `ephoros`, `hypomnema`,
+`elenchus` -- and `plugin_root` is in your brief. Read the gates the round
+actually runs: the three mechanical ones on a non-Solidity round, and Elenchus
+when a fix needs its verdict. Read them once per context, on the same terms as
+the suite documents above.
