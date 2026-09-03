@@ -42,6 +42,11 @@ expectation, scorer state, candidate id and competing labels do not. exact
 canonical source bytes define authority and deterministic exact-source
 recovery. raw fallback can preserve that recovery but is not a native mapping;
 semantic and behavioural success belong to the later model experiment.
+the ten verified scenario closures contain 64 canonical paths and 938,614
+exact-unique bytes (51.6004% of the corpus), 16 logical skills, every observed
+construct, document class, authority tier and size decile, and all five shared
+suite/router contracts. none of their 68 physical paths belongs to the sealed
+holdout.
 
 raw covers all 191 physical files and 2,290,450 bytes. WAI1 invokes the merged
 checker over its exact three reviewed envelopes: 11,170 current native bytes,
@@ -61,17 +66,24 @@ current coverage or later behavioural success.
 
 the simple control has 174 exact whole-file content nodes and 17 duplicate
 aliases, with no section or permission semantics. the distinct section graph
-has 1,896 exact Markdown spans with explicit parent dependencies. it preserves
-2,071,863 Markdown bytes natively and keeps all 15 non-Markdown inputs and
-218,587 bytes as raw fallback. every claimed source projection round-trips.
+has 1,471 canonical Markdown nodes, source-owned authority tiers, explicit
+parent dependencies and 17 exact-content aliases; its 1,896 physical coverage
+ranges preserve 2,071,863 Markdown bytes natively and keep all 15 non-Markdown
+inputs and 218,587 bytes as raw fallback. conservative selection includes all
+sections of each loader-reachable canonical file plus transitive parents, so
+its source content equals the simple arm and its component metadata is overhead,
+not a compression claim. every claimed source projection round-trips.
 
 `evidence/development/artifact-inventory.json` is the publication point for 15
 payloads across controls, cases, hostile specimens, hostile execution and
 evidence. all 12 hostile specimens execute against all five arms and retain 60
 content-addressed refusal rows. resource evidence derives its standard-library
 and external import sets from the Python AST and refuses any external runtime
-dependency. replay checks the inventory twice, rebuilds from the frozen source
-and pinned control objects, and requires every payload byte to match. the
+dependency. it reconciles 13,793,418 payload bytes plus the 2,409-byte inventory
+to the complete 13,795,827-byte published generation; command results emit the
+observed wall times and peak RSS, while Step 3 owns repeated p50/p95 samples.
+replay checks the inventory twice, rebuilds from the frozen source and pinned
+control objects, and requires every payload byte to match. the
 holdout stays unopened and no holdout task, answer or model output is accessed.
 
 ## source and publication boundary

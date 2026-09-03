@@ -133,6 +133,20 @@ DEVELOPMENT_CLASSES = (
     "recovery",
     "authority",
 )
+SECTION_SELECTION = {
+    "closure": "selected-sections-plus-transitive-parents",
+    "deduplication": "exact-whole-file-canonical-content",
+    "fallback": "whole-source-for-unsupported-non-markdown",
+    "roots": "all-sections-of-loader-reachable-canonical-files",
+    "scenario_source": "verified-loader-graph",
+}
+SHARED_BEHAVIORAL_PATHS = (
+    ".agents/skills/promise-machine/PORTABLE.md",
+    ".agents/skills/promise-machine/SKILL.md",
+    "AGENTS.md",
+    "PROMISE_MACHINE.md",
+    "SHOGGOTH.md",
+)
 WAI1_CONTROL_REF = SOURCE_REF
 NOEMA_PRODUCT_REF = "07ee0475d1559a2b09488f925645a83f786d1f3c"
 NOEMA_REVIEW_REF = "7344de8874f9de8a2a2ef78a31f7e760f56e491e"
@@ -144,12 +158,12 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "235f80d084639d9f1da676a85046787f7c11650f2afd0d487b92b3b920f7ccf8"
+    "68d263e8f354d8484d6478a5460597b6bb1b7365e4a48a413d0e16471e854bd8"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
     "raw": "bfc416cc7fd3d9a1a569fea4eaa6e6577770bf89f77b68eb23378633d57da23e",
-    "section-graph": "571a5c3cb26d832058511495e0bdce1207bcacf2601f68e6347cb8a25c88f5d4",
+    "section-graph": "64f62560d56b65c782c792854a7803e90c864cb7fa590e75618f2f744c8d40a1",
     "simple": "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
     "wai1": "d296ad65805dacf9e9514e1e9517c0f61335ddcdc33a19b91a3fa1d8cfe8daab",
 }
@@ -7292,6 +7306,7 @@ def _section_control(manifest: dict[str, Any]) -> dict[str, Any]:
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
     documents = {item["path"]: item for item in manifest["documents"]}
+    sections_by_canonical_path: dict[str, list[dict[str, Any]]] = {}
     for document in manifest["documents"]:
         data = _source_blob(document["path"])
         if not document["path"].endswith(".md"):
@@ -7307,8 +7322,37 @@ def _section_control(manifest: dict[str, Any]) -> dict[str, Any]:
                 )
             )
             continue
-        for node in _markdown_sections(document["path"], data):
-            nodes.append(node)
+        canonical_path = document["canonical_content_path"]
+        canonical = documents[canonical_path]
+        canonical_sections = sections_by_canonical_path.get(canonical_path)
+        if canonical_sections is None:
+            canonical_data = _source_blob(canonical_path)
+            canonical_sections = [
+                {**node, "authority_tier": canonical["authority_tier"]}
+                for node in _markdown_sections(canonical_path, canonical_data)
+            ]
+            sections_by_canonical_path[canonical_path] = canonical_sections
+            nodes.extend(canonical_sections)
+            for node in canonical_sections:
+                for dependency in node["dependencies"]:
+                    edges.append(
+                        {
+                            "kind": "section-parent",
+                            "source": node["id"],
+                            "target": dependency,
+                        }
+                    )
+        elif data != _source_blob(canonical_path):
+            raise Refusal("section graph exact-content alias differs from canonical source")
+        if document["path"] != canonical_path:
+            edges.append(
+                {
+                    "kind": "exact-content-alias",
+                    "source": document["path"],
+                    "target": canonical_path,
+                }
+            )
+        for node in canonical_sections:
             ranges.append(
                 _range_record(
                     document,
@@ -7320,18 +7364,15 @@ def _section_control(manifest: dict[str, Any]) -> dict[str, Any]:
                     node["id"],
                 )
             )
-            for dependency in node["dependencies"]:
-                edges.append(
-                    {"kind": "section-parent", "source": node["id"], "target": dependency}
-                )
     if len(nodes) > MAX_SECTION_COUNT:
         raise Refusal("section graph exceeds its global node limit")
     nodes.sort(key=lambda item: (item["path"], item["start"], item["id"]))
-    edges.sort(key=lambda item: (item["source"], item["target"]))
+    edges.sort(key=lambda item: (item["kind"], item["source"], item["target"]))
     node_ids = {item["id"] for item in nodes}
     if len(node_ids) != len(nodes) or any(
         edge["source"] not in node_ids or edge["target"] not in node_ids
         for edge in edges
+        if edge["kind"] == "section-parent"
     ):
         raise Refusal("section graph has duplicate or missing dependency nodes")
     control = _base_control(
@@ -7344,7 +7385,7 @@ def _section_control(manifest: dict[str, Any]) -> dict[str, Any]:
         artifacts=[],
         checker=None,
         native_mappings=[],
-        graph={"edges": edges, "nodes": nodes},
+        graph={"edges": edges, "nodes": nodes, "selection": SECTION_SELECTION},
         mechanism_evidence={
             "current_native_bytes": sum(item["bytes"] for item in ranges if item["mode"] == "native"),
             "current_native_envelopes": len(nodes),
@@ -7375,15 +7416,32 @@ def _validate_section_graph(control: dict[str, Any], manifest: dict[str, Any]) -
     for document in manifest["documents"]:
         if not document["path"].endswith(".md"):
             continue
-        for node in _markdown_sections(document["path"], _source_blob(document["path"])):
+        canonical_path = document["canonical_content_path"]
+        if document["path"] != canonical_path:
+            if _source_blob(document["path"]) != _source_blob(canonical_path):
+                raise Refusal("section graph exact-content alias differs from canonical source")
+            expected_edges.append(
+                {
+                    "kind": "exact-content-alias",
+                    "source": document["path"],
+                    "target": canonical_path,
+                }
+            )
+            continue
+        for parsed in _markdown_sections(canonical_path, _source_blob(canonical_path)):
+            node = {**parsed, "authority_tier": document["authority_tier"]}
             expected_nodes.append(node)
             for dependency in node["dependencies"]:
                 expected_edges.append(
                     {"kind": "section-parent", "source": node["id"], "target": dependency}
                 )
     expected_nodes.sort(key=lambda item: (item["path"], item["start"], item["id"]))
-    expected_edges.sort(key=lambda item: (item["source"], item["target"]))
-    if control.get("graph") != {"edges": expected_edges, "nodes": expected_nodes}:
+    expected_edges.sort(key=lambda item: (item["kind"], item["source"], item["target"]))
+    if control.get("graph") != {
+        "edges": expected_edges,
+        "nodes": expected_nodes,
+        "selection": SECTION_SELECTION,
+    }:
         raise Refusal("section graph differs from its deterministic parser or misses an edge")
 
 
@@ -7394,6 +7452,7 @@ CASE_SPECS = (
         "Act on the single directive it prints, then receipt it.",
         "state the next action while preserving the governing operation order",
         "tool-invocation",
+        "agent-skills:skill:fiat:profile:fiat:frontier-gate:credential:github-contributor",
     ),
     (
         "scope",
@@ -7401,6 +7460,7 @@ CASE_SPECS = (
         "A scoped pass says nothing about outside-scope drift",
         "state the bounded conclusion without widening its scope",
         "decision",
+        "agent-skills:skill:horos:profile:horos:frontier-gate:credential:github-contributor",
     ),
     (
         "negation",
@@ -7408,6 +7468,7 @@ CASE_SPECS = (
         "Files present in context are not automatically active skills.",
         "decide whether the supplied context activates an instruction",
         "decision",
+        "agent-skills:skill:hermes:profile:hermes:gas-operation:credential:github-contributor",
     ),
     (
         "exception",
@@ -7415,6 +7476,7 @@ CASE_SPECS = (
         "- Exceptions: none\n\n### brevitas-evidence-preservation",
         "state whether the described gate has an applicable exception",
         "decision",
+        "agent-skills:skill:fiat:profile:fiat:prose__scribe__brevitas-1__issue-0__last-1:credential:github-contributor",
     ),
     (
         "literal",
@@ -7422,6 +7484,7 @@ CASE_SPECS = (
         "40-hex literal used as a metric label",
         "preserve the exact literal constraint in the resulting plan",
         "structured-plan",
+        "agent-skills:skill:ephoros:profile:ephoros:frontier-gate:credential:github-contributor",
     ),
     (
         "alias",
@@ -7429,6 +7492,7 @@ CASE_SPECS = (
         "every canonical name a case expects or contests",
         "resolve the named identity without inventing an alias",
         "decision",
+        "agent-skills:skill:x-ray:profile:x-ray:audit:credential:github-contributor",
     ),
     (
         "unknown",
@@ -7436,6 +7500,7 @@ CASE_SPECS = (
         "Absence, ambiguity and `unknown` never pass.",
         "decide the transition when the supplied evidence is unknown",
         "refusal",
+        "agent-skills:skill:solidity-auditor:profile:solidity-auditor:audit:credential:github-contributor",
     ),
     (
         "refusal",
@@ -7443,6 +7508,7 @@ CASE_SPECS = (
         "- Refuses: A symptom-only patch",
         "decide whether to proceed with the described repair",
         "refusal",
+        "agent-skills:skill:elenchus:profile:elenchus:contract-fix:credential:github-contributor",
     ),
     (
         "recovery",
@@ -7450,6 +7516,7 @@ CASE_SPECS = (
         "- Recovery: Freeze one reproducible method",
         "state the recovery sequence for the failed measurement",
         "recovery",
+        "agent-skills:skill:fiat:profile:fiat:implement__mason__none__metron-budget__elenchus-contract__hypomnema__hermes:credential:github-contributor",
     ),
     (
         "authority",
@@ -7457,6 +7524,7 @@ CASE_SPECS = (
         "It does not activate a skill, grant authority,",
         "decide whether the supplied material grants action authority",
         "refusal",
+        "agent-skills:skill:lazarus:profile:lazarus:maintenance:credential:github-contributor",
     ),
 )
 
@@ -7498,22 +7566,93 @@ def _scenario_paths(
 
 
 def _scenario_for_path(
-    document: dict[str, Any], graph: dict[str, Any], development_skills: set[str]
+    document: dict[str, Any],
+    graph: dict[str, Any],
+    development_skills: set[str],
+    scenario_id: str,
 ) -> str:
     roots = {item["id"]: item for item in graph["scenario_roots"]}
-    candidates = []
-    for identifier in document["scenario_reachability"]:
-        root = roots.get(identifier)
-        if (
-            root is not None
-            and root["route"] == "repository"
-            and root["credential"] == "absent"
-            and root["selected_skill"] in development_skills
-        ):
-            candidates.append(identifier)
-    if not candidates:
+    root = roots.get(scenario_id)
+    if (
+        root is None
+        or scenario_id not in document["scenario_reachability"]
+        or root["selected_skill"] not in development_skills
+    ):
         raise Refusal(f"development case source has no admitted scenario: {document['path']}")
-    return sorted(candidates)[0]
+    return scenario_id
+
+
+def _development_case_coverage(
+    cases: list[dict[str, Any]],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+) -> dict[str, Any]:
+    documents = {item["path"]: item for item in manifest["documents"]}
+    physical_paths = {
+        path
+        for case in cases
+        for path in _scenario_paths(manifest, graph, case["scenario_id"])
+    }
+    holdout_paths = set(cohorts["holdout"]["paths"])
+    if physical_paths & holdout_paths:
+        raise Refusal("development case scenarios expose a sealed holdout path")
+    canonical_paths = {
+        documents[path]["canonical_content_path"] for path in physical_paths
+    }
+    development_paths = set(cohorts["development"]["paths"])
+    if not canonical_paths <= development_paths:
+        raise Refusal("development case scenarios leave the development cohort")
+    unique_bytes = sum(documents[path]["bytes"] for path in canonical_paths)
+    logical_skills = sorted(
+        {
+            documents[path]["logical_document"].removeprefix("skill:")
+            for path in canonical_paths
+            if documents[path]["logical_document"].startswith("skill:")
+        }
+    )
+    authority_tiers = sorted(
+        {documents[path]["authority_tier"] for path in canonical_paths}
+    )
+    document_classes = sorted(
+        {documents[path]["document_class"] for path in canonical_paths}
+    )
+    constructs = _observed_constructs(sorted(canonical_paths))
+    shared_paths = sorted(set(SHARED_BEHAVIORAL_PATHS) & canonical_paths)
+    deciles = _size_deciles(
+        [
+            item
+            for item in manifest["documents"]
+            if item["path"] == item["canonical_content_path"]
+        ]
+    )
+    size_deciles = sorted({deciles[path] for path in canonical_paths})
+    if unique_bytes * 2 < manifest["totals"]["unique_bytes"]:
+        raise Refusal("behavioral development coverage is below 50 percent")
+    if len(logical_skills) < 12:
+        raise Refusal("behavioral development coverage has fewer than 12 logical skills")
+    if authority_tiers != cohorts["development"]["authority_tiers"]:
+        raise Refusal("behavioral development authority-tier coverage is incomplete")
+    if document_classes != cohorts["development"]["document_classes"]:
+        raise Refusal("behavioral development document-class coverage is incomplete")
+    if constructs != cohorts["development"]["constructs"]:
+        raise Refusal("behavioral development construct coverage is incomplete")
+    if shared_paths != list(SHARED_BEHAVIORAL_PATHS):
+        raise Refusal("behavioral development shared-contract coverage is incomplete")
+    if size_deciles != cohorts["development"]["size_deciles"]:
+        raise Refusal("behavioral development size-decile coverage is incomplete")
+    return {
+        "authority_tiers": authority_tiers,
+        "canonical_paths": sorted(canonical_paths),
+        "constructs": constructs,
+        "document_classes": document_classes,
+        "logical_skills": logical_skills,
+        "physical_paths": sorted(physical_paths),
+        "shared_paths": shared_paths,
+        "size_deciles": size_deciles,
+        "unique_byte_ratio": f"{unique_bytes / manifest['totals']['unique_bytes']:.6f}",
+        "unique_bytes": unique_bytes,
+    }
 
 
 def _development_cases(
@@ -7524,7 +7663,14 @@ def _development_cases(
     holdout_paths = set(cohorts["holdout"]["paths"])
     development_skills = set(cohorts["development"]["logical_skills"])
     cases: list[dict[str, Any]] = []
-    for index, (semantic, path, needle, task, response_shape) in enumerate(CASE_SPECS, 1):
+    for index, (
+        semantic,
+        path,
+        needle,
+        task,
+        response_shape,
+        scenario_id,
+    ) in enumerate(CASE_SPECS, 1):
         document = documents.get(path)
         if document is None or path not in development_paths or path in holdout_paths:
             raise Refusal("development case source crosses the sealed cohort boundary")
@@ -7534,7 +7680,9 @@ def _development_cases(
         if start < 0 or data.find(encoded, start + 1) >= 0:
             raise Refusal(f"development case source span is missing or ambiguous: {semantic}")
         end = start + len(encoded)
-        scenario_id = _scenario_for_path(document, graph, development_skills)
+        scenario_id = _scenario_for_path(
+            document, graph, development_skills, scenario_id
+        )
         if path not in _scenario_paths(manifest, graph, scenario_id):
             raise Refusal("development case source is not scenario reachable")
         cases.append(
@@ -7560,6 +7708,7 @@ def _development_cases(
     record = {
         "cases": cases,
         "cohorts_sha256": _artifact_digest(cohorts),
+        "coverage": _development_case_coverage(cases, manifest, cohorts, graph),
         "manifest_sha256": _artifact_digest(manifest),
         "schema": f"{SCHEMA_PREFIX}-cases/v1",
         "source_ref": SOURCE_REF,
@@ -7576,8 +7725,8 @@ def _validate_development_cases(
 ) -> None:
     _require_fields(
         record,
-        ("cases", "cohorts_sha256", "manifest_sha256", "schema", "source_ref"),
-        ("cases", "cohorts_sha256", "manifest_sha256", "schema", "source_ref"),
+        ("cases", "cohorts_sha256", "coverage", "manifest_sha256", "schema", "source_ref"),
+        ("cases", "cohorts_sha256", "coverage", "manifest_sha256", "schema", "source_ref"),
         "development cases",
     )
     cases = record["cases"]
@@ -7632,6 +7781,8 @@ def _validate_development_cases(
             raise Refusal("development case source oracle drift")
         if not isinstance(case["task"], str) or not case["task"]:
             raise Refusal("development case task is empty")
+    if record["coverage"] != _development_case_coverage(cases, manifest, cohorts, graph):
+        raise Refusal("behavioral development coverage record drift")
 
 
 def _control_ranges(control: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
@@ -7721,6 +7872,71 @@ def _assemble_prompt(
                     "representation_id": identifier,
                 }
             )
+    elif arm == "section-graph":
+        _validate_section_graph(control, manifest)
+        ranges_by_path = _control_ranges(control)
+        nodes = {item["id"]: item for item in control["graph"]["nodes"]}
+        emitted: dict[str, str] = {}
+        originals: dict[str, list[str]] = {}
+        emission_order: list[str] = []
+        for path in paths:
+            document = documents[path]
+            canonical_path = document["canonical_content_path"]
+            data = _source_blob(canonical_path)
+            rows = ranges_by_path.get(path)
+            if not rows:
+                raise Refusal("adapter selection has no source coverage")
+            for row in rows:
+                identifier = row["representation_id"]
+                originals.setdefault(identifier, []).append(path)
+                if identifier in emitted:
+                    continue
+                if row["mode"] == "native":
+                    node = nodes.get(identifier)
+                    if node is None or node["path"] != canonical_path:
+                        raise Refusal("section selection leaves its canonical node")
+                    start = node["start"]
+                    end = node["end"]
+                    encoding = "exact-source-section"
+                else:
+                    start = row["start"]
+                    end = row["end"]
+                    encoding = "raw-source-fallback"
+                payload = data[start:end]
+                if len(payload) != row["bytes"] or _sha256(payload) != row["sha256"]:
+                    raise Refusal("section selection differs from its canonical source")
+                component_id = f"representation-{len(components):04d}"
+                components.append(
+                    _prompt_component(
+                        component_id,
+                        payload,
+                        encoding,
+                        {
+                            "end": end,
+                            "path": canonical_path,
+                            "sha256": _sha256(payload),
+                            "start": start,
+                        },
+                    )
+                )
+                emitted[identifier] = component_id
+                emission_order.append(identifier)
+        selected = set(emission_order)
+        if any(
+            dependency not in selected
+            for identifier in emission_order
+            for dependency in nodes.get(identifier, {}).get("dependencies", [])
+        ):
+            raise Refusal("section selection misses a transitive parent dependency")
+        for identifier in emission_order:
+            trace.append(
+                {
+                    "component_id": emitted[identifier],
+                    "mode": "native" if identifier in nodes else "raw-fallback",
+                    "original_paths": sorted(originals[identifier]),
+                    "representation_id": identifier,
+                }
+            )
     else:
         ranges_by_path = _control_ranges(control)
         mappings = {item["id"]: item for item in control["native_mappings"]}
@@ -7804,8 +8020,6 @@ def _assemble_prompt(
                         }
                     )
                     continue
-                elif arm == "section-graph" and row["mode"] == "native":
-                    encoding = "exact-source-section"
                 component_id = f"representation-{len(components):04d}"
                 source = {
                     "end": row["end"],
@@ -8455,7 +8669,9 @@ def _runtime_dependency_modules(source: str) -> tuple[list[str], list[str]]:
 
 
 def _resource_record(
-    manifest: dict[str, Any], controls: dict[str, dict[str, Any]], payload_bytes: int
+    manifest: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+    disk_bytes: dict[str, int],
 ) -> dict[str, Any]:
     source = _read_regular(Path(__file__), 4 * 1024 * 1024).decode("utf-8")
     executable_loc = sum(
@@ -8466,7 +8682,7 @@ def _resource_record(
     if external:
         raise Refusal("benchmark has an unrecorded external runtime dependency")
     return {
-        "artifact_payload_bytes": payload_bytes,
+        "artifact_payload_bytes": disk_bytes["artifact_payloads"],
         "dependency_count": {
             "external_runtime": len(external),
             "standard_library_modules": len(standard),
@@ -8475,6 +8691,7 @@ def _resource_record(
             "external_runtime": external,
             "standard_library": standard,
         },
+        "disk_bytes": disk_bytes,
         "executable_loc": executable_loc,
         "limits": {
             "max_control_paths": MAX_CONTROL_PATHS,
@@ -8507,7 +8724,7 @@ def _resource_record(
         ],
         "schema": f"{SCHEMA_PREFIX}-resource-samples/v1",
         "source_ref": SOURCE_REF,
-        "timing_policy": "wall time and peak RSS are measured at command execution; reproducible artifacts retain closed workload and upper bounds",
+        "timing_policy": "build and replay results emit observed wall time and peak RSS; this deterministic artifact retains the closed workload, upper bounds and exact published disk bytes; Step 3 retains repeated p50/p95 observations",
     }
 
 
@@ -8919,19 +9136,37 @@ def _development_payloads(
         "evidence/development/simple.json": results["simple"],
         "evidence/development/wai1.json": results["wai1"],
     }
-    preliminary = {path: _canonical_json(value) for path, value in values.items()}
-    resource_record = _resource_record(
-        manifest, controls, sum(len(data) for data in preliminary.values())
-    )
-    values["evidence/development/resource-samples.json"] = resource_record
-    if set(values) != set(DEVELOPMENT_RECORD_PATHS):
-        raise Refusal("development payload inventory drift")
-    payloads = {path: _canonical_json(values[path]) for path in DEVELOPMENT_RECORD_PATHS}
-    return payloads, {
-        "assembly_wall_time_ns": assembly_ns,
-        "case_wall_time_ns": case_ns,
-        "control_wall_time_ns": control_ns,
+    disk_bytes = {
+        "artifact_inventory": 1,
+        "artifact_payloads": 1,
+        "published_generation": 2,
     }
+    for _ in range(16):
+        values["evidence/development/resource-samples.json"] = _resource_record(
+            manifest, controls, disk_bytes
+        )
+        if set(values) != set(DEVELOPMENT_RECORD_PATHS):
+            raise Refusal("development payload inventory drift")
+        payloads = {
+            path: _canonical_json(values[path]) for path in DEVELOPMENT_RECORD_PATHS
+        }
+        inventory_bytes = _canonical_json(
+            _development_inventory(manifest, graph, cohorts, payloads)
+        )
+        observed = {
+            "artifact_inventory": len(inventory_bytes),
+            "artifact_payloads": sum(len(data) for data in payloads.values()),
+            "published_generation": sum(len(data) for data in payloads.values())
+            + len(inventory_bytes),
+        }
+        if observed == disk_bytes:
+            return payloads, {
+                "assembly_wall_time_ns": assembly_ns,
+                "case_wall_time_ns": case_ns,
+                "control_wall_time_ns": control_ns,
+            }
+        disk_bytes = observed
+    raise Refusal("development disk-byte accounting did not converge")
 
 
 def _development_inventory(

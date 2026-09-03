@@ -8307,7 +8307,14 @@ class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
             self.assertFalse(mechanism["synthetic_in_aggregate_success"])
 
     def test_runtime_closes_cases_prompts_scores_and_reports(self):
-        AI._validate_development_cases(self.cases, self.manifest, self.cohorts, self.graph)
+        try:
+            AI._validate_development_cases(
+                self.cases, self.manifest, self.cohorts, self.graph
+            )
+        except AI.Refusal as exc:
+            if str(exc) != "development cases has a non-closed field set":
+                raise
+            self.fail(f"development case validator rejected its repaired contract: {exc}")
         try:
             AI._validate_development_report(self.report)
         except KeyError as err:
@@ -8514,25 +8521,30 @@ class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
                 except KeyError as err:
                     self.fail(f"development report validator crashed on its field contract: {err}")
 
-    def test_native_spans_emit_one_immutable_noema_first_use_bundle(self):
+    def test_holdout_owned_native_spans_are_bound_but_not_emitted_in_development(self):
         control = self.controls["noema"]
         self.assertEqual(len(control["native_mappings"]), 10)
-        result = self.results["noema"]["results"][0]
-        components = result["prompt"]["components"]
-        bundles = [item for item in components if item["encoding"] == "noema-first-use"]
-        self.assertEqual(len(bundles), 1)
-        self.assertIsNone(bundles[0]["source"])
-        self.assertNotIn(
-            "exact-source",
-            {
-                item["encoding"]
-                for item in components
-                if (item.get("source") or {}).get("path")
-                == "plugins/sapheneia/skills/sapheneia/SKILL.md"
-            },
+        bundles = [
+            item
+            for result in self.results["noema"]["results"]
+            for item in result["prompt"]["components"]
+            if item["encoding"] == "noema-first-use"
+        ]
+        self.assertEqual(
+            bundles,
+            [],
+            "development prompts emit a bundle whose only current mapping is holdout-owned",
         )
         expected = {item["representation_sha256"] for item in control["native_mappings"]}
-        self.assertEqual(expected, {hashlib.sha256(bundles[0]["content"].encode()).hexdigest()})
+        bound = set()
+        for mapping in control["native_mappings"]:
+            relative_root = Path(mapping["representation_path"]).parent.relative_to(
+                Path("tests/fixtures/noema-v1")
+            )
+            path, payload = AI._noema_prompt_bundle(relative_root.as_posix())
+            self.assertEqual(path, mapping["representation_path"])
+            bound.add(hashlib.sha256(payload).hexdigest())
+        self.assertEqual(expected, bound)
 
 
 class SimpleControlTests(DevelopmentFixtureMixin, unittest.TestCase):
@@ -8564,7 +8576,7 @@ class SectionGraphTests(DevelopmentFixtureMixin, unittest.TestCase):
     def test_section_graph_has_exact_stable_nodes_dependencies_and_fallback(self):
         control = self.controls["section-graph"]
         summary = control["coverage"]["summary"]
-        self.assertEqual(len(control["graph"]["nodes"]), 1_896)
+        self.assertEqual(len(control["graph"]["nodes"]), 1_471)
         self.assertEqual(
             (
                 summary["native_ranges"],
@@ -8577,11 +8589,16 @@ class SectionGraphTests(DevelopmentFixtureMixin, unittest.TestCase):
             (1_896, 176, 2_071_863, 1_600_419, 15, 218_587),
         )
         ids = {node["id"] for node in control["graph"]["nodes"]}
-        self.assertEqual(len(ids), 1_896)
-        self.assertTrue(all(edge["source"] in ids and edge["target"] in ids for edge in control["graph"]["edges"]))
+        self.assertEqual(len(ids), 1_471)
+        parent_edges = [
+            edge for edge in control["graph"]["edges"] if edge["kind"] == "section-parent"
+        ]
+        self.assertTrue(
+            all(edge["source"] in ids and edge["target"] in ids for edge in parent_edges)
+        )
         self.assertEqual(
             hashlib.sha256(DEVELOPMENT_CONTROLS["section-graph"].read_bytes()).hexdigest(),
-            "571a5c3cb26d832058511495e0bdce1207bcacf2601f68e6347cb8a25c88f5d4",
+            "64f62560d56b65c782c792854a7803e90c864cb7fa590e75618f2f744c8d40a1",
         )
 
     def test_every_markdown_file_round_trips_by_exact_sections(self):
@@ -8603,6 +8620,71 @@ class SectionGraphTests(DevelopmentFixtureMixin, unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "misses an edge"):
             AI._validate_section_graph(changed, self.manifest)
 
+    def test_authority_selection_and_alias_mutations_refuse(self):
+        mutations = []
+        missing_selection = copy.deepcopy(self.controls["section-graph"])
+        missing_selection["graph"].pop("selection", None)
+        mutations.append(missing_selection)
+        changed_authority = copy.deepcopy(self.controls["section-graph"])
+        changed_authority["graph"]["nodes"][0]["authority_tier"] = "invented"
+        mutations.append(changed_authority)
+        missing_alias = copy.deepcopy(self.controls["section-graph"])
+        alias_index = next(
+            index
+            for index, edge in enumerate(missing_alias["graph"]["edges"])
+            if edge["kind"] == "exact-content-alias"
+        )
+        missing_alias["graph"]["edges"].pop(alias_index)
+        mutations.append(missing_alias)
+        for changed in mutations:
+            with self.subTest(), self.assertRaisesRegex(AI.Refusal, "differs|misses"):
+                AI._validate_section_graph(changed, self.manifest)
+
+    def test_section_graph_declares_authority_selection_and_exact_alias_dedup(self):
+        control = self.controls["section-graph"]
+        graph = control["graph"]
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        selection = graph.get("selection")
+        self.assertIsInstance(
+            selection,
+            dict,
+            "section graph omits its deterministic scenario-root and closure policy",
+        )
+        self.assertEqual(
+            selection,
+            {
+                "closure": "selected-sections-plus-transitive-parents",
+                "deduplication": "exact-whole-file-canonical-content",
+                "fallback": "whole-source-for-unsupported-non-markdown",
+                "roots": "all-sections-of-loader-reachable-canonical-files",
+                "scenario_source": "verified-loader-graph",
+            },
+        )
+        nodes = graph["nodes"]
+        self.assertTrue(nodes)
+        self.assertTrue(
+            all(node.get("authority_tier") == documents[node["path"]]["authority_tier"] for node in nodes),
+            "section nodes omit or misstate source-owned authority",
+        )
+        self.assertTrue(
+            all(documents[node["path"]]["canonical_content_path"] == node["path"] for node in nodes),
+            "section graph parses physical duplicates as independent authority",
+        )
+        aliases = [edge for edge in graph["edges"] if edge["kind"] == "exact-content-alias"]
+        self.assertEqual(len(aliases), len(self.cohorts["generated_duplicates_excluded"]))
+        grouped = [
+            row
+            for result in self.results["section-graph"]["results"]
+            for row in result["selection_trace"]
+            if len(row["original_paths"]) > 1
+        ]
+        self.assertTrue(grouped, "section prompts do not deduplicate exact physical aliases")
+        for row in grouped:
+            self.assertEqual(
+                1,
+                len({documents[path]["sha256"] for path in row["original_paths"]}),
+            )
+
 
 class DevelopmentCaseTests(DevelopmentFixtureMixin, unittest.TestCase):
     def test_closed_case_set_uses_only_exact_development_source_spans(self):
@@ -8610,7 +8692,14 @@ class DevelopmentCaseTests(DevelopmentFixtureMixin, unittest.TestCase):
             [case["semantic_class"] for case in self.cases["cases"]],
             list(AI.DEVELOPMENT_CLASSES),
         )
-        AI._validate_development_cases(self.cases, self.manifest, self.cohorts, self.graph)
+        try:
+            AI._validate_development_cases(
+                self.cases, self.manifest, self.cohorts, self.graph
+            )
+        except AI.Refusal as exc:
+            if str(exc) != "development cases has a non-closed field set":
+                raise
+            self.fail(f"development case validator rejected its repaired contract: {exc}")
         holdout = set(self.cohorts["holdout"]["paths"])
         self.assertFalse({case["source"]["path"] for case in self.cases["cases"]} & holdout)
 
@@ -8633,6 +8722,81 @@ class DevelopmentCaseTests(DevelopmentFixtureMixin, unittest.TestCase):
         seal = load(SEAL)
         self.assertFalse(seal["opened"])
         self.assertTrue(all(not case["id"].startswith("holdout-") for case in self.cases["cases"]))
+
+    def test_behavioral_development_cohort_meets_issue_coverage_and_isolation(self):
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        physical_paths = {
+            path
+            for case in self.cases["cases"]
+            for path in AI._scenario_paths(self.manifest, self.graph, case["scenario_id"])
+        }
+        holdout_paths = set(self.cohorts["holdout"]["paths"])
+        self.assertFalse(
+            physical_paths & holdout_paths,
+            "development prompts expose holdout-owned source paths",
+        )
+        canonical_paths = {
+            documents[path]["canonical_content_path"] for path in physical_paths
+        }
+        shared_paths = getattr(AI, "SHARED_BEHAVIORAL_PATHS", None)
+        self.assertIsNotNone(
+            shared_paths,
+            "development coverage has no explicit shared-contract inventory",
+        )
+        self.assertLessEqual(set(shared_paths), canonical_paths)
+        unique_bytes = sum(documents[path]["bytes"] for path in canonical_paths)
+        self.assertGreaterEqual(
+            unique_bytes * 2,
+            self.manifest["totals"]["unique_bytes"],
+            "behavioral development prompts cover less than 50 percent of canonical bytes",
+        )
+        logical_skills = {
+            documents[path]["logical_document"]
+            for path in canonical_paths
+            if documents[path]["logical_document"].startswith("skill:")
+        }
+        self.assertGreaterEqual(len(logical_skills), 12)
+        self.assertEqual(
+            {documents[path]["authority_tier"] for path in canonical_paths},
+            set(self.cohorts["development"]["authority_tiers"]),
+        )
+        self.assertEqual(
+            set(AI._observed_constructs(sorted(canonical_paths))),
+            set(self.cohorts["development"]["constructs"]),
+        )
+        deciles = AI._size_deciles(
+            [
+                item
+                for item in self.manifest["documents"]
+                if item["path"] == item["canonical_content_path"]
+            ]
+        )
+        self.assertEqual(
+            sorted({deciles[path] for path in canonical_paths}),
+            list(range(10)),
+        )
+        self.assertEqual(self.cases["coverage"]["size_deciles"], list(range(10)))
+
+    def test_case_validator_refuses_holdout_exposure_and_subthreshold_coverage(self):
+        holdout_exposure = copy.deepcopy(self.cases)
+        holdout_exposure["cases"][0]["scenario_id"] = (
+            "repository:skill:fiat:profile:fiat:audit-nonsol__inline__"
+            "phylax-proxy__fix-elenchus:credential:absent"
+        )
+        with self.assertRaisesRegex(AI.Refusal, "sealed holdout"):
+            AI._validate_development_cases(
+                holdout_exposure, self.manifest, self.cohorts, self.graph
+            )
+
+        subthreshold = copy.deepcopy(self.cases)
+        subthreshold["cases"][5]["scenario_id"] = (
+            "agent-skills:skill:hermes:profile:hermes:gas-operation:"
+            "credential:github-contributor"
+        )
+        with self.assertRaisesRegex(AI.Refusal, "below 50 percent"):
+            AI._validate_development_cases(
+                subthreshold, self.manifest, self.cohorts, self.graph
+            )
 
     def test_exact_source_recovery_requires_source_bytes_in_the_complete_prompt(self):
         self.assertEqual(
@@ -8780,9 +8944,8 @@ class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
             },
         )
         self.assertTrue(all(item["status"] == "refused" for item in committed["results"]))
-        self.assertEqual(
-            committed,
-            builder(
+        try:
+            rebuilt = builder(
                 specimens,
                 self.cases,
                 self.manifest,
@@ -8790,8 +8953,15 @@ class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
                 self.graph,
                 self.controls,
                 self.results,
-            ),
-        )
+            )
+        except AI.Refusal as exc:
+            if str(exc) != (
+                "hostile specimen refused for the wrong reason: "
+                "raw:hostile-02-stale-source"
+            ):
+                raise
+            self.fail(f"hostile replay rejected its repaired evidence contract: {exc}")
+        self.assertEqual(committed, rebuilt)
 
     def test_duplicate_key_noncanonical_and_unicode_scalar_refuse(self):
         with self.assertRaisesRegex(AI.Refusal, "duplicate JSON key"):
@@ -8880,6 +9050,23 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
         self.assertGreater(record["executable_loc"], 0)
         self.assertGreater(record["artifact_payload_bytes"], 0)
         self.assertEqual([item["phase"] for item in record["samples"]], ["parse-validate", "select", "assemble"])
+
+    def test_resource_record_reconciles_the_complete_published_generation(self):
+        record = load(FIXTURES / "evidence/development/resource-samples.json")
+        inventory = load(DEVELOPMENT_INVENTORY)
+        disk = record.get("disk_bytes")
+        self.assertIsInstance(
+            disk,
+            dict,
+            "resource record reports a preliminary payload subtotal as disk bytes",
+        )
+        payload_bytes = sum(
+            (FIXTURES / relative).stat().st_size for relative in inventory["artifacts"]
+        )
+        inventory_bytes = DEVELOPMENT_INVENTORY.stat().st_size
+        self.assertEqual(disk["artifact_payloads"], payload_bytes)
+        self.assertEqual(disk["artifact_inventory"], inventory_bytes)
+        self.assertEqual(disk["published_generation"], payload_bytes + inventory_bytes)
 
     def test_dependency_counts_are_ast_derived_and_external_imports_fail_closed(self):
         classifier = getattr(AI, "_runtime_dependency_modules", None)

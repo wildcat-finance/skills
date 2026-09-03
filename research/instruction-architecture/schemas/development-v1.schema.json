@@ -69,13 +69,31 @@
         "task": {"type": "string", "minLength": 1, "maxLength": 4096}
       }
     },
+    "developmentCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority_tiers", "canonical_paths", "constructs", "document_classes", "logical_skills", "physical_paths", "shared_paths", "size_deciles", "unique_byte_ratio", "unique_bytes"],
+      "properties": {
+        "authority_tiers": {"type": "array", "minItems": 14, "maxItems": 14, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+        "canonical_paths": {"type": "array", "minItems": 1, "maxItems": 174, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+        "constructs": {"type": "array", "minItems": 11, "maxItems": 11, "uniqueItems": true, "items": {"enum": ["authority", "cross-document", "exact-literal", "exception", "failure", "negation", "order", "recovery", "refusal", "scope", "unknown"]}},
+        "document_classes": {"type": "array", "minItems": 14, "maxItems": 14, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+        "logical_skills": {"type": "array", "minItems": 12, "maxItems": 31, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+        "physical_paths": {"type": "array", "minItems": 1, "maxItems": 191, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+        "shared_paths": {"type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+        "size_deciles": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 9}},
+        "unique_byte_ratio": {"type": "string", "pattern": "^(?:0|1)\\.[0-9]{6}$"},
+        "unique_bytes": {"type": "integer", "minimum": 1}
+      }
+    },
     "casesFile": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["cases", "cohorts_sha256", "manifest_sha256", "schema", "source_ref"],
+      "required": ["cases", "cohorts_sha256", "coverage", "manifest_sha256", "schema", "source_ref"],
       "properties": {
         "cases": {"type": "array", "minItems": 10, "maxItems": 128, "items": {"$ref": "#/$defs/case"}},
         "cohorts_sha256": {"$ref": "#/$defs/sha256"},
+        "coverage": {"$ref": "#/$defs/developmentCoverage"},
         "manifest_sha256": {"$ref": "#/$defs/sha256"},
         "schema": {"const": "wildcat-instruction-architecture-cases/v1"},
         "source_ref": {"$ref": "#/$defs/gitCommit"}
@@ -377,8 +395,9 @@
     "sectionNode": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["dependencies", "end", "id", "path", "sha256", "start", "title_sha256"],
+      "required": ["authority_tier", "dependencies", "end", "id", "path", "sha256", "start", "title_sha256"],
       "properties": {
+        "authority_tier": {"type": "string", "minLength": 1, "maxLength": 128},
         "dependencies": {"type": "array", "maxItems": 1, "items": {"type": "string", "minLength": 1}},
         "end": {"type": "integer", "minimum": 1},
         "id": {"type": "string", "pattern": "^section:[0-9a-f]{64}$"},
@@ -398,13 +417,26 @@
         "target": {"type": "string", "minLength": 1, "maxLength": 1024}
       }
     },
+    "sectionSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["closure", "deduplication", "fallback", "roots", "scenario_source"],
+      "properties": {
+        "closure": {"const": "selected-sections-plus-transitive-parents"},
+        "deduplication": {"const": "exact-whole-file-canonical-content"},
+        "fallback": {"const": "whole-source-for-unsupported-non-markdown"},
+        "roots": {"const": "all-sections-of-loader-reachable-canonical-files"},
+        "scenario_source": {"const": "verified-loader-graph"}
+      }
+    },
     "controlGraph": {
       "type": "object",
       "additionalProperties": false,
       "required": ["edges", "nodes"],
       "properties": {
         "edges": {"type": "array", "maxItems": 32768, "items": {"$ref": "#/$defs/graphEdge"}},
-        "nodes": {"type": "array", "maxItems": 32768, "items": {"oneOf": [{"$ref": "#/$defs/fileNode"}, {"$ref": "#/$defs/sectionNode"}]}}
+        "nodes": {"type": "array", "maxItems": 32768, "items": {"oneOf": [{"$ref": "#/$defs/fileNode"}, {"$ref": "#/$defs/sectionNode"}]}},
+        "selection": {"$ref": "#/$defs/sectionSelection"}
       }
     },
     "mechanism": {
@@ -454,7 +486,7 @@
     "resourceFile": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["artifact_payload_bytes", "dependency_count", "dependency_modules", "executable_loc", "limits", "samples", "schema", "source_ref", "timing_policy"],
+      "required": ["artifact_payload_bytes", "dependency_count", "dependency_modules", "disk_bytes", "executable_loc", "limits", "samples", "schema", "source_ref", "timing_policy"],
       "properties": {
         "artifact_payload_bytes": {"type": "integer", "minimum": 1},
         "dependency_count": {
@@ -470,6 +502,16 @@
           "properties": {
             "external_runtime": {"type": "array", "maxItems": 0},
             "standard_library": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}}
+          }
+        },
+        "disk_bytes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["artifact_inventory", "artifact_payloads", "published_generation"],
+          "properties": {
+            "artifact_inventory": {"type": "integer", "minimum": 1},
+            "artifact_payloads": {"type": "integer", "minimum": 1},
+            "published_generation": {"type": "integer", "minimum": 1}
           }
         },
         "executable_loc": {"type": "integer", "minimum": 1},
