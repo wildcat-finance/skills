@@ -40,8 +40,8 @@ credit claim.
 A public record of on-chain credit events that keeps the venue's source record
 beside every common row.
 
-The checked-in releases preserve three narrow credit records: Aave v4's
-borrower-side index, one Euler v1 canonical-proxy block and one Euler V2 owner
+The checked-in releases preserve three narrow credit records: an Aave v4
+consensus-log window, one Euler v1 canonical-proxy block and one Euler V2 owner
 activity response from the Euler V3 API. Each can be rebuilt after its source
 endpoint changes or disappears.
 
@@ -70,8 +70,10 @@ Three rules hold the release together:
 
 ## How it works
 
-The first release captures Aave v4's borrower-side record: 34 borrow and 477
-repay entities mapped into 511 canonical rows. Two Euler releases now add a
+The first release captures an Aave v4 credit window from Ethereum consensus
+logs: 282 borrow and 218 repay logs across blocks 25855441 to 25870892, mapped
+into 500 canonical rows, with each amount's underlying token read from the
+spoke and the token itself. Two Euler releases now add a
 real Euler v1 canonical-proxy borrow log and a fixed Euler V2 owner/second
 activity response from the Euler V3 API. Each row keeps the complete
 venue-native record and names the source selector, adapter version and mapping
@@ -198,9 +200,11 @@ builds there, makes all four release files read-only, verifies them offline and
 compares the canonical and coverage bytes with the committed release. It never
 rewrites the example.
 
-The Aave v4 source also contains `_meta`, `callableLoans`, `creditLines` and
-`tranchedPools`. Their counts remain visible in the coverage manifest, but this
-adapter does not turn them into canonical events.
+The Aave v4 capture is a topic pair over a block range, so it has no unmapped
+remainder: `unsupported_events` is empty. Supply, withdraw and collateral-flag
+activity falls outside the two captured topics and is neither preserved nor
+counted. A repay log's last three data words were zero throughout and are
+never named.
 
 ## What it never proves
 

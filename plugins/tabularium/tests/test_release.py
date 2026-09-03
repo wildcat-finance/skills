@@ -21,10 +21,10 @@ EVENTS = RELEASE / "events.jsonl"
 COVERAGE = RELEASE / "coverage.json"
 DEMO = RELEASE / "rebuild.py"
 EXPECTED_HASHES = {
-    "source.json": "af6255d371efe1cffe527053f9e7d25adce961bb7f1faa8774706ad51eeafb4d",
-    "capture.json": "49bf9a366c3c68aab797b6e22568955a63476dd2043eb67f53cbf363ca06aef0",
-    "events.jsonl": "a54a7ff15cfe9aa43639b00bb07036f0ebc2e832ac37f44fcee2b0dd0684daa4",
-    "coverage.json": "91939a61f51df015e6a1a653a4eda290e762dd81004c9e95528923bf9b0c5c66",
+    "source.json": "1d88fdb5bca293995fd02e5a59f060d74541c80405e7bf1987544e5f334a8744",
+    "capture.json": "3cd14d1852561ec2aa9f498f37d6156b74ce321ec0965e81264925c4ba2e24ee",
+    "events.jsonl": "490d3f6399f84af8a81a5401b3cc92bf7ecfbe98a6bb02f07215b9099625ccf7",
+    "coverage.json": "b1538b633f1dfcfcc493afd033a52b4b199350b3a2221afb3c627a289d9de793",
 }
 
 
@@ -63,11 +63,7 @@ class CheckedInReleaseTests(unittest.TestCase):
             "borrow": 282,
             "repay": 218,
         })
-        self.assertEqual(coverage["coverage"]["unsupported_events"], {
-            "SET_COLLATERAL": 111,
-            "SUPPLY": 376,
-            "WITHDRAW": 264,
-        })
+        self.assertEqual(coverage["coverage"]["unsupported_events"], {})
 
     def test_committed_release_verifies_offline_and_without_rewrites(self):
         paths = (SOURCE, CAPTURE, EVENTS, COVERAGE)
@@ -104,7 +100,7 @@ class CheckedInReleaseTests(unittest.TestCase):
         fields = json.loads(EVENTS.read_text().splitlines()[0]).keys()
         for field in fields:
             self.assertIn("`%s`" % field, dictionary)
-        self.assertIn("the venue row, unchanged", dictionary)
+        self.assertIn("the consensus log, unchanged", dictionary)
 
     def test_release_docs_state_counts_and_semantic_limits(self):
         prose = "\n".join(
@@ -115,9 +111,9 @@ class CheckedInReleaseTests(unittest.TestCase):
         for phrase in (
             "282 `borrowing`",
             "218 `repayment`",
-            "hosted indexer",
+            "native-log",
             "not publisher identity or authenticity",
-            "no drawn value is reconstructed",
+            "does not independently prove the chain boundary",
         ):
             self.assertIn(phrase, prose)
 

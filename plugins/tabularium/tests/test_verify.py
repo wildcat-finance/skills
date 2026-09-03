@@ -106,7 +106,7 @@ class OfflineVerificationTests(unittest.TestCase):
 
     def test_omitted_source_kind_fails_manifest_shape(self):
         manifest = self.manifest()
-        del manifest["coverage"]["unsupported_events"]["SUPPLY"]
+        manifest["coverage"]["unsupported_events"]["SUPPLY"] = 1
         self.write_manifest(manifest)
         with self.assertRaisesRegex(TabulariumError, "unsupported event counts"):
             verify(self.manifest_path)
@@ -149,7 +149,7 @@ class OfflineVerificationTests(unittest.TestCase):
         manifest = self.manifest()
         manifest["versions"]["mapping_rules"] = ["aave-v4.borrow.v2"]
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "unsupported mapping-rule"):
+        with self.assertRaisesRegex(TabulariumError, "mapping-rule versions"):
             verify(self.manifest_path)
 
     def test_absolute_artifact_path_fails(self):
@@ -270,14 +270,14 @@ class OfflineVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(TabulariumError, "window does not match"):
             verify(self.manifest_path)
 
-    def test_capture_request_must_name_the_snapshot_subgraph(self):
+    def test_capture_topics_must_be_the_credit_topics(self):
         capture = json.loads(self.capture.read_text())
-        capture["request"]["path"] = "/api/subgraphs/id/AnotherSubgraphIdentifier"
+        capture["scope"]["event_topics"] = ["0x" + "ab" * 32, "0x" + "cd" * 32]
         self.capture.write_bytes(canonical_json(capture) + b"\n")
         manifest = self.manifest()
         self.update_claim(manifest, "capture_manifest", self.capture)
         self.write_manifest(manifest)
-        with self.assertRaisesRegex(TabulariumError, "request does not match"):
+        with self.assertRaisesRegex(TabulariumError, "not the Aave v4 credit topics"):
             verify(self.manifest_path)
 
     def test_known_gap_omission_fails(self):

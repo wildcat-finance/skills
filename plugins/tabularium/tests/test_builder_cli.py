@@ -94,7 +94,7 @@ class BuilderCliTests(unittest.TestCase):
             rows = [json.loads(line) for line in output.read_text().splitlines()]
             self.assertEqual([row["event_family"] for row in rows], ["borrowing", "repayment"])
             self.assertIn("built 2 event(s)", result.stderr)
-            self.assertIn("SUPPLY=1", result.stderr)
+            self.assertIn("borrowing=1, repayment=1", result.stderr)
             self.assertIn("coverage manifest sha256", result.stderr)
             self.assertTrue(output.read_bytes().endswith(b"\n"))
             self.assertTrue(manifest.read_bytes().endswith(b"\n"))

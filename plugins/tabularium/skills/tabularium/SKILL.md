@@ -72,8 +72,8 @@ not become a verdict about the borrower.
 
 The built prototype ships
 [`aave-v4-v0`](../../examples/aave-v4-v0/README.md): unchanged source and
-capture bytes, 511 canonical rows, a coverage manifest, a data dictionary and
-a temporary rebuild demonstration.
+capture bytes, 500 canonical rows from consensus logs, a coverage manifest, a
+data dictionary and a temporary rebuild demonstration.
 
 It also ships [`euler-v1-v0`](../../examples/euler-v1-v0/README.md), a
 one-block canonical-proxy release, and
@@ -118,11 +118,12 @@ source response. It rejects
 duplicate source identifiers, unsafe numeric values, paths outside the release
 directory and outputs that alias preserved input.
 
-The Aave v4 adapter maps `borrows` to `aave-v4.borrow` and `repays` to
-`aave-v4.repay`. Each row carries the complete native entity, a stable source
-selector, the source contract, adapter version and mapping rule. The builder
-reports `_meta`, `callableLoans`, `creditLines` and `tranchedPools` as
-unsupported rather than treating silence as coverage.
+The Aave v4 adapter maps two consensus-log topics to `aave-v4.borrow` and
+`aave-v4.repay`. Each row carries the complete log, its block hash and
+transaction index, a stable source selector, the source contract, adapter
+version and mapping rule, and names the `getReserve`, `symbol` and `decimals`
+reads that resolved its asset. A log whose reserve was never read is refused
+rather than mapped with an unnamed asset.
 
 Euler v1 maps canonical proxy Borrow, Repay and Liquidation logs. Euler V2
 maps borrow, repay, liquidation, debt socialisation, debt transfer and interest
@@ -160,9 +161,9 @@ remain Phase 1 work.
 
 ## What the result means
 
-A Aave v4 repayment row means the source recorded a repayment amount. It
-does not by itself prove that every obligation was paid, the facility closed or
-the borrower's whole debt was settled.
+An Aave v4 repayment row means a repay log stated a total repaid. It does not
+by itself prove that every obligation was paid, the facility closed or the
+borrower's whole debt was settled.
 
 The capture boundary is what the named hosted indexer or public RPC reported.
 Neither the boundary nor each event is independently proved against Ethereum

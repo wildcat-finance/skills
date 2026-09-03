@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17156949,
+    "bytes_blob": 17066613,
     "bytes_generated": 98
   },
   "entries": [
@@ -568,16 +568,16 @@
       "path": "plugins/probitas/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 968928,
+      "bytes": 1232064,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v0/events.jsonl"
     },
     {
-      "bytes": 814776,
+      "bytes": 461304,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 814776 bytes",
+      "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
     },
