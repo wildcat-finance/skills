@@ -80,8 +80,9 @@ be checked today with no service in existence.
 record whose service-repository visibility would be settled at creation time,
 and it pointed at two issue numbers as the entry gates. Neither of those numbers
 resolves: #563 and #564 both answer HTTP 404 on 2026-09-03, so they are named
-here as unresolved rather than linked, and neither is cited as authority. Creating `wildcat-finance/fiat-checkpoints`, choosing its visibility
-and approving any cloud account, dependency or deployment remain separately
+here as unresolved rather than linked, and neither is cited as authority.
+Creating `wildcat-finance/fiat-checkpoints`, choosing its visibility and
+approving any cloud account, dependency or deployment remain separately
 authorised deliveries, which is the part of that clause worth keeping. Also
 dropped: the implication that offline restore had to be built before it could be
 relied on.
