@@ -403,9 +403,9 @@ class Reconciliation:
     ) -> dict[str, Any]:
         """Write the edit into the copy and apply the mechanical passes.
 
-        `skip` omits one named pass, which is how each pass is shown to be
-        load-bearing: the refusal that results identifies the pass that is
-        missing. Returns the manifest as written.
+        `skip` leaves out one named pass. That is how each pass is shown to
+        be needed: leave one out and a refusal comes back, and it names the
+        pass that is missing. Returns the manifest as written.
         """
         for name in skip:
             if name not in MECHANICAL_PASSES:
@@ -604,7 +604,7 @@ def prove_selftest(reconciliation: Reconciliation) -> tuple[int, dict[str, Any],
     if not unedited["accepted"]:
         raise ProverError(f"a no-op reconciliation did not go green: {unedited['refusals']}")
 
-    # Each mechanical pass is load-bearing, and identifiable from its refusal.
+    # No mechanical pass can be dropped, and each one's refusal names it.
     edited = reconciliation.edited_source(AFTER_SPAN_PLACEMENT)
     complete = reconciliation.reconcile(edited)
     signatures: dict[str, Any] = {}

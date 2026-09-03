@@ -42,8 +42,8 @@ PARITY_NODE = "$.evidence.parity_record"
 
 # The refusal each omitted mechanical pass produces, observed at
 # bacb34c0d49a83dea0c4463a61b2cf1525fec60b. Recorded per pass rather than as a
-# count: a pass that started refusing under a sibling's code would still be
-# load-bearing by count, and would no longer be identifiable from its refusal.
+# count: a pass that started refusing under a sibling's code would still show
+# up as needed in a count, and would no longer be identifiable from its refusal.
 PASS_SIGNATURES = {
     "manifest-source": (
         "WAI-E-DIGEST.SOURCE",
