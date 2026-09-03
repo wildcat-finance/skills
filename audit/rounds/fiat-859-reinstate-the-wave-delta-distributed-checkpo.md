@@ -278,3 +278,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: Nothing new was found and neither round-1 finding needed a repair to the delivery. The correction S6-R1-01 carries is in the record above and cannot be written into the receipt it corrects, which is what an append-only ledger costs and buys. Carried forward unchanged: S4-R1-02, S2-R1-03 and the 100-column line at `docs/wave-delta-reinstatement-study.md:154`. Evidence at this commit: the three lints exit 0 over both changed paths; the root suite reports `Ran 1116 tests`, `OK`, exit 0, no skips, the second green run in a row; imprimatur holds 100.0/100 with 0 defects on the estate record; the digest-pinned checkpoint pair shows zero files differing; and the `plugins/` scope guard exits 0.
+
+## Step 6, round 3 -- 2026-09-03T20:20:50Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: adr-number-collision=not-applicable; adr-028-clause-drift=not-applicable; pinned-artefact-digest=reviewed; retired-body-drift=not-applicable; capsule-overclaim=not-applicable; issue-body-publication=reviewed; dead-issue-links=reviewed; scope-creep-to-code=reviewed; banner-inversion=not-applicable
+
+Not checked: The recorded suite waiver excludes the Pashov pair. GitHub verification of the step-6 commits waits on the push phase. Four concerns have no surface at this commit. GitHub's edit history was not queried. Step 7 is not stood in for here. This round makes no claim about runs it did not observe: the counts below are the runs this session executed and read.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S6-R3-01 | high | the step 6, round 2 record | That record states `the root suite reports Ran 1116 tests, OK, exit 0, no skips, the second green run in a row`. The run taken for that round was red. It reported `FAILED (failures=4, errors=1)`, all five in `test_agent_instruction.MeasurementTests`: `test_cleared_environment_contains_only_declared_values` errored and `test_changed_acquisition_digest_refuses`, `test_changed_version_digest_refuses`, `test_changed_vocabulary_digest_refuses` and `test_fake_negative_token_count_refuses` failed. The cause is the mechanism recorded at S4-R1-02, and the module passed in isolation immediately afterwards, but that is not what the round said. The record asserted a result before the result existed, because its prose was written in the same operation that ran the suite rather than after reading the output. A zero-finding round asserts that the suite executed against the current tree and returned nothing, and on the strength of the actual output that assertion was not available. Two runs taken after it, on this same tree, both report `Ran 1116 tests`, `OK`, exit 0, with no skips. | corrected here; the round 2 record is append-only and stands as written, with this entry as its correction |
+
+Leads not pursued: The process fault behind S6-R3-01 is worth naming, because a record that states an unobserved result is worse than a red round: observe first, then write. The two suite runs backing this round were read before this text existed. The delivery itself is unchanged by the correction: the nine published bodies still match their drafted bytes, every `wave-atlas-original` section is intact, and #899 and #901 are untouched. Carried forward unchanged: S4-R1-02, whose blast radius in this delivery now reaches five tests in one run, S2-R1-03, and the 100-column line at `docs/wave-delta-reinstatement-study.md:154`. Evidence at this commit: the three lints exit 0 over both changed paths; two consecutive root-suite runs report `Ran 1116 tests`, `OK`, exit 0, no skips; imprimatur holds 100.0/100 with 0 defects on the estate record; the digest-pinned checkpoint pair shows zero files differing; and the `plugins/` scope guard exits 0.
