@@ -219,7 +219,7 @@
     "promise_id": "promise-machine-dead-code-baseline",
     "runtime": {
       "path": "scripts/dead_code.py",
-      "sha256": "838a52981abf9345490f8aeed7059ce27ba0c41c569b6cc76068913d1c126482"
+      "sha256": "4cc6e057df3f0e105b074343e38ae44da9bfee8dd0e6f99a0ba6a77e966e290d"
     },
     "schema_source": {
       "path": "schemas/dead-code-report-v1.schema.json",
@@ -263,7 +263,7 @@
         "test_workflow_and_operator_guide_carry_the_exact_five_command_demo",
         "test_workflow_summary_carries_the_publication_commit_as_plain_text"
       ],
-      "sha256": "6da6f1724e94c573f02fdbb2ea37282a0e4998af2128e159a71d9d17cbca0fc8"
+      "sha256": "5f80a036a558e91c9b86165b23e6760c741f890da937817d2587a71700fcbddd"
     },
     "transition": "record and verify one report-only static candidate baseline over its exact clean source commit, and separately validate exact suppressions against the same clean current commit, with no finding count treated as deletion or merge authority"
   },
