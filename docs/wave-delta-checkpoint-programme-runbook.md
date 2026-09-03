@@ -61,7 +61,8 @@ with a restore transcript produced on a machine that did not write it.
 Its exit commands:
 
 ```bash
-hexctl --dir <fresh-origin> checkpoint restore --from <capsule> --manifest-sha256 <digest>
+hexctl --dir <fresh-origin> checkpoint restore \
+  --from <capsule> --manifest-sha256 <digest>
 hexctl --dir <fresh-origin> verify
 ```
 
@@ -170,9 +171,13 @@ elenchus applies to every refusal path.
 **Goal.** Close #865: two accepted siblings are visible, and a named resolver
 decides what the project carries.
 
-**Entry.** Step 5 closed. Target repository `wildcat-finance/skills` for the
-protocol half and `wildcat-finance/fiat-checkpoints` for the index half, which
-makes this two packets in practice rather than one.
+**Entry.** Step 5 closed. Target repository `wildcat-finance/skills`. This
+packet is the protocol half of #865: the graph, its refusals and the typed
+resolution record. The index half is a dependent packet in
+`wildcat-finance/fiat-checkpoints` with the pinned protocol release between
+them, and #865 closes when both have landed. One packet, one repository, as the
+rule above requires. Authority gate: none beyond the ordinary Fiat run for this
+half; the dependent index packet inherits step 3's gate.
 
 **Exit.** The graph refuses what
 [ADR-073](decisions/ADR-073-model-checkpoint-lineage-as-an-explicitly-resolved-dag.md)
@@ -183,10 +188,11 @@ Its exit commands:
 
 ```bash
 python3 -m unittest discover -s tests
-<index>/scripts/check.sh
+python3 plugins/hexaemeron/tests/run_tests.py
 ```
 
-**Files.** The protocol schemas here, the index there.
+**Files.** The protocol schemas in this repository. The dependent index packet
+touches no file here.
 
 **Tests.** Two restores of one capsule, each publishing a valid sibling, and a
 resolution record that selects one without deleting the other.
@@ -199,10 +205,12 @@ the resolution record is a durable decision.
 **Goal.** Close #866: the paths nobody wants to exercise are exercised on
 purpose.
 
-**Entry.** Step 6 closed. Target repository `wildcat-finance/fiat-checkpoints`,
-with the protocol fixtures in `wildcat-finance/skills`. Authority gate: the
-deployment record from step 4 covers it; a drill that touches production data
-needs its own approval.
+**Entry.** Step 6 closed. Target repository `wildcat-finance/fiat-checkpoints`.
+Any protocol fixture the drills need is a dependent packet in
+`wildcat-finance/skills`, landing there first under the pinned release, so this
+packet stays one repository wide. Authority gate: the deployment record from
+step 4 covers the drills; one that touches production data needs its own
+approval.
 
 **Exit.** A revoked node blocks its descendants, salvage from a clean ancestor
 produces a new checked checkpoint, and a rebuild from immutable records restores
