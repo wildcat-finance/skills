@@ -4,7 +4,7 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "00d0591ff07c457a959ce5393849cd72fbcbb96cee1b2c3286d97405ada77cc3"
+      "sha256": "5f00dfadca505370e5c749685b4179ecde6a446f02c3cef1a535e4d28060a5e5"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
@@ -16,7 +16,7 @@
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "1b36663eb4f3dbbd171582e1a892879ad2dc793b47f9687db5635610864b0922"
+      "sha256": "1326327d078a894c05a58ad3ef60759938698afce78c1bd0ab85eea7766e0efc"
     },
     "documentation": [
       {
@@ -118,7 +118,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "0dfbacb0a9d82e6edf038f256278133f3a19f6d6025a4847dcf373da63460d3e",
+      "sha256": "91a016eeb4fcd3f86b2529f51b1acf5dd0abc674bfdf6e7a7356566f3cd01140",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
