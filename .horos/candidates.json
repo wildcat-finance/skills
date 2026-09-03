@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16618554,
+    "bytes_blob": 16637857,
     "bytes_generated": 98
   },
   "entries": [
@@ -19,6 +19,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
+    },
+    {
+      "bytes": 19303,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
     },
     {
       "bytes": 173841,
