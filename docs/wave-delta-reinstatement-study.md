@@ -42,7 +42,13 @@ Assuming, unless corrected:
    carryover and delegated writes rather than checkpoint identity. #860 is
    startable once the reinstatement records land. #508 stays open in its own
    lane inside milestone 64. The fresh programme runbook carries both halves of
-   that sentence forward.
+   that sentence forward. Since that decision was recorded, #860's controller
+   half has landed on the default branch: commit `482172e7` reapplies pull
+   request #1069, so init resolves one immutable starting commit, an init-owned
+   `fiat-run-anchor/v1` receipt joins the run identity to that commit, and
+   `hexctl checkpoint identity` derives one semantic checkpoint identity. The
+   issue stays open, and the fresh programme documents take #860's remaining
+   scope from that commit rather than from its title.
 10. Five records, as designed: ADR-069 states the reinstatement route and
     ADR-070 through ADR-073 carry ADR-029 through ADR-032 forward one for one.
 11. This run reports its results in the pull-request body. Where a step would
