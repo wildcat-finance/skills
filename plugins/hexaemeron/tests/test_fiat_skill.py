@@ -238,8 +238,9 @@ class FiatSkillContractTests(unittest.TestCase):
             "mason": "`runbook_step`, `design_evidence`, `branch`, and `branch_from`",
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
-                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, "
-                "`runbook_step`, and `design_evidence`"
+                "`audit_log_path`, `step`, `round`, `warden_continuity`, "
+                "`audit_filter`, `risk_register`, `runbook_step`, "
+                "and `design_evidence`"
             ),
             "scribe": "`files`, `pr_base`, `pr_draft_path`, and `plugin_root`",
         }
