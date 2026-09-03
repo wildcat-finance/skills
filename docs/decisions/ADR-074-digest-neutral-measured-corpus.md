@@ -93,6 +93,14 @@ slot moved. The subject still carries every source path, every reviewed span's
 offsets, and every artefact path, so an artefact appearing, vanishing, or being
 renamed still moves the corpus digest.
 
+`measure` and `parity` count the same projection. The canonical models and the
+compact documents are put to the tokenizer, and to each parity family, through
+`digest_neutral_projection`, and each recorded count names the projection it was
+taken under. Projecting the subject without projecting the measured bytes would
+have left the measurement record stale at
+`documents[*].canonical_model` under exactly the edit the subject change absorbs,
+which is half a design rather than a smaller one.
+
 `check` still verifies every whole-file and artefact digest against the bytes on
 disk. `WAI-E-DIGEST.SOURCE` and `WAI-E-DIGEST.ARTIFACT` are untouched, and a
 tampered bound document is caught exactly where it was before. What stops
@@ -154,15 +162,50 @@ counts and risk classes. Anything relying on the corpus digest to detect a
 changed artefact *value* must read the manifest's own bindings instead, which
 `check` verifies on every run.
 
-This narrows the measured *subject*. It does not change the measured *bytes*:
-`measure` still records each document's `canonical_model` and `compact` as
-digests of the raw artefact bytes, and `_measurement_material` still compares
-those against the bytes on disk. `model.json` and the compact document both
-embed the whole-file source digest, so an out-of-span edit still moves them and
-still stales the measurement record at
-`$.evidence.measurement_record.documents[*].canonical_model`. Closing that means
-measuring the projection of those artefacts rather than their raw bytes — the
-other half of the `digest-neutral-corpus` design record — and it changes the
-values a `measure` run emits, so it has to land before a run rather than after
-one. `test_the_measurement_record_still_binds_the_raw_artefact_digests` pins the
-gap as it stands so it cannot be mistaken for closed.
+The change reaches the measured bytes as well as the measured subject, because
+the design record takes the embedded whole-file digest out of both. `measure`
+counts `digest_neutral_projection(manifest, ...)` of each canonical model and
+each compact document, `parity` puts the projected compact document to each
+model family, and `_measurement_material` and `_validate_parity_mode_record`
+compare against those same streams. The reviewed spans are still counted raw:
+a span's recorded digest is its `span_sha256`, and that equality is the review
+boundary. `test_no_reviewed_span_carries_a_bound_digest` observes that no span
+would be changed by the projection anyway, so measuring it raw is a checked
+fact rather than an exception carved out in the code.
+
+Every measured stream in both records carries a `projection` field naming the
+rule applied before it was counted, either `none` or
+`digest-neutral-bound-sha256/v1`. The name is versioned because it identifies
+what a count is a count of: widening or narrowing the projection requires a new
+name, so a record written under one rule cannot read as though it were written
+under another. An undefined name refuses with `WAI-E-MEASURE.PROJECTION` or
+`WAI-E-PARITY.PROJECTION`. The contract for the field is in
+[`docs/agent-instruction-language-v1.md`](../agent-instruction-language-v1.md),
+because a reader who finds a `compact.sha256` that does not match `compact.wai`
+on disk has to be able to find out why from the contract rather than from the
+checker.
+
+Not measured here has not become not bound anywhere. The manifest still binds
+every artefact by the digest of the bytes on disk, and `check` still verifies
+each one on every run, so the measurement record's projected digest and the
+manifest's raw digest are two different checked claims about two different byte
+strings, and neither substitutes for the other.
+`test_the_measurement_record_binds_the_projected_artefact_digests` asserts both
+at once, and asserts that the two differ, so a projection that quietly stopped
+projecting could not pass it.
+
+The whole property was simulated end to end before the single budgeted run was
+spent: both records rebuilt in a throwaway copy by the checker's own generators,
+with the committed token counts substituted for the model, then an out-of-span
+edit applied to each of the three bound sources with the five mechanical passes
+run. `check` exited 0 for all three with the corpus digest unmoved, and exited 2
+with the corpus digest moved for an in-span edit to each of the three. The
+simulation holds the counts fixed, so it establishes what `check` compares and
+says nothing about the sign of `delta_tokens`, which only the run can observe.
+
+One placement stays uncovered and is step 4's: an edit *before* a reviewed span
+start moves every recorded binding offset, and reconciling it needs the offsets
+re-derived rather than the digests rewritten.
+`prove_agent_instruction_reconciliation.py span-shift` reports that placement as
+uncovered rather than omitting it, so the criterion stays unmet until it is
+exercised.
