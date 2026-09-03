@@ -38,8 +38,14 @@ brief carrying the same `step_branch` continues work you already have in
 context. Fiat owns the receipt and the decision to continue or close the loop.
 
 The controller gives you one `brief` object with exactly `step_branch`,
-`stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `round`,
-`audit_filter`, `risk_register`, `runbook_step`, and `design_evidence`.
+`stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `step`,
+`round`, `warden_continuity`, `audit_filter`, `risk_register`, `runbook_step`,
+and `design_evidence`.
+`warden_continuity` is `new` on a step's first round and `same-agent` on every
+later round of that step. It tells the controller which Warden to delegate to.
+It is not a claim about you: `same-agent` does not mean the suite documents are
+in your context, and it never licenses skipping a read. Decide that from your
+own context, exactly as the paragraph below says.
 `design_evidence` names the fixed record path, digest, and selected candidate;
 audit the step against that selected design and the conformance criteria due at
 its boundary. `audit_filter` must name

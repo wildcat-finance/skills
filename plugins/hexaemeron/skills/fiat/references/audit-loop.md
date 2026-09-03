@@ -21,6 +21,14 @@ suite documents in full. Nothing about the evidence changes either way: one
 round still produces one `audit-round` receipt, and the round is still the unit
 Fiat records.
 
+The audit-round brief says which of the two this is. `warden_continuity` is
+`new` on a step's first round and `same-agent` on every later round of that
+step, and `step` names the step those rounds belong to, so a controller reading
+one brief can tell a step's first round from its fourth without counting its
+own history. The field decides delegation only. It never states that a Warden
+has read anything, so a host that cannot keep the agent alive still starts a
+new one and still pays for the full read, and the brief stays true either way.
+
 ## One round
 
 1. Before selecting X-Ray, read the
