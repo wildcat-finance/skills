@@ -4,11 +4,19 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "2066234ba7165b19c2b479e96ff7667e3671cbfcdb7bdf967e67a214ce5c128b"
+      "sha256": "00d0591ff07c457a959ce5393849cd72fbcbb96cee1b2c3286d97405ada77cc3"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
       "sha256": "c7f0bea52aee68f3c561fd95f8648a74695cf25182b89d9f177ef4d5e3d71775"
+    },
+    "prover": {
+      "path": "scripts/prove_agent_instruction_reconciliation.py",
+      "sha256": "6b6326e5176e672efefa41234e9c707170749e9b2ff4f227963b5459173c3eb8"
+    },
+    "prover_tests": {
+      "path": "tests/test_agent_instruction_corpus.py",
+      "sha256": "1b36663eb4f3dbbd171582e1a892879ad2dc793b47f9687db5635610864b0922"
     },
     "documentation": [
       {
@@ -110,12 +118,13 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "27813c953cf63018250903237c1ce166e5b63ceaf4641980792039722840c1b6",
+      "sha256": "0dfbacb0a9d82e6edf038f256278133f3a19f6d6025a4847dcf373da63460d3e",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
+        "test_specialised_coverage_binds_the_reconciliation_prover",
         "test_specialised_coverage_binds_focused_tests",
         "test_specialised_coverage_binds_all_fixture_artifacts",
         "test_specialised_coverage_binds_all_evidence_records",

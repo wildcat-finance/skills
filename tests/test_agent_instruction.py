@@ -3202,7 +3202,20 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             with self.subTest(path=record["path"]):
                 path = ROOT / record["path"]
                 self.assertTrue(path.is_file())
-                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), record["sha256"])
+                self.assertEqual(
+                    hashlib.sha256(path.read_bytes()).hexdigest(),
+                    record["sha256"],
+                    # Nothing generates tests/promise_machine_coverage.json, so
+                    # this is the failure a person has to act on by hand, and a
+                    # bare digest comparison did not say how. Rebinding before
+                    # the last edit to the file is what leaves it stale again,
+                    # which is the loop this message exists to break.
+                    f"tests/promise_machine_coverage.json binds {record['path']} to a "
+                    "digest its bytes no longer have. Nothing regenerates that file: "
+                    f"recompute with `shasum -a 256 {record['path']}` and write the "
+                    "value into the matching sha256, as the last edit before you "
+                    "commit rather than the first.",
+                )
 
     def test_root_promise_has_complete_exact_field_inventory(self):
         source = (ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
@@ -3246,6 +3259,34 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
         self.assert_bound_paths(records)
+
+    def test_specialised_coverage_binds_the_reconciliation_prover(self):
+        """The component that verifies every bound artefact is itself bound.
+
+        `Reconciliation.__init__` checks every path `bound_digests` reports
+        before a proof runs, and `bound_targets` refuses a report written over
+        any of them. Until now neither the prover nor its test module appeared
+        in any coverage row, so the guard over the bound set was the one thing
+        outside it: an edit to either moved no digest this register would
+        notice. S2-R2-04.
+
+        `test_every_bound_capability_digest_matches_the_file_it_names` in
+        `tests/test_unique_identifiers.py` recomputes any `path`/`sha256` pair
+        under a promise entry, so these two are bound by that walker as soon as
+        they are named here. This case is what makes the naming deliberate
+        rather than incidental, so removing either row fails here and not only
+        as a digest that stopped being checked.
+        """
+        coverage = self.coverage()
+        self.assertEqual(
+            coverage["prover"]["path"],
+            "scripts/prove_agent_instruction_reconciliation.py",
+        )
+        self.assertEqual(
+            coverage["prover_tests"]["path"],
+            "tests/test_agent_instruction_corpus.py",
+        )
+        self.assert_bound_paths([coverage["prover"], coverage["prover_tests"]])
 
     def test_specialised_coverage_binds_focused_tests(self):
         record = self.coverage()["tests"]
@@ -3598,6 +3639,91 @@ class DigestNeutralProjectionTests(unittest.TestCase):
             with self.subTest(fixture=fixture["id"]):
                 after_manifest, _ = self.edited_fixture(fixture)
                 self.assertNotEqual(corpus, AI._corpus_sha256(after_manifest))
+
+    def test_the_reviewed_span_digest_is_distinct_from_the_projected_digest(self):
+        """The review boundary survives the projection, checked not assumed.
+
+        `digest_neutral_projection` substitutes a digest value, so it cannot
+        tell a `source.sha256` apart from any other field carrying the same
+        bytes. Today no fixture's reviewed span covers its whole file, so no
+        `span_sha256` carries those bytes and the span digest comes through
+        untouched. That is a property of the fixtures, not of the code: a
+        fixture whose span ran from 0 to the file's length would make the two
+        digests equal, and the projection would then neutralise the review
+        boundary along with the binding it is aimed at.
+
+        S2-R1-02. Without this case the docstring's "the reviewed span digest
+        is untouched" is an observation about three fixtures rather than a
+        checked claim about the projection.
+        """
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                span = fixture["source"]
+                raw = (ROOT / span["path"]).read_bytes()
+                self.assertNotEqual(
+                    (int(span["start"]), int(span["end"])),
+                    (0, len(raw)),
+                    "a whole-file reviewed span makes span_sha256 the projected digest",
+                )
+                self.assertNotEqual(span["span_sha256"], span["sha256"])
+                projected = AI.digest_neutral_projection(
+                    self.manifest, span["span_sha256"].encode("ascii")
+                )
+                self.assertEqual(span["span_sha256"].encode("ascii"), projected)
+
+    def test_every_occurrence_of_a_bound_digest_is_substituted(self):
+        """Not just the first, for a byte string that carries one twice.
+
+        Each committed artefact embeds each bound digest exactly once, so a
+        regression to `bytes.replace(digest, marker, 1)` passes every case
+        above without changing a byte of their evidence. The multiplicity rule
+        is stated in the docstring -- "wherever it appears" -- so it gets a
+        buffer that can see the difference.
+
+        S2-R1-03. The buffer is built here and never written; no committed file
+        carries a repeated binding today, and this does not require one to.
+        """
+        for digest in self.source_digests:
+            with self.subTest(digest=digest):
+                needle = digest.encode("ascii")
+                doubled = needle + b'","other":"' + needle
+                projected = AI.digest_neutral_projection(self.manifest, doubled)
+                marker = self.PLACEHOLDER.encode("ascii")
+                self.assertEqual(marker + b'","other":"' + marker, projected)
+                self.assertNotIn(needle, projected)
+
+    def test_the_projection_does_not_yet_neutralise_the_bound_artefact_digests(self):
+        """The gap step 3 must close, pinned so it cannot be assumed shut.
+
+        `test_projection_is_unchanged_by_an_out_of_span_edit` compares the
+        three artefacts derived from a source, and they do project alike. The
+        manifest is not among them, and it is the byte string that matters:
+        `_corpus_sha256` digests a subject carrying `fixtures` whole, so it
+        carries `artifacts.model.sha256`, `artifacts.source_spans.sha256` and
+        `artifacts.compact.sha256`. Those are digests of the three artefacts,
+        they move when the source digest embedded inside them moves, and they
+        are not themselves bound source digests, so the substitution passes
+        over them.
+
+        S2-R1-01. This case asserts the gap as it stands rather than the
+        property the design wants, and step 3 inverts it when it widens the
+        projection and switches the subject. Asserted this way, a step 3 that
+        switched the subject without widening the projection would leave this
+        case green and ship a corpus digest that still moves on an out-of-span
+        edit -- which is the whole refusal skills#1098 reports.
+        """
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                after_manifest, _ = self.edited_fixture(fixture)
+                before = AI.canonical_record_bytes(self.manifest)
+                after = AI.canonical_record_bytes(after_manifest)
+                self.assertNotEqual(before, after)
+                self.assertNotEqual(
+                    AI.digest_neutral_projection(self.manifest, before),
+                    AI.digest_neutral_projection(after_manifest, after),
+                    "the projection now reaches the manifest: step 3's widening "
+                    "has landed and this case is the one to invert",
+                )
 
 
 if __name__ == "__main__":

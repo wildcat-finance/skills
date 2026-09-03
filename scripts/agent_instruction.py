@@ -3302,17 +3302,35 @@ def digest_neutral_projection(manifest: Mapping[str, Any], data: bytes) -> bytes
 
     This is the projection the `digest-neutral-corpus` design measures instead
     of the raw bytes. It substitutes one fixed marker for each bound whole-file
-    source digest and leaves every other byte where it was, so two trees that
-    differ only in which revision of a bound document they carry project to
-    identical bytes. The reviewed span digest is untouched here and stays the
-    review boundary: an edit that moves reviewed bytes still moves it.
+    source digest and leaves every other byte where it was, so `model.json`,
+    `source-spans.json` and the compact document project to identical bytes
+    across two revisions of the document they derive from.
+
+    What it does not yet reach is the fourth embedding named above: the
+    manifest's own `artifacts.*.sha256` entries, which are digests *of* those
+    three artefacts and move whenever the source digest inside them moves.
+    Those entries are 64-hex runs, not bound source digests, so the
+    substitution below passes over them, and the manifest -- and with it the
+    `_corpus_sha256` subject, which carries `fixtures` whole -- still differs
+    across an out-of-span edit under this projection.
+    `test_the_projection_does_not_yet_neutralise_the_bound_artefact_digests`
+    pins that counterexample. Closing it is step 3's, together with the switch,
+    because widening the substitution here would exceed what step 2 exposes.
+
+    The reviewed span digest is untouched and stays the review boundary: an
+    edit that moves reviewed bytes still moves it. That holds because no
+    fixture's reviewed span covers its whole file, so no `span_sha256` equals
+    the `source.sha256` this substitutes;
+    `test_the_reviewed_span_digest_is_distinct_from_the_projected_digest`
+    checks it rather than leaving it to the fixtures' good behaviour.
 
     Substitution is by byte, not by field path, because one of the embeddings
     has no addressable path: the compact document carries the digest as an
-    `h64:` literal inside a codec's byte stream, not as JSON. A 64-character
-    lowercase-hexadecimal run in a bound artefact is a digest binding wherever
-    it appears, so matching the literal reaches every embedding under one rule
-    rather than a schema-aware walker per artefact kind.
+    `h64:` literal inside a codec's byte stream, not as JSON. Matching each
+    bound digest's own 64-byte literal reaches every embedding under one rule
+    rather than a schema-aware walker per artefact kind, and it reaches only
+    those: every other 64-hex run -- `span_sha256`, the artefact digests above,
+    a digest quoted in prose -- is left exactly where it was.
 
     Nothing is read from disk and nothing is written. This step exposes the
     projection only; `_corpus_sha256` below still digests today's subject, and
