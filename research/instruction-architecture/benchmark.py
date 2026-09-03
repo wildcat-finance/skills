@@ -158,7 +158,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "68d263e8f354d8484d6478a5460597b6bb1b7365e4a48a413d0e16471e854bd8"
+    "92456ca1c7209ee228c6c1d899ffb47c187569bde1ea1c85dd0f14f65fbf4b1b"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
@@ -7222,22 +7222,114 @@ def _markdown_sections(path: str, data: bytes) -> list[dict[str, Any]]:
         data.decode("utf-8", errors="strict")
     except UnicodeDecodeError as exc:
         raise Refusal("section source is not UTF-8") from exc
+    _preflight_partition_markdown(data, path)
     lines = data.splitlines(keepends=True)
+
+    def fence_marker(line: bytes) -> tuple[bytes, bytes] | None:
+        match = re.match(rb" {0,3}(`{3,}|~{3,})([^\r\n]*)$", line)
+        return None if match is None else (match.group(1), match.group(2))
+
+    def opens(marker: tuple[bytes, bytes]) -> bool:
+        run, remainder = marker
+        return run[:1] == b"~" or b"`" not in remainder
+
+    def closes(marker: tuple[bytes, bytes], active: tuple[int, int]) -> bool:
+        run, remainder = marker
+        return (
+            run[0] == active[0]
+            and len(run) >= active[1]
+            and not remainder.strip(b" \t")
+        )
+
+    fence_events = [
+        (index, marker)
+        for index, line in enumerate(lines)
+        if (marker := fence_marker(line.rstrip(b"\r\n"))) is not None
+    ]
+
+    event_count = len(fence_events)
+    event_positions = [index for index, _ in fence_events]
+    suffix_balanced = [True] * (event_count + 1)
+    if fence_events:
+        lengths = sorted({len(marker[0]) for _, marker in fence_events})
+        length_count = len(lengths)
+        nearest_by_type = {
+            ord("`"): [event_count] * (length_count + 1),
+            ord("~"): [event_count] * (length_count + 1),
+        }
+        next_close = [event_count] * event_count
+
+        def nearest_at_least(tree: list[int], length: int) -> int:
+            cursor = length_count - bisect_left(lengths, length)
+            nearest = event_count
+            while cursor:
+                nearest = min(nearest, tree[cursor])
+                cursor -= cursor & -cursor
+            return nearest
+
+        def add_closer(tree: list[int], length: int, index: int) -> None:
+            cursor = length_count - bisect_left(lengths, length)
+            while cursor <= length_count:
+                tree[cursor] = min(tree[cursor], index)
+                cursor += cursor & -cursor
+
+        for event_index in range(event_count - 1, -1, -1):
+            _, marker = fence_events[event_index]
+            run, remainder = marker
+            tree = nearest_by_type[run[0]]
+            next_close[event_index] = nearest_at_least(tree, len(run))
+            if not remainder.strip(b" \t"):
+                add_closer(tree, len(run), event_index)
+
+        for event_index in range(event_count - 1, -1, -1):
+            _, marker = fence_events[event_index]
+            if not opens(marker):
+                suffix_balanced[event_index] = suffix_balanced[event_index + 1]
+                continue
+            close_index = next_close[event_index]
+            suffix_balanced[event_index] = (
+                close_index < event_count and suffix_balanced[close_index + 1]
+            )
+
+    def commonmark_suffix_is_balanced(start: int) -> bool:
+        return suffix_balanced[bisect_left(event_positions, start)]
+
     positions: list[tuple[int, int, bytes]] = []
     offset = 0
     fence: tuple[int, int] | None = None
-    for line in lines:
+    pending_template: tuple[int, int] | None = None
+    for index, line in enumerate(lines):
         body = line.rstrip(b"\r\n")
         if len(body) > MAX_MARKDOWN_LINE_CHARS:
             raise Refusal("section source line exceeds its limit")
-        fence_match = re.match(rb" {0,3}(`{3,}|~{3,})", body)
-        if fence_match is not None:
-            marker = fence_match.group(1)
-            identity = (marker[0], len(marker))
-            if fence is None:
-                fence = identity
-            elif identity[0] == fence[0] and identity[1] >= fence[1]:
-                fence = None
+        marker = fence_marker(body)
+        if fence is not None:
+            if marker is not None:
+                run, remainder = marker
+                if closes(marker, fence):
+                    if (
+                        pending_template is not None
+                        and closes(marker, pending_template)
+                        and not commonmark_suffix_is_balanced(index + 1)
+                    ):
+                        pending_template = None
+                    else:
+                        fence = None
+                        pending_template = None
+                elif pending_template is not None and closes(
+                    marker, pending_template
+                ):
+                    pending_template = None
+                elif remainder.strip(b" \t") and opens(marker):
+                    # Some governed source examples show balanced fenced snippets
+                    # inside a surrounding fence. Keep ordinary CommonMark markers
+                    # literal while admitting only that bounded template shape.
+                    pending_template = (run[0], len(run))
+            offset += len(line)
+            continue
+        if marker is not None and opens(marker):
+            run, _ = marker
+            fence = (run[0], len(run))
             offset += len(line)
             continue
         if fence is None:
@@ -9297,6 +9389,7 @@ def _load_development_evidence(
     if (
         inventory["schema"] != f"{SCHEMA_PREFIX}-development-inventory/v1"
         or inventory["source_ref"] != SOURCE_REF
+        or not isinstance(inventory["artifacts"], dict)
         or set(inventory["artifacts"]) != set(DEVELOPMENT_RECORD_PATHS)
     ):
         raise Refusal("development inventory identity drift")

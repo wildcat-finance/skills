@@ -8997,6 +8997,27 @@ class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "model output exceeds"):
             AI._validate_model_output(b"x" * (AI.MAX_MODEL_OUTPUT_BYTES + 1))
 
+    def test_section_parser_keeps_nonblank_fence_markers_literal(self):
+        source = (
+            b"# outer\n"
+            b"```text\n"
+            b"```not-a-close\n"
+            b"# code heading\n"
+            b"````also-not-a-close\n"
+            b"# still code\n"
+            b"```\n"
+            b"# after\n"
+        )
+        after = source.index(b"# after")
+        try:
+            nodes = AI._markdown_sections("hostile.md", source)
+        except AI.Refusal as exc:
+            self.fail(f"valid fenced Markdown was refused: {exc}")
+        self.assertEqual(
+            [(node["start"], node["end"]) for node in nodes],
+            [(0, after), (after, len(source))],
+        )
+
 
 class PathBoundaryTests(unittest.TestCase):
     def test_noncanonical_paths_refuse(self):
@@ -9027,6 +9048,20 @@ class PathBoundaryTests(unittest.TestCase):
             with mock.patch.object(AI, "_read_descriptor", side_effect=replace_after_read):
                 with self.assertRaisesRegex(AI.Refusal, "input changed during read"):
                     AI._read_regular(target, AI.MAX_JSON_BYTES)
+
+    def test_replay_refuses_non_object_artifact_inventory(self):
+        inventory = load(DEVELOPMENT_INVENTORY)
+        inventory["artifacts"] = 7
+        evidence = AI.ROOT / "tmp/elenchus-r3/evidence/development"
+        with mock.patch.object(AI, "_read_regular", return_value=canonical(inventory)):
+            try:
+                AI._load_development_evidence(evidence)
+            except AI.Refusal as exc:
+                self.assertRegex(str(exc), "inventory identity drift")
+            except Exception as exc:
+                self.fail(f"malformed inventory escaped refusal as {type(exc).__name__}")
+            else:
+                self.fail("malformed inventory was accepted")
 
     def test_atomic_output_round_trip(self):
         with scratch_directory("development-atomic-") as temporary:
@@ -9088,7 +9123,7 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
 
     def test_section_and_prompt_count_limits_refuse(self):
         hostile = b"# x\n" * (AI.MAX_SECTION_COUNT + 1)
-        with self.assertRaisesRegex(AI.Refusal, "section count"):
+        with self.assertRaisesRegex(AI.Refusal, "physical line count|section count"):
             AI._markdown_sections("hostile.md", hostile)
         component = {
             "content": "x",
@@ -9106,6 +9141,11 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
         }
         with self.assertRaisesRegex(AI.Refusal, "component count"):
             AI._validate_prompt(prompt)
+
+    def test_section_parser_refuses_excess_physical_lines(self):
+        hostile = b"\n" * (AI.MAX_MARKDOWN_PHYSICAL_LINES + 1)
+        with self.assertRaisesRegex(AI.Refusal, "physical line count"):
+            AI._markdown_sections("hostile.md", hostile)
 
     def test_committed_inventory_binds_all_fifteen_payloads(self):
         inventory = load(DEVELOPMENT_INVENTORY)
