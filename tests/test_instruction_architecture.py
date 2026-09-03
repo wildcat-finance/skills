@@ -10314,9 +10314,7 @@ class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):
             {"data": {"total_credits": "1", "total_usage": "1"}},
             endpoint_rows,
         ]
-        with tempfile.TemporaryDirectory(
-            prefix=".instruction-architecture-authority-", dir=ROOT
-        ) as directory:
+        with scratch_directory("step3-authority-") as directory:
             authority = Path(directory) / "authority.json"
             authority.write_bytes(canonical(authority_fixture()))
             args = types.SimpleNamespace(
