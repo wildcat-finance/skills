@@ -3202,7 +3202,20 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             with self.subTest(path=record["path"]):
                 path = ROOT / record["path"]
                 self.assertTrue(path.is_file())
-                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), record["sha256"])
+                self.assertEqual(
+                    hashlib.sha256(path.read_bytes()).hexdigest(),
+                    record["sha256"],
+                    # Nothing generates tests/promise_machine_coverage.json, so
+                    # this is the failure a person has to act on by hand, and a
+                    # bare digest comparison did not say how. Rebinding before
+                    # the last edit to the file is what leaves it stale again,
+                    # which is the loop this message exists to break.
+                    f"tests/promise_machine_coverage.json binds {record['path']} to a "
+                    "digest its bytes no longer have. Nothing regenerates that file: "
+                    f"recompute with `shasum -a 256 {record['path']}` and write the "
+                    "value into the matching sha256, as the last edit before you "
+                    "commit rather than the first.",
+                )
 
     def test_root_promise_has_complete_exact_field_inventory(self):
         source = (ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
@@ -3246,6 +3259,34 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
         self.assert_bound_paths(records)
+
+    def test_specialised_coverage_binds_the_reconciliation_prover(self):
+        """The component that verifies every bound artefact is itself bound.
+
+        `Reconciliation.__init__` checks every path `bound_digests` reports
+        before a proof runs, and `bound_targets` refuses a report written over
+        any of them. Until now neither the prover nor its test module appeared
+        in any coverage row, so the guard over the bound set was the one thing
+        outside it: an edit to either moved no digest this register would
+        notice. S2-R2-04.
+
+        `test_every_bound_capability_digest_matches_the_file_it_names` in
+        `tests/test_unique_identifiers.py` recomputes any `path`/`sha256` pair
+        under a promise entry, so these two are bound by that walker as soon as
+        they are named here. This case is what makes the naming deliberate
+        rather than incidental, so removing either row fails here and not only
+        as a digest that stopped being checked.
+        """
+        coverage = self.coverage()
+        self.assertEqual(
+            coverage["prover"]["path"],
+            "scripts/prove_agent_instruction_reconciliation.py",
+        )
+        self.assertEqual(
+            coverage["prover_tests"]["path"],
+            "tests/test_agent_instruction_corpus.py",
+        )
+        self.assert_bound_paths([coverage["prover"], coverage["prover_tests"]])
 
     def test_specialised_coverage_binds_focused_tests(self):
         record = self.coverage()["tests"]

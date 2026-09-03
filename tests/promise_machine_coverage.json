@@ -10,6 +10,14 @@
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
       "sha256": "c7f0bea52aee68f3c561fd95f8648a74695cf25182b89d9f177ef4d5e3d71775"
     },
+    "prover": {
+      "path": "scripts/prove_agent_instruction_reconciliation.py",
+      "sha256": "6b6326e5176e672efefa41234e9c707170749e9b2ff4f227963b5459173c3eb8"
+    },
+    "prover_tests": {
+      "path": "tests/test_agent_instruction_corpus.py",
+      "sha256": "1b36663eb4f3dbbd171582e1a892879ad2dc793b47f9687db5635610864b0922"
+    },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
@@ -110,12 +118,13 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "08da630799d4e766429b171a3f59e01beab84323817bfc2e283ba0ddefdb721d",
+      "sha256": "0dfbacb0a9d82e6edf038f256278133f3a19f6d6025a4847dcf373da63460d3e",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
+        "test_specialised_coverage_binds_the_reconciliation_prover",
         "test_specialised_coverage_binds_focused_tests",
         "test_specialised_coverage_binds_all_fixture_artifacts",
         "test_specialised_coverage_binds_all_evidence_records",
