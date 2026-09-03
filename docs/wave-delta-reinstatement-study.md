@@ -126,13 +126,14 @@ paths on restore. `fiat-v5.44.1` retired the Google Drive transport and made
 every accepted boundary write to the fixed local store under the origin
 checkout.
 
-So the distributed programme still needs, on top of the capsule: a semantic
-checkpoint identity distinct from archive bytes; the outer archive and Git
-bundle assembly that ADR-028 leaves to a manual procedure; an intake, validation
-and publication state machine; an independent signer and locked storage; a
-publication fence on external runs; and a lineage graph with explicit
-resolution. It does not need controller-state capture, ref binding, ledger
-prefix verification or relocation. Those exist and work.
+So the distributed programme still needs, on top of the capsule and the
+semantic identity `hexctl checkpoint identity` now prints: the outer archive
+and Git bundle assembly that ADR-028 leaves to a manual procedure; an intake,
+validation and publication state machine; an independent signer and locked
+storage; a publication fence on external runs; and a lineage graph with
+explicit resolution. It does not need controller-state capture, ref binding,
+ledger prefix verification, relocation or a semantic identity of its own. Those
+exist and work.
 
 **In this repository, the retired half.** `docs/decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md`
 is Accepted, dated 2026-08-27, and its Status says it retires ADR-029 through
@@ -418,10 +419,11 @@ banner-inversion | the two historical programme documents once the fresh pair ex
   `<origin>/.hexaemeron/checkpoints/<run-worktree-name>/` that ADR-028 makes the
   only current transport.
 - **Distributed layer.** Everything the reinstated programme adds above that
-  store: semantic identity, intake, signed acceptance, the external-run fence,
-  and lineage resolution.
+  store: intake, signed acceptance, the external-run fence, and lineage
+  resolution, over the semantic identity the controller already prints.
 - **Semantic checkpoint identity.** A `snapshot_id` that survives harmless
-  repacking, as distinct from an archive byte digest.
+  repacking, as distinct from an archive byte digest. Printed by `hexctl
+  checkpoint identity` on the default branch since `482172e7`.
 - **Standing successor.** A new record that carries a retired record's decision
   forward and names it, leaving the retired record in place as history.
 - **Estate.** The nine issues #859 through #867 plus the review blocks on them.
