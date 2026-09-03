@@ -32,11 +32,15 @@ What the reopened layer still owes depends on what shipped meanwhile. `hexctl
 checkpoint export` and `hexctl checkpoint restore` are live in `fiat-v5.49.1`
 and already supply controller-state capture, ref binding, ledger prefix
 verification and relocation under the `fiat-controller-checkpoint/v1` capsule
-contract. The distributed layer sits above that capsule and adds a semantic
-checkpoint identity distinct from archive bytes, the outer archive assembly
-ADR-028 leaves to a manual procedure, an intake and publication state machine,
-an independent signer and locked storage, a publication fence on external runs,
-and a lineage graph with explicit resolution.
+contract. `hexctl checkpoint identity` and ADR-028's `Immutable run anchors and
+checkpoint identity` amendment supply the semantic checkpoint identity that is
+distinct from archive bytes. Both landed on the default branch after this
+delivery's base commit, so the reopened layer consumes that identity rather
+than defining one. The distributed layer sits above the capsule and adds the
+outer archive assembly ADR-028 leaves to a manual procedure, an intake and
+publication state machine, an independent signer and locked storage, a
+publication fence on external runs, and a lineage graph with explicit
+resolution.
 
 Four records describe that layer. All four are Retired, their bodies preserved
 as historical rationale, and none of them has a successor to follow.

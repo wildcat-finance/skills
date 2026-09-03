@@ -99,11 +99,18 @@ tests.test_fiat_checkpoint_decision_record` exits zero.
 
 ## 2. Prior art
 
-**In this repository, the shipped half.** Fiat is at `fiat-v5.49.1`.
+**In this repository, the shipped half.** Fiat is at `fiat-v5.49.1`. At this
+run's base commit `ff47f3070c8dce05c767b6c0dad65234c56870de`,
 `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` defines exactly two
-checkpoint subcommands: `cmd_checkpoint_export` at line 12629 and
-`cmd_checkpoint_restore` at line 13754. There is no intake, publication,
-acceptance, revocation or lineage-resolution command, and no service client.
+checkpoint subcommands, `cmd_checkpoint_export` and `cmd_checkpoint_restore`,
+with no intake, publication, acceptance, revocation or lineage-resolution
+command and no service client. The default branch has moved since. Commit
+`482172e7` adds `cmd_checkpoint_identity`, a third subcommand that prints one
+verified semantic checkpoint identity, and amends ADR-028 with `Immutable run
+anchors and checkpoint identity (2026-08-29)`, which derives that identity from
+the verified run anchor and separates it from exact capsule and archive bytes.
+Semantic checkpoint identity is therefore accepted and shipped, and the
+reopened layer consumes it rather than defining one.
 `plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md` holds the
 capsule contract: schema `fiat-controller-checkpoint/v1`, the two accepted
 export boundaries, a closed manifest, hostile-input read ceilings, an atomic
@@ -427,7 +434,7 @@ banner-inversion | the two historical programme documents once the fresh pair ex
 - `docs/hexaemeron-checkpoint-programme-study.md` and `docs/hexaemeron-checkpoint-programme-runbook.md`.
 - `docs/fiat-controller-checkpoint-study.md` and `docs/fiat-controller-checkpoint-runbook.md`, digest-pinned by `tests/test_fiat_checkpoint_decision_record.py`.
 - `plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md`.
-- `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `cmd_checkpoint_export` line 12629, `cmd_checkpoint_restore` line 13754, subparsers at line 14803.
+- `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `cmd_checkpoint_export`, `cmd_checkpoint_restore` and the `checkpoint` subparser block, read at the run's base commit `ff47f3070c8dce05c767b6c0dad65234c56870de`. The file has changed on the default branch since, so it is cited by symbol rather than by line.
 - `plugins/hexaemeron/skills/fiat/EVOLUTION.md`, rows `fiat-v5.35.1`, `fiat-v5.43.1`, `fiat-v5.44.1`, current `fiat-v5.49.1`.
 - `tests/test_decision_records.py`, `tests/test_fiat_checkpoint_decision_record.py`, `tests/test_shipped_prose_lints.py`.
 - Issues #859, #860, #861, #862, #863, #864, #865, #866, #867, #508, #899, #901 in `wildcat-finance/skills`, each read on 2026-09-02. #547 does not resolve.
