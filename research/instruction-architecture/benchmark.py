@@ -158,7 +158,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "92456ca1c7209ee228c6c1d899ffb47c187569bde1ea1c85dd0f14f65fbf4b1b"
+    "0e32f86d67a35a7153fa32bb28cec2cfdb877da71b8f3ba699601455abd54da3"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "88fbc6e2e558228f1932ba6a2dbd67d8c13e509c127d3bc11df29311ce972ffe",
@@ -8738,12 +8738,16 @@ def _hostile_execution(
     return record
 
 
-def _runtime_dependency_modules(source: str) -> tuple[list[str], list[str]]:
+def _runtime_dependency_modules(
+    source: str,
+    *,
+    filename: str = "research/instruction-architecture/benchmark.py",
+) -> tuple[list[str], list[str]]:
     """Classify every syntactic runtime import against the pinned stdlib."""
     try:
-        tree = ast.parse(source, filename="research/instruction-architecture/benchmark.py")
+        tree = ast.parse(source, filename=filename)
     except SyntaxError as exc:
-        raise Refusal("benchmark imports cannot be parsed") from exc
+        raise Refusal("executable source imports cannot be parsed") from exc
     modules: set[str] = set()
     external: set[str] = set()
     standard: set[str] = set()
@@ -8760,31 +8764,106 @@ def _runtime_dependency_modules(source: str) -> tuple[list[str], list[str]]:
     return sorted(standard), sorted(external)
 
 
+def _resource_executable_sources(
+    controls: dict[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[tuple[str, str]]]:
+    """Bind each Python source unit compiled by the development workbench."""
+    workbench_path = "research/instruction-architecture/benchmark.py"
+    checker_path = "scripts/agent_instruction.py"
+    source_blobs = [
+        ("workbench", workbench_path, None, _read_regular(Path(__file__), 4 * 1024 * 1024)),
+        (
+            "pinned-checker",
+            checker_path,
+            WAI1_CONTROL_REF,
+            _git_blob_at(WAI1_CONTROL_REF, checker_path),
+        ),
+    ]
+    checker = source_blobs[1][3]
+    expected_checker = {
+        "bytes": len(checker),
+        "path": checker_path,
+        "ref": WAI1_CONTROL_REF,
+        "sha256": _sha256(checker),
+    }
+    checker_bindings = [
+        item
+        for item in controls["wai1"]["binding"]["artifacts"]
+        if item.get("path") == checker_path
+    ]
+    if checker_bindings != [expected_checker]:
+        raise Refusal("resource evidence checker source differs from its WAI1 binding")
+
+    rows: list[dict[str, Any]] = []
+    texts: list[tuple[str, str]] = []
+    for kind, path, ref, source in source_blobs:
+        try:
+            text = source.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise Refusal("executable source is not UTF-8") from exc
+        loc = sum(
+            bool(line.strip()) and not line.lstrip().startswith("#")
+            for line in text.splitlines()
+        )
+        digest_source = source
+        digest_scope = "exact"
+        if kind == "workbench":
+            if (
+                not isinstance(EXPECTED_DEVELOPMENT_INVENTORY_SHA256, str)
+                or len(EXPECTED_DEVELOPMENT_INVENTORY_SHA256) != 64
+            ):
+                raise Refusal("development inventory digest cannot be normalised")
+            self_reference = EXPECTED_DEVELOPMENT_INVENTORY_SHA256.encode("ascii")
+            if source.count(self_reference) != 1:
+                raise Refusal("development inventory digest self-reference drift")
+            digest_source = source.replace(self_reference, b"0" * 64)
+            digest_scope = "development-inventory-self-reference-normalised"
+        rows.append(
+            {
+                "digest_scope": digest_scope,
+                "kind": kind,
+                "loc": loc,
+                "path": path,
+                "ref": ref,
+                "sha256": _sha256(digest_source),
+            }
+        )
+        texts.append((path, text))
+    return rows, texts
+
+
 def _resource_record(
     manifest: dict[str, Any],
     controls: dict[str, dict[str, Any]],
     disk_bytes: dict[str, int],
 ) -> dict[str, Any]:
-    source = _read_regular(Path(__file__), 4 * 1024 * 1024).decode("utf-8")
-    executable_loc = sum(
-        bool(line.strip()) and not line.lstrip().startswith("#")
-        for line in source.splitlines()
-    )
-    standard, external = _runtime_dependency_modules(source)
+    executable_sources, source_texts = _resource_executable_sources(controls)
+    standard: set[str] = set()
+    external: set[str] = set()
+    for path, source in source_texts:
+        source_standard, source_external = _runtime_dependency_modules(
+            source, filename=path
+        )
+        standard.update(source_standard)
+        external.update(source_external)
     if external:
-        raise Refusal("benchmark has an unrecorded external runtime dependency")
+        raise Refusal("executable source has an unrecorded Python dependency")
+    external_runtime = [PurePosixPath(_git_executable()).name]
+    if external_runtime != ["git"]:
+        raise Refusal("bounded Git dependency identity drift")
     return {
         "artifact_payload_bytes": disk_bytes["artifact_payloads"],
         "dependency_count": {
-            "external_runtime": len(external),
+            "external_runtime": len(external_runtime),
             "standard_library_modules": len(standard),
         },
         "dependency_modules": {
-            "external_runtime": external,
-            "standard_library": standard,
+            "external_runtime": external_runtime,
+            "standard_library": sorted(standard),
         },
         "disk_bytes": disk_bytes,
-        "executable_loc": executable_loc,
+        "executable_loc": sum(item["loc"] for item in executable_sources),
+        "executable_sources": executable_sources,
         "limits": {
             "max_control_paths": MAX_CONTROL_PATHS,
             "max_development_cases": MAX_DEVELOPMENT_CASES,

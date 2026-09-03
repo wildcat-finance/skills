@@ -77,10 +77,13 @@ not a compression claim. every claimed source projection round-trips.
 `evidence/development/artifact-inventory.json` is the publication point for 15
 payloads across controls, cases, hostile specimens, hostile execution and
 evidence. all 12 hostile specimens execute against all five arms and retain 60
-content-addressed refusal rows. resource evidence derives its standard-library
-and external import sets from the Python AST and refuses any external runtime
-dependency. it reconciles 13,793,418 payload bytes plus the 2,409-byte inventory
-to the complete 13,795,827-byte published generation; command results emit the
+content-addressed refusal rows. resource evidence binds both Python sources the
+workbench executes, derives their union of standard-library imports from the
+AST, refuses any external Python import and records bounded Git as its one
+out-of-process runtime dependency. the workbench-source digest zeroes only the
+inventory-digest literal to avoid a cryptographic self-reference; its enclosing
+commit binds the literal itself. it reconciles 13,793,942 payload bytes plus the
+2,409-byte inventory to the complete 13,796,351-byte published generation; command results emit the
 observed wall times and peak RSS, while Step 3 owns repeated p50/p95 samples.
 replay checks the inventory twice, rebuilds from the frozen source and pinned
 control objects, and requires every payload byte to match. the

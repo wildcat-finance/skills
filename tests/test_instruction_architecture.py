@@ -9072,12 +9072,80 @@ class PathBoundaryTests(unittest.TestCase):
 
 
 class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_resource_record_accounts_for_every_executed_source_and_process(self):
+        record = load(FIXTURES / "evidence/development/resource-samples.json")
+        checker_path = "scripts/agent_instruction.py"
+        checker = AI._git_blob_at(AI.WAI1_CONTROL_REF, checker_path)
+        benchmark = AI._read_regular(Path(AI.__file__), 4 * 1024 * 1024)
+
+        sources = record.get("executable_sources")
+        self.assertIsInstance(
+            sources,
+            list,
+            "resource evidence omits the dynamically executed WAI1 checker",
+        )
+        by_path = {item["path"]: item for item in sources}
+        expected = {
+            "research/instruction-architecture/benchmark.py": (
+                "workbench",
+                None,
+                benchmark,
+            ),
+            checker_path: ("pinned-checker", AI.WAI1_CONTROL_REF, checker),
+        }
+        self.assertEqual(set(by_path), set(expected))
+        for path, (kind, ref, source) in expected.items():
+            row = by_path[path]
+            text = source.decode("utf-8", errors="strict")
+            executable_loc = sum(
+                bool(line.strip()) and not line.lstrip().startswith("#")
+                for line in text.splitlines()
+            )
+            digest_source = source
+            digest_scope = "exact"
+            if kind == "workbench":
+                self_reference = AI.EXPECTED_DEVELOPMENT_INVENTORY_SHA256.encode(
+                    "ascii"
+                )
+                self.assertEqual(source.count(self_reference), 1)
+                digest_source = source.replace(self_reference, b"0" * 64)
+                digest_scope = "development-inventory-self-reference-normalised"
+            self.assertEqual(
+                row,
+                {
+                    "digest_scope": digest_scope,
+                    "kind": kind,
+                    "loc": executable_loc,
+                    "path": path,
+                    "ref": ref,
+                    "sha256": hashlib.sha256(digest_source).hexdigest(),
+                },
+            )
+        self.assertEqual(
+            record["executable_loc"], sum(item["loc"] for item in sources)
+        )
+
+        standard = set()
+        external = set()
+        for path, (_, _, source) in expected.items():
+            source_standard, source_external = AI._runtime_dependency_modules(
+                source.decode("utf-8", errors="strict"), filename=path
+            )
+            standard.update(source_standard)
+            external.update(source_external)
+        self.assertFalse(external)
+        self.assertEqual(
+            record["dependency_modules"]["standard_library"], sorted(standard)
+        )
+        self.assertEqual(record["dependency_modules"]["external_runtime"], ["git"])
+        self.assertEqual(record["dependency_count"]["external_runtime"], 1)
+
     def test_resource_record_freezes_workload_limits_loc_and_dependencies(self):
         record = load(FIXTURES / "evidence/development/resource-samples.json")
-        self.assertEqual(record["dependency_count"]["external_runtime"], 0)
+        self.assertEqual(record["dependency_count"]["external_runtime"], 1)
         self.assertGreater(record["dependency_count"]["standard_library_modules"], 0)
         self.assertIn("dependency_modules", record)
-        self.assertEqual(record["dependency_modules"]["external_runtime"], [])
+        self.assertEqual(record["dependency_modules"]["external_runtime"], ["git"])
         self.assertEqual(
             record["dependency_count"]["standard_library_modules"],
             len(record["dependency_modules"]["standard_library"]),
