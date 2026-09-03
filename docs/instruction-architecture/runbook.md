@@ -1302,3 +1302,1061 @@ byte 2368 and the matching close end at byte 2975.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Goal: Measure the five immutable arms on
+the development cohort; freeze their versions, a conservative mechanical rule
+for admitting the architecture nominee and every statistically or
+operationally near-frontier arm; and freeze two disjoint answer-free packets:
+the existing seven-model behavioural holdout and a native Claude Code/Codex
+deployment gate. Freeze model routes, scorer, lifecycle schedule, cache
+accounting, runtime invocation and configuration, two-axis decision rule and
+the `$100.00` OpenRouter gross spend ceiling before either sealed packet opens.
+No paid request or answer-producing native session runs in this step.
+
+Complete replacement Exit: All of the following hold:
+
+1. One content-addressed development aggregate reports raw, WAI1, Noema, simple
+   and section graph on coverage, exact fidelity, complete assembled bytes and
+   every locally available tokenizer separately, parse/select/assembly p50 and
+   p95, peak RSS, disk, executable LOC, dependencies, mutations, crashes,
+   nondeterminism and source-edit amplification. Component rows are mutually
+   exclusive and every denominator reconciles. The issue's 0.80 cold and 0.70
+   warm prompt ratios are retained as descriptive legacy observations, not as
+   the deployment objective or an admission veto.
+2. A frozen admission function first excludes any non-control arm with a
+   deterministic critical failure. Raw Markdown and simple deterministic are
+   mandatory native-gate baselines. The development nominee is the remaining
+   non-control arm or tied set not dominated on complete-context proxies and
+   operational feasibility. After the behavioural holdout, Step 4 must also
+   admit every non-control arm that establishes equal behaviour and cannot be
+   excluded with the frozen evidence: a paired 95% interval overlaps a nominee
+   or frontier arm, available token axes do not prove strict dominance, or the
+   arm is the sole compatible survivor for a required runtime. Stable arm id
+   resolves serialization only, never substantive uncertainty. The final
+   architecture remains undecided.
+3. The behavioural preregistration binds 16 answer-producing holdout cases
+   across the sealed logical skills and all required semantic classes. Each
+   response is a bounded structured plan, decision, refusal, recovery or tool
+   invocation; identifier-only multiple choice is diagnostic only. A
+   deterministic scorer is representation-blind. Presentation order and case
+   order use fixed seeds.
+4. Two independent behavioural cohorts run all five arms through exactly
+   `anthropic/claude-opus-5`, `google/gemini-3.7-flash`,
+   `qwen/qwen3.8-27b`, `openai/gpt-5.6-sol`,
+   `deepseek/deepseek-v4-pro-0813`, `moonshotai/kimi-k3`, and
+   `z-ai/glm-5.3`, for 1,120 logical calls before bounded retries. Each model
+   has one ordered ZDR-required provider policy; unavailable remains unknown
+   and no model id substitutes. The paired one-sided 95% degradation interval,
+   trial aggregation, error taxonomy, critical-policy zero tolerance and
+   no-tuning rule are frozen; the implementation recomputes the bound.
+5. A separate native deployment preregistration binds native Claude Code and
+   native Codex runtime versions, model/tokenizer identity when exposed, exact
+   invocation and configuration, isolated state roots, environment allowlist,
+   response-cache disablement, stable representation-and-bootstrap prefix,
+   changing task suffix, correlation ids and these ordered lifecycle cases:
+   cold start, continuous warm use, resume within provider TTL, resume after
+   expiry and post-compaction. Cache TTL and expiry wait are source-attributed;
+   an unprovable expiry predicate makes that runtime result inconclusive rather
+   than guessed. The packet contains no response, expected answer, scorer key,
+   holdout source or provider secret and no native session is launched.
+6. The native schema makes cache-read, cache-write and uncached suffix-or-miss
+   token categories mutually exclusive. It defines complete logical-context
+   high-water as all logical input tokens, including cache reads in full, and
+   cumulative fresh-token churn as cache writes plus uncached suffix-or-miss
+   tokens. Invalidation is represented only by later fresh work. Unknown native
+   telemetry remains unknown unless documented provider semantics support an
+   exact derivation. Behaviour is an eligibility predicate; dominance compares
+   the two token axes separately per runtime, model and tokenizer. Unlike
+   tokenizers are never pooled, and tokens are never dollar-weighted. Billing,
+   settled cost, actual credits, latency, TCB, upkeep, compatibility and
+   recovery are frozen as secondary evidence.
+7. `.hexaemeron/model-evaluation-authority.json` records the user's 2026-08-31
+   authority, `$100.00` gross ceiling, credential location by label rather than
+   value, reservation and settlement rules, retry cap, redaction policy and
+   current credit observation. OpenRouter spend and matrix preflights plus a
+   no-session native preflight produce the progressive design reports without
+   a paid call or native answer. The immutable evaluator design evidence passes
+   `--transition step:4`; the selected neutral workbench is not confused with a
+   selected architecture.
+8. Both answer-free packet commitments reproduce from repository bytes.
+   Searching packet bytes finds no expected answer, scorer key, source class
+   label or competing representation name. Offline development replay, focused
+   tests and repository-selected checks pass.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py aggregate-development --evidence tests/fixtures/instruction-architecture/evidence/development --output tests/fixtures/instruction-architecture/development-selection.json
+python3 research/instruction-architecture/benchmark.py freeze-experiment --selection tests/fixtures/instruction-architecture/development-selection.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --output tests/fixtures/instruction-architecture/evidence/frozen
+python3 research/instruction-architecture/benchmark.py freeze-native-gate --selection tests/fixtures/instruction-architecture/development-selection.json --runtime-manifest tests/fixtures/instruction-architecture/native-runtime-manifest.json --output tests/fixtures/instruction-architecture/evidence/frozen/native
+python3 research/instruction-architecture/benchmark.py verify-native-preregistration --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --no-session
+python3 research/instruction-architecture/benchmark.py preflight-spend --candidate neutral-evidence-workbench --authority .hexaemeron/model-evaluation-authority.json --max-gross-usd 100 --report .hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json
+python3 research/instruction-architecture/benchmark.py preflight-model-matrix --candidate neutral-evidence-workbench --models anthropic/claude-opus-5,google/gemini-3.7-flash,qwen/qwen3.8-27b,openai/gpt-5.6-sol,deepseek/deepseek-v4-pro-0813,moonshotai/kimi-k3,z-ai/glm-5.3 --require-zdr --report .hexaemeron/design-reports/neutral-evidence-workbench-seven-model-preflight.json
+python3 research/instruction-architecture/benchmark.py preflight-native-gate --candidate neutral-evidence-workbench --runtimes claude-code,codex --no-session --report .hexaemeron/design-reports/neutral-evidence-workbench-native-gate-preflight.json
+python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition step:4
+python3 research/instruction-architecture/benchmark.py emit-packet --preregistration tests/fixtures/instruction-architecture/preregistration.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --commitment-only --output tmp/framework-74-packet
+python3 research/instruction-architecture/benchmark.py emit-native-packet --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment-only --output tmp/framework-74-native-packet
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+git diff --check
+```
+
+Complete replacement Files: Change the Step 2 workbench, local schemas, tests,
+development evidence and research README. Create
+`tests/fixtures/instruction-architecture/development-selection.json`,
+`preregistration.json`, `model-runtime-manifest.json`, `prompt-template.txt`,
+`scorer.json`, `holdout-packet-commitment.json`,
+`native-deployment-preregistration.json`, `native-runtime-manifest.json`,
+`native-cache-accounting.json`, `native-prompt-template.txt` and
+`native-lifecycle-packet-commitment.json`, plus answer-free packet artifacts
+under `tests/fixtures/instruction-architecture/evidence/frozen/` and its
+`native/` child. Create the non-secret ignored authority and progressive report
+files only below `.hexaemeron/`. Update
+`docs/instruction-architecture/research-report.md` with development evidence
+and both frozen protocols. Do not reveal either sealed source, expected answer
+or response; launch a native answer-producing session; make a paid call; change
+either control; or change a production path.
+
+Complete replacement Tests: Add `DevelopmentAggregateTests`,
+`CandidateSelectionTests`, `AdmissionRuleTests`, `PreregistrationTests`,
+`PromptContaminationTests`, `StatisticsTests`, `BudgetLedgerTests`,
+`ModelPreflightTests`, `NativeRuntimeManifestTests`,
+`NativeCacheAccountingTests`, `NativeLifecyclePreregistrationTests` and
+`PacketCommitmentTests`. Parent-red guards cover a deterministic critical
+failure; an uncertainty-overlapping or sole-compatible arm incorrectly
+excluded; a legacy ratio used as a veto; an underpowered interval; scorer or
+answer material in either prompt; unstable-prefix ordering; enabled response
+caching; overlapping cache categories; cached tokens omitted from logical
+context; invalidation double-counted; cross-tokenizer pooling; dollar-weighted
+selection; mismatched model or runtime id; unproved expiry; native session
+launch; non-ZDR route; missing fee; over-budget reservation; lost uncertain
+attempt; and post-freeze rule change. Run every command in the complete
+replacement Exit. Run the two OpenRouter preflight commands and the native
+no-session preflight once for each of `neutral-evidence-workbench`,
+`wai1-hosted-evaluator` and `noema-hosted-evaluator`, using the exact report
+paths in `.hexaemeron/design-evidence.json`. Repeat the focused unittest, full
+runner, selected repository checks and whitespace check after a fresh
+eight-output rebuild, then replay both packet commitments byte-for-byte. For an
+audit repair, run `python3 tests/run_tests.py --elenchus-report {report}` with
+fresh path `.elenchus/fiat-1046-step-3.json` and required schema
+`elenchus.unittest.v1`; the parent runner must fail if the report is missing,
+stale, malformed, unsuccessful or not attributable to that invocation.
+
+Complete replacement Disciplines: phylax: both no-call preflights read only
+named secret-file metadata, locally installed runtime metadata, official
+allowlisted endpoints and bounded catalog responses; no credential enters argv
+or artifacts, and isolated runtime state cannot mutate user sessions. ephoros:
+development selection, admission, packet freeze, reservation and route events
+have stable run/candidate/runtime/lifecycle/case correlations and explicit
+terminal causes. metron: baselines precede selection, each token unit retains
+its runtime/model/tokenizer, both token axes and cache components are explicit,
+and `$100.00` bounds gross OpenRouter exposure without becoming an objective.
+elenchus: any frozen byte change invalidates the candidate version; neither
+sealed packet is repaired after opening. hypomnema: preregistrations own the
+experiments, the selection record owns only the provisional admission result,
+and the research report explains why final architecture selection remains
+open.
+
+**Why.** The corrected objective distinguishes logical context from newly
+processed tokens and requires evidence from real cache lifecycles. The prior
+Step 3 froze only an API behavioural packet and made prompt ratios, money and a
+single candidate do work they cannot justify. A separately committed native
+packet and conservative admission rule prevent later holdout or cache results
+from choosing which arms were allowed to be measured.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+broken. Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Goal: Open and execute the behavioural
+holdout once under its gross ledger, apply the frozen conservative admission
+rule, then open the separately committed native deployment gate and run its
+cache-shaped arms in native Claude Code and native Codex sessions across all
+five lifecycle states. Publish content-addressed deterministic, behavioural and
+per-runtime two-axis token evidence without tuning, cross-tokenizer pooling or
+dollar-weighted selection.
+
+Complete replacement Entry: Step 3 is integrated; its five arm versions,
+development aggregate, admission function, behavioural preregistration and
+packet commitment, native deployment preregistration and packet commitment,
+scorer, runtime versions, exact invocations and configurations, cache
+accounting, lifecycle schedule, model routes and decision rules are immutable.
+The design-evidence `step:4` transition and every progressive preflight are
+receipted. The current OpenRouter credential and account credit can fund the
+next reservation, and native Claude Code and Codex authentication preflights
+succeed without starting an answer-producing session. No issue-1046 holdout
+reveal, paid request or native gate session exists. If any predicate fails,
+stop before the corresponding external request; do not shrink the model matrix,
+change an arm or silently omit a lifecycle.
+
+Complete replacement Exit: All of the following hold:
+
+1. One reveal record reproduces the Step 1 seal, source ref, admission method,
+   seeds, logical skills, byte coverage and closed behavioural cases. It proves
+   the behavioural holdout opened once after every relevant byte froze. Any
+   drift is a terminal failed version.
+2. All five arms build from the same revealed sources. Deterministic round-trip,
+   source traceability, classification, order, scope, negation, exception,
+   literal, alias, unknown, refusal, recovery, authority, resource,
+   stale-source, concurrent-edit, crash-recovery and safe-fallback checks emit
+   exact per-case rows. A critical deterministic failure cannot be averaged
+   away.
+3. Every preregistered OpenRouter logical call has a bounded accepted response
+   or durable unknown/refusal with model id, exposed provider revision, route,
+   attempt, request and response digests, timing, usage, settled cost and
+   reservation. The HTTPS adapter has no shell, uses strict size and schema
+   caps, allows at most three byte-identical attempts with fixed backoff, and
+   accepts no transcript-derived instruction. Public transcripts are retained
+   only after secret and header redaction.
+4. The gross ledger starts at zero for this experiment, chains every
+   reservation, settlement and retained uncertainty, reconciles OpenRouter
+   usage, checks live credit before each batch and never exceeds `$100.00`. A
+   top-up changes available credit only. No failed or uncertain attempt silently
+   releases exposure, and neither price nor cost enters a token-axis score.
+5. Behavioural reports show all five arms, seven exact model ids, two cohorts,
+   prompt components, per-case success, false allow/refuse, critical failures,
+   latency, cost and paired intervals. Unlike tokenizer counts stay per model.
+   Equal behaviour requires complete deterministic fidelity, zero critical
+   regression and the preregistered one-sided paired 95% upper degradation
+   bound at or below 0.02. The 0.80/0.70 ratios are reported descriptively and
+   do not determine admission or selection.
+6. Before any native answer-producing session, one content-addressed admission
+   record applies the frozen rule to the closed behavioural evidence. Raw
+   Markdown and simple deterministic are always admitted. It records the
+   development nominee or tied set and admits every statistically or
+   operationally near-frontier non-control arm the rule cannot exclude. An arm
+   with unequal behaviour is marked ineligible, not measured as an equal-
+   behaviour token alternative. The record and the already committed native
+   packet together fix the exact arm/runtime/lifecycle execution matrix.
+7. Native Claude Code and native Codex each execute every admitted arm over the
+   preregistered isolated cases and repetitions in this order: cold start,
+   continuous warm use, resume within provider TTL, resume after proved expiry
+   and post-compaction. Each observation proves the frozen runtime binary,
+   version, model/tokenizer identity when exposed, invocation, configuration,
+   isolated state root, stable representation-and-bootstrap prefix followed by
+   the changing task suffix, and disabled local response reuse. Native session
+   continuation and compaction are used; direct API emulation is not a
+   substitute. A missing lifecycle, drifted runtime or unproved expiry is an
+   explicit per-runtime inconclusive result.
+8. Every native observation retains provider-native cache read, write and miss
+   telemetry when exposed; raw usage; start/end and first-token latency;
+   behavioural score; complete logical context; and actual credits or settled
+   cost when exposed. For a runtime with disjoint Anthropic-style fields,
+   complete logical input is uncached input plus cache-creation input plus
+   cache-read input. For a runtime whose total input already includes cached
+   input, complete logical input is that inclusive total. Total minus cached may
+   be derived only when documented semantics make the categories exhaustive.
+   Otherwise the component is unknown and the affected comparison is
+   inconclusive; no zero or estimate is imputed.
+9. Within every native runtime/model/tokenizer, cache-read, cache-write and
+   uncached suffix-or-miss tokens are mutually exclusive. Cached tokens count in
+   full toward the complete logical-context high-water and separately as cache
+   reads. Cumulative fresh-token churn is cache-write tokens plus uncached
+   suffix-or-miss tokens across the lifecycle; invalidation contributes only
+   through the later fresh tokens it causes. Reports retain each lifecycle row,
+   the context high-water, cumulative components and vector. They never pool
+   unlike tokenizers or convert token axes to money. Billing and latency remain
+   secondary deployment evidence.
+10. Per-runtime reports compare only equal-behaviour arms by dominance: no
+    worse on both token axes and strictly better on at least one. Axis or
+    runtime disagreement retains the Pareto frontier; missing decisive
+    telemetry is inconclusive. Step 4 records evidence and relations but does
+    not force one architecture. `benchmark.py replay --cohort holdout --offline`
+    and `replay-native-gate --offline` reconstruct every deterministic row,
+    request/prompt digest, score, ledger total, interval, cache component,
+    vector and dominance edge without network or native execution. Hostile
+    source, transcript, ledger, route, session, usage and report mutations
+    refuse; full repository checks pass.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py open-holdout --seal tests/fixtures/instruction-architecture/holdout-seal.json --preregistration tests/fixtures/instruction-architecture/preregistration.json --output tests/fixtures/instruction-architecture/evidence/holdout/reveal.json
+python3 research/instruction-architecture/benchmark.py build-holdout --reveal tests/fixtures/instruction-architecture/evidence/holdout/reveal.json --output tests/fixtures/instruction-architecture/evidence/holdout/deterministic
+python3 research/instruction-architecture/benchmark.py run-model-matrix --preregistration tests/fixtures/instruction-architecture/preregistration.json --authority .hexaemeron/model-evaluation-authority.json --credential-file /Users/kethcode/.config/codex/secrets/openrouter-api-key --output tests/fixtures/instruction-architecture/evidence/holdout/provider
+python3 research/instruction-architecture/benchmark.py aggregate-behavioural-holdout --evidence tests/fixtures/instruction-architecture/evidence/holdout --output tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json
+python3 research/instruction-architecture/benchmark.py admit-native-arms --selection tests/fixtures/instruction-architecture/development-selection.json --behavioural tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --output tests/fixtures/instruction-architecture/evidence/native/admission.json
+python3 research/instruction-architecture/benchmark.py open-native-gate --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --admission tests/fixtures/instruction-architecture/evidence/native/admission.json --output tests/fixtures/instruction-architecture/evidence/native/reveal.json
+python3 research/instruction-architecture/benchmark.py run-native-gate --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --admission tests/fixtures/instruction-architecture/evidence/native/admission.json --runtimes claude-code,codex --output tests/fixtures/instruction-architecture/evidence/native/sessions
+python3 research/instruction-architecture/benchmark.py aggregate-native-gate --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --evidence tests/fixtures/instruction-architecture/evidence/native --output tests/fixtures/instruction-architecture/evidence/native/aggregate.json
+python3 research/instruction-architecture/benchmark.py replay --cohort holdout --evidence tests/fixtures/instruction-architecture/evidence/holdout --offline
+python3 research/instruction-architecture/benchmark.py replay-native-gate --evidence tests/fixtures/instruction-architecture/evidence/native --offline
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture/evidence/holdout tests/fixtures/instruction-architecture/evidence/native
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture/evidence/holdout tests/fixtures/instruction-architecture/evidence/native
+git diff --check
+```
+
+Complete replacement Files: Change only the Step 3 workbench, tests and
+research report unless a frozen-interface defect is found; that defect records
+a failed version and stops repair. Create holdout reveal, exact arm artifacts,
+redacted transcripts, attempt records, gross ledgers, per-case scores and
+behavioural aggregates below
+`tests/fixtures/instruction-architecture/evidence/holdout/`. Create the native
+admission and reveal records, redacted native event/session exports, per-
+observation usage and cache rows, behaviour scores, lifecycle summaries and
+per-runtime aggregates below
+`tests/fixtures/instruction-architecture/evidence/native/`. Record observed
+provider revision, route and unknown fields without substituting a model or
+runtime. Do not change preregistrations, commitments, arm versions, scorer,
+prompt templates, controls, live instructions, production paths, authority or
+decision rules. Runtime scratch state stays in bounded isolated temporary
+roots; only redacted, schema-checked evidence enters the repository.
+
+Complete replacement Tests: Add `HoldoutRevealTests`, `ProviderAdapterTests`,
+`TranscriptBoundaryTests`, `SpendLedgerTests`, `HoldoutConformanceTests`,
+`BehaviouralScoringTests`, `IntervalTests`, `NativeAdmissionTests`,
+`NativeRuntimeAdapterTests`, `NativeLifecycleTests`,
+`NativeTelemetrySemanticsTests`, `TokenVectorTests`, `DominanceTests`,
+`OfflineReplayTests` and hostile evidence mutations. Fake providers and fake
+native runtimes cover every HTTP, process, JSON/JSONL, event, retry,
+truncation, timeout, usage, cache-category, TTL, compaction, session-resume,
+price, credit, redaction and cleanup path before live execution. Parent-red
+mutants cover omitted mandatory baselines, unequal behaviour admitted as a
+token competitor, an uncertainty-overlapping arm excluded, changed stable
+prefix, response replay, stale runtime, API emulation, missing lifecycle,
+unproved expiry, cached tokens removed from logical context, overlapping fresh
+categories, invalidation double-count, inclusive input added twice,
+unsupported subtraction, unknown imputed as zero, tokenizer pooling and dollar
+weighting. Run every command in the replacement Exit in order. Repeat focused
+tests, the full runner, repository-selected checks, Phylax, Ephoros and
+whitespace checks from clean retained evidence. For an audit repair, run
+`python3 tests/run_tests.py --elenchus-report {report}` with fresh path
+`.elenchus/fiat-1046-step-4.json` and required schema `elenchus.unittest.v1`;
+the parent runner must fail on missing, stale, malformed, unsuccessful or
+unattributable evidence. A repair that changes any frozen experiment byte does
+not rerun either gate in this issue.
+
+Complete replacement Disciplines: phylax: credentials, HTTPS, runtime
+subprocesses, mutable catalogs, provider output, session state, filesystem and
+concurrency are bounded by allowlists, caps, strict parsing, no shell, isolated
+state, redaction, atomic writes and identity checks. ephoros: every request,
+retry and native lifecycle transition has one correlation from source and arm
+through usage, cache category, behaviour and secondary cost; terminal stop
+causes are explicit. metron: identical cases and frozen routes run baseline
+first, fresh-token components never overlap, logical context counts reads,
+vectors retain native units, and `$100.00` caps exposure without weighting the
+decision. elenchus: provider, runtime and evidence failures reproduce under
+fakes; semantic failure invalidates the version instead of inviting tuning.
+hypomnema: raw evidence stays machine-readable, the report separates fact from
+unknown telemetry, and architecture selection remains for Step 5.
+
+**Why.** The former holdout step could establish behaviour but could not show
+how native session caching changes logical context and fresh-token churn across
+real lifecycle transitions. Executing the sealed behavioural gate first keeps
+admission independent of native outcomes; executing the separately committed
+native gate next supplies the missing deployment evidence without conflating
+token units, mutable prices or latency with the primary objective.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Goal: Publish the complete deterministic,
+behavioural and native lifecycle evidence; give every WAI1 and Noema mechanism
+an `adopt`, `adapt` or `reject` disposition; and report the per-runtime
+two-axis dominance result as one uniquely selected architecture, a retained
+Pareto frontier or no selection. Define a future implementation and recovery
+boundary only when the evidence supports a unique non-raw architecture, without
+filing or executing follow-on work.
+
+Complete replacement Entry: Step 4 is integrated; its behavioural and native
+reveals, deterministic rows, transcripts, gross ledger, behavioural intervals,
+admission result, native session evidence, cache accounting, lifecycle rows,
+per-runtime token vectors, secondary cost/latency evidence and offline replays
+are immutable. Evidence may pass, fail or remain inconclusive, and every unknown
+or failed predicate must survive publication. Fetch `origin/main` and record the
+current next-free ADR number only at publication; no temporary decision path
+may overwrite an independently landed ADR.
+
+Complete replacement Exit: All of the following hold:
+
+1. A numbered ADR and machine-readable decision record report, for each native
+   runtime/model/tokenizer without pooling, every admitted arm's behavioural
+   eligibility, lifecycle observations, complete logical-context high-water,
+   cache reads, cache writes, uncached suffix-or-miss tokens, cumulative fresh-
+   token churn, unknown fields and vector. Actual credits or settled cost and
+   latency remain separately labelled secondary deployment evidence; neither
+   becomes a token conversion or score weight.
+2. Dominance is computed only among arms with equal behaviour in the same
+   required runtime/model/tokenizer. Arm A dominates B only when A is no worse
+   on complete logical-context high-water and cumulative fresh-token churn and
+   is strictly better on at least one. Each runtime retains its full Pareto
+   frontier, including uncertainty caused by missing provider-native telemetry.
+   Unlike tokenizer units are never compared or pooled.
+3. Select one architecture only when the same arm establishes equal behaviour
+   and dominates every other eligible arm in every required native runtime.
+   If either axis or runtime disagrees, publish the unresolved per-runtime and
+   cross-runtime frontier without a scalar tie-break. If required evidence is
+   invalid, no arm is behaviour-eligible or no deployment choice can be
+   justified, select none. The gate is allowed to retain raw Markdown as the
+   unique result; that means no production architecture change. Every failed or
+   unknown predicate and the exact reason for frontier or none are explicit.
+4. Every substantive #909 and #942 mechanism has one evidence-linked
+   `adopt`/`adapt`/`reject` row. Historical WAI1 and Noema results remain pinned
+   and are not rewritten as comparable measurements. The ADR distinguishes the
+   selected neutral evaluator design from the architecture outcome.
+5. Create `docs/instruction-architecture/implementation-contract.md` if and
+   only if a unique non-raw simple or candidate arm passed behavioural,
+   deterministic, telemetry and cross-runtime dominance gates. It fixes the
+   semantic domain, schema or grammar, canonical form, source mapping, review
+   projection, slice algorithm, exact literals, authority and authorship,
+   deterministic APIs, versioning, migration, rollback, observability, bounds
+   and compatibility gates. When raw wins, a frontier remains or none is
+   selected, the path is absent and the ADR states the next bounded question.
+6. `docs/instruction-architecture/follow-up-decomposition.md` contains a ready-
+   to-file but unfiled set of repository boundaries, ordered changes,
+   acceptance tests, migration and rollback sequence, review points and
+   dependencies. The final research report reconciles every physical, unique,
+   reachable, prompt and native-context denominator; documents partitions,
+   cases, models, runtimes, provider terms, prompts, scoring, intervals, cache
+   semantics, vectors, frontiers, TCB/upkeep, secondary billing/latency,
+   failures and reproduction commands; links each claim to retained digests;
+   and says plainly that no production integration occurred.
+7. One offline command verifies the closed package from repository bytes,
+   including corpus, controls, development selection, both seal/reveal pairs,
+   deterministic and behavioural results, native sessions, telemetry semantics,
+   ledgers, vectors, dominance, ADR claims and optional implementation
+   contract. Tampering, missing evidence or claim/report disagreement refuses.
+   The full repository runner, discipline checks, Protasis, Imprimatur, audit
+   synopsis, Horos, dead-code currency when selected and whitespace checks
+   pass. The final branch changes no live behaviour and does not merge #942,
+   run `sync-run`, register or deploy anything, convert Markdown, file follow-up
+   issues or close #1030.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py decide-architecture --behavioural tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json --native tests/fixtures/instruction-architecture/evidence/native/aggregate.json --output tests/fixtures/instruction-architecture/evidence/decision.json
+python3 research/instruction-architecture/benchmark.py verify-package --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --evidence tests/fixtures/instruction-architecture/evidence --decision docs/decisions/select-an-agent-instruction-architecture.md
+python3 research/instruction-architecture/benchmark.py replay --cohort all --evidence tests/fixtures/instruction-architecture/evidence --offline
+python3 research/instruction-architecture/benchmark.py replay-native-gate --evidence tests/fixtures/instruction-architecture/evidence/native --offline
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --full --jobs 8
+python3 scripts/dead_code.py baseline --check
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/instruction-architecture/study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/instruction-architecture/runbook.md
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/instruction-architecture/study.md docs/instruction-architecture/runbook.md docs/instruction-architecture/corpus-reconciliation.md docs/instruction-architecture/research-report.md docs/instruction-architecture/follow-up-decomposition.md docs/decisions/select-an-agent-instruction-architecture.md
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py research/instruction-architecture docs/instruction-architecture docs/decisions/select-an-agent-instruction-architecture.md tests/fixtures/instruction-architecture
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Complete replacement Files: Change the research report, research README,
+workbench and tests only when required to bind final evidence without changing
+frozen semantics. Create
+`tests/fixtures/instruction-architecture/evidence/decision.json`, create the
+temporary decision path
+`docs/decisions/select-an-agent-instruction-architecture.md`, then rename it and
+all current references to the next free `ADR-NNN` at integration. Create
+`docs/instruction-architecture/follow-up-decomposition.md`. Create
+`docs/instruction-architecture/implementation-contract.md` only for a unique
+passing non-raw selection. Permit deterministic `.horos` regeneration and a
+report-only `.dead-code/baseline.json` refresh only when repository checks
+require them. Do not change any other product, plugin, root contract,
+dependency, CI or external-repository path.
+
+Complete replacement Tests: Add `DecisionConsistencyTests`,
+`PerRuntimeVectorTests`, `ParetoFrontierTests`,
+`MechanismDispositionTests`, `ImplementationContractTests`,
+`FollowUpBoundaryTests`, `ResearchReportTests` and `CompleteReplayTests`. They
+bind every number and digest; equal-behaviour filtering; complete-context and
+fresh-churn equations; mutually exclusive components; unknown propagation;
+per-runtime dominance; frontier retention on axis/runtime disagreement;
+single-selection only on cross-runtime dominance; raw/frontier/none contract
+absence; non-raw passing-selection contract presence; all #909/#942 rows;
+absence of filed issue ids; production-path exclusion; and one-command offline
+replay. Parent-red mutants attempt tokenizer pooling, dollar weighting,
+latency tie-breaking, unknown-to-zero coercion, cached-token omission,
+invalidation double-counting, false dominance, forced selection, an illegal
+contract and report/decision drift. Run every command in the replacement Exit,
+including the implementation contract in Imprimatur and Hypomnema only when it
+exists. For an audit repair, run `python3 tests/run_tests.py --elenchus-report
+{report}` with fresh path `.elenchus/fiat-1046-step-5.json` and required schema
+`elenchus.unittest.v1`; parent tests reject missing, stale, malformed,
+unsuccessful or unattributable audit evidence.
+
+Complete replacement Disciplines: phylax: final replay opens no network,
+credential or native session and proves all external evidence inert, bounded
+and redacted. ephoros: the final report maps every decision to source, arm,
+case, model, runtime, lifecycle, cache component, token vector and secondary
+billing/latency ids; there is no production alert. metron: publish baselines,
+context high-water, churn components, vectors, frontiers and secondary tails in
+their exact native units; never pool tokenizers or scalarize with dollars.
+elenchus: packaging, arithmetic, dominance and prose mismatches are parent-red
+and guarded; no semantic or native-gate failure is repaired in this version.
+hypomnema: the ADR owns the costly choice or explicit non-choice, the optional
+contract owns only a supported future implementation, the research report owns
+evidence and the decomposition owns unfiled work.
+
+**Why.** A scalar ranking would erase the corrected objective whenever context
+pressure and fresh-token churn disagree, and cross-runtime pooling would invent
+a token unit that no provider exposes. Per-runtime Pareto sets preserve the
+actual result. Requiring the same uniquely dominant arm across native runtimes
+keeps an implementation contract from laundering uncertainty into a deployment
+decision.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Tests: Add
+`DevelopmentAggregateTests`, `CandidateSelectionTests`,
+`AdmissionRuleTests`, `PreregistrationTests`, `PromptContaminationTests`,
+`StatisticsTests`, `BudgetLedgerTests`, `ModelPreflightTests`,
+`NativeRuntimeManifestTests`, `NativeCacheAccountingTests`,
+`NativeLifecyclePreregistrationTests` and `PacketCommitmentTests`. Parent-red
+guards cover a deterministic critical failure; an uncertainty-overlapping or
+sole-compatible arm incorrectly excluded; a legacy ratio used as a veto; an
+underpowered interval; scorer or answer material in either prompt; unstable-
+prefix ordering; enabled response caching; overlapping cache categories;
+cached tokens omitted from logical context; invalidation double-counted;
+cross-tokenizer pooling; dollar-weighted selection; mismatched model or runtime
+id; unproved expiry; native session launch; non-ZDR route; missing fee; over-
+budget reservation; lost uncertain attempt; and post-freeze rule change. Run
+every command in the effective Step 3 Exit. Run both OpenRouter preflights once
+for each of `neutral-evidence-workbench`, `wai1-hosted-evaluator` and
+`noema-hosted-evaluator`, using their six exact report paths in
+`.hexaemeron/design-evidence.json`. Run the native no-session preflight once for
+each candidate using the three distinct paths frozen in
+`native-deployment-preregistration.json`; these native reports do not amend or
+masquerade as the immutable Step 2 design-evidence results. Repeat the focused
+unittest, full runner, selected repository checks and whitespace check after a
+fresh eight-output rebuild, then replay both packet commitments byte-for-byte.
+For an audit repair, run `python3 tests/run_tests.py --elenchus-report {report}`
+with fresh path `.elenchus/fiat-1046-step-3.json` and required schema
+`elenchus.unittest.v1`; the parent runner must fail if the report is missing,
+stale, malformed, unsuccessful or not attributable to that invocation.
+
+**Why.** The immutable Step 2 design-evidence record contains six pending
+OpenRouter report paths and no native criterion. Reusing or editing those paths
+would either overwrite evidence or reopen the receipted evaluator selection.
+The native gate is a later deployment experiment and therefore owns three
+separate frozen preflight paths.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Goal: Measure the five immutable arms on
+the development cohort; freeze their versions, a conservative mechanical rule
+for admitting the architecture nominee and every statistically or
+operationally near-frontier arm; and freeze two disjoint answer-free packets:
+the existing seven-model behavioural holdout and a native Claude Code/Codex
+deployment gate. Freeze model routes, scorer, lifecycle schedule, cache
+accounting, runtime invocation and configuration, two-axis decision rule and
+the `$4,500.00` OpenRouter gross spend ceiling before either sealed packet
+opens. No paid request or answer-producing native session runs in this step.
+
+Complete replacement Exit: All of the following hold:
+
+1. One content-addressed development aggregate reports raw, WAI1, Noema, simple
+   and section graph on coverage, exact fidelity, complete assembled bytes and
+   every locally available tokenizer separately, parse/select/assembly p50 and
+   p95, peak RSS, disk, executable LOC, dependencies, mutations, crashes,
+   nondeterminism and source-edit amplification. Component rows are mutually
+   exclusive and every denominator reconciles. The issue's 0.80 cold and 0.70
+   warm prompt ratios are retained as descriptive legacy observations, not as
+   the deployment objective or an admission veto.
+2. A frozen admission function first excludes any non-control arm with a
+   deterministic critical failure. Raw Markdown and simple deterministic are
+   mandatory native-gate baselines. The development nominee is the remaining
+   non-control arm or tied set not dominated on complete-context proxies and
+   operational feasibility. After the behavioural holdout, Step 4 must also
+   admit every non-control arm that establishes equal behaviour and cannot be
+   excluded with the frozen evidence: a paired 95% interval overlaps a nominee
+   or frontier arm, available token axes do not prove strict dominance, or the
+   arm is the sole compatible survivor for a required runtime. Stable arm id
+   resolves serialization only, never substantive uncertainty. The final
+   architecture remains undecided.
+3. The behavioural preregistration binds 16 answer-producing holdout cases
+   across the sealed logical skills and all required semantic classes. Each
+   response is a bounded structured plan, decision, refusal, recovery or tool
+   invocation; identifier-only multiple choice is diagnostic only. A
+   deterministic scorer is representation-blind. Presentation order and case
+   order use fixed seeds.
+4. Two independent behavioural cohorts run all five arms through exactly
+   `anthropic/claude-opus-5`, `google/gemini-3.7-flash`,
+   `qwen/qwen3.8-27b`, `openai/gpt-5.6-sol`,
+   `deepseek/deepseek-v4-pro-0813`, `moonshotai/kimi-k3`, and
+   `z-ai/glm-5.3`, for 1,120 logical calls before bounded retries. Each model
+   has one ordered ZDR-required provider policy; unavailable remains unknown
+   and no model id substitutes. The paired one-sided 95% degradation interval,
+   trial aggregation, error taxonomy, critical-policy zero tolerance and
+   no-tuning rule are frozen; the implementation recomputes the bound.
+5. A separate native deployment preregistration binds native Claude Code and
+   native Codex runtime versions, model/tokenizer identity when exposed, exact
+   invocation and configuration, isolated state roots, environment allowlist,
+   response-cache disablement, stable representation-and-bootstrap prefix,
+   changing task suffix, correlation ids and these ordered lifecycle cases:
+   cold start, continuous warm use, resume within provider TTL, resume after
+   expiry and post-compaction. Cache TTL and expiry wait are source-attributed;
+   an unprovable expiry predicate makes that runtime result inconclusive rather
+   than guessed. The packet contains no response, expected answer, scorer key,
+   holdout source or provider secret and no native session is launched.
+6. The native schema makes cache-read, cache-write and uncached suffix-or-miss
+   token categories mutually exclusive. It defines complete logical-context
+   high-water as all logical input tokens, including cache reads in full, and
+   cumulative fresh-token churn as cache writes plus uncached suffix-or-miss
+   tokens. Invalidation is represented only by later fresh work. Unknown native
+   telemetry remains unknown unless documented provider semantics support an
+   exact derivation. Behaviour is an eligibility predicate; dominance compares
+   the two token axes separately per runtime, model and tokenizer. Unlike
+   tokenizers are never pooled, and tokens are never dollar-weighted. Billing,
+   settled cost, actual credits, latency, TCB, upkeep, compatibility and
+   recovery are frozen as secondary evidence.
+7. `.hexaemeron/model-evaluation-authority.json` records the user's standing
+   authority through 2026-09-03, the `$4,500.00` gross ceiling, credential
+   location by label rather than value, reservation and settlement rules,
+   retry cap, redaction policy and current credit observation. OpenRouter spend
+   and matrix preflights plus a no-session native preflight produce the
+   progressive design reports without a paid call or native answer. The
+   immutable evaluator design evidence passes `--transition step:4`; the
+   selected neutral workbench is not confused with a selected architecture.
+8. Both answer-free packet commitments reproduce from repository bytes.
+   Searching packet bytes finds no expected answer, scorer key, source class
+   label or competing representation name. Offline development replay, focused
+   tests and repository-selected checks pass.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py aggregate-development --evidence tests/fixtures/instruction-architecture/evidence/development --output tests/fixtures/instruction-architecture/development-selection.json
+python3 research/instruction-architecture/benchmark.py freeze-experiment --selection tests/fixtures/instruction-architecture/development-selection.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --output tests/fixtures/instruction-architecture/evidence/frozen
+python3 research/instruction-architecture/benchmark.py freeze-native-gate --selection tests/fixtures/instruction-architecture/development-selection.json --runtime-manifest tests/fixtures/instruction-architecture/native-runtime-manifest.json --output tests/fixtures/instruction-architecture/evidence/frozen/native
+python3 research/instruction-architecture/benchmark.py verify-native-preregistration --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --no-session
+python3 research/instruction-architecture/benchmark.py preflight-spend --candidate neutral-evidence-workbench --authority .hexaemeron/model-evaluation-authority.json --max-gross-usd 4500 --report .hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json
+python3 research/instruction-architecture/benchmark.py preflight-model-matrix --candidate neutral-evidence-workbench --models anthropic/claude-opus-5,google/gemini-3.7-flash,qwen/qwen3.8-27b,openai/gpt-5.6-sol,deepseek/deepseek-v4-pro-0813,moonshotai/kimi-k3,z-ai/glm-5.3 --require-zdr --report .hexaemeron/design-reports/neutral-evidence-workbench-seven-model-preflight.json
+python3 research/instruction-architecture/benchmark.py preflight-native-gate --candidate neutral-evidence-workbench --runtimes claude-code,codex --no-session --report .hexaemeron/design-reports/neutral-evidence-workbench-native-gate-preflight.json
+python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition step:4
+python3 research/instruction-architecture/benchmark.py emit-packet --preregistration tests/fixtures/instruction-architecture/preregistration.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --commitment-only --output tmp/framework-74-packet
+python3 research/instruction-architecture/benchmark.py emit-native-packet --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment-only --output tmp/framework-74-native-packet
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+git diff --check
+```
+
+Complete replacement Disciplines: phylax: both no-call preflights read only
+named secret-file metadata, locally installed runtime metadata, official
+allowlisted endpoints and bounded catalog responses; no credential enters argv
+or artifacts, and isolated runtime state cannot mutate user sessions. ephoros:
+development selection, admission, packet freeze, reservation and route events
+have stable run/candidate/runtime/lifecycle/case correlations and explicit
+terminal causes. metron: baselines precede selection, each token unit retains
+its runtime/model/tokenizer, both token axes and cache components are explicit,
+and `$4,500.00` bounds gross OpenRouter exposure without becoming an objective.
+elenchus: any frozen byte change invalidates the candidate version; neither
+sealed packet is repaired after opening. hypomnema: preregistrations own the
+experiments, the selection record owns only the provisional admission result,
+and the research report explains why final architecture selection remains
+open.
+
+**Why.** The frozen full matrix cannot fit the former ceiling. Against the
+current eligible ZDR routes, one initial attempt plus the authorised retry,
+the per-arm UTF-8-byte prompt maxima, 768 output tokens and the 5.5 percent fee
+produce a conservative gross bound of `$4,444.53582892800`. The rounded
+`$4,500.00` ceiling preserves the complete matrix and remains only a hard
+exposure guard; a price increase or insufficient live credit still refuses
+before any paid request instead of shrinking the experiment.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. One reveal record reproduces the Step 1 seal, source ref, admission method,
+   seeds, logical skills, byte coverage and closed behavioural cases. It proves
+   the behavioural holdout opened once after every relevant byte froze. Any
+   drift is a terminal failed version.
+2. All five arms build from the same revealed sources. Deterministic round-trip,
+   source traceability, classification, order, scope, negation, exception,
+   literal, alias, unknown, refusal, recovery, authority, resource,
+   stale-source, concurrent-edit, crash-recovery and safe-fallback checks emit
+   exact per-case rows. A critical deterministic failure cannot be averaged
+   away.
+3. Every preregistered OpenRouter logical call has a bounded accepted response
+   or durable unknown/refusal with model id, exposed provider revision, route,
+   attempt, request and response digests, timing, usage, settled cost and
+   reservation. The HTTPS adapter has no shell, uses strict size and schema
+   caps, allows at most three byte-identical attempts with fixed backoff, and
+   accepts no transcript-derived instruction. Public transcripts are retained
+   only after secret and header redaction.
+4. The gross ledger starts at zero for this experiment, chains every
+   reservation, settlement and retained uncertainty, reconciles OpenRouter
+   usage, checks live credit before each batch and never exceeds `$4,500.00`.
+   A top-up changes available credit only. No failed or uncertain attempt
+   silently releases exposure, and neither price nor cost enters a token-axis
+   score.
+5. Behavioural reports show all five arms, seven exact model ids, two cohorts,
+   prompt components, per-case success, false allow/refuse, critical failures,
+   latency, cost and paired intervals. Unlike tokenizer counts stay per model.
+   Equal behaviour requires complete deterministic fidelity, zero critical
+   regression and the preregistered one-sided paired 95% upper degradation
+   bound at or below 0.02. The 0.80/0.70 ratios are reported descriptively and
+   do not determine admission or selection.
+6. Before any native answer-producing session, one content-addressed admission
+   record applies the frozen rule to the closed behavioural evidence. Raw
+   Markdown and simple deterministic are always admitted. It records the
+   development nominee or tied set and admits every statistically or
+   operationally near-frontier non-control arm the rule cannot exclude. An arm
+   with unequal behaviour is marked ineligible, not measured as an equal-
+   behaviour token alternative. The record and the already committed native
+   packet together fix the exact arm/runtime/lifecycle execution matrix.
+7. Native Claude Code and native Codex each execute every admitted arm over the
+   preregistered isolated cases and repetitions in this order: cold start,
+   continuous warm use, resume within provider TTL, resume after proved expiry
+   and post-compaction. Each observation proves the frozen runtime binary,
+   version, model/tokenizer identity when exposed, invocation, configuration,
+   isolated state root, stable representation-and-bootstrap prefix followed by
+   the changing task suffix, and disabled local response reuse. Native session
+   continuation and compaction are used; direct API emulation is not a
+   substitute. A missing lifecycle, drifted runtime or unproved expiry is an
+   explicit per-runtime inconclusive result.
+8. Every native observation retains provider-native cache read, write and miss
+   telemetry when exposed; raw usage; start/end and first-token latency;
+   behavioural score; complete logical context; and actual credits or settled
+   cost when exposed. For a runtime with disjoint Anthropic-style fields,
+   complete logical input is uncached input plus cache-creation input plus
+   cache-read input. For a runtime whose total input already includes cached
+   input, complete logical input is that inclusive total. Total minus cached may
+   be derived only when documented semantics make the categories exhaustive.
+   Otherwise the component is unknown and the affected comparison is
+   inconclusive; no zero or estimate is imputed.
+9. Within every native runtime/model/tokenizer, cache-read, cache-write and
+   uncached suffix-or-miss tokens are mutually exclusive. Cached tokens count in
+   full toward the complete logical-context high-water and separately as cache
+   reads. Cumulative fresh-token churn is cache-write tokens plus uncached
+   suffix-or-miss tokens across the lifecycle; invalidation contributes only
+   through the later fresh tokens it causes. Reports retain each lifecycle row,
+   the context high-water, cumulative components and vector. They never pool
+   unlike tokenizers or convert token axes to money. Billing and latency remain
+   secondary deployment evidence.
+10. Per-runtime reports compare only equal-behaviour arms by dominance: no
+    worse on both token axes and strictly better on at least one. Axis or
+    runtime disagreement retains the Pareto frontier; missing decisive
+    telemetry is inconclusive. Step 4 records evidence and relations but does
+    not force one architecture. `benchmark.py replay --cohort holdout --offline`
+    and `replay-native-gate --offline` reconstruct every deterministic row,
+    request/prompt digest, score, ledger total, interval, cache component,
+    vector and dominance edge without network or native execution. Hostile
+    source, transcript, ledger, route, session, usage and report mutations
+    refuse; full repository checks pass.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py open-holdout --seal tests/fixtures/instruction-architecture/holdout-seal.json --preregistration tests/fixtures/instruction-architecture/preregistration.json --output tests/fixtures/instruction-architecture/evidence/holdout/reveal.json
+python3 research/instruction-architecture/benchmark.py build-holdout --reveal tests/fixtures/instruction-architecture/evidence/holdout/reveal.json --output tests/fixtures/instruction-architecture/evidence/holdout/deterministic
+python3 research/instruction-architecture/benchmark.py run-model-matrix --preregistration tests/fixtures/instruction-architecture/preregistration.json --authority .hexaemeron/model-evaluation-authority.json --credential-file /Users/kethcode/.config/codex/secrets/openrouter-api-key --output tests/fixtures/instruction-architecture/evidence/holdout/provider
+python3 research/instruction-architecture/benchmark.py aggregate-behavioural-holdout --evidence tests/fixtures/instruction-architecture/evidence/holdout --output tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json
+python3 research/instruction-architecture/benchmark.py admit-native-arms --selection tests/fixtures/instruction-architecture/development-selection.json --behavioural tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --output tests/fixtures/instruction-architecture/evidence/native/admission.json
+python3 research/instruction-architecture/benchmark.py open-native-gate --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --admission tests/fixtures/instruction-architecture/evidence/native/admission.json --output tests/fixtures/instruction-architecture/evidence/native/reveal.json
+python3 research/instruction-architecture/benchmark.py run-native-gate --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --admission tests/fixtures/instruction-architecture/evidence/native/admission.json --runtimes claude-code,codex --output tests/fixtures/instruction-architecture/evidence/native/sessions
+python3 research/instruction-architecture/benchmark.py aggregate-native-gate --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --evidence tests/fixtures/instruction-architecture/evidence/native --output tests/fixtures/instruction-architecture/evidence/native/aggregate.json
+python3 research/instruction-architecture/benchmark.py replay --cohort holdout --evidence tests/fixtures/instruction-architecture/evidence/holdout --offline
+python3 research/instruction-architecture/benchmark.py replay-native-gate --evidence tests/fixtures/instruction-architecture/evidence/native --offline
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture/evidence/holdout tests/fixtures/instruction-architecture/evidence/native
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture/evidence/holdout tests/fixtures/instruction-architecture/evidence/native
+git diff --check
+```
+
+Complete replacement Disciplines: phylax: credentials, HTTPS, runtime
+subprocesses, mutable catalogs, provider output, session state, filesystem and
+concurrency are bounded by allowlists, caps, strict parsing, no shell, isolated
+state, redaction, atomic writes and identity checks. ephoros: every request,
+retry and native lifecycle transition has one correlation from source and arm
+through usage, cache category, behaviour and secondary cost; terminal stop
+causes are explicit. metron: identical cases and frozen routes run baseline
+first, fresh-token components never overlap, logical context counts reads,
+vectors retain native units, and `$4,500.00` caps exposure without weighting
+the decision. elenchus: provider, runtime and evidence failures reproduce under
+fakes; semantic failure invalidates the version instead of inviting tuning.
+hypomnema: raw evidence stays machine-readable, the report separates fact from
+unknown telemetry, and architecture selection remains for Step 5.
+
+**Why.** Step 4 must carry the same authorised ceiling as the packet and
+preflight it consumes. The change affects only the hard gross-exposure guard;
+the full matrix, reservation rules, token objective, equal-behaviour gate and
+per-runtime dominance logic remain fixed.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. One content-addressed development aggregate reports raw, WAI1, Noema, simple
+   and section graph on coverage, exact fidelity, complete assembled bytes and
+   every locally available tokenizer separately, parse/select/assembly p50 and
+   p95, peak RSS, disk, executable LOC, dependencies, mutations, crashes,
+   nondeterminism and source-edit amplification. Component rows are mutually
+   exclusive and every denominator reconciles. The issue's 0.80 cold and 0.70
+   warm prompt ratios remain descriptive legacy observations, not an admission
+   veto or deployment objective.
+2. A frozen admission function first excludes any non-control arm with a
+   deterministic critical failure. Raw Markdown and simple deterministic are
+   mandatory native-gate baselines. The development nominee is the remaining
+   non-control arm or tied set not dominated on complete-context proxies and
+   operational feasibility. After the behavioural holdout, Step 4 also admits
+   every equal-behaviour non-control arm the frozen evidence cannot exclude:
+   its paired interval overlaps a nominee or frontier arm, available token axes
+   do not prove strict dominance, or it is the sole compatible survivor for a
+   required runtime. Stable arm id resolves serialization only. The final
+   architecture remains undecided.
+3. The behavioural preregistration binds 16 answer-producing slots over the
+   sealed logical skills and all five semantic classes. After reveal, a
+   deterministic generator selects a committed invocation profile, verifies
+   the pinned source ref, corpus manifest, complete source bytes and obligation
+   spans, and derives a closed structured task plus hidden oracle. Exact-literal
+   tasks include the verified committed input bytes. The response schema is
+   specific to the semantic class; scoring is representation-blind strict
+   equality with the hidden oracle, and model self-scoring is never
+   authoritative. Neither answer-free packet contains a source plaintext,
+   expected answer, oracle, scorer key or response.
+4. The fixed behavioural grid has two repeat and presentation-order conditions,
+   seven exact model ids, 16 fixed case slots and five arms: 1,120 logical calls
+   in 224 contiguous five-arm pair blocks. The two conditions repeat the same
+   case-model grid; they are not independently sampled case cohorts. Every
+   request is one user message with the complete rendered prompt,
+   `max_tokens=768`, `stream=false` and the semantic class's strict JSON Schema;
+   temperature, top-p, seed, tools and tool choice are omitted. A block compares
+   only an identical model id and nonempty settled provider route. Exposed model
+   revision and tokenizer digest must match; one-known is unknown, while
+   both-unknown is qualified for behaviour only and never token pooling. Each
+   logical call permits one initial attempt and at most one byte-identical retry.
+   Each model has one ordered ZDR-only provider policy; unavailable remains
+   unknown and no model substitutes.
+5. The empirical gate requires zero raw-only losses over the closed 224-cell
+   arm-versus-raw grid. A one-sided 95 percent bound at or below 0.02 is claimed
+   only if execution evidence establishes the preregistered independent
+   stateless-dispatch predicate. For zero heterogeneous Bernoulli events, the
+   implementation recomputes the conditional AM-GM upper bound
+   `1 - alpha^(1/n)`; 149 cells are the minimum and 224 are planned. Any
+   raw-only loss fails the two-percent inferential gate, and failed independence
+   makes it inconclusive. No task-population generalization is claimed.
+6. The separate native preregistration binds Claude Code 2.1.251 and Codex
+   0.151.0, requested models, exposed runtime/model/tokenizer identity, exact
+   schema-constrained invocation, isolated state and workspace roots, disabled
+   local response reuse, a stable representation-and-bootstrap prefix and a
+   changing task suffix. Five distinct committed behavioural tasks map one to
+   one onto cold start, continuous warm use, resume within TTL, resume after
+   expiry and post-compaction. One repetition permits at most ten runtime-arm
+   chains and 50 observations before the behavioural admission filter; raw and
+   simple execute in the first tier. Native continuation and compaction are
+   required; direct API emulation is not a substitute.
+7. Claude expiry uses the observed five-minute or one-hour cache-write class
+   plus 60 seconds and requires a later provider-native miss. Codex expiry waits
+   1,860 seconds after the latest write or reuse and also requires a miss; the
+   documented 30-minute minimum may persist longer, so a later hit is
+   inconclusive. Every provider-native usage event from a turn, including
+   compaction, is retained. Complete logical-context high-water is the maximum
+   inclusive logical input across events. Cumulative fresh-token churn sums
+   mutually exclusive cache writes and uncached suffix-or-miss tokens across
+   events; for Codex the latter is inclusive input minus cache reads and writes.
+   Invalidation counts only through later fresh work. Missing telemetry remains
+   unknown unless cited semantics permit exact derivation; negative or
+   overlapping categories refuse, and an unexpected answer-producing call
+   makes the chain inconclusive. Behaviour is an eligibility predicate;
+   dominance compares the two axes per runtime, model and tokenizer without
+   cross-tokenizer pooling or dollar weighting. Billing, credits or settled
+   cost, latency, TCB, upkeep, compatibility and recovery remain secondary.
+8. The exact-key Draft 2020-12 experiment schema recursively closes every
+   object. The two packet commitments reproduce byte-for-byte from repository
+   inputs, their schedules put baselines first, and contamination searches find
+   no forbidden answer material. Nine progressive no-answer preflights across
+   `neutral-evidence-workbench`, `wai1-hosted-evaluator` and
+   `noema-hosted-evaluator` bind live OpenRouter catalog/credit observations and
+   local native runtime/schema/authentication evidence without launching a
+   native task. The `$4,500.00` hard gross ceiling includes both bounded
+   attempts and remains separate from the objective. Offline development
+   replay, focused tests, full tests and repository-selected checks pass before
+   the packet opens.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py aggregate-development --evidence tests/fixtures/instruction-architecture/evidence/development --output tests/fixtures/instruction-architecture/development-selection.json
+python3 research/instruction-architecture/benchmark.py freeze-experiment --selection tests/fixtures/instruction-architecture/development-selection.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --output tests/fixtures/instruction-architecture/evidence/frozen
+python3 research/instruction-architecture/benchmark.py freeze-native-gate --selection tests/fixtures/instruction-architecture/development-selection.json --runtime-manifest tests/fixtures/instruction-architecture/native-runtime-manifest.json --output tests/fixtures/instruction-architecture/evidence/frozen/native
+python3 research/instruction-architecture/benchmark.py verify-native-preregistration --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --no-session
+python3 research/instruction-architecture/benchmark.py preflight-spend --candidate neutral-evidence-workbench --authority .hexaemeron/model-evaluation-authority.json --max-gross-usd 4500 --report .hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json
+python3 research/instruction-architecture/benchmark.py preflight-model-matrix --candidate neutral-evidence-workbench --models anthropic/claude-opus-5,google/gemini-3.7-flash,qwen/qwen3.8-27b,openai/gpt-5.6-sol,deepseek/deepseek-v4-pro-0813,moonshotai/kimi-k3,z-ai/glm-5.3 --require-zdr --report .hexaemeron/design-reports/neutral-evidence-workbench-seven-model-preflight.json
+python3 research/instruction-architecture/benchmark.py preflight-native-gate --candidate neutral-evidence-workbench --runtimes claude-code,codex --no-session --report .hexaemeron/design-reports/neutral-evidence-workbench-native-gate-preflight.json
+python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition step:4
+python3 research/instruction-architecture/benchmark.py emit-packet --preregistration tests/fixtures/instruction-architecture/preregistration.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --commitment-only --output tmp/framework-74-packet
+python3 research/instruction-architecture/benchmark.py emit-native-packet --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment-only --output tmp/framework-74-native-packet
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+git diff --check
+```
+
+**Why.** The implemented seal uses deterministic source-owned semantic cases,
+fixed repeat conditions and native lifecycle chains rather than sampled
+independent cohorts. The replacement removes false independence and retry
+claims and binds the exact schemas, comparability predicates, conditional
+inference and all-event cache accounting that Step 4 must execute without
+tuning.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. One reveal record reproduces the Step 1 seal, source ref, admission method,
+   seeds, logical skills, byte coverage and closed behavioural case plans. It
+   proves the behavioural holdout opened once after every relevant byte froze.
+   Materialization verifies the committed invocation profiles, source blobs,
+   obligation spans and exact-literal inputs before deriving any task or hidden
+   oracle. Any drift is a terminal failed version.
+2. All five arms build from the same revealed sources. Deterministic round-trip,
+   source traceability, classification, order, scope, negation, exception,
+   literal, alias, unknown, refusal, recovery, authority, resource,
+   stale-source, concurrent-edit, crash-recovery and safe-fallback checks emit
+   exact per-case rows. A critical deterministic failure cannot be averaged
+   away.
+3. The 1,120 frozen OpenRouter tuples execute in their 224 contiguous five-arm
+   pair blocks. Every tuple has one bounded initial attempt and at most one
+   byte-identical retry using the frozen one-message request, semantic response
+   schema and ordered ZDR route policy. A completed pair block has one exact
+   model id and settled provider route; exposed revision and tokenizer identity
+   obey the frozen known/unknown comparability rule. Every accepted, failed or
+   uncertain attempt retains request and response digests, terminal cause,
+   usage, timing, settled cost and reservation. The HTTPS adapter has no shell,
+   strict size and schema caps, fixed backoff and no transcript-derived
+   instruction. Public transcripts retain only bounded structured output after
+   secret and header redaction.
+4. The gross ledger starts at zero for this experiment, chains every
+   reservation, settlement and retained uncertainty, reconciles OpenRouter
+   usage, proves live credit before each tuple and never exceeds `$4,500.00`.
+   Both possible attempts are reserved before dispatch; a top-up changes only
+   available credit. No failed or uncertain attempt silently releases exposure,
+   and neither price nor cost enters a token-axis score. Insufficient credit
+   stops before the next immutable tuple and permits only prefix-preserving
+   resume.
+5. Behavioural reports retain all five arms, seven exact model ids, two fixed
+   repeat/order conditions, prompt components, per-case objective success,
+   false allow/refuse, critical failures, latency, cost and pair comparability.
+   The empirical gate requires zero raw-only losses over all 224 fixed cells.
+   The one-sided 95 percent upper degradation bound may be at most 0.02 only
+   when execution establishes independent stateless dispatch; the zero-event
+   heterogeneous Bernoulli AM-GM bound is recomputed with at least 149 eligible
+   cells. Any loss fails the inferential gate and failed independence is
+   inconclusive. No task-population generalization or exact heterogeneous
+   binomial interval is claimed. The 0.80/0.70 ratios remain descriptive.
+6. Before any native answer-producing session, one content-addressed admission
+   record applies the frozen rule to closed behavioural evidence. Raw Markdown
+   and simple deterministic are always admitted. It records the development
+   nominee or tied set and every equal-behaviour statistically or operationally
+   near-frontier non-control arm the rule cannot exclude. An unequal or unknown-
+   behaviour arm is ineligible. The record and committed native packet fix the
+   exact execution subset without changing packet bytes.
+7. For each admitted runtime-arm pair, native Claude Code and Codex run one
+   persistent chain containing five distinct committed semantic tasks, in this
+   order: cold start, continuous warm use, resume within provider TTL, resume
+   after proved expiry and post-compaction. Before admission there are at most
+   ten chains and 50 observations; each runtime's raw/simple baseline tier runs
+   before candidates. Every observation proves the frozen executable digest,
+   version, requested and resolved model, tokenizer identity or explicit
+   unknown, schema-constrained invocation, isolated state/workspace,
+   representation-and-bootstrap prefix and changing task suffix. Native
+   continuation and compaction are mandatory; direct API emulation is not a
+   substitute. A missing lifecycle or drifted identity is inconclusive.
+8. Claude expiry requires its observed five-minute or one-hour cache class plus
+   60 seconds and then a provider-native miss. Codex expiry waits 1,860 seconds
+   after the latest write or reuse and requires a miss; a cache hit after that
+   wait is inconclusive because the documented minimum can persist longer.
+   Every provider-native usage event for a turn, including compaction, retains
+   raw input, cache reads, cache writes, uncached suffix-or-miss, latency,
+   behavioural score and credits or settled cost when exposed. Unexpected
+   answer-producing calls make the chain inconclusive rather than disappearing
+   from accounting.
+9. Per runtime, model and tokenizer, complete logical-context high-water is the
+   maximum inclusive logical input over all lifecycle events; cached tokens
+   count in full and separately as reads. Cumulative fresh-token churn is the
+   sum of mutually exclusive writes and uncached suffix-or-miss tokens over all
+   events. Claude's inclusive logical input is uncached input plus creation plus
+   reads. Codex input is already inclusive, and its uncached component is input
+   minus reads and writes. Invalidation counts only through later fresh work.
+   Negative or overlapping categories refuse; other missing decisive telemetry
+   is unknown and makes that comparison inconclusive. Unlike tokenizer units
+   are never pooled or dollar-weighted; billing and latency remain secondary.
+10. Per-runtime reports compare only equal-behaviour arms by dominance: no
+    worse on both token axes and strictly better on at least one. Axis or
+    runtime disagreement retains the Pareto frontier; missing decisive evidence
+    is inconclusive, and Step 4 may establish no deployable choice. It records
+    evidence and relations without forcing one architecture. `benchmark.py
+    replay --cohort holdout --offline` and `replay-native-gate --offline`
+    reconstruct every deterministic row, prompt/request digest, objective
+    score, attempt and ledger total, conditional interval, provider event,
+    cache component, vector and dominance edge without network or native
+    execution. Hostile source, transcript, ledger, route, session, usage and
+    report mutations refuse; full repository checks pass.
+
+Run:
+
+```text
+python3 research/instruction-architecture/benchmark.py open-holdout --seal tests/fixtures/instruction-architecture/holdout-seal.json --preregistration tests/fixtures/instruction-architecture/preregistration.json --output tests/fixtures/instruction-architecture/evidence/holdout/reveal.json
+python3 research/instruction-architecture/benchmark.py build-holdout --reveal tests/fixtures/instruction-architecture/evidence/holdout/reveal.json --output tests/fixtures/instruction-architecture/evidence/holdout/deterministic
+python3 research/instruction-architecture/benchmark.py run-model-matrix --preregistration tests/fixtures/instruction-architecture/preregistration.json --authority .hexaemeron/model-evaluation-authority.json --credential-file /Users/kethcode/.config/codex/secrets/openrouter-api-key --output tests/fixtures/instruction-architecture/evidence/holdout/provider
+python3 research/instruction-architecture/benchmark.py aggregate-behavioural-holdout --evidence tests/fixtures/instruction-architecture/evidence/holdout --output tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json
+python3 research/instruction-architecture/benchmark.py admit-native-arms --selection tests/fixtures/instruction-architecture/development-selection.json --behavioural tests/fixtures/instruction-architecture/evidence/holdout/behavioural-aggregate.json --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --output tests/fixtures/instruction-architecture/evidence/native/admission.json
+python3 research/instruction-architecture/benchmark.py open-native-gate --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --admission tests/fixtures/instruction-architecture/evidence/native/admission.json --output tests/fixtures/instruction-architecture/evidence/native/reveal.json
+python3 research/instruction-architecture/benchmark.py run-native-gate --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --admission tests/fixtures/instruction-architecture/evidence/native/admission.json --runtimes claude-code,codex --output tests/fixtures/instruction-architecture/evidence/native/sessions
+python3 research/instruction-architecture/benchmark.py aggregate-native-gate --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --evidence tests/fixtures/instruction-architecture/evidence/native --output tests/fixtures/instruction-architecture/evidence/native/aggregate.json
+python3 research/instruction-architecture/benchmark.py replay --cohort holdout --evidence tests/fixtures/instruction-architecture/evidence/holdout --offline
+python3 research/instruction-architecture/benchmark.py replay-native-gate --evidence tests/fixtures/instruction-architecture/evidence/native --offline
+python3 -m unittest tests.test_instruction_architecture -v
+python3 tests/run_tests.py
+python3 scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture/evidence/holdout tests/fixtures/instruction-architecture/evidence/native
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py research/instruction-architecture tests/test_instruction_architecture.py tests/fixtures/instruction-architecture/evidence/holdout tests/fixtures/instruction-architecture/evidence/native
+git diff --check
+```
+
+**Why.** Step 4 must execute exactly the sealed fixed grid and native chains.
+The replacement removes the obsolete three-attempt allowance and freezes the
+conditional inference, pair identity, five-task lifecycle, TTL proof and
+all-provider-event token accounting required by the corrected two-axis
+objective.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

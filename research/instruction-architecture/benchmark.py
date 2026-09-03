@@ -10,25 +10,36 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import Counter
+from contextlib import contextmanager
+from decimal import Decimal, InvalidOperation, localcontext
 import hashlib
+import importlib
+import importlib.util
 import itertools
 import json
 import math
 import os
 from pathlib import Path, PurePosixPath
 import posixpath
+import pwd
 import re
 import resource
 import secrets
 import selectors
+import shlex
 import signal
+import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 from bisect import bisect_left, bisect_right
 from functools import lru_cache
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
+from urllib.error import HTTPError, URLError
+from urllib.request import HTTPSHandler, HTTPRedirectHandler, Request, build_opener
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -190,7 +201,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "5c2d75f64fa661772f915a0abba6b443c247774be8b77271ce87c97ba87a6b51"
+    "8879361a57f9270dbbc5b7d8ef0fe5900e20555afbed7ee27a256a02328660cd"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -198,6 +209,104 @@ EXPECTED_CONTROL_SHA256 = {
     "section-graph": "64f62560d56b65c782c792854a7803e90c864cb7fa590e75618f2f744c8d40a1",
     "simple": "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
     "wai1": "d45599ba946cf515a72491310a105db6e257847d67541f218398877ea84e0ac1",
+}
+
+EXPERIMENT_SCHEMA = PurePosixPath(
+    "research/instruction-architecture/schemas/experiment-v1.schema.json"
+)
+EXPERIMENT_FIXTURE_ROOT = PurePosixPath("tests/fixtures/instruction-architecture")
+CORPUS_MANIFEST = EXPERIMENT_FIXTURE_ROOT / "corpus-manifest.json"
+DEVELOPMENT_SELECTION = EXPERIMENT_FIXTURE_ROOT / "development-selection.json"
+BEHAVIORAL_PREREGISTRATION = EXPERIMENT_FIXTURE_ROOT / "preregistration.json"
+MODEL_RUNTIME_MANIFEST = EXPERIMENT_FIXTURE_ROOT / "model-runtime-manifest.json"
+BEHAVIORAL_PROMPT_TEMPLATE = EXPERIMENT_FIXTURE_ROOT / "prompt-template.txt"
+BEHAVIORAL_SCORER = EXPERIMENT_FIXTURE_ROOT / "scorer.json"
+BEHAVIORAL_COMMITMENT = EXPERIMENT_FIXTURE_ROOT / "holdout-packet-commitment.json"
+FROZEN_BEHAVIORAL_ROOT = EXPERIMENT_FIXTURE_ROOT / "evidence/frozen"
+NATIVE_PREREGISTRATION = (
+    EXPERIMENT_FIXTURE_ROOT / "native-deployment-preregistration.json"
+)
+NATIVE_RUNTIME_MANIFEST = EXPERIMENT_FIXTURE_ROOT / "native-runtime-manifest.json"
+NATIVE_CACHE_ACCOUNTING = EXPERIMENT_FIXTURE_ROOT / "native-cache-accounting.json"
+NATIVE_PROMPT_TEMPLATE = EXPERIMENT_FIXTURE_ROOT / "native-prompt-template.txt"
+NATIVE_COMMITMENT = (
+    EXPERIMENT_FIXTURE_ROOT / "native-lifecycle-packet-commitment.json"
+)
+FROZEN_NATIVE_ROOT = FROZEN_BEHAVIORAL_ROOT / "native"
+MODEL_IDS = (
+    "anthropic/claude-opus-5",
+    "google/gemini-3.7-flash",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-5.6-sol",
+    "deepseek/deepseek-v4-pro-0813",
+    "moonshotai/kimi-k3",
+    "z-ai/glm-5.3",
+)
+EVALUATOR_CANDIDATES = (
+    "neutral-evidence-workbench",
+    "wai1-hosted-evaluator",
+    "noema-hosted-evaluator",
+)
+NATIVE_RUNTIMES = ("claude-code", "codex")
+NATIVE_RESPONSE_REUSE_SHA256 = (
+    "1895eb199f74072637c05a3fc3826f9602433de717d776fb5dfaadedb1860a33"
+)
+NATIVE_RUNTIME_RECORD_SHA256 = {
+    "claude-code": "147a80d9d34f24837562f9fb0c8aa086d6029bb72aff9f249f4209564d612fae",
+    "codex": "ac9e2cf5bb89cabff77096db17a6f0af64112ee48ee67c38a7d98292697b2f4f",
+}
+NATIVE_CACHE_ACCOUNTING_SHA256 = (
+    "e58fc949a40f89dbc44b7a85e8e26bc92723fa5a18a0068d863d58ffcbcb77ad"
+)
+NATIVE_LIFECYCLES = (
+    "cold-start",
+    "continuous-warm",
+    "resume-within-ttl",
+    "resume-after-expiry",
+    "post-compaction",
+)
+BEHAVIORAL_ACTIONS = {
+    "decision": "decide",
+    "refusal": "refuse",
+    "recovery": "recover",
+    "structured-plan": "plan",
+    "tool-invocation": "invoke",
+}
+SEMANTIC_WITNESS_RULES = {
+    "authority": "closed profile phase plus primary skill obligation witness",
+    "failure": "closed profile branch state plus primary skill obligation witness",
+    "recovery": "closed required-document set plus primary skill obligation witness",
+    "exact-literal": "closed ordered document set plus primary skill obligation witness",
+    "cross-document": "closed dependency set plus first two obligation witnesses",
+}
+CASE_GENERATOR_ALGORITHM = "source-ref-invocation-profile-oracle/v1"
+NATIVE_REPETITIONS = 1
+BEHAVIORAL_COHORTS = ("cohort-a", "cohort-b")
+OPENROUTER_ENDPOINTS = {
+    "account": "https://openrouter.ai/api/v1/key",
+    "credits": "https://openrouter.ai/api/v1/credits",
+    "models": "https://openrouter.ai/api/v1/models",
+    "zdr": "https://openrouter.ai/api/v1/endpoints/zdr",
+}
+BATCH_ORDER_SEED = (
+    "7d7eee40bc69b0273a41d56572f2afbcec1132075ac30581b1a54e0e24af836c"
+)
+MAX_HTTP_BYTES = 4 * 1024 * 1024
+HTTP_TIMEOUT_SECONDS = 20
+MAX_COMMAND_OUTPUT_BYTES = 2 * 1024 * 1024
+DESIGN_REPORT_ROOT = PurePosixPath(".hexaemeron/design-reports")
+BEHAVIORAL_TRIALS = 2
+BEHAVIORAL_CASES = 16
+BEHAVIORAL_LOGICAL_CALLS = (
+    len(DEVELOPMENT_ARMS) * len(MODEL_IDS) * BEHAVIORAL_TRIALS * BEHAVIORAL_CASES
+)
+BEHAVIORAL_ALPHA = Decimal("0.05")
+BEHAVIORAL_MAX_DEGRADATION = Decimal("0.02")
+NATIVE_REPORT_PATHS = {
+    candidate: PurePosixPath(
+        f".hexaemeron/design-reports/{candidate}-native-gate-preflight.json"
+    )
+    for candidate in EVALUATOR_CANDIDATES
 }
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
@@ -6458,6 +6567,68 @@ def _atomic_write(path: Path, data: bytes) -> None:
         os.close(parent)
 
 
+def _existing_output_bytes(path: Path, limit: int) -> bytes | None:
+    """Read an already published target without following any path component."""
+    relative = _repository_relative(path, "output")
+    parent, name = _open_parent(relative, create=False, label="output")
+    try:
+        try:
+            descriptor = os.open(name, _regular_read_flags(), dir_fd=parent)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise Refusal("existing output is unavailable or unsafe") from exc
+        try:
+            raw, opened = _read_descriptor(descriptor, limit)
+        finally:
+            os.close(descriptor)
+        try:
+            named = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        except OSError as exc:
+            raise Refusal("existing output changed during read") from exc
+        if _identity(opened) != _identity(named):
+            raise Refusal("existing output changed during read")
+        return raw
+    finally:
+        os.close(parent)
+
+
+def _publish_committed_set(
+    ordered: list[tuple[Path, bytes]], *, terminal: Path
+) -> None:
+    """Publish payloads first and one external commitment as the last marker.
+
+    An interrupted run may resume only when every previously published byte is
+    exactly the byte planned now.  Once the terminal marker exists, the set is
+    immutable and must already be complete.
+    """
+    if not ordered or ordered[-1][0] != terminal:
+        raise Refusal("commitment marker is not the final publication")
+    paths = [path for path, _ in ordered]
+    if len(paths) != len(set(paths)):
+        raise Refusal("committed publication contains duplicate targets")
+    for path in paths:
+        _safe_output(path)
+    observed = {
+        path: _existing_output_bytes(path, max(MAX_JSON_BYTES, len(raw)))
+        for path, raw in ordered
+    }
+    for path, expected in ordered:
+        actual = observed[path]
+        if actual is not None and actual != expected:
+            raise Refusal("interrupted committed publication contains stale bytes")
+    if observed[terminal] is not None:
+        if any(observed[path] is None for path in paths):
+            raise Refusal("terminal commitment exists for an incomplete publication")
+        return
+    for path, raw in ordered:
+        if observed[path] is None:
+            _atomic_write(path, raw)
+    for path, raw in ordered:
+        if _existing_output_bytes(path, max(MAX_JSON_BYTES, len(raw))) != raw:
+            raise Refusal("committed publication failed final verification")
+
+
 # Step 2 keeps evaluator semantics outside every adapter.  This same contract
 # is copied into each arm record so neither historical IR becomes the host.
 NEUTRAL_CONTRACT = {
@@ -10170,6 +10341,4193 @@ def build_baseline(args: argparse.Namespace) -> bytes:
     )
 
 
+def _digested_record(body: dict[str, Any]) -> dict[str, Any]:
+    if "sha256" in body:
+        raise Refusal("content-addressed record body already contains a digest")
+    return {**body, "sha256": _sha256(_canonical_json(body))}
+
+
+def _validate_digested_record(record: dict[str, Any], label: str) -> None:
+    if not isinstance(record, dict) or not isinstance(record.get("sha256"), str):
+        raise Refusal(f"{label} is not content-addressed")
+    body = {key: value for key, value in record.items() if key != "sha256"}
+    if record["sha256"] != _sha256(_canonical_json(body)):
+        raise Refusal(f"{label} digest drift")
+
+
+def _nearest_rank(values: list[int], percentile: Decimal) -> int:
+    if not values:
+        raise Refusal("timing sample set is empty")
+    ordered = sorted(values)
+    rank = max(1, math.ceil(float(percentile) * len(ordered)))
+    return ordered[rank - 1]
+
+
+def _timing_summary(operation: Any, repetitions: int = 9) -> dict[str, Any]:
+    if repetitions < 2 or repetitions > 31:
+        raise Refusal("timing repetition count is outside its bound")
+    samples: list[int] = []
+    for _ in range(repetitions):
+        started = time.perf_counter_ns()
+        operation()
+        samples.append(max(1, time.perf_counter_ns() - started))
+    return {
+        "p50_ns": _nearest_rank(samples, Decimal("0.50")),
+        "p95_ns": _nearest_rank(samples, Decimal("0.95")),
+        "repetitions": repetitions,
+    }
+
+
+def _locally_available_tokenizers() -> tuple[list[dict[str, Any]], list[str]]:
+    """Load only known local tokenizer packages; never download a vocabulary."""
+    available: list[dict[str, Any]] = []
+    unavailable: list[str] = []
+    if importlib.util.find_spec("tiktoken") is None:
+        unavailable.extend(("tiktoken:cl100k_base", "tiktoken:o200k_base"))
+    else:
+        module = importlib.import_module("tiktoken")
+        for encoding_name in ("cl100k_base", "o200k_base"):
+            try:
+                encoding = module.get_encoding(encoding_name)
+            except Exception as exc:  # pragma: no cover - depends on optional package
+                unavailable.append(f"tiktoken:{encoding_name}:{type(exc).__name__}")
+                continue
+            available.append(
+                {
+                    "count": lambda text, current=encoding: len(current.encode(text)),
+                    "id": f"tiktoken:{encoding_name}",
+                }
+            )
+    return available, unavailable
+
+
+def _source_edit_amplification(record: dict[str, Any]) -> dict[str, Any]:
+    samples: list[int] = []
+    for result in record["results"]:
+        source = result["outcome"]["source_expectation"]
+        components = {item["id"]: item for item in result["prompt"]["components"]}
+        affected: set[str] = set()
+        for trace in result["selection_trace"]:
+            if source["path"] in trace["original_paths"]:
+                affected.add(trace["component_id"])
+        regenerated = sum(
+            len(components[identifier]["content"].encode("utf-8"))
+            for identifier in affected
+        )
+        edited_span = source["end"] - source["start"]
+        if edited_span <= 0 or regenerated <= 0:
+            raise Refusal("source-edit amplification has an empty source or projection")
+        samples.append(math.ceil(regenerated / edited_span))
+    return {
+        "maximum_regenerated_bytes_per_edited_source_byte": max(samples),
+        "median_regenerated_bytes_per_edited_source_byte": _nearest_rank(
+            samples, Decimal("0.50")
+        ),
+        "samples": len(samples),
+    }
+
+
+def _development_arm_summary(
+    arm: str,
+    control: dict[str, Any],
+    result: dict[str, Any],
+    hostile_rows: list[dict[str, Any]],
+    tokenizer_specs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    aggregate = result["aggregate"]
+    prompt_texts = [
+        _canonical_json(item["prompt"]).decode("utf-8") for item in result["results"]
+    ]
+    token_counts = [
+        {
+            "aggregation": "sum-of-complete-prompts-with-no-cross-case-merges",
+            "tokenizer_id": item["id"],
+            "tokens": sum(item["count"](text) for text in prompt_texts),
+        }
+        for item in tokenizer_specs
+    ]
+    parse_timing = _timing_summary(
+        lambda: _decode_record(_canonical_json(result)), repetitions=9
+    )
+    select_timing = _timing_summary(
+        lambda: sum(
+            len(item["selection_trace"]) for item in result["results"]
+        ),
+        repetitions=9,
+    )
+    assemble_timing = _timing_summary(
+        lambda: b"".join(
+            _canonical_json(item["prompt"]) for item in result["results"]
+        ),
+        repetitions=9,
+    )
+    cases = aggregate["cases"]
+    unavailable_cases = cases - aggregate["exact_source_recovery_cases"]
+    critical_failure = unavailable_cases > 0
+    native_complete = aggregate["native_exact_source_recovery_cases"] == cases
+    fallback_cases = aggregate["fallback_cases"]
+    return {
+        "arm": arm,
+        "complete_assembled_bytes": aggregate["prompt_bytes"],
+        "maximum_complete_prompt_bytes": max(
+            len(_canonical_json(item["prompt"])) for item in result["results"]
+        ),
+        "control_sha256": _artifact_digest(control),
+        "coverage": {
+            "cases": cases,
+            "exact_source_recovery_cases": aggregate["exact_source_recovery_cases"],
+            "fallback_cases": fallback_cases,
+            "native_exact_source_recovery_cases": aggregate[
+                "native_exact_source_recovery_cases"
+            ],
+            "native_mapping_cases": aggregate["native_mapping_cases"],
+        },
+        "deterministic_critical_failure": critical_failure,
+        "failure_causes": (
+            [f"{unavailable_cases} development cases lack exact source recovery"]
+            if critical_failure
+            else []
+        ),
+        "fidelity": {
+            "exact_source_recovery_ratio": f"{aggregate['exact_source_recovery_cases'] / cases:.6f}",
+            "native_complete": native_complete,
+        },
+        "hostile": {
+            "crashes": sum(item["status"] == "crash" for item in hostile_rows),
+            "mutations_exercised": len(hostile_rows),
+            "refusals": sum(item["status"] == "refused" for item in hostile_rows),
+        },
+        "nondeterminism": {"distinct_digests": 1, "replays": 2},
+        "operational_feasibility": {
+            "all_cases_exact": unavailable_cases == 0,
+            "all_cases_native": native_complete,
+            "fallback_cases": fallback_cases,
+        },
+        "source_edit_amplification": _source_edit_amplification(result),
+        "timing": {
+            "assembly": assemble_timing,
+            "parse_validate": parse_timing,
+            "select": select_timing,
+        },
+        "token_counts": token_counts,
+    }
+
+
+def _development_dominates(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    """Conservative proxy dominance; Boolean feasibility precedes no byte axis."""
+    left_axes = (
+        left["complete_assembled_bytes"],
+        left["coverage"]["fallback_cases"],
+        left["coverage"]["cases"] - left["coverage"]["native_mapping_cases"],
+    )
+    right_axes = (
+        right["complete_assembled_bytes"],
+        right["coverage"]["fallback_cases"],
+        right["coverage"]["cases"] - right["coverage"]["native_mapping_cases"],
+    )
+    return all(a <= b for a, b in zip(left_axes, right_axes, strict=True)) and any(
+        a < b for a, b in zip(left_axes, right_axes, strict=True)
+    )
+
+
+def _selection_from_development(
+    arms: list[dict[str, Any]], inventory_sha256: str, resources: dict[str, Any]
+) -> dict[str, Any]:
+    by_id = {item["arm"]: item for item in arms}
+    raw_bytes = by_id["raw"]["complete_assembled_bytes"]
+    eligible = [
+        by_id[arm]
+        for arm in DEVELOPMENT_ARMS
+        if not by_id[arm]["deterministic_critical_failure"]
+    ]
+    frontier = [
+        item
+        for item in eligible
+        if not any(
+            other is not item and _development_dominates(other, item)
+            for other in eligible
+        )
+    ]
+    implementation_ready = [
+        item
+        for item in frontier
+        if item["operational_feasibility"]["all_cases_native"]
+        and item["operational_feasibility"]["all_cases_exact"]
+    ]
+    nominees = sorted(item["arm"] for item in implementation_ready)
+    if not nominees:
+        nominees = sorted(item["arm"] for item in frontier)
+    near_frontier = sorted(
+        item["arm"]
+        for item in frontier
+        if item["arm"] not in nominees
+    )
+    body = {
+        "admission_rule": {
+            "after_behavioral_holdout": {
+                "admit_if_behavior_equal_and_any": [
+                    "paired-95-percent-interval-overlaps-nominee-or-frontier",
+                    "available-token-axes-do-not-prove-strict-dominance",
+                    "sole-compatible-survivor-for-required-runtime",
+                ],
+                "behavior_unknown_is_not_equal": True,
+                "stable_arm_id_resolves_serialization_only": True,
+            },
+            "development": {
+                "critical_failure_excludes_arm_from_nomination": True,
+                "mandatory_baselines": ["raw", "simple"],
+                "nominee_rule": "implementation-ready member of the conservative development proxy frontier; raw and simple are eligible winners",
+            },
+            "final_architecture_decided": False,
+        },
+        "arms": arms,
+        "development_evidence_sha256": inventory_sha256,
+        "development_frontier": sorted(item["arm"] for item in frontier),
+        "development_nominee": nominees,
+        "excluded": [
+            {
+                "arm": item["arm"],
+                "causes": item["failure_causes"],
+                "reason": "deterministic-critical-failure",
+            }
+            for item in arms
+            if item["deterministic_critical_failure"]
+        ],
+        "holdout": {"cases_accessed": 0, "opened": False},
+        "legacy_prompt_ratios": {
+            "admission_veto": False,
+            "cold_threshold": "0.80",
+            "observations": [
+                {
+                    "arm": item["arm"],
+                    "cold_complete_byte_ratio": f"{item['complete_assembled_bytes'] / raw_bytes:.6f}",
+                    "warm_ratio": None,
+                }
+                for item in arms
+            ],
+            "role": "descriptive-only",
+            "warm_threshold": "0.70",
+        },
+        "mandatory_native_baselines": ["raw", "simple"],
+        "measurement_identity": {
+            "committed_selection_is_bound_by_digest": True,
+            "live_peak_rss_and_timing_are_observations": True,
+            "selection_rebuild_is_not_claimed_byte_identical": True,
+        },
+        "near_frontier": near_frontier,
+        "resources": resources,
+        "schema": f"{SCHEMA_PREFIX}-development-selection/v1",
+        "source_ref": SOURCE_REF,
+    }
+    record = _digested_record(body)
+    _validate_development_selection(record)
+    return record
+
+
+def _validate_development_selection(record: dict[str, Any]) -> None:
+    _validate_digested_record(record, "development selection")
+    expected_admission = {
+        "after_behavioral_holdout": {
+            "admit_if_behavior_equal_and_any": [
+                "paired-95-percent-interval-overlaps-nominee-or-frontier",
+                "available-token-axes-do-not-prove-strict-dominance",
+                "sole-compatible-survivor-for-required-runtime",
+            ],
+            "behavior_unknown_is_not_equal": True,
+            "stable_arm_id_resolves_serialization_only": True,
+        },
+        "development": {
+            "critical_failure_excludes_arm_from_nomination": True,
+            "mandatory_baselines": ["raw", "simple"],
+            "nominee_rule": "implementation-ready member of the conservative development proxy frontier; raw and simple are eligible winners",
+        },
+        "final_architecture_decided": False,
+    }
+    if (
+        record.get("schema") != f"{SCHEMA_PREFIX}-development-selection/v1"
+        or record.get("source_ref") != SOURCE_REF
+        or record.get("holdout") != {"cases_accessed": 0, "opened": False}
+        or record.get("mandatory_native_baselines") != ["raw", "simple"]
+        or record.get("measurement_identity", {}).get(
+            "selection_rebuild_is_not_claimed_byte_identical"
+        )
+        is not True
+        or record.get("admission_rule", {}).get("final_architecture_decided") is not False
+        or record.get("legacy_prompt_ratios", {}).get("admission_veto") is not False
+        or record.get("admission_rule") != expected_admission
+        or [item.get("arm") for item in record.get("arms", [])]
+        != list(DEVELOPMENT_ARMS)
+    ):
+        raise Refusal("development selection identity or control boundary drift")
+    if any(
+        item.get("deterministic_critical_failure") is True
+        and item["arm"] in record.get("development_nominee", [])
+        for item in record["arms"]
+    ):
+        raise Refusal("development selection admits a deterministic critical failure")
+    if not record.get("development_nominee"):
+        raise Refusal("development selection has no provisional nominee")
+    eligible = [
+        item
+        for item in record["arms"]
+        if item.get("deterministic_critical_failure") is False
+    ]
+    frontier = [
+        item
+        for item in eligible
+        if not any(
+            other is not item and _development_dominates(other, item)
+            for other in eligible
+        )
+    ]
+    implementation_ready = [
+        item
+        for item in frontier
+        if item.get("operational_feasibility", {}).get("all_cases_native") is True
+        and item.get("operational_feasibility", {}).get("all_cases_exact") is True
+    ]
+    expected_nominees = sorted(
+        item["arm"] for item in (implementation_ready or frontier)
+    )
+    expected_near = sorted(
+        item["arm"] for item in frontier if item["arm"] not in expected_nominees
+    )
+    if (
+        record.get("development_frontier")
+        != sorted(item["arm"] for item in frontier)
+        or record.get("development_nominee") != expected_nominees
+        or record.get("near_frontier") != expected_near
+    ):
+        raise Refusal("development selection does not reproduce its frozen rule")
+
+
+def admitted_native_arms(
+    selection: dict[str, Any], behavioral_rows: list[dict[str, Any]]
+) -> list[str]:
+    """Apply the frozen conservative post-holdout admission rule."""
+    _validate_development_selection(selection)
+    if not isinstance(behavioral_rows, list):
+        raise Refusal("behavioral admission evidence must be a list")
+    by_arm: dict[str, dict[str, Any]] = {}
+    for row in behavioral_rows:
+        if not isinstance(row, dict) or row.get("arm") in by_arm:
+            raise Refusal("behavioral admission evidence is malformed or duplicated")
+        arm = row.get("arm")
+        if arm not in DEVELOPMENT_ARMS:
+            raise Refusal("behavioral admission evidence has an unknown arm")
+        by_arm[arm] = row
+    if set(by_arm) != set(DEVELOPMENT_ARMS):
+        raise Refusal("behavioral admission evidence does not cover every arm")
+    failed = {
+        item["arm"]
+        for item in selection["arms"]
+        if item["deterministic_critical_failure"]
+    }
+    admitted = set(selection["mandatory_native_baselines"])
+    for arm in selection["development_nominee"]:
+        if by_arm[arm].get("behavior_equal") is True:
+            admitted.add(arm)
+    for arm in DEVELOPMENT_ARMS:
+        row = by_arm[arm]
+        if arm in {"raw", "simple"} or arm in failed:
+            continue
+        equal = row.get("behavior_equal")
+        if equal is not True:
+            continue
+        evidence_requires_admission = (
+            row.get("paired_interval_overlaps_frontier") is True
+            or row.get("strictly_dominated_on_available_token_axes") is False
+            or row.get("sole_compatible_survivor") is True
+        )
+        if evidence_requires_admission:
+            admitted.add(arm)
+    return [arm for arm in DEVELOPMENT_ARMS if arm in admitted]
+
+
+def aggregate_development(args: argparse.Namespace) -> bytes:
+    output = _confined_output(
+        args.output,
+        "development selection output",
+        exact=(DEVELOPMENT_SELECTION,),
+        roots=(SCRATCH_ROOT,),
+    )
+    inventory, inventory_raw, payloads = _load_development_evidence(args.evidence)
+    controls = {
+        arm: _decode_record(
+            _read_regular(
+                ROOT / Path(*(EXPERIMENT_FIXTURE_ROOT / f"controls/{arm}.json").parts),
+                MAX_JSON_BYTES,
+            )
+        )
+        for arm in DEVELOPMENT_ARMS
+    }
+    results = {
+        arm: _decode_record(payloads[f"evidence/development/{arm}.json"])
+        for arm in DEVELOPMENT_ARMS
+    }
+    hostile = _decode_record(
+        _read_regular(
+            ROOT / Path(*(EXPERIMENT_FIXTURE_ROOT / "hostile/execution.json").parts),
+            MAX_JSON_BYTES,
+        )
+    )
+    tokenizer_specs, unavailable_tokenizers = _locally_available_tokenizers()
+    arms = [
+        _development_arm_summary(
+            arm,
+            controls[arm],
+            results[arm],
+            [item for item in hostile["results"] if item["arm"] == arm],
+            tokenizer_specs,
+        )
+        for arm in DEVELOPMENT_ARMS
+    ]
+    resource_record = _decode_record(
+        payloads["evidence/development/resource-samples.json"]
+    )
+    resources = {
+        "dependency_count": resource_record["dependency_count"],
+        "dependency_modules": resource_record["dependency_modules"],
+        "disk_bytes": resource_record["disk_bytes"],
+        "executable_loc": resource_record["executable_loc"],
+        "locally_available_tokenizers": [item["id"] for item in tokenizer_specs],
+        "peak_rss_bytes": _peak_rss_bytes(),
+        "unavailable_known_tokenizers": unavailable_tokenizers,
+    }
+    record = _selection_from_development(arms, _sha256(inventory_raw), resources)
+    _safe_output(output)
+    _atomic_write(output, _canonical_json(record))
+    return _result(
+        "aggregate-development",
+        _canonical_json(record),
+        {
+            "arms": len(arms),
+            "holdout_cases_accessed": 0,
+            "nominees": len(record["development_nominee"]),
+            "tokenizers": len(tokenizer_specs),
+        },
+    )
+
+
+def _read_utf8(path: Path, limit: int, label: str) -> tuple[str, bytes]:
+    raw = _read_regular(path, limit)
+    try:
+        return raw.decode("utf-8", errors="strict"), raw
+    except UnicodeDecodeError as exc:
+        raise Refusal(f"{label} is not UTF-8") from exc
+
+
+def _fixture_path(relative: PurePosixPath) -> Path:
+    return ROOT / Path(*relative.parts)
+
+
+def _load_fixture_record(relative: PurePosixPath) -> tuple[dict[str, Any], bytes]:
+    return _load_record(_fixture_path(relative))
+
+
+def _expected_behavioral_batching() -> dict[str, Any]:
+    if BATCH_ORDER_SEED != _sha256(
+        (SELECTION_SEED + "\0behavioral-logical-call-order").encode("utf-8")
+    ):
+        raise Refusal("behavioral call-order seed drift")
+    return {
+        "atomic_batch": "one frozen cohort, model, case commitment and arm tuple",
+        "batch_count": BEHAVIORAL_LOGICAL_CALLS,
+        "block_count": BEHAVIORAL_LOGICAL_CALLS // len(DEVELOPMENT_ARMS),
+        "block_restart": (
+            "provider, revision, tokenizer or catalog drift invalidates the whole "
+            "five-arm block; restart it only with each tuple's already-reserved "
+            "second attempt, otherwise mark the pair unknown"
+        ),
+        "block_size": len(DEVELOPMENT_ARMS),
+        "completion_rule": (
+            "an incomplete immutable-order prefix is partial evidence and cannot be "
+            "treated as a complete matrix"
+        ),
+        "logical_calls_per_batch": 1,
+        "may_reorder_or_shrink": False,
+        "order_seed": BATCH_ORDER_SEED,
+        "permutation": (
+            "sort pair blocks by sha256(order seed NUL pair id), then sort the five "
+            "arms inside each block by sha256(order seed NUL pair id NUL arm control "
+            "digest); flatten without separating a block"
+        ),
+        "reservation": (
+            "reserve both bounded attempts for the tuple before dispatch; insufficient "
+            "credit stops before dispatch and resumes at the same tuple"
+        ),
+    }
+
+
+def _validate_model_runtime_manifest(record: dict[str, Any]) -> None:
+    batching = _expected_behavioral_batching()
+    if (
+        record.get("schema")
+        != f"{SCHEMA_PREFIX}-model-runtime-manifest/v1"
+        or record.get("allow_model_substitution") is not False
+        or record.get("batching") != batching
+        or record.get("cohorts") != list(BEHAVIORAL_COHORTS)
+        or record.get("logical_calls_before_retries") != BEHAVIORAL_LOGICAL_CALLS
+        or not isinstance(record.get("models"), list)
+        or [item.get("id") for item in record["models"]] != list(MODEL_IDS)
+    ):
+        raise Refusal("model runtime manifest identity or matrix drift")
+    provider = record.get("provider")
+    if (
+        not isinstance(provider, dict)
+        or provider.get("zdr") is not True
+        or provider.get("data_collection") != "deny"
+        or provider.get("allow_fallbacks_within_order") is not True
+        or provider.get("require_parameters") is not True
+        or provider.get("endpoint")
+        != "https://openrouter.ai/api/v1/chat/completions"
+    ):
+        raise Refusal("model runtime manifest permits a non-ZDR route")
+    for model in record["models"]:
+        if (
+            not isinstance(model.get("ordered_provider_policy"), list)
+            or not model["ordered_provider_policy"]
+            or len(model["ordered_provider_policy"])
+            != len(set(model["ordered_provider_policy"]))
+            or not isinstance(model.get("context_length"), int)
+            or model["context_length"] <= 0
+            or not isinstance(model.get("tokenizer"), str)
+            or model.get("tokenizer_digest")
+            != "required-from-settled-response-or-unknown"
+            or model.get("model_revision")
+            != "required-from-settled-response-or-unknown"
+        ):
+            raise Refusal("model runtime manifest has an unbounded provider policy")
+    request = record.get("request", {})
+    if (
+        request.get("independent_stateless_dispatch") is not True
+        or request.get("allowed_sent_fields")
+        != ["messages", "max_tokens", "model", "provider", "response_format", "stream"]
+        or request.get("retry_cap") != 1
+        or request.get("max_output_tokens") != 768
+        or request.get("max_token_field") != "max_tokens"
+        or request.get("messages")
+        != [{"content": "{complete_rendered_prompt}", "role": "user"}]
+        or request.get("sent_defaults") != {"stream": False}
+        or request.get("unspecified_field_policy")
+        != (
+            "omit every field outside allowed_sent_fields; provider default applies "
+            "and the settled route, revision and tokenizer identity are recorded "
+            "without invention"
+        )
+        or request.get("response_format")
+        != {
+            "json_schema": {
+                "name": "framework_74_behavioral_response",
+                "schema": "{case_response_schema_object}",
+                "strict": True,
+            },
+            "type": "json_schema",
+        }
+        or request.get("session_or_response_reuse") is not False
+        or request.get("timeout_seconds") != 120
+    ):
+        raise Refusal("model runtime manifest request policy drift")
+
+
+def _behavioral_case_generator_contract(
+    selection: dict[str, Any],
+    seal: dict[str, Any],
+    manifest: dict[str, Any],
+    scorer_sha256: str,
+) -> dict[str, Any]:
+    if (
+        manifest.get("source", {}).get("ref") != seal.get("source_ref")
+        or _artifact_digest(manifest) != seal.get("manifest_sha256")
+        or seal.get("selection_seed") != SELECTION_SEED
+    ):
+        raise Refusal("behavioral generator source identity drift")
+    return {
+        "algorithm": CASE_GENERATOR_ALGORITHM,
+        "case_commitment": (
+            "sha256('framework-74-generated-case\\0' + canonical JSON of the "
+            "closed answer-free case plan)"
+        ),
+        "complete_prompt_derivation": (
+            "the frozen arm representation, frozen prompt template and generated "
+            "task suffix determine each complete prompt"
+        ),
+        "corpus_manifest_sha256": seal["manifest_sha256"],
+        "invocation_profile_selection": (
+            "at reveal, verify the frozen invocation profile record; filter by "
+            "selected_skill, and for cross-document require at least two required "
+            "documents; rank by sha256(profile seed NUL profile canonical JSON); "
+            "select the first"
+        ),
+        "invocation_profiles_sha256": seal["invocation_profiles_sha256"],
+        "executable_binding": {
+            "development_inventory_sha256": selection[
+                "development_evidence_sha256"
+            ],
+            "selection_sha256": selection["sha256"],
+        },
+        "materialization": "deferred until the sealed holdout is opened",
+        "oracle": (
+            "semantic-class-specific strict equality over kind and result, derived "
+            "mechanically from the selected profile's closed fields and verified "
+            "obligation spans; the model never supplies its own score"
+        ),
+        "provider_request_derivation": (
+            "one user message containing the complete rendered prompt; max_tokens "
+            "768; strict response_format json_schema derived from semantic class; "
+            "omit temperature, top_p, seed, tools and tool_choice"
+        ),
+        "scorer_sha256": scorer_sha256,
+        "source_ref": seal["source_ref"],
+        "source_validation": (
+            "exact source sha256, byte offsets and span sha256 from frozen invocation "
+            "profile evidence; a missing obligation witness refuses materialization"
+        ),
+    }
+
+
+def _behavioral_response_schema(
+    semantic_class: str, response_shape: str
+) -> dict[str, Any]:
+    evidence = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["obligation", "path", "quote"],
+        "properties": {
+            "obligation": {"type": "string", "minLength": 1},
+            "path": {"type": "string", "minLength": 1},
+            "quote": {"type": "string", "minLength": 1, "maxLength": 4096},
+        },
+    }
+    evidence_list = {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 2,
+        "items": evidence,
+    }
+    string_list = {
+        "type": "array",
+        "maxItems": 64,
+        "items": {"type": "string", "minLength": 1},
+    }
+    if semantic_class == "authority":
+        result_properties = {
+            "decision": {"enum": ["apply", "do-not-apply"]},
+            "evidence": evidence_list,
+            "profile_id": {"type": "string", "minLength": 1},
+        }
+        required = ["decision", "evidence", "profile_id"]
+    elif semantic_class == "failure":
+        result_properties = {
+            "arguments": string_list,
+            "evidence": evidence_list,
+            "tool": {"type": "string", "minLength": 1},
+        }
+        required = ["arguments", "evidence", "tool"]
+    elif semantic_class == "recovery":
+        result_properties = {
+            "decision": {"enum": ["accept", "refuse"]},
+            "evidence": evidence_list,
+            "recovery_documents": string_list,
+        }
+        required = ["decision", "evidence", "recovery_documents"]
+    elif semantic_class == "exact-literal":
+        fixed_input = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["load_semantics", "path", "text"],
+            "properties": {
+                "load_semantics": {"type": "string", "minLength": 1},
+                "path": {"type": "string", "minLength": 1},
+                "text": {"type": "string", "minLength": 1, "maxLength": 4096},
+            },
+        }
+        step = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["document", "ordinal"],
+            "properties": {
+                "document": {"type": "string", "minLength": 1},
+                "ordinal": {"type": "integer", "minimum": 1},
+            },
+        }
+        result_properties = {
+            "evidence": evidence_list,
+            "fixed_input": fixed_input,
+            "steps": {"type": "array", "maxItems": 64, "items": step},
+        }
+        required = ["evidence", "fixed_input", "steps"]
+    elif semantic_class == "cross-document":
+        result_properties = {
+            "dependencies": string_list,
+            "evidence": evidence_list,
+            "steps": string_list,
+        }
+        required = ["dependencies", "evidence", "steps"]
+    else:
+        raise Refusal("behavioral response schema semantic class is unsupported")
+    expected_shape = {
+        "authority": "decision",
+        "failure": "tool-invocation",
+        "recovery": "refusal",
+        "exact-literal": "structured-plan",
+        "cross-document": "recovery",
+    }[semantic_class]
+    if response_shape != expected_shape:
+        raise Refusal("behavioral response schema shape disagrees with semantic class")
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["kind", "result"],
+        "properties": {
+            "kind": {"const": response_shape},
+            "result": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": required,
+                "properties": result_properties,
+            },
+        },
+    }
+
+
+def _behavioral_case_plans(
+    generator: dict[str, Any],
+    seal: dict[str, Any],
+    manifest: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if (
+        generator.get("algorithm") != CASE_GENERATOR_ALGORITHM
+        or generator.get("source_ref") != seal.get("source_ref")
+        or generator.get("corpus_manifest_sha256") != _artifact_digest(manifest)
+    ):
+        raise Refusal("behavioral case generator identity drift")
+    plans: list[dict[str, Any]] = []
+    for slot in seal.get("closed_future_case_envelope", {}).get("slots", []):
+        if set(slot) != {"id", "logical_skill", "response_shape", "semantic_class"}:
+            raise Refusal("behavioral generator slot is not closed")
+        if (
+            slot["response_shape"] not in BEHAVIORAL_ACTIONS
+            or slot["semantic_class"] not in SEMANTIC_WITNESS_RULES
+        ):
+            raise Refusal("behavioral generator response shape is unsupported")
+        slot_raw = _canonical_json(slot)
+        plans.append(
+            {
+                "corpus_manifest_sha256": generator["corpus_manifest_sha256"],
+                "generator_sha256": _sha256(_canonical_json(generator)),
+                "invocation_profiles_sha256": generator[
+                    "invocation_profiles_sha256"
+                ],
+                "logical_skill": slot["logical_skill"],
+                "profile_selection_seed": _sha256(
+                    b"framework-74-case-profile\0" + slot_raw
+                ),
+                "response_shape": slot["response_shape"],
+                "response_schema": _behavioral_response_schema(
+                    slot["semantic_class"], slot["response_shape"]
+                ),
+                "scorer_sha256": generator["scorer_sha256"],
+                "semantic_class": slot["semantic_class"],
+                "slot_id": slot["id"],
+                "witness_rule": SEMANTIC_WITNESS_RULES[slot["semantic_class"]],
+            }
+        )
+    if len(plans) != BEHAVIORAL_CASES:
+        raise Refusal("behavioral generator did not close all case slots")
+    return plans
+
+
+def _behavioral_case_commitments(
+    generator: dict[str, Any], seal: dict[str, Any], manifest: dict[str, Any]
+) -> list[str]:
+    commitments = [
+        _sha256(b"framework-74-generated-case\0" + _canonical_json(plan))
+        for plan in _behavioral_case_plans(generator, seal, manifest)
+    ]
+    if len(commitments) != len(set(commitments)):
+        raise Refusal("behavioral generated case commitments are ambiguous")
+    return commitments
+
+
+def materialize_behavioral_case(
+    plan: dict[str, Any],
+    invocation_profiles: dict[str, Any],
+    manifest: dict[str, Any],
+    source_bytes: dict[str, bytes],
+) -> dict[str, Any]:
+    """Deterministically materialize one case after, never before, holdout opening."""
+    if set(plan) != {
+        "corpus_manifest_sha256",
+        "generator_sha256",
+        "invocation_profiles_sha256",
+        "logical_skill",
+        "profile_selection_seed",
+        "response_shape",
+        "response_schema",
+        "scorer_sha256",
+        "semantic_class",
+        "slot_id",
+        "witness_rule",
+    } or (
+        plan.get("witness_rule") != SEMANTIC_WITNESS_RULES.get(
+            plan.get("semantic_class")
+        )
+        or plan.get("response_schema")
+        != _behavioral_response_schema(
+            plan.get("semantic_class"), plan.get("response_shape")
+        )
+    ):
+        raise Refusal("behavioral case plan is invalid")
+    if (
+        _artifact_digest(invocation_profiles)
+        != plan["invocation_profiles_sha256"]
+        or invocation_profiles.get("source_ref") != SOURCE_REF
+        or not isinstance(invocation_profiles.get("profiles"), list)
+        or len(invocation_profiles["profiles"]) > 1024
+    ):
+        raise Refusal("behavioral case invocation profile record drift")
+    if (
+        _artifact_digest(manifest) != plan["corpus_manifest_sha256"]
+        or manifest.get("source", {}).get("ref") != SOURCE_REF
+    ):
+        raise Refusal("behavioral case corpus manifest drift")
+    manifest_documents = {
+        item.get("path"): item for item in manifest.get("documents", [])
+    }
+    eligible: list[tuple[str, dict[str, Any]]] = []
+    primary_suffix = f"/{plan['logical_skill']}/SKILL.md"
+    for profile in invocation_profiles["profiles"]:
+        if not isinstance(profile, dict) or profile.get("selected_skill") != plan[
+            "logical_skill"
+        ]:
+            continue
+        documents = profile.get("required_documents")
+        evidence = profile.get("source_evidence")
+        if (
+            not isinstance(documents, list)
+            or documents != sorted(set(documents))
+            or any(not isinstance(document, str) or not document for document in documents)
+            or not isinstance(evidence, list)
+            or not evidence
+            or not isinstance(profile.get("id"), str)
+            or not profile["id"].startswith(f"{plan['logical_skill']}:")
+            or not isinstance(profile.get("applicability"), str)
+            or not profile["applicability"]
+        ):
+            raise Refusal("behavioral case invocation profile is malformed")
+        primary_evidence = [
+            item
+            for item in evidence
+            if isinstance(item, dict)
+            and str(item.get("obligation", "")).endswith(primary_suffix)
+        ]
+        semantic = plan["semantic_class"]
+        fixed_inputs = profile.get("fixed_inputs")
+        if (
+            len(primary_evidence) != 1
+            or not isinstance(profile.get("phase"), str)
+            or not profile["phase"]
+            or not isinstance(profile.get("branch_state"), list)
+            or not profile["branch_state"]
+            or any(
+                not isinstance(value, str) or not value
+                for value in profile["branch_state"]
+            )
+            or semantic == "cross-document"
+            and (len(documents) < 2 or len(evidence) < 2)
+            or semantic == "exact-literal"
+            and (not isinstance(fixed_inputs, list) or not fixed_inputs)
+        ):
+            continue
+        rank = _sha256(
+            plan["profile_selection_seed"].encode("ascii")
+            + b"\0"
+            + _canonical_json(profile)
+        )
+        eligible.append((rank, profile))
+    if not eligible:
+        raise Refusal("behavioral case lacks its required semantic profile")
+    eligible.sort(key=lambda item: (item[0], item[1].get("id", "")))
+    profile = eligible[0][1]
+    evidence = profile["source_evidence"]
+    semantic = plan["semantic_class"]
+    if semantic == "cross-document":
+        witnesses = sorted(
+            evidence,
+            key=lambda item: (
+                item.get("obligation", ""),
+                item.get("path", ""),
+                item.get("start", -1),
+            ),
+        )[:2]
+    else:
+        witnesses = [
+            item
+            for item in evidence
+            if isinstance(item, dict)
+            and str(item.get("obligation", "")).endswith(primary_suffix)
+        ][:1]
+    if len(witnesses) != (2 if plan["semantic_class"] == "cross-document" else 1):
+        raise Refusal("behavioral case lacks its required semantic witness")
+    expected_paths = {item.get("path") for item in witnesses}
+    fixed_input: dict[str, Any] | None = None
+    if semantic == "exact-literal":
+        candidates = sorted(
+            profile["fixed_inputs"], key=lambda item: item.get("path", "")
+        )
+        fixed_input = candidates[0]
+        if set(fixed_input) != {"load_semantics", "path"}:
+            raise Refusal("behavioral exact-literal input is not closed")
+        expected_paths.add(fixed_input["path"])
+    if None in expected_paths or set(source_bytes) != expected_paths:
+        raise Refusal("behavioral case source set drift")
+    citations: list[dict[str, Any]] = []
+    provenance: list[dict[str, Any]] = []
+    targets: list[dict[str, Any]] = []
+    for witness in witnesses:
+        if set(witness) != {
+            "end",
+            "obligation",
+            "path",
+            "source_sha256",
+            "span_sha256",
+            "start",
+        }:
+            raise Refusal("behavioral case source witness is not closed")
+        raw = source_bytes[witness["path"]]
+        start = witness["start"]
+        end = witness["end"]
+        if (
+            not isinstance(raw, bytes)
+            or len(raw) > MAX_SOURCE_BYTES
+            or type(start) is not int
+            or type(end) is not int
+            or start < 0
+            or end <= start
+            or end > len(raw)
+            or end - start > 4096
+            or _sha256(raw) != witness["source_sha256"]
+            or _sha256(raw[start:end]) != witness["span_sha256"]
+        ):
+            raise Refusal("behavioral case source bytes differ from their commitment")
+        try:
+            quote = raw[start:end].decode("utf-8", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise Refusal("behavioral case source witness is not UTF-8") from exc
+        targets.append(
+            {"obligation": witness["obligation"], "path": witness["path"]}
+        )
+        citations.append(
+            {
+                "obligation": witness["obligation"],
+                "path": witness["path"],
+                "quote": quote,
+            }
+        )
+        provenance.append(
+            {
+                "path": witness["path"],
+                "source_sha256": witness["source_sha256"],
+                "span_sha256": witness["span_sha256"],
+            }
+        )
+    documents = profile["required_documents"]
+    if semantic == "authority":
+        result = {
+            "decision": "apply",
+            "evidence": citations,
+            "profile_id": profile["id"],
+        }
+        scenario = "decide whether the selected source-owned profile is operative"
+        result_fields = ["decision", "evidence", "profile_id"]
+    elif semantic == "failure":
+        result = {
+            "arguments": profile["branch_state"],
+            "evidence": citations,
+            "tool": plan["logical_skill"],
+        }
+        scenario = "produce the exact routed tool invocation after the stated failure"
+        result_fields = ["arguments", "evidence", "tool"]
+    elif semantic == "recovery":
+        result = {
+            "decision": "refuse",
+            "evidence": citations,
+            "recovery_documents": documents,
+        }
+        scenario = "refuse the requested boundary bypass and give the source-owned recovery set"
+        result_fields = ["decision", "evidence", "recovery_documents"]
+    elif semantic == "exact-literal":
+        assert fixed_input is not None
+        fixed_document = manifest_documents.get(fixed_input["path"])
+        literal_raw = source_bytes[fixed_input["path"]]
+        if (
+            not isinstance(fixed_document, dict)
+            or type(fixed_document.get("bytes")) is not int
+            or fixed_document["bytes"] > 4096
+            or len(literal_raw) != fixed_document["bytes"]
+            or _sha256(literal_raw) != fixed_document.get("sha256")
+        ):
+            raise Refusal("behavioral exact-literal input differs from its manifest")
+        try:
+            literal = literal_raw.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise Refusal("behavioral exact-literal input is not UTF-8") from exc
+        result = {
+            "evidence": citations,
+            "fixed_input": {
+                **fixed_input,
+                "text": literal,
+            },
+            "steps": [
+                {"document": document, "ordinal": index}
+                for index, document in enumerate(documents, start=1)
+            ],
+        }
+        scenario = "produce the exact ordered document plan for the selected profile"
+        result_fields = ["evidence", "fixed_input", "steps"]
+    elif semantic == "cross-document":
+        result = {
+            "dependencies": [item["obligation"] for item in witnesses],
+            "evidence": citations,
+            "steps": documents,
+        }
+        scenario = "recover the cross-document dependency and next-step sequence"
+        result_fields = ["dependencies", "evidence", "steps"]
+    else:
+        raise Refusal("behavioral case semantic class is unsupported")
+    oracle = {"kind": plan["response_shape"], "result": result}
+    task = (
+        "use only the supplied representation. "
+        + scenario
+        + ". return one JSON object with exactly kind and result; do not self-score. "
+        + _canonical_json(
+            {
+                "evidence_fields": [
+                    "obligation",
+                    "path",
+                    "quote",
+                ],
+                "fixed_input_target": fixed_input,
+                "operation": profile["applicability"],
+                "profile_id": profile["id"],
+                "required_kind": plan["response_shape"],
+                "result_fields": result_fields,
+                "witness_targets": targets,
+            }
+        ).decode("utf-8").strip()
+    )
+    payload = {
+        "oracle": oracle,
+        "provenance": {
+            "fixed_input_sha256": (
+                fixed_document["sha256"] if semantic == "exact-literal" else None
+            ),
+            "source_spans": provenance,
+        },
+        "response_schema": plan["response_schema"],
+        "task": task,
+    }
+    return {**payload, "payload_sha256": _sha256(_canonical_json(payload))}
+
+
+def score_behavioral_response(
+    oracle: dict[str, Any], response_raw: bytes
+) -> dict[str, Any]:
+    """Score model output from the hidden oracle; model self-scores are data only."""
+    if not isinstance(response_raw, bytes) or len(response_raw) > MAX_MODEL_OUTPUT_BYTES:
+        return {
+            "critical_policy_violation": False,
+            "reason": "response-byte-bound",
+            "success": False,
+        }
+    try:
+        response = _decode_external_json(response_raw, "behavioral model response")
+    except Refusal:
+        return {
+            "critical_policy_violation": False,
+            "reason": "invalid-structured-output",
+            "success": False,
+        }
+    forbidden = {
+        "critical_policy_violation",
+        "expected_answer",
+        "scorer_key",
+        "success",
+    }
+
+    def contains_forbidden(value: Any) -> bool:
+        if isinstance(value, dict):
+            return bool(forbidden & set(value)) or any(
+                contains_forbidden(child) for child in value.values()
+            )
+        if isinstance(value, list):
+            return any(contains_forbidden(child) for child in value)
+        return False
+
+    self_score = contains_forbidden(response)
+    closed = set(response) == {"kind", "result"}
+    success = closed and not self_score and response == oracle
+    expected_refusal = oracle.get("result", {}).get("decision") == "refuse"
+    observed_result = response.get("result")
+    refusal_breach = expected_refusal and (
+        not isinstance(observed_result, dict)
+        or observed_result.get("decision") != "refuse"
+    )
+    return {
+        "critical_policy_violation": self_score or refusal_breach,
+        "reason": "exact-oracle-match" if success else "objective-mismatch",
+        "success": success,
+    }
+
+
+def behavioral_pair_comparability(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not isinstance(rows, list) or len(rows) != len(DEVELOPMENT_ARMS):
+        raise Refusal("behavioral pair must contain the five frozen arms")
+    for required in ("model_id", "provider_name"):
+        values = [row.get(required) for row in rows]
+        if any(not isinstance(value, str) or not value for value in values):
+            return {"comparable": False, "identity_quality": "required-unknown"}
+        if len(set(values)) != 1:
+            return {"comparable": False, "identity_quality": "required-mismatch"}
+    qualified_unknown: list[str] = []
+    for optional in ("model_revision", "tokenizer_digest"):
+        values = [row.get(optional) for row in rows]
+        known = [value for value in values if isinstance(value, str) and value]
+        if not known:
+            qualified_unknown.append(optional)
+            continue
+        if len(known) != len(values) or len(set(known)) != 1:
+            return {"comparable": False, "identity_quality": f"{optional}-unknown"}
+    return {
+        "comparable": True,
+        "identity_quality": (
+            "qualified-behavior-identity"
+            if qualified_unknown
+            else "fully-exposed-identity"
+        ),
+        "token_pooling_allowed": not qualified_unknown,
+        "unknown_fields": qualified_unknown,
+    }
+
+
+def behavioral_inferential_gate(
+    raw_only_events: int,
+    pairs: int,
+    *,
+    independent_stateless_dispatch: bool,
+) -> dict[str, Any]:
+    if (
+        type(raw_only_events) is not int
+        or type(pairs) is not int
+        or pairs <= 0
+        or raw_only_events < 0
+        or raw_only_events > pairs
+    ):
+        raise Refusal("behavioral inferential gate inputs are invalid")
+    if independent_stateless_dispatch is not True:
+        return {"status": "inconclusive", "upper_bound": None}
+    if raw_only_events != 0:
+        return {"status": "fail", "upper_bound": None}
+    bound = paired_degradation_upper_bound(0, pairs)
+    return {
+        "status": "pass" if bound <= BEHAVIORAL_MAX_DEGRADATION else "fail",
+        "upper_bound": str(bound),
+    }
+
+
+def _validate_behavioral_scorer(record: dict[str, Any]) -> None:
+    if (
+        record.get("schema") != f"{SCHEMA_PREFIX}-scorer/v1"
+        or record.get("representation_blind") is not True
+        or record.get("no_tuning_after_open") is not True
+        or record.get("confidence", {}).get("alpha") != "0.05"
+        or record.get("confidence", {}).get("max_degradation") != "0.02"
+        or record.get("confidence", {}).get("planned_selected_vs_raw_pairs") != 224
+        or record.get("aggregation", {}).get("critical_policy_tolerance") != 0
+        or record.get("aggregation", {}).get("degradation_event")
+        != "raw-only success: raw succeeds and the paired candidate fails"
+        or record.get("aggregation", {}).get("estimand")
+        != (
+            "average raw-only loss probability over the fixed case-model-repeat "
+            "cells, not a population of tasks or net paired success-rate difference"
+        )
+        or record.get("confidence", {}).get("eligibility_use") is not True
+        or "zero events only" not in record.get("confidence", {}).get("bound", "")
+        or record.get("objective_scoring", {}).get("model_self_score_authoritative")
+        is not False
+        or record.get("objective_scoring", {}).get("success_rule")
+        != "strict equality with the hidden generated oracle"
+        or record.get("structured_response", {}).get("required")
+        != ["kind", "result"]
+        or record.get("structured_response", {}).get("additional_properties")
+        is not False
+    ):
+        raise Refusal("behavioral scorer identity or frozen statistics drift")
+
+
+def _prompt_contamination(
+    raw: bytes,
+    *,
+    source_labels: Iterable[str] = (),
+    include_arm_names: bool = True,
+) -> str | None:
+    try:
+        text = raw.decode("utf-8", errors="strict").lower()
+    except UnicodeDecodeError:
+        return "non-utf8"
+    forbidden = {"expected_answer", "scorer_key", "model_output"}
+    if include_arm_names:
+        forbidden.update(DEVELOPMENT_ARMS)
+    forbidden.update(value.lower() for value in source_labels)
+    for token in sorted(forbidden, key=lambda value: (-len(value), value)):
+        if re.search(rf"(?<![a-z0-9]){re.escape(token)}(?![a-z0-9])", text):
+            return token
+    return None
+
+
+def _validate_behavioral_prompt_template(raw: bytes) -> None:
+    text = raw.decode("utf-8", errors="strict")
+    if (
+        text.count("{{representation}}") != 1
+        or text.count("{{task}}") != 1
+        or text.index("{{representation}}") > text.index("{{task}}")
+        or _prompt_contamination(raw) is not None
+    ):
+        raise Refusal("behavioral prompt template is contaminated or reordered")
+
+
+def paired_degradation_upper_bound(
+    events: int, trials: int, alpha: Decimal = BEHAVIORAL_ALPHA
+) -> Decimal:
+    if (
+        type(events) is not int
+        or type(trials) is not int
+        or events < 0
+        or trials <= 0
+        or events > trials
+        or alpha <= 0
+        or alpha >= 1
+    ):
+        raise Refusal("paired degradation inputs are invalid")
+    if events != 0:
+        raise Refusal("heterogeneous paired bound is defined only for zero events")
+    return Decimal(1) - alpha ** (Decimal(1) / Decimal(trials))
+
+
+def _minimum_zero_event_pairs(alpha: Decimal, maximum: Decimal) -> int:
+    for trials in range(1, 10_001):
+        if paired_degradation_upper_bound(0, trials, alpha) <= maximum:
+            return trials
+    raise Refusal("paired degradation power search exceeded its bound")
+
+
+def _behavioral_preregistration(
+    selection: dict[str, Any],
+    seal: dict[str, Any],
+    manifest: dict[str, Any],
+    manifest_raw: bytes,
+    model_manifest: dict[str, Any],
+    model_raw: bytes,
+    prompt_raw: bytes,
+    scorer: dict[str, Any],
+    scorer_raw: bytes,
+) -> dict[str, Any]:
+    slots = seal["closed_future_case_envelope"]["slots"]
+    if len(slots) != BEHAVIORAL_CASES:
+        raise Refusal("behavioral holdout slot count drift")
+    minimum_pairs = _minimum_zero_event_pairs(
+        BEHAVIORAL_ALPHA, BEHAVIORAL_MAX_DEGRADATION
+    )
+    if minimum_pairs != scorer["confidence"]["minimum_zero-event_pairs"]:
+        raise Refusal("behavioral scorer power calculation drift")
+    planned_pairs = BEHAVIORAL_CASES * len(MODEL_IDS) * BEHAVIORAL_TRIALS
+    if paired_degradation_upper_bound(0, planned_pairs) > BEHAVIORAL_MAX_DEGRADATION:
+        raise Refusal("behavioral experiment is underpowered")
+    generator = _behavioral_case_generator_contract(
+        selection, seal, manifest, _sha256(scorer_raw)
+    )
+    body = {
+        "arms": [
+            {
+                "control_sha256": item["control_sha256"],
+                "id": item["arm"],
+            }
+            for item in selection["arms"]
+        ],
+        "case_slots": [
+            {
+                "id": item["id"],
+                "logical_skill": item["logical_skill"],
+                "response_shape": item["response_shape"],
+                "semantic_class": item["semantic_class"],
+            }
+            for item in slots
+        ],
+        "case_generator": generator,
+        "cohorts": [
+            {
+                "id": cohort,
+                "order_seed": _sha256(
+                    (SELECTION_SEED + "\0behavioral\0" + cohort).encode("utf-8")
+                ),
+            }
+            for cohort in BEHAVIORAL_COHORTS
+        ],
+        "error_taxonomy": [
+            "route-unavailable",
+            "provider-timeout",
+            "provider-error",
+            "truncated-response",
+            "invalid-structured-output",
+            "scorer-refusal",
+            "critical-policy-violation",
+        ],
+        "holdout": {
+            "commitment_sha256": seal["commitment_sha256"],
+            "corpus_manifest_bytes": len(manifest_raw),
+            "opened": False,
+            "seal_sha256": _artifact_digest(seal),
+        },
+        "logical_calls_before_retries": BEHAVIORAL_LOGICAL_CALLS,
+        "gross_budget_bounds": {
+            "batching": model_manifest["batching"],
+            "case_count_per_cohort": BEHAVIORAL_CASES,
+            "cohorts": len(BEHAVIORAL_COHORTS),
+            "max_output_tokens_per_attempt": model_manifest["request"][
+                "max_output_tokens"
+            ],
+            "max_prompt_tokens_per_arm_case": {
+                item["arm"]: item["maximum_complete_prompt_bytes"]
+                for item in selection["arms"]
+            },
+            "prompt_bound_enforcement": (
+                "refuse before provider dispatch when rendered UTF-8 bytes exceed "
+                "the frozen per-arm bound"
+            ),
+            "prompt_token_upper_bound": (
+                "one token per rendered UTF-8 byte; this is a spend bound, not a "
+                "tokenizer measurement"
+            ),
+            "retry_attempts_per_logical_call": 1
+            + model_manifest["request"]["retry_cap"],
+        },
+        "model_runtime_manifest_sha256": _sha256(model_raw),
+        "no_tuning_after_open": True,
+        "presentation": {
+            "identifier_only_multiple_choice": "diagnostic-only",
+            "logical_call_order": (
+                "the immutable 224 pair-block permutation and within-block arm order "
+                "committed in the answer-free packet"
+            ),
+            "pair_identity": "cohort, model id and case commitment",
+            "repeat_condition": (
+                "cohort-a and cohort-b are fixed repeat/order conditions over the "
+                "same case-model grid, not independent sampled cases"
+            ),
+        },
+        "pair_comparability": {
+            "behavior_required_equal_fields": ["model_id", "provider_name"],
+            "conditionally_equal_fields": ["model_revision", "tokenizer_digest"],
+            "rule": (
+                "model id and settled provider route must be identical and nonempty; "
+                "revision and tokenizer digest must match when exposed, one-known is "
+                "unknown, and both-unknown is qualified for behavior but never token "
+                "pooling"
+            ),
+        },
+        "prompt_template_sha256": _sha256(prompt_raw),
+        "retry_policy": {
+            "cap_per_logical_call": model_manifest["request"]["retry_cap"],
+            "failed_or_uncertain_attempts_count_against_gross_budget": True,
+            "model_substitution": False,
+        },
+        "schema": f"{SCHEMA_PREFIX}-behavioral-preregistration/v1",
+        "scorer_sha256": _sha256(scorer_raw),
+        "selection_sha256": selection["sha256"],
+        "statistics": {
+            "alpha": "0.05",
+            "confidence_gate": (
+                "pass only when independent stateless dispatch is evidenced, raw-only "
+                "losses are zero, and the heterogeneous zero-event upper bound is at "
+                "most 0.02; otherwise fail or inconclusive"
+            ),
+            "empirical_gate": "deterministic zero-loss over the closed 224-cell grid",
+            "binomial_bound_role": (
+                "required inferential gate conditional on the independent stateless "
+                "dispatch predicate"
+            ),
+            "critical_policy_zero_tolerance": True,
+            "degradation_event": (
+                "raw-only success: raw succeeds and the paired candidate fails"
+            ),
+            "degradation_estimand": (
+                "average raw-only loss probability over the fixed case-model-repeat "
+                "cells, not a population of tasks or net paired success-rate difference"
+            ),
+            "degradation_upper_bound": (
+                "for zero events only, independent heterogeneous Bernoulli AM-GM bound"
+            ),
+            "independence_failure": "95 percent result is inconclusive",
+            "independence_status_before_dispatch": "unobserved",
+            "independent_stateless_dispatch_required": True,
+            "maximum_degradation": "0.02",
+            "minimum_zero_event_pairs": minimum_pairs,
+            "planned_pairs_per_arm_vs_raw": planned_pairs,
+            "population_generalization": False,
+            "positive_event_policy": (
+                "one or more raw-only losses fails the two-percent inferential gate; "
+                "do not claim an exact heterogeneous binomial interval"
+            ),
+            "recompute_bound": True,
+        },
+        "state": "frozen-unopened",
+    }
+    record = _digested_record(body)
+    _validate_behavioral_preregistration(record, seal)
+    return record
+
+
+def _validate_behavioral_preregistration(
+    record: dict[str, Any], seal: dict[str, Any] | None = None
+) -> None:
+    _validate_digested_record(record, "behavioral preregistration")
+    batching = record.get("gross_budget_bounds", {}).get("batching", {})
+    if (
+        record.get("schema")
+        != f"{SCHEMA_PREFIX}-behavioral-preregistration/v1"
+        or record.get("state") != "frozen-unopened"
+        or record.get("logical_calls_before_retries") != BEHAVIORAL_LOGICAL_CALLS
+        or [item.get("id") for item in record.get("arms", [])]
+        != list(DEVELOPMENT_ARMS)
+        or [item.get("id") for item in record.get("cohorts", [])]
+        != list(BEHAVIORAL_COHORTS)
+        or len(record.get("case_slots", [])) != BEHAVIORAL_CASES
+        or record.get("statistics", {}).get("empirical_gate")
+        != "deterministic zero-loss over the closed 224-cell grid"
+        or record.get("statistics", {}).get("independence_status_before_dispatch")
+        != "unobserved"
+        or record.get("statistics", {}).get(
+            "independent_stateless_dispatch_required"
+        )
+        is not True
+        or record.get("statistics", {}).get("population_generalization") is not False
+        or record.get("retry_policy", {}).get("model_substitution") is not False
+        or record.get("statistics", {}).get("planned_pairs_per_arm_vs_raw") != 224
+        or set(
+            record.get("gross_budget_bounds", {}).get(
+                "max_prompt_tokens_per_arm_case", {}
+            )
+        )
+        != set(DEVELOPMENT_ARMS)
+        or record.get("gross_budget_bounds", {}).get(
+            "retry_attempts_per_logical_call"
+        )
+        != 2
+        or batching != _expected_behavioral_batching()
+        or record.get("presentation", {}).get("pair_identity")
+        != "cohort, model id and case commitment"
+        or record.get("pair_comparability", {}).get(
+            "behavior_required_equal_fields"
+        )
+        != ["model_id", "provider_name"]
+        or record.get("pair_comparability", {}).get(
+            "conditionally_equal_fields"
+        )
+        != ["model_revision", "tokenizer_digest"]
+    ):
+        raise Refusal("behavioral preregistration identity or matrix drift")
+    if seal is not None and (
+        seal.get("opened") is not False
+        or record["holdout"]["seal_sha256"] != _artifact_digest(seal)
+        or record["holdout"]["commitment_sha256"] != seal["commitment_sha256"]
+    ):
+        raise Refusal("behavioral preregistration differs from unopened seal")
+    if seal is not None:
+        manifest, manifest_raw = _load_fixture_record(CORPUS_MANIFEST)
+        scorer, scorer_raw = _load_fixture_record(BEHAVIORAL_SCORER)
+        selection, _ = _load_fixture_record(DEVELOPMENT_SELECTION)
+        _validate_behavioral_scorer(scorer)
+        if (
+            record.get("selection_sha256") != selection.get("sha256")
+            or record.get("holdout", {}).get("corpus_manifest_bytes")
+            != len(manifest_raw)
+            or record.get("case_generator")
+            != _behavioral_case_generator_contract(
+                selection, seal, manifest, _sha256(scorer_raw)
+            )
+        ):
+            raise Refusal("behavioral preregistration case generator drift")
+        _behavioral_case_commitments(record["case_generator"], seal, manifest)
+
+
+def _behavioral_call_order(
+    preregistration: dict[str, Any], case_commitments: list[str]
+) -> list[dict[str, Any]]:
+    if (
+        len(case_commitments) != BEHAVIORAL_CASES
+        or len(set(case_commitments)) != len(case_commitments)
+    ):
+        raise Refusal("behavioral call order has invalid case commitments")
+    unordered_blocks: list[dict[str, Any]] = []
+    for cohort in BEHAVIORAL_COHORTS:
+        for model_id in MODEL_IDS:
+            for case_commitment in case_commitments:
+                pair_id = _sha256(
+                    (
+                        "framework-74-pair\0"
+                        + cohort
+                        + "\0"
+                        + model_id
+                        + "\0"
+                        + case_commitment
+                    ).encode("utf-8")
+                )
+                unordered_blocks.append(
+                    {
+                        "block_order": _sha256(
+                            (BATCH_ORDER_SEED + "\0" + pair_id).encode("utf-8")
+                        ),
+                        "case_commitment": case_commitment,
+                        "cohort": cohort,
+                        "model_id": model_id,
+                        "pair_id": pair_id,
+                    }
+                )
+    blocks = sorted(
+        unordered_blocks,
+        key=lambda item: (
+            item["block_order"],
+            item["cohort"],
+            item["model_id"],
+            item["case_commitment"],
+        ),
+    )
+    ordered: list[dict[str, Any]] = []
+    for block_index, block in enumerate(blocks):
+        calls: list[dict[str, Any]] = []
+        for arm in preregistration["arms"]:
+            control_digest = arm["control_sha256"]
+            call_id = _sha256(
+                (
+                    BATCH_ORDER_SEED
+                    + "\0"
+                    + block["pair_id"]
+                    + "\0"
+                    + control_digest
+                ).encode("utf-8")
+            )
+            calls.append(
+                {
+                    "call_id": call_id,
+                    "case_commitment": block["case_commitment"],
+                    "cohort": block["cohort"],
+                    "model_id": block["model_id"],
+                    "pair_id": block["pair_id"],
+                    "variant_commitment": _sha256(
+                        ("framework-74-arm\0" + control_digest).encode("utf-8")
+                    ),
+                }
+            )
+        calls.sort(key=lambda item: (item["call_id"], item["variant_commitment"]))
+        for arm_index, item in enumerate(calls):
+            ordered.append(
+                {
+                    "arm_index": arm_index,
+                    "batch_index": len(ordered),
+                    "block_index": block_index,
+                    **item,
+                }
+            )
+    if (
+        len(ordered) != BEHAVIORAL_LOGICAL_CALLS
+        or len({item["call_id"] for item in ordered}) != len(ordered)
+    ):
+        raise Refusal("behavioral call order is incomplete or ambiguous")
+    pair_counts = Counter(item["pair_id"] for item in ordered)
+    if set(pair_counts.values()) != {len(DEVELOPMENT_ARMS)}:
+        raise Refusal("behavioral call order does not preserve paired arm identities")
+    for offset in range(0, len(ordered), len(DEVELOPMENT_ARMS)):
+        block = ordered[offset : offset + len(DEVELOPMENT_ARMS)]
+        if len({item["pair_id"] for item in block}) != 1:
+            raise Refusal("behavioral pair block is not contiguous")
+    return ordered
+
+
+def _opaque_behavioral_packet(
+    preregistration: dict[str, Any], seal: dict[str, Any]
+) -> dict[str, bytes]:
+    manifest, _ = _load_fixture_record(CORPUS_MANIFEST)
+    case_commitments = _behavioral_case_commitments(
+        preregistration["case_generator"], seal, manifest
+    )
+    arm_commitments = [
+        _sha256(
+            ("framework-74-arm\0" + item["control_sha256"]).encode("utf-8")
+        )
+        for item in preregistration["arms"]
+    ]
+    packet = {
+        "batching_sha256": _sha256(
+            _canonical_json(_expected_behavioral_batching())
+        ),
+        "case_generation_sha256": _sha256(
+            _canonical_json(preregistration["case_generator"])
+        ),
+        "case_commitments": case_commitments,
+        "cohorts": len(BEHAVIORAL_COHORTS),
+        "logical_call_order": _behavioral_call_order(
+            preregistration, case_commitments
+        ),
+        "logical_calls_before_retries": BEHAVIORAL_LOGICAL_CALLS,
+        "model_ids": list(MODEL_IDS),
+        "prompt_template_sha256": preregistration["prompt_template_sha256"],
+        "schema": f"{SCHEMA_PREFIX}-answer-free-behavioral-packet/v1",
+        "variant_commitments": arm_commitments,
+    }
+    packet_raw = _canonical_json(packet)
+    labels = {
+        item["semantic_class"]
+        for item in seal["closed_future_case_envelope"]["slots"]
+    }
+    contamination = _prompt_contamination(packet_raw, source_labels=labels)
+    if contamination is not None:
+        raise Refusal(f"behavioral packet contains forbidden material: {contamination}")
+    manifest = {
+        "artifacts": {
+            "packet.json": {"bytes": len(packet_raw), "sha256": _sha256(packet_raw)}
+        },
+        "preregistration_sha256": preregistration["sha256"],
+        "schema": f"{SCHEMA_PREFIX}-answer-free-packet-manifest/v1",
+    }
+    return {"manifest.json": _canonical_json(manifest), "packet.json": packet_raw}
+
+
+def _packet_commitment(
+    schema: str,
+    preregistration_sha256: str,
+    packet: dict[str, bytes],
+) -> dict[str, Any]:
+    body = {
+        "artifacts": {
+            path: {"bytes": len(raw), "sha256": _sha256(raw)}
+            for path, raw in sorted(packet.items())
+        },
+        "opened": False,
+        "preregistration_sha256": preregistration_sha256,
+        "schema": schema,
+    }
+    return _digested_record(body)
+
+
+def freeze_experiment(args: argparse.Namespace) -> bytes:
+    output = _confined_output(
+        args.output,
+        "frozen behavioral packet output",
+        exact=(FROZEN_BEHAVIORAL_ROOT,),
+        roots=(),
+    )
+    selection, _ = _load_record(args.selection)
+    _validate_development_selection(selection)
+    seal, _ = _load_record(args.seal)
+    if seal.get("opened") is not False:
+        raise Refusal("behavioral freeze requires the unopened holdout seal")
+    model_manifest, model_raw = _load_fixture_record(MODEL_RUNTIME_MANIFEST)
+    _validate_model_runtime_manifest(model_manifest)
+    manifest, manifest_raw = _load_fixture_record(CORPUS_MANIFEST)
+    scorer, scorer_raw = _load_fixture_record(BEHAVIORAL_SCORER)
+    _validate_behavioral_scorer(scorer)
+    _, prompt_raw = _read_utf8(
+        _fixture_path(BEHAVIORAL_PROMPT_TEMPLATE), MAX_PROMPT_BYTES, "prompt template"
+    )
+    _validate_behavioral_prompt_template(prompt_raw)
+    preregistration = _behavioral_preregistration(
+        selection,
+        seal,
+        manifest,
+        manifest_raw,
+        model_manifest,
+        model_raw,
+        prompt_raw,
+        scorer,
+        scorer_raw,
+    )
+    packet = _opaque_behavioral_packet(preregistration, seal)
+    commitment = _packet_commitment(
+        f"{SCHEMA_PREFIX}-holdout-packet-commitment/v1",
+        preregistration["sha256"],
+        packet,
+    )
+    terminal = _fixture_path(BEHAVIORAL_COMMITMENT)
+    _publish_committed_set(
+        [
+            (output / "packet.json", packet["packet.json"]),
+            (output / "manifest.json", packet["manifest.json"]),
+            (
+                _fixture_path(BEHAVIORAL_PREREGISTRATION),
+                _canonical_json(preregistration),
+            ),
+            (terminal, _canonical_json(commitment)),
+        ],
+        terminal=terminal,
+    )
+    return _result(
+        "freeze-experiment",
+        _canonical_json(commitment),
+        {"answer_bytes": 0, "artifacts": len(packet), "logical_calls": 1120},
+    )
+
+
+def _validate_native_cache_accounting(record: dict[str, Any]) -> None:
+    if (
+        record.get("schema")
+        != f"{SCHEMA_PREFIX}-native-cache-accounting/v1"
+        or record.get("behavior", {}).get("role") != "eligibility-predicate"
+        or record.get("axes", {})
+        .get("complete_logical_context_high_water", {})
+        .get("cached_tokens_count_in_full")
+        is not True
+        or record.get("comparison", {}).get("cross_tokenizer_pooling") is not False
+        or record.get("comparison", {}).get("dollar_weighting") is not False
+        or record.get("comparison", {}).get("group_by")
+        != ["runtime_id", "model_id", "tokenizer_id"]
+    ):
+        raise Refusal("native cache accounting objective drift")
+    categories = record.get("categories", {})
+    if set(categories) != {
+        "cache_read_tokens",
+        "cache_write_tokens",
+        "uncached_suffix_or_miss_tokens",
+    }:
+        raise Refusal("native cache accounting categories overlap or are incomplete")
+    if (
+        record.get("axes", {})
+        .get("cumulative_fresh_token_churn", {})
+        .get("invalidation")
+        != "count only the later fresh work caused by invalidation"
+    ):
+        raise Refusal("native cache accounting double-counts invalidation")
+    if _sha256(_canonical_json(record)) != NATIVE_CACHE_ACCOUNTING_SHA256:
+        raise Refusal("native cache accounting frozen formula or selection drift")
+
+
+def native_token_vector(runtime_id: str, usage: dict[str, Any]) -> dict[str, Any]:
+    def token(name: str, *, required: bool = True) -> int | None:
+        value = usage.get(name)
+        if value is None and not required:
+            return None
+        if type(value) is not int or value < 0:
+            raise Refusal(f"native usage field is missing or invalid: {name}")
+        return value
+
+    if runtime_id == "claude-code":
+        uncached = token("input_tokens")
+        write = token("cache_creation_input_tokens")
+        read = token("cache_read_input_tokens")
+        assert uncached is not None and write is not None and read is not None
+        logical = uncached + write + read
+        churn = uncached + write
+    elif runtime_id == "codex":
+        logical = token("inputTokens")
+        read = token("cachedInputTokens")
+        write = token("cacheWriteInputTokens", required=False)
+        assert logical is not None and read is not None
+        if write is None:
+            if read > logical:
+                raise Refusal("native cache read exceeds logical input")
+            uncached = None
+            churn = logical - read
+        else:
+            uncached = logical - read - write
+            if uncached < 0:
+                raise Refusal("native cache categories overlap")
+            churn = write + uncached
+    else:
+        raise Refusal("native runtime id is unsupported")
+    return {
+        "cache_read_tokens": read,
+        "cache_write_tokens": write,
+        "complete_logical_input_tokens": logical,
+        "fresh_token_churn": churn,
+        "uncached_suffix_or_miss_tokens": uncached,
+    }
+
+
+def claude_expiry_wait_seconds(usage: dict[str, Any]) -> int | None:
+    creation = usage.get("cache_creation")
+    if not isinstance(creation, dict):
+        return None
+    classes = {
+        "ephemeral_1h_input_tokens": 3600,
+        "ephemeral_5m_input_tokens": 300,
+    }
+    active: list[int] = []
+    for field, ttl in classes.items():
+        value = creation.get(field, 0)
+        if type(value) is not int or value < 0:
+            raise Refusal("Claude cache creation TTL class is invalid")
+        if value > 0:
+            active.append(ttl)
+    if len(active) != 1:
+        return None
+    return active[0] + 60
+
+
+def native_vector_dominates(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    identity = ("runtime_id", "model_id", "tokenizer_id")
+    if any(
+        not isinstance(vector.get(key), str) or not vector[key].strip()
+        for vector in (left, right)
+        for key in identity
+    ):
+        raise Refusal("native token vector identity is missing")
+    if any(left.get(key) != right.get(key) for key in identity):
+        raise Refusal("native token vectors cannot pool unlike identities")
+    axes = ("complete_logical_context_high_water", "cumulative_fresh_token_churn")
+    if any(type(left.get(key)) is not int or type(right.get(key)) is not int for key in axes):
+        return False
+    return all(left[key] <= right[key] for key in axes) and any(
+        left[key] < right[key] for key in axes
+    )
+
+
+def _validate_native_prompt_template(raw: bytes) -> None:
+    text = raw.decode("utf-8", errors="strict")
+    required = ("{{representation}}", "{{lifecycle_index}}", "{{task_suffix}}")
+    if any(text.count(value) != 1 for value in required):
+        raise Refusal("native prompt template placeholders drift")
+    if not (
+        text.index("{{representation}}")
+        < text.index("<bootstrap>")
+        < text.index("{{task_suffix}}")
+    ):
+        raise Refusal("native prompt template does not keep one stable prefix")
+    contamination = _prompt_contamination(raw)
+    if contamination is not None:
+        raise Refusal(f"native prompt template contains forbidden material: {contamination}")
+
+
+def _validate_native_runtime_manifest(record: dict[str, Any]) -> None:
+    _require_fields(
+        record,
+        ("response_reuse", "runtimes", "schema"),
+        ("response_reuse", "runtimes", "schema"),
+        "native runtime manifest",
+    )
+    if (
+        record.get("schema")
+        != f"{SCHEMA_PREFIX}-native-runtime-manifest/v1"
+        or record.get("response_reuse", {}).get("enabled") is not False
+        or [item.get("id") for item in record.get("runtimes", [])]
+        != list(NATIVE_RUNTIMES)
+    ):
+        raise Refusal("native runtime manifest identity or response-cache policy drift")
+    if (
+        _sha256(_canonical_json(record["response_reuse"]))
+        != NATIVE_RESPONSE_REUSE_SHA256
+    ):
+        raise Refusal("native runtime manifest response-cache policy drift")
+    serialized = json.dumps(record, sort_keys=True)
+    if "/Users/" in serialized:
+        raise Refusal("tracked native runtime manifest contains a host-absolute path")
+    by_id = {item["id"]: item for item in record["runtimes"]}
+    executed_commands = {
+        "claude-code": {
+            "authentication": ["claude", "auth", "status", "--json"],
+            "version": ["claude", "--version"],
+        },
+        "codex": {
+            "authentication": ["codex", "login", "status"],
+            "protocol_schema": [
+                "codex",
+                "app-server",
+                "generate-json-schema",
+                "--experimental",
+                "--out",
+                "{temporary_schema_root}",
+            ],
+            "version": ["codex", "--version"],
+        },
+    }
+    for runtime_id, expected in executed_commands.items():
+        runtime = by_id[runtime_id]
+        if runtime.get("authentication", {}).get("command") != expected[
+            "authentication"
+        ] or runtime.get("version", {}).get("command") != expected["version"]:
+            raise Refusal("native runtime manifest executable command drift")
+        if runtime_id == "codex" and runtime.get("protocol_schema", {}).get(
+            "command"
+        ) != expected["protocol_schema"]:
+            raise Refusal("native runtime manifest executable command drift")
+    if any(
+        _sha256(_canonical_json(by_id[runtime_id])) != expected
+        for runtime_id, expected in NATIVE_RUNTIME_RECORD_SHA256.items()
+    ):
+        raise Refusal("native runtime manifest safe invocation contract drift")
+    claude = by_id["claude-code"]
+    codex = by_id["codex"]
+    claude_argv = claude.get("invocation", {}).get("common_argv", [])
+    if (
+        claude.get("executable") != "claude"
+        or claude.get("isolated_state", {}).get("environment")
+        != {"CLAUDE_CONFIG_DIR": "{isolated_state_root}/claude"}
+        or claude.get("isolated_state", {}).get("must_not_mutate_user_sessions")
+        is not True
+        or claude.get("authentication", {})
+        .get("isolated_bootstrap", {})
+        .get("failure")
+        != "mark runtime inconclusive before any session; never fall back to the user session store"
+        or claude.get("cache", {}).get("expiry", {}).get("observed_class_required")
+        is not True
+        or set(claude.get("cache", {}).get("expiry", {}).get("ttl_classes", {}))
+        != {"ephemeral_1h_input_tokens", "ephemeral_5m_input_tokens"}
+        or claude_argv.count("--json-schema") != 1
+        or "{response_schema_json}" not in claude_argv
+        or claude.get("invocation", {}).get("terminal_output", {}).get("field")
+        != "structured_output"
+    ):
+        raise Refusal("Claude Code isolation or adaptive expiry policy drift")
+    start = codex.get("invocation", {}).get("start_request", {})
+    params = start.get("params", {})
+    if (
+        codex.get("executable") != "codex"
+        or codex.get("isolated_state", {}).get("environment")
+        != {"CODEX_HOME": "{isolated_state_root}/codex"}
+        or codex.get("isolated_state", {}).get("must_not_mutate_user_sessions")
+        is not True
+        or params.get("ephemeral") is not False
+        or params.get("allowProviderModelFallback") is not False
+        or params.get("dynamicTools") != []
+        or params.get("environments") != []
+        or set(params)
+        != {
+            "allowProviderModelFallback",
+            "approvalPolicy",
+            "baseInstructions",
+            "cwd",
+            "dynamicTools",
+            "environments",
+            "ephemeral",
+            "experimentalRawEvents",
+            "model",
+            "sandbox",
+        }
+        or start.get("method") != "thread/start"
+        or codex.get("invocation", {}).get("resume_request", {}).get("method")
+        != "thread/resume"
+        or codex.get("invocation", {}).get("compact_request", {}).get("method")
+        != "thread/compact/start"
+        or codex.get("invocation", {}).get("turn_request", {}).get("method")
+        != "turn/start"
+        or codex.get("invocation", {})
+        .get("turn_request", {})
+        .get("params", {})
+        .get("outputSchema")
+        != "{response_schema_object}"
+        or codex.get("invocation", {}).get("terminal_output", {}).get("field")
+        != "last agentMessage.text"
+        or codex.get("cache", {}).get("expiry")
+        != {
+            "after_expiry_margin_seconds": 60,
+            "predicate": (
+                "wait 1860 seconds after the latest write or reuse, then require a "
+                "provider-native miss; a later hit is inconclusive"
+            ),
+            "source_ttl_seconds": 1800,
+            "ttl_semantics": (
+                "GPT-5.6 default and minimum is 30 minutes after the latest write "
+                "or reuse and may persist longer"
+            ),
+        }
+        or "https://developers.openai.com/api/docs/guides/prompt-caching"
+        not in codex.get("sources", [])
+    ):
+        raise Refusal("Codex persistent isolation or app-server method drift")
+    for runtime in record["runtimes"]:
+        if (
+            runtime.get("cache", {}).get("prompt_prefix_cache_enabled") is not True
+            or runtime.get("tokenizer", {}).get("pooling") is not False
+            or not runtime.get("sources")
+        ):
+            raise Refusal("native runtime cache, tokenizer, or source policy drift")
+
+
+def _native_session_schedule() -> list[dict[str, Any]]:
+    return [
+        {
+            "cache_evidence": "require cold miss or write",
+            "id": "cold-start",
+            "index": 0,
+            "process": "start fresh runtime process in the isolated store",
+            "response_shape": "decision",
+            "semantic_class": "authority",
+            "session": "create one persistent session or thread",
+            "task": "score the mapped authority decision task",
+        },
+        {
+            "cache_evidence": "record warm read, write and miss categories",
+            "id": "continuous-warm",
+            "index": 1,
+            "process": "keep the runtime process alive",
+            "response_shape": "tool-invocation",
+            "semantic_class": "failure",
+            "session": "reuse the same session or thread",
+            "task": "score the mapped failure tool-invocation task",
+        },
+        {
+            "cache_evidence": "resume before the observed runtime TTL expires",
+            "id": "resume-within-ttl",
+            "index": 2,
+            "process": "stop, then restart the runtime process",
+            "response_shape": "refusal",
+            "semantic_class": "recovery",
+            "session": "resume the same persisted session or thread",
+            "task": "score the mapped recovery refusal task after resume",
+        },
+        {
+            "cache_evidence": (
+                "wait observed TTL plus the frozen safety margin, then require a "
+                "later miss or mark the runtime inconclusive"
+            ),
+            "id": "resume-after-expiry",
+            "index": 3,
+            "process": "stop, wait, then restart the runtime process",
+            "response_shape": "structured-plan",
+            "semantic_class": "exact-literal",
+            "session": "resume the same persisted session or thread",
+            "task": "score the mapped exact-literal plan task after expiry",
+        },
+        {
+            "cache_evidence": "record usage only after native compaction completes",
+            "id": "post-compaction",
+            "index": 4,
+            "process": "keep the resumed runtime process alive",
+            "response_shape": "recovery",
+            "semantic_class": "cross-document",
+            "session": (
+                "compact the same session or thread, require the native completion "
+                "event, then start one new turn"
+            ),
+            "task": "score the mapped cross-document recovery task after compaction",
+        },
+    ]
+
+
+def _native_workload(
+    behavioral_preregistration: dict[str, Any],
+    behavioral_commitment: dict[str, Any],
+    behavioral_packet: dict[str, bytes],
+) -> dict[str, Any]:
+    packet = _decode_record(behavioral_packet["packet.json"])
+    case_commitments = packet.get("case_commitments", [])
+    slots = behavioral_preregistration.get("case_slots", [])
+    if (
+        len(case_commitments) != BEHAVIORAL_CASES
+        or len(slots) != BEHAVIORAL_CASES
+        or len(case_commitments) != len(set(case_commitments))
+    ):
+        raise Refusal("native workload behavioral task mapping drift")
+    pool = [
+        {**slot, "task_commitment": commitment}
+        for slot, commitment in zip(slots, case_commitments, strict=True)
+    ]
+    task_slots: list[dict[str, Any]] = []
+    for step in _native_session_schedule():
+        candidates = [
+            item
+            for item in pool
+            if item["semantic_class"] == step["semantic_class"]
+            and item["response_shape"] == step["response_shape"]
+        ]
+        candidates.sort(
+            key=lambda item: (
+                _sha256(
+                    (
+                        "framework-74-native-task\0"
+                        + step["id"]
+                        + "\0"
+                        + item["task_commitment"]
+                    ).encode("utf-8")
+                ),
+                item["id"],
+            )
+        )
+        if not candidates:
+            raise Refusal("native workload lacks a lifecycle task shape")
+        selected = candidates[0]
+        task_slots.append(
+            {
+                "lifecycle_id": step["id"],
+                "response_shape": selected["response_shape"],
+                "response_schema_sha256": _sha256(
+                    _canonical_json(
+                        _behavioral_response_schema(
+                            selected["semantic_class"], selected["response_shape"]
+                        )
+                    )
+                ),
+                "semantic_class": selected["semantic_class"],
+                "slot_id": selected["id"],
+                "task_commitment": selected["task_commitment"],
+            }
+        )
+    if len({item["task_commitment"] for item in task_slots}) != len(
+        NATIVE_LIFECYCLES
+    ):
+        raise Refusal("native workload lifecycle tasks are not distinct")
+    return {
+        "admission_filter": (
+            "execute chains only for arms returned by the frozen behavioral admission "
+            "rule; raw and simple remain mandatory; record every excluded chain"
+        ),
+        "behavioral_packet_commitment_sha256": behavioral_commitment["sha256"],
+        "behavioral_preregistration_sha256": behavioral_preregistration["sha256"],
+        "behavioral_case_pool_count": BEHAVIORAL_CASES,
+        "maximum_chains_before_admission_filter": (
+            len(NATIVE_RUNTIMES) * len(DEVELOPMENT_ARMS) * NATIVE_REPETITIONS
+        ),
+        "maximum_observations_before_admission_filter": (
+            len(NATIVE_RUNTIMES)
+            * len(DEVELOPMENT_ARMS)
+            * NATIVE_REPETITIONS
+            * len(NATIVE_LIFECYCLES)
+        ),
+        "observations_per_chain": len(NATIVE_LIFECYCLES),
+        "provider_event_accounting": (
+            "retain every provider-native usage event in each turn; complete logical "
+            "context high-water is the maximum event input, fresh churn is the sum "
+            "over events, score only the terminal bounded JSON, and mark unexpected "
+            "extra answer-producing calls inconclusive"
+        ),
+        "repetitions_per_runtime_arm_chain": NATIVE_REPETITIONS,
+        "schedule_order": (
+            "for each runtime and repetition run the raw/simple mandatory-baseline "
+            "tier before the admission-filtered candidate tier, sort by chain id "
+            "inside each tier, and execute each chain's observations in index order"
+        ),
+        "session_schedule": _native_session_schedule(),
+        "task_sequence": (
+            "materialize five distinct committed behavioral tasks, one per semantic "
+            "class and lifecycle; keep the representation prefix stable, change the "
+            "task suffix at every turn, retain every response and score every observation"
+        ),
+        "scheduled_task_count": len(NATIVE_LIFECYCLES),
+        "task_slots": task_slots,
+    }
+
+
+def _native_chain_order(preregistration: dict[str, Any]) -> list[dict[str, Any]]:
+    workload = preregistration["workload"]
+    rows: list[dict[str, Any]] = []
+    for runtime_id in NATIVE_RUNTIMES:
+        runtime_commitment = _sha256(
+            (
+                "framework-74-native-runtime\0"
+                + preregistration["runtime_manifest_sha256"]
+                + "\0"
+                + runtime_id
+            ).encode("utf-8")
+        )
+        for arm in preregistration["arm_versions"]:
+            arm_commitment = _sha256(
+                (
+                    "framework-74-native-arm\0" + arm["control_sha256"]
+                ).encode("utf-8")
+            )
+            sequence_sha256 = _sha256(
+                _canonical_json(workload["task_slots"])
+            )
+            for repetition_index in range(NATIVE_REPETITIONS):
+                chain_id = _sha256(
+                    (
+                        "framework-74-native-chain\0"
+                        + runtime_commitment
+                        + "\0"
+                        + arm_commitment
+                        + "\0"
+                        + sequence_sha256
+                        + "\0"
+                        + str(repetition_index)
+                    ).encode("utf-8")
+                )
+                observations = []
+                for step, task in zip(
+                    workload["session_schedule"],
+                    workload["task_slots"],
+                    strict=True,
+                ):
+                    if step["id"] != task["lifecycle_id"]:
+                        raise Refusal("native task sequence lifecycle mapping drift")
+                    observations.append(
+                        {
+                            "correlation_id": _sha256(
+                                (
+                                    chain_id
+                                    + "\0"
+                                    + str(step["index"])
+                                    + "\0"
+                                    + step["id"]
+                                ).encode("utf-8")
+                            ),
+                            "lifecycle_id": step["id"],
+                            "observation_index": step["index"],
+                            "response_schema_sha256": task[
+                                "response_schema_sha256"
+                            ],
+                            "slot_id": task["slot_id"],
+                            "task_commitment": task["task_commitment"],
+                        }
+                    )
+                rows.append(
+                    {
+                        "arm_commitment": arm_commitment,
+                        "chain_id": chain_id,
+                        "execution_tier": (
+                            "mandatory-baseline"
+                            if arm["id"] in {"raw", "simple"}
+                            else "admission-filtered-candidate"
+                        ),
+                        "observations": observations,
+                        "repetition_index": repetition_index,
+                        "runtime_commitment": runtime_commitment,
+                        "task_sequence_sha256": sequence_sha256,
+                    }
+                )
+    runtime_order = {
+        _sha256(
+            (
+                "framework-74-native-runtime\0"
+                + preregistration["runtime_manifest_sha256"]
+                + "\0"
+                + runtime_id
+            ).encode("utf-8")
+        ): index
+        for index, runtime_id in enumerate(NATIVE_RUNTIMES)
+    }
+    rows.sort(
+        key=lambda item: (
+            runtime_order[item["runtime_commitment"]],
+            item["repetition_index"],
+            0 if item["execution_tier"] == "mandatory-baseline" else 1,
+            item["chain_id"],
+        )
+    )
+    expected = workload["maximum_chains_before_admission_filter"]
+    if len(rows) != expected or len({item["chain_id"] for item in rows}) != expected:
+        raise Refusal("native workload chain schedule is incomplete or ambiguous")
+    return [{"chain_index": index, **row} for index, row in enumerate(rows)]
+
+
+def _native_preregistration(
+    selection: dict[str, Any],
+    runtime_manifest: dict[str, Any],
+    runtime_raw: bytes,
+    accounting: dict[str, Any],
+    accounting_raw: bytes,
+    prompt_raw: bytes,
+    behavioral_preregistration: dict[str, Any],
+    behavioral_commitment: dict[str, Any],
+    behavioral_packet: dict[str, bytes],
+) -> dict[str, Any]:
+    workload = _native_workload(
+        behavioral_preregistration, behavioral_commitment, behavioral_packet
+    )
+    body = {
+        "admission": {
+            "development_nominee": selection["development_nominee"],
+            "frozen_rule_sha256": _sha256(
+                _canonical_json(selection["admission_rule"])
+            ),
+            "mandatory_baselines": ["raw", "simple"],
+            "near_frontier": selection["near_frontier"],
+            "resolved_only_after_behavioral_holdout": True,
+        },
+        "arm_versions": [
+            {"control_sha256": item["control_sha256"], "id": item["arm"]}
+            for item in selection["arms"]
+        ],
+        "cache_accounting_sha256": _sha256(accounting_raw),
+        "behavior_scoring": {
+            "case_generator_sha256": _sha256(
+                _canonical_json(behavioral_preregistration["case_generator"])
+            ),
+            "equal_behavior": (
+                "for each runtime, task and lifecycle observation, compare objective "
+                "success and critical-violation status to raw; unknown is not equal"
+            ),
+            "model_self_score_authoritative": False,
+            "scorer_sha256": behavioral_preregistration["scorer_sha256"],
+            "success_rule": "strict equality with the hidden generated oracle",
+        },
+        "correlation": {
+            "formula": (
+                "sha256(chain id NUL observation index NUL lifecycle id), where chain "
+                "id binds runtime, arm, the five-task sequence and repetition"
+            ),
+            "required_fields": [
+                "run_id",
+                "chain_id",
+                "repetition_index",
+                "observation_index",
+                "runtime_id",
+                "arm_commitment",
+                "lifecycle_id",
+                "task_commitment",
+            ],
+        },
+        "decision": {
+            "behavior_is_eligibility_predicate": True,
+            "dollar_weighting": False,
+            "per_runtime_model_tokenizer": True,
+            "retain_frontier_when_axes_disagree": True,
+            "selection_may_be_none": True,
+        },
+        "lifecycle_order": list(NATIVE_LIFECYCLES),
+        "native_preflight_reports": {
+            candidate: NATIVE_REPORT_PATHS[candidate].as_posix()
+            for candidate in EVALUATOR_CANDIDATES
+        },
+        "no_native_session_launched": True,
+        "prompt": {
+            "response_reuse_enabled": False,
+            "stable_prefix_before_task_suffix": True,
+            "template_sha256": _sha256(prompt_raw),
+        },
+        "runtime_manifest_sha256": _sha256(runtime_raw),
+        "runtimes": list(NATIVE_RUNTIMES),
+        "schema": f"{SCHEMA_PREFIX}-native-deployment-preregistration/v1",
+        "secondary_evidence": accounting["secondary_evidence"],
+        "selection_sha256": selection["sha256"],
+        "state": "frozen-unopened",
+        "telemetry_unknown_policy": accounting["unknown_policy"],
+        "workload": workload,
+    }
+    record = _digested_record(body)
+    _validate_native_preregistration(record)
+    return record
+
+
+def _validate_native_preregistration(record: dict[str, Any]) -> None:
+    _validate_digested_record(record, "native deployment preregistration")
+    if (
+        record.get("schema")
+        != f"{SCHEMA_PREFIX}-native-deployment-preregistration/v1"
+        or record.get("state") != "frozen-unopened"
+        or record.get("runtimes") != list(NATIVE_RUNTIMES)
+        or record.get("lifecycle_order") != list(NATIVE_LIFECYCLES)
+        or record.get("no_native_session_launched") is not True
+        or record.get("prompt", {}).get("response_reuse_enabled") is not False
+        or record.get("prompt", {}).get("stable_prefix_before_task_suffix") is not True
+        or record.get("admission", {}).get("mandatory_baselines")
+        != ["raw", "simple"]
+        or record.get("decision", {}).get("dollar_weighting") is not False
+        or record.get("decision", {}).get("per_runtime_model_tokenizer") is not True
+        or record.get("native_preflight_reports")
+        != {
+            candidate: NATIVE_REPORT_PATHS[candidate].as_posix()
+            for candidate in EVALUATOR_CANDIDATES
+        }
+        or record.get("behavior_scoring", {}).get(
+            "model_self_score_authoritative"
+        )
+        is not False
+        or record.get("behavior_scoring", {}).get("success_rule")
+        != "strict equality with the hidden generated oracle"
+        or record.get("workload", {}).get("repetitions_per_runtime_arm_chain")
+        != NATIVE_REPETITIONS
+        or record.get("workload", {}).get("session_schedule")
+        != _native_session_schedule()
+        or record.get("workload", {}).get(
+            "maximum_chains_before_admission_filter"
+        )
+        != 10
+        or record.get("workload", {}).get(
+            "maximum_observations_before_admission_filter"
+        )
+        != 50
+    ):
+        raise Refusal("native deployment preregistration contract drift")
+    behavioral, _ = _load_fixture_record(BEHAVIORAL_PREREGISTRATION)
+    seal, _ = _load_fixture_record(EXPERIMENT_FIXTURE_ROOT / "holdout-seal.json")
+    _validate_behavioral_preregistration(behavioral, seal)
+    expected_behavioral_packet = _opaque_behavioral_packet(behavioral, seal)
+    expected_behavioral_packet = _load_frozen_packet(
+        FROZEN_BEHAVIORAL_ROOT,
+        expected_behavioral_packet,
+        allowed_directories=("native",),
+    )
+    commitment, _ = _load_fixture_record(BEHAVIORAL_COMMITMENT)
+    _verify_packet_commitment(
+        behavioral,
+        commitment,
+        f"{SCHEMA_PREFIX}-holdout-packet-commitment/v1",
+        expected_behavioral_packet,
+    )
+    expected_workload = _native_workload(
+        behavioral, commitment, expected_behavioral_packet
+    )
+    if record.get("workload") != expected_workload:
+        raise Refusal("native deployment task or repetition workload drift")
+    expected_scoring = {
+        "case_generator_sha256": _sha256(
+            _canonical_json(behavioral["case_generator"])
+        ),
+        "equal_behavior": (
+            "for each runtime, task and lifecycle observation, compare objective "
+            "success and critical-violation status to raw; unknown is not equal"
+        ),
+        "model_self_score_authoritative": False,
+        "scorer_sha256": behavioral["scorer_sha256"],
+        "success_rule": "strict equality with the hidden generated oracle",
+    }
+    if record.get("behavior_scoring") != expected_scoring:
+        raise Refusal("native deployment behavior scorer drift")
+
+
+def _opaque_native_packet(preregistration: dict[str, Any]) -> dict[str, bytes]:
+    packet = {
+        "behavior_scorer_sha256": preregistration["behavior_scoring"][
+            "scorer_sha256"
+        ],
+        "chain_order": _native_chain_order(preregistration),
+        "lifecycle_commitments": [
+            _sha256(
+                (
+                    "framework-74-native-lifecycle\0"
+                    + preregistration["sha256"]
+                    + "\0"
+                    + lifecycle
+                ).encode("utf-8")
+            )
+            for lifecycle in NATIVE_LIFECYCLES
+        ],
+        "prompt_template_sha256": preregistration["prompt"]["template_sha256"],
+        "runtime_commitments": [
+            _sha256(
+                (
+                    "framework-74-native-runtime\0"
+                    + preregistration["runtime_manifest_sha256"]
+                    + "\0"
+                    + runtime
+                ).encode("utf-8")
+            )
+            for runtime in NATIVE_RUNTIMES
+        ],
+        "schema": f"{SCHEMA_PREFIX}-answer-free-native-packet/v1",
+        "task_commitments": [
+            item["task_commitment"]
+            for item in preregistration["workload"]["task_slots"]
+        ],
+        "variant_commitments": [
+            _sha256(
+                ("framework-74-native-arm\0" + item["control_sha256"]).encode(
+                    "utf-8"
+                )
+            )
+            for item in preregistration["arm_versions"]
+        ],
+        "workload_sha256": _sha256(_canonical_json(preregistration["workload"])),
+    }
+    packet_raw = _canonical_json(packet)
+    contamination = _prompt_contamination(packet_raw)
+    if contamination is not None:
+        raise Refusal(f"native packet contains forbidden material: {contamination}")
+    manifest = {
+        "artifacts": {
+            "packet.json": {"bytes": len(packet_raw), "sha256": _sha256(packet_raw)}
+        },
+        "preregistration_sha256": preregistration["sha256"],
+        "schema": f"{SCHEMA_PREFIX}-answer-free-native-packet-manifest/v1",
+    }
+    return {"manifest.json": _canonical_json(manifest), "packet.json": packet_raw}
+
+
+def freeze_native_gate(args: argparse.Namespace) -> bytes:
+    output = _confined_output(
+        args.output,
+        "frozen native packet output",
+        exact=(FROZEN_NATIVE_ROOT,),
+        roots=(),
+    )
+    selection, _ = _load_record(args.selection)
+    _validate_development_selection(selection)
+    runtime_manifest, runtime_raw = _load_record(args.runtime_manifest)
+    _validate_native_runtime_manifest(runtime_manifest)
+    accounting, accounting_raw = _load_fixture_record(NATIVE_CACHE_ACCOUNTING)
+    _validate_native_cache_accounting(accounting)
+    _, prompt_raw = _read_utf8(
+        _fixture_path(NATIVE_PROMPT_TEMPLATE),
+        MAX_PROMPT_BYTES,
+        "native prompt template",
+    )
+    _validate_native_prompt_template(prompt_raw)
+    behavioral, _ = _load_fixture_record(BEHAVIORAL_PREREGISTRATION)
+    seal, _ = _load_fixture_record(EXPERIMENT_FIXTURE_ROOT / "holdout-seal.json")
+    _validate_behavioral_preregistration(behavioral, seal)
+    behavioral_packet = _opaque_behavioral_packet(behavioral, seal)
+    behavioral_packet = _load_frozen_packet(
+        FROZEN_BEHAVIORAL_ROOT,
+        behavioral_packet,
+        allowed_directories=("native",),
+    )
+    behavioral_commitment, _ = _load_fixture_record(BEHAVIORAL_COMMITMENT)
+    _verify_packet_commitment(
+        behavioral,
+        behavioral_commitment,
+        f"{SCHEMA_PREFIX}-holdout-packet-commitment/v1",
+        behavioral_packet,
+    )
+    preregistration = _native_preregistration(
+        selection,
+        runtime_manifest,
+        runtime_raw,
+        accounting,
+        accounting_raw,
+        prompt_raw,
+        behavioral,
+        behavioral_commitment,
+        behavioral_packet,
+    )
+    packet = _opaque_native_packet(preregistration)
+    commitment = _packet_commitment(
+        f"{SCHEMA_PREFIX}-native-lifecycle-packet-commitment/v1",
+        preregistration["sha256"],
+        packet,
+    )
+    terminal = _fixture_path(NATIVE_COMMITMENT)
+    _publish_committed_set(
+        [
+            (output / "packet.json", packet["packet.json"]),
+            (output / "manifest.json", packet["manifest.json"]),
+            (
+                _fixture_path(NATIVE_PREREGISTRATION),
+                _canonical_json(preregistration),
+            ),
+            (terminal, _canonical_json(commitment)),
+        ],
+        terminal=terminal,
+    )
+    return _result(
+        "freeze-native-gate",
+        _canonical_json(commitment),
+        {"answer_bytes": 0, "artifacts": len(packet), "sessions_launched": 0},
+    )
+
+
+def _verify_packet_commitment(
+    preregistration: dict[str, Any],
+    commitment: dict[str, Any],
+    expected_schema: str,
+    packet: dict[str, bytes],
+) -> None:
+    _validate_digested_record(commitment, "packet commitment")
+    if (
+        commitment.get("schema") != expected_schema
+        or commitment.get("opened") is not False
+        or commitment.get("preregistration_sha256") != preregistration["sha256"]
+        or commitment.get("artifacts")
+        != {
+            path: {"bytes": len(raw), "sha256": _sha256(raw)}
+            for path, raw in sorted(packet.items())
+        }
+    ):
+        raise Refusal("packet commitment does not reproduce from repository bytes")
+
+
+def _load_frozen_packet(
+    relative_root: PurePosixPath,
+    expected: dict[str, bytes],
+    *,
+    allowed_directories: tuple[str, ...] = (),
+) -> dict[str, bytes]:
+    root = ROOT / Path(*relative_root.parts)
+    descriptor: int | None = None
+    try:
+        root_metadata = root.lstat()
+        if stat.S_ISLNK(root_metadata.st_mode) or not stat.S_ISDIR(
+            root_metadata.st_mode
+        ):
+            raise Refusal("frozen packet root is not an ordinary directory")
+        descriptor = os.open(root, _directory_flags())
+        opened_metadata = os.fstat(descriptor)
+    except OSError as exc:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise Refusal("frozen packet directory is unavailable or unsafe") from exc
+    if _identity(root_metadata) != _identity(opened_metadata):
+        os.close(descriptor)
+        raise Refusal("frozen packet directory changed while opening")
+    entry_bound = len(expected) + len(allowed_directories)
+    observed_files: set[str] = set()
+    observed_directories: set[str] = set()
+    try:
+        with os.scandir(descriptor) as entries:
+            for index, entry in enumerate(entries, start=1):
+                if index > entry_bound:
+                    raise Refusal("frozen packet directory exceeds its entry bound")
+                try:
+                    if entry.is_symlink():
+                        raise Refusal("frozen packet directory contains a symlink")
+                    if entry.is_file(follow_symlinks=False):
+                        observed_files.add(entry.name)
+                    elif entry.is_dir(follow_symlinks=False):
+                        observed_directories.add(entry.name)
+                    else:
+                        raise Refusal(
+                            "frozen packet directory contains a special entry"
+                        )
+                except OSError as exc:
+                    raise Refusal(
+                        "frozen packet directory changed during enumeration"
+                    ) from exc
+        if observed_files != set(expected) or not observed_directories <= set(
+            allowed_directories
+        ):
+            raise Refusal("frozen packet directory has a non-closed path set")
+        loaded: dict[str, bytes] = {}
+        for name, raw in expected.items():
+            try:
+                file_descriptor = os.open(
+                    name, _regular_read_flags(), dir_fd=descriptor
+                )
+            except OSError as exc:
+                raise Refusal("frozen packet input is unavailable or unsafe") from exc
+            try:
+                observed, opened = _read_descriptor(
+                    file_descriptor, max(MAX_JSON_BYTES, len(raw))
+                )
+            finally:
+                os.close(file_descriptor)
+            try:
+                named = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            except OSError as exc:
+                raise Refusal("frozen packet input changed during read") from exc
+            if _identity(opened) != _identity(named):
+                raise Refusal("frozen packet input changed during read")
+            loaded[name] = observed
+        after = os.fstat(descriptor)
+        try:
+            named_root = root.lstat()
+        except OSError as exc:
+            raise Refusal("frozen packet directory changed during read") from exc
+        if (
+            _rename_stable_identity(opened_metadata)
+            != _rename_stable_identity(after)
+            or _identity(after) != _identity(named_root)
+        ):
+            raise Refusal("frozen packet directory changed during read")
+    finally:
+        os.close(descriptor)
+    if loaded != expected:
+        raise Refusal("frozen packet bytes differ from their preregistration")
+    manifest = _decode_record(loaded["manifest.json"])
+    packet_raw = loaded["packet.json"]
+    if manifest.get("artifacts") != {
+        "packet.json": {
+            "bytes": len(packet_raw),
+            "sha256": _sha256(packet_raw),
+        }
+    }:
+        raise Refusal("frozen packet manifest does not bind packet.json")
+    return loaded
+
+
+def verify_native_preregistration(args: argparse.Namespace) -> bytes:
+    if args.no_session is not True:
+        raise Refusal("native preregistration verification requires --no-session")
+    preregistration, prereg_raw = _load_record(args.preregistration)
+    _validate_native_preregistration(preregistration)
+    commitment, commitment_raw = _load_record(args.commitment)
+    packet = _opaque_native_packet(preregistration)
+    packet = _load_frozen_packet(FROZEN_NATIVE_ROOT, packet)
+    _verify_packet_commitment(
+        preregistration,
+        commitment,
+        f"{SCHEMA_PREFIX}-native-lifecycle-packet-commitment/v1",
+        packet,
+    )
+    return _result(
+        "verify-native-preregistration",
+        commitment_raw,
+        {
+            "preregistration_bytes": len(prereg_raw),
+            "sessions_launched": 0,
+            "verified_artifacts": len(packet),
+        },
+    )
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(
+        self,
+        req: Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> None:
+        return None
+
+
+def _external_secret(path: str, limit: int = 4096) -> bytes:
+    """Read one explicitly authorised secret without following a symlink."""
+    candidate = Path(path)
+    if not candidate.is_absolute() or not hasattr(os, "O_NOFOLLOW"):
+        raise Refusal("credential path is not an absolute no-follow path")
+    try:
+        descriptor = os.open(
+            candidate,
+            os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0),
+        )
+    except OSError as exc:
+        raise Refusal("credential is unavailable or unsafe") from exc
+    try:
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_uid != os.getuid()
+            or before.st_mode & 0o077
+            or before.st_size <= 0
+            or before.st_size > limit
+        ):
+            raise Refusal("credential metadata is unsafe")
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(descriptor, min(4096, limit + 1 - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > limit:
+                raise Refusal("credential exceeds its byte limit")
+        after = os.fstat(descriptor)
+        if _identity(before) != _identity(after):
+            raise Refusal("credential changed during read")
+    finally:
+        os.close(descriptor)
+    raw = b"".join(chunks).strip()
+    if not raw or b"\x00" in raw or b"\n" in raw or b"\r" in raw:
+        raise Refusal("credential bytes are malformed")
+    return raw
+
+
+def _http_json(endpoint: str, credential: bytes | None = None) -> dict[str, Any]:
+    if endpoint not in OPENROUTER_ENDPOINTS.values():
+        raise Refusal("HTTP endpoint is outside the frozen allowlist")
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "wildcat-framework-74-preflight/1",
+    }
+    if credential is not None:
+        try:
+            headers["Authorization"] = "Bearer " + credential.decode(
+                "ascii", errors="strict"
+            )
+        except UnicodeDecodeError as exc:
+            raise Refusal("credential is not ASCII") from exc
+    request = Request(endpoint, headers=headers, method="GET")
+    opener = build_opener(_NoRedirect(), HTTPSHandler())
+    try:
+        with opener.open(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+            if response.geturl() != endpoint or response.status != 200:
+                raise Refusal("OpenRouter preflight returned an unexpected response")
+            content_type = response.headers.get_content_type()
+            if content_type != "application/json":
+                raise Refusal("OpenRouter preflight response is not JSON")
+            raw = response.read(MAX_HTTP_BYTES + 1)
+    except HTTPError as exc:
+        raise Refusal(f"OpenRouter preflight HTTP status {exc.code}") from exc
+    except (OSError, URLError) as exc:
+        raise Refusal("OpenRouter preflight transport failed") from exc
+    if len(raw) > MAX_HTTP_BYTES:
+        raise Refusal("OpenRouter preflight response exceeds its byte limit")
+    return _decode_external_json(raw, "OpenRouter preflight response")
+
+
+def _decode_external_json(raw: bytes, label: str) -> dict[str, Any]:
+    _preflight_json(raw)
+    try:
+        value = json.loads(
+            raw.decode("utf-8", errors="strict"),
+            object_pairs_hook=_closed_object,
+            parse_int=_parse_integer,
+            parse_float=_parse_external_decimal,
+            parse_constant=_reject_constant,
+        )
+    except Refusal:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        raise Refusal(f"{label} is not strict UTF-8 JSON") from exc
+    if not isinstance(value, dict):
+        raise Refusal(f"{label} root must be an object")
+    return value
+
+
+def _parse_external_decimal(value: str) -> Decimal:
+    if len(value) > MAX_JSON_NUMBER_CHARS:
+        raise Refusal("external record exceeds JSON number length limit")
+    try:
+        result = Decimal(value)
+    except InvalidOperation as exc:
+        raise Refusal("external record contains an invalid decimal") from exc
+    if not result.is_finite():
+        raise Refusal("external record contains a non-finite decimal")
+    return result
+
+
+def _decimal(value: Any, label: str) -> Decimal:
+    if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
+        raise Refusal(f"{label} is not an exact decimal")
+    try:
+        result = Decimal(str(value))
+    except InvalidOperation as exc:
+        raise Refusal(f"{label} is not an exact decimal") from exc
+    if not result.is_finite() or result < 0:
+        raise Refusal(f"{label} is not a non-negative finite decimal")
+    return result
+
+
+def _validate_authority(record: dict[str, Any], maximum: Decimal) -> None:
+    observation = record.get("current_credit_observation", {})
+    if (
+        record.get("schema")
+        != f"{SCHEMA_PREFIX}-model-evaluation-authority/v1"
+        or record.get("authority", {}).get("authorized_on") != "2026-08-31"
+        or record.get("authority", {}).get("amended_on") != "2026-09-03"
+        or record.get("authority", {}).get("scope")
+        != "framework-74 seven-model behavioral holdout only"
+        or record.get("retry_cap") != 1
+        or record.get("budget", {}).get("currency") != "USD"
+        or record.get("budget", {}).get("objective_role")
+        != "hard-guard-only-never-a-selection-weight"
+        or record.get("credential", {}).get("report_value") is not False
+        or record.get("credential", {}).get("label") != "openrouter-api-key"
+        or record.get("reservation", {}).get("lost_or_uncertain_attempt")
+        != "retain reservation as uncertain until provider settlement is proved"
+        or observation.get("account_endpoint") != OPENROUTER_ENDPOINTS["account"]
+        or observation.get("credit_endpoint") != OPENROUTER_ENDPOINTS["credits"]
+        or observation.get("observed_on") != "2026-09-03"
+        or observation.get("state") != "proved-from-credits-endpoint"
+    ):
+        raise Refusal("model-evaluation authority identity or policy drift")
+    ceiling = _decimal(record.get("budget", {}).get("gross_ceiling"), "gross ceiling")
+    if ceiling != Decimal("4500.00") or maximum != ceiling:
+        raise Refusal("requested gross ceiling differs from authority")
+    fee = record.get("reservation", {}).get("fee_rate")
+    if fee is None:
+        raise Refusal("reservation fee is missing")
+    if _decimal(fee, "reservation fee") != Decimal("0.055"):
+        raise Refusal("reservation fee drift")
+    observed_total = _decimal(
+        observation.get("total_credits"), "observed total credits"
+    )
+    observed_usage = _decimal(
+        observation.get("total_usage"), "observed total usage"
+    )
+    observed_available = _decimal(
+        observation.get("available_credit"), "observed available credit"
+    )
+    if observed_usage > observed_total or observed_total - observed_usage != observed_available:
+        raise Refusal("recorded credit observation is internally inconsistent")
+    ledger = record.get("ledger", {})
+    exposure = sum(
+        (_decimal(ledger.get(field), field) for field in (
+            "reserved_gross",
+            "settled_gross",
+            "uncertain_gross",
+        )),
+        Decimal(0),
+    )
+    if exposure > ceiling:
+        raise Refusal("authority ledger already exceeds the gross ceiling")
+    forbidden = set(record.get("redaction", {}).get("forbidden", []))
+    if not {"credential bytes", "authorization header", "key hash"} <= forbidden:
+        raise Refusal("authority redaction policy is incomplete")
+
+
+def budget_reservation(
+    authority: dict[str, Any], requested_gross: Decimal
+) -> dict[str, str]:
+    maximum = _decimal(
+        authority.get("budget", {}).get("gross_ceiling"), "gross ceiling"
+    )
+    _validate_authority(authority, maximum)
+    requested = _decimal(str(requested_gross), "requested reservation")
+    ledger = authority["ledger"]
+    reserved = _decimal(ledger["reserved_gross"], "reserved gross")
+    settled = _decimal(ledger["settled_gross"], "settled gross")
+    uncertain = _decimal(ledger["uncertain_gross"], "uncertain gross")
+    if reserved + settled + uncertain + requested > maximum:
+        raise Refusal("gross reservation exceeds the authorised ceiling")
+    return {
+        "reserved_gross": str(reserved + requested),
+        "settled_gross": str(settled),
+        "uncertain_gross": str(uncertain),
+    }
+
+
+def budget_attempt_outcome(
+    ledger: dict[str, Any], reservation: Decimal, outcome: str
+) -> dict[str, str]:
+    reserved = _decimal(ledger.get("reserved_gross"), "reserved gross")
+    settled = _decimal(ledger.get("settled_gross"), "settled gross")
+    uncertain = _decimal(ledger.get("uncertain_gross"), "uncertain gross")
+    amount = _decimal(str(reservation), "reservation")
+    if amount > reserved:
+        raise Refusal("attempt outcome exceeds its reservation")
+    if outcome == "settled":
+        reserved -= amount
+        settled += amount
+    elif outcome in {"lost", "uncertain"}:
+        reserved -= amount
+        uncertain += amount
+    else:
+        raise Refusal("attempt outcome is unsupported")
+    return {
+        "reserved_gross": str(reserved),
+        "settled_gross": str(settled),
+        "uncertain_gross": str(uncertain),
+    }
+
+
+def _expected_report(candidate: str, criterion: str) -> Path:
+    if candidate not in EVALUATOR_CANDIDATES:
+        raise Refusal("evaluator candidate is outside the frozen set")
+    if criterion not in {
+        "paid-evaluation-preflight",
+        "seven-model-preflight",
+        "native-gate-preflight",
+    }:
+        raise Refusal("preflight criterion is outside the frozen set")
+    relative = DESIGN_REPORT_ROOT / f"{candidate}-{criterion}.json"
+    return ROOT / Path(*relative.parts)
+
+
+def _preflight_invocation(args: argparse.Namespace, criterion: str) -> str:
+    def repository_argument(value: Any, label: str) -> str:
+        candidate = Path(value)
+        if candidate.is_absolute():
+            return _repository_relative(candidate, label).as_posix()
+        return _safe_relative(candidate.as_posix()).as_posix()
+
+    argv = [
+        "uv",
+        "run",
+        "--no-project",
+        "--python",
+        "3.14.6",
+        "python3",
+        "research/instruction-architecture/benchmark.py",
+    ]
+    if criterion == "paid-evaluation-preflight":
+        argv.extend(
+            [
+                "preflight-spend",
+                "--candidate",
+                args.candidate,
+                "--authority",
+                repository_argument(args.authority, "authority argument"),
+                "--max-gross-usd",
+                args.max_gross_usd,
+                "--report",
+                repository_argument(args.report, "report argument"),
+            ]
+        )
+    elif criterion == "seven-model-preflight":
+        argv.extend(
+            [
+                "preflight-model-matrix",
+                "--candidate",
+                args.candidate,
+                "--models",
+                args.models,
+                "--require-zdr",
+                "--report",
+                repository_argument(args.report, "report argument"),
+            ]
+        )
+    elif criterion == "native-gate-preflight":
+        argv.extend(
+            [
+                "preflight-native-gate",
+                "--candidate",
+                args.candidate,
+                "--runtimes",
+                args.runtimes,
+                "--no-session",
+                "--report",
+                repository_argument(args.report, "report argument"),
+            ]
+        )
+    else:
+        raise Refusal("preflight invocation criterion is outside the frozen set")
+    return shlex.join(argv)
+
+
+def _publish_preflight_report(
+    args: argparse.Namespace,
+    criterion: str,
+    evidence: dict[str, Any],
+    *,
+    value: bool = True,
+) -> bytes:
+    expected = _expected_report(args.candidate, criterion)
+    report = _confined_output(
+        args.report, "preflight report", exact=(_repository_relative(expected, "report"),), roots=()
+    )
+    command = _preflight_invocation(args, criterion)
+    if not command.isprintable() or len(command.encode("utf-8")) > 4096:
+        raise Refusal("preflight invocation exceeds the progressive report bound")
+    evidence_record = _digested_record(
+        {
+            "candidate": args.candidate,
+            "criterion": criterion,
+            "facts": evidence,
+            "invocation": command,
+            "schema": f"{SCHEMA_PREFIX}-preflight-evidence/v1",
+        }
+    )
+    evidence_raw = _canonical_json(evidence_record)
+    if len(evidence_raw) > MAX_JSON_BYTES:
+        raise Refusal("preflight evidence exceeds the progressive report bound")
+    record = {
+        "candidate": args.candidate,
+        "command": command,
+        "criterion": criterion,
+        "exit": 0,
+        "schema": "protasis-design-report/v1",
+        "unit": "boolean",
+        "value": value,
+    }
+    raw = _canonical_json(record)
+    evidence_report = report.with_name(f"{report.stem}-evidence.json")
+    _publish_committed_set(
+        [(evidence_report, evidence_raw), (report, raw)], terminal=report
+    )
+    return _result(
+        criterion,
+        raw,
+        {
+            "candidate": args.candidate,
+            "evidence_sha256": evidence_record["sha256"],
+            "metadata_get_count": evidence.get("metadata_get_count", 0),
+            "paid_or_answer_calls": 0,
+            "value": value,
+        },
+    )
+
+
+def _catalog_rows(record: dict[str, Any], label: str) -> list[dict[str, Any]]:
+    rows = record.get("data")
+    if not isinstance(rows, list) or len(rows) > 100_000:
+        raise Refusal(f"{label} catalog shape drift")
+    if not all(isinstance(row, dict) for row in rows):
+        raise Refusal(f"{label} catalog contains a non-object row")
+    return rows
+
+
+def _eligible_zdr_routes(
+    frozen: dict[str, Any], rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in rows
+        if row.get("model_id") == frozen["id"]
+        and row.get("provider_name") in frozen["ordered_provider_policy"]
+        and row.get("status") == 0
+        and {"response_format", "structured_outputs"}
+        <= set(row.get("supported_parameters", []))
+    ]
+
+
+def _pricing_values(pricing: Any, field: str, label: str) -> list[Decimal]:
+    if not isinstance(pricing, dict):
+        raise Refusal(f"{label} pricing is missing")
+    values = [_decimal(pricing.get(field), f"{label} {field} price")]
+    overrides = pricing.get("overrides", [])
+    if not isinstance(overrides, list):
+        raise Refusal(f"{label} pricing overrides are malformed")
+    for index, override in enumerate(overrides):
+        if not isinstance(override, dict):
+            raise Refusal(f"{label} pricing override is malformed")
+        if field in override:
+            values.append(
+                _decimal(override[field], f"{label} override {index} {field} price")
+            )
+    return values
+
+
+def _worst_eligible_prices(
+    frozen: dict[str, Any], routes: list[dict[str, Any]]
+) -> tuple[Decimal, Decimal]:
+    if not routes:
+        raise Refusal(f"model has no active frozen ZDR route: {frozen['id']}")
+    if not frozen.get("ordered_provider_policy"):
+        raise Refusal("model provider policy is empty")
+    prompt: list[Decimal] = []
+    completion: list[Decimal] = []
+    for row in routes:
+        label = f"{frozen['id']} {row.get('provider_name')}"
+        prompt.extend(_pricing_values(row.get("pricing"), "prompt", label))
+        completion.extend(
+            _pricing_values(row.get("pricing"), "completion", label)
+        )
+    return max(prompt), max(completion)
+
+
+def _matrix_gross_bound(
+    preregistration: dict[str, Any],
+    manifest: dict[str, Any],
+    endpoints: list[dict[str, Any]],
+    fee_rate: Decimal,
+    packet: dict[str, Any],
+) -> tuple[Decimal, dict[str, dict[str, str]], Decimal, dict[str, Any]]:
+    bounds = preregistration["gross_budget_bounds"]
+    prompt_bounds = bounds["max_prompt_tokens_per_arm_case"]
+    calls_per_arm_model = bounds["case_count_per_cohort"] * bounds["cohorts"]
+    attempts = bounds["retry_attempts_per_logical_call"]
+    output_tokens = bounds["max_output_tokens_per_attempt"]
+    subtotal = Decimal(0)
+    prices: dict[str, dict[str, str]] = {}
+    exact_prices: dict[str, tuple[Decimal, Decimal]] = {}
+    for frozen in manifest["models"]:
+        routes = _eligible_zdr_routes(frozen, endpoints)
+        prompt_price, completion_price = _worst_eligible_prices(frozen, routes)
+        model_input = sum(
+            (_decimal(value, f"{arm} prompt bound") for arm, value in prompt_bounds.items()),
+            Decimal(0),
+        )
+        model_subtotal = (
+            model_input * prompt_price
+            + Decimal(len(prompt_bounds)) * output_tokens * completion_price
+        ) * calls_per_arm_model * attempts
+        subtotal += model_subtotal
+        prices[frozen["id"]] = {
+            "completion": str(completion_price),
+            "prompt": str(prompt_price),
+        }
+        exact_prices[frozen["id"]] = (prompt_price, completion_price)
+    order = packet.get("logical_call_order")
+    if (
+        packet.get("batching_sha256")
+        != _sha256(_canonical_json(_expected_behavioral_batching()))
+        or not isinstance(order, list)
+        or len(order) != BEHAVIORAL_LOGICAL_CALLS
+        or [item.get("batch_index") for item in order]
+        != list(range(BEHAVIORAL_LOGICAL_CALLS))
+    ):
+        raise Refusal("frozen logical-call permutation drift")
+    variant_to_arm = {
+        _sha256(
+            ("framework-74-arm\0" + item["control_sha256"]).encode("utf-8")
+        ): item["id"]
+        for item in preregistration["arms"]
+    }
+    first = order[0]
+    model_id = first.get("model_id")
+    arm = variant_to_arm.get(first.get("variant_commitment"))
+    if model_id not in exact_prices or arm not in prompt_bounds:
+        raise Refusal("first frozen logical call cannot be priced")
+    prompt_price, completion_price = exact_prices[model_id]
+    next_reservation = (
+        _decimal(prompt_bounds[arm], f"{arm} prompt bound") * prompt_price
+        + Decimal(output_tokens) * completion_price
+    ) * Decimal(attempts) * (Decimal(1) + fee_rate)
+    next_call = {
+        key: first[key]
+        for key in (
+            "batch_index",
+            "call_id",
+            "case_commitment",
+            "cohort",
+            "model_id",
+            "pair_id",
+            "variant_commitment",
+        )
+    }
+    return (
+        subtotal * (Decimal(1) + fee_rate),
+        prices,
+        next_reservation,
+        next_call,
+    )
+
+
+def preflight_spend(args: argparse.Namespace) -> bytes:
+    maximum = _decimal(args.max_gross_usd, "requested gross ceiling")
+    authority, authority_raw = _load_record(args.authority)
+    _validate_authority(authority, maximum)
+    preregistration, _ = _load_fixture_record(BEHAVIORAL_PREREGISTRATION)
+    seal, _ = _load_fixture_record(
+        EXPERIMENT_FIXTURE_ROOT / "holdout-seal.json"
+    )
+    _validate_behavioral_preregistration(preregistration, seal)
+    manifest, manifest_raw = _load_fixture_record(MODEL_RUNTIME_MANIFEST)
+    _validate_model_runtime_manifest(manifest)
+    frozen_packet = _load_frozen_packet(
+        FROZEN_BEHAVIORAL_ROOT,
+        _opaque_behavioral_packet(preregistration, seal),
+        allowed_directories=("native",),
+    )
+    packet = _decode_record(frozen_packet["packet.json"])
+    credential_path = authority.get("credential", {}).get("file")
+    if not isinstance(credential_path, str):
+        raise Refusal("credential location is missing")
+    credential = _external_secret(credential_path)
+    try:
+        account = _http_json(OPENROUTER_ENDPOINTS["account"], credential)
+        credits = _http_json(OPENROUTER_ENDPOINTS["credits"], credential)
+    finally:
+        credential = b""
+    data = account.get("data", account)
+    if not isinstance(data, dict):
+        raise Refusal("OpenRouter key metadata shape drift")
+    usage_fields = ("usage", "usage_daily", "usage_weekly", "usage_monthly")
+    for field in usage_fields:
+        if field in data and data[field] is not None:
+            _decimal(data[field], f"OpenRouter {field}")
+    remaining = data.get("limit_remaining")
+    if remaining is not None:
+        _decimal(remaining, "OpenRouter limit remaining")
+    credit_data = credits.get("data", credits)
+    if not isinstance(credit_data, dict):
+        raise Refusal("OpenRouter credit metadata shape drift")
+    total_credits = _decimal(
+        credit_data.get("total_credits"), "OpenRouter total credits"
+    )
+    total_usage = _decimal(
+        credit_data.get("total_usage"), "OpenRouter total usage"
+    )
+    if total_usage > total_credits:
+        raise Refusal("OpenRouter credit usage exceeds total credits")
+    available_credit = total_credits - total_usage
+    endpoints = _catalog_rows(
+        _http_json(OPENROUTER_ENDPOINTS["zdr"]), "OpenRouter ZDR endpoint"
+    )
+    fee_rate = _decimal(authority["reservation"]["fee_rate"], "reservation fee")
+    gross_bound, prices, next_reservation, next_call = _matrix_gross_bound(
+        preregistration, manifest, endpoints, fee_rate, packet
+    )
+    ledger = authority["ledger"]
+    existing = sum(
+        (_decimal(ledger[field], field) for field in (
+            "reserved_gross",
+            "settled_gross",
+            "uncertain_gross",
+        )),
+        Decimal(0),
+    )
+    if existing + gross_bound > maximum:
+        raise Refusal(
+            "conservative seven-model gross bound "
+            f"{gross_bound} USD exceeds the authorised {maximum} USD ceiling; "
+            "authority amendment required before publishing a pass report"
+        )
+    if available_credit < next_reservation:
+        raise Refusal(
+            "proved OpenRouter available credit "
+            f"{available_credit} USD does not cover the next frozen atomic "
+            f"reservation {next_reservation} USD"
+        )
+    budget_reservation(authority, next_reservation)
+    price_digest = _sha256(_canonical_json(prices))
+    return _publish_preflight_report(
+        args,
+        "paid-evaluation-preflight",
+        {
+            "account_endpoint": OPENROUTER_ENDPOINTS["account"],
+            "available_credit": str(available_credit),
+            "authority_sha256": _sha256(authority_raw),
+            "credential_use": "authorization-header-only-not-retained",
+            "credit_endpoint": OPENROUTER_ENDPOINTS["credits"],
+            "gross_bound": str(gross_bound),
+            "gross_ceiling": str(maximum),
+            "key_valid": True,
+            "metadata_get_count": 3,
+            "metadata_get_endpoints": [
+                OPENROUTER_ENDPOINTS["account"],
+                OPENROUTER_ENDPOINTS["credits"],
+                OPENROUTER_ENDPOINTS["zdr"],
+            ],
+            "next_atomic_call": next_call,
+            "next_atomic_reservation": str(next_reservation),
+            "paid_or_answer_calls": 0,
+            "pricing_sha256": price_digest,
+            "proved_total_credits": str(total_credits),
+            "proved_total_usage": str(total_usage),
+            "requires_authority_amendment": False,
+            "runtime_manifest_sha256": _sha256(manifest_raw),
+        },
+    )
+
+
+def preflight_model_matrix(args: argparse.Namespace) -> bytes:
+    requested = tuple(args.models.split(","))
+    if requested != MODEL_IDS or args.require_zdr is not True:
+        raise Refusal("model matrix differs from the frozen seven-model ZDR set")
+    manifest, manifest_raw = _load_fixture_record(MODEL_RUNTIME_MANIFEST)
+    _validate_model_runtime_manifest(manifest)
+    models = _catalog_rows(
+        _http_json(OPENROUTER_ENDPOINTS["models"]), "OpenRouter model"
+    )
+    endpoints = _catalog_rows(
+        _http_json(OPENROUTER_ENDPOINTS["zdr"]), "OpenRouter ZDR endpoint"
+    )
+    by_model: dict[str, dict[str, Any]] = {}
+    for row in models:
+        identifier = row.get("id")
+        if isinstance(identifier, str) and identifier not in by_model:
+            by_model[identifier] = row
+    endpoint_rows: dict[str, list[dict[str, Any]]] = {
+        identifier: [] for identifier in MODEL_IDS
+    }
+    for row in endpoints:
+        identifier = row.get("model_id")
+        if identifier in endpoint_rows:
+            endpoint_rows[identifier].append(row)
+    frozen = {row["id"]: row for row in manifest["models"]}
+    selected: list[dict[str, Any]] = []
+    for identifier in MODEL_IDS:
+        catalog = by_model.get(identifier)
+        if catalog is None:
+            raise Refusal(f"model is absent from the OpenRouter catalog: {identifier}")
+        pricing = catalog.get("pricing")
+        architecture = catalog.get("architecture")
+        if not isinstance(pricing, dict) or not isinstance(architecture, dict):
+            raise Refusal(f"model catalog metadata is incomplete: {identifier}")
+        prompt_price = _decimal(pricing.get("prompt"), f"{identifier} prompt price")
+        completion_price = _decimal(
+            pricing.get("completion"), f"{identifier} completion price"
+        )
+        if (
+            catalog.get("context_length") != frozen[identifier]["context_length"]
+            or architecture.get("tokenizer") != frozen[identifier]["tokenizer"]
+        ):
+            raise Refusal(f"frozen model identity drift: {identifier}")
+        active = _eligible_zdr_routes(frozen[identifier], endpoint_rows[identifier])
+        if not active:
+            raise Refusal(f"model has no active frozen ZDR route: {identifier}")
+        worst_prompt, worst_completion = _worst_eligible_prices(
+            frozen[identifier], active
+        )
+        provider = min(
+            (row["provider_name"] for row in active),
+            key=frozen[identifier]["ordered_provider_policy"].index,
+        )
+        selected.append(
+            {
+                "completion": str(worst_completion),
+                "id": identifier,
+                "prompt": str(worst_prompt),
+                "provider": provider,
+            }
+        )
+    matrix_raw = _canonical_json({"models": selected})
+    return _publish_preflight_report(
+        args,
+        "seven-model-preflight",
+        {
+            "catalog_endpoints": [
+                OPENROUTER_ENDPOINTS["models"],
+                OPENROUTER_ENDPOINTS["zdr"],
+            ],
+            "manifest_sha256": _sha256(manifest_raw),
+            "matrix_sha256": _sha256(matrix_raw),
+            "metadata_get_count": 2,
+            "metadata_get_endpoints": [
+                OPENROUTER_ENDPOINTS["models"],
+                OPENROUTER_ENDPOINTS["zdr"],
+            ],
+            "models": len(selected),
+            "model_substitution": False,
+            "paid_or_answer_calls": 0,
+            "zdr_required": True,
+        },
+    )
+
+
+def _resolved_runtime_executable(name: str) -> Path:
+    if name not in {"claude", "codex"}:
+        raise Refusal("runtime executable is outside the frozen allowlist")
+    located = shutil.which(name)
+    if located is None:
+        raise Refusal(f"runtime executable is unavailable: {name}")
+    try:
+        resolved = Path(located).resolve(strict=True)
+        metadata = resolved.stat()
+    except OSError as exc:
+        raise Refusal(f"runtime executable is unavailable: {name}") from exc
+    if (
+        not resolved.is_absolute()
+        or not stat.S_ISREG(metadata.st_mode)
+        or not metadata.st_mode & 0o111
+        or metadata.st_mode & 0o022
+    ):
+        raise Refusal(f"runtime executable is unsafe: {name}")
+    return resolved
+
+
+def _external_file_digest(path: Path, limit: int = 256 * 1024 * 1024) -> str:
+    try:
+        descriptor = os.open(
+            path, os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+        )
+    except OSError as exc:
+        raise Refusal("external file is unavailable or unsafe") from exc
+    try:
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_nlink != 1
+            or metadata.st_size > limit
+        ):
+            raise Refusal("external file metadata is unsafe")
+        digest = hashlib.sha256()
+        remaining = metadata.st_size
+        while remaining:
+            chunk = os.read(descriptor, min(65_536, remaining))
+            if not chunk:
+                raise Refusal("external file ended before its declared size")
+            digest.update(chunk)
+            remaining -= len(chunk)
+        after = os.fstat(descriptor)
+        if _identity(metadata) != _identity(after):
+            raise Refusal("external file changed during hashing")
+        return digest.hexdigest()
+    finally:
+        os.close(descriptor)
+
+
+def _bounded_process(
+    argv: list[str],
+    *,
+    environment: dict[str, str],
+    cwd: Path,
+    timeout: int = 20,
+    limit: int = MAX_COMMAND_OUTPUT_BYTES,
+) -> tuple[int, bytes, bytes]:
+    if (
+        not argv
+        or timeout <= 0
+        or timeout > 60
+        or limit <= 0
+        or limit > MAX_COMMAND_OUTPUT_BYTES
+    ):
+        raise Refusal("bounded command parameters are invalid")
+    process: subprocess.Popen[bytes] | None = None
+    try:
+        process = subprocess.Popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=environment,
+            cwd=cwd,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise Refusal("bounded runtime metadata command failed to start") from exc
+    assert process.stdout is not None and process.stderr is not None
+    selector = selectors.DefaultSelector()
+    stdout = bytearray()
+    stderr = bytearray()
+    deadline = time.monotonic() + timeout
+    completed = False
+    try:
+        selector.register(process.stdout, selectors.EVENT_READ, (stdout, limit))
+        selector.register(process.stderr, selectors.EVENT_READ, (stderr, limit))
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise Refusal("bounded runtime metadata command timed out")
+            events = selector.select(remaining)
+            if not events:
+                raise Refusal("bounded runtime metadata command timed out")
+            for key, _ in events:
+                buffer, cap = key.data
+                try:
+                    chunk = os.read(key.fd, min(65_536, cap + 1 - len(buffer)))
+                except OSError as exc:
+                    raise Refusal("bounded runtime metadata capture failed") from exc
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) > cap:
+                    raise Refusal("bounded runtime metadata output exceeded its limit")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise Refusal("bounded runtime metadata command timed out")
+        try:
+            code = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as exc:
+            raise Refusal("bounded runtime metadata command timed out") from exc
+        completed = True
+        return code, bytes(stdout), bytes(stderr)
+    finally:
+        selector.close()
+        if not completed:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            pass
+
+
+def _runtime_environment(state_name: str, state_path: Path) -> dict[str, str]:
+    path = os.environ.get("PATH")
+    if not path:
+        raise Refusal("runtime PATH is unavailable")
+    environment = {
+        "HOME": str(state_path),
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": path,
+    }
+    environment[state_name] = str(state_path)
+    return environment
+
+
+def _safe_external_metadata(path: Path, maximum: int) -> dict[str, Any]:
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise Refusal("authentication bootstrap source is unavailable") from exc
+    if (
+        stat.S_ISLNK(metadata.st_mode)
+        or not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_nlink != 1
+        or metadata.st_uid != os.getuid()
+        or metadata.st_mode & 0o077
+        or metadata.st_size <= 0
+        or metadata.st_size > maximum
+    ):
+        raise Refusal("authentication bootstrap source metadata is unsafe")
+    return {
+        "identity": _rename_stable_identity(metadata),
+        "mode": stat.S_IMODE(metadata.st_mode),
+        "size": metadata.st_size,
+    }
+
+
+def _copy_external_auth(source: Path, destination: Path, maximum: int) -> None:
+    """Copy bounded auth bytes into a fresh isolated store, never into a report."""
+    metadata = _safe_external_metadata(source, maximum)
+    source_fd: int | None = None
+    destination_fd: int | None = None
+    try:
+        source_fd = os.open(
+            source, os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+        )
+        opened_source = os.fstat(source_fd)
+        if _rename_stable_identity(opened_source) != metadata["identity"]:
+            raise Refusal("auth bootstrap source changed while opening")
+        destination_fd = os.open(
+            destination,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | os.O_NOFOLLOW
+            | getattr(os, "O_CLOEXEC", 0),
+            0o600,
+        )
+        copied = 0
+        while copied < metadata["size"]:
+            chunk = os.read(source_fd, min(65_536, metadata["size"] - copied))
+            if not chunk:
+                raise Refusal("auth bootstrap source ended early")
+            view = memoryview(chunk)
+            while view:
+                written = os.write(destination_fd, view)
+                if written <= 0:
+                    raise Refusal("isolated auth bootstrap write failed")
+                view = view[written:]
+            copied += len(chunk)
+        if os.read(source_fd, 1):
+            raise Refusal("auth bootstrap source grew during copy")
+        after_source = os.fstat(source_fd)
+        try:
+            named_source = source.lstat()
+        except OSError as exc:
+            raise Refusal("auth bootstrap source changed during copy") from exc
+        if not (
+            _rename_stable_identity(opened_source)
+            == _rename_stable_identity(after_source)
+            == _rename_stable_identity(named_source)
+        ):
+            raise Refusal("auth bootstrap source changed during copy")
+        os.fsync(destination_fd)
+        destination_metadata = os.fstat(destination_fd)
+        if (
+            copied != metadata["size"]
+            or not stat.S_ISREG(destination_metadata.st_mode)
+            or destination_metadata.st_nlink != 1
+            or stat.S_IMODE(destination_metadata.st_mode) != 0o600
+        ):
+            raise Refusal("isolated auth bootstrap output metadata drift")
+    except OSError as exc:
+        raise Refusal("isolated auth bootstrap is unavailable or unsafe") from exc
+    finally:
+        if destination_fd is not None:
+            os.close(destination_fd)
+        if source_fd is not None:
+            os.close(source_fd)
+
+
+def _write_isolated_secret(raw: bytes, destination: Path, maximum: int) -> int:
+    payload = raw.rstrip(b"\r\n")
+    if not payload or len(payload) > maximum or b"\x00" in payload:
+        raise Refusal("isolated credential payload is empty or over limit")
+    try:
+        descriptor = os.open(
+            destination,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | os.O_NOFOLLOW
+            | getattr(os, "O_CLOEXEC", 0),
+            0o600,
+        )
+    except OSError as exc:
+        raise Refusal("isolated credential destination is unsafe") from exc
+    try:
+        view = memoryview(payload)
+        while view:
+            written = os.write(descriptor, view)
+            if written <= 0:
+                raise Refusal("isolated credential write failed")
+            view = view[written:]
+        os.fsync(descriptor)
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_nlink != 1
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+            or metadata.st_size != len(payload)
+        ):
+            raise Refusal("isolated credential destination metadata drift")
+    finally:
+        os.close(descriptor)
+    return len(payload)
+
+
+def _macos_claude_credential(maximum: int) -> bytes:
+    security = Path("/usr/bin/security")
+    try:
+        resolved = security.resolve(strict=True)
+        metadata = resolved.stat()
+    except OSError as exc:
+        raise Refusal("macOS security executable is unavailable") from exc
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_uid != 0
+        or metadata.st_mode & 0o022
+        or not metadata.st_mode & 0o111
+    ):
+        raise Refusal("macOS security executable is unsafe")
+    account = pwd.getpwuid(os.getuid()).pw_name
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", account):
+        raise Refusal("local account name is unsafe for keychain lookup")
+    environment = {
+        "HOME": str(Path.home()),
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "PATH": "/usr/bin:/bin",
+    }
+    code, stdout, _ = _bounded_process(
+        [
+            str(resolved),
+            "find-generic-password",
+            "-a",
+            account,
+            "-w",
+            "-s",
+            "Claude Code-credentials",
+        ],
+        environment=environment,
+        cwd=ROOT,
+        limit=maximum,
+    )
+    if code != 0:
+        raise Refusal("default Claude keychain credential is unavailable")
+    return stdout
+
+
+def _read_generated_schema_bundle(root: Path) -> tuple[str, list[dict[str, Any]]]:
+    records: list[dict[str, Any]] = []
+    total = 0
+    entries_seen = 0
+    root_descriptor: int | None = None
+
+    def walk(directory: int, prefix: PurePosixPath, depth: int) -> None:
+        nonlocal entries_seen, total
+        if depth > 32:
+            raise Refusal("Codex generated schema bundle exceeds its depth limit")
+        before_directory = os.fstat(directory)
+        try:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    entries_seen += 1
+                    if entries_seen > 4096:
+                        raise Refusal(
+                            "Codex generated schema bundle exceeds its entry limit"
+                        )
+                    relative_path = prefix / entry.name
+                    relative = _safe_relative(relative_path.as_posix())
+                    try:
+                        entry_metadata = entry.stat(follow_symlinks=False)
+                    except OSError as exc:
+                        raise Refusal(
+                            "Codex generated schema entry changed during enumeration"
+                        ) from exc
+                    if entry.is_symlink():
+                        raise Refusal("Codex generated schema contains a symlink")
+                    if stat.S_ISDIR(entry_metadata.st_mode):
+                        try:
+                            child = os.open(
+                                entry.name, _directory_flags(), dir_fd=directory
+                            )
+                        except OSError as exc:
+                            raise Refusal(
+                                "Codex generated schema directory is unsafe"
+                            ) from exc
+                        try:
+                            opened = os.fstat(child)
+                            if _identity(entry_metadata) != _identity(opened):
+                                raise Refusal(
+                                    "Codex generated schema directory changed while opening"
+                                )
+                            walk(child, relative, depth + 1)
+                            named = os.stat(
+                                entry.name,
+                                dir_fd=directory,
+                                follow_symlinks=False,
+                            )
+                            if _identity(opened) != _identity(named):
+                                raise Refusal(
+                                    "Codex generated schema directory changed during read"
+                                )
+                        finally:
+                            os.close(child)
+                        continue
+                    if not stat.S_ISREG(entry_metadata.st_mode):
+                        raise Refusal(
+                            "Codex generated schema contains a special entry"
+                        )
+                    if relative.suffix != ".json":
+                        raise Refusal(
+                            "Codex generated schema contains a non-JSON file"
+                        )
+                    if len(records) >= 2048:
+                        raise Refusal(
+                            "Codex generated schema bundle cardinality drift"
+                        )
+                    try:
+                        source = os.open(
+                            entry.name,
+                            _regular_read_flags(),
+                            dir_fd=directory,
+                        )
+                    except OSError as exc:
+                        raise Refusal(
+                            "Codex generated schema file is unsafe"
+                        ) from exc
+                    try:
+                        opened = os.fstat(source)
+                        if _rename_stable_identity(entry_metadata) != (
+                            _rename_stable_identity(opened)
+                        ):
+                            raise Refusal(
+                                "Codex generated schema file changed while opening"
+                            )
+                        raw, after = _read_descriptor(source, MAX_JSON_BYTES)
+                    finally:
+                        os.close(source)
+                    try:
+                        named = os.stat(
+                            entry.name,
+                            dir_fd=directory,
+                            follow_symlinks=False,
+                        )
+                    except OSError as exc:
+                        raise Refusal(
+                            "Codex generated schema file changed during read"
+                        ) from exc
+                    if not (
+                        _rename_stable_identity(opened)
+                        == _rename_stable_identity(after)
+                        == _rename_stable_identity(named)
+                    ):
+                        raise Refusal(
+                            "Codex generated schema file changed during read"
+                        )
+                    total += len(raw)
+                    if total > 64 * 1024 * 1024:
+                        raise Refusal(
+                            "Codex generated schema bundle exceeds its byte limit"
+                        )
+                    value = _decode_external_json(
+                        raw, "Codex generated schema file"
+                    )
+                    records.append(
+                        {
+                            "bytes": len(raw),
+                            "path": relative.as_posix(),
+                            "sha256": _sha256(raw),
+                            "value": value,
+                        }
+                    )
+        except OSError as exc:
+            raise Refusal("Codex generated schema enumeration failed") from exc
+        after_directory = os.fstat(directory)
+        if _rename_stable_identity(before_directory) != _rename_stable_identity(
+            after_directory
+        ):
+            raise Refusal("Codex generated schema directory changed during read")
+
+    try:
+        root_metadata = root.lstat()
+        if stat.S_ISLNK(root_metadata.st_mode) or not stat.S_ISDIR(
+            root_metadata.st_mode
+        ):
+            raise Refusal("Codex generated schema root is unsafe")
+        root_descriptor = os.open(root, _directory_flags())
+        opened_root = os.fstat(root_descriptor)
+        if _identity(root_metadata) != _identity(opened_root):
+            raise Refusal("Codex generated schema root changed while opening")
+        walk(root_descriptor, PurePosixPath(), 0)
+        try:
+            named_root = root.lstat()
+        except OSError as exc:
+            raise Refusal("Codex generated schema root changed during read") from exc
+        if _identity(opened_root) != _identity(named_root):
+            raise Refusal("Codex generated schema root changed during read")
+    except OSError as exc:
+        raise Refusal("Codex generated schema root is unavailable") from exc
+    finally:
+        if root_descriptor is not None:
+            os.close(root_descriptor)
+    if not records:
+        raise Refusal("Codex generated schema bundle cardinality drift")
+    records.sort(key=lambda item: item["path"])
+    digest_input = _canonical_json(
+        {
+            "files": [
+                {key: item[key] for key in ("bytes", "path", "sha256")}
+                for item in records
+            ]
+        }
+    )
+    return _sha256(digest_input), records
+
+
+def _schema_contains_property_set(value: Any, required: set[str]) -> bool:
+    if isinstance(value, dict):
+        properties = value.get("properties")
+        if isinstance(properties, dict) and required <= set(properties):
+            return True
+        return any(
+            _schema_contains_property_set(child, required)
+            for child in value.values()
+        )
+    if isinstance(value, list):
+        return any(_schema_contains_property_set(child, required) for child in value)
+    return False
+
+
+def _schema_contains_string(value: Any, needle: str) -> bool:
+    if isinstance(value, dict):
+        return needle in value or any(
+            _schema_contains_string(child, needle) for child in value.values()
+        )
+    if isinstance(value, list):
+        return any(_schema_contains_string(child, needle) for child in value)
+    return value == needle
+
+
+def _validate_codex_schema_bundle(records: list[dict[str, Any]]) -> None:
+    for token in (
+        "thread/start",
+        "thread/resume",
+        "thread/compact/start",
+        "turn/start",
+        "contextCompaction",
+        "inputTokens",
+        "cachedInputTokens",
+        "cacheWriteInputTokens",
+        "outputSchema",
+    ):
+        if not any(
+            _schema_contains_string(item["value"], token) for item in records
+        ):
+            raise Refusal(f"Codex experimental protocol schema omits {token!r}")
+    start_fields = {
+        "allowProviderModelFallback",
+        "approvalPolicy",
+        "baseInstructions",
+        "cwd",
+        "dynamicTools",
+        "environments",
+        "ephemeral",
+        "experimentalRawEvents",
+        "model",
+        "sandbox",
+    }
+    if not any(
+        _schema_contains_property_set(item["value"], start_fields)
+        for item in records
+    ):
+        raise Refusal("Codex thread/start request does not validate against its schema")
+
+
+@contextmanager
+def _private_system_temporary_directory() -> Iterator[Path]:
+    """Create one private temp root without consulting repository paths."""
+    with tempfile.TemporaryDirectory(
+        prefix="framework-74-native-preflight-"
+    ) as temporary:
+        root = Path(temporary)
+        descriptor: int | None = None
+        try:
+            named = root.lstat()
+            if (
+                stat.S_ISLNK(named.st_mode)
+                or not stat.S_ISDIR(named.st_mode)
+                or named.st_uid != os.getuid()
+                or stat.S_IMODE(named.st_mode) != 0o700
+            ):
+                raise Refusal("system temporary root is not private")
+            descriptor = os.open(root, _directory_flags())
+            opened = os.fstat(descriptor)
+            if (
+                _directory_identity(named) != _directory_identity(opened)
+                or opened.st_uid != os.getuid()
+            ):
+                raise Refusal("system temporary root changed while opening")
+            try:
+                yield root
+            finally:
+                current = root.lstat()
+                if (
+                    _directory_identity(opened)
+                    != _directory_identity(os.fstat(descriptor))
+                    or _directory_identity(opened) != _directory_identity(current)
+                    or current.st_uid != os.getuid()
+                ):
+                    raise Refusal("system temporary root changed during use")
+        except OSError as exc:
+            raise Refusal("system temporary root is unavailable or unsafe") from exc
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+
+
+def preflight_native_gate(args: argparse.Namespace) -> bytes:
+    if args.no_session is not True or tuple(args.runtimes.split(",")) != NATIVE_RUNTIMES:
+        raise Refusal("native preflight requires the frozen runtimes and --no-session")
+    manifest, manifest_raw = _load_fixture_record(NATIVE_RUNTIME_MANIFEST)
+    _validate_native_runtime_manifest(manifest)
+    by_id = {row["id"]: row for row in manifest["runtimes"]}
+    identities: dict[str, dict[str, Any]] = {}
+    resolved_executables: dict[str, Path] = {}
+    with _private_system_temporary_directory() as state_root:
+        for runtime_id, state_name in (
+            ("claude-code", "CLAUDE_CONFIG_DIR"),
+            ("codex", "CODEX_HOME"),
+        ):
+            runtime = by_id[runtime_id]
+            executable = _resolved_runtime_executable(runtime["executable"])
+            resolved_executables[runtime_id] = executable
+            isolated = state_root / runtime_id
+            isolated.mkdir(mode=0o700)
+            environment = _runtime_environment(state_name, isolated)
+            version_argv = [str(executable), *runtime["version"]["command"][1:]]
+            code, stdout, stderr = _bounded_process(
+                version_argv, environment=environment, cwd=ROOT
+            )
+            version = (stdout + stderr).decode("utf-8", errors="strict").strip()
+            if code != 0 or version != runtime["version"]["expected"]:
+                raise Refusal(f"native runtime version drift: {runtime_id}")
+            auth_argv = [
+                str(executable), *runtime["authentication"]["command"][1:]
+            ]
+            auth_code, auth_stdout, auth_stderr = _bounded_process(
+                auth_argv, environment=environment, cwd=ROOT
+            )
+            if runtime_id == "claude-code":
+                auth = _decode_external_json(
+                    auth_stdout or auth_stderr, "Claude isolated auth status"
+                )
+                if auth.get("loggedIn") is not False or auth_code == 0:
+                    raise Refusal("fresh Claude state unexpectedly inherited authentication")
+                bootstrap = runtime["authentication"]["isolated_bootstrap"]
+                credential = _macos_claude_credential(
+                    bootstrap["size_limit_bytes"]
+                )
+                _write_isolated_secret(
+                    credential,
+                    isolated / ".credentials.json",
+                    bootstrap["size_limit_bytes"],
+                )
+                credential = b""
+                auth_code, auth_stdout, auth_stderr = _bounded_process(
+                    auth_argv, environment=environment, cwd=ROOT
+                )
+                auth = _decode_external_json(
+                    auth_stdout or auth_stderr, "Claude isolated auth status"
+                )
+                if auth_code != 0 or auth.get("loggedIn") is not True:
+                    raise Refusal("isolated Claude credential bootstrap did not authenticate")
+                isolated_auth = "bounded-keychain-bootstrap-authenticated"
+            else:
+                auth_text = (auth_stdout + auth_stderr).decode(
+                    "utf-8", errors="strict"
+                )
+                if auth_code == 0 or "Not logged in" not in auth_text:
+                    raise Refusal("fresh Codex state unexpectedly inherited authentication")
+                bootstrap = runtime["authentication"]["isolated_bootstrap"]
+                source = Path.home() / ".codex/auth.json"
+                metadata = _safe_external_metadata(
+                    source, bootstrap["size_limit_bytes"]
+                )
+                if metadata["mode"] != 0o600:
+                    raise Refusal("Codex auth bootstrap source mode drift")
+                _copy_external_auth(
+                    source, isolated / "auth.json", bootstrap["size_limit_bytes"]
+                )
+                auth_code, auth_stdout, auth_stderr = _bounded_process(
+                    auth_argv, environment=environment, cwd=ROOT
+                )
+                auth_text = (auth_stdout + auth_stderr).decode(
+                    "utf-8", errors="strict"
+                )
+                if auth_code != 0 or runtime["authentication"]["pass_stdout"] not in auth_text:
+                    raise Refusal("isolated Codex auth bootstrap did not authenticate")
+                isolated_auth = "bounded-copy-authenticated"
+            identities[runtime_id] = {
+                "executable_basename": runtime["executable"],
+                "executable_sha256": _external_file_digest(executable),
+                "isolated_auth": isolated_auth,
+                "resolution_class": "closed-name-from-PATH",
+                "version": version,
+            }
+        codex = by_id["codex"]
+        codex_executable = resolved_executables["codex"]
+        schema_root = state_root / "codex-schema"
+        schema_state = state_root / "codex-schema-state"
+        schema_state.mkdir(mode=0o700)
+        schema_command = codex["protocol_schema"]["command"]
+        schema_argv = [
+            str(codex_executable),
+            *[
+                str(schema_root) if item == "{temporary_schema_root}" else item
+                for item in schema_command[1:]
+            ],
+        ]
+        code, stdout, stderr = _bounded_process(
+            schema_argv,
+            environment=_runtime_environment("CODEX_HOME", schema_state),
+            cwd=ROOT,
+            timeout=60,
+        )
+        if code != 0:
+            raise Refusal("Codex experimental schema generation failed")
+        schema_digest, schema_records = _read_generated_schema_bundle(schema_root)
+        _validate_codex_schema_bundle(schema_records)
+    identities["codex"]["experimental_schema_sha256"] = schema_digest
+    return _publish_preflight_report(
+        args,
+        "native-gate-preflight",
+        {
+            "manifest_sha256": _sha256(manifest_raw),
+            "metadata_get_count": 0,
+            "metadata_get_endpoints": [],
+            "no_native_session": True,
+            "paid_or_answer_calls": 0,
+            "resolved": identities,
+            "runtime_count": len(identities),
+            "isolated_authentication_proved": True,
+        },
+    )
+
+
+def _publish_emitted_packet(output: Path, packet: dict[str, bytes]) -> None:
+    terminal = output / "manifest.json"
+    _publish_committed_set(
+        [
+            (output / "packet.json", packet["packet.json"]),
+            (terminal, packet["manifest.json"]),
+        ],
+        terminal=terminal,
+    )
+
+
+def emit_packet(args: argparse.Namespace) -> bytes:
+    if args.commitment_only is not True:
+        raise Refusal("behavioral packet emission requires --commitment-only")
+    output = _confined_output(
+        args.output, "behavioral packet emission output", exact=(), roots=(SCRATCH_ROOT,)
+    )
+    preregistration, _ = _load_record(args.preregistration)
+    seal, _ = _load_record(args.seal)
+    _validate_behavioral_preregistration(preregistration, seal)
+    packet = _opaque_behavioral_packet(preregistration, seal)
+    packet = _load_frozen_packet(
+        FROZEN_BEHAVIORAL_ROOT, packet, allowed_directories=("native",)
+    )
+    commitment, commitment_raw = _load_fixture_record(BEHAVIORAL_COMMITMENT)
+    _verify_packet_commitment(
+        preregistration,
+        commitment,
+        f"{SCHEMA_PREFIX}-holdout-packet-commitment/v1",
+        packet,
+    )
+    _publish_emitted_packet(output, packet)
+    return _result(
+        "emit-packet",
+        commitment_raw,
+        {"answer_bytes": 0, "artifacts": len(packet)},
+    )
+
+
+def emit_native_packet(args: argparse.Namespace) -> bytes:
+    if args.commitment_only is not True:
+        raise Refusal("native packet emission requires --commitment-only")
+    output = _confined_output(
+        args.output, "native packet emission output", exact=(), roots=(SCRATCH_ROOT,)
+    )
+    preregistration, _ = _load_record(args.preregistration)
+    _validate_native_preregistration(preregistration)
+    packet = _opaque_native_packet(preregistration)
+    packet = _load_frozen_packet(FROZEN_NATIVE_ROOT, packet)
+    commitment, commitment_raw = _load_fixture_record(NATIVE_COMMITMENT)
+    _verify_packet_commitment(
+        preregistration,
+        commitment,
+        f"{SCHEMA_PREFIX}-native-lifecycle-packet-commitment/v1",
+        packet,
+    )
+    _publish_emitted_packet(output, packet)
+    return _result(
+        "emit-native-packet",
+        commitment_raw,
+        {"answer_bytes": 0, "artifacts": len(packet), "sessions_launched": 0},
+    )
+
+
 def _path(value: str) -> Path:
     path = Path(value)
     return path if path.is_absolute() else ROOT / path
@@ -10273,6 +14631,79 @@ def parser() -> argparse.ArgumentParser:
                 "implicit for the committed fixture"
             ),
         )
+
+    aggregate = subparsers.add_parser("aggregate-development")
+    aggregate.add_argument(
+        "--evidence",
+        type=_path,
+        default=ROOT / Path(*DEVELOPMENT_EVIDENCE_ROOT.parts),
+    )
+    aggregate.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / Path(*DEVELOPMENT_SELECTION.parts),
+    )
+    aggregate.set_defaults(handler=aggregate_development)
+
+    freeze = subparsers.add_parser("freeze-experiment")
+    freeze.add_argument("--selection", type=_path, required=True)
+    freeze.add_argument("--seal", type=_path, required=True)
+    freeze.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / Path(*FROZEN_BEHAVIORAL_ROOT.parts),
+    )
+    freeze.set_defaults(handler=freeze_experiment)
+
+    native_freeze = subparsers.add_parser("freeze-native-gate")
+    native_freeze.add_argument("--selection", type=_path, required=True)
+    native_freeze.add_argument("--runtime-manifest", type=_path, required=True)
+    native_freeze.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / Path(*FROZEN_NATIVE_ROOT.parts),
+    )
+    native_freeze.set_defaults(handler=freeze_native_gate)
+
+    native_verify = subparsers.add_parser("verify-native-preregistration")
+    native_verify.add_argument("--preregistration", type=_path, required=True)
+    native_verify.add_argument("--commitment", type=_path, required=True)
+    native_verify.add_argument("--no-session", action="store_true")
+    native_verify.set_defaults(handler=verify_native_preregistration)
+
+    spend = subparsers.add_parser("preflight-spend")
+    spend.add_argument("--candidate", required=True)
+    spend.add_argument("--authority", type=_path, required=True)
+    spend.add_argument("--max-gross-usd", required=True)
+    spend.add_argument("--report", type=_path, required=True)
+    spend.set_defaults(handler=preflight_spend)
+
+    matrix = subparsers.add_parser("preflight-model-matrix")
+    matrix.add_argument("--candidate", required=True)
+    matrix.add_argument("--models", required=True)
+    matrix.add_argument("--require-zdr", action="store_true")
+    matrix.add_argument("--report", type=_path, required=True)
+    matrix.set_defaults(handler=preflight_model_matrix)
+
+    native_preflight = subparsers.add_parser("preflight-native-gate")
+    native_preflight.add_argument("--candidate", required=True)
+    native_preflight.add_argument("--runtimes", required=True)
+    native_preflight.add_argument("--no-session", action="store_true")
+    native_preflight.add_argument("--report", type=_path, required=True)
+    native_preflight.set_defaults(handler=preflight_native_gate)
+
+    emit = subparsers.add_parser("emit-packet")
+    emit.add_argument("--preregistration", type=_path, required=True)
+    emit.add_argument("--seal", type=_path, required=True)
+    emit.add_argument("--commitment-only", action="store_true")
+    emit.add_argument("--output", type=_path, required=True)
+    emit.set_defaults(handler=emit_packet)
+
+    emit_native = subparsers.add_parser("emit-native-packet")
+    emit_native.add_argument("--preregistration", type=_path, required=True)
+    emit_native.add_argument("--commitment-only", action="store_true")
+    emit_native.add_argument("--output", type=_path, required=True)
+    emit_native.set_defaults(handler=emit_native_packet)
     return result
 
 

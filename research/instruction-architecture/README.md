@@ -191,3 +191,35 @@ scorer key or model output. do not add those fields before the frozen
 experiment opens the envelope. this workbench supplies evidence for the later
 raw Markdown, WAI1, Noema, simple-control and new-candidate comparison; it does
 not choose or integrate an architecture.
+
+## Step 3 selection and sealed gates
+
+the current development proxy frontier is `simple` alone. it is a provisional
+nominee, not a final architecture: raw/no-change and simple remain valid
+winners, WAI1 is excluded from nomination after three exact-source failures,
+and behavioural plus native cache evidence can retain a frontier or select
+none. detailed results and record placement are in
+[`research-report.md`](../../docs/instruction-architecture/research-report.md).
+
+Step 3 freezes two answer-free packets. the behavioural packet contains 224
+contiguous five-arm pair blocks: 1,120 repeat-condition/model/case/arm tuples;
+one tuple is one atomic credit reservation covering both allowed attempts. the
+native packet keeps cache-shaped raw and simple as mandatory baselines and
+compares complete logical-context high-water with cumulative fresh-token churn
+separately for each runtime, model and tokenizer. cached tokens count in full
+for logical context, no cross-tokenizer pooling or dollar weighting is allowed,
+and missing native telemetry remains unknown.
+
+```text
+uv run --no-project --python "$(cat .python-version)" python3 research/instruction-architecture/benchmark.py aggregate-development --evidence tests/fixtures/instruction-architecture/evidence/development --output tests/fixtures/instruction-architecture/development-selection.json
+uv run --no-project --python "$(cat .python-version)" python3 research/instruction-architecture/benchmark.py freeze-experiment --selection tests/fixtures/instruction-architecture/development-selection.json --seal tests/fixtures/instruction-architecture/holdout-seal.json --output tests/fixtures/instruction-architecture/evidence/frozen
+uv run --no-project --python "$(cat .python-version)" python3 research/instruction-architecture/benchmark.py freeze-native-gate --selection tests/fixtures/instruction-architecture/development-selection.json --runtime-manifest tests/fixtures/instruction-architecture/native-runtime-manifest.json --output tests/fixtures/instruction-architecture/evidence/frozen/native
+uv run --no-project --python "$(cat .python-version)" python3 research/instruction-architecture/benchmark.py verify-native-preregistration --preregistration tests/fixtures/instruction-architecture/native-deployment-preregistration.json --commitment tests/fixtures/instruction-architecture/native-lifecycle-packet-commitment.json --no-session
+```
+
+the no-call preflights use public catalog metadata, the official credit balance
+endpoint and isolated local authentication probes. they do not dispatch a paid
+model request or launch an answer-producing native session. at the frozen
+2026-09-03 observation the complete conservative gross bound is
+`$4,435.75397516800` under the `$4,500.00` ceiling, and the next two-attempt
+tuple reserves `$0.38103308400` against `$57.118449467` proved available credit.

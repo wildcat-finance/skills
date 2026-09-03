@@ -1,0 +1,9 @@
+<instruction-context>
+{{representation}}
+<bootstrap>
+use only the instruction context above. return one bounded json object matching the supplied response schema. do not identify or compare the instruction encoding.
+</bootstrap>
+</instruction-context>
+<task sequence="{{lifecycle_index}}">
+{{task_suffix}}
+</task>

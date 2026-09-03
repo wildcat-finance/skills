@@ -894,3 +894,66 @@ totals; only Step 1's exit and tests require replacement.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-03
+
+**What changed.** The neutral evidence workbench remains the selected evaluator
+design; this amendment does not select an instruction architecture or disturb
+the frozen corpus, controls, five representation arms, seven-model behavioural
+matrix, cohorts, scorer or holdout seal. For Steps 3 through 5, replace monetary
+cost, prompt ratios and a single pooled ranking as the deployment selector with
+an equal-behaviour, two-axis token result reported separately for each native
+runtime, model and tokenizer: complete logical-context high-water mark and
+cumulative fresh-token churn. Complete logical context counts cached tokens in
+full and also reports them separately as cache reads. Fresh-token churn is the
+sum of mutually exclusive cache-write tokens and uncached suffix-or-miss tokens;
+an invalidation contributes through the later fresh work it causes, not as a
+third token category. A category the native runtime does not expose remains
+unknown unless documented provider semantics permit an exact derivation; it is
+never imputed.
+
+The cache experiment must keep cache-shaped raw Markdown and the simple
+deterministic control as mandatory baselines. Every measured arm uses a stable
+representation-and-bootstrap prefix before the changing task suffix, and
+response reuse or response caching is disabled so only prompt-prefix caching is
+under test. The architecture nominee and every statistically or operationally
+near-frontier arm admitted by the frozen development rule proceed with those
+two baselines to a separately sealed deployment gate in native Claude Code and
+native Codex sessions. That gate covers cold start, continuous warm use, resume
+within cache TTL, resume after cache expiry and post-compaction. It records the
+provider-native cache reads, writes and misses available from each runtime,
+complete-context high-water mark, fresh-token components, behavioural success,
+actual credits or settled cost when exposed, latency, runtime version, model,
+tokenizer and lifecycle identity. The existing seven-model OpenRouter matrix
+remains a distinct behavioural holdout and cannot substitute for native
+lifecycle evidence.
+
+Selection is by per-runtime dominance after equal behavioural success. An arm
+dominates another only when it is no worse on both token axes and strictly
+better on at least one; when the axes or required runtimes disagree, retain the
+Pareto frontier. The gate may select none, including when telemetry is
+incomplete or no arm establishes equal behaviour. Do not pool unlike
+tokenizers, convert tokens to dollars, dollar-weight the axes or use billing and
+latency as the primary objective. Billing, latency, implementation size, TCB,
+upkeep, compatibility and recovery remain secondary deployment evidence. The
+issue's 0.80 cold and 0.70 warm ratios remain descriptive legacy thresholds,
+not substitutes for the two-axis native result. The `$100.00` OpenRouter
+authority remains a hard gross spend guard, not a selection weight.
+
+**Why.** Prefix caching changes what repeated work consumes without shrinking
+the logical context that the runtime must address. A byte or tokenizer ratio
+therefore conflates two different outcomes, while dollar weighting makes the
+answer depend on mutable prices and cross-provider token units. Native cache
+telemetry and lifecycle transitions are also not reproduced by an API-only
+behavioural matrix. Separating logical-context pressure from newly processed
+tokens preserves both claims, and a per-runtime frontier exposes disagreement
+instead of manufacturing a scalar winner.
+
+**Steps touched.** Steps 3, 4 and 5. Step 3 must freeze the native deployment
+packet and admission rule without opening it; Step 4 must execute and replay the
+behavioural holdout and then the separately sealed native lifecycle gate; Step
+5 must publish per-runtime vectors, dominance relations, retained frontiers or
+no selection.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+broken. Step 5: entry holds; exit broken.
