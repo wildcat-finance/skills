@@ -55,7 +55,7 @@ Suite state as of this writing:
 | probitas | 445, **1 error** | downstream of alexandria; resolves when 6.2 does |
 | alexandria | 471, **2 failures + 129 errors** | pins deleted `tabularium/examples/goldfinch-v0/source.json` |
 
-Remaining Goldfinch references: **154 files, 773 matches.**
+Remaining Goldfinch references: **153 files** on this branch against **225 on main**, independently counted from a clean checkout. Main is gaining references while this branch removes them, so a later merge inherits new ones. That argues for finishing rather than pausing.
 
 **Merge debt.** The branch forks from `ff47f307`; `origin/main` has since
 reached `244b6729`, so it is **34 commits behind** and 4 ahead. Whoever
@@ -143,11 +143,11 @@ entity, not guessed: for Core hub asset 7 both give `decimals=18`,
 `feeReceiver=0xb9b0b8616f6bf6841972a52058132be08d723155`.
 
 Verified across the current Tabularium window: **35 of 35** `(spoke, assetId)`
-pairs resolve, yielding 10 distinct underlying tokens: USDC
-`0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48`, WBTC
-`0x2260fac5e5542a773aa44fbcfedf7c193bc2c599`, WETH
-`0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2`, sUSDe
-`0x4c9edd5852cd905f086c759e8383e09bff1e68b3` and six others.
+pairs resolve through `spoke.getReserve`, whose word[0] is the underlying and
+word[1] the owning hub. That yields 10 distinct tokens, each answering
+`symbol()` and `decimals()`: USDC, USDT, USDG, EURC, WBTC, cbBTC, WETH, GHO,
+USDe and frxUSD. Measured, not inferred: 35 of 35 pairs and 10 of 10 token
+metadata reads succeeded.
 
 `symbol()` and `decimals()` on the underlying complete the metadata.
 
@@ -274,10 +274,13 @@ Each of these cost real time. They are ordered by how much.
    and an exact starting-ref byte length on audit files; they are append-only
    by design, recording findings against artefacts as they stood at audit
    time. A prose sweep across `plugins/tabularium/audit/AUDIT.md` broke that
-   guard and went unnoticed for one commit. `audit/rounds/` (12 files),
-   `audit/AUDIT.md` and `audit/AUDIT_SYNOPSIS.md` therefore **stay
-   Goldfinch-named**. They will keep the grep non-empty; that is correct.
-   Editing `AUDIT.md` also makes `AUDIT_SYNOPSIS.md` stale.
+   guard and went unnoticed for one commit. Six files are pinned in
+   `tests/fixtures/audit-prefixes.json`: the root `audit/AUDIT.md` and the
+   ariadne, hexaemeron, pandects, probitas and tabularium
+   `plugins/*/audit/AUDIT.md`. Those, plus `audit/rounds/` (12 files) and
+   `audit/AUDIT_SYNOPSIS.md`, **stay Goldfinch-named**. They will keep the
+   grep non-empty; that is correct. Editing an `AUDIT.md` also makes its
+   synopsis stale.
 2. **The scoped gate does not run `root-suite`.**
    `run_checks.py` selects a plugin's own suite for a diff inside that plugin
    and omits `root-suite`, which holds the repo-wide invariants: audit prefix
