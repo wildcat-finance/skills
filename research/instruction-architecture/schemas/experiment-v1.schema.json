@@ -1267,6 +1267,7 @@
           "required": [
             "behavior_required_equal_fields",
             "conditionally_equal_fields",
+            "required_arm_set",
             "rule"
           ],
           "properties": {
@@ -1283,6 +1284,15 @@
               "type": "array",
               "minItems": 2,
               "maxItems": 2,
+              "items": {
+                "type": "string",
+                "maxLength": 128
+              }
+            },
+            "required_arm_set": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
               "items": {
                 "type": "string",
                 "maxLength": 128
@@ -2562,11 +2572,42 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "partition",
             "response_reuse_enabled",
             "stable_prefix_before_task_suffix",
             "template_sha256"
           ],
           "properties": {
+            "partition": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "continuation_input",
+                "first_turn_input",
+                "stable_prefix_injections_per_chain",
+                "stable_prefix_template_sha256",
+                "task_suffix_template_sha256"
+              ],
+              "properties": {
+                "continuation_input": {
+                  "const": "{task_suffix}"
+                },
+                "first_turn_input": {
+                  "const": "{stable_prefix}{task_suffix}"
+                },
+                "stable_prefix_injections_per_chain": {
+                  "const": 1
+                },
+                "stable_prefix_template_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "task_suffix_template_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
             "response_reuse_enabled": {
               "type": "boolean"
             },
@@ -2921,6 +2962,7 @@
                   "id",
                   "invocation",
                   "isolated_state",
+                  "isolated_workspace",
                   "model",
                   "sources",
                   "tokenizer",
@@ -3074,8 +3116,10 @@
                       "common_argv",
                       "compact_input",
                       "compact_success",
+                      "continuation_input",
                       "resume_argv",
                       "start_argv",
+                      "start_input",
                       "terminal_output",
                       "transport"
                     ],
@@ -3139,6 +3183,35 @@
                           }
                         }
                       },
+                      "continuation_input": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "message",
+                          "type"
+                        ],
+                        "properties": {
+                          "message": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "content",
+                              "role"
+                            ],
+                            "properties": {
+                              "content": {
+                                "const": "{task_suffix}"
+                              },
+                              "role": {
+                                "const": "user"
+                              }
+                            }
+                          },
+                          "type": {
+                            "const": "user"
+                          }
+                        }
+                      },
                       "resume_argv": {
                         "type": "array",
                         "minItems": 2,
@@ -3155,6 +3228,35 @@
                         "items": {
                           "type": "string",
                           "maxLength": 128
+                        }
+                      },
+                      "start_input": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "message",
+                          "type"
+                        ],
+                        "properties": {
+                          "message": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "content",
+                              "role"
+                            ],
+                            "properties": {
+                              "content": {
+                                "const": "{stable_prefix}{task_suffix}"
+                              },
+                              "role": {
+                                "const": "user"
+                              }
+                            }
+                          },
+                          "type": {
+                            "const": "user"
+                          }
                         }
                       },
                       "terminal_output": {
@@ -3222,6 +3324,28 @@
                         }
                       },
                       "must_not_mutate_user_sessions": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "isolated_workspace": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "cwd",
+                      "mode",
+                      "must_be_fresh_empty_directory"
+                    ],
+                    "properties": {
+                      "cwd": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "mode": {
+                        "type": "string",
+                        "maxLength": 4
+                      },
+                      "must_be_fresh_empty_directory": {
                         "type": "boolean"
                       }
                     }
@@ -3305,6 +3429,7 @@
                   "id",
                   "invocation",
                   "isolated_state",
+                  "isolated_workspace",
                   "model",
                   "protocol_schema",
                   "sources",
@@ -3739,6 +3864,28 @@
                       }
                     }
                   },
+                  "isolated_workspace": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "cwd",
+                      "mode",
+                      "must_be_fresh_empty_directory"
+                    ],
+                    "properties": {
+                      "cwd": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "mode": {
+                        "type": "string",
+                        "maxLength": 4
+                      },
+                      "must_be_fresh_empty_directory": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
                   "model": {
                     "type": "object",
                     "additionalProperties": false,
@@ -3951,6 +4098,7 @@
           "required": [
             "cache_read_tokens",
             "cache_write_tokens",
+            "reinjected_stable_prefix",
             "uncached_suffix_or_miss_tokens"
           ],
           "properties": {
@@ -3959,6 +4107,10 @@
               "maxLength": 128
             },
             "cache_write_tokens": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "reinjected_stable_prefix": {
               "type": "string",
               "maxLength": 128
             },
@@ -4118,6 +4270,7 @@
         "behavior_scorer_sha256",
         "chain_order",
         "lifecycle_commitments",
+        "prompt_partition_sha256",
         "prompt_template_sha256",
         "runtime_commitments",
         "schema",
@@ -4227,6 +4380,10 @@
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           }
+        },
+        "prompt_partition_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         },
         "prompt_template_sha256": {
           "type": "string",

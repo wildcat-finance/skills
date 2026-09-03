@@ -201,7 +201,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "8879361a57f9270dbbc5b7d8ef0fe5900e20555afbed7ee27a256a02328660cd"
+    "670918b82f3ac0d760527e0b237715492a3acbe7cecc8fdb1d9ae91c8a8c47f5"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -252,11 +252,11 @@ NATIVE_RESPONSE_REUSE_SHA256 = (
     "1895eb199f74072637c05a3fc3826f9602433de717d776fb5dfaadedb1860a33"
 )
 NATIVE_RUNTIME_RECORD_SHA256 = {
-    "claude-code": "147a80d9d34f24837562f9fb0c8aa086d6029bb72aff9f249f4209564d612fae",
-    "codex": "ac9e2cf5bb89cabff77096db17a6f0af64112ee48ee67c38a7d98292697b2f4f",
+    "claude-code": "95a0665769de797c757ac28702ee39c1e16b6da726fab1929295df9213cc6278",
+    "codex": "7fe3320c0cf01dea69ed2f0e431290ed8325aced2d315df0bd6f6462e0d24845",
 }
 NATIVE_CACHE_ACCOUNTING_SHA256 = (
-    "e58fc949a40f89dbc44b7a85e8e26bc92723fa5a18a0068d863d58ffcbcb77ad"
+    "ab7d3102d2e51ce75c56d2cc683a4ca0763397824581b86ff79e7b7c20a3a6df"
 )
 NATIVE_LIFECYCLES = (
     "cold-start",
@@ -6488,7 +6488,7 @@ def _fresh_named_identity(
         os.close(parent)
 
 
-def _atomic_write(path: Path, data: bytes) -> None:
+def _atomic_write(path: Path, data: bytes, *, replace_existing: bool = True) -> None:
     path = _safe_output(path)
     relative = _repository_relative(path, "output")
     parent, name = _open_parent(relative, create=True, label="output")
@@ -6535,13 +6535,32 @@ def _atomic_write(path: Path, data: bytes) -> None:
                 raise Refusal("output parent changed before publication")
         finally:
             os.close(routed_parent)
-        os.replace(
-            temporary,
-            name,
-            src_dir_fd=parent,
-            dst_dir_fd=parent,
-        )
-        temporary = None
+        if replace_existing:
+            os.replace(
+                temporary,
+                name,
+                src_dir_fd=parent,
+                dst_dir_fd=parent,
+            )
+            temporary = None
+        else:
+            try:
+                os.link(
+                    temporary,
+                    name,
+                    src_dir_fd=parent,
+                    dst_dir_fd=parent,
+                    follow_symlinks=False,
+                )
+            except FileExistsError as exc:
+                raise Refusal("output changed during publication") from exc
+            except OSError as exc:
+                raise Refusal("output could not be published without replacement") from exc
+            try:
+                os.unlink(temporary, dir_fd=parent)
+            except OSError as exc:
+                raise Refusal("output stage changed during publication") from exc
+            temporary = None
         os.fsync(parent)
         try:
             published = os.open(name, _regular_read_flags(), dir_fd=parent)
@@ -6620,10 +6639,10 @@ def _publish_committed_set(
     if observed[terminal] is not None:
         if any(observed[path] is None for path in paths):
             raise Refusal("terminal commitment exists for an incomplete publication")
-        return
-    for path, raw in ordered:
-        if observed[path] is None:
-            _atomic_write(path, raw)
+    else:
+        for path, raw in ordered:
+            if observed[path] is None:
+                _atomic_write(path, raw, replace_existing=False)
     for path, raw in ordered:
         if _existing_output_bytes(path, max(MAX_JSON_BYTES, len(raw))) != raw:
             raise Refusal("committed publication failed final verification")
@@ -10710,11 +10729,13 @@ def admitted_native_arms(
         raise Refusal("behavioral admission evidence must be a list")
     by_arm: dict[str, dict[str, Any]] = {}
     for row in behavioral_rows:
-        if not isinstance(row, dict) or row.get("arm") in by_arm:
+        if not isinstance(row, dict):
             raise Refusal("behavioral admission evidence is malformed or duplicated")
         arm = row.get("arm")
-        if arm not in DEVELOPMENT_ARMS:
+        if not isinstance(arm, str) or arm not in DEVELOPMENT_ARMS:
             raise Refusal("behavioral admission evidence has an unknown arm")
+        if arm in by_arm:
+            raise Refusal("behavioral admission evidence is malformed or duplicated")
         by_arm[arm] = row
     if set(by_arm) != set(DEVELOPMENT_ARMS):
         raise Refusal("behavioral admission evidence does not cover every arm")
@@ -11485,6 +11506,13 @@ def score_behavioral_response(
 def behavioral_pair_comparability(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not isinstance(rows, list) or len(rows) != len(DEVELOPMENT_ARMS):
         raise Refusal("behavioral pair must contain the five frozen arms")
+    if not all(isinstance(row, dict) for row in rows):
+        raise Refusal("behavioral pair contains a malformed row")
+    arms = [row.get("arm") for row in rows]
+    if any(not isinstance(arm, str) for arm in arms) or set(arms) != set(
+        DEVELOPMENT_ARMS
+    ):
+        raise Refusal("behavioral pair does not contain one row per frozen arm")
     for required in ("model_id", "provider_name"):
         values = [row.get(required) for row in rows]
         if any(not isinstance(value, str) or not value for value in values):
@@ -11494,12 +11522,13 @@ def behavioral_pair_comparability(rows: list[dict[str, Any]]) -> dict[str, Any]:
     qualified_unknown: list[str] = []
     for optional in ("model_revision", "tokenizer_digest"):
         values = [row.get(optional) for row in rows]
-        known = [value for value in values if isinstance(value, str) and value]
-        if not known:
+        if all(value is None for value in values):
             qualified_unknown.append(optional)
             continue
-        if len(known) != len(values) or len(set(known)) != 1:
+        if any(not isinstance(value, str) or not value for value in values):
             return {"comparable": False, "identity_quality": f"{optional}-unknown"}
+        if len(set(values)) != 1:
+            return {"comparable": False, "identity_quality": f"{optional}-mismatch"}
     return {
         "comparable": True,
         "identity_quality": (
@@ -11633,6 +11662,8 @@ def _behavioral_preregistration(
     prompt_raw: bytes,
     scorer: dict[str, Any],
     scorer_raw: bytes,
+    *,
+    validate: bool = True,
 ) -> dict[str, Any]:
     slots = seal["closed_future_case_envelope"]["slots"]
     if len(slots) != BEHAVIORAL_CASES:
@@ -11730,11 +11761,12 @@ def _behavioral_preregistration(
         "pair_comparability": {
             "behavior_required_equal_fields": ["model_id", "provider_name"],
             "conditionally_equal_fields": ["model_revision", "tokenizer_digest"],
+            "required_arm_set": list(DEVELOPMENT_ARMS),
             "rule": (
-                "model id and settled provider route must be identical and nonempty; "
-                "revision and tokenizer digest must match when exposed, one-known is "
-                "unknown, and both-unknown is qualified for behavior but never token "
-                "pooling"
+                "exactly one row per frozen arm; model id and settled provider route "
+                "must be identical and nonempty; revision and tokenizer digest must "
+                "be strings that match when exposed, one-known is unknown, and "
+                "both-null is qualified for behavior but never token pooling"
             ),
         },
         "prompt_template_sha256": _sha256(prompt_raw),
@@ -11785,7 +11817,8 @@ def _behavioral_preregistration(
         "state": "frozen-unopened",
     }
     record = _digested_record(body)
-    _validate_behavioral_preregistration(record, seal)
+    if validate:
+        _validate_behavioral_preregistration(record, seal)
     return record
 
 
@@ -11836,6 +11869,8 @@ def _validate_behavioral_preregistration(
             "conditionally_equal_fields"
         )
         != ["model_revision", "tokenizer_digest"]
+        or record.get("pair_comparability", {}).get("required_arm_set")
+        != list(DEVELOPMENT_ARMS)
     ):
         raise Refusal("behavioral preregistration identity or matrix drift")
     if seal is not None and (
@@ -11846,20 +11881,36 @@ def _validate_behavioral_preregistration(
         raise Refusal("behavioral preregistration differs from unopened seal")
     if seal is not None:
         manifest, manifest_raw = _load_fixture_record(CORPUS_MANIFEST)
+        model_manifest, model_raw = _load_fixture_record(MODEL_RUNTIME_MANIFEST)
         scorer, scorer_raw = _load_fixture_record(BEHAVIORAL_SCORER)
         selection, _ = _load_fixture_record(DEVELOPMENT_SELECTION)
+        _, prompt_raw = _read_utf8(
+            _fixture_path(BEHAVIORAL_PROMPT_TEMPLATE),
+            MAX_PROMPT_BYTES,
+            "behavioral prompt template",
+        )
+        _validate_development_selection(selection)
+        _validate_manifest_shape(manifest)
+        _validate_model_runtime_manifest(model_manifest)
         _validate_behavioral_scorer(scorer)
-        if (
-            record.get("selection_sha256") != selection.get("sha256")
-            or record.get("holdout", {}).get("corpus_manifest_bytes")
-            != len(manifest_raw)
-            or record.get("case_generator")
-            != _behavioral_case_generator_contract(
-                selection, seal, manifest, _sha256(scorer_raw)
+        _validate_behavioral_prompt_template(prompt_raw)
+        expected = _behavioral_preregistration(
+            selection,
+            seal,
+            manifest,
+            manifest_raw,
+            model_manifest,
+            model_raw,
+            prompt_raw,
+            scorer,
+            scorer_raw,
+            validate=False,
+        )
+        if record != expected:
+            raise Refusal(
+                "behavioral preregistration differs from repository inputs"
             )
-        ):
-            raise Refusal("behavioral preregistration case generator drift")
-        _behavioral_case_commitments(record["case_generator"], seal, manifest)
+        _behavioral_case_commitments(expected["case_generator"], seal, manifest)
 
 
 def _behavioral_call_order(
@@ -12098,9 +12149,15 @@ def _validate_native_cache_accounting(record: dict[str, Any]) -> None:
     if set(categories) != {
         "cache_read_tokens",
         "cache_write_tokens",
+        "reinjected_stable_prefix",
         "uncached_suffix_or_miss_tokens",
     }:
         raise Refusal("native cache accounting categories overlap or are incomplete")
+    if categories.get("reinjected_stable_prefix") != (
+        "ordinary cache-write or uncached suffix-or-miss tokens included in "
+        "cumulative fresh-token churn"
+    ):
+        raise Refusal("native cache accounting omits stable-prefix reinjection")
     if (
         record.get("axes", {})
         .get("cumulative_fresh_token_churn", {})
@@ -12208,6 +12265,31 @@ def _validate_native_prompt_template(raw: bytes) -> None:
         raise Refusal(f"native prompt template contains forbidden material: {contamination}")
 
 
+def _native_prompt_partition(raw: bytes) -> dict[str, Any]:
+    _validate_native_prompt_template(raw)
+    marker = b'<task sequence="{{lifecycle_index}}">\n'
+    if raw.count(marker) != 1:
+        raise Refusal("native prompt template task partition drift")
+    stable_prefix, changing_body = raw.split(marker, 1)
+    task_suffix = marker + changing_body
+    if (
+        b"{{representation}}" not in stable_prefix
+        or b"{{lifecycle_index}}" in stable_prefix
+        or b"{{task_suffix}}" in stable_prefix
+        or b"{{representation}}" in task_suffix
+        or b"{{lifecycle_index}}" not in task_suffix
+        or b"{{task_suffix}}" not in task_suffix
+    ):
+        raise Refusal("native prompt template stable/changing partition drift")
+    return {
+        "continuation_input": "{task_suffix}",
+        "first_turn_input": "{stable_prefix}{task_suffix}",
+        "stable_prefix_injections_per_chain": 1,
+        "stable_prefix_template_sha256": _sha256(stable_prefix),
+        "task_suffix_template_sha256": _sha256(task_suffix),
+    }
+
+
 def _validate_native_runtime_manifest(record: dict[str, Any]) -> None:
     _require_fields(
         record,
@@ -12215,11 +12297,18 @@ def _validate_native_runtime_manifest(record: dict[str, Any]) -> None:
         ("response_reuse", "runtimes", "schema"),
         "native runtime manifest",
     )
+    runtimes = record.get("runtimes")
+    if (
+        not isinstance(runtimes, list)
+        or len(runtimes) != len(NATIVE_RUNTIMES)
+        or not all(isinstance(item, dict) for item in runtimes)
+    ):
+        raise Refusal("native runtime manifest contains malformed runtimes")
     if (
         record.get("schema")
         != f"{SCHEMA_PREFIX}-native-runtime-manifest/v1"
         or record.get("response_reuse", {}).get("enabled") is not False
-        or [item.get("id") for item in record.get("runtimes", [])]
+        or [item.get("id") for item in runtimes]
         != list(NATIVE_RUNTIMES)
     ):
         raise Refusal("native runtime manifest identity or response-cache policy drift")
@@ -12267,9 +12356,26 @@ def _validate_native_runtime_manifest(record: dict[str, Any]) -> None:
         raise Refusal("native runtime manifest safe invocation contract drift")
     claude = by_id["claude-code"]
     codex = by_id["codex"]
+    workspace_contract = {
+        "cwd": "{isolated_workspace}",
+        "mode": "0700",
+        "must_be_fresh_empty_directory": True,
+    }
     claude_argv = claude.get("invocation", {}).get("common_argv", [])
+    claude_start_input = {
+        "message": {
+            "content": "{stable_prefix}{task_suffix}",
+            "role": "user",
+        },
+        "type": "user",
+    }
+    claude_continuation_input = {
+        "message": {"content": "{task_suffix}", "role": "user"},
+        "type": "user",
+    }
     if (
         claude.get("executable") != "claude"
+        or claude.get("isolated_workspace") != workspace_contract
         or claude.get("isolated_state", {}).get("environment")
         != {"CLAUDE_CONFIG_DIR": "{isolated_state_root}/claude"}
         or claude.get("isolated_state", {}).get("must_not_mutate_user_sessions")
@@ -12284,6 +12390,10 @@ def _validate_native_runtime_manifest(record: dict[str, Any]) -> None:
         != {"ephemeral_1h_input_tokens", "ephemeral_5m_input_tokens"}
         or claude_argv.count("--json-schema") != 1
         or "{response_schema_json}" not in claude_argv
+        or claude.get("invocation", {}).get("start_input")
+        != claude_start_input
+        or claude.get("invocation", {}).get("continuation_input")
+        != claude_continuation_input
         or claude.get("invocation", {}).get("terminal_output", {}).get("field")
         != "structured_output"
     ):
@@ -12292,6 +12402,7 @@ def _validate_native_runtime_manifest(record: dict[str, Any]) -> None:
     params = start.get("params", {})
     if (
         codex.get("executable") != "codex"
+        or codex.get("isolated_workspace") != workspace_contract
         or codex.get("isolated_state", {}).get("environment")
         != {"CODEX_HOME": "{isolated_state_root}/codex"}
         or codex.get("isolated_state", {}).get("must_not_mutate_user_sessions")
@@ -12629,6 +12740,8 @@ def _native_preregistration(
     behavioral_preregistration: dict[str, Any],
     behavioral_commitment: dict[str, Any],
     behavioral_packet: dict[str, bytes],
+    *,
+    validate: bool = True,
 ) -> dict[str, Any]:
     workload = _native_workload(
         behavioral_preregistration, behavioral_commitment, behavioral_packet
@@ -12690,6 +12803,7 @@ def _native_preregistration(
         },
         "no_native_session_launched": True,
         "prompt": {
+            "partition": _native_prompt_partition(prompt_raw),
             "response_reuse_enabled": False,
             "stable_prefix_before_task_suffix": True,
             "template_sha256": _sha256(prompt_raw),
@@ -12704,7 +12818,8 @@ def _native_preregistration(
         "workload": workload,
     }
     record = _digested_record(body)
-    _validate_native_preregistration(record)
+    if validate:
+        _validate_native_preregistration(record)
     return record
 
 
@@ -12783,6 +12898,32 @@ def _validate_native_preregistration(record: dict[str, Any]) -> None:
     }
     if record.get("behavior_scoring") != expected_scoring:
         raise Refusal("native deployment behavior scorer drift")
+    selection, _ = _load_fixture_record(DEVELOPMENT_SELECTION)
+    _validate_development_selection(selection)
+    runtime_manifest, runtime_raw = _load_fixture_record(NATIVE_RUNTIME_MANIFEST)
+    _validate_native_runtime_manifest(runtime_manifest)
+    accounting, accounting_raw = _load_fixture_record(NATIVE_CACHE_ACCOUNTING)
+    _validate_native_cache_accounting(accounting)
+    _, prompt_raw = _read_utf8(
+        _fixture_path(NATIVE_PROMPT_TEMPLATE),
+        MAX_PROMPT_BYTES,
+        "native prompt template",
+    )
+    _validate_native_prompt_template(prompt_raw)
+    expected = _native_preregistration(
+        selection,
+        runtime_manifest,
+        runtime_raw,
+        accounting,
+        accounting_raw,
+        prompt_raw,
+        behavioral,
+        commitment,
+        expected_behavioral_packet,
+        validate=False,
+    )
+    if record != expected:
+        raise Refusal("native deployment preregistration differs from repository inputs")
 
 
 def _opaque_native_packet(preregistration: dict[str, Any]) -> dict[str, bytes]:
@@ -12802,6 +12943,9 @@ def _opaque_native_packet(preregistration: dict[str, Any]) -> dict[str, bytes]:
             )
             for lifecycle in NATIVE_LIFECYCLES
         ],
+        "prompt_partition_sha256": _sha256(
+            _canonical_json(preregistration["prompt"]["partition"])
+        ),
         "prompt_template_sha256": preregistration["prompt"]["template_sha256"],
         "runtime_commitments": [
             _sha256(
@@ -13071,29 +13215,87 @@ class _NoRedirect(HTTPRedirectHandler):
         return None
 
 
+def _external_read_flags() -> int:
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_NONBLOCK"):
+        raise Refusal("nonblocking no-follow external reads are unavailable")
+    return (
+        os.O_RDONLY
+        | os.O_NOFOLLOW
+        | os.O_NONBLOCK
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+
+
+def _open_external_regular(
+    path: Path,
+    *,
+    allowed_uids: frozenset[int],
+    forbidden_mode: int,
+    label: str,
+    maximum: int,
+    exact_mode: int | None = None,
+    required_mode: int = 0,
+) -> tuple[int, os.stat_result]:
+    if (
+        not path.is_absolute()
+        or type(maximum) is not int
+        or maximum <= 0
+        or not allowed_uids
+    ):
+        raise Refusal(f"{label} path or limit is unsafe")
+    descriptor: int | None = None
+    accepted = False
+    try:
+        descriptor = os.open(path, _external_read_flags())
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_nlink != 1
+            or metadata.st_uid not in allowed_uids
+            or metadata.st_mode & forbidden_mode
+            or (
+                exact_mode is not None
+                and stat.S_IMODE(metadata.st_mode) != exact_mode
+            )
+            or (required_mode and not metadata.st_mode & required_mode)
+            or metadata.st_size <= 0
+            or metadata.st_size > maximum
+        ):
+            raise Refusal(f"{label} metadata is unsafe")
+        accepted = True
+        return descriptor, metadata
+    except OSError as exc:
+        raise Refusal(f"{label} is unavailable or unsafe") from exc
+    except Refusal:
+        raise
+    finally:
+        if descriptor is not None and not accepted:
+            os.close(descriptor)
+
+
+def _require_external_name_identity(
+    path: Path, metadata: os.stat_result, label: str
+) -> None:
+    try:
+        named = path.lstat()
+    except OSError as exc:
+        raise Refusal(f"{label} changed during access") from exc
+    if _rename_stable_identity(named) != _rename_stable_identity(metadata):
+        raise Refusal(f"{label} changed during access")
+
+
 def _external_secret(path: str, limit: int = 4096) -> bytes:
     """Read one explicitly authorised secret without following a symlink."""
     candidate = Path(path)
-    if not candidate.is_absolute() or not hasattr(os, "O_NOFOLLOW"):
-        raise Refusal("credential path is not an absolute no-follow path")
+    descriptor, before = _open_external_regular(
+        candidate,
+        allowed_uids=frozenset({os.getuid()}),
+        forbidden_mode=0o077,
+        label="credential",
+        maximum=limit,
+    )
     try:
-        descriptor = os.open(
-            candidate,
-            os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0),
-        )
-    except OSError as exc:
-        raise Refusal("credential is unavailable or unsafe") from exc
-    try:
-        before = os.fstat(descriptor)
-        if (
-            not stat.S_ISREG(before.st_mode)
-            or before.st_nlink != 1
-            or before.st_uid != os.getuid()
-            or before.st_mode & 0o077
-            or before.st_size <= 0
-            or before.st_size > limit
-        ):
-            raise Refusal("credential metadata is unsafe")
+        _require_external_name_identity(candidate, before, "credential")
         chunks: list[bytes] = []
         total = 0
         while True:
@@ -13107,6 +13309,7 @@ def _external_secret(path: str, limit: int = 4096) -> bytes:
         after = os.fstat(descriptor)
         if _identity(before) != _identity(after):
             raise Refusal("credential changed during read")
+        _require_external_name_identity(candidate, after, "credential")
     finally:
         os.close(descriptor)
     raw = b"".join(chunks).strip()
@@ -13165,6 +13368,13 @@ def _decode_external_json(raw: bytes, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise Refusal(f"{label} root must be an object")
     return value
+
+
+def _decode_external_utf8(raw: bytes, label: str) -> str:
+    try:
+        return raw.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal(f"{label} is not UTF-8") from exc
 
 
 def _parse_external_decimal(value: str) -> Decimal:
@@ -13433,15 +13643,30 @@ def _catalog_rows(record: dict[str, Any], label: str) -> list[dict[str, Any]]:
 def _eligible_zdr_routes(
     frozen: dict[str, Any], rows: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    return [
-        row
-        for row in rows
-        if row.get("model_id") == frozen["id"]
-        and row.get("provider_name") in frozen["ordered_provider_policy"]
-        and row.get("status") == 0
-        and {"response_format", "structured_outputs"}
-        <= set(row.get("supported_parameters", []))
-    ]
+    if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+        raise Refusal("OpenRouter ZDR routes are malformed")
+    eligible: list[dict[str, Any]] = []
+    for row in rows:
+        if (
+            row.get("model_id") != frozen["id"]
+            or row.get("provider_name") not in frozen["ordered_provider_policy"]
+        ):
+            continue
+        supported = row.get("supported_parameters")
+        if (
+            not isinstance(supported, list)
+            or any(not isinstance(value, str) or not value for value in supported)
+            or len(supported) != len(set(supported))
+        ):
+            raise Refusal("OpenRouter ZDR route supported parameters are malformed")
+        if type(row.get("status")) is not int:
+            raise Refusal("OpenRouter ZDR route status is malformed")
+        if row["status"] == 0 and {
+            "response_format",
+            "structured_outputs",
+        } <= set(supported):
+            eligible.append(row)
+    return eligible
 
 
 def _pricing_values(pricing: Any, field: str, label: str) -> list[Decimal]:
@@ -13687,7 +13912,7 @@ def preflight_model_matrix(args: argparse.Namespace) -> bytes:
     }
     for row in endpoints:
         identifier = row.get("model_id")
-        if identifier in endpoint_rows:
+        if isinstance(identifier, str) and identifier in endpoint_rows:
             endpoint_rows[identifier].append(row)
     frozen = {row["id"]: row for row in manifest["models"]}
     selected: list[dict[str, Any]] = []
@@ -13771,21 +13996,19 @@ def _resolved_runtime_executable(name: str) -> Path:
     return resolved
 
 
-def _external_file_digest(path: Path, limit: int = 256 * 1024 * 1024) -> str:
+def _external_file_attestation(
+    path: Path, limit: int = 256 * 1024 * 1024
+) -> tuple[str, tuple[int, ...]]:
+    descriptor, metadata = _open_external_regular(
+        path,
+        allowed_uids=frozenset({0, os.getuid()}),
+        forbidden_mode=0o022,
+        label="external file",
+        maximum=limit,
+        required_mode=0o111,
+    )
     try:
-        descriptor = os.open(
-            path, os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
-        )
-    except OSError as exc:
-        raise Refusal("external file is unavailable or unsafe") from exc
-    try:
-        metadata = os.fstat(descriptor)
-        if (
-            not stat.S_ISREG(metadata.st_mode)
-            or metadata.st_nlink != 1
-            or metadata.st_size > limit
-        ):
-            raise Refusal("external file metadata is unsafe")
+        _require_external_name_identity(path, metadata, "external file")
         digest = hashlib.sha256()
         remaining = metadata.st_size
         while remaining:
@@ -13797,9 +14020,110 @@ def _external_file_digest(path: Path, limit: int = 256 * 1024 * 1024) -> str:
         after = os.fstat(descriptor)
         if _identity(metadata) != _identity(after):
             raise Refusal("external file changed during hashing")
-        return digest.hexdigest()
+        _require_external_name_identity(path, after, "external file")
+        return digest.hexdigest(), _identity(after)
     finally:
         os.close(descriptor)
+
+
+def _external_file_digest(path: Path, limit: int = 256 * 1024 * 1024) -> str:
+    return _external_file_attestation(path, limit)[0]
+
+
+def _stage_external_executable(
+    source: Path, destination: Path, limit: int = 256 * 1024 * 1024
+) -> tuple[str, tuple[int, ...]]:
+    """Copy one verified executable into a fresh private execution directory."""
+    source_fd: int | None = None
+    destination_fd: int | None = None
+    parent_fd: int | None = None
+    destination_created = False
+    success = False
+    try:
+        source_fd, opened_source = _open_external_regular(
+            source,
+            allowed_uids=frozenset({0, os.getuid()}),
+            forbidden_mode=0o022,
+            label="runtime executable source",
+            maximum=limit,
+            required_mode=0o111,
+        )
+        _require_external_name_identity(
+            source, opened_source, "runtime executable source"
+        )
+        parent_fd = os.open(destination.parent, _directory_flags())
+        parent = os.fstat(parent_fd)
+        if (
+            not stat.S_ISDIR(parent.st_mode)
+            or parent.st_uid != os.getuid()
+            or stat.S_IMODE(parent.st_mode) != 0o700
+        ):
+            raise Refusal("private executable stage directory is unsafe")
+        destination_fd = os.open(
+            destination.name,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | os.O_NOFOLLOW
+            | getattr(os, "O_CLOEXEC", 0),
+            0o500,
+            dir_fd=parent_fd,
+        )
+        destination_created = True
+        digest = hashlib.sha256()
+        copied = 0
+        while copied < opened_source.st_size:
+            chunk = os.read(
+                source_fd, min(65_536, opened_source.st_size - copied)
+            )
+            if not chunk:
+                raise Refusal("runtime executable source ended early")
+            digest.update(chunk)
+            view = memoryview(chunk)
+            while view:
+                written = os.write(destination_fd, view)
+                if written <= 0:
+                    raise Refusal("private executable stage write failed")
+                view = view[written:]
+            copied += len(chunk)
+        if os.read(source_fd, 1):
+            raise Refusal("runtime executable source grew during copy")
+        after_source = os.fstat(source_fd)
+        if _identity(opened_source) != _identity(after_source):
+            raise Refusal("runtime executable source changed during copy")
+        _require_external_name_identity(
+            source, after_source, "runtime executable source"
+        )
+        os.fsync(destination_fd)
+        staged = os.fstat(destination_fd)
+        if (
+            copied != opened_source.st_size
+            or not stat.S_ISREG(staged.st_mode)
+            or staged.st_nlink != 1
+            or staged.st_uid != os.getuid()
+            or stat.S_IMODE(staged.st_mode) != 0o500
+        ):
+            raise Refusal("private executable stage metadata drift")
+        os.fsync(parent_fd)
+        success = True
+    except OSError as exc:
+        raise Refusal("private executable stage is unavailable or unsafe") from exc
+    finally:
+        if destination_fd is not None:
+            os.close(destination_fd)
+        if source_fd is not None:
+            os.close(source_fd)
+        if parent_fd is not None:
+            if destination_created and not success:
+                try:
+                    os.unlink(destination.name, dir_fd=parent_fd)
+                except OSError:
+                    pass
+            os.close(parent_fd)
+    attestation = _external_file_attestation(destination, limit)
+    if attestation[0] != digest.hexdigest() or attestation[1] != _identity(staged):
+        raise Refusal("private executable stage failed verification")
+    return attestation
 
 
 def _bounded_process(
@@ -13884,6 +14208,9 @@ def _bounded_process(
             process.wait(timeout=2)
         except subprocess.TimeoutExpired:
             pass
+        for stream in (process.stdout, process.stderr):
+            if stream is not None:
+                stream.close()
 
 
 def _runtime_environment(state_name: str, state_path: Path) -> dict[str, str]:
@@ -13901,40 +14228,24 @@ def _runtime_environment(state_name: str, state_path: Path) -> dict[str, str]:
     return environment
 
 
-def _safe_external_metadata(path: Path, maximum: int) -> dict[str, Any]:
-    try:
-        metadata = path.lstat()
-    except OSError as exc:
-        raise Refusal("authentication bootstrap source is unavailable") from exc
-    if (
-        stat.S_ISLNK(metadata.st_mode)
-        or not stat.S_ISREG(metadata.st_mode)
-        or metadata.st_nlink != 1
-        or metadata.st_uid != os.getuid()
-        or metadata.st_mode & 0o077
-        or metadata.st_size <= 0
-        or metadata.st_size > maximum
-    ):
-        raise Refusal("authentication bootstrap source metadata is unsafe")
-    return {
-        "identity": _rename_stable_identity(metadata),
-        "mode": stat.S_IMODE(metadata.st_mode),
-        "size": metadata.st_size,
-    }
-
-
 def _copy_external_auth(source: Path, destination: Path, maximum: int) -> None:
     """Copy bounded auth bytes into a fresh isolated store, never into a report."""
-    metadata = _safe_external_metadata(source, maximum)
     source_fd: int | None = None
     destination_fd: int | None = None
+    destination_created = False
+    success = False
     try:
-        source_fd = os.open(
-            source, os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+        source_fd, opened_source = _open_external_regular(
+            source,
+            allowed_uids=frozenset({os.getuid()}),
+            forbidden_mode=0o077,
+            label="authentication bootstrap source",
+            maximum=maximum,
+            exact_mode=0o600,
         )
-        opened_source = os.fstat(source_fd)
-        if _rename_stable_identity(opened_source) != metadata["identity"]:
-            raise Refusal("auth bootstrap source changed while opening")
+        _require_external_name_identity(
+            source, opened_source, "authentication bootstrap source"
+        )
         destination_fd = os.open(
             destination,
             os.O_WRONLY
@@ -13944,9 +14255,12 @@ def _copy_external_auth(source: Path, destination: Path, maximum: int) -> None:
             | getattr(os, "O_CLOEXEC", 0),
             0o600,
         )
+        destination_created = True
         copied = 0
-        while copied < metadata["size"]:
-            chunk = os.read(source_fd, min(65_536, metadata["size"] - copied))
+        while copied < opened_source.st_size:
+            chunk = os.read(
+                source_fd, min(65_536, opened_source.st_size - copied)
+            )
             if not chunk:
                 raise Refusal("auth bootstrap source ended early")
             view = memoryview(chunk)
@@ -13959,25 +14273,21 @@ def _copy_external_auth(source: Path, destination: Path, maximum: int) -> None:
         if os.read(source_fd, 1):
             raise Refusal("auth bootstrap source grew during copy")
         after_source = os.fstat(source_fd)
-        try:
-            named_source = source.lstat()
-        except OSError as exc:
-            raise Refusal("auth bootstrap source changed during copy") from exc
-        if not (
-            _rename_stable_identity(opened_source)
-            == _rename_stable_identity(after_source)
-            == _rename_stable_identity(named_source)
-        ):
+        if _identity(opened_source) != _identity(after_source):
             raise Refusal("auth bootstrap source changed during copy")
+        _require_external_name_identity(
+            source, after_source, "authentication bootstrap source"
+        )
         os.fsync(destination_fd)
         destination_metadata = os.fstat(destination_fd)
         if (
-            copied != metadata["size"]
+            copied != opened_source.st_size
             or not stat.S_ISREG(destination_metadata.st_mode)
             or destination_metadata.st_nlink != 1
             or stat.S_IMODE(destination_metadata.st_mode) != 0o600
         ):
             raise Refusal("isolated auth bootstrap output metadata drift")
+        success = True
     except OSError as exc:
         raise Refusal("isolated auth bootstrap is unavailable or unsafe") from exc
     finally:
@@ -13985,6 +14295,11 @@ def _copy_external_auth(source: Path, destination: Path, maximum: int) -> None:
             os.close(destination_fd)
         if source_fd is not None:
             os.close(source_fd)
+        if destination_created and not success:
+            try:
+                destination.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def _write_isolated_secret(raw: bytes, destination: Path, maximum: int) -> int:
@@ -14335,6 +14650,28 @@ def _private_system_temporary_directory() -> Iterator[Path]:
                 os.close(descriptor)
 
 
+def _fresh_private_child(root: Path, name: str) -> Path:
+    relative = _safe_relative(name)
+    if len(relative.parts) != 1:
+        raise Refusal("isolated runtime directory name is unsafe")
+    child = root / relative.name
+    try:
+        child.mkdir(mode=0o700)
+        metadata = child.lstat()
+        empty = not any(child.iterdir())
+    except OSError as exc:
+        raise Refusal("isolated runtime directory is unavailable") from exc
+    if (
+        stat.S_ISLNK(metadata.st_mode)
+        or not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_uid != os.getuid()
+        or stat.S_IMODE(metadata.st_mode) != 0o700
+        or not empty
+    ):
+        raise Refusal("isolated runtime directory is not fresh, empty and private")
+    return child
+
+
 def preflight_native_gate(args: argparse.Namespace) -> bytes:
     if args.no_session is not True or tuple(args.runtimes.split(",")) != NATIVE_RUNTIMES:
         raise Refusal("native preflight requires the frozen runtimes and --no-session")
@@ -14343,29 +14680,61 @@ def preflight_native_gate(args: argparse.Namespace) -> bytes:
     by_id = {row["id"]: row for row in manifest["runtimes"]}
     identities: dict[str, dict[str, Any]] = {}
     resolved_executables: dict[str, Path] = {}
+    executable_attestations: dict[str, tuple[str, tuple[int, ...]]] = {}
+    workspaces: dict[str, Path] = {}
     with _private_system_temporary_directory() as state_root:
+        executable_root = _fresh_private_child(state_root, "executables")
+        for runtime_id in NATIVE_RUNTIMES:
+            runtime = by_id[runtime_id]
+            source = _resolved_runtime_executable(runtime["executable"])
+            executable = executable_root / runtime["executable"]
+            executable_attestation = _stage_external_executable(source, executable)
+            resolved_executables[runtime_id] = executable
+            executable_attestations[runtime_id] = executable_attestation
+        try:
+            executable_root.chmod(0o500)
+            executable_root_metadata = executable_root.lstat()
+        except OSError as exc:
+            raise Refusal("private executable stage could not be sealed") from exc
+        if (
+            not stat.S_ISDIR(executable_root_metadata.st_mode)
+            or executable_root_metadata.st_uid != os.getuid()
+            or stat.S_IMODE(executable_root_metadata.st_mode) != 0o500
+        ):
+            raise Refusal("private executable stage did not seal")
         for runtime_id, state_name in (
             ("claude-code", "CLAUDE_CONFIG_DIR"),
             ("codex", "CODEX_HOME"),
         ):
             runtime = by_id[runtime_id]
-            executable = _resolved_runtime_executable(runtime["executable"])
-            resolved_executables[runtime_id] = executable
-            isolated = state_root / runtime_id
-            isolated.mkdir(mode=0o700)
+            executable = resolved_executables[runtime_id]
+            executable_attestation = executable_attestations[runtime_id]
+            executable_digest = executable_attestation[0]
+            state_template = runtime["isolated_state"]["environment"][state_name]
+            state_prefix = "{isolated_state_root}/"
+            if not state_template.startswith(state_prefix):
+                raise Refusal("native runtime isolated-state path drift")
+            state_leaf = state_template.removeprefix(state_prefix)
+            isolated = _fresh_private_child(state_root, state_leaf)
+            workspace = _fresh_private_child(
+                state_root, f"{runtime_id}-workspace"
+            )
+            workspaces[runtime_id] = workspace
             environment = _runtime_environment(state_name, isolated)
             version_argv = [str(executable), *runtime["version"]["command"][1:]]
             code, stdout, stderr = _bounded_process(
-                version_argv, environment=environment, cwd=ROOT
+                version_argv, environment=environment, cwd=workspace
             )
-            version = (stdout + stderr).decode("utf-8", errors="strict").strip()
+            version = _decode_external_utf8(
+                stdout + stderr, f"{runtime_id} version output"
+            ).strip()
             if code != 0 or version != runtime["version"]["expected"]:
                 raise Refusal(f"native runtime version drift: {runtime_id}")
             auth_argv = [
                 str(executable), *runtime["authentication"]["command"][1:]
             ]
             auth_code, auth_stdout, auth_stderr = _bounded_process(
-                auth_argv, environment=environment, cwd=ROOT
+                auth_argv, environment=environment, cwd=workspace
             )
             if runtime_id == "claude-code":
                 auth = _decode_external_json(
@@ -14384,7 +14753,7 @@ def preflight_native_gate(args: argparse.Namespace) -> bytes:
                 )
                 credential = b""
                 auth_code, auth_stdout, auth_stderr = _bounded_process(
-                    auth_argv, environment=environment, cwd=ROOT
+                    auth_argv, environment=environment, cwd=workspace
                 )
                 auth = _decode_external_json(
                     auth_stdout or auth_stderr, "Claude isolated auth status"
@@ -14393,42 +14762,39 @@ def preflight_native_gate(args: argparse.Namespace) -> bytes:
                     raise Refusal("isolated Claude credential bootstrap did not authenticate")
                 isolated_auth = "bounded-keychain-bootstrap-authenticated"
             else:
-                auth_text = (auth_stdout + auth_stderr).decode(
-                    "utf-8", errors="strict"
+                auth_text = _decode_external_utf8(
+                    auth_stdout + auth_stderr, "Codex isolated auth status"
                 )
                 if auth_code == 0 or "Not logged in" not in auth_text:
                     raise Refusal("fresh Codex state unexpectedly inherited authentication")
                 bootstrap = runtime["authentication"]["isolated_bootstrap"]
                 source = Path.home() / ".codex/auth.json"
-                metadata = _safe_external_metadata(
-                    source, bootstrap["size_limit_bytes"]
-                )
-                if metadata["mode"] != 0o600:
-                    raise Refusal("Codex auth bootstrap source mode drift")
                 _copy_external_auth(
                     source, isolated / "auth.json", bootstrap["size_limit_bytes"]
                 )
                 auth_code, auth_stdout, auth_stderr = _bounded_process(
-                    auth_argv, environment=environment, cwd=ROOT
+                    auth_argv, environment=environment, cwd=workspace
                 )
-                auth_text = (auth_stdout + auth_stderr).decode(
-                    "utf-8", errors="strict"
+                auth_text = _decode_external_utf8(
+                    auth_stdout + auth_stderr, "Codex isolated auth status"
                 )
                 if auth_code != 0 or runtime["authentication"]["pass_stdout"] not in auth_text:
                     raise Refusal("isolated Codex auth bootstrap did not authenticate")
                 isolated_auth = "bounded-copy-authenticated"
+            if _external_file_attestation(executable) != executable_attestation:
+                raise Refusal(f"native runtime executable changed: {runtime_id}")
             identities[runtime_id] = {
                 "executable_basename": runtime["executable"],
-                "executable_sha256": _external_file_digest(executable),
+                "executable_sha256": executable_digest,
                 "isolated_auth": isolated_auth,
-                "resolution_class": "closed-name-from-PATH",
+                "isolated_workspace": "fresh-empty-private",
+                "resolution_class": "verified-copy-in-sealed-private-stage",
                 "version": version,
             }
         codex = by_id["codex"]
         codex_executable = resolved_executables["codex"]
         schema_root = state_root / "codex-schema"
-        schema_state = state_root / "codex-schema-state"
-        schema_state.mkdir(mode=0o700)
+        schema_state = _fresh_private_child(state_root, "codex-schema-state")
         schema_command = codex["protocol_schema"]["command"]
         schema_argv = [
             str(codex_executable),
@@ -14440,13 +14806,22 @@ def preflight_native_gate(args: argparse.Namespace) -> bytes:
         code, stdout, stderr = _bounded_process(
             schema_argv,
             environment=_runtime_environment("CODEX_HOME", schema_state),
-            cwd=ROOT,
+            cwd=workspaces["codex"],
             timeout=60,
         )
         if code != 0:
             raise Refusal("Codex experimental schema generation failed")
+        if (
+            _external_file_attestation(codex_executable)
+            != executable_attestations["codex"]
+        ):
+            raise Refusal("native runtime executable changed: codex")
         schema_digest, schema_records = _read_generated_schema_bundle(schema_root)
         _validate_codex_schema_bundle(schema_records)
+        try:
+            executable_root.chmod(0o700)
+        except OSError as exc:
+            raise Refusal("private executable stage could not be reopened") from exc
     identities["codex"]["experimental_schema_sha256"] = schema_digest
     return _publish_preflight_report(
         args,
@@ -14460,6 +14835,7 @@ def preflight_native_gate(args: argparse.Namespace) -> bytes:
             "resolved": identities,
             "runtime_count": len(identities),
             "isolated_authentication_proved": True,
+            "isolated_workspace_proved": True,
         },
     )
 

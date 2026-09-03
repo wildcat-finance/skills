@@ -9938,15 +9938,32 @@ class AdmissionRuleTests(ExperimentFixtureMixin, unittest.TestCase):
         self.assertNotIn("noema", admitted)
         self.assertNotIn("wai1", admitted)
 
+    def test_unhashable_behavioral_arm_refuses(self):
+        try:
+            AI.admitted_native_arms(self.selection, [{"arm": []}])
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "unknown arm")
+        except Exception as exc:
+            self.fail(f"unhashable arm escaped as {type(exc).__name__}")
+        else:
+            self.fail("unhashable arm was accepted")
+
 
 class PreregistrationTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_behavioral_preregistration_binds_full_answer_matrix(self):
         seal = load(SEAL)
-        AI._validate_behavioral_preregistration(self.preregistration, seal)
+        try:
+            AI._validate_behavioral_preregistration(self.preregistration, seal)
+        except AI.Refusal as exc:
+            self.fail(f"frozen behavioral preregistration refused: {exc}")
         self.assertEqual(self.preregistration["logical_calls_before_retries"], 1120)
         self.assertEqual(len(self.preregistration["case_slots"]), 16)
         self.assertEqual(len(self.preregistration["arms"]), 5)
         self.assertEqual(len(self.model_manifest["models"]), 7)
+        self.assertEqual(
+            self.preregistration["pair_comparability"].get("required_arm_set"),
+            list(AI.DEVELOPMENT_ARMS),
+        )
 
     def test_experiment_schema_closes_every_declared_object(self):
         schema = load(EXPERIMENT_SCHEMA)
@@ -9971,6 +9988,29 @@ class PreregistrationTests(ExperimentFixtureMixin, unittest.TestCase):
                     walk(child)
 
         walk(schema)
+
+    def test_behavioral_preregistration_replays_every_repository_input_binding(self):
+        seal = load(SEAL)
+        base = copy.deepcopy(self.preregistration)
+        base["pair_comparability"]["required_arm_set"] = list(AI.DEVELOPMENT_ARMS)
+        mutations = []
+        for path in (
+            ("model_runtime_manifest_sha256",),
+            ("prompt_template_sha256",),
+            ("scorer_sha256",),
+            ("arms", 0, "control_sha256"),
+        ):
+            changed = copy.deepcopy(base)
+            target = changed
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = "0" * 64
+            changed.pop("sha256")
+            mutations.append((path, AI._digested_record(changed)))
+        for path, changed in mutations:
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(AI.Refusal, "repository inputs"):
+                    AI._validate_behavioral_preregistration(changed, seal)
 
     def test_experiment_schema_has_no_wildcard_extra_key_escape(self):
         schema = load(EXPERIMENT_SCHEMA)
@@ -10044,7 +10084,9 @@ class BehavioralCaseGeneratorTests(ExperimentFixtureMixin, unittest.TestCase):
         changed["case_generator"]["algorithm"] = "mutable-after-open"
         changed.pop("sha256")
         changed = AI._digested_record(changed)
-        with self.assertRaisesRegex(AI.Refusal, "case generator drift"):
+        with self.assertRaisesRegex(
+            AI.Refusal, "case generator drift|differs from repository inputs"
+        ):
             AI._validate_behavioral_preregistration(changed, load(SEAL))
 
     def test_synthetic_exact_literal_is_objective_and_source_bound(self):
@@ -10134,18 +10176,48 @@ class BehavioralCaseGeneratorTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_pair_comparability_qualifies_both_unknown_but_refuses_one_known(self):
         rows = [
             {
+                "arm": arm,
                 "model_id": "m",
                 "provider_name": "p",
                 "model_revision": None,
                 "tokenizer_digest": None,
             }
-            for _ in AI.DEVELOPMENT_ARMS
+            for arm in AI.DEVELOPMENT_ARMS
         ]
         observed = AI.behavioral_pair_comparability(rows)
         self.assertTrue(observed["comparable"])
         self.assertFalse(observed["token_pooling_allowed"])
         rows[0]["model_revision"] = "r1"
         self.assertFalse(AI.behavioral_pair_comparability(rows)["comparable"])
+
+    def test_pair_comparability_refuses_non_object_rows(self):
+        try:
+            AI.behavioral_pair_comparability([None] * len(AI.DEVELOPMENT_ARMS))
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "malformed")
+        except Exception as exc:
+            self.fail(f"malformed row escaped as {type(exc).__name__}")
+        else:
+            self.fail("malformed row was accepted")
+
+    def test_pair_comparability_requires_closed_arms_and_valid_identity_types(self):
+        rows = [
+            {
+                "arm": arm,
+                "model_id": "m",
+                "provider_name": "p",
+                "model_revision": None,
+                "tokenizer_digest": None,
+            }
+            for arm in AI.DEVELOPMENT_ARMS
+        ]
+        duplicated = [dict(rows[0]) for _ in AI.DEVELOPMENT_ARMS]
+        with self.assertRaisesRegex(AI.Refusal, "one row per frozen arm"):
+            AI.behavioral_pair_comparability(duplicated)
+        rows[0]["model_revision"] = 7
+        observed = AI.behavioral_pair_comparability(rows)
+        self.assertFalse(observed["comparable"])
+        self.assertEqual(observed["identity_quality"], "model_revision-unknown")
 
 
 class PromptContaminationTests(unittest.TestCase):
@@ -10168,6 +10240,20 @@ class PromptContaminationTests(unittest.TestCase):
         ).replace("TEMP", "{{task_suffix}}", 1)
         with self.assertRaisesRegex(AI.Refusal, "stable prefix|placeholders"):
             AI._validate_native_prompt_template(changed.encode())
+
+    def test_native_prompt_partition_freezes_prefix_once_and_suffix_per_turn(self):
+        partitioner = getattr(AI, "_native_prompt_partition", None)
+        self.assertIsNotNone(partitioner)
+        partition = partitioner(NATIVE_PROMPT_TEMPLATE.read_bytes())
+        self.assertEqual(partition["stable_prefix_injections_per_chain"], 1)
+        self.assertEqual(
+            partition["first_turn_input"], "{stable_prefix}{task_suffix}"
+        )
+        self.assertEqual(partition["continuation_input"], "{task_suffix}")
+        self.assertNotEqual(
+            partition["stable_prefix_template_sha256"],
+            partition["task_suffix_template_sha256"],
+        )
 
 
 class StatisticsTests(ExperimentFixtureMixin, unittest.TestCase):
@@ -10269,6 +10355,24 @@ class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):
         with mock.patch.object(AI, "_http_json", side_effect=[model_rows, {"data": []}]):
             with self.assertRaisesRegex(AI.Refusal, "no active frozen ZDR route"):
                 AI.preflight_model_matrix(args)
+
+    def test_malformed_zdr_supported_parameters_refuse(self):
+        frozen = self.model_manifest["models"][0]
+        route = {
+            "model_id": frozen["id"],
+            "pricing": {"completion": "0.1", "prompt": "0.1"},
+            "provider_name": frozen["ordered_provider_policy"][0],
+            "status": 0,
+            "supported_parameters": None,
+        }
+        try:
+            AI._eligible_zdr_routes(frozen, [route])
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "supported parameters")
+        except Exception as exc:
+            self.fail(f"malformed supported parameters escaped as {type(exc).__name__}")
+        else:
+            self.fail("malformed supported parameters were accepted")
 
     def test_worst_fallback_price_is_reserved(self):
         frozen = self.model_manifest["models"][0]
@@ -10409,14 +10513,22 @@ class NativePreflightBoundaryTests(unittest.TestCase):
         with scratch_directory("step3-auth-identity-") as temporary:
             source = Path(temporary) / "auth.json"
             destination = Path(temporary) / "copy.json"
+            replacement = Path(temporary) / "replacement.json"
             source.write_bytes(b"secret")
             source.chmod(0o600)
-            metadata = AI._safe_external_metadata(source, 64)
-            metadata["identity"] = (0,) * len(metadata["identity"])
+            replacement.write_bytes(b"other")
+            replacement.chmod(0o600)
+            real_lstat = Path.lstat
+
+            def replaced_identity(candidate):
+                if candidate == source:
+                    return real_lstat(replacement)
+                return real_lstat(candidate)
+
             with mock.patch.object(
-                AI, "_safe_external_metadata", return_value=metadata
+                Path, "lstat", autospec=True, side_effect=replaced_identity
             ):
-                with self.assertRaisesRegex(AI.Refusal, "changed while opening"):
+                with self.assertRaisesRegex(AI.Refusal, "changed during access"):
                     AI._copy_external_auth(source, destination, 64)
             self.assertFalse(destination.exists())
 
@@ -10443,6 +10555,224 @@ class NativePreflightBoundaryTests(unittest.TestCase):
             self.assertEqual(len(source_descriptor), 1)
             with self.assertRaises(OSError):
                 os.fstat(source_descriptor[0])
+
+    def test_auth_copy_reopens_source_nonblocking_and_nofollow(self):
+        with scratch_directory("step3-auth-nonblocking-") as temporary:
+            source = Path(temporary) / "auth.json"
+            destination = Path(temporary) / "copy.json"
+            source.write_bytes(b"secret")
+            source.chmod(0o600)
+            real_open = AI.os.open
+
+            def guarded_open(path, flags, *args, **kwargs):
+                if Path(path) == source:
+                    self.assertTrue(flags & os.O_NONBLOCK)
+                    self.assertTrue(flags & os.O_NOFOLLOW)
+                return real_open(path, flags, *args, **kwargs)
+
+            with mock.patch.object(AI.os, "open", side_effect=guarded_open):
+                AI._copy_external_auth(source, destination, 64)
+            self.assertEqual(destination.read_bytes(), b"secret")
+
+    def test_external_digest_refuses_named_replacement_during_read(self):
+        with scratch_directory("step3-executable-race-") as temporary:
+            target = Path(temporary) / "runtime"
+            replacement = Path(temporary) / "replacement"
+            target.write_bytes(b"original-runtime")
+            replacement.write_bytes(b"replacement-runtime")
+            target.chmod(0o700)
+            replacement.chmod(0o700)
+            real_read = AI.os.read
+            replaced = False
+
+            def racing_read(descriptor, size):
+                nonlocal replaced
+                chunk = real_read(descriptor, size)
+                if chunk and not replaced:
+                    replaced = True
+                    os.replace(replacement, target)
+                return chunk
+
+            with (
+                mock.patch.object(AI.os, "read", side_effect=racing_read),
+                self.assertRaisesRegex(AI.Refusal, "changed during (access|hashing)"),
+            ):
+                AI._external_file_digest(target)
+
+    def test_external_attestation_detects_swap_back(self):
+        attester = getattr(AI, "_external_file_attestation", None)
+        self.assertIsNotNone(attester)
+        with scratch_directory("step3-executable-swap-back-") as temporary:
+            root = Path(temporary)
+            target = root / "runtime"
+            original = root / "original"
+            hostile = root / "hostile"
+            target.write_bytes(b"original-runtime")
+            hostile.write_bytes(b"hostile-runtime")
+            target.chmod(0o700)
+            hostile.chmod(0o700)
+            before = attester(target)
+            os.replace(target, original)
+            os.replace(hostile, target)
+            self.assertEqual(target.read_bytes(), b"hostile-runtime")
+            os.replace(target, hostile)
+            os.replace(original, target)
+            after = attester(target)
+            self.assertEqual(before[0], after[0])
+            self.assertNotEqual(before[1], after[1])
+
+    def test_external_executable_stage_binds_verified_private_copy(self):
+        stage = getattr(AI, "_stage_external_executable", None)
+        self.assertIsNotNone(stage)
+        with scratch_directory("step3-executable-stage-") as temporary:
+            root = Path(temporary)
+            private = root / "private"
+            private.mkdir(mode=0o700)
+            source = root / "runtime"
+            source.write_bytes(b"runtime")
+            source.chmod(0o700)
+            destination = private / "runtime"
+            attestation = stage(source, destination)
+            self.assertEqual(destination.read_bytes(), b"runtime")
+            self.assertEqual(stat.S_IMODE(destination.stat().st_mode), 0o500)
+            self.assertEqual(attestation, AI._external_file_attestation(destination))
+
+    def test_source_swap_back_cannot_change_staged_execution(self):
+        stage = getattr(AI, "_stage_external_executable", None)
+        self.assertIsNotNone(stage)
+        with scratch_directory("step3-executable-stage-swap-back-") as temporary:
+            root = Path(temporary)
+            private = root / "private"
+            private.mkdir(mode=0o700)
+            source = root / "runtime"
+            original = root / "original"
+            hostile = root / "hostile"
+            source.write_bytes(b"#!/bin/sh\nprintf 'original\\n'\n")
+            hostile.write_bytes(b"#!/bin/sh\nprintf 'hostile\\n'\n")
+            source.chmod(0o700)
+            hostile.chmod(0o700)
+            before = AI._external_file_attestation(source)
+            destination = private / "runtime"
+            staged = stage(source, destination)
+            private.chmod(0o500)
+            os.replace(source, original)
+            os.replace(hostile, source)
+            try:
+                code, stdout, stderr = AI._bounded_process(
+                    [str(destination)],
+                    environment={"LANG": "C", "PATH": os.environ["PATH"]},
+                    cwd=root,
+                )
+            finally:
+                os.replace(source, hostile)
+                os.replace(original, source)
+                private.chmod(0o700)
+            after = AI._external_file_attestation(source)
+            self.assertEqual(after[0], before[0])
+            self.assertEqual(after[1][:-1], before[1][:-1])
+            self.assertEqual(staged[0], before[0])
+            self.assertEqual((code, stdout, stderr), (0, b"original\n", b""))
+
+    def test_external_digest_refuses_fifo_without_blocking(self):
+        with scratch_directory("step3-executable-fifo-") as temporary:
+            fifo = Path(temporary) / "runtime"
+            os.mkfifo(fifo)
+            probe = "\n".join(
+                (
+                    "from pathlib import Path",
+                    "import sys",
+                    "from tests.test_instruction_architecture import AI",
+                    "try:",
+                    "    AI._external_file_digest(Path(sys.argv[1]))",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO executable was accepted')",
+                )
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", probe, str(fifo)],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                stdout, stderr = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                self.fail("executable digest open blocked on a FIFO")
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertEqual(stdout.strip(), "external file metadata is unsafe")
+
+    def test_external_digest_refuses_symlink_and_unsafe_mode(self):
+        with scratch_directory("step3-executable-kind-") as temporary:
+            root = Path(temporary)
+            executable = root / "runtime"
+            executable.write_bytes(b"runtime")
+            executable.chmod(0o700)
+            linked = root / "linked-runtime"
+            linked.symlink_to(executable)
+            with self.assertRaisesRegex(AI.Refusal, "unavailable or unsafe"):
+                AI._external_file_digest(linked)
+            executable.chmod(0o722)
+            with self.assertRaisesRegex(AI.Refusal, "metadata is unsafe"):
+                AI._external_file_digest(executable)
+
+    def test_external_process_text_is_strict_utf8(self):
+        decoder = getattr(AI, "_decode_external_utf8", None)
+        self.assertIsNotNone(decoder)
+        with self.assertRaisesRegex(AI.Refusal, "not UTF-8"):
+            decoder(b"\xff", "native version output")
+
+    def test_external_secret_refuses_fifo_without_blocking(self):
+        with scratch_directory("step3-secret-fifo-") as temporary:
+            fifo = Path(temporary) / "credential"
+            os.mkfifo(fifo)
+            probe = "\n".join(
+                (
+                    "from pathlib import Path",
+                    "import sys",
+                    "from tests.test_instruction_architecture import AI",
+                    "try:",
+                    "    AI._external_secret(str(Path(sys.argv[1]).resolve()))",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO credential was accepted')",
+                )
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", probe, str(fifo)],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                stdout, stderr = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                self.fail("credential open blocked on a FIFO")
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertEqual(stdout.strip(), "credential metadata is unsafe")
+
+    def test_external_secret_refuses_symlink_and_directory(self):
+        with scratch_directory("step3-secret-kind-") as temporary:
+            root = Path(temporary)
+            secret = root / "secret"
+            secret.write_bytes(b"secret")
+            secret.chmod(0o600)
+            linked = root / "linked"
+            linked.symlink_to(secret)
+            for hostile in (linked, root):
+                with self.subTest(hostile=hostile):
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "unavailable or unsafe|metadata is unsafe"
+                    ):
+                        AI._external_secret(str(hostile))
 
     def test_generated_schema_walk_refuses_symlink_and_oversized_cardinality(self):
         with scratch_directory("step3-schema-walk-") as temporary:
@@ -10497,10 +10827,39 @@ class NativePreflightBoundaryTests(unittest.TestCase):
 
 class NativeRuntimeManifestTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_native_runtime_manifest_is_portable_isolated_and_schema_bound(self):
-        AI._validate_native_runtime_manifest(self.native_manifest)
+        try:
+            AI._validate_native_runtime_manifest(self.native_manifest)
+        except AI.Refusal as exc:
+            self.fail(f"frozen native runtime manifest refused: {exc}")
         self.assertNotIn("/Users/", json.dumps(self.native_manifest))
+        for runtime in self.native_manifest["runtimes"]:
+            self.assertEqual(
+                runtime.get("isolated_workspace"),
+                {
+                    "cwd": "{isolated_workspace}",
+                    "mode": "0700",
+                    "must_be_fresh_empty_directory": True,
+                },
+            )
         codex = self.native_manifest["runtimes"][1]
+        claude = self.native_manifest["runtimes"][0]
+        self.assertEqual(
+            claude["invocation"].get("start_input", {}).get("message", {}).get("content"),
+            "{stable_prefix}{task_suffix}",
+        )
+        self.assertEqual(
+            claude["invocation"]
+            .get("continuation_input", {})
+            .get("message", {})
+            .get("content"),
+            "{task_suffix}",
+        )
         params = codex["invocation"]["start_request"]["params"]
+        self.assertEqual(params["baseInstructions"], "{stable_prefix}")
+        self.assertEqual(
+            codex["invocation"]["turn_request"]["params"]["input"][0]["text"],
+            "{task_suffix}",
+        )
         self.assertFalse(params["ephemeral"])
         self.assertFalse(params["allowProviderModelFallback"])
         self.assertEqual(params["dynamicTools"], [])
@@ -10547,6 +10906,16 @@ class NativeRuntimeManifestTests(ExperimentFixtureMixin, unittest.TestCase):
                 with self.assertRaisesRegex(AI.Refusal, "safe invocation"):
                     AI._validate_native_runtime_manifest(changed)
 
+    def test_claude_stable_prefix_reinjection_contract_refuses(self):
+        changed = copy.deepcopy(self.native_manifest)
+        continuation = changed["runtimes"][0]["invocation"].get(
+            "continuation_input"
+        )
+        self.assertIsNotNone(continuation)
+        continuation["message"]["content"] = "{stable_prefix}{task_suffix}"
+        with self.assertRaisesRegex(AI.Refusal, "safe invocation|isolation"):
+            AI._validate_native_runtime_manifest(changed)
+
     def test_preflight_refuses_mutated_executable_command_before_subprocess(self):
         changed = copy.deepcopy(self.native_manifest)
         changed["runtimes"][1]["protocol_schema"]["command"] = [
@@ -10568,10 +10937,123 @@ class NativeRuntimeManifestTests(ExperimentFixtureMixin, unittest.TestCase):
                     AI.preflight_native_gate(args)
         bounded.assert_not_called()
 
+    def test_native_preflight_executes_only_in_manifest_bound_isolation(self):
+        calls = []
+        auth_calls = {"claude": 0, "codex": 0}
+
+        def resolved(name):
+            return Path(f"/opt/frozen-runtime/{name}")
+
+        def staged(_source, destination):
+            return "0" * 64, (1,) * 7
+
+        def bounded(argv, *, environment, cwd, **_kwargs):
+            executable_path = Path(argv[0])
+            executable = executable_path.name
+            calls.append(
+                (executable_path, tuple(argv[1:]), dict(environment), Path(cwd))
+            )
+            if argv[1:] == ["--version"]:
+                version = next(
+                    row["version"]["expected"]
+                    for row in self.native_manifest["runtimes"]
+                    if row["executable"] == executable
+                )
+                return 0, version.encode(), b""
+            if executable == "claude" and argv[1:4] == ["auth", "status", "--json"]:
+                auth_calls[executable] += 1
+                logged_in = auth_calls[executable] == 2
+                return (
+                    0 if logged_in else 1,
+                    canonical({"loggedIn": logged_in}),
+                    b"",
+                )
+            if executable == "codex" and argv[1:3] == ["login", "status"]:
+                auth_calls[executable] += 1
+                logged_in = auth_calls[executable] == 2
+                return (
+                    0 if logged_in else 1,
+                    b"Logged in using ChatGPT" if logged_in else b"Not logged in",
+                    b"",
+                )
+            if executable == "codex" and argv[1:4] == [
+                "app-server",
+                "generate-json-schema",
+                "--experimental",
+            ]:
+                return 0, b"", b""
+            self.fail(f"unexpected native preflight command: {argv}")
+
+        args = types.SimpleNamespace(
+            candidate=AI.EVALUATOR_CANDIDATES[0],
+            no_session=True,
+            report=ROOT / AI.NATIVE_REPORT_PATHS[AI.EVALUATOR_CANDIDATES[0]],
+            runtimes=",".join(AI.NATIVE_RUNTIMES),
+        )
+        with (
+            mock.patch.object(AI, "_resolved_runtime_executable", side_effect=resolved),
+            mock.patch.object(
+                AI, "_stage_external_executable", create=True, side_effect=staged
+            ) as executable_stage,
+            mock.patch.object(AI, "_bounded_process", side_effect=bounded),
+            mock.patch.object(
+                AI,
+                "_external_file_attestation",
+                create=True,
+                return_value=("0" * 64, (1,) * 7),
+            ) as executable_attestation,
+            mock.patch.object(
+                AI, "_external_file_digest", return_value="0" * 64
+            ) as executable_digest,
+            mock.patch.object(AI, "_macos_claude_credential", return_value=b"secret"),
+            mock.patch.object(AI, "_write_isolated_secret"),
+            mock.patch.object(AI, "_copy_external_auth"),
+            mock.patch.object(
+                AI, "_read_generated_schema_bundle", return_value=("1" * 64, [{}])
+            ),
+            mock.patch.object(AI, "_validate_codex_schema_bundle"),
+            mock.patch.object(AI, "_publish_preflight_report", return_value=b"{}\n") as publish,
+        ):
+            try:
+                AI.preflight_native_gate(args)
+            except AI.Refusal as exc:
+                self.fail(f"frozen native preflight refused: {exc}")
+
+        self.assertEqual(auth_calls, {"claude": 2, "codex": 2})
+        attested = [
+            Path(call.args[0]).name
+            for call in executable_attestation.call_args_list
+        ]
+        self.assertEqual(attested.count("claude"), 1)
+        self.assertEqual(attested.count("codex"), 2)
+        self.assertEqual(executable_digest.call_count, 0)
+        self.assertEqual(executable_stage.call_count, 2)
+        self.assertTrue(calls)
+        for executable_path, argv, environment, cwd in calls:
+            executable = executable_path.name
+            self.assertEqual(executable_path.parent.name, "executables")
+            self.assertNotEqual(cwd, ROOT)
+            self.assertEqual(cwd.name, f"{executable if executable == 'codex' else 'claude-code'}-workspace")
+            state_name = "CLAUDE_CONFIG_DIR" if executable == "claude" else "CODEX_HOME"
+            expected_leaf = (
+                "claude"
+                if executable == "claude"
+                else "codex-schema-state"
+                if argv[:3]
+                == ("app-server", "generate-json-schema", "--experimental")
+                else "codex"
+            )
+            self.assertEqual(Path(environment[state_name]).name, expected_leaf)
+        evidence = publish.call_args.args[2]
+        self.assertTrue(evidence.get("isolated_workspace_proved"))
+
 
 class NativeCacheAccountingTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_cached_tokens_count_in_full_and_churn_excludes_reads(self):
-        AI._validate_native_cache_accounting(self.accounting)
+        try:
+            AI._validate_native_cache_accounting(self.accounting)
+        except AI.Refusal as exc:
+            self.fail(f"frozen native cache accounting refused: {exc}")
         claude = AI.native_token_vector(
             "claude-code",
             {
@@ -10629,6 +11111,17 @@ class NativeCacheAccountingTests(ExperimentFixtureMixin, unittest.TestCase):
         with self.assertRaisesRegex(AI.Refusal, "overlap or are incomplete"):
             AI._validate_native_cache_accounting(changed)
 
+    def test_reinjected_stable_prefix_is_fresh_churn(self):
+        self.assertEqual(
+            self.accounting["categories"].get("reinjected_stable_prefix"),
+            "ordinary cache-write or uncached suffix-or-miss tokens included in "
+            "cumulative fresh-token churn",
+        )
+        changed = copy.deepcopy(self.accounting)
+        changed["categories"]["reinjected_stable_prefix"] = "ignored"
+        with self.assertRaisesRegex(AI.Refusal, "reinjection"):
+            AI._validate_native_cache_accounting(changed)
+
     def test_formula_aggregation_and_none_selection_are_exactly_committed(self):
         mutations = []
         changed = copy.deepcopy(self.accounting)
@@ -10650,7 +11143,10 @@ class NativeCacheAccountingTests(ExperimentFixtureMixin, unittest.TestCase):
 
 class NativeLifecyclePreregistrationTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_native_preregistration_freezes_lifecycle_and_baselines(self):
-        AI._validate_native_preregistration(self.native_preregistration)
+        try:
+            AI._validate_native_preregistration(self.native_preregistration)
+        except AI.Refusal as exc:
+            self.fail(f"frozen native preregistration refused: {exc}")
         self.assertEqual(
             self.native_preregistration["lifecycle_order"], list(AI.NATIVE_LIFECYCLES)
         )
@@ -10669,9 +11165,19 @@ class NativeLifecyclePreregistrationTests(ExperimentFixtureMixin, unittest.TestC
         self.assertEqual(
             len({item["task_commitment"] for item in workload["task_slots"]}), 5
         )
+        partition = self.native_preregistration["prompt"].get("partition")
+        self.assertIsNotNone(partition)
+        self.assertEqual(partition["stable_prefix_injections_per_chain"], 1)
+        self.assertEqual(partition["continuation_input"], "{task_suffix}")
 
     def test_native_packet_binds_baseline_first_five_task_chains(self):
         packet = load(FROZEN_NATIVE_ROOT / "packet.json")
+        self.assertEqual(
+            packet.get("prompt_partition_sha256"),
+            hashlib.sha256(
+                canonical(self.native_preregistration["prompt"]["partition"])
+            ).hexdigest(),
+        )
         chains = packet["chain_order"]
         self.assertEqual(len(chains), 10)
         for runtime_offset in (0, 5):
@@ -10712,6 +11218,26 @@ class NativeLifecyclePreregistrationTests(ExperimentFixtureMixin, unittest.TestC
                 ):
                     AI._validate_native_preregistration(changed)
 
+    def test_native_preregistration_replays_every_repository_input_binding(self):
+        mutations = []
+        for path in (
+            ("runtime_manifest_sha256",),
+            ("cache_accounting_sha256",),
+            ("selection_sha256",),
+            ("prompt", "template_sha256"),
+        ):
+            changed = copy.deepcopy(self.native_preregistration)
+            target = changed
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = "0" * 64
+            changed.pop("sha256")
+            mutations.append((path, AI._digested_record(changed)))
+        for path, changed in mutations:
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(AI.Refusal, "repository inputs"):
+                    AI._validate_native_preregistration(changed)
+
     def test_unproved_or_mixed_claude_expiry_is_inconclusive(self):
         self.assertIsNone(AI.claude_expiry_wait_seconds({}))
         self.assertIsNone(
@@ -10744,24 +11270,29 @@ class NativeLifecyclePreregistrationTests(ExperimentFixtureMixin, unittest.TestC
 class PacketCommitmentTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_both_frozen_packets_reproduce_from_repository_bytes(self):
         seal = load(SEAL)
-        behavioral = AI._opaque_behavioral_packet(self.preregistration, seal)
-        loaded_behavioral = AI._load_frozen_packet(
-            AI.FROZEN_BEHAVIORAL_ROOT, behavioral, allowed_directories=("native",)
-        )
-        AI._verify_packet_commitment(
-            self.preregistration,
-            load(HOLDOUT_PACKET_COMMITMENT),
-            f"{AI.SCHEMA_PREFIX}-holdout-packet-commitment/v1",
-            loaded_behavioral,
-        )
-        native = AI._opaque_native_packet(self.native_preregistration)
-        loaded_native = AI._load_frozen_packet(AI.FROZEN_NATIVE_ROOT, native)
-        AI._verify_packet_commitment(
-            self.native_preregistration,
-            load(NATIVE_PACKET_COMMITMENT),
-            f"{AI.SCHEMA_PREFIX}-native-lifecycle-packet-commitment/v1",
-            loaded_native,
-        )
+        try:
+            behavioral = AI._opaque_behavioral_packet(self.preregistration, seal)
+            loaded_behavioral = AI._load_frozen_packet(
+                AI.FROZEN_BEHAVIORAL_ROOT,
+                behavioral,
+                allowed_directories=("native",),
+            )
+            AI._verify_packet_commitment(
+                self.preregistration,
+                load(HOLDOUT_PACKET_COMMITMENT),
+                f"{AI.SCHEMA_PREFIX}-holdout-packet-commitment/v1",
+                loaded_behavioral,
+            )
+            native = AI._opaque_native_packet(self.native_preregistration)
+            loaded_native = AI._load_frozen_packet(AI.FROZEN_NATIVE_ROOT, native)
+            AI._verify_packet_commitment(
+                self.native_preregistration,
+                load(NATIVE_PACKET_COMMITMENT),
+                f"{AI.SCHEMA_PREFIX}-native-lifecycle-packet-commitment/v1",
+                loaded_native,
+            )
+        except AI.Refusal as exc:
+            self.fail(f"frozen packet refused: {exc}")
 
     def test_packet_mutation_and_removal_refuse(self):
         expected = AI._opaque_native_packet(self.native_preregistration)
@@ -10803,6 +11334,29 @@ class PacketCommitmentTests(ExperimentFixtureMixin, unittest.TestCase):
                     [(payload, b"changed\n"), (terminal, b"commitment\n")],
                     terminal=terminal,
                 )
+
+    def test_committed_publication_never_overwrites_a_concurrent_target(self):
+        with scratch_directory("step3-publication-race-") as temporary:
+            root = Path(temporary)
+            payload = root / "packet.json"
+            terminal = root / "commitment.json"
+            original_write = AI._atomic_write
+
+            def collide(path, raw, **kwargs):
+                if path == payload and not path.exists():
+                    path.write_bytes(b"concurrent\n")
+                return original_write(path, raw, **kwargs)
+
+            with (
+                mock.patch.object(AI, "_atomic_write", side_effect=collide),
+                self.assertRaisesRegex(AI.Refusal, "changed during publication"),
+            ):
+                AI._publish_committed_set(
+                    [(payload, b"payload\n"), (terminal, b"commitment\n")],
+                    terminal=terminal,
+                )
+            self.assertEqual(payload.read_bytes(), b"concurrent\n")
+            self.assertFalse(terminal.exists())
 
     def test_progressive_report_is_publish_once(self):
         with scratch_directory("step3-report-") as temporary:
