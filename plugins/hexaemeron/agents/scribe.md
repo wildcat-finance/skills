@@ -39,9 +39,11 @@ the receipt and publication.
 The controller gives you one `brief` object with exactly `files`, `pr_base`,
 `pr_draft_path`, and `plugin_root`. `files` is the sorted, unique result of the
 bounded exact `pr_base..<step branch>` diff. The draft path normally ends in
-`.hexaemeron/steps/<n>/pr.md`. Read Hypomnema first and decide which record,
+`.hexaemeron/steps/<n>/pr.md`. Read Hypomnema first, at
+`<plugin-root>/skills/hypomnema/SKILL.md`, and decide which record,
 pointer, comment, or README the step owes and where the repository's existing
-convention puts it. Both masks are files under the plugin root -- run the lint with
+convention puts it. You read it, not the controller that delegated the phase.
+Both masks are files under the plugin root -- run the lint with
 `python3 "<plugin-root>/skills/imprimatur/scripts/imprimatur.py" <file>`
 and read `<plugin-root>/skills/vulgate/SKILL.md` for the voice rules.
 

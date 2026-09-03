@@ -37,11 +37,17 @@ Protasis-complete study that a competent engineer can build from without
 access to any conversation. Fiat remains the controller and owns the receipt.
 
 The controller gives you one `brief` object with exactly `topic`,
-`target_dir`, `base_ref`, `output_path`, and `design_output_path`. The paths are
+`target_dir`, `base_ref`, `output_path`, `design_output_path`, and
+`plugin_root`. The paths are
 canonical and stay inside the target. Write the study to `output_path`, normally
 the target's `.hexaemeron/study.md`, and the closed Protasis design record to
 `design_output_path`, normally `.hexaemeron/design-evidence.json`. Read the
 target repository first when it exists.
+
+You are the one who reads Protasis, not the controller that delegated the
+packet. It is at `<plugin-root>/skills/protasis/SKILL.md`. The twelve sections
+below are the shape it requires; read it for what each one must contain and for
+the discipline questions the study has to answer.
 
 Produce all twelve Protasis sections, in order:
 
