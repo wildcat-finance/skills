@@ -4,7 +4,7 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "5f00dfadca505370e5c749685b4179ecde6a446f02c3cef1a535e4d28060a5e5"
+      "sha256": "489593b9e8c46ae8f50cf210c5b2131486c8b7e6be266c59ac439ec5c121dda8"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
@@ -16,16 +16,20 @@
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "1326327d078a894c05a58ad3ef60759938698afce78c1bd0ab85eea7766e0efc"
+      "sha256": "6ed70eac5253d996219716aecda36bd7544cbc864380048dbb5aa257694c395a"
     },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "398cd69ac8beadb112b135380be2597bec42a7274d3819b1b9b465ad49e39f65"
+        "sha256": "ac6cb5ecf5f0131ca9348a63549d05291e7a469189e35436a2c56f6b71182768"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
         "sha256": "7cfd343c6d8fd498ea1084f8ed93e0dcf5fe1262afc1ee00fb8f4ac43b348c93"
+      },
+      {
+        "path": "docs/decisions/ADR-074-digest-neutral-measured-corpus.md",
+        "sha256": "10bcd12317fe862bfe1a9c4a2abb683c6b7251279891962b54ab8a191b78b9b7"
       }
     ],
     "fixtures": [
@@ -118,7 +122,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "91a016eeb4fcd3f86b2529f51b1acf5dd0abc674bfdf6e7a7356566f3cd01140",
+      "sha256": "8c8f118ed3e531a6dd2d0d2d15e95683d4165fb658b02d8a735eb895ca80f3d3",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
