@@ -520,3 +520,14 @@ choices earn durable records and where readers find them.
 All five begin `Proposed, 2026-08-24`. The component issues carry operational
 detail and their own runbooks; those details do not silently strengthen a
 proposed record into accepted policy. ADR-022 remains owned by PR #539.
+## Forward pointer, 3 September 2026
+
+This study stays historical and its banner stands. The programme it describes
+was reopened on 2026-09-02 by
+[ADR-069](decisions/ADR-069-reinstate-the-distributed-checkpoint-layer-above-the-local-store.md),
+and the account that governs now is
+[`wave-delta-checkpoint-programme-study.md`](wave-delta-checkpoint-programme-study.md).
+The four decisions this study proposed and ADR-028 retired each have a standing
+successor: ADR-070 carries ADR-029, ADR-071 carries ADR-030, ADR-072 carries
+ADR-031, and ADR-073 carries ADR-032. Read this document for what was considered
+in August 2026, and the fresh study for what the programme is.
