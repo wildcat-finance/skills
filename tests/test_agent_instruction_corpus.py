@@ -327,6 +327,108 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertEqual("span-shift-regression", reports["span-shift"]["criterion"])
         self.assertEqual("count", reports["span-shift"]["unit"])
 
+    def test_a_report_path_the_manifest_binds_is_refused(self):
+        """The one write outside the copy, aimed at a bound document.
+
+        `--report PROMISE_MACHINE.md --root .` would replace a bound document
+        with a JSON report, which the study's "Never" list rules out. The bound
+        set is derived from the manifest, so it tracks what the manifest binds
+        rather than a list that can drift from it.
+
+        The refusal is exercised against a throwaway copy rather than the live
+        tree: a regression in the guard then damages a copy under `TMPDIR` and
+        never a bound document. The live tree is used only to read the bound
+        set, which writes nothing.
+
+        An absent guard is asserted rather than raised, so a tree without the
+        control fails this case on the claim it makes instead of erroring on a
+        missing attribute.
+        """
+        self.assertTrue(
+            hasattr(self.prover, "bound_targets"),
+            "the prover derives no bound set, so `--report` cannot refuse one",
+        )
+        bound = self.prover.bound_targets(ROOT, self.work.manifest)
+        for document in (
+            "plugins/hexaemeron/skills/fiat/SKILL.md",
+            "plugins/horos/skills/horos/SKILL.md",
+            "PROMISE_MACHINE.md",
+        ):
+            self.assertIn((ROOT / document).resolve(), bound)
+        self.assertIn(
+            (ROOT / "tests/fixtures/agent-instruction-v1/manifest.json").resolve(),
+            bound,
+        )
+
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            copied = self.prover.bound_targets(tree, self.work.manifest)
+
+            hostile = (
+                "PROMISE_MACHINE.md",
+                "plugins/hexaemeron/skills/fiat/SKILL.md",
+                "tests/fixtures/agent-instruction-v1/manifest.json",
+                f"tests/fixtures/agent-instruction-v1/{self.prover.SUBJECT}/compact.wai",
+                str(tree / "PROMISE_MACHINE.md"),
+            )
+            for target in hostile:
+                resolved = Path(target)
+                if not resolved.is_absolute():
+                    resolved = tree / target
+                before = resolved.read_bytes()
+                with self.assertRaises(self.prover.ProverError):
+                    self.prover.write_report(self.checker, tree, target, b"{}\n", copied)
+                self.assertEqual(
+                    before, resolved.read_bytes(),
+                    f"the refused report write changed {target}",
+                )
+
+            # A path the manifest does not bind still writes, so the guard is a
+            # boundary rather than a blanket refusal.
+            allowed = Path(scratch) / "report.json"
+            self.prover.write_report(self.checker, tree, str(allowed), b"{}\n", copied)
+            self.assertEqual(b"{}\n", allowed.read_bytes())
+
+    def test_a_candidate_outside_the_design_record_is_refused(self):
+        """A design report may not name a candidate no design record contains.
+
+        `--candidate` is closed over the ids the run's design record declares,
+        the way `.hexaemeron/scripts/design_probe.py` closes the same flag, so
+        the refusal is a usage error before any proof runs and before any
+        report is written. The fallback set is asserted to agree with the
+        record, so the flag stays closed where the record is absent.
+
+        An absent guard is asserted rather than raised, for the reason the
+        sibling case above gives.
+        """
+        self.assertTrue(
+            hasattr(self.prover, "candidate_choices"),
+            "the prover reads no candidate set, so `--candidate` is not closed",
+        )
+        self.assertEqual(
+            sorted(self.prover.candidate_choices(ROOT)),
+            sorted(self.prover.FALLBACK_CANDIDATES),
+        )
+        self.assertIn("digest-neutral-corpus", self.prover.candidate_choices(ROOT))
+
+        with tempfile.TemporaryDirectory() as scratch:
+            target = Path(scratch) / "report.json"
+            completed = subprocess.run(
+                [
+                    sys.executable, str(PROVER), "selftest",
+                    "--root", str(ROOT),
+                    "--candidate", "not-a-candidate",
+                    "--report", str(target),
+                ],
+                capture_output=True, text=True, timeout=600, check=False,
+            )
+            self.assertNotEqual(0, completed.returncode)
+            self.assertIn("not-a-candidate", completed.stderr)
+            self.assertFalse(
+                target.exists(),
+                "a refused candidate still wrote a design report",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

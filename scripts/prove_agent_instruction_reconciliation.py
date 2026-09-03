@@ -46,6 +46,10 @@ Boundaries this tool holds to, per the study's `reconcile-tool-writes` entry:
 - The bound sources in the live repository are never written.  The edit is
   applied to the copy, and `selftest` proves the live tree's digests are
   unchanged across a run.
+- `--report` is the one write this tool makes outside the copy, so it refuses a
+  target the manifest binds by digest.  The bound set is derived from the
+  manifest rather than listed here, and `tests/test_agent_instruction_corpus.py`
+  exercises the refusal against a throwaway copy.
 - The checker runs as a subprocess with an argument list, no shell, a
   constructed environment rather than the ambient one, the copy as its working
   directory, a wall-clock timeout and a cap on the output parsed.
@@ -109,6 +113,20 @@ AFTER_SPAN_PLACEMENT = "after-span"
 CHECK_TIMEOUT_SECONDS = 600
 MAX_OUTPUT_BYTES = 1 << 20
 
+# The run's design record, read to close `--candidate`.
+DESIGN_EVIDENCE = ".hexaemeron/design-evidence.json"
+MAX_DESIGN_EVIDENCE_BYTES = 1 << 20
+
+# The closed candidate set, used only when the run's design record is not
+# readable, because this tool is runnable outside a Fiat run.
+# `.hexaemeron/scripts/design_probe.py` closes the same flag over the same ids.
+FALLBACK_CANDIDATES = (
+    "deterministic-tokenizer",
+    "digest-neutral-corpus",
+    "evidence-outside-corpus",
+    "published-profile",
+)
+
 
 class ProverError(RuntimeError):
     """The tool cannot complete a check, so it reports nothing rather than a guess."""
@@ -132,7 +150,45 @@ def report_bytes(record: dict[str, Any]) -> bytes:
     ).encode("utf-8")
 
 
-def write_report(checker, root: Path, target: str, data: bytes) -> None:
+def candidate_choices(root: Path) -> tuple[str, ...]:
+    """The candidate ids the run's design record declares.
+
+    Read from the record rather than listed here, so the flag tracks the design
+    this run actually selected from. `--candidate` is closed over the result, so
+    a typo is a usage error rather than a `protasis-design-report/v1` object
+    naming a candidate no design record contains.
+
+    Falls back to the closed set above when the record is absent, oversized or
+    malformed, because the flag must stay closed even where the record is not
+    there to close it.
+    """
+    path = Path(root) / DESIGN_EVIDENCE
+    try:
+        if path.stat().st_size > MAX_DESIGN_EVIDENCE_BYTES:
+            return FALLBACK_CANDIDATES
+        record = json.loads(path.read_bytes())
+        ids = tuple(str(entry["id"]) for entry in record["candidates"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return FALLBACK_CANDIDATES
+    return ids or FALLBACK_CANDIDATES
+
+
+def bound_targets(root: Path, manifest: dict[str, Any]) -> frozenset[Path]:
+    """Every path the manifest binds by digest, resolved absolute.
+
+    Derived from the manifest rather than listed here, so the guard tracks what
+    the manifest binds instead of drifting from it. Both sides are resolved, so
+    a symlinked route to a bound path is the same path.
+    """
+    relative = {MANIFEST}
+    for entry in manifest["fixtures"]:
+        relative.add(entry["source"]["path"])
+        for artifact in entry["artifacts"].values():
+            relative.add(artifact["path"])
+    return frozenset((Path(root) / path).resolve() for path in sorted(relative))
+
+
+def write_report(checker, root: Path, target: str, data: bytes, bound: frozenset[Path]) -> None:
     """Write one report through the checker's confined atomic writer.
 
     A relative `--report` is confined to `--root`, which is how the design
@@ -143,12 +199,22 @@ def write_report(checker, root: Path, target: str, data: bytes) -> None:
     atomic replace. Either way the leaf goes through `_safe_relative_path`,
     so `..`, a backslash, a control character and an empty name refuse.
 
-    The path is operator argv, not data read from outside the process. The
-    control here is that the write cannot be tricked into following a symlink
-    or leaving a half-written file, not that the operator is prevented from
-    choosing a directory.
+    The path is operator argv, not data read from outside the process, so the
+    writer's own controls are about symlinks and half-written files rather than
+    about which directory an operator may choose. One choice is not the
+    operator's to make: this is the only write the tool performs outside its
+    throwaway copy, and the study's "Never" list rules out editing a bound
+    document. A target the manifest binds is therefore refused before anything
+    is opened, so `--report PROMISE_MACHINE.md --root .` cannot replace a bound
+    document with a JSON report.
     """
     path = Path(target)
+    absolute = path if path.is_absolute() else Path(root) / path
+    if absolute.resolve() in bound:
+        raise ProverError(
+            f"{target} is a path the manifest binds by digest; "
+            "writing a report over it would destroy bound bytes"
+        )
     if path.is_absolute():
         checker.write_confined_atomic(path.parent, path.name, data)
     else:
@@ -588,11 +654,14 @@ def build_parser() -> argparse.ArgumentParser:
         description="Prove what a bound instruction-document edit costs, with no model.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    # Closed at parser-build time against the design record beside this script,
+    # so an unknown candidate is a usage error before any proof runs.
+    choices = candidate_choices(Path(__file__).resolve().parents[1])
     subparsers = parser.add_subparsers(dest="command")
     for name in SUBCOMMANDS:
         subparser = subparsers.add_parser(name)
         subparser.add_argument("--root", default=".")
-        subparser.add_argument("--candidate", default="digest-neutral-corpus")
+        subparser.add_argument("--candidate", default="digest-neutral-corpus", choices=choices)
         subparser.add_argument("--report")
         subparser.add_argument("--detail", action="store_true")
     return parser
@@ -640,7 +709,20 @@ def main(argv: list[str] | None = None) -> int:
 
     if arguments.report:
         try:
-            write_report(reconciliation.checker, root, arguments.report, written)
+            write_report(
+                reconciliation.checker,
+                root,
+                arguments.report,
+                written,
+                bound_targets(root, reconciliation.manifest),
+            )
+        except ProverError as error:
+            print(
+                f"prove_agent_instruction_reconciliation: refused to write "
+                f"{arguments.report}: {error}",
+                file=sys.stderr,
+            )
+            return 2
         except reconciliation.checker.CodecError as error:
             print(
                 f"prove_agent_instruction_reconciliation: refused to write "
