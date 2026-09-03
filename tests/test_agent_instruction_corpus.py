@@ -42,8 +42,8 @@ PARITY_NODE = "$.evidence.parity_record"
 
 # The refusal each omitted mechanical pass produces, observed at
 # bacb34c0d49a83dea0c4463a61b2cf1525fec60b. Recorded per pass rather than as a
-# count: a pass that started refusing under a sibling's code would still be
-# load-bearing by count, and would no longer be identifiable from its refusal.
+# count: a pass that started refusing under a sibling's code would still show
+# up as needed in a count, and would no longer be identifiable from its refusal.
 PASS_SIGNATURES = {
     "manifest-source": (
         "WAI-E-DIGEST.SOURCE",
@@ -194,8 +194,11 @@ class AgentInstructionCorpusTests(unittest.TestCase):
 
         This is what makes the corpus refusal above a finding rather than a
         missed step: it is only reached when nothing mechanical is left. Each
-        omission also refuses under its own code and node path, so a
-        contributor reading a refusal can tell which pass they skipped.
+        omission refuses under its own pairing of code and node path, so a
+        contributor reading a refusal can tell which pass they skipped. The
+        codes alone do not separate them: `model` and `source-spans` both
+        refuse `WAI-E-MANIFEST.SOURCE` and differ only in node path, which is
+        why the assertion below compares the pair rather than the code.
 
         The sixth pass a live reconciliation owes is the coverage register,
         which `check` never reads and a fixture copy therefore cannot observe.
@@ -326,6 +329,157 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertFalse(reports["offline"]["value"])
         self.assertEqual("span-shift-regression", reports["span-shift"]["criterion"])
         self.assertEqual("count", reports["span-shift"]["unit"])
+        # The value, not just its shape: a report nothing checks the value of
+        # is not evidence. One placement is covered today, `after-span`, and
+        # the runbook schedules `before-span` at step 4. When that lands this
+        # assertion is what says so.
+        self.assertEqual(1, reports["span-shift"]["value"])
+
+    def test_a_report_path_the_manifest_binds_is_refused(self):
+        """The one write outside the copy, aimed at a bound document.
+
+        `--report PROMISE_MACHINE.md --root .` would replace a bound document
+        with a JSON report, which the study's "Never" list rules out. The bound
+        set is derived from the manifest, so it tracks what the manifest binds
+        rather than a list that can drift from it.
+
+        The refusal is exercised against a throwaway copy rather than the live
+        tree: a regression in the guard then damages a copy under `TMPDIR` and
+        never a bound document. The live tree is used only to read the bound
+        set, which writes nothing.
+
+        An absent guard is asserted rather than raised, so a tree without the
+        control fails this case on the claim it makes instead of erroring on a
+        missing attribute.
+        """
+        self.assertTrue(
+            hasattr(self.prover, "bound_targets"),
+            "the prover derives no bound set, so `--report` cannot refuse one",
+        )
+        bound = self.prover.bound_targets(ROOT, self.work.manifest)
+        for document in (
+            "plugins/hexaemeron/skills/fiat/SKILL.md",
+            "plugins/horos/skills/horos/SKILL.md",
+            "PROMISE_MACHINE.md",
+        ):
+            self.assertIn((ROOT / document).resolve(), bound)
+        self.assertIn(
+            (ROOT / "tests/fixtures/agent-instruction-v1/manifest.json").resolve(),
+            bound,
+        )
+
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            copied = self.prover.bound_targets(tree, self.work.manifest)
+
+            hostile = (
+                "PROMISE_MACHINE.md",
+                "plugins/hexaemeron/skills/fiat/SKILL.md",
+                "tests/fixtures/agent-instruction-v1/manifest.json",
+                f"tests/fixtures/agent-instruction-v1/{self.prover.SUBJECT}/compact.wai",
+                str(tree / "PROMISE_MACHINE.md"),
+            )
+            for target in hostile:
+                resolved = Path(target)
+                if not resolved.is_absolute():
+                    resolved = tree / target
+                before = resolved.read_bytes()
+                with self.assertRaises(self.prover.ProverError):
+                    self.prover.write_report(self.checker, tree, target, b"{}\n", copied)
+                self.assertEqual(
+                    before, resolved.read_bytes(),
+                    f"the refused report write changed {target}",
+                )
+
+            # A path the manifest does not bind still writes, so the guard is a
+            # boundary rather than a blanket refusal.
+            allowed = Path(scratch) / "report.json"
+            self.prover.write_report(self.checker, tree, str(allowed), b"{}\n", copied)
+            self.assertEqual(b"{}\n", allowed.read_bytes())
+
+    def test_construction_refuses_a_tree_already_off_a_bound_digest(self):
+        """The constructor's self-consistency claim, over every bound path.
+
+        `Reconciliation` promises a proof never runs against a tree that was
+        already inconsistent. That promise is only worth the paths it covers:
+        the manifest binds a source and five artefacts for each of three
+        fixtures, and drift in any of them would otherwise surface later as a
+        `check` refusal attributed to the edit rather than to the drift.
+
+        Exercised by planting drift in a throwaway copy, in an artefact no
+        mechanical pass rewrites, so the failure can only come from the
+        constructor's own check. The live tree is read but never written.
+        """
+        self.assertTrue(
+            hasattr(self.prover, "bound_digests"),
+            "the prover enumerates no bound digests, so construction checks a subset",
+        )
+        bound = dict(self.prover.bound_digests(self.work.manifest))
+        self.assertEqual(18, len(bound), "three sources and fifteen artefacts")
+        for previously_unchecked in (
+            f"tests/fixtures/agent-instruction-v1/{self.prover.SUBJECT}/questions.json",
+            f"tests/fixtures/agent-instruction-v1/{self.prover.SUBJECT}/mutations.json",
+            "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json",
+            "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
+            "PROMISE_MACHINE.md",
+        ):
+            self.assertIn(previously_unchecked, bound)
+
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            # The unedited copy constructs, so the refusal below is the drift
+            # and not the copy.
+            self.prover.Reconciliation(tree, checker=self.checker)
+
+            drifted = (
+                tree
+                / f"tests/fixtures/agent-instruction-v1/{self.prover.SUBJECT}/questions.json"
+            )
+            drifted.write_bytes(drifted.read_bytes() + b"\n")
+            with self.assertRaises(self.prover.ProverError) as raised:
+                self.prover.Reconciliation(tree, checker=self.checker)
+            self.assertIn("questions.json", str(raised.exception))
+            self.assertIn("off its manifest digest", str(raised.exception))
+
+    def test_a_candidate_outside_the_design_record_is_refused(self):
+        """A design report may not name a candidate no design record contains.
+
+        `--candidate` is closed over the ids the run's design record declares,
+        the way `.hexaemeron/scripts/design_probe.py` closes the same flag, so
+        the refusal is a usage error before any proof runs and before any
+        report is written. The fallback set is asserted to agree with the
+        record, so the flag stays closed where the record is absent.
+
+        An absent guard is asserted rather than raised, for the reason the
+        sibling case above gives.
+        """
+        self.assertTrue(
+            hasattr(self.prover, "candidate_choices"),
+            "the prover reads no candidate set, so `--candidate` is not closed",
+        )
+        self.assertEqual(
+            sorted(self.prover.candidate_choices(ROOT)),
+            sorted(self.prover.FALLBACK_CANDIDATES),
+        )
+        self.assertIn("digest-neutral-corpus", self.prover.candidate_choices(ROOT))
+
+        with tempfile.TemporaryDirectory() as scratch:
+            target = Path(scratch) / "report.json"
+            completed = subprocess.run(
+                [
+                    sys.executable, str(PROVER), "selftest",
+                    "--root", str(ROOT),
+                    "--candidate", "not-a-candidate",
+                    "--report", str(target),
+                ],
+                capture_output=True, text=True, timeout=600, check=False,
+            )
+            self.assertNotEqual(0, completed.returncode)
+            self.assertIn("not-a-candidate", completed.stderr)
+            self.assertFalse(
+                target.exists(),
+                "a refused candidate still wrote a design report",
+            )
 
 
 if __name__ == "__main__":
