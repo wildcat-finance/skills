@@ -157,6 +157,21 @@ SECRET_ASSIGNMENT_RE = re.compile(
     (?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;}]+)
     """
 )
+# The one marker `digest_neutral_projection` writes over every bound whole-file
+# source digest.
+#
+# It is `f` sixty-four times for two reasons. It is well-formed lowercase
+# hexadecimal, so it satisfies `SHA256_RE` above and a projected artefact keeps
+# every digest field's declared shape; a legible marker such as `PROJECTED`
+# would force that shape check to be relaxed wherever a projected record is
+# read. And it is the largest value the space holds, never observed as a
+# SHA-256 output: a bound document that collided with it would be a preimage
+# for one specific 2**-256 target, so no real source can be mistaken for the
+# marker. All zeros was the other well-formed candidate and is rejected because
+# a zero digest already reads as "not set" in too many registers, which is a
+# different claim from "deliberately not measured here".
+CORPUS_SOURCE_DIGEST_PLACEHOLDER = "f" * 64
+
 LITERAL_KINDS = (
     "identifier",
     "path",
@@ -3271,6 +3286,46 @@ def _load_evidence_artifacts(
     _validate_measurement_record(root, measurement, manifest, evidence, tokenizer)
     _validate_parity_record(root, parity, manifest, evidence, families)
     return evidence
+
+
+def digest_neutral_projection(manifest: Mapping[str, Any], data: bytes) -> bytes:
+    """`data` with every whole-file source digest the manifest binds neutralised.
+
+    A bound instruction document is bound twice over: the manifest records its
+    whole-file SHA-256, and the artefacts derived from it -- `model.json`,
+    `source-spans.json` and the compact document's `h64:` literal -- each embed
+    that same digest. Editing the document anywhere, including outside its
+    reviewed span, therefore moves the manifest's source entry, the contents of
+    all three artefacts, and the manifest digests that bind them -- four
+    embeddings for one document -- even though not one reviewed byte changed.
+    That is the whole cost skills#1098 reports.
+
+    This is the projection the `digest-neutral-corpus` design measures instead
+    of the raw bytes. It substitutes one fixed marker for each bound whole-file
+    source digest and leaves every other byte where it was, so two trees that
+    differ only in which revision of a bound document they carry project to
+    identical bytes. The reviewed span digest is untouched here and stays the
+    review boundary: an edit that moves reviewed bytes still moves it.
+
+    Substitution is by byte, not by field path, because one of the embeddings
+    has no addressable path: the compact document carries the digest as an
+    `h64:` literal inside a codec's byte stream, not as JSON. A 64-character
+    lowercase-hexadecimal run in a bound artefact is a digest binding wherever
+    it appears, so matching the literal reaches every embedding under one rule
+    rather than a schema-aware walker per artefact kind.
+
+    Nothing is read from disk and nothing is written. This step exposes the
+    projection only; `_corpus_sha256` below still digests today's subject, and
+    the switch is step 3's.
+    """
+    bound = {fixture["source"]["sha256"] for fixture in manifest["fixtures"]}
+    projected = data
+    for source_digest in sorted(bound):
+        projected = projected.replace(
+            source_digest.encode("ascii"),
+            CORPUS_SOURCE_DIGEST_PLACEHOLDER.encode("ascii"),
+        )
+    return projected
 
 
 def _corpus_sha256(manifest: Mapping[str, Any]) -> str:
