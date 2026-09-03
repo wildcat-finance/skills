@@ -183,6 +183,27 @@ SECRET_ASSIGNMENT_RE = re.compile(
 # beside it.
 CORPUS_BOUND_DIGEST_PLACEHOLDER = "f" * 64
 
+# What a measurement or parity record says it counted. Every recorded count
+# names the exact bytes measured, so a reader who finds a `compact.sha256` that
+# does not match `compact.wai` on disk can find out why from the record itself
+# rather than by reading this file.
+#
+# `none` means the bytes on disk, unchanged: the reviewed spans are measured
+# raw, because a span's recorded digest is `span_sha256` and that equality is
+# the review boundary. `digest-neutral-bound-sha256/v1` means the stream was
+# passed through `digest_neutral_projection` first, which is how the canonical
+# models and compact documents are measured -- each embeds its source's
+# whole-file digest, and counting the raw bytes would make an edit outside a
+# reviewed span stale a count of bytes that did not change.
+#
+# The name is versioned because it identifies a rule, not a value: widening or
+# narrowing what the projection substitutes changes what a recorded count is a
+# count of, and a record written under the old rule must not read as though it
+# were written under the new one.
+MEASURED_PROJECTION_NONE = "none"
+MEASURED_PROJECTION_DIGEST_NEUTRAL = "digest-neutral-bound-sha256/v1"
+MEASURED_PROJECTIONS = (MEASURED_PROJECTION_NONE, MEASURED_PROJECTION_DIGEST_NEUTRAL)
+
 LITERAL_KINDS = (
     "identifier",
     "path",
@@ -2776,14 +2797,31 @@ def _measurement_material(
     value: Any,
     expected_bytes: bytes,
     path: str,
+    projection: str,
 ) -> tuple[dict[str, Any], int]:
-    material = _object(value, ("sha256", "bytes", "tokens"), path)
+    """One recorded count, checked against the bytes it says it counted.
+
+    `expected_bytes` is the measured stream itself, already projected by the
+    caller when `projection` says so, and `projection` is recorded beside the
+    count. Both halves are compared, so a record cannot carry a digest computed
+    one way and a `projection` claiming the other: the digest is of the stream
+    the caller measured, and the name says which stream that was.
+
+    `tokens` is carried over from the supplied record rather than recomputed,
+    because recomputing it means consulting a model. That is the one field here
+    the checker takes on trust, and it is why the digest beside it has to be
+    exact.
+    """
+    material = _object(value, ("sha256", "bytes", "projection", "tokens"), path)
     token_count = _record_nonnegative_integer(material["tokens"], f"{path}.tokens")
     _record_nonnegative_integer(material["bytes"], f"{path}.bytes")
     _sha256(material["sha256"], f"{path}.sha256")
+    if material["projection"] not in MEASURED_PROJECTIONS:
+        refuse("WAI-E-MEASURE.PROJECTION", f"{path}.projection")
     expected = {
         "sha256": _digest(expected_bytes),
         "bytes": len(expected_bytes),
+        "projection": projection,
         "tokens": token_count,
     }
     if canonical_record_bytes(material, allow_integers=True) != canonical_record_bytes(
@@ -2852,25 +2890,50 @@ def _validate_measurement_record(
         source_file = read_confined(root, fixture["source"]["path"])
         start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
         end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+        # The reviewed span is measured raw. Its recorded digest is
+        # `span_sha256`, and that equality is what ties a count to the bytes a
+        # reviewer signed off, so it must not be substituted away.
+        # `test_no_reviewed_span_carries_a_bound_digest` checks that no span
+        # would be changed by the projection anyway, so measuring it raw is an
+        # observation rather than an exception carved out here.
         source_bytes = source_file[start:end]
-        model_bytes = _load_bound_artifact(
-            root,
-            fixture["artifacts"]["model"],
-            f"$.fixtures.{fixture_id}.model",
+        # The canonical model and the compact document each embed the source's
+        # whole-file digest, so these are the two streams the projection exists
+        # for: measured through it, they are byte-identical across an edit that
+        # moved nothing inside a reviewed span.
+        model_bytes = digest_neutral_projection(
+            manifest,
+            _load_bound_artifact(
+                root,
+                fixture["artifacts"]["model"],
+                f"$.fixtures.{fixture_id}.model",
+            ),
         )
-        compact_bytes = _load_bound_artifact(
-            root,
-            fixture["artifacts"]["compact"],
-            f"$.fixtures.{fixture_id}.compact",
+        compact_bytes = digest_neutral_projection(
+            manifest,
+            _load_bound_artifact(
+                root,
+                fixture["artifacts"]["compact"],
+                f"$.fixtures.{fixture_id}.compact",
+            ),
         )
         source, source_tokens = _measurement_material(
-            supplied["source"], source_bytes, f"{document_path}.source"
+            supplied["source"],
+            source_bytes,
+            f"{document_path}.source",
+            MEASURED_PROJECTION_NONE,
         )
         model, model_tokens = _measurement_material(
-            supplied["canonical_model"], model_bytes, f"{document_path}.canonical_model"
+            supplied["canonical_model"],
+            model_bytes,
+            f"{document_path}.canonical_model",
+            MEASURED_PROJECTION_DIGEST_NEUTRAL,
         )
         compact, compact_tokens = _measurement_material(
-            supplied["compact"], compact_bytes, f"{document_path}.compact"
+            supplied["compact"],
+            compact_bytes,
+            f"{document_path}.compact",
+            MEASURED_PROJECTION_DIGEST_NEUTRAL,
         )
         one_document = _object(
             supplied["one_document"],
@@ -3019,6 +3082,7 @@ def _validate_parity_mode_record(
     mode: str,
     document: bytes,
     prompt: bytes,
+    projection: str,
     correlation_id: str,
     path: str,
 ) -> dict[str, Any]:
@@ -3027,6 +3091,7 @@ def _validate_parity_mode_record(
         (
             "job_id",
             "input_sha256",
+            "projection",
             "prompt_sha256",
             "prompt_tokens",
             "answer_id",
@@ -3036,6 +3101,8 @@ def _validate_parity_mode_record(
         ),
         path,
     )
+    if supplied["projection"] not in MEASURED_PROJECTIONS:
+        refuse("WAI-E-PARITY.PROJECTION", f"{path}.projection")
     prompt_tokens = _record_nonnegative_integer(supplied["prompt_tokens"], f"{path}.prompt_tokens")
     response = _string(supplied["response"], f"{path}.response")
     if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
@@ -3048,6 +3115,7 @@ def _validate_parity_mode_record(
             (correlation_id + profile["id"] + fixture_id + question["id"] + mode).encode("utf-8")
         ),
         "input_sha256": _digest(document),
+        "projection": projection,
         "prompt_sha256": _digest(prompt),
         "prompt_tokens": prompt_tokens,
         **answer,
@@ -3111,10 +3179,17 @@ def _validate_parity_record(
             start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
             end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
             source = source_file[start:end]
-            compact = _load_bound_artifact(
-                root,
-                fixture["artifacts"]["compact"],
-                f"$.fixtures.{fixture_id}.compact",
+            # The compact document is put to the model through the projection,
+            # so the prompt a parity result records is the prompt that was
+            # actually sent and both survive an out-of-span edit. The reviewed
+            # span goes raw, for the same reason it does in the measurement.
+            compact = digest_neutral_projection(
+                manifest,
+                _load_bound_artifact(
+                    root,
+                    fixture["artifacts"]["compact"],
+                    f"$.fixtures.{fixture_id}.compact",
+                ),
             )
             questions_record = load_canonical_record(
                 _load_bound_artifact(
@@ -3156,6 +3231,7 @@ def _validate_parity_record(
                     mode="source",
                     document=source,
                     prompt=source_prompt,
+                    projection=MEASURED_PROJECTION_NONE,
                     correlation_id=correlation_id,
                     path=f"{result_path}.source",
                 )
@@ -3167,6 +3243,7 @@ def _validate_parity_record(
                     mode="compact",
                     document=compact,
                     prompt=compact_prompt,
+                    projection=MEASURED_PROJECTION_DIGEST_NEUTRAL,
                     correlation_id=correlation_id,
                     path=f"{result_path}.compact",
                 )
@@ -3458,9 +3535,19 @@ def measure_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[
         source_file = read_confined(root, fixture["source"]["path"])
         start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
         end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+        # The reviewed span raw, the two derived artefacts through the
+        # projection. `_validate_measurement_record` reads the same three
+        # streams the same way, so what the tokenizer is handed here is exactly
+        # what `check` recomputes the digests of later.
         source = source_file[start:end]
-        model = _load_bound_artifact(root, fixture["artifacts"]["model"], f"$.fixtures.{fixture_id}.model")
-        compact = _load_bound_artifact(root, fixture["artifacts"]["compact"], f"$.fixtures.{fixture_id}.compact")
+        model = digest_neutral_projection(
+            manifest,
+            _load_bound_artifact(root, fixture["artifacts"]["model"], f"$.fixtures.{fixture_id}.model"),
+        )
+        compact = digest_neutral_projection(
+            manifest,
+            _load_bound_artifact(root, fixture["artifacts"]["compact"], f"$.fixtures.{fixture_id}.compact"),
+        )
         raw_documents.append(
             {"fixture_id": fixture_id, "source": source, "model": model, "compact": compact}
         )
@@ -3511,9 +3598,24 @@ def measure_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[
         documents.append(
             {
                 "fixture_id": fixture_id,
-                "source": {"sha256": _digest(source), "bytes": len(source), "tokens": source_tokens},
-                "canonical_model": {"sha256": _digest(model), "bytes": len(model), "tokens": model_tokens},
-                "compact": {"sha256": _digest(compact), "bytes": len(compact), "tokens": compact_tokens},
+                "source": {
+                    "sha256": _digest(source),
+                    "bytes": len(source),
+                    "projection": MEASURED_PROJECTION_NONE,
+                    "tokens": source_tokens,
+                },
+                "canonical_model": {
+                    "sha256": _digest(model),
+                    "bytes": len(model),
+                    "projection": MEASURED_PROJECTION_DIGEST_NEUTRAL,
+                    "tokens": model_tokens,
+                },
+                "compact": {
+                    "sha256": _digest(compact),
+                    "bytes": len(compact),
+                    "projection": MEASURED_PROJECTION_DIGEST_NEUTRAL,
+                    "tokens": compact_tokens,
+                },
                 "one_document": {
                     "bytes": len(compact) + len(bootstrap),
                     "tokens": compact_tokens + bootstrap_tokens,
@@ -3712,7 +3814,11 @@ def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[d
             start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
             end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
             source = source_file[start:end]
-            compact = _load_bound_artifact(root, fixture["artifacts"]["compact"], f"$.fixtures.{fixture_id}.compact")
+            # Projected, exactly as `_validate_parity_record` reads it back.
+            compact = digest_neutral_projection(
+                manifest,
+                _load_bound_artifact(root, fixture["artifacts"]["compact"], f"$.fixtures.{fixture_id}.compact"),
+            )
             questions_record = load_canonical_record(
                 _load_bound_artifact(root, fixture["artifacts"]["questions"], f"$.fixtures.{fixture_id}.questions")
             )
@@ -3720,7 +3826,10 @@ def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[d
             questions = questions_record["questions"]
             for question in questions:
                 mode_records: dict[str, dict[str, Any]] = {}
-                for mode, document in (("source", source), ("compact", compact)):
+                for mode, document, projection in (
+                    ("source", source, MEASURED_PROJECTION_NONE),
+                    ("compact", compact, MEASURED_PROJECTION_DIGEST_NEUTRAL),
+                ):
                     prompt = _render_parity_prompt(template, mode, bootstrap, document, question)
                     job_id = _digest(
                         (correlation_id + profile["id"] + fixture_id + question["id"] + mode).encode("utf-8")
@@ -3740,6 +3849,7 @@ def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[d
                     mode_records[mode] = {
                         "job_id": job_id,
                         "input_sha256": _digest(document),
+                        "projection": projection,
                         "prompt_sha256": _digest(prompt),
                         "prompt_tokens": prompt_tokens,
                         **answer,

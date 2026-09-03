@@ -604,41 +604,32 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertEqual(len(bound), projected.count(marker))
         self.assertEqual(len(probe), len(projected))
 
-    def test_the_measurement_record_still_binds_the_raw_artefact_digests(self):
-        """The gap the corpus switch does not reach, pinned so it is not assumed shut.
+    def test_the_measurement_record_binds_the_projected_artefact_digests(self):
+        """Inverted from `..._still_binds_the_raw_artefact_digests`, replacing it.
 
-        Step 3's switch takes the *corpus digest* off the whole-file and raw
-        artefact digests, and the cases above show it working: an out-of-span
-        edit leaves the corpus digest exactly where it was. That is the step's
-        stated Exit, and it is met.
+        The assumption this replaces was recorded one commit earlier in this
+        same step, and lasted exactly as long as it took to ask the controller.
+        It was that the switch changed the corpus subject and left the measured
+        bytes alone, so `measure` still recorded each document's
+        `canonical_model` and `compact` as digests of the raw artefact bytes.
+        Observed then, by simulating the reissue in a throwaway copy and
+        applying an out-of-span edit: `check` refused `WAI-E-MEASURE.RECORD` at
+        `$.evidence.measurement_record.documents[0].canonical_model`, with the
+        corpus digest itself unmoved.
 
-        It is not the whole of what skills#1098 reports. `measure` records each
-        document's `canonical_model` and `compact` as digests of the raw
-        artefact bytes, and `_measurement_material` compares each one against
-        the bytes on disk. `model.json` and the compact document both embed the
-        whole-file source digest, so an out-of-span edit moves them, and the
-        measurement record is stale again at a node the corpus switch never
-        touches.
+        The `digest-neutral-corpus` design record takes the embedded whole-file
+        digest out of the measured bytes *and* out of the corpus subject, so
+        half of it would have shipped a delivery failing its own selected
+        design. `measure` now counts
+        `digest_neutral_projection(manifest, ...)` of the model and the compact
+        document, and `_measurement_material` compares against the same streams.
 
-        Observed on this branch by simulating the reissue in a throwaway copy --
-        recomputing `corpus_sha256` and every `correlation_id` from the new
-        subject, writing nothing into the repository -- and then applying the
-        out-of-span edit: `check` refused `WAI-E-MEASURE.RECORD` at
-        `$.evidence.measurement_record.documents[0].canonical_model`. The same
-        run confirmed the corpus digest itself did not move.
-
-        Closing it means measuring `digest_neutral_projection(manifest, ...)` of
-        the model and compact bytes rather than the raw bytes -- the "measured
-        bytes" half of the `digest-neutral-corpus` design record, alongside the
-        "corpus subject" half this step landed. That change must land *before*
-        the single budgeted `measure` run, because it changes the values that
-        run emits; it is not something a later step can add without a second
-        run. It is recorded here rather than made silently, because the runbook
-        step's amended Exit does not name it and the budget is one run.
-
-        This case asserts the gap as it stands, in the manner step 2's audit
-        used for S2-R1-01: whoever closes it inverts this, and until then it
-        cannot be mistaken for closed.
+        What the record must not do is stop binding the raw digests anywhere.
+        It does not: the manifest still binds every artefact by its real
+        digest, `check` still verifies each against the bytes on disk, and this
+        case asserts both halves at once -- the record carries the projected
+        digest, the manifest carries the raw one, and for these two artefacts
+        the two differ. Not measured here has not become not bound anywhere.
         """
         manifest = self.work.manifest
         recorded = self.work._live_record(self.prover.MEASUREMENT, allow_integers=True)
@@ -650,27 +641,63 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                 ("compact", "compact"),
             ):
                 with self.subTest(fixture=entry["id"], material=record_key):
+                    raw = self.work._live_bytes(entry["artifacts"][artifact_name]["path"])
+                    projected = self.checker.digest_neutral_projection(manifest, raw)
+                    material = documents[entry["id"]][record_key]
+
+                    # The manifest still binds the bytes on disk, by their real
+                    # digest, and check still verifies it.
                     self.assertEqual(
                         entry["artifacts"][artifact_name]["sha256"],
-                        documents[entry["id"]][record_key]["sha256"],
-                        "the measurement record no longer binds the raw artefact "
-                        "digest: the measured-bytes half has landed and this "
-                        "case is the one to invert",
+                        self.prover.digest(raw),
+                    )
+                    # The record binds the projection, and says so.
+                    self.assertEqual(self.prover.digest(projected), material["sha256"])
+                    self.assertEqual(
+                        self.checker.MEASURED_PROJECTION_DIGEST_NEUTRAL,
+                        material["projection"],
+                    )
+                    # And the two are genuinely different bytes here, so
+                    # neither assertion is passing on a projection that did
+                    # nothing to this artefact.
+                    self.assertNotEqual(raw, projected)
+                    self.assertNotEqual(
+                        entry["artifacts"][artifact_name]["sha256"], material["sha256"]
                     )
 
-        # And that digest moves under the very edit the corpus switch was made
-        # to absorb, so the staleness is real rather than theoretical.
-        with tempfile.TemporaryDirectory(prefix="prove-measured-bytes-") as scratch:
-            tree = self.work.copy_tree(Path(scratch))
-            after = self.work.apply_passes(tree, self.after_span)
-        subject = next(e for e in after["fixtures"] if e["id"] == self.prover.SUBJECT)
-        live = next(e for e in manifest["fixtures"] if e["id"] == self.prover.SUBJECT)
-        for artifact_name in ("model", "compact"):
-            with self.subTest(moved=artifact_name):
-                self.assertNotEqual(
-                    live["artifacts"][artifact_name]["sha256"],
-                    subject["artifacts"][artifact_name]["sha256"],
-                )
+        # The reviewed span is the exception, and it is checked rather than
+        # carved out: the record counts it raw, names no projection, and the
+        # recorded digest is span_sha256, which is the review boundary.
+        for entry in manifest["fixtures"]:
+            with self.subTest(fixture=entry["id"], material="source"):
+                material = documents[entry["id"]]["source"]
+                self.assertEqual(self.checker.MEASURED_PROJECTION_NONE, material["projection"])
+                self.assertEqual(entry["source"]["span_sha256"], material["sha256"])
+
+    def test_no_reviewed_span_carries_a_bound_digest(self):
+        """Why measuring the reviewed spans raw costs nothing.
+
+        The measurement counts each span as it is on disk, so if a span quoted
+        one of the digests the manifest binds, an out-of-span edit would move
+        bytes inside a measured stream and the record would go stale for a
+        reason the projection was meant to remove.
+
+        No span does today, and this observes it rather than assuming it. If a
+        reviewed span ever starts quoting a bound digest, this fails and the
+        choice between projecting the span and losing the `span_sha256`
+        equality has to be made deliberately, rather than discovered as a
+        mysterious `WAI-E-MEASURE.RECORD` after a measure run nobody can repeat.
+        """
+        manifest = self.work.manifest
+        bound = self.checker._bound_digest_values(manifest)
+        self.assertEqual(len(self.prover.bound_digests(manifest)), len(bound))
+        for entry in manifest["fixtures"]:
+            with self.subTest(fixture=entry["id"]):
+                source = self.work._live_bytes(entry["source"]["path"])
+                span = source[int(entry["source"]["start"]) : int(entry["source"]["end"])]
+                self.assertEqual(span, self.checker.digest_neutral_projection(manifest, span))
+                for digest in bound:
+                    self.assertNotIn(digest.encode("ascii"), span)
 
 
 if __name__ == "__main__":

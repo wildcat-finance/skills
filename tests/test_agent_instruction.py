@@ -2652,6 +2652,25 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         self.assertEqual(report["summary"]["refusal_codes"], ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"])
 
     def test_source_baseline_precedes_each_compact_count(self):
+        """Order, and which exact bytes reached the tokenizer.
+
+        The order claim is unchanged: every source baseline is counted before
+        any compact document, so a comparison cannot be assembled from counts
+        taken under a drifting runtime.
+
+        What the streams are did change. Step 3 measures the canonical model and
+        the compact document through `digest_neutral_projection`, because each
+        embeds its source's whole-file digest and counting the raw bytes let an
+        edit outside a reviewed span invalidate a count of bytes that had not
+        moved. The reviewed spans are still counted raw: a span's recorded
+        digest is `span_sha256`, and that equality is the review boundary.
+        The decoder bootstrap is evidence rather than a bound fixture artefact,
+        carries no bound digest, and is unchanged either way.
+
+        Asserted as the exact streams rather than as counts, so a regression
+        that projected the span, or that stopped projecting an artefact, is
+        caught here by digest and not left to the record comparison.
+        """
         observed = []
 
         def count(profile, prompt, **kwargs):
@@ -2674,11 +2693,23 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         for fixture in manifest["fixtures"]:
             expected.extend(
                 [
-                    (ROOT / fixture["artifacts"]["model"]["path"]).read_bytes(),
-                    (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes(),
+                    AI.digest_neutral_projection(
+                        manifest, (ROOT / fixture["artifacts"]["model"]["path"]).read_bytes()
+                    ),
+                    AI.digest_neutral_projection(
+                        manifest, (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes()
+                    ),
                 ]
             )
         self.assertEqual([hashlib.sha256(item).hexdigest() for item in observed], [hashlib.sha256(item).hexdigest() for item in expected])
+        # The projection actually moved the two artefact streams here, so the
+        # comparison above is not passing because it is a no-op.
+        for fixture in manifest["fixtures"]:
+            for name in ("model", "compact"):
+                raw = (ROOT / fixture["artifacts"][name]["path"]).read_bytes()
+                with self.subTest(fixture=fixture["id"], artifact=name):
+                    self.assertNotIn(raw, observed)
+                    self.assertIn(AI.digest_neutral_projection(manifest, raw), observed)
 
     def test_measurement_report_has_exact_ten_integer_cases(self):
         counts = iter([*((10, "{}") for _ in range(3)), (1, "{}"), *((value, "{}") for value in (5, 1) * 3)])
@@ -3247,6 +3278,18 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         self.assertIn("| all decoded literals and binding offsets | 786,432 | UTF-8 bytes |", contract)
 
     def test_specialised_coverage_binds_runtime_documentation_and_manifest(self):
+        """The records a reader needs to interpret this capability, bound by digest.
+
+        ADR-074 joins the list at step 3. The row binds the capability's own
+        decision records, and ADR-074 is one: it is what a reader consults on
+        finding that a measurement record's `compact.sha256` does not match
+        `compact.wai` on disk. Leaving it unbound would be the same drift
+        S2-R2-04 filed against the prover -- a document the behaviour depends on,
+        outside the register that notices when it moves.
+
+        The list is asserted exactly rather than by length, so adding a record
+        here is a deliberate edit and never a side effect of writing an ADR.
+        """
         coverage = self.coverage()
         self.assertEqual(coverage["checker"]["path"], "scripts/agent_instruction.py")
         self.assertEqual(coverage["manifest"]["path"], str(MANIFEST.relative_to(ROOT)))
@@ -3255,6 +3298,7 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             [
                 "docs/agent-instruction-language-v1.md",
                 "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
+                "docs/decisions/ADR-074-digest-neutral-measured-corpus.md",
             ],
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
