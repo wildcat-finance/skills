@@ -3599,6 +3599,91 @@ class DigestNeutralProjectionTests(unittest.TestCase):
                 after_manifest, _ = self.edited_fixture(fixture)
                 self.assertNotEqual(corpus, AI._corpus_sha256(after_manifest))
 
+    def test_the_reviewed_span_digest_is_distinct_from_the_projected_digest(self):
+        """The review boundary survives the projection, checked not assumed.
+
+        `digest_neutral_projection` substitutes a digest value, so it cannot
+        tell a `source.sha256` apart from any other field carrying the same
+        bytes. Today no fixture's reviewed span covers its whole file, so no
+        `span_sha256` carries those bytes and the span digest comes through
+        untouched. That is a property of the fixtures, not of the code: a
+        fixture whose span ran from 0 to the file's length would make the two
+        digests equal, and the projection would then neutralise the review
+        boundary along with the binding it is aimed at.
+
+        S2-R1-02. Without this case the docstring's "the reviewed span digest
+        is untouched" is an observation about three fixtures rather than a
+        checked claim about the projection.
+        """
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                span = fixture["source"]
+                raw = (ROOT / span["path"]).read_bytes()
+                self.assertNotEqual(
+                    (int(span["start"]), int(span["end"])),
+                    (0, len(raw)),
+                    "a whole-file reviewed span makes span_sha256 the projected digest",
+                )
+                self.assertNotEqual(span["span_sha256"], span["sha256"])
+                projected = AI.digest_neutral_projection(
+                    self.manifest, span["span_sha256"].encode("ascii")
+                )
+                self.assertEqual(span["span_sha256"].encode("ascii"), projected)
+
+    def test_every_occurrence_of_a_bound_digest_is_substituted(self):
+        """Not just the first, for a byte string that carries one twice.
+
+        Each committed artefact embeds each bound digest exactly once, so a
+        regression to `bytes.replace(digest, marker, 1)` passes every case
+        above without changing a byte of their evidence. The multiplicity rule
+        is stated in the docstring -- "wherever it appears" -- so it gets a
+        buffer that can see the difference.
+
+        S2-R1-03. The buffer is built here and never written; no committed file
+        carries a repeated binding today, and this does not require one to.
+        """
+        for digest in self.source_digests:
+            with self.subTest(digest=digest):
+                needle = digest.encode("ascii")
+                doubled = needle + b'","other":"' + needle
+                projected = AI.digest_neutral_projection(self.manifest, doubled)
+                marker = self.PLACEHOLDER.encode("ascii")
+                self.assertEqual(marker + b'","other":"' + marker, projected)
+                self.assertNotIn(needle, projected)
+
+    def test_the_projection_does_not_yet_neutralise_the_bound_artefact_digests(self):
+        """The gap step 3 must close, pinned so it cannot be assumed shut.
+
+        `test_projection_is_unchanged_by_an_out_of_span_edit` compares the
+        three artefacts derived from a source, and they do project alike. The
+        manifest is not among them, and it is the byte string that matters:
+        `_corpus_sha256` digests a subject carrying `fixtures` whole, so it
+        carries `artifacts.model.sha256`, `artifacts.source_spans.sha256` and
+        `artifacts.compact.sha256`. Those are digests of the three artefacts,
+        they move when the source digest embedded inside them moves, and they
+        are not themselves bound source digests, so the substitution passes
+        over them.
+
+        S2-R1-01. This case asserts the gap as it stands rather than the
+        property the design wants, and step 3 inverts it when it widens the
+        projection and switches the subject. Asserted this way, a step 3 that
+        switched the subject without widening the projection would leave this
+        case green and ship a corpus digest that still moves on an out-of-span
+        edit -- which is the whole refusal skills#1098 reports.
+        """
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                after_manifest, _ = self.edited_fixture(fixture)
+                before = AI.canonical_record_bytes(self.manifest)
+                after = AI.canonical_record_bytes(after_manifest)
+                self.assertNotEqual(before, after)
+                self.assertNotEqual(
+                    AI.digest_neutral_projection(self.manifest, before),
+                    AI.digest_neutral_projection(after_manifest, after),
+                    "the projection now reaches the manifest: step 3's widening "
+                    "has landed and this case is the one to invert",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
