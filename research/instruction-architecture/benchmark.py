@@ -190,7 +190,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "64720f3013bf95ae394c3cdd3a1f9a4c0f016c42b8c3569325d7bc3ad91f42b4"
+    "412e9f351b1e1dcf21ea935d595d7961a7841b9bc3223311d34a6ea76150dd36"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -6570,6 +6570,174 @@ def _control_snapshot_manifest(
     }
 
 
+def _snapshot_entries(descriptor: int, label: str) -> list[str]:
+    try:
+        entries = os.listdir(descriptor)
+    except OSError as exc:
+        raise Refusal(f"{label} inventory is unavailable") from exc
+    if len(entries) != len(set(entries)):
+        raise Refusal(f"{label} inventory is duplicated")
+    return entries
+
+
+def _snapshot_regular_identity(
+    descriptor: int, name: str, label: str
+) -> tuple[int, ...]:
+    try:
+        metadata = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+    except OSError as exc:
+        raise Refusal(f"{label} entry is unavailable or unsafe") from exc
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+        raise Refusal(f"{label} entry is not a single-link regular file")
+    return _identity(metadata)
+
+
+def _snapshot_read_entry(
+    descriptor: int, name: str, limit: int, label: str
+) -> tuple[bytes, tuple[int, ...]]:
+    try:
+        entry = os.open(name, _regular_read_flags(), dir_fd=descriptor)
+    except OSError as exc:
+        raise Refusal(f"{label} entry is unavailable or unsafe") from exc
+    try:
+        data, metadata = _read_descriptor(entry, limit)
+    finally:
+        os.close(entry)
+    return data, _identity(metadata)
+
+
+def _open_snapshot_directories(
+    root: PurePosixPath, *, create: bool, exact_root: bool
+) -> tuple[int, int]:
+    """Open the snapshot root and object store without following path changes."""
+    directory, _ = _open_parent(
+        root / ".entry", create=create, label="control snapshot root"
+    )
+    objects = -1
+    try:
+        expected = {"manifest.json", "objects"}
+        entries = set(_snapshot_entries(directory, "control snapshot root"))
+        if (exact_root and entries != expected) or (
+            not exact_root and not entries <= expected
+        ):
+            raise Refusal("control snapshot root directory is not closed")
+        if "manifest.json" in entries:
+            _snapshot_regular_identity(
+                directory, "manifest.json", "control snapshot manifest"
+            )
+        if "objects" not in entries:
+            if not create:
+                raise Refusal("control snapshot root directory is not closed")
+            try:
+                os.mkdir("objects", mode=0o755, dir_fd=directory)
+            except OSError as exc:
+                raise Refusal("control snapshot object directory is unavailable") from exc
+        try:
+            objects = os.open("objects", _directory_flags(), dir_fd=directory)
+        except OSError as exc:
+            raise Refusal("control snapshot object directory is unavailable or unsafe") from exc
+        final_entries = set(_snapshot_entries(directory, "control snapshot root"))
+        if (exact_root and final_entries != expected) or (
+            not exact_root and not final_entries <= expected
+        ):
+            raise Refusal("control snapshot root directory is not closed")
+        return directory, objects
+    except BaseException:
+        if objects >= 0:
+            os.close(objects)
+        os.close(directory)
+        raise
+
+
+def _preflight_snapshot_publication(
+    output: PurePosixPath, object_names: set[str]
+) -> tuple[int, int]:
+    """Admit only an empty, partial, or complete instance of this generation."""
+    directory, objects = _open_snapshot_directories(
+        output, create=True, exact_root=False
+    )
+    try:
+        entries = set(_snapshot_entries(objects, "control snapshot object"))
+        if not entries <= object_names:
+            raise Refusal("control snapshot object directory contains an unowned entry")
+        for name in entries:
+            _snapshot_regular_identity(objects, name, "control snapshot object")
+        return directory, objects
+    except BaseException:
+        os.close(objects)
+        os.close(directory)
+        raise
+
+
+def _verify_snapshot_publication(
+    output: PurePosixPath,
+    directory: int,
+    object_directory: int,
+    manifest: bytes,
+    objects: dict[str, bytes],
+) -> None:
+    """Re-read one complete generation and bind it to the preflight directories."""
+    expected_objects = set(objects)
+    directory_before = os.fstat(directory)
+    objects_before = os.fstat(object_directory)
+    if set(_snapshot_entries(directory, "control snapshot root")) != {
+        "manifest.json",
+        "objects",
+    }:
+        raise Refusal("control snapshot root directory is not closed")
+    if set(_snapshot_entries(object_directory, "control snapshot object")) != expected_objects:
+        raise Refusal("control snapshot object directory differs from its manifest")
+    manifest_read, manifest_identity = _snapshot_read_entry(
+        directory, "manifest.json", MAX_JSON_BYTES, "control snapshot manifest"
+    )
+    if manifest_read != manifest:
+        raise Refusal("published control snapshot manifest drift")
+    object_identities: dict[str, tuple[int, ...]] = {}
+    for oid in sorted(objects):
+        data, identity = _snapshot_read_entry(
+            object_directory, oid, MAX_SOURCE_BYTES, "control snapshot object"
+        )
+        if data != objects[oid]:
+            raise Refusal("published control snapshot object drift")
+        object_identities[oid] = identity
+    if (
+        set(_snapshot_entries(directory, "control snapshot root"))
+        != {"manifest.json", "objects"}
+        or set(_snapshot_entries(object_directory, "control snapshot object"))
+        != expected_objects
+        or _identity(os.fstat(directory)) != _identity(directory_before)
+        or _identity(os.fstat(object_directory)) != _identity(objects_before)
+        or _snapshot_regular_identity(
+            directory, "manifest.json", "control snapshot manifest"
+        )
+        != manifest_identity
+        or any(
+            _snapshot_regular_identity(
+                object_directory, oid, "control snapshot object"
+            )
+            != object_identities[oid]
+            for oid in object_identities
+        )
+    ):
+        raise Refusal("control snapshot publication changed during verification")
+    routed_directory, routed_objects = _open_snapshot_directories(
+        output, create=False, exact_root=True
+    )
+    try:
+        if (
+            _directory_identity(os.fstat(routed_directory))
+            != _directory_identity(directory_before)
+            or _directory_identity(os.fstat(routed_objects))
+            != _directory_identity(objects_before)
+            or set(_snapshot_entries(routed_objects, "control snapshot object"))
+            != expected_objects
+        ):
+            raise Refusal("control snapshot publication path changed")
+    finally:
+        os.close(routed_objects)
+        os.close(routed_directory)
+
+
 def snapshot_controls(args: argparse.Namespace) -> bytes:
     """Materialise immutable control objects while every pinned ref is present."""
     output = _confined_output(
@@ -6614,9 +6782,23 @@ def snapshot_controls(args: argparse.Namespace) -> bytes:
         and _sha256(manifest_bytes) != EXPECTED_CONTROL_SNAPSHOT_SHA256
     ):
         raise Refusal("control snapshot manifest differs from its frozen digest")
-    for oid in sorted(objects):
-        _atomic_write(output / "objects" / oid, objects[oid])
-    _atomic_write(output / "manifest.json", manifest_bytes)
+    directory, object_directory = _preflight_snapshot_publication(
+        relative_output, set(objects)
+    )
+    try:
+        for oid in sorted(objects):
+            _atomic_write(output / "objects" / oid, objects[oid])
+        _atomic_write(output / "manifest.json", manifest_bytes)
+        _verify_snapshot_publication(
+            relative_output,
+            directory,
+            object_directory,
+            manifest_bytes,
+            objects,
+        )
+    finally:
+        os.close(object_directory)
+        os.close(directory)
     return _result(
         "snapshot-controls",
         manifest_bytes,
@@ -6626,6 +6808,11 @@ def snapshot_controls(args: argparse.Namespace) -> bytes:
 
 @lru_cache(maxsize=1)
 def _control_snapshot() -> dict[str, Any]:
+    snapshot_directory, snapshot_objects = _open_snapshot_directories(
+        CONTROL_SNAPSHOT_ROOT, create=False, exact_root=True
+    )
+    os.close(snapshot_objects)
+    os.close(snapshot_directory)
     manifest_path = ROOT / Path(*CONTROL_SNAPSHOT_MANIFEST.parts)
     raw = _read_regular(manifest_path, MAX_JSON_BYTES)
     if (
@@ -6767,6 +6954,20 @@ def _control_snapshot() -> dict[str, Any]:
         raise Refusal("control snapshot object byte total drift")
     if _read_regular(manifest_path, MAX_JSON_BYTES) != raw:
         raise Refusal("control snapshot manifest changed during verification")
+    snapshot_directory, snapshot_objects = _open_snapshot_directories(
+        CONTROL_SNAPSHOT_ROOT, create=False, exact_root=True
+    )
+    try:
+        _verify_snapshot_publication(
+            CONTROL_SNAPSHOT_ROOT,
+            snapshot_directory,
+            snapshot_objects,
+            raw,
+            object_bytes,
+        )
+    finally:
+        os.close(snapshot_objects)
+        os.close(snapshot_directory)
     return {
         "artifacts": artifacts,
         "manifest": manifest,

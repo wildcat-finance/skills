@@ -8505,6 +8505,80 @@ class ControlSnapshotTests(unittest.TestCase):
             finally:
                 clear_source_cache()
 
+    def test_snapshot_root_directory_is_closed(self):
+        with scratch_directory("control-snapshot-root-extra-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            shutil.copytree(CONTROL_SNAPSHOT_MANIFEST.parent, snapshot)
+            (snapshot / "EXTRA").write_bytes(b"unlisted")
+            relative = PurePosixPath(snapshot.relative_to(ROOT).as_posix())
+            clear_source_cache()
+            try:
+                with (
+                    mock.patch.object(AI, "CONTROL_SNAPSHOT_ROOT", relative),
+                    mock.patch.object(
+                        AI,
+                        "CONTROL_SNAPSHOT_MANIFEST",
+                        relative / "manifest.json",
+                    ),
+                    self.assertRaisesRegex(
+                        AI.Refusal, "root directory is not closed"
+                    ),
+                ):
+                    AI._control_snapshot()
+            finally:
+                clear_source_cache()
+
+    def test_snapshot_generation_refuses_unowned_entries_before_writing(self):
+        for relative_extra in ("EXTRA", "objects/EXTRA"):
+            with self.subTest(relative_extra=relative_extra):
+                with scratch_directory("control-snapshot-generate-extra-") as temporary:
+                    snapshot = Path(temporary) / "snapshot"
+                    (snapshot / "objects").mkdir(parents=True)
+                    extra = snapshot / relative_extra
+                    extra.parent.mkdir(parents=True, exist_ok=True)
+                    extra.write_bytes(b"unowned")
+                    with (
+                        mock.patch.object(AI, "_atomic_write") as write,
+                        self.assertRaisesRegex(
+                            AI.Refusal, "not closed|unowned entry"
+                        ),
+                    ):
+                        AI.snapshot_controls(types.SimpleNamespace(output=snapshot))
+                    write.assert_not_called()
+
+    def test_snapshot_generation_completes_owned_partial_and_clean_refresh(self):
+        with scratch_directory("control-snapshot-generate-owned-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            objects = snapshot / "objects"
+            objects.mkdir(parents=True)
+            first_oid = self.manifest["objects"][0]["oid"]
+            shutil.copy2(
+                CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / first_oid,
+                objects / first_oid,
+            )
+            arguments = types.SimpleNamespace(output=snapshot)
+            first = AI.snapshot_controls(arguments)
+            second = AI.snapshot_controls(arguments)
+            self.assertEqual(first, second)
+            self.assertEqual(
+                {path.name for path in snapshot.iterdir()},
+                {"manifest.json", "objects"},
+            )
+            self.assertEqual(
+                {path.name for path in objects.iterdir()},
+                {item["oid"] for item in self.manifest["objects"]},
+            )
+            self.assertEqual(snapshot.joinpath("manifest.json").read_bytes(), self.manifest_raw)
+            for item in self.manifest["objects"]:
+                self.assertEqual(
+                    (objects / item["oid"]).read_bytes(),
+                    (
+                        CONTROL_SNAPSHOT_MANIFEST.parent
+                        / "objects"
+                        / item["oid"]
+                    ).read_bytes(),
+                )
+
     def _one_commit_shallow_checkout(self, *, development: bool):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

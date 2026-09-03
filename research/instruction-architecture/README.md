@@ -124,8 +124,11 @@ stderr at 64 KiB and each process at 20 seconds.
 WAI1 and Noema use a distinct content-addressed control snapshot inside the
 Step-2 fixture boundary. its frozen manifest maps all 172 admitted
 commit-and-path identities to 157 unique objects and binds each object by byte
-length, SHA-256 and its Git blob id; the object directory must contain exactly
-those 157 names before and after verification. when a pinned commit exists,
+length, SHA-256 and its Git blob id. the snapshot root must contain only
+`manifest.json` and `objects`, and the object directory must contain exactly
+those 157 names before and after verification. refresh refuses an unowned root
+or object entry before its first write, then rereads and identity-checks the
+closed publication without deleting anything. when a pinned commit exists,
 replay also requires its complete admitted path inventory, every `commit:path` blob id and
 every Git blob byte to equal the snapshot. snapshot-only use is admitted solely
 when that exact commit is absent and Git reports the repository as shallow.
