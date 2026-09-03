@@ -4,7 +4,7 @@ description: >
   Preserve heterogeneous lending-protocol captures by digest and expose a
   narrow, source-bound credit view for Tabularium and Probitas. Use when the
   user names Alexandria or asks to archive lending data for reproducible,
-  address-scoped credit research. Raw release and registered Goldfinch and
+  address-scoped credit research. Raw release and registered Aave v4 and
   Clearpool derivation, disposable indexing, address queries and a checked-in
   offline demonstration, unsigned in-toto release statements, a bounded
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
@@ -131,7 +131,7 @@ python3 "$SKILL_DIR/../../scripts/alexandria.py" verify derived-release
 ```
 
 Derivation first verifies the input and never changes it. Registered
-Goldfinch and Clearpool mappings emit deterministic credit events and, where
+Aave v4 and Clearpool mappings emit deterministic credit events and, where
 the source supplies position state, observations. Every row names the raw
 release, component digest, source and context selectors, mapping rule, adapter
 version and evidence class. Verification resolves those selectors, reruns the
@@ -175,8 +175,8 @@ python3 plugins/alexandria/examples/credit-history-v0/demo.py build --output "$o
 python3 plugins/alexandria/examples/credit-history-v0/demo.py verify "$output"
 ```
 
-The plan pins existing Goldfinch and Clearpool files by digest. The result is a
-reproducibility fixture, not a production corpus. Its Goldfinch source remains
+The plan pins existing Aave v4 and Clearpool files by digest. The result is a
+reproducibility fixture, not a production corpus. Its Aave v4 source remains
 provider-reported and its Clearpool source remains subject-scoped with unknown
 finality.
 

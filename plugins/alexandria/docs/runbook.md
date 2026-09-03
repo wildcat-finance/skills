@@ -87,7 +87,7 @@ from versioned mappings while retaining exact source selectors and coverage.
 
 **Entry.** The audited Step 2 head and a verified raw-release fixture.
 
-**Exit.** Registered Goldfinch and Clearpool mappings read verified Alexandria
+**Exit.** Registered Aave v4 and Clearpool mappings read verified Alexandria
 raw components and emit deterministic `credit-events.jsonl` plus an empty or
 populated `credit-observations.jsonl` as their source permits. Rows support
 multiple amount legs, chain-qualified subject accounts, venue-qualified
@@ -98,8 +98,8 @@ views and reconciles row, family, subject and coverage counts. No mapping
 claims default, full repayment or a current balance.
 
 **Files.** Add credit-event and position-observation schemas; add mapping
-registry, row builders, Goldfinch and Clearpool mapping modules; add the
-Goldfinch release and Clearpool fixture as test inputs by declared repository
+registry, row builders, Aave v4 and Clearpool mapping modules; add the
+Aave v4 release and Clearpool fixture as test inputs by declared repository
 path rather than duplicating large bytes; extend release schemas, verification,
 CLI and adapter documentation.
 
@@ -116,7 +116,7 @@ should add at least 30 cases; Tabularium's full suite must also pass.
 **Goal.** Make verified Alexandria releases queryable by address and usable as
 an archive-backed Probitas source without collapsing venue coverage.
 
-**Entry.** The audited Step 3 head with verified Goldfinch and Clearpool credit
+**Entry.** The audited Step 3 head with verified Aave v4 and Clearpool credit
 views.
 
 **Exit.** `alexandria index` rebuilds a disposable SQLite database from one or
@@ -124,7 +124,7 @@ more verified release manifests. `alexandria query --address` returns matching
 events, observations and capture coverage in stable JSON order, with release
 and raw-object identities on every row. Probitas accepts an explicit
 Alexandria catalogue or index input, translates supported rows to its existing
-`Record` and `Coverage` classes, retains `goldfinch` and `clearpool` as venue
+`Record` and `Coverage` classes, retains `aave-v4` and `clearpool` as venue
 IDs, and leaves unharvested registry entries visible as gaps. A zero-row result
 is `empty` only when matching coverage includes the subject and requested
 selectors.
@@ -155,7 +155,7 @@ query and Probitas translation green.
 chains, Comet revisions, event and observation families, chunking,
 checkpoints, finality, provider reconciliation, error receipts, expected data
 shape and acceptance checks. A checked-in Alexandria demo plan ingests the
-Goldfinch and Clearpool sources, builds and verifies release manifests and
+Aave v4 and Clearpool sources, builds and verifies release manifests and
 credit views, rebuilds the SQLite index, queries known addresses, runs Probitas
 from Alexandria and verifies the rendered dossier with network access
 disabled. Two clean temporary builds are byte-identical for every release
@@ -171,7 +171,7 @@ implemented path and its evidence limits.
 
 **Tests.** Add one clean-machine demonstration test, one read-only and
 network-disabled verification test, two-build digest comparison, expected
-Goldfinch and Clearpool row and coverage counts, Probitas render and five-gate
+Aave v4 and Clearpool row and coverage counts, Probitas render and five-gate
 verification, every component-tamper case, no-live-fallback checks and local
 link validation. Run every repository suite named in root `AGENTS.md`, validate
 all changed skill frontmatter, parse every changed JSON document and schema,
