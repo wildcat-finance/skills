@@ -52,6 +52,32 @@ inconsistent current scope is a refusal, not a cache fallback.
    source inventory, and current digests of all four outputs. A refusal or
    interruption leaves the previous cache untouched.
 
+## Why all four, every round
+
+Step 4 costs a full regeneration on a round whose diff was three lines, and it
+is the largest generated block in a run. That cost is deliberate. The
+`hexaemeron-x-ray-preaudit` overlay in
+[PROMISES.md](../../../PROMISES.md) states the reason per artefact, and this
+is the same rule stated for the reader who is about to run it:
+
+- `architecture.json` and `entry-points.md` enumerate the exact current source
+  inventory and its entry points. A carried copy names a source or an entry
+  point the round no longer has, or omits one it gained.
+- `invariants.md` derives every block from a cited delta pair, guard lift and
+  write site, edge, temporal predicate, or documented claim inside the scope
+  files. A carried block can cite a location the diff has moved.
+- `x-ray.md` is written from the fresh global synthesis and cross-links
+  `invariants.md` anchors by identifier. Carrying it presents a superseded
+  conclusion under a current heading, and can link to an anchor that no longer
+  exists.
+
+Reuse therefore stops at preparation facts, which are per-source and digest
+validated, and never reaches a synthesis, a finding, or one of the four
+outputs. Anyone who wants that boundary moved changes the overlay first: the
+adapter and this reference follow it, and neither may be edited to disagree
+with it. See
+[skills#1126](https://github.com/wildcat-finance/skills/issues/1126).
+
 ## Fiat boundary
 
 Scope manifests, plans, preparation entries, candidates, output manifests,
