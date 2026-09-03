@@ -429,8 +429,9 @@ class TestDelegationPackets(HexctlCase):
             warden,
             "warden",
             ("step_branch", "stacked_branch", "security_suite", "plugin_root",
-             "audit_log_path", "round", "audit_filter", "risk_register",
-             "runbook_step", "design_evidence"),
+             "audit_log_path", "step", "round", "warden_continuity",
+             "audit_filter", "risk_register", "runbook_step",
+             "design_evidence"),
         )
         risk = warden["brief"]["risk_register"]
         self.assertEqual(set(risk), {"markdown", "path", "sha256"})
@@ -3096,8 +3097,9 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             set(warden_first["brief"]),
             {
                 "step_branch", "stacked_branch", "security_suite", "plugin_root",
-                "audit_log_path", "round", "audit_filter", "risk_register",
-                "runbook_step", "design_evidence",
+                "audit_log_path", "step", "round", "warden_continuity",
+                "audit_filter", "risk_register", "runbook_step",
+                "design_evidence",
             },
         )
         self.assertEqual(
