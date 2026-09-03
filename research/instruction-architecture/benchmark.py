@@ -9,6 +9,7 @@ sources recorded here.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import itertools
 import json
@@ -17,6 +18,7 @@ import os
 from pathlib import Path, PurePosixPath
 import posixpath
 import re
+import resource
 import secrets
 import selectors
 import signal
@@ -95,6 +97,108 @@ BASELINE_RECORD_NAMES = (
 EXPECTED_BASELINE_INVENTORY_SHA256 = (
     "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
 )
+
+DEVELOPMENT_SCHEMA = PurePosixPath(
+    "research/instruction-architecture/schemas/development-v1.schema.json"
+)
+DEVELOPMENT_FIXTURE_ROOT = PurePosixPath("tests/fixtures/instruction-architecture")
+DEVELOPMENT_EVIDENCE_ROOT = DEVELOPMENT_FIXTURE_ROOT / "evidence/development"
+DEVELOPMENT_RECORD_PATHS = (
+    "controls/noema.json",
+    "controls/raw.json",
+    "controls/section-graph.json",
+    "controls/simple.json",
+    "controls/wai1.json",
+    "development/cases.json",
+    "hostile/specimens.json",
+    "hostile/execution.json",
+    "evidence/development/noema.json",
+    "evidence/development/raw.json",
+    "evidence/development/report.json",
+    "evidence/development/resource-samples.json",
+    "evidence/development/section-graph.json",
+    "evidence/development/simple.json",
+    "evidence/development/wai1.json",
+)
+DEVELOPMENT_ARMS = ("raw", "wai1", "noema", "simple", "section-graph")
+DEVELOPMENT_CLASSES = (
+    "order",
+    "scope",
+    "negation",
+    "exception",
+    "literal",
+    "alias",
+    "unknown",
+    "refusal",
+    "recovery",
+    "authority",
+)
+SECTION_SELECTION = {
+    "closure": "selected-sections-plus-transitive-parents",
+    "deduplication": "exact-whole-file-canonical-content",
+    "fallback": "whole-source-for-unsupported-non-markdown",
+    "roots": "all-sections-of-loader-reachable-canonical-files",
+    "scenario_source": "verified-loader-graph",
+}
+SHARED_BEHAVIORAL_PATHS = (
+    ".agents/skills/promise-machine/PORTABLE.md",
+    ".agents/skills/promise-machine/SKILL.md",
+    "AGENTS.md",
+    "PROMISE_MACHINE.md",
+    "SHOGGOTH.md",
+)
+WAI1_CONTROL_REF = SOURCE_REF
+NOEMA_PRODUCT_REF = "07ee0475d1559a2b09488f925645a83f786d1f3c"
+NOEMA_REVIEW_REF = "7344de8874f9de8a2a2ef78a31f7e760f56e491e"
+CONTROL_SNAPSHOT_ROOT = DEVELOPMENT_FIXTURE_ROOT / "controls/snapshots"
+CONTROL_SNAPSHOT_MANIFEST = CONTROL_SNAPSHOT_ROOT / "manifest.json"
+WAI1_CONTROL_PREFIXES = (
+    "docs/agent-instruction-language-v1.md",
+    "schemas/agent-instruction-v1.schema.json",
+    "scripts/agent_instruction.py",
+    "tests/fixtures/agent-instruction-v1",
+)
+NOEMA_PRODUCT_PREFIXES = (
+    "docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md",
+    "docs/noema-v1.md",
+    "schemas/noema-v1.schema.json",
+    "scripts/noema.py",
+    "tests/fixtures/noema-v1",
+)
+NOEMA_REVIEW_PREFIXES = (
+    "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.md",
+    "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.synopsis.md",
+)
+CONTROL_SNAPSHOT_GROUPS = (
+    (WAI1_CONTROL_REF, WAI1_CONTROL_PREFIXES),
+    (NOEMA_PRODUCT_REF, NOEMA_PRODUCT_PREFIXES),
+    (NOEMA_REVIEW_REF, NOEMA_REVIEW_PREFIXES),
+)
+EXPECTED_CONTROL_SNAPSHOT_SHA256 = (
+    "696d67a87f3c564b9c02d68fb8630132ffad2f98d2319af76390cfd80a28fc7a"
+)
+EXPECTED_CONTROL_SNAPSHOT_COUNTS = {
+    "artifact_records": 172,
+    "object_bytes": 2_095_430,
+    "objects": 157,
+}
+MAX_CONTROL_PATHS = 1_024
+MAX_DEVELOPMENT_CASES = 128
+MAX_PROMPT_COMPONENTS = 8_192
+MAX_PROMPT_BYTES = 4 * 1024 * 1024
+MAX_SECTION_COUNT = 32_768
+MAX_HOSTILE_SPECIMENS = 128
+MAX_MODEL_OUTPUT_BYTES = 256 * 1024
+EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
+    "5c2d75f64fa661772f915a0abba6b443c247774be8b77271ce87c97ba87a6b51"
+)
+EXPECTED_CONTROL_SHA256 = {
+    "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
+    "raw": "bfc416cc7fd3d9a1a569fea4eaa6e6577770bf89f77b68eb23378633d57da23e",
+    "section-graph": "64f62560d56b65c782c792854a7803e90c864cb7fa590e75618f2f744c8d40a1",
+    "simple": "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
+    "wai1": "d45599ba946cf515a72491310a105db6e257847d67541f218398877ea84e0ac1",
+}
 
 INVOCATION_PROFILE_SCHEMA = PurePosixPath(
     "research/instruction-architecture/schemas/invocation-profile-v1.schema.json"
@@ -1046,10 +1150,7 @@ def _open_parent(
 
 def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result]:
     before = os.fstat(descriptor)
-    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
-        raise Refusal("input is not a single-link regular file")
-    if before.st_size > limit:
-        raise Refusal("input exceeds byte limit")
+    _validate_input_metadata(before.st_mode, before.st_nlink, before.st_size, limit)
     chunks: list[bytes] = []
     size = 0
     while True:
@@ -1061,9 +1162,22 @@ def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result
         if size > limit:
             raise Refusal("input exceeds byte limit")
     after = os.fstat(descriptor)
-    if _identity(before) != _identity(after):
-        raise Refusal("input changed during read")
+    _require_unchanged_input(_identity(before), _identity(after))
     return b"".join(chunks), after
+
+
+def _validate_input_metadata(mode: int, links: int, size: int, limit: int) -> None:
+    """Apply the regular-file and byte predicates used by every input read."""
+    if not stat.S_ISREG(mode) or links != 1:
+        raise Refusal("input is not a single-link regular file")
+    if size > limit:
+        raise Refusal("input exceeds byte limit")
+
+
+def _require_unchanged_input(before: tuple[int, ...], after: tuple[int, ...]) -> None:
+    """Keep the concurrent-change predicate independently exercisable."""
+    if before != after:
+        raise Refusal("input changed during read")
 
 
 def _read_regular(path: Path, limit: int) -> bytes:
@@ -1088,8 +1202,7 @@ def _read_regular(path: Path, limit: int) -> bytes:
         except OSError as exc:
             raise Refusal("input changed during read") from exc
         try:
-            if _identity(os.fstat(current)) != _identity(after):
-                raise Refusal("input changed during read")
+            _require_unchanged_input(_identity(after), _identity(os.fstat(current)))
         finally:
             os.close(current)
     finally:
@@ -6345,6 +6458,3115 @@ def _atomic_write(path: Path, data: bytes) -> None:
         os.close(parent)
 
 
+# Step 2 keeps evaluator semantics outside every adapter.  This same contract
+# is copied into each arm record so neither historical IR becomes the host.
+NEUTRAL_CONTRACT = {
+    "authority": "exact-canonical-source-bytes-at-source-ref",
+    "case_semantics": "exact-source-span",
+    "fallback": "exact-current-source-counted-as-not-native",
+    "prompt": "task-plus-representation-without-oracle-or-arm-label",
+    "score": "exact-source-recovery-and-native-mechanism",
+}
+
+
+def _git_blob_oid(data: bytes, object_format: str = "sha1") -> str:
+    """Compute the repository-format Git identity for exact blob bytes."""
+    header = f"blob {len(data)}\0".encode("ascii")
+    if object_format == "sha1":
+        hasher = hashlib.sha1(usedforsecurity=False)
+    elif object_format == "sha256":
+        hasher = hashlib.sha256()
+    else:
+        raise Refusal("control snapshot object format is unsupported")
+    hasher.update(header)
+    hasher.update(data)
+    return hasher.hexdigest()
+
+
+@lru_cache(maxsize=4)
+def _control_ref_mode(ref: str) -> str:
+    """Require a typed commit or its exact absence in a shallow repository."""
+    if re.fullmatch(r"[0-9a-f]{40}", ref) is None:
+        raise Refusal("control ref is not an exact commit id")
+    expression = f"{ref}^{{commit}}"
+    probe = _git(
+        ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        128,
+        input_data=f"{expression}\n".encode("ascii"),
+    )
+    if probe == f"{ref} commit\n".encode("ascii"):
+        return "git"
+    if probe != f"{expression} missing\n".encode("ascii"):
+        raise Refusal("bounded Git read returned an unexpected control identity")
+    shallow = _git(["rev-parse", "--is-shallow-repository"], 16)
+    if shallow != b"true\n":
+        raise Refusal("control commit is absent from a non-shallow repository")
+    return "snapshot"
+
+
+def _git_control_paths(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+    if _control_ref_mode(ref) != "git":
+        raise Refusal("control snapshot generation requires the pinned commit")
+    if not prefixes:
+        raise Refusal("control inventory has no admitted prefixes")
+    for prefix in prefixes:
+        _safe_relative(prefix)
+    raw = _git(
+        ["ls-tree", "-r", "-z", "--name-only", ref, "--", *prefixes],
+        2 * 1024 * 1024,
+    )
+    if not raw or not raw.endswith(b"\0") or raw.startswith(b"\0") or b"\0\0" in raw:
+        raise Refusal("control tree inventory is malformed")
+    try:
+        paths = [part.decode("utf-8", errors="strict") for part in raw[:-1].split(b"\0")]
+    except UnicodeDecodeError as exc:
+        raise Refusal("control tree path is not UTF-8") from exc
+    if paths != sorted(set(paths)) or len(paths) > MAX_CONTROL_PATHS:
+        raise Refusal("control tree inventory is unordered, duplicated, or oversized")
+    for path in paths:
+        _safe_relative(path)
+        if not any(
+            path == prefix or path.startswith(prefix.rstrip("/") + "/")
+            for prefix in prefixes
+        ):
+            raise Refusal("control tree escaped its admitted prefixes")
+    return paths
+
+
+def _git_blob_identity_at(ref: str, path: str) -> str:
+    _safe_relative(path)
+    expression = f"{ref}:{path}"
+    probe = _git(
+        ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        128,
+        input_data=f"{expression}\n".encode("ascii"),
+    )
+    match = re.fullmatch(rb"([0-9a-f]{40}) blob\n", probe)
+    if match is None:
+        raise Refusal("control commit path does not resolve to a typed blob")
+    return match.group(1).decode("ascii")
+
+
+def _control_snapshot_manifest(
+    artifacts: list[dict[str, Any]], objects: dict[str, bytes]
+) -> dict[str, Any]:
+    return {
+        "artifacts": artifacts,
+        "object_format": "sha1",
+        "objects": [
+            {
+                "bytes": len(objects[oid]),
+                "oid": oid,
+                "sha256": _sha256(objects[oid]),
+            }
+            for oid in sorted(objects)
+        ],
+        "schema": f"{SCHEMA_PREFIX}-control-snapshot/v1",
+        "totals": {
+            "artifact_records": len(artifacts),
+            "object_bytes": sum(len(data) for data in objects.values()),
+            "objects": len(objects),
+        },
+    }
+
+
+def _snapshot_entries(descriptor: int, label: str, limit: int) -> list[str]:
+    entries: list[str] = []
+    seen: set[str] = set()
+    try:
+        with os.scandir(descriptor) as iterator:
+            for entry in iterator:
+                if len(entries) >= limit:
+                    raise Refusal(f"{label} inventory exceeds its bound")
+                if entry.name in seen:
+                    raise Refusal(f"{label} inventory is duplicated")
+                entries.append(entry.name)
+                seen.add(entry.name)
+    except OSError as exc:
+        raise Refusal(f"{label} inventory is unavailable") from exc
+    return entries
+
+
+def _snapshot_regular_identity(
+    descriptor: int, name: str, label: str
+) -> tuple[int, ...]:
+    try:
+        metadata = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+    except OSError as exc:
+        raise Refusal(f"{label} entry is unavailable or unsafe") from exc
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+        raise Refusal(f"{label} entry is not a single-link regular file")
+    return _identity(metadata)
+
+
+def _snapshot_read_entry(
+    descriptor: int, name: str, limit: int, label: str
+) -> tuple[bytes, tuple[int, ...]]:
+    try:
+        entry = os.open(name, _regular_read_flags(), dir_fd=descriptor)
+    except OSError as exc:
+        raise Refusal(f"{label} entry is unavailable or unsafe") from exc
+    try:
+        data, metadata = _read_descriptor(entry, limit)
+    finally:
+        os.close(entry)
+    return data, _identity(metadata)
+
+
+def _open_snapshot_directories(
+    root: PurePosixPath, *, create: bool, exact_root: bool
+) -> tuple[int, int]:
+    """Open the snapshot root and object store without following path changes."""
+    directory, _ = _open_parent(
+        root / ".entry", create=create, label="control snapshot root"
+    )
+    objects = -1
+    try:
+        expected = {"manifest.json", "objects"}
+        entries = set(_snapshot_entries(directory, "control snapshot root", 2))
+        if (exact_root and entries != expected) or (
+            not exact_root and not entries <= expected
+        ):
+            raise Refusal("control snapshot root directory is not closed")
+        if "manifest.json" in entries:
+            _snapshot_regular_identity(
+                directory, "manifest.json", "control snapshot manifest"
+            )
+        if "objects" not in entries:
+            if not create:
+                raise Refusal("control snapshot root directory is not closed")
+            try:
+                os.mkdir("objects", mode=0o755, dir_fd=directory)
+            except OSError as exc:
+                raise Refusal("control snapshot object directory is unavailable") from exc
+        try:
+            objects = os.open("objects", _directory_flags(), dir_fd=directory)
+        except OSError as exc:
+            raise Refusal("control snapshot object directory is unavailable or unsafe") from exc
+        final_entries = set(_snapshot_entries(directory, "control snapshot root", 2))
+        if (exact_root and final_entries != expected) or (
+            not exact_root and not final_entries <= expected
+        ):
+            raise Refusal("control snapshot root directory is not closed")
+        return directory, objects
+    except BaseException:
+        if objects >= 0:
+            os.close(objects)
+        os.close(directory)
+        raise
+
+
+def _preflight_snapshot_publication(
+    output: PurePosixPath, object_names: set[str]
+) -> tuple[int, int]:
+    """Admit only an empty, partial, or complete instance of this generation."""
+    directory, objects = _open_snapshot_directories(
+        output, create=True, exact_root=False
+    )
+    try:
+        entries = set(
+            _snapshot_entries(objects, "control snapshot object", len(object_names))
+        )
+        if not entries <= object_names:
+            raise Refusal("control snapshot object directory contains an unowned entry")
+        for name in entries:
+            _snapshot_regular_identity(objects, name, "control snapshot object")
+        return directory, objects
+    except BaseException:
+        os.close(objects)
+        os.close(directory)
+        raise
+
+
+def _verify_snapshot_publication(
+    output: PurePosixPath,
+    directory: int,
+    object_directory: int,
+    manifest: bytes,
+    objects: dict[str, bytes],
+) -> None:
+    """Re-read one complete generation and bind it to the preflight directories."""
+    expected_objects = set(objects)
+    directory_before = os.fstat(directory)
+    objects_before = os.fstat(object_directory)
+    if set(_snapshot_entries(directory, "control snapshot root", 2)) != {
+        "manifest.json",
+        "objects",
+    }:
+        raise Refusal("control snapshot root directory is not closed")
+    if (
+        set(
+            _snapshot_entries(
+                object_directory, "control snapshot object", len(expected_objects)
+            )
+        )
+        != expected_objects
+    ):
+        raise Refusal("control snapshot object directory differs from its manifest")
+    manifest_read, manifest_identity = _snapshot_read_entry(
+        directory, "manifest.json", MAX_JSON_BYTES, "control snapshot manifest"
+    )
+    if manifest_read != manifest:
+        raise Refusal("published control snapshot manifest drift")
+    object_identities: dict[str, tuple[int, ...]] = {}
+    for oid in sorted(objects):
+        data, identity = _snapshot_read_entry(
+            object_directory, oid, MAX_SOURCE_BYTES, "control snapshot object"
+        )
+        if data != objects[oid]:
+            raise Refusal("published control snapshot object drift")
+        object_identities[oid] = identity
+    if (
+        set(_snapshot_entries(directory, "control snapshot root", 2))
+        != {"manifest.json", "objects"}
+        or set(
+            _snapshot_entries(
+                object_directory, "control snapshot object", len(expected_objects)
+            )
+        )
+        != expected_objects
+        or _identity(os.fstat(directory)) != _identity(directory_before)
+        or _identity(os.fstat(object_directory)) != _identity(objects_before)
+        or _snapshot_regular_identity(
+            directory, "manifest.json", "control snapshot manifest"
+        )
+        != manifest_identity
+        or any(
+            _snapshot_regular_identity(
+                object_directory, oid, "control snapshot object"
+            )
+            != object_identities[oid]
+            for oid in object_identities
+        )
+    ):
+        raise Refusal("control snapshot publication changed during verification")
+    routed_directory, routed_objects = _open_snapshot_directories(
+        output, create=False, exact_root=True
+    )
+    try:
+        if (
+            _directory_identity(os.fstat(routed_directory))
+            != _directory_identity(directory_before)
+            or _directory_identity(os.fstat(routed_objects))
+            != _directory_identity(objects_before)
+            or set(
+                _snapshot_entries(
+                    routed_objects, "control snapshot object", len(expected_objects)
+                )
+            )
+            != expected_objects
+        ):
+            raise Refusal("control snapshot publication path changed")
+    finally:
+        os.close(routed_objects)
+        os.close(routed_directory)
+
+
+def snapshot_controls(args: argparse.Namespace) -> bytes:
+    """Materialise immutable control objects while every pinned ref is present."""
+    output = _confined_output(
+        args.output,
+        "control snapshot output",
+        exact=(CONTROL_SNAPSHOT_ROOT,),
+        roots=(SCRATCH_ROOT,),
+    )
+    object_format = _git(["rev-parse", "--show-object-format"], 16)
+    if object_format != b"sha1\n":
+        raise Refusal("control refs require a SHA-1 object-format repository")
+    artifacts: list[dict[str, Any]] = []
+    objects: dict[str, bytes] = {}
+    for ref, prefixes in CONTROL_SNAPSHOT_GROUPS:
+        for path in _git_control_paths(ref, prefixes):
+            oid = _git_blob_identity_at(ref, path)
+            data = _git(["cat-file", "blob", oid], MAX_SOURCE_BYTES)
+            if _git_blob_oid(data) != oid:
+                raise Refusal("Git returned control bytes with another blob identity")
+            existing = objects.get(oid)
+            if existing is not None and existing != data:
+                raise Refusal("two control objects share an identity but not bytes")
+            objects[oid] = data
+            artifacts.append(
+                {
+                    "blob_oid": oid,
+                    "bytes": len(data),
+                    "path": path,
+                    "ref": ref,
+                    "sha256": _sha256(data),
+                }
+            )
+    artifacts.sort(key=lambda item: (item["ref"], item["path"]))
+    manifest = _control_snapshot_manifest(artifacts, objects)
+    if manifest["totals"] != EXPECTED_CONTROL_SNAPSHOT_COUNTS:
+        raise Refusal("control snapshot resource totals drift")
+    manifest_bytes = _canonical_json(manifest)
+    relative_output = _repository_relative(output, "control snapshot output")
+    if (
+        relative_output == CONTROL_SNAPSHOT_ROOT
+        and EXPECTED_CONTROL_SNAPSHOT_SHA256 is not None
+        and _sha256(manifest_bytes) != EXPECTED_CONTROL_SNAPSHOT_SHA256
+    ):
+        raise Refusal("control snapshot manifest differs from its frozen digest")
+    directory, object_directory = _preflight_snapshot_publication(
+        relative_output, set(objects)
+    )
+    try:
+        for oid in sorted(objects):
+            _atomic_write(output / "objects" / oid, objects[oid])
+        _atomic_write(output / "manifest.json", manifest_bytes)
+        _verify_snapshot_publication(
+            relative_output,
+            directory,
+            object_directory,
+            manifest_bytes,
+            objects,
+        )
+    finally:
+        os.close(object_directory)
+        os.close(directory)
+    return _result(
+        "snapshot-controls",
+        manifest_bytes,
+        dict(EXPECTED_CONTROL_SNAPSHOT_COUNTS),
+    )
+
+
+@lru_cache(maxsize=1)
+def _control_snapshot() -> dict[str, Any]:
+    snapshot_directory, snapshot_objects = _open_snapshot_directories(
+        CONTROL_SNAPSHOT_ROOT, create=False, exact_root=True
+    )
+    os.close(snapshot_objects)
+    os.close(snapshot_directory)
+    manifest_path = ROOT / Path(*CONTROL_SNAPSHOT_MANIFEST.parts)
+    raw = _read_regular(manifest_path, MAX_JSON_BYTES)
+    if (
+        not isinstance(EXPECTED_CONTROL_SNAPSHOT_SHA256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", EXPECTED_CONTROL_SNAPSHOT_SHA256) is None
+        or _sha256(raw) != EXPECTED_CONTROL_SNAPSHOT_SHA256
+    ):
+        raise Refusal("control snapshot manifest differs from its frozen digest")
+    manifest = _decode_record(raw)
+    _require_fields(
+        manifest,
+        ("artifacts", "object_format", "objects", "schema", "totals"),
+        ("artifacts", "object_format", "objects", "schema", "totals"),
+        "control snapshot manifest",
+    )
+    if (
+        manifest["schema"] != f"{SCHEMA_PREFIX}-control-snapshot/v1"
+        or manifest["object_format"] != "sha1"
+        or not isinstance(manifest["artifacts"], list)
+        or not isinstance(manifest["objects"], list)
+        or manifest["totals"] != EXPECTED_CONTROL_SNAPSHOT_COUNTS
+        or len(manifest["artifacts"])
+        != EXPECTED_CONTROL_SNAPSHOT_COUNTS["artifact_records"]
+        or len(manifest["objects"]) != EXPECTED_CONTROL_SNAPSHOT_COUNTS["objects"]
+    ):
+        raise Refusal("control snapshot manifest identity or totals drift")
+
+    object_records: dict[str, dict[str, Any]] = {}
+    object_order: list[str] = []
+    for record in manifest["objects"]:
+        _require_fields(
+            record, ("bytes", "oid", "sha256"), ("bytes", "oid", "sha256"),
+            "control snapshot object",
+        )
+        oid = record["oid"]
+        size = record["bytes"]
+        digest = record["sha256"]
+        if (
+            not isinstance(oid, str)
+            or re.fullmatch(r"[0-9a-f]{40}", oid) is None
+            or type(size) is not int
+            or not 0 < size <= MAX_SOURCE_BYTES
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            or oid in object_records
+        ):
+            raise Refusal("control snapshot object identity is malformed")
+        object_records[oid] = record
+        object_order.append(oid)
+    if object_order != sorted(object_order):
+        raise Refusal("control snapshot objects are not canonically ordered")
+
+    object_directory = CONTROL_SNAPSHOT_ROOT / "objects"
+    directory, _ = _open_parent(
+        object_directory / ".entry", create=False, label="control snapshot objects"
+    )
+    object_bytes: dict[str, bytes] = {}
+    try:
+        directory_before = os.fstat(directory)
+        entries_before = _snapshot_entries(
+            directory, "control snapshot object", len(object_records)
+        )
+        if (
+            len(entries_before) != len(object_records)
+            or set(entries_before) != set(object_records)
+        ):
+            raise Refusal("control snapshot object directory differs from its manifest")
+        for oid, record in object_records.items():
+            data = _read_regular(
+                ROOT / Path(*(object_directory / oid).parts), MAX_SOURCE_BYTES
+            )
+            if (
+                len(data) != record["bytes"]
+                or _sha256(data) != record["sha256"]
+                or _git_blob_oid(data, manifest["object_format"]) != oid
+            ):
+                raise Refusal(
+                    "control snapshot object size, digest, or blob identity drift"
+                )
+            object_bytes[oid] = data
+        entries_after = _snapshot_entries(
+            directory, "control snapshot object", len(object_records)
+        )
+        if (
+            sorted(entries_after) != sorted(entries_before)
+            or _identity(os.fstat(directory)) != _identity(directory_before)
+        ):
+            raise Refusal("control snapshot object inventory changed")
+    finally:
+        os.close(directory)
+
+    prefixes_by_ref = {ref: prefixes for ref, prefixes in CONTROL_SNAPSHOT_GROUPS}
+    artifacts: dict[tuple[str, str], dict[str, Any]] = {}
+    artifact_order: list[tuple[str, str]] = []
+    for record in manifest["artifacts"]:
+        _require_fields(
+            record,
+            ("blob_oid", "bytes", "path", "ref", "sha256"),
+            ("blob_oid", "bytes", "path", "ref", "sha256"),
+            "control snapshot artifact",
+        )
+        ref = record["ref"]
+        path = record["path"]
+        oid = record["blob_oid"]
+        prefixes = prefixes_by_ref.get(ref)
+        if (
+            prefixes is None
+            or not isinstance(path, str)
+            or not isinstance(oid, str)
+            or re.fullmatch(r"[0-9a-f]{40}", oid) is None
+        ):
+            raise Refusal("control snapshot artifact identity is malformed")
+        _safe_relative(path)
+        if not any(
+            path == prefix or path.startswith(prefix.rstrip("/") + "/")
+            for prefix in prefixes
+        ):
+            raise Refusal("control snapshot artifact escaped its admitted prefixes")
+        key = (ref, path)
+        source = object_records.get(oid)
+        if (
+            key in artifacts
+            or source is None
+            or record["bytes"] != source["bytes"]
+            or record["sha256"] != source["sha256"]
+        ):
+            raise Refusal("control snapshot artifact binding drift")
+        artifacts[key] = record
+        artifact_order.append(key)
+    if artifact_order != sorted(artifact_order):
+        raise Refusal("control snapshot artifacts are not canonically ordered")
+    if set(object_records) != {record["blob_oid"] for record in artifacts.values()}:
+        raise Refusal("control snapshot contains an unreferenced or absent object")
+    if sum(len(data) for data in object_bytes.values()) != EXPECTED_CONTROL_SNAPSHOT_COUNTS[
+        "object_bytes"
+    ]:
+        raise Refusal("control snapshot object byte total drift")
+    if _read_regular(manifest_path, MAX_JSON_BYTES) != raw:
+        raise Refusal("control snapshot manifest changed during verification")
+    snapshot_directory, snapshot_objects = _open_snapshot_directories(
+        CONTROL_SNAPSHOT_ROOT, create=False, exact_root=True
+    )
+    try:
+        _verify_snapshot_publication(
+            CONTROL_SNAPSHOT_ROOT,
+            snapshot_directory,
+            snapshot_objects,
+            raw,
+            object_bytes,
+        )
+    finally:
+        os.close(snapshot_objects)
+        os.close(snapshot_directory)
+    return {
+        "artifacts": artifacts,
+        "manifest": manifest,
+        "manifest_bytes": raw,
+        "objects": object_bytes,
+    }
+
+
+@lru_cache(maxsize=512)
+def _git_blob_at(ref: str, path: str) -> bytes:
+    _safe_relative(path)
+    snapshot = _control_snapshot()
+    record = snapshot["artifacts"].get((ref, path))
+    if record is None:
+        raise Refusal("control artifact is absent from the checked snapshot")
+    data = snapshot["objects"][record["blob_oid"]]
+    if _control_ref_mode(ref) == "git":
+        observed_oid = _git_blob_identity_at(ref, path)
+        if observed_oid != record["blob_oid"]:
+            raise Refusal("control commit path differs from its snapshot blob identity")
+        if _git(["cat-file", "blob", observed_oid], MAX_SOURCE_BYTES) != data:
+            raise Refusal("control Git bytes differ from the checked snapshot")
+    return data
+
+
+def _control_paths_at(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+    if not prefixes:
+        raise Refusal("control inventory has no admitted prefixes")
+    for prefix in prefixes:
+        _safe_relative(prefix)
+    snapshot_paths = sorted(
+        path
+        for (artifact_ref, path) in _control_snapshot()["artifacts"]
+        if artifact_ref == ref
+        and any(
+            path == prefix or path.startswith(prefix.rstrip("/") + "/")
+            for prefix in prefixes
+        )
+    )
+    if not snapshot_paths or len(snapshot_paths) > MAX_CONTROL_PATHS:
+        raise Refusal("control snapshot inventory is empty or oversized")
+    if _control_ref_mode(ref) == "git":
+        git_paths = _git_control_paths(ref, prefixes)
+        if git_paths != snapshot_paths:
+            raise Refusal("control commit inventory differs from its checked snapshot")
+    return snapshot_paths
+
+
+def _control_inventory(
+    ref: str,
+    prefixes: tuple[str, ...],
+    *,
+    require_live_match: bool,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path in _control_paths_at(ref, prefixes):
+        data = _git_blob_at(ref, path)
+        snapshot = _control_snapshot()["artifacts"][(ref, path)]
+        if require_live_match:
+            live = _read_regular(
+                ROOT / Path(*PurePosixPath(path).parts), MAX_SOURCE_BYTES
+            )
+            if live != data:
+                raise Refusal(f"immutable control differs from its entry bytes: {path}")
+        records.append(
+            {
+                "blob_oid": snapshot["blob_oid"],
+                "bytes": len(data),
+                "path": path,
+                "ref": ref,
+                "sha256": _sha256(data),
+            }
+        )
+    return records
+
+
+def _range_record(
+    document: dict[str, Any],
+    data: bytes,
+    start: int,
+    end: int,
+    mode: str,
+    reason: str,
+    representation_id: str,
+) -> dict[str, Any]:
+    if (
+        type(start) is not int
+        or type(end) is not int
+        or start < 0
+        or end <= start
+        or end > len(data)
+        or mode not in {"native", "raw-fallback"}
+    ):
+        raise Refusal("adapter range is malformed")
+    if mode == "native" and reason:
+        raise Refusal("native adapter range carries a fallback reason")
+    if mode == "raw-fallback" and not reason:
+        raise Refusal("fallback adapter range has no reason")
+    span = data[start:end]
+    return {
+        "bytes": len(span),
+        "end": end,
+        "mode": mode,
+        "path": document["path"],
+        "reason": reason,
+        "representation_id": representation_id,
+        "sha256": _sha256(span),
+        "start": start,
+    }
+
+
+def _coverage_summary(
+    manifest: dict[str, Any], ranges: list[dict[str, Any]]
+) -> dict[str, int]:
+    by_path: dict[str, list[dict[str, Any]]] = {}
+    for item in ranges:
+        by_path.setdefault(item["path"], []).append(item)
+    documents = {item["path"]: item for item in manifest["documents"]}
+    if set(by_path) != set(documents):
+        raise Refusal("adapter coverage does not name the complete corpus")
+    native_files = fallback_files = native_bytes = fallback_bytes = 0
+    for path, document in documents.items():
+        data = _source_blob(path)
+        rows = sorted(by_path[path], key=lambda item: (item["start"], item["end"]))
+        cursor = 0
+        modes: set[str] = set()
+        for row in rows:
+            if row["start"] != cursor or row["end"] > len(data):
+                raise Refusal(f"adapter coverage has a gap or overlap: {path}")
+            if (
+                row["bytes"] != row["end"] - row["start"]
+                or row["sha256"] != _sha256(data[row["start"] : row["end"]])
+            ):
+                raise Refusal(f"adapter coverage digest drift: {path}")
+            cursor = row["end"]
+            modes.add(row["mode"])
+            if row["mode"] == "native":
+                native_bytes += row["bytes"]
+            else:
+                fallback_bytes += row["bytes"]
+        if cursor != document["bytes"] or len(data) != document["bytes"]:
+            raise Refusal(f"adapter coverage does not recover source bytes: {path}")
+        native_files += "native" in modes
+        fallback_files += "raw-fallback" in modes
+
+    canonical_paths = {
+        item["path"]
+        for item in manifest["documents"]
+        if item["path"] == item["canonical_content_path"]
+    }
+    unique_native_files = unique_fallback_files = 0
+    unique_native_bytes = unique_fallback_bytes = 0
+    for path in canonical_paths:
+        modes = {item["mode"] for item in by_path[path]}
+        unique_native_files += "native" in modes
+        unique_fallback_files += "raw-fallback" in modes
+        for item in by_path[path]:
+            if item["mode"] == "native":
+                unique_native_bytes += item["bytes"]
+            else:
+                unique_fallback_bytes += item["bytes"]
+    summary = {
+        "fallback_physical_bytes": fallback_bytes,
+        "fallback_physical_files": fallback_files,
+        "fallback_ranges": sum(item["mode"] == "raw-fallback" for item in ranges),
+        "fallback_unique_bytes": unique_fallback_bytes,
+        "fallback_unique_files": unique_fallback_files,
+        "native_physical_bytes": native_bytes,
+        "native_physical_files": native_files,
+        "native_ranges": sum(item["mode"] == "native" for item in ranges),
+        "native_unique_bytes": unique_native_bytes,
+        "native_unique_files": unique_native_files,
+        "physical_bytes": manifest["totals"]["physical_bytes"],
+        "physical_files": manifest["totals"]["physical_files"],
+        "unique_bytes": manifest["totals"]["unique_bytes"],
+        "unique_files": manifest["totals"]["unique_files"],
+    }
+    if (
+        native_bytes + fallback_bytes != summary["physical_bytes"]
+        or unique_native_bytes + unique_fallback_bytes != summary["unique_bytes"]
+    ):
+        raise Refusal("adapter coverage denominators do not reconcile")
+    return summary
+
+
+def _coverage(
+    manifest: dict[str, Any], ranges: list[dict[str, Any]]
+) -> dict[str, Any]:
+    ranges.sort(key=lambda item: (item["path"], item["start"], item["end"]))
+    return {"ranges": ranges, "summary": _coverage_summary(manifest, ranges)}
+
+
+def _base_control(
+    arm: str,
+    manifest: dict[str, Any],
+    ranges: list[dict[str, Any]],
+    *,
+    binding_kind: str,
+    product_ref: str,
+    review_ref: str | None,
+    artifacts: list[dict[str, Any]],
+    checker: dict[str, Any] | None,
+    native_mappings: list[dict[str, Any]],
+    graph: dict[str, Any],
+    mechanism_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    if arm not in DEVELOPMENT_ARMS:
+        raise Refusal("unknown development arm")
+    binding_body = {
+        "artifacts": artifacts,
+        "kind": binding_kind,
+        "product_ref": product_ref,
+        "review_ref": review_ref,
+    }
+    control = {
+        "arm": arm,
+        "binding": {
+            **binding_body,
+            "artifacts_sha256": _sha256(_canonical_json(binding_body)),
+            "checker": checker,
+        },
+        "claims": {
+            "candidate_defines_semantics": False,
+            "fallback_is_aggregate_success": False,
+            "fallback_is_native_coverage": False,
+            "full_source_trace_required": True,
+            "round_trip_scope": "exact-source-bytes",
+        },
+        "contract": dict(NEUTRAL_CONTRACT),
+        "coverage": _coverage(manifest, ranges),
+        "graph": graph,
+        "manifest_sha256": _artifact_digest(manifest),
+        "mechanism_evidence": mechanism_evidence,
+        "native_mappings": native_mappings,
+        "schema": f"{SCHEMA_PREFIX}-control/v1",
+        "source_ref": SOURCE_REF,
+    }
+    expected = EXPECTED_CONTROL_SHA256.get(arm)
+    if expected is not None and _artifact_digest(control) != expected:
+        raise Refusal(f"immutable {arm} control digest drift")
+    return control
+
+
+def _raw_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    ranges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        ranges.append(
+            _range_record(
+                document, data, 0, len(data), "native", "", f"raw:{document['sha256']}"
+            )
+        )
+    return _base_control(
+        "raw",
+        manifest,
+        ranges,
+        binding_kind="verified-loader-source",
+        product_ref=SOURCE_REF,
+        review_ref=None,
+        artifacts=[],
+        checker=None,
+        native_mappings=[],
+        graph={"edges": [], "nodes": []},
+        mechanism_evidence={
+            "current_native_bytes": manifest["totals"]["physical_bytes"],
+            "current_native_envelopes": len(ranges),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+
+
+def _wai1_checker() -> tuple[list[dict[str, Any]], str]:
+    checker_path = "scripts/agent_instruction.py"
+    source = _git_blob_at(WAI1_CONTROL_REF, checker_path)
+    namespace: dict[str, Any] = {
+        "__file__": str(ROOT / checker_path),
+        "__name__": "_framework74_pinned_wai1_checker",
+        "__package__": None,
+    }
+    try:
+        # phylax: allow exact merged WAI1 checker blob at its immutable Git ref
+        exec(compile(source, f"{WAI1_CONTROL_REF}:{checker_path}", "exec"), namespace)
+        records = namespace["check_manifest"](
+            ROOT, "tests/fixtures/agent-instruction-v1/manifest.json"
+        )
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise Refusal("pinned WAI1 checker refused its immutable fixtures") from exc
+    fixture_ids = {
+        item.get("fixture_id")
+        for item in records
+        if isinstance(item, dict) and isinstance(item.get("fixture_id"), str)
+    } if isinstance(records, list) else set()
+    if (
+        not isinstance(records, list)
+        or len(records) != 21
+        or fixture_ids
+        != {
+            "fiat-study-runbook-phase",
+            "horos-boundary-check",
+            "promise-machine-router-selection",
+        }
+    ):
+        raise Refusal("pinned WAI1 checker result cardinality drift")
+    return records, _sha256(_canonical_json(records))
+
+
+def _wai1_decoder_bootstrap() -> tuple[str, bytes]:
+    manifest = _decode_record(
+        _git_blob_at(WAI1_CONTROL_REF, "tests/fixtures/agent-instruction-v1/manifest.json")
+    )
+    evidence = manifest.get("evidence")
+    if not isinstance(evidence, dict) or not isinstance(
+        evidence.get("decoder_bootstrap"), dict
+    ):
+        raise Refusal("WAI1 decoder bootstrap binding is malformed")
+    binding = evidence["decoder_bootstrap"]
+    path = binding.get("path")
+    if not isinstance(path, str):
+        raise Refusal("WAI1 decoder bootstrap path is malformed")
+    data = _git_blob_at(WAI1_CONTROL_REF, path)
+    if (
+        not data
+        or len(data) > 4_096
+        or not data.endswith(b"\n")
+        or binding.get("sha256") != _sha256(data)
+    ):
+        raise Refusal("WAI1 decoder bootstrap digest or shape drift")
+    try:
+        data.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal("WAI1 decoder bootstrap is not UTF-8") from exc
+    return path, data
+
+
+def _wai1_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    artifacts = _control_inventory(
+        WAI1_CONTROL_REF, WAI1_CONTROL_PREFIXES, require_live_match=True
+    )
+    wai_manifest = _decode_record(
+        _git_blob_at(WAI1_CONTROL_REF, "tests/fixtures/agent-instruction-v1/manifest.json")
+    )
+    fixtures = wai_manifest.get("fixtures")
+    if not isinstance(fixtures, list) or len(fixtures) != 3:
+        raise Refusal("WAI1 immutable manifest does not contain three envelopes")
+    documents = {item["path"]: item for item in manifest["documents"]}
+    native_by_path: dict[str, list[tuple[int, int, dict[str, Any]]]] = {}
+    mappings: list[dict[str, Any]] = []
+    for fixture in fixtures:
+        if not isinstance(fixture, dict) or not isinstance(fixture.get("source"), dict):
+            raise Refusal("WAI1 envelope source binding is malformed")
+        source = fixture["source"]
+        path = source.get("path")
+        if path not in documents:
+            raise Refusal("WAI1 envelope source is outside the current corpus")
+        try:
+            start = int(source["start"])
+            end = int(source["end"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise Refusal("WAI1 envelope range is malformed") from exc
+        data = _source_blob(path)
+        compact = fixture.get("artifacts", {}).get("compact", {})
+        compact_path = compact.get("path")
+        if (
+            source.get("sha256") != _sha256(data)
+            or start < 0
+            or end <= start
+            or end > len(data)
+            or source.get("span_sha256") != _sha256(data[start:end])
+            or not isinstance(compact_path, str)
+        ):
+            raise Refusal("WAI1 current envelope source binding drift")
+        compact_bytes = _git_blob_at(WAI1_CONTROL_REF, compact_path)
+        if compact.get("sha256") != _sha256(compact_bytes):
+            raise Refusal("WAI1 compact envelope digest drift")
+        identifier = f"wai1:{fixture['id']}"
+        mapping = {
+            "end": end,
+            "id": identifier,
+            "path": path,
+            "representation_bytes": len(compact_bytes),
+            "representation_path": compact_path,
+            "representation_sha256": _sha256(compact_bytes),
+            "source_sha256": _sha256(data[start:end]),
+            "start": start,
+        }
+        mappings.append(mapping)
+        native_by_path.setdefault(path, []).append((start, end, mapping))
+    mappings.sort(key=lambda item: item["id"])
+
+    ranges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        cursor = 0
+        for start, end, mapping in sorted(native_by_path.get(document["path"], [])):
+            if start < cursor:
+                raise Refusal("WAI1 current envelope ranges overlap")
+            if start > cursor:
+                ranges.append(
+                    _range_record(
+                        document,
+                        data,
+                        cursor,
+                        start,
+                        "raw-fallback",
+                        "unmapped-current-span",
+                        f"raw:{document['sha256']}:{cursor}:{start}",
+                    )
+                )
+            ranges.append(
+                _range_record(document, data, start, end, "native", "", mapping["id"])
+            )
+            cursor = end
+        if cursor < len(data):
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    cursor,
+                    len(data),
+                    "raw-fallback",
+                    "unmapped-current-span",
+                    f"raw:{document['sha256']}:{cursor}:{len(data)}",
+                )
+            )
+    records, checker_sha = _wai1_checker()
+    bootstrap_path, bootstrap = _wai1_decoder_bootstrap()
+    if not any(
+        item["path"] == bootstrap_path
+        and item["sha256"] == _sha256(bootstrap)
+        and item["bytes"] == len(bootstrap)
+        for item in artifacts
+    ):
+        raise Refusal("WAI1 decoder bootstrap is absent from the immutable inventory")
+    control = _base_control(
+        "wai1",
+        manifest,
+        ranges,
+        binding_kind="merged-wai1-at-entry-ref",
+        product_ref=WAI1_CONTROL_REF,
+        review_ref=None,
+        artifacts=artifacts,
+        checker={
+            "invoked": True,
+            "record_count": len(records),
+            "result_sha256": checker_sha,
+            "status": "pass",
+        },
+        native_mappings=mappings,
+        graph={"edges": [], "nodes": []},
+        mechanism_evidence={
+            "current_native_bytes": sum(item["end"] - item["start"] for item in mappings),
+            "current_native_envelopes": len(mappings),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+    summary = control["coverage"]["summary"]
+    if (
+        summary["native_ranges"] != 3
+        or summary["native_physical_bytes"] != 11_170
+        or summary["native_unique_bytes"] != 11_170
+        or summary["fallback_physical_bytes"] != 2_279_280
+        or summary["fallback_unique_bytes"] != 1_807_836
+    ):
+        raise Refusal("WAI1 current native/fallback coverage drift")
+    return control
+
+
+def _noema_prompt_bundle(root: str) -> tuple[str, bytes]:
+    base = PurePosixPath("tests/fixtures/noema-v1") / PurePosixPath(root)
+    kernel_path = (base / "kernel.noe").as_posix()
+    profile_path = (base / "profile.json").as_posix()
+    projection_path = (base / "projection.json").as_posix()
+    kernel = _git_blob_at(NOEMA_PRODUCT_REF, kernel_path)
+    profile_raw = _git_blob_at(NOEMA_PRODUCT_REF, profile_path)
+    projection_raw = _git_blob_at(NOEMA_PRODUCT_REF, projection_path)
+    profile = _decode_record(profile_raw)
+    projection = _decode_record(projection_raw)
+    corpus = _decode_record(
+        _git_blob_at(NOEMA_PRODUCT_REF, "tests/fixtures/noema-v1/manifest.json")
+    )
+    bound = [
+        item
+        for item in corpus.get("specimens", [])
+        if isinstance(item, dict) and item.get("directory") == root
+    ]
+    if (
+        len(bound) != 1
+        or bound[0].get("kernel_sha256") != _sha256(kernel)
+        or bound[0].get("profile_sha256") != _sha256(profile_raw)
+        or bound[0].get("projection_sha256") != _sha256(projection_raw)
+    ):
+        raise Refusal("Noema first-use prompt leaves its immutable specimen binding")
+    aliases = profile.get("aliases")
+    text = projection.get("text")
+    if not isinstance(aliases, list) or not isinstance(text, str):
+        raise Refusal("Noema first-use prompt recipe is malformed")
+    try:
+        projection_text = text.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise Refusal("Noema operation slice is not Unicode scalar text") from exc
+    alias_dictionary = _canonical_json(
+        {"aliases": aliases, "schema": "noema-alias-dictionary/v1"}
+    )
+    bundle = (
+        b"NOEMA-KERNEL\n"
+        + kernel
+        + b"NOEMA-ALIAS-DICTIONARY\n"
+        + alias_dictionary
+        + b"NOEMA-OPERATION-SLICE\n"
+        + projection_text
+    )
+    if not bundle or len(bundle) > MAX_PROMPT_BYTES:
+        raise Refusal("Noema first-use prompt exceeds its byte limit")
+    return projection_path, bundle
+
+
+def _noema_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    artifacts = _control_inventory(
+        NOEMA_PRODUCT_REF, NOEMA_PRODUCT_PREFIXES, require_live_match=False
+    ) + _control_inventory(
+        NOEMA_REVIEW_REF, NOEMA_REVIEW_PREFIXES, require_live_match=False
+    )
+    artifacts.sort(key=lambda item: (item["ref"], item["path"]))
+    noema_manifest = _decode_record(
+        _git_blob_at(NOEMA_PRODUCT_REF, "tests/fixtures/noema-v1/manifest.json")
+    )
+    specimens = noema_manifest.get("specimens")
+    if not isinstance(specimens, list) or len(specimens) != 4:
+        raise Refusal("Noema immutable specimen inventory drift")
+    documents = {item["path"]: item for item in manifest["documents"]}
+    current_by_path: dict[str, list[dict[str, Any]]] = {}
+    specimen_roots: dict[str, str] = {}
+    stale_paths: set[str] = set()
+    synthetic_spans = 0
+    synthetic_bytes = 0
+    current_sources = 0
+    for specimen in specimens:
+        if not isinstance(specimen, dict) or not isinstance(specimen.get("directory"), str):
+            raise Refusal("Noema specimen record is malformed")
+        root = specimen["directory"]
+        identity = _decode_record(
+            _git_blob_at(NOEMA_PRODUCT_REF, f"tests/fixtures/noema-v1/{root}/source.json")
+        )
+        spans_record = _decode_record(
+            _git_blob_at(
+                NOEMA_PRODUCT_REF,
+                f"tests/fixtures/noema-v1/{root}/source-spans.json",
+            )
+        )
+        path = identity.get("path")
+        spans = spans_record.get("spans")
+        if path not in documents or not isinstance(spans, list):
+            raise Refusal("Noema specimen source is outside the current corpus")
+        cursor = 0
+        mapped = 0
+        mapped_bytes = 0
+        normalized: list[dict[str, Any]] = []
+        for row in spans:
+            if not isinstance(row, dict):
+                raise Refusal("Noema source-span row is malformed")
+            start = row.get("start")
+            end = row.get("end")
+            kind = row.get("kind")
+            if (
+                type(start) is not int
+                or type(end) is not int
+                or start != cursor
+                or end <= start
+                or kind not in {"node", "unsupported-remainder"}
+            ):
+                raise Refusal("Noema source-span partition is malformed")
+            cursor = end
+            normalized.append(row)
+            if kind == "node":
+                mapped += 1
+                mapped_bytes += end - start
+        if cursor != identity.get("bytes") or mapped != specimen.get("mapped_spans"):
+            raise Refusal("Noema source-span partition does not close")
+        synthetic_spans += mapped
+        synthetic_bytes += mapped_bytes
+        current = _source_blob(path)
+        if identity.get("sha256") == _sha256(current) and identity.get("bytes") == len(current):
+            current_sources += 1
+            current_by_path[path] = normalized
+            specimen_roots[path] = root
+        else:
+            stale_paths.add(path)
+
+    ranges: list[dict[str, Any]] = []
+    mappings: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        mapped_rows = current_by_path.get(document["path"])
+        if mapped_rows is None:
+            reason = (
+                "stale-control-source"
+                if document["path"] in stale_paths
+                else "unsupported-or-unmapped-current-source"
+            )
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    0,
+                    len(data),
+                    "raw-fallback",
+                    reason,
+                    f"raw:{document['sha256']}",
+                )
+            )
+            continue
+        for index, row in enumerate(mapped_rows):
+            native = row["kind"] == "node"
+            identifier = (
+                f"noema:{document['path']}:{row['node']}:{index}"
+                if native
+                else f"raw:{document['sha256']}:{row['start']}:{row['end']}"
+            )
+            if native:
+                representation_path, representation = _noema_prompt_bundle(
+                    specimen_roots[document["path"]]
+                )
+                mappings.append(
+                    {
+                        "end": row["end"],
+                        "id": identifier,
+                        "path": document["path"],
+                        "representation_bytes": len(representation),
+                        "representation_path": representation_path,
+                        "representation_sha256": _sha256(representation),
+                        "source_sha256": _sha256(data[row["start"] : row["end"]]),
+                        "start": row["start"],
+                    }
+                )
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    row["start"],
+                    row["end"],
+                    "native" if native else "raw-fallback",
+                    "" if native else "unsupported-by-noema-v1",
+                    identifier,
+                )
+            )
+    mappings.sort(key=lambda item: item["id"])
+
+    synopsis_path = NOEMA_REVIEW_PREFIXES[1]
+    synopsis = _git_blob_at(NOEMA_REVIEW_REF, synopsis_path)
+    first_line = synopsis.splitlines()[0].decode("ascii", errors="strict")
+    match = re.fullmatch(
+        r"Synopsis schema=fiat-audit-synopsis/v1 \| source=(.+) \| "
+        r"source_sha256=([0-9a-f]{64}) \| h2_count=([0-9]+)",
+        first_line,
+    )
+    review = _git_blob_at(NOEMA_REVIEW_REF, NOEMA_REVIEW_PREFIXES[0])
+    if (
+        match is None
+        or match.group(1) != NOEMA_REVIEW_PREFIXES[0]
+        or match.group(2) != _sha256(review)
+        or int(match.group(3)) != 44
+    ):
+        raise Refusal("Noema review synopsis does not bind its authoritative record")
+    control = _base_control(
+        "noema",
+        manifest,
+        ranges,
+        binding_kind="parked-noema-product-and-review",
+        product_ref=NOEMA_PRODUCT_REF,
+        review_ref=NOEMA_REVIEW_REF,
+        artifacts=artifacts,
+        checker=None,
+        native_mappings=mappings,
+        graph={"edges": [], "nodes": []},
+        mechanism_evidence={
+            "current_native_bytes": sum(
+                item["bytes"] for item in ranges if item["mode"] == "native"
+            ),
+            "current_native_envelopes": sum(
+                item["mode"] == "native" for item in ranges
+            ),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus-with-separate-product-synthetic-evidence",
+            "stale_sources": len(stale_paths),
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": synthetic_bytes,
+            "synthetic_mapped_spans": synthetic_spans,
+        },
+    )
+    summary = control["coverage"]["summary"]
+    if (
+        current_sources != 1
+        or len(stale_paths) != 3
+        or synthetic_spans != 40
+        or synthetic_bytes != 3_173
+        or summary["native_ranges"] != 10
+        or summary["native_physical_bytes"] != 655
+        or summary["native_unique_bytes"] != 655
+        or summary["fallback_ranges"] != 201
+        or summary["fallback_physical_bytes"] != 2_289_795
+        or summary["fallback_unique_bytes"] != 1_818_351
+    ):
+        raise Refusal("Noema current fallback or synthetic coverage drift")
+    return control
+
+
+def _simple_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    ranges: list[dict[str, Any]] = []
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        ranges.append(
+            _range_record(
+                document, data, 0, len(data), "native", "", f"file:{document['sha256']}"
+            )
+        )
+        if document["path"] == document["canonical_content_path"]:
+            nodes.append(
+                {
+                    "bytes": document["bytes"],
+                    "id": f"file:{document['sha256']}",
+                    "path": document["path"],
+                    "sha256": document["sha256"],
+                }
+            )
+        if document["path"] != document["canonical_content_path"]:
+            edges.append(
+                {
+                    "kind": "exact-content-alias",
+                    "source": document["path"],
+                    "target": f"file:{document['sha256']}",
+                }
+            )
+    nodes.sort(key=lambda item: item["id"])
+    edges.sort(key=lambda item: (item["source"], item["target"]))
+    if len(nodes) != manifest["totals"]["unique_files"]:
+        raise Refusal("simple control deduplication cardinality drift")
+    return _base_control(
+        "simple",
+        manifest,
+        ranges,
+        binding_kind="exact-file-content-addresses",
+        product_ref=SOURCE_REF,
+        review_ref=None,
+        artifacts=[],
+        checker=None,
+        native_mappings=[],
+        graph={"edges": edges, "nodes": nodes},
+        mechanism_evidence={
+            "current_native_bytes": manifest["totals"]["physical_bytes"],
+            "current_native_envelopes": len(nodes),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+
+
+def _markdown_sections(path: str, data: bytes) -> list[dict[str, Any]]:
+    if len(data) > MAX_SOURCE_BYTES:
+        raise Refusal("section source exceeds its byte limit")
+    try:
+        data.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal("section source is not UTF-8") from exc
+    _preflight_partition_markdown(data, path)
+    lines = data.splitlines(keepends=True)
+
+    def fence_marker(line: bytes) -> tuple[bytes, bytes] | None:
+        match = re.match(rb" {0,3}(`{3,}|~{3,})([^\r\n]*)$", line)
+        return None if match is None else (match.group(1), match.group(2))
+
+    def opens(marker: tuple[bytes, bytes]) -> bool:
+        run, remainder = marker
+        return run[:1] == b"~" or b"`" not in remainder
+
+    def closes(marker: tuple[bytes, bytes], active: tuple[int, int]) -> bool:
+        run, remainder = marker
+        return (
+            run[0] == active[0]
+            and len(run) >= active[1]
+            and not remainder.strip(b" \t")
+        )
+
+    fence_events = [
+        (index, marker)
+        for index, line in enumerate(lines)
+        if (marker := fence_marker(line.rstrip(b"\r\n"))) is not None
+    ]
+
+    event_count = len(fence_events)
+    event_positions = [index for index, _ in fence_events]
+    suffix_balanced = [True] * (event_count + 1)
+    if fence_events:
+        lengths = sorted({len(marker[0]) for _, marker in fence_events})
+        length_count = len(lengths)
+        nearest_by_type = {
+            ord("`"): [event_count] * (length_count + 1),
+            ord("~"): [event_count] * (length_count + 1),
+        }
+        next_close = [event_count] * event_count
+
+        def nearest_at_least(tree: list[int], length: int) -> int:
+            cursor = length_count - bisect_left(lengths, length)
+            nearest = event_count
+            while cursor:
+                nearest = min(nearest, tree[cursor])
+                cursor -= cursor & -cursor
+            return nearest
+
+        def add_closer(tree: list[int], length: int, index: int) -> None:
+            cursor = length_count - bisect_left(lengths, length)
+            while cursor <= length_count:
+                tree[cursor] = min(tree[cursor], index)
+                cursor += cursor & -cursor
+
+        for event_index in range(event_count - 1, -1, -1):
+            _, marker = fence_events[event_index]
+            run, remainder = marker
+            tree = nearest_by_type[run[0]]
+            next_close[event_index] = nearest_at_least(tree, len(run))
+            if not remainder.strip(b" \t"):
+                add_closer(tree, len(run), event_index)
+
+        for event_index in range(event_count - 1, -1, -1):
+            _, marker = fence_events[event_index]
+            if not opens(marker):
+                suffix_balanced[event_index] = suffix_balanced[event_index + 1]
+                continue
+            close_index = next_close[event_index]
+            suffix_balanced[event_index] = (
+                close_index < event_count and suffix_balanced[close_index + 1]
+            )
+
+    def commonmark_suffix_is_balanced(start: int) -> bool:
+        return suffix_balanced[bisect_left(event_positions, start)]
+
+    positions: list[tuple[int, int, bytes]] = []
+    offset = 0
+    fence: tuple[int, int] | None = None
+    pending_template: tuple[int, int] | None = None
+    for index, line in enumerate(lines):
+        body = line.rstrip(b"\r\n")
+        if len(body) > MAX_MARKDOWN_LINE_CHARS:
+            raise Refusal("section source line exceeds its limit")
+        marker = fence_marker(body)
+        if fence is not None:
+            if marker is not None:
+                run, remainder = marker
+                if closes(marker, fence):
+                    if (
+                        pending_template is not None
+                        and closes(marker, pending_template)
+                        and not commonmark_suffix_is_balanced(index + 1)
+                    ):
+                        pending_template = None
+                    else:
+                        fence = None
+                        pending_template = None
+                elif pending_template is not None and closes(
+                    marker, pending_template
+                ):
+                    pending_template = None
+                elif remainder.strip(b" \t") and opens(marker):
+                    # Some governed source examples show balanced fenced snippets
+                    # inside a surrounding fence. Keep ordinary CommonMark markers
+                    # literal while admitting only that bounded template shape.
+                    pending_template = (run[0], len(run))
+            offset += len(line)
+            continue
+        if marker is not None and opens(marker):
+            run, _ = marker
+            fence = (run[0], len(run))
+            offset += len(line)
+            continue
+        if fence is None:
+            heading = re.match(rb" {0,3}(#{1,6})(?:[ \t]+(.*?)[ \t]*#*[ \t]*|[ \t]*)$", body)
+            if heading is not None:
+                title = heading.group(2) or b""
+                positions.append((offset, len(heading.group(1)), title))
+        offset += len(line)
+    if fence is not None:
+        raise Refusal("section source has an unclosed fenced block")
+    if len(positions) + 1 > MAX_SECTION_COUNT:
+        raise Refusal("section source exceeds its section count limit")
+
+    descriptors: list[tuple[int, int, bytes, str, list[str]]] = []
+    stack: list[tuple[int, str]] = []
+    duplicates: dict[tuple[int, bytes, str], int] = {}
+    preamble_id: str | None = None
+    if not positions or positions[0][0] > 0:
+        preamble_id = "section:" + _sha256((path + "\0preamble").encode("utf-8"))
+        end = positions[0][0] if positions else len(data)
+        descriptors.append((0, end, b"", preamble_id, []))
+    for index, (start, level, title) in enumerate(positions):
+        while stack and stack[-1][0] >= level:
+            stack.pop()
+        parent = stack[-1][1] if stack else preamble_id
+        parent_key = parent or "root"
+        key = (level, title, parent_key)
+        ordinal = duplicates.get(key, 0)
+        duplicates[key] = ordinal + 1
+        identifier = "section:" + _sha256(
+            path.encode("utf-8")
+            + b"\0"
+            + parent_key.encode("ascii")
+            + b"\0"
+            + str(level).encode("ascii")
+            + b"\0"
+            + title
+            + b"\0"
+            + str(ordinal).encode("ascii")
+        )
+        end = positions[index + 1][0] if index + 1 < len(positions) else len(data)
+        descriptors.append((start, end, title, identifier, [parent] if parent else []))
+        stack.append((level, identifier))
+    nodes: list[dict[str, Any]] = []
+    for start, end, title, identifier, dependencies in descriptors:
+        if end <= start:
+            raise Refusal("section parser emitted an empty span")
+        nodes.append(
+            {
+                "dependencies": dependencies,
+                "end": end,
+                "id": identifier,
+                "path": path,
+                "sha256": _sha256(data[start:end]),
+                "start": start,
+                "title_sha256": _sha256(title),
+            }
+        )
+    if b"".join(data[item["start"] : item["end"]] for item in nodes) != data:
+        raise Refusal("section graph does not round-trip exact source bytes")
+    return nodes
+
+
+def _section_control(manifest: dict[str, Any]) -> dict[str, Any]:
+    ranges: list[dict[str, Any]] = []
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    documents = {item["path"]: item for item in manifest["documents"]}
+    sections_by_canonical_path: dict[str, list[dict[str, Any]]] = {}
+    for document in manifest["documents"]:
+        data = _source_blob(document["path"])
+        if not document["path"].endswith(".md"):
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    0,
+                    len(data),
+                    "raw-fallback",
+                    "unsupported-non-markdown-source",
+                    f"raw:{document['sha256']}",
+                )
+            )
+            continue
+        canonical_path = document["canonical_content_path"]
+        canonical = documents[canonical_path]
+        canonical_sections = sections_by_canonical_path.get(canonical_path)
+        if canonical_sections is None:
+            canonical_data = _source_blob(canonical_path)
+            canonical_sections = [
+                {**node, "authority_tier": canonical["authority_tier"]}
+                for node in _markdown_sections(canonical_path, canonical_data)
+            ]
+            sections_by_canonical_path[canonical_path] = canonical_sections
+            nodes.extend(canonical_sections)
+            for node in canonical_sections:
+                for dependency in node["dependencies"]:
+                    edges.append(
+                        {
+                            "kind": "section-parent",
+                            "source": node["id"],
+                            "target": dependency,
+                        }
+                    )
+        elif data != _source_blob(canonical_path):
+            raise Refusal("section graph exact-content alias differs from canonical source")
+        if document["path"] != canonical_path:
+            edges.append(
+                {
+                    "kind": "exact-content-alias",
+                    "source": document["path"],
+                    "target": canonical_path,
+                }
+            )
+        for node in canonical_sections:
+            ranges.append(
+                _range_record(
+                    document,
+                    data,
+                    node["start"],
+                    node["end"],
+                    "native",
+                    "",
+                    node["id"],
+                )
+            )
+    if len(nodes) > MAX_SECTION_COUNT:
+        raise Refusal("section graph exceeds its global node limit")
+    nodes.sort(key=lambda item: (item["path"], item["start"], item["id"]))
+    edges.sort(key=lambda item: (item["kind"], item["source"], item["target"]))
+    node_ids = {item["id"] for item in nodes}
+    if len(node_ids) != len(nodes) or any(
+        edge["source"] not in node_ids or edge["target"] not in node_ids
+        for edge in edges
+        if edge["kind"] == "section-parent"
+    ):
+        raise Refusal("section graph has duplicate or missing dependency nodes")
+    control = _base_control(
+        "section-graph",
+        manifest,
+        ranges,
+        binding_kind="exact-source-span-section-graph",
+        product_ref=SOURCE_REF,
+        review_ref=None,
+        artifacts=[],
+        checker=None,
+        native_mappings=[],
+        graph={"edges": edges, "nodes": nodes, "selection": SECTION_SELECTION},
+        mechanism_evidence={
+            "current_native_bytes": sum(item["bytes"] for item in ranges if item["mode"] == "native"),
+            "current_native_envelopes": len(nodes),
+            "current_native_in_current_coverage": True,
+            "scope": "current-corpus",
+            "stale_sources": 0,
+            "synthetic_in_aggregate_success": False,
+            "synthetic_in_current_coverage": False,
+            "synthetic_mapped_bytes": 0,
+            "synthetic_mapped_spans": 0,
+        },
+    )
+    summary = control["coverage"]["summary"]
+    if (
+        summary["native_physical_bytes"] != 2_071_863
+        or summary["native_unique_bytes"] != 1_600_419
+        or summary["fallback_physical_bytes"] != 218_587
+        or summary["fallback_unique_bytes"] != 218_587
+    ):
+        raise Refusal("section graph Markdown/fallback coverage drift")
+    _validate_section_graph(control, manifest)
+    return control
+
+
+def _validate_section_graph(control: dict[str, Any], manifest: dict[str, Any]) -> None:
+    expected_nodes: list[dict[str, Any]] = []
+    expected_edges: list[dict[str, Any]] = []
+    for document in manifest["documents"]:
+        if not document["path"].endswith(".md"):
+            continue
+        canonical_path = document["canonical_content_path"]
+        if document["path"] != canonical_path:
+            if _source_blob(document["path"]) != _source_blob(canonical_path):
+                raise Refusal("section graph exact-content alias differs from canonical source")
+            expected_edges.append(
+                {
+                    "kind": "exact-content-alias",
+                    "source": document["path"],
+                    "target": canonical_path,
+                }
+            )
+            continue
+        for parsed in _markdown_sections(canonical_path, _source_blob(canonical_path)):
+            node = {**parsed, "authority_tier": document["authority_tier"]}
+            expected_nodes.append(node)
+            for dependency in node["dependencies"]:
+                expected_edges.append(
+                    {"kind": "section-parent", "source": node["id"], "target": dependency}
+                )
+    expected_nodes.sort(key=lambda item: (item["path"], item["start"], item["id"]))
+    expected_edges.sort(key=lambda item: (item["kind"], item["source"], item["target"]))
+    if control.get("graph") != {
+        "edges": expected_edges,
+        "nodes": expected_nodes,
+        "selection": SECTION_SELECTION,
+    }:
+        raise Refusal("section graph differs from its deterministic parser or misses an edge")
+
+
+CASE_SPECS = (
+    (
+        "order",
+        "plugins/hexaemeron/skills/fiat/SKILL.md",
+        "Act on the single directive it prints, then receipt it.",
+        "state the next action while preserving the governing operation order",
+        "tool-invocation",
+        "agent-skills:skill:fiat:profile:fiat:frontier-gate:credential:github-contributor",
+    ),
+    (
+        "scope",
+        "plugins/horos/skills/horos/SKILL.md",
+        "A scoped pass says nothing about outside-scope drift",
+        "state the bounded conclusion without widening its scope",
+        "decision",
+        "agent-skills:skill:horos:profile:horos:frontier-gate:credential:github-contributor",
+    ),
+    (
+        "negation",
+        "AGENTS.md",
+        "Files present in context are not automatically active skills.",
+        "decide whether the supplied context activates an instruction",
+        "decision",
+        "agent-skills:skill:hermes:profile:hermes:gas-operation:credential:github-contributor",
+    ),
+    (
+        "exception",
+        "plugins/brevitas/skills/brevitas/SKILL.md",
+        "- Exceptions: none\n\n### brevitas-evidence-preservation",
+        "state whether the described gate has an applicable exception",
+        "decision",
+        "agent-skills:skill:fiat:profile:fiat:prose__scribe__brevitas-1__issue-0__last-1:credential:github-contributor",
+    ),
+    (
+        "literal",
+        "plugins/hexaemeron/skills/ephoros/SKILL.md",
+        "40-hex literal used as a metric label",
+        "preserve the exact literal constraint in the resulting plan",
+        "structured-plan",
+        "agent-skills:skill:ephoros:profile:ephoros:frontier-gate:credential:github-contributor",
+    ),
+    (
+        "alias",
+        "PROMISE_MACHINE.md",
+        "every canonical name a case expects or contests",
+        "resolve the named identity without inventing an alias",
+        "decision",
+        "agent-skills:skill:x-ray:profile:x-ray:audit:credential:github-contributor",
+    ),
+    (
+        "unknown",
+        "PROMISE_MACHINE.md",
+        "Absence, ambiguity and `unknown` never pass.",
+        "decide the transition when the supplied evidence is unknown",
+        "refusal",
+        "agent-skills:skill:solidity-auditor:profile:solidity-auditor:audit:credential:github-contributor",
+    ),
+    (
+        "refusal",
+        "plugins/hexaemeron/skills/elenchus/SKILL.md",
+        "- Refuses: A symptom-only patch",
+        "decide whether to proceed with the described repair",
+        "refusal",
+        "agent-skills:skill:elenchus:profile:elenchus:contract-fix:credential:github-contributor",
+    ),
+    (
+        "recovery",
+        "plugins/hexaemeron/skills/metron/SKILL.md",
+        "- Recovery: Freeze one reproducible method",
+        "state the recovery sequence for the failed measurement",
+        "recovery",
+        "agent-skills:skill:fiat:profile:fiat:implement__mason__none__metron-budget__elenchus-contract__hypomnema__hermes:credential:github-contributor",
+    ),
+    (
+        "authority",
+        "AGENTS.md",
+        "It does not activate a skill, grant authority,",
+        "decide whether the supplied material grants action authority",
+        "refusal",
+        "agent-skills:skill:lazarus:profile:lazarus:maintenance:credential:github-contributor",
+    ),
+)
+
+
+def _scenario_paths(
+    manifest: dict[str, Any], graph: dict[str, Any], scenario_id: str
+) -> list[str]:
+    roots = [item for item in graph["scenario_roots"] if item["id"] == scenario_id]
+    if len(roots) != 1:
+        raise Refusal("development scenario root is missing or duplicated")
+    adjacency: dict[str, set[str]] = {}
+    for edge in graph["scenario_edges"]:
+        if scenario_id in edge["active_scenarios"]:
+            adjacency.setdefault(edge["source"], set()).add(edge["target"])
+    pending = [roots[0]["node"]]
+    reached: set[str] = set()
+    ordered: list[str] = []
+    while pending:
+        node = pending.pop(0)
+        if node in reached:
+            continue
+        reached.add(node)
+        ordered.append(node)
+        if len(reached) > EXPECTED_TOTALS["physical_files"]:
+            raise Refusal("development scenario graph exceeds its corpus bound")
+        pending.extend(
+            path
+            for path in sorted(adjacency.get(node, set()))
+            if path not in reached and path not in pending
+        )
+    expected = {
+        item["path"]
+        for item in manifest["documents"]
+        if scenario_id in item["scenario_reachability"]
+    }
+    if reached != expected:
+        raise Refusal("development scenario graph has a missing or invented edge")
+    return ordered
+
+
+def _scenario_for_path(
+    document: dict[str, Any],
+    graph: dict[str, Any],
+    development_skills: set[str],
+    scenario_id: str,
+) -> str:
+    roots = {item["id"]: item for item in graph["scenario_roots"]}
+    root = roots.get(scenario_id)
+    if (
+        root is None
+        or scenario_id not in document["scenario_reachability"]
+        or root["selected_skill"] not in development_skills
+    ):
+        raise Refusal(f"development case source has no admitted scenario: {document['path']}")
+    return scenario_id
+
+
+def _development_case_coverage(
+    cases: list[dict[str, Any]],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+) -> dict[str, Any]:
+    documents = {item["path"]: item for item in manifest["documents"]}
+    physical_paths = {
+        path
+        for case in cases
+        for path in _scenario_paths(manifest, graph, case["scenario_id"])
+    }
+    holdout_paths = set(cohorts["holdout"]["paths"])
+    if physical_paths & holdout_paths:
+        raise Refusal("development case scenarios expose a sealed holdout path")
+    canonical_paths = {
+        documents[path]["canonical_content_path"] for path in physical_paths
+    }
+    development_paths = set(cohorts["development"]["paths"])
+    if not canonical_paths <= development_paths:
+        raise Refusal("development case scenarios leave the development cohort")
+    unique_bytes = sum(documents[path]["bytes"] for path in canonical_paths)
+    logical_skills = sorted(
+        {
+            documents[path]["logical_document"].removeprefix("skill:")
+            for path in canonical_paths
+            if documents[path]["logical_document"].startswith("skill:")
+        }
+    )
+    authority_tiers = sorted(
+        {documents[path]["authority_tier"] for path in canonical_paths}
+    )
+    document_classes = sorted(
+        {documents[path]["document_class"] for path in canonical_paths}
+    )
+    constructs = _observed_constructs(sorted(canonical_paths))
+    shared_paths = sorted(set(SHARED_BEHAVIORAL_PATHS) & canonical_paths)
+    deciles = _size_deciles(
+        [
+            item
+            for item in manifest["documents"]
+            if item["path"] == item["canonical_content_path"]
+        ]
+    )
+    size_deciles = sorted({deciles[path] for path in canonical_paths})
+    if unique_bytes * 2 < manifest["totals"]["unique_bytes"]:
+        raise Refusal("behavioral development coverage is below 50 percent")
+    if len(logical_skills) < 12:
+        raise Refusal("behavioral development coverage has fewer than 12 logical skills")
+    if authority_tiers != cohorts["development"]["authority_tiers"]:
+        raise Refusal("behavioral development authority-tier coverage is incomplete")
+    if document_classes != cohorts["development"]["document_classes"]:
+        raise Refusal("behavioral development document-class coverage is incomplete")
+    if constructs != cohorts["development"]["constructs"]:
+        raise Refusal("behavioral development construct coverage is incomplete")
+    if shared_paths != list(SHARED_BEHAVIORAL_PATHS):
+        raise Refusal("behavioral development shared-contract coverage is incomplete")
+    if size_deciles != cohorts["development"]["size_deciles"]:
+        raise Refusal("behavioral development size-decile coverage is incomplete")
+    return {
+        "authority_tiers": authority_tiers,
+        "canonical_paths": sorted(canonical_paths),
+        "constructs": constructs,
+        "document_classes": document_classes,
+        "logical_skills": logical_skills,
+        "physical_paths": sorted(physical_paths),
+        "shared_paths": shared_paths,
+        "size_deciles": size_deciles,
+        "unique_byte_ratio": f"{unique_bytes / manifest['totals']['unique_bytes']:.6f}",
+        "unique_bytes": unique_bytes,
+    }
+
+
+def _development_cases(
+    manifest: dict[str, Any], cohorts: dict[str, Any], graph: dict[str, Any]
+) -> dict[str, Any]:
+    documents = {item["path"]: item for item in manifest["documents"]}
+    development_paths = set(cohorts["development"]["paths"])
+    holdout_paths = set(cohorts["holdout"]["paths"])
+    development_skills = set(cohorts["development"]["logical_skills"])
+    cases: list[dict[str, Any]] = []
+    for index, (
+        semantic,
+        path,
+        needle,
+        task,
+        response_shape,
+        scenario_id,
+    ) in enumerate(CASE_SPECS, 1):
+        document = documents.get(path)
+        if document is None or path not in development_paths or path in holdout_paths:
+            raise Refusal("development case source crosses the sealed cohort boundary")
+        data = _source_blob(path)
+        encoded = needle.encode("utf-8")
+        start = data.find(encoded)
+        if start < 0 or data.find(encoded, start + 1) >= 0:
+            raise Refusal(f"development case source span is missing or ambiguous: {semantic}")
+        end = start + len(encoded)
+        scenario_id = _scenario_for_path(
+            document, graph, development_skills, scenario_id
+        )
+        if path not in _scenario_paths(manifest, graph, scenario_id):
+            raise Refusal("development case source is not scenario reachable")
+        cases.append(
+            {
+                "expectation": {
+                    "kind": "exact-source-span",
+                    "sha256": _sha256(data[start:end]),
+                },
+                "id": f"development-{index:02d}-{semantic}",
+                "response_shape": response_shape,
+                "scenario_id": scenario_id,
+                "semantic_class": semantic,
+                "source": {
+                    "end": end,
+                    "path": path,
+                    "sha256": _sha256(data[start:end]),
+                    "source_sha256": _sha256(data),
+                    "start": start,
+                },
+                "task": task,
+            }
+        )
+    record = {
+        "cases": cases,
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "coverage": _development_case_coverage(cases, manifest, cohorts, graph),
+        "manifest_sha256": _artifact_digest(manifest),
+        "schema": f"{SCHEMA_PREFIX}-cases/v1",
+        "source_ref": SOURCE_REF,
+    }
+    _validate_development_cases(record, manifest, cohorts, graph)
+    return record
+
+
+def _validate_development_cases(
+    record: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+) -> None:
+    _require_fields(
+        record,
+        ("cases", "cohorts_sha256", "coverage", "manifest_sha256", "schema", "source_ref"),
+        ("cases", "cohorts_sha256", "coverage", "manifest_sha256", "schema", "source_ref"),
+        "development cases",
+    )
+    cases = record["cases"]
+    if (
+        record["schema"] != f"{SCHEMA_PREFIX}-cases/v1"
+        or record["source_ref"] != SOURCE_REF
+        or record["manifest_sha256"] != _artifact_digest(manifest)
+        or record["cohorts_sha256"] != _artifact_digest(cohorts)
+        or not isinstance(cases, list)
+        or len(cases) > MAX_DEVELOPMENT_CASES
+        or [item.get("semantic_class") for item in cases] != list(DEVELOPMENT_CLASSES)
+    ):
+        raise Refusal("development case-set identity drift")
+    holdout_paths = set(cohorts["holdout"]["paths"])
+    development_paths = set(cohorts["development"]["paths"])
+    for case in cases:
+        _require_fields(
+            case,
+            ("expectation", "id", "response_shape", "scenario_id", "semantic_class", "source", "task"),
+            ("expectation", "id", "response_shape", "scenario_id", "semantic_class", "source", "task"),
+            "development case",
+        )
+        source = case["source"]
+        expectation = case["expectation"]
+        if not isinstance(source, dict) or not isinstance(expectation, dict):
+            raise Refusal("development case source or expectation is malformed")
+        _require_fields(
+            source,
+            ("end", "path", "sha256", "source_sha256", "start"),
+            ("end", "path", "sha256", "source_sha256", "start"),
+            "development case source",
+        )
+        _require_fields(
+            expectation,
+            ("kind", "sha256"),
+            ("kind", "sha256"),
+            "development case expectation",
+        )
+        path = source["path"]
+        data = _source_blob(path)
+        if (
+            path not in development_paths
+            or path in holdout_paths
+            or source["start"] < 0
+            or source["end"] <= source["start"]
+            or source["end"] > len(data)
+            or source["source_sha256"] != _sha256(data)
+            or source["sha256"] != _sha256(data[source["start"] : source["end"]])
+            or expectation != {"kind": "exact-source-span", "sha256": source["sha256"]}
+            or path not in _scenario_paths(manifest, graph, case["scenario_id"])
+        ):
+            raise Refusal("development case source oracle drift")
+        if not isinstance(case["task"], str) or not case["task"]:
+            raise Refusal("development case task is empty")
+    if record["coverage"] != _development_case_coverage(cases, manifest, cohorts, graph):
+        raise Refusal("behavioral development coverage record drift")
+
+
+def _control_ranges(control: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    result: dict[str, list[dict[str, Any]]] = {}
+    for row in control["coverage"]["ranges"]:
+        result.setdefault(row["path"], []).append(row)
+    return result
+
+
+def _prompt_component(
+    identifier: str,
+    content: bytes,
+    encoding: str,
+    source: dict[str, Any] | None,
+    *,
+    kind: str | None = None,
+) -> dict[str, Any]:
+    try:
+        text = content.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise Refusal("prompt representation is not UTF-8") from exc
+    resolved_kind = kind or ("representation" if source is not None else "task")
+    if resolved_kind not in {"representation", "task"}:
+        raise Refusal("prompt component kind is malformed")
+    return {
+        "content": text,
+        "encoding": encoding,
+        "id": identifier,
+        "kind": resolved_kind,
+        "source": source,
+    }
+
+
+def _assemble_prompt(
+    arm: str,
+    case: dict[str, Any],
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if control["arm"] != arm:
+        raise Refusal("adapter and control identity differ")
+    documents = {item["path"]: item for item in manifest["documents"]}
+    paths = _scenario_paths(manifest, graph, case["scenario_id"])
+    components = [
+        _prompt_component(
+            "task",
+            case["task"].encode("utf-8"),
+            "utf-8-task",
+            None,
+        )
+    ]
+    trace: list[dict[str, Any]] = []
+    if arm == "simple":
+        emitted: dict[str, str] = {}
+        originals: dict[str, list[str]] = {}
+        for path in paths:
+            document = documents[path]
+            canonical_path = document["canonical_content_path"]
+            canonical = documents[canonical_path]
+            identifier = f"file:{canonical['sha256']}"
+            originals.setdefault(identifier, []).append(path)
+            if identifier in emitted:
+                continue
+            data = _source_blob(canonical_path)
+            component_id = f"representation-{len(components):04d}"
+            components.append(
+                _prompt_component(
+                    component_id,
+                    data,
+                    "content-addressed-source",
+                    {
+                        "end": len(data),
+                        "path": canonical_path,
+                        "sha256": _sha256(data),
+                        "start": 0,
+                    },
+                )
+            )
+            emitted[identifier] = component_id
+        for identifier in sorted(originals):
+            trace.append(
+                {
+                    "component_id": emitted[identifier],
+                    "mode": "native",
+                    "original_paths": sorted(originals[identifier]),
+                    "representation_id": identifier,
+                }
+            )
+    elif arm == "section-graph":
+        _validate_section_graph(control, manifest)
+        ranges_by_path = _control_ranges(control)
+        nodes = {item["id"]: item for item in control["graph"]["nodes"]}
+        emitted: dict[str, str] = {}
+        originals: dict[str, list[str]] = {}
+        emission_order: list[str] = []
+        for path in paths:
+            document = documents[path]
+            canonical_path = document["canonical_content_path"]
+            data = _source_blob(canonical_path)
+            rows = ranges_by_path.get(path)
+            if not rows:
+                raise Refusal("adapter selection has no source coverage")
+            for row in rows:
+                identifier = row["representation_id"]
+                originals.setdefault(identifier, []).append(path)
+                if identifier in emitted:
+                    continue
+                if row["mode"] == "native":
+                    node = nodes.get(identifier)
+                    if node is None or node["path"] != canonical_path:
+                        raise Refusal("section selection leaves its canonical node")
+                    start = node["start"]
+                    end = node["end"]
+                    encoding = "exact-source-section"
+                else:
+                    start = row["start"]
+                    end = row["end"]
+                    encoding = "raw-source-fallback"
+                payload = data[start:end]
+                if len(payload) != row["bytes"] or _sha256(payload) != row["sha256"]:
+                    raise Refusal("section selection differs from its canonical source")
+                component_id = f"representation-{len(components):04d}"
+                components.append(
+                    _prompt_component(
+                        component_id,
+                        payload,
+                        encoding,
+                        {
+                            "end": end,
+                            "path": canonical_path,
+                            "sha256": _sha256(payload),
+                            "start": start,
+                        },
+                    )
+                )
+                emitted[identifier] = component_id
+                emission_order.append(identifier)
+        selected = set(emission_order)
+        if any(
+            dependency not in selected
+            for identifier in emission_order
+            for dependency in nodes.get(identifier, {}).get("dependencies", [])
+        ):
+            raise Refusal("section selection misses a transitive parent dependency")
+        for identifier in emission_order:
+            trace.append(
+                {
+                    "component_id": emitted[identifier],
+                    "mode": "native" if identifier in nodes else "raw-fallback",
+                    "original_paths": sorted(originals[identifier]),
+                    "representation_id": identifier,
+                }
+            )
+    else:
+        ranges_by_path = _control_ranges(control)
+        mappings = {item["id"]: item for item in control["native_mappings"]}
+        wai1_bootstrap_component: str | None = None
+        noema_components: dict[str, str] = {}
+        for path in paths:
+            data = _source_blob(path)
+            rows = ranges_by_path.get(path)
+            if not rows:
+                raise Refusal("adapter selection has no source coverage")
+            for row in rows:
+                payload = data[row["start"] : row["end"]]
+                encoding = (
+                    "raw-source-fallback"
+                    if row["mode"] == "raw-fallback"
+                    else "exact-source"
+                )
+                if arm == "wai1" and row["mode"] == "native":
+                    mapping = mappings.get(row["representation_id"])
+                    if mapping is None:
+                        raise Refusal("WAI1 prompt mapping is missing")
+                    if wai1_bootstrap_component is None:
+                        bootstrap_path, bootstrap = _wai1_decoder_bootstrap()
+                        wai1_bootstrap_component = f"representation-{len(components):04d}"
+                        components.append(
+                            _prompt_component(
+                                wai1_bootstrap_component,
+                                bootstrap,
+                                "wai1-decoder-bootstrap",
+                                None,
+                                kind="representation",
+                            )
+                        )
+                        if not any(
+                            item["path"] == bootstrap_path
+                            and item["sha256"] == _sha256(bootstrap)
+                            for item in control["binding"]["artifacts"]
+                        ):
+                            raise Refusal("WAI1 prompt bootstrap is outside its binding")
+                    payload = _git_blob_at(WAI1_CONTROL_REF, mapping["representation_path"])
+                    if _sha256(payload) != mapping["representation_sha256"]:
+                        raise Refusal("WAI1 prompt representation digest drift")
+                    encoding = "wai1-compact"
+                elif arm == "noema" and row["mode"] == "native":
+                    mapping = mappings.get(row["representation_id"])
+                    if mapping is None:
+                        raise Refusal("Noema prompt mapping is missing")
+                    key = mapping["representation_sha256"]
+                    component_id = noema_components.get(key)
+                    if component_id is None:
+                        root = PurePosixPath(mapping["representation_path"]).parent
+                        prefix = PurePosixPath("tests/fixtures/noema-v1")
+                        try:
+                            relative_root = root.relative_to(prefix).as_posix()
+                        except ValueError as exc:
+                            raise Refusal("Noema prompt mapping leaves its immutable root") from exc
+                        representation_path, payload = _noema_prompt_bundle(relative_root)
+                        if (
+                            representation_path != mapping["representation_path"]
+                            or len(payload) != mapping["representation_bytes"]
+                            or _sha256(payload) != mapping["representation_sha256"]
+                        ):
+                            raise Refusal("Noema first-use prompt representation drift")
+                        component_id = f"representation-{len(components):04d}"
+                        components.append(
+                            _prompt_component(
+                                component_id,
+                                payload,
+                                "noema-first-use",
+                                None,
+                                kind="representation",
+                            )
+                        )
+                        noema_components[key] = component_id
+                    trace.append(
+                        {
+                            "component_id": component_id,
+                            "mode": row["mode"],
+                            "original_paths": [path],
+                            "representation_id": row["representation_id"],
+                        }
+                    )
+                    continue
+                component_id = f"representation-{len(components):04d}"
+                source = {
+                    "end": row["end"],
+                    "path": path,
+                    "sha256": row["sha256"],
+                    "start": row["start"],
+                }
+                components.append(_prompt_component(component_id, payload, encoding, source))
+                trace.append(
+                    {
+                        "component_id": component_id,
+                        "mode": row["mode"],
+                        "original_paths": [path],
+                        "representation_id": row["representation_id"],
+                    }
+                )
+    if len(components) > MAX_PROMPT_COMPONENTS:
+        raise Refusal("prompt component count exceeds its limit")
+    body = {
+        "case_id": case["id"],
+        "components": components,
+        "scenario_id": case["scenario_id"],
+        "schema": f"{SCHEMA_PREFIX}-prompt/v1",
+    }
+    body_bytes = _canonical_json(body)
+    if len(body_bytes) > MAX_PROMPT_BYTES:
+        raise Refusal("prompt exceeds its byte limit")
+    prompt = {**body, "sha256": _sha256(body_bytes)}
+    if set(prompt) & {"arm", "candidate", "expected_answer", "scorer_key"}:
+        raise Refusal("prompt contains an answer or candidate label")
+    return prompt, trace
+
+
+def _case_native(control: dict[str, Any], case: dict[str, Any]) -> bool:
+    source = case["source"]
+    rows = [
+        item
+        for item in control["coverage"]["ranges"]
+        if item["path"] == source["path"]
+        and item["end"] > source["start"]
+        and item["start"] < source["end"]
+    ]
+    cursor = source["start"]
+    for row in rows:
+        start = max(row["start"], source["start"])
+        end = min(row["end"], source["end"])
+        if start != cursor or row["mode"] != "native":
+            return False
+        cursor = end
+    return cursor == source["end"]
+
+
+def _validate_prompt(prompt: dict[str, Any]) -> None:
+    if isinstance(prompt, dict) and set(prompt) & {
+        "arm",
+        "candidate",
+        "expected_answer",
+        "scorer_key",
+    }:
+        raise Refusal("prompt contains an answer or candidate label")
+    _require_fields(
+        prompt,
+        ("case_id", "components", "scenario_id", "schema", "sha256"),
+        ("case_id", "components", "scenario_id", "schema", "sha256"),
+        "prompt",
+    )
+    components = prompt["components"]
+    if prompt["schema"] != f"{SCHEMA_PREFIX}-prompt/v1" or not isinstance(
+        components, list
+    ):
+        raise Refusal("prompt identity drift")
+    if len(components) > MAX_PROMPT_COMPONENTS:
+        raise Refusal("prompt component count exceeds its limit")
+    if len(components) < 2:
+        raise Refusal("prompt has too few components")
+    component_ids: set[str] = set()
+    for index, component in enumerate(components):
+        _require_fields(
+            component,
+            ("content", "encoding", "id", "kind", "source"),
+            ("content", "encoding", "id", "kind", "source"),
+            "prompt component",
+        )
+        if (
+            not isinstance(component["content"], str)
+            or not isinstance(component["id"], str)
+            or not component["id"]
+            or component["id"] in component_ids
+        ):
+            raise Refusal("prompt component content is malformed")
+        component_ids.add(component["id"])
+        if index == 0:
+            if (
+                component["kind"] != "task"
+                or component["source"] is not None
+                or component["encoding"] != "utf-8-task"
+            ):
+                raise Refusal("prompt task component drift")
+        elif component["kind"] != "representation":
+            raise Refusal("prompt representation component drift")
+        elif component["source"] is None:
+            if component["encoding"] not in {
+                "noema-first-use",
+                "wai1-decoder-bootstrap",
+            }:
+                raise Refusal("unbound prompt representation component")
+        elif not isinstance(component["source"], dict):
+            raise Refusal("prompt representation source is malformed")
+    body = {key: value for key, value in prompt.items() if key != "sha256"}
+    if len(_canonical_json(body)) > MAX_PROMPT_BYTES:
+        raise Refusal("prompt exceeds its byte limit")
+    if prompt["sha256"] != _sha256(_canonical_json(body)):
+        raise Refusal("prompt digest drift")
+def _validate_score(score: dict[str, Any]) -> None:
+    fields = (
+        "exact_source_recovery",
+        "fallback_used",
+        "native_exact_source_recovery",
+        "native_mapping_used",
+        "trace_complete",
+    )
+    _require_fields(score, fields, fields, "deterministic score")
+    if any(type(score[field]) is not bool for field in fields):
+        raise Refusal("deterministic score fields are not Boolean")
+    if score["fallback_used"] == score["native_mapping_used"]:
+        raise Refusal("fallback and native mapping classification are not exclusive")
+    if score["native_exact_source_recovery"] and (
+        not score["native_mapping_used"] or not score["exact_source_recovery"]
+    ):
+        raise Refusal("native exact-source recovery lacks its required predicates")
+
+
+def _recover_case_source(
+    control: dict[str, Any],
+    case: dict[str, Any],
+    prompt: dict[str, Any],
+    trace: list[dict[str, Any]],
+) -> bytes | None:
+    """Recover a case oracle only from exact bytes carried by its prompt."""
+    source = case["source"]
+    components = {item["id"]: item for item in prompt["components"]}
+    ranges = {
+        (item["path"], item["representation_id"]): item
+        for item in control["coverage"]["ranges"]
+    }
+    segments: list[tuple[int, int, bytes | None]] = []
+    exact_encodings = {
+        "content-addressed-source",
+        "exact-source",
+        "exact-source-section",
+        "raw-source-fallback",
+    }
+    for row in trace:
+        if source["path"] not in row["original_paths"]:
+            continue
+        coverage = ranges.get((source["path"], row["representation_id"]))
+        component = components.get(row["component_id"])
+        if coverage is None or component is None:
+            raise Refusal("adapter selection trace does not resolve to its control")
+        content: bytes | None = None
+        if component["encoding"] in exact_encodings:
+            try:
+                candidate = component["content"].encode("utf-8", errors="strict")
+            except UnicodeEncodeError as exc:
+                raise Refusal("prompt representation is not Unicode scalar text") from exc
+            if (
+                len(candidate) != coverage["bytes"]
+                or _sha256(candidate) != coverage["sha256"]
+            ):
+                raise Refusal("exact prompt representation differs from its control span")
+            content = candidate
+        segments.append((coverage["start"], coverage["end"], content))
+
+    cursor = source["start"]
+    recovered: list[bytes] = []
+    for start, end, content in sorted(segments):
+        overlap_start = max(start, source["start"])
+        overlap_end = min(end, source["end"])
+        if overlap_end <= overlap_start:
+            continue
+        if overlap_start != cursor or content is None:
+            return None
+        recovered.append(content[overlap_start - start : overlap_end - start])
+        cursor = overlap_end
+        if cursor == source["end"]:
+            break
+    if cursor != source["end"]:
+        return None
+    return b"".join(recovered)
+
+
+def _case_score(
+    control: dict[str, Any], case: dict[str, Any], prompt: dict[str, Any], trace: list[dict[str, Any]]
+) -> tuple[dict[str, bool], bytes | None]:
+    _validate_prompt(prompt)
+    component_ids = {item["id"] for item in prompt["components"]}
+    if not trace or any(
+        not isinstance(row, dict)
+        or row.get("component_id") not in component_ids
+        or not row.get("original_paths")
+        for row in trace
+    ):
+        raise Refusal("adapter selection trace is incomplete")
+    native = _case_native(control, case)
+    fallback = not native
+    recovered = _recover_case_source(control, case, prompt, trace)
+    exact = (
+        recovered is not None
+        and len(recovered) == case["source"]["end"] - case["source"]["start"]
+        and _sha256(recovered) == case["expectation"]["sha256"]
+    )
+    score = {
+        "exact_source_recovery": exact,
+        "fallback_used": fallback,
+        "native_exact_source_recovery": bool(exact and native),
+        "native_mapping_used": native,
+        "trace_complete": True,
+    }
+    _validate_score(score)
+    return score, recovered
+
+
+def _case_outcome(case: dict[str, Any], recovered: bytes | None) -> dict[str, Any]:
+    source = case["source"]
+    exact = recovered is not None and _sha256(recovered) == case["expectation"]["sha256"]
+    return {
+        "kind": case["response_shape"],
+        "recovery": (
+            {"bytes": len(recovered), "sha256": _sha256(recovered)}
+            if exact and recovered is not None
+            else None
+        ),
+        "source_expectation": {
+            "end": source["end"],
+            "path": source["path"],
+            "sha256": source["sha256"],
+            "start": source["start"],
+        },
+        "status": "exact-source-recovered" if exact else "exact-source-unavailable",
+    }
+
+
+def _adapter_correlation(
+    arm: str,
+    case_id: str,
+    scenario_id: str,
+    prompt_sha256: str,
+    outcome: dict[str, Any],
+) -> str:
+    return _sha256(
+        (
+            SOURCE_REF
+            + "\0"
+            + arm
+            + "\0"
+            + scenario_id
+            + "\0"
+            + case_id
+            + "\0"
+            + prompt_sha256
+            + "\0"
+            + _sha256(_canonical_json(outcome))
+        ).encode("utf-8")
+    )
+
+
+def _arm_results(
+    arm: str,
+    cases_record: dict[str, Any],
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+) -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
+    for case in cases_record["cases"]:
+        prompt, trace = _assemble_prompt(arm, case, manifest, graph, control)
+        score, recovered = _case_score(control, case, prompt, trace)
+        outcome = _case_outcome(case, recovered)
+        correlation = _adapter_correlation(
+            arm,
+            case["id"],
+            case["scenario_id"],
+            prompt["sha256"],
+            outcome,
+        )
+        results.append(
+            {
+                "case_id": case["id"],
+                "correlation_id": correlation,
+                "outcome": outcome,
+                "prompt": prompt,
+                "scenario_id": case["scenario_id"],
+                "score": score,
+                "selection_trace": trace,
+            }
+        )
+        _validate_prompt(prompt)
+    aggregate = {
+        "cases": len(results),
+        "exact_source_recovery_cases": sum(
+            item["score"]["exact_source_recovery"] for item in results
+        ),
+        "fallback_cases": sum(item["score"]["fallback_used"] for item in results),
+        "native_exact_source_recovery_cases": sum(
+            item["score"]["native_exact_source_recovery"] for item in results
+        ),
+        "native_mapping_cases": sum(
+            item["score"]["native_mapping_used"] for item in results
+        ),
+        "prompt_bytes": sum(len(_canonical_json(item["prompt"])) for item in results),
+    }
+    record = {
+        "aggregate": aggregate,
+        "arm": arm,
+        "case_set_sha256": _artifact_digest(cases_record),
+        "control_sha256": _artifact_digest(control),
+        "results": results,
+        "schema": f"{SCHEMA_PREFIX}-adapter-results/v1",
+        "source_ref": SOURCE_REF,
+    }
+    _validate_adapter_results(record, cases_record, manifest, graph, control)
+    return record
+
+
+def _validate_adapter_results(
+    record: dict[str, Any],
+    cases_record: dict[str, Any],
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+) -> None:
+    _require_fields(
+        record,
+        ("aggregate", "arm", "case_set_sha256", "control_sha256", "results", "schema", "source_ref"),
+        ("aggregate", "arm", "case_set_sha256", "control_sha256", "results", "schema", "source_ref"),
+        "adapter results",
+    )
+    if (
+        record["schema"] != f"{SCHEMA_PREFIX}-adapter-results/v1"
+        or record["source_ref"] != SOURCE_REF
+        or record["arm"] not in DEVELOPMENT_ARMS
+        or record["arm"] != control["arm"]
+        or record["case_set_sha256"] != _artifact_digest(cases_record)
+        or record["control_sha256"] != _artifact_digest(control)
+        or not isinstance(record["results"], list)
+    ):
+        raise Refusal("adapter result identity drift")
+    if not all(isinstance(result, dict) for result in record["results"]):
+        raise Refusal("adapter result case order or coverage drift")
+    if [result.get("case_id") for result in record["results"]] != [
+        case["id"] for case in cases_record["cases"]
+    ]:
+        raise Refusal("adapter result case order or coverage drift")
+    cases_by_id = {item["id"]: item for item in cases_record["cases"]}
+    for result in record["results"]:
+        _require_fields(
+            result,
+            ("case_id", "correlation_id", "outcome", "prompt", "scenario_id", "score", "selection_trace"),
+            ("case_id", "correlation_id", "outcome", "prompt", "scenario_id", "score", "selection_trace"),
+            "adapter case result",
+        )
+        _validate_prompt(result["prompt"])
+        _validate_score(result["score"])
+        if (
+            result["prompt"]["case_id"] != result["case_id"]
+            or result["prompt"]["scenario_id"] != result["scenario_id"]
+            or result["correlation_id"]
+            != _adapter_correlation(
+                record["arm"],
+                result["case_id"],
+                result["scenario_id"],
+                result["prompt"]["sha256"],
+                result["outcome"],
+            )
+        ):
+            raise Refusal("adapter result correlation drift")
+        case = cases_by_id.get(result["case_id"])
+        if case is None:
+            raise Refusal("adapter result names an unknown case")
+        expected_prompt, expected_trace = _assemble_prompt(
+            record["arm"], case, manifest, graph, control
+        )
+        expected_score, recovered = _case_score(
+            control, case, expected_prompt, expected_trace
+        )
+        expected_outcome = _case_outcome(case, recovered)
+        if (
+            result["scenario_id"] != case["scenario_id"]
+            or result["prompt"] != expected_prompt
+            or result["selection_trace"] != expected_trace
+            or result["score"] != expected_score
+            or result["outcome"] != expected_outcome
+        ):
+            raise Refusal("adapter result differs from its representation-bound derivation")
+    aggregate = record["aggregate"]
+    expected = {
+        "cases": len(record["results"]),
+        "exact_source_recovery_cases": sum(
+            item["score"]["exact_source_recovery"] for item in record["results"]
+        ),
+        "fallback_cases": sum(item["score"]["fallback_used"] for item in record["results"]),
+        "native_exact_source_recovery_cases": sum(
+            item["score"]["native_exact_source_recovery"]
+            for item in record["results"]
+        ),
+        "native_mapping_cases": sum(
+            item["score"]["native_mapping_used"] for item in record["results"]
+        ),
+        "prompt_bytes": sum(len(_canonical_json(item["prompt"])) for item in record["results"]),
+    }
+    if aggregate != expected:
+        raise Refusal("adapter aggregate differs from case scores")
+
+
+def _hostile_specimens() -> dict[str, Any]:
+    rows = [
+        ("parser-differential", "unclosed-fence", "section source has an unclosed fenced block"),
+        ("stale-source", "changed-source-digest", "development case source oracle drift"),
+        ("malformed-input", "noncanonical-json", "record is not canonical JSON"),
+        ("malformed-input", "duplicate-json-key", "duplicate JSON key"),
+        ("missing-edge", "delete-scenario-edge", "missing or invented edge"),
+        ("digest", "changed-span-digest", "adapter coverage digest drift"),
+        ("concurrent-change", "replace-open-input", "input changed during read"),
+        ("hostile-output", "oversized-model-output", "model output exceeds its limit"),
+        ("resource-bound", "too-many-components", "prompt component count exceeds its limit"),
+        ("path-boundary", "parent-traversal", "unsafe repository path"),
+        ("path-boundary", "symlink-input", "input is not a single-link regular file"),
+        ("prompt-leak", "scorer-key-field", "prompt contains an answer or candidate label"),
+    ]
+    if len(rows) > MAX_HOSTILE_SPECIMENS:
+        raise Refusal("hostile specimen count exceeds its limit")
+    return {
+        "schema": f"{SCHEMA_PREFIX}-mutations/v1",
+        "source_ref": SOURCE_REF,
+        "specimens": [
+            {
+                "expected_refusal": expected,
+                "id": f"hostile-{index:02d}-{category}",
+                "mutation": mutation,
+                "risk_class": category,
+            }
+            for index, (category, mutation, expected) in enumerate(rows, 1)
+        ],
+    }
+
+
+def _validate_model_output(data: bytes) -> dict[str, Any]:
+    if len(data) > MAX_MODEL_OUTPUT_BYTES:
+        raise Refusal("model output exceeds its limit")
+    value = _decode_record(data)
+    _require_fields(value, ("case_id", "outcome"), ("case_id", "outcome"), "model output")
+    if not isinstance(value["case_id"], str) or not isinstance(value["outcome"], str):
+        raise Refusal("model output fields are malformed")
+    return value
+
+
+def _hostile_recipe(
+    specimen: dict[str, Any],
+    arm: str,
+    case: dict[str, Any],
+    result: dict[str, Any],
+    control_sha256: str,
+) -> str:
+    return _sha256(
+        _canonical_json(
+            {
+                "arm": arm,
+                "case_id": case["id"],
+                "control_sha256": control_sha256,
+                "mutation": specimen["mutation"],
+                "prompt_sha256": result["prompt"]["sha256"],
+                "scenario_id": case["scenario_id"],
+                "specimen_sha256": _artifact_digest(specimen),
+            }
+        )
+    )
+
+
+def _exercise_hostile_specimen(
+    specimen: dict[str, Any],
+    arm: str,
+    cases: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+    control: dict[str, Any],
+    arm_results: dict[str, Any],
+    control_sha256: str,
+) -> dict[str, Any]:
+    case = cases["cases"][0]
+    result = arm_results["results"][0]
+    mutation = specimen["mutation"]
+    try:
+        if mutation == "unclosed-fence":
+            _markdown_sections("hostile.md", b"# admitted\n```text\nnot closed\n")
+        elif mutation == "changed-source-digest":
+            changed = _decode_record(_canonical_json(cases))
+            changed["cases"][0]["source"]["source_sha256"] = "0" * 64
+            _validate_development_cases(changed, manifest, cohorts, graph)
+        elif mutation == "noncanonical-json":
+            _decode_record(b'{ "case_id": "hostile" }\n')
+        elif mutation == "duplicate-json-key":
+            _decode_record(b'{"case_id":"a","case_id":"b"}\n')
+        elif mutation == "delete-scenario-edge":
+            changed = _decode_record(_canonical_json(graph))
+            for index, edge in enumerate(changed["scenario_edges"]):
+                if (
+                    case["scenario_id"] in edge["active_scenarios"]
+                    and edge["target"] == case["source"]["path"]
+                ):
+                    changed["scenario_edges"].pop(index)
+                    break
+            else:
+                raise Refusal("hostile missing-edge recipe has no removable edge")
+            _scenario_paths(manifest, changed, case["scenario_id"])
+        elif mutation == "changed-span-digest":
+            changed = _decode_record(_canonical_json(control))
+            changed["coverage"]["ranges"][0]["sha256"] = "0" * 64
+            _coverage_summary(manifest, changed["coverage"]["ranges"])
+        elif mutation == "replace-open-input":
+            _require_unchanged_input((1, 2, 3), (1, 2, 4))
+        elif mutation == "oversized-model-output":
+            _validate_model_output(b"x" * (MAX_MODEL_OUTPUT_BYTES + 1))
+        elif mutation == "too-many-components":
+            changed = _decode_record(_canonical_json(result["prompt"]))
+            changed["components"] = [changed["components"][0]] * (
+                MAX_PROMPT_COMPONENTS + 1
+            )
+            _validate_prompt(changed)
+        elif mutation == "parent-traversal":
+            _safe_relative("../escape")
+        elif mutation == "symlink-input":
+            _validate_input_metadata(stat.S_IFLNK | 0o777, 1, 1, MAX_JSON_BYTES)
+        elif mutation == "scorer-key-field":
+            changed = _decode_record(_canonical_json(result["prompt"]))
+            changed["scorer_key"] = case["expectation"]["sha256"]
+            _validate_prompt(changed)
+        else:
+            raise Refusal("hostile mutation is not executable")
+    except Refusal as exc:
+        observed = str(exc)
+    else:
+        raise Refusal(
+            f"hostile specimen did not refuse for {arm}: {specimen['id']}"
+        )
+    if specimen["expected_refusal"] not in observed:
+        raise Refusal(
+            f"hostile specimen refused for the wrong reason: {arm}:{specimen['id']}"
+        )
+    mutation_sha256 = _hostile_recipe(
+        specimen, arm, case, result, control_sha256
+    )
+    refusal_sha256 = _sha256(observed.encode("utf-8", errors="strict"))
+    correlation_id = _sha256(
+        (
+            SOURCE_REF
+            + "\0"
+            + arm
+            + "\0"
+            + case["scenario_id"]
+            + "\0"
+            + case["id"]
+            + "\0"
+            + result["prompt"]["sha256"]
+            + "\0"
+            + mutation_sha256
+            + "\0"
+            + refusal_sha256
+        ).encode("utf-8")
+    )
+    return {
+        "arm": arm,
+        "case_id": case["id"],
+        "correlation_id": correlation_id,
+        "mutation_sha256": mutation_sha256,
+        "observed_refusal": observed,
+        "prompt_sha256": result["prompt"]["sha256"],
+        "refusal_sha256": refusal_sha256,
+        "risk_class": specimen["risk_class"],
+        "scenario_id": case["scenario_id"],
+        "specimen_id": specimen["id"],
+        "status": "refused",
+    }
+
+
+def _hostile_execution(
+    specimens: dict[str, Any],
+    cases: dict[str, Any],
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    graph: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+    results: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    control_digests = {
+        arm: _artifact_digest(controls[arm]) for arm in DEVELOPMENT_ARMS
+    }
+    rows = [
+        _exercise_hostile_specimen(
+            specimen,
+            arm,
+            cases,
+            manifest,
+            cohorts,
+            graph,
+            controls[arm],
+            results[arm],
+            control_digests[arm],
+        )
+        for arm in DEVELOPMENT_ARMS
+        for specimen in specimens["specimens"]
+    ]
+    record = {
+        "results": rows,
+        "schema": f"{SCHEMA_PREFIX}-mutation-results/v1",
+        "source_ref": SOURCE_REF,
+        "specimens_sha256": _artifact_digest(specimens),
+    }
+    if (
+        len(rows) != len(DEVELOPMENT_ARMS) * len(specimens["specimens"])
+        or any(item["status"] != "refused" for item in rows)
+    ):
+        raise Refusal("hostile execution does not close every arm/specimen pair")
+    return record
+
+
+def _runtime_dependency_modules(
+    source: str,
+    *,
+    filename: str = "research/instruction-architecture/benchmark.py",
+) -> tuple[list[str], list[str]]:
+    """Classify every syntactic runtime import against the pinned stdlib."""
+    try:
+        tree = ast.parse(source, filename=filename)
+    except SyntaxError as exc:
+        raise Refusal("executable source imports cannot be parsed") from exc
+    modules: set[str] = set()
+    external: set[str] = set()
+    standard: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name.split(".", 1)[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                external.add("." * node.level + (node.module or ""))
+            elif node.module:
+                modules.add(node.module.split(".", 1)[0])
+    for module in modules:
+        (standard if module in sys.stdlib_module_names else external).add(module)
+    return sorted(standard), sorted(external)
+
+
+def _resource_executable_sources(
+    controls: dict[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[tuple[str, str]]]:
+    """Bind each Python source unit compiled by the development workbench."""
+    workbench_path = "research/instruction-architecture/benchmark.py"
+    checker_path = "scripts/agent_instruction.py"
+    source_blobs = [
+        ("workbench", workbench_path, None, _read_regular(Path(__file__), 4 * 1024 * 1024)),
+        (
+            "pinned-checker",
+            checker_path,
+            WAI1_CONTROL_REF,
+            _git_blob_at(WAI1_CONTROL_REF, checker_path),
+        ),
+    ]
+    checker = source_blobs[1][3]
+    expected_checker = {
+        "blob_oid": _control_snapshot()["artifacts"][(WAI1_CONTROL_REF, checker_path)][
+            "blob_oid"
+        ],
+        "bytes": len(checker),
+        "path": checker_path,
+        "ref": WAI1_CONTROL_REF,
+        "sha256": _sha256(checker),
+    }
+    checker_bindings = [
+        item
+        for item in controls["wai1"]["binding"]["artifacts"]
+        if item.get("path") == checker_path
+    ]
+    if checker_bindings != [expected_checker]:
+        raise Refusal("resource evidence checker source differs from its WAI1 binding")
+
+    rows: list[dict[str, Any]] = []
+    texts: list[tuple[str, str]] = []
+    for kind, path, ref, source in source_blobs:
+        try:
+            text = source.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise Refusal("executable source is not UTF-8") from exc
+        loc = sum(
+            bool(line.strip()) and not line.lstrip().startswith("#")
+            for line in text.splitlines()
+        )
+        digest_source = source
+        digest_scope = "exact"
+        if kind == "workbench":
+            if (
+                not isinstance(EXPECTED_DEVELOPMENT_INVENTORY_SHA256, str)
+                or len(EXPECTED_DEVELOPMENT_INVENTORY_SHA256) != 64
+            ):
+                raise Refusal("development inventory digest cannot be normalised")
+            self_reference = EXPECTED_DEVELOPMENT_INVENTORY_SHA256.encode("ascii")
+            if source.count(self_reference) != 1:
+                raise Refusal("development inventory digest self-reference drift")
+            digest_source = source.replace(self_reference, b"0" * 64)
+            digest_scope = "development-inventory-self-reference-normalised"
+        rows.append(
+            {
+                "digest_scope": digest_scope,
+                "kind": kind,
+                "loc": loc,
+                "path": path,
+                "ref": ref,
+                "sha256": _sha256(digest_source),
+            }
+        )
+        texts.append((path, text))
+    return rows, texts
+
+
+def _control_snapshot_resources() -> dict[str, Any]:
+    snapshot = _control_snapshot()
+    manifest_bytes = snapshot["manifest_bytes"]
+    object_bytes = sum(len(data) for data in snapshot["objects"].values())
+    return {
+        "artifact_records": len(snapshot["artifacts"]),
+        "manifest_bytes": len(manifest_bytes),
+        "manifest_sha256": _sha256(manifest_bytes),
+        "object_bytes": object_bytes,
+        "objects": len(snapshot["objects"]),
+        "published_bytes": len(manifest_bytes) + object_bytes,
+    }
+
+
+def _resource_record(
+    manifest: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+    disk_bytes: dict[str, int],
+) -> dict[str, Any]:
+    executable_sources, source_texts = _resource_executable_sources(controls)
+    standard: set[str] = set()
+    external: set[str] = set()
+    for path, source in source_texts:
+        source_standard, source_external = _runtime_dependency_modules(
+            source, filename=path
+        )
+        standard.update(source_standard)
+        external.update(source_external)
+    if external:
+        raise Refusal("executable source has an unrecorded Python dependency")
+    external_runtime = [PurePosixPath(_git_executable()).name]
+    if external_runtime != ["git"]:
+        raise Refusal("bounded Git dependency identity drift")
+    return {
+        "artifact_payload_bytes": disk_bytes["artifact_payloads"],
+        "control_snapshot": _control_snapshot_resources(),
+        "dependency_count": {
+            "external_runtime": len(external_runtime),
+            "standard_library_modules": len(standard),
+        },
+        "dependency_modules": {
+            "external_runtime": external_runtime,
+            "standard_library": sorted(standard),
+        },
+        "disk_bytes": disk_bytes,
+        "executable_loc": sum(item["loc"] for item in executable_sources),
+        "executable_sources": executable_sources,
+        "limits": {
+            "max_control_paths": MAX_CONTROL_PATHS,
+            "max_development_cases": MAX_DEVELOPMENT_CASES,
+            "max_model_output_bytes": MAX_MODEL_OUTPUT_BYTES,
+            "max_prompt_bytes": MAX_PROMPT_BYTES,
+            "max_prompt_components": MAX_PROMPT_COMPONENTS,
+            "peak_rss_bytes": 2 * 1024 * 1024 * 1024,
+        },
+        "samples": [
+            {
+                "phase": "parse-validate",
+                "wall_time_budget_ms": 20_000,
+                "work_units": manifest["totals"]["physical_files"],
+            },
+            {
+                "phase": "select",
+                "wall_time_budget_ms": 20_000,
+                "work_units": len(DEVELOPMENT_CLASSES) * len(DEVELOPMENT_ARMS),
+            },
+            {
+                "phase": "assemble",
+                "wall_time_budget_ms": 20_000,
+                "work_units": sum(
+                    item["coverage"]["summary"]["native_ranges"]
+                    + item["coverage"]["summary"]["fallback_ranges"]
+                    for item in controls.values()
+                ),
+            },
+        ],
+        "schema": f"{SCHEMA_PREFIX}-resource-samples/v1",
+        "source_ref": SOURCE_REF,
+        "timing_policy": "build and replay results emit observed wall time and peak RSS; this deterministic artifact retains the closed workload, upper bounds and exact published disk bytes; Step 3 retains repeated p50/p95 observations",
+    }
+
+
+def _development_report(
+    manifest: dict[str, Any],
+    cohorts: dict[str, Any],
+    cases: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+    results: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for arm in DEVELOPMENT_ARMS:
+        control = controls[arm]
+        result = results[arm]
+        summary = control["coverage"]["summary"]
+        mechanism = control["mechanism_evidence"]
+        rows.append(
+            {
+                "arm": arm,
+                "control_sha256": _artifact_digest(control),
+                "development_case_count": result["aggregate"]["cases"],
+                "development_exact_source_recovery_cases": result["aggregate"][
+                    "exact_source_recovery_cases"
+                ],
+                "development_fallback_cases": result["aggregate"]["fallback_cases"],
+                "development_native_exact_source_recovery_cases": result[
+                    "aggregate"
+                ]["native_exact_source_recovery_cases"],
+                "development_native_mapping_cases": result["aggregate"][
+                    "native_mapping_cases"
+                ],
+                "full_current_corpus_fallback_bytes": summary["fallback_physical_bytes"],
+                "full_current_corpus_native_bytes": summary["native_physical_bytes"],
+                "full_current_corpus_native_ranges": summary["native_ranges"],
+                "synthetic_in_aggregate_success": mechanism[
+                    "synthetic_in_aggregate_success"
+                ],
+                "synthetic_in_current_coverage": mechanism[
+                    "synthetic_in_current_coverage"
+                ],
+                "synthetic_mapped_bytes": mechanism["synthetic_mapped_bytes"],
+                "synthetic_mapped_spans": mechanism["synthetic_mapped_spans"],
+            }
+        )
+    report = {
+        "arms": rows,
+        "case_set_sha256": _artifact_digest(cases),
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "holdout": {"cases_accessed": 0, "opened": False},
+        "invariants": {
+            "candidate_independent_oracle": True,
+            "fallback_is_aggregate_success": False,
+            "fallback_is_native_coverage": False,
+            "synthetic_noema_is_current_coverage": False,
+        },
+        "manifest_sha256": _artifact_digest(manifest),
+        "schema": f"{SCHEMA_PREFIX}-aggregate-report/v1",
+        "source_ref": SOURCE_REF,
+    }
+    _validate_development_report(report)
+    return report
+
+
+def _validate_development_report(report: dict[str, Any]) -> None:
+    _require_fields(
+        report,
+        ("arms", "case_set_sha256", "cohorts_sha256", "holdout", "invariants", "manifest_sha256", "schema", "source_ref"),
+        ("arms", "case_set_sha256", "cohorts_sha256", "holdout", "invariants", "manifest_sha256", "schema", "source_ref"),
+        "development aggregate report",
+    )
+    if (
+        report["schema"] != f"{SCHEMA_PREFIX}-aggregate-report/v1"
+        or report["source_ref"] != SOURCE_REF
+        or report["holdout"] != {"cases_accessed": 0, "opened": False}
+        or report["invariants"]
+        != {
+            "candidate_independent_oracle": True,
+            "fallback_is_aggregate_success": False,
+            "fallback_is_native_coverage": False,
+            "synthetic_noema_is_current_coverage": False,
+        }
+        or not isinstance(report["arms"], list)
+        or [item.get("arm") for item in report["arms"]] != list(DEVELOPMENT_ARMS)
+    ):
+        raise Refusal("development report identity, order, or holdout boundary drift")
+    noema = next(item for item in report["arms"] if item["arm"] == "noema")
+    wai1 = next(item for item in report["arms"] if item["arm"] == "wai1")
+    if (
+        noema["full_current_corpus_native_bytes"] != 655
+        or noema["full_current_corpus_native_ranges"] != 10
+        or noema["development_native_mapping_cases"] != 0
+        or noema["development_native_exact_source_recovery_cases"] != 0
+        or wai1["full_current_corpus_native_bytes"] != 11_170
+        or any(
+            row["synthetic_in_aggregate_success"] is not False
+            or row["synthetic_in_current_coverage"] is not False
+            for row in report["arms"]
+        )
+    ):
+        raise Refusal("control report relabels native, fallback, or synthetic evidence")
+
+
 def _reconciliation_markdown(
     manifest: dict[str, Any],
     profiles: dict[str, Any],
@@ -6575,6 +9797,298 @@ remain unmeasured until the later arm and case builders exist.
     return text.encode("utf-8")
 
 
+def _development_baseline(
+    manifest_path: Path, cohorts_path: Path
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    directory = manifest_path.parent
+    records = _load_committed_baseline(
+        {
+            "byte-partition.json": directory / "byte-partition.json",
+            "cohorts.json": cohorts_path,
+            "corpus-manifest.json": manifest_path,
+            "holdout-seal.json": directory / "holdout-seal.json",
+            "invocation-profiles.json": directory / "invocation-profiles.json",
+            "loader-graph.json": directory / "loader-graph.json",
+        }
+    )
+    manifest = records["corpus-manifest.json"][0]
+    profiles = records["invocation-profiles.json"][0]
+    graph = records["loader-graph.json"][0]
+    cohorts = records["cohorts.json"][0]
+    seal = records["holdout-seal.json"][0]
+    partition = records["byte-partition.json"][0]
+    _validate_invocation_profiles(profiles)
+    _validate_manifest_shape(manifest, profiles)
+    _validate_loader_graph(graph, manifest, profiles)
+    _validate_partition_closure(partition, manifest)
+    _validate_cohorts(cohorts, manifest)
+    _validate_holdout_seal(seal, manifest, cohorts, profiles, graph)
+    if seal["opened"] is not False:
+        raise Refusal("sealed holdout was opened before development build")
+    return manifest, profiles, graph, cohorts, seal
+
+
+def _development_payloads(
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    cohorts: dict[str, Any],
+) -> tuple[dict[str, bytes], dict[str, int]]:
+    phase_start = time.perf_counter_ns()
+    controls = {
+        "raw": _raw_control(manifest),
+        "wai1": _wai1_control(manifest),
+        "noema": _noema_control(manifest),
+        "simple": _simple_control(manifest),
+        "section-graph": _section_control(manifest),
+    }
+    control_ns = time.perf_counter_ns() - phase_start
+    if tuple(controls) != DEVELOPMENT_ARMS:
+        raise Refusal("development arm order drift")
+
+    phase_start = time.perf_counter_ns()
+    cases = _development_cases(manifest, cohorts, graph)
+    hostile = _hostile_specimens()
+    case_ns = time.perf_counter_ns() - phase_start
+
+    phase_start = time.perf_counter_ns()
+    results = {
+        arm: _arm_results(arm, cases, manifest, graph, controls[arm])
+        for arm in DEVELOPMENT_ARMS
+    }
+    assembly_ns = time.perf_counter_ns() - phase_start
+    hostile_execution = _hostile_execution(
+        hostile, cases, manifest, cohorts, graph, controls, results
+    )
+    report = _development_report(manifest, cohorts, cases, controls, results)
+    values: dict[str, dict[str, Any]] = {
+        "controls/noema.json": controls["noema"],
+        "controls/raw.json": controls["raw"],
+        "controls/section-graph.json": controls["section-graph"],
+        "controls/simple.json": controls["simple"],
+        "controls/wai1.json": controls["wai1"],
+        "development/cases.json": cases,
+        "hostile/specimens.json": hostile,
+        "hostile/execution.json": hostile_execution,
+        "evidence/development/noema.json": results["noema"],
+        "evidence/development/raw.json": results["raw"],
+        "evidence/development/report.json": report,
+        "evidence/development/section-graph.json": results["section-graph"],
+        "evidence/development/simple.json": results["simple"],
+        "evidence/development/wai1.json": results["wai1"],
+    }
+    disk_bytes = {
+        "artifact_inventory": 1,
+        "artifact_payloads": 1,
+        "published_generation": 2,
+    }
+    for _ in range(16):
+        values["evidence/development/resource-samples.json"] = _resource_record(
+            manifest, controls, disk_bytes
+        )
+        if set(values) != set(DEVELOPMENT_RECORD_PATHS):
+            raise Refusal("development payload inventory drift")
+        payloads = {
+            path: _canonical_json(values[path]) for path in DEVELOPMENT_RECORD_PATHS
+        }
+        inventory_bytes = _canonical_json(
+            _development_inventory(manifest, graph, cohorts, payloads)
+        )
+        observed = {
+            "artifact_inventory": len(inventory_bytes),
+            "artifact_payloads": sum(len(data) for data in payloads.values()),
+            "published_generation": sum(len(data) for data in payloads.values())
+            + len(inventory_bytes),
+        }
+        if observed == disk_bytes:
+            return payloads, {
+                "assembly_wall_time_ns": assembly_ns,
+                "case_wall_time_ns": case_ns,
+                "control_wall_time_ns": control_ns,
+            }
+        disk_bytes = observed
+    raise Refusal("development disk-byte accounting did not converge")
+
+
+def _development_inventory(
+    manifest: dict[str, Any],
+    graph: dict[str, Any],
+    cohorts: dict[str, Any],
+    payloads: dict[str, bytes],
+) -> dict[str, Any]:
+    cases = _decode_record(payloads["development/cases.json"])
+    return {
+        "artifacts": {
+            path: {"bytes": len(data), "sha256": _sha256(data)}
+            for path, data in payloads.items()
+        },
+        "case_set_sha256": _artifact_digest(cases),
+        "cohorts_sha256": _artifact_digest(cohorts),
+        "loader_graph_sha256": _artifact_digest(graph),
+        "manifest_sha256": _artifact_digest(manifest),
+        "schema": f"{SCHEMA_PREFIX}-development-inventory/v1",
+        "source_ref": SOURCE_REF,
+        "source_tree_sha256": manifest["source"]["tree_sha256"],
+    }
+
+
+def _development_fixture_root(output: Path) -> tuple[PurePosixPath, PurePosixPath]:
+    relative = _repository_relative(output, "development evidence output")
+    if relative == DEVELOPMENT_EVIDENCE_ROOT:
+        return DEVELOPMENT_FIXTURE_ROOT, relative
+    if (
+        not relative.parts
+        or relative.parts[0] != SCRATCH_ROOT.as_posix()
+        or len(relative.parts) < 4
+        or relative.parts[-2:] != ("evidence", "development")
+    ):
+        raise Refusal("scratch development output must end in evidence/development")
+    return relative.parent.parent, relative
+
+
+def _peak_rss_bytes() -> int:
+    value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return value if sys.platform == "darwin" else value * 1024
+
+
+def build_development(args: argparse.Namespace) -> bytes:
+    output = _confined_output(
+        args.output,
+        "development evidence output",
+        exact=(DEVELOPMENT_EVIDENCE_ROOT,),
+        roots=(SCRATCH_ROOT,),
+    )
+    fixture_root, output_relative = _development_fixture_root(output)
+    manifest, _, graph, cohorts, seal = _development_baseline(args.manifest, args.cohorts)
+    if seal["opened"] is not False:
+        raise Refusal("development build attempted to access an opened holdout")
+    started = time.perf_counter_ns()
+    payloads, timings = _development_payloads(manifest, graph, cohorts)
+    inventory = _development_inventory(manifest, graph, cohorts, payloads)
+    inventory_bytes = _canonical_json(inventory)
+    if (
+        output_relative == DEVELOPMENT_EVIDENCE_ROOT
+        and EXPECTED_DEVELOPMENT_INVENTORY_SHA256 is not None
+        and _sha256(inventory_bytes) != EXPECTED_DEVELOPMENT_INVENTORY_SHA256
+    ):
+        raise Refusal("development inventory differs from its frozen digest")
+    targets = {
+        path: ROOT / Path(*(fixture_root / PurePosixPath(path)).parts)
+        for path in DEVELOPMENT_RECORD_PATHS
+    }
+    inventory_target = output / "artifact-inventory.json"
+    for target in [*targets.values(), inventory_target]:
+        _safe_output(target)
+    for path in DEVELOPMENT_RECORD_PATHS:
+        _atomic_write(targets[path], payloads[path])
+    _atomic_write(inventory_target, inventory_bytes)
+    peak = _peak_rss_bytes()
+    if peak > 2 * 1024 * 1024 * 1024:
+        raise Refusal("development build exceeded its peak RSS limit")
+    return _result(
+        "build-development",
+        inventory_bytes,
+        {
+            **timings,
+            "arms": len(DEVELOPMENT_ARMS),
+            "cases": len(DEVELOPMENT_CLASSES),
+            "peak_rss_bytes": peak,
+            "total_wall_time_ns": time.perf_counter_ns() - started,
+        },
+    )
+
+
+def _load_development_evidence(
+    evidence: Path,
+) -> tuple[dict[str, Any], bytes, dict[str, bytes]]:
+    fixture_root, relative = _development_fixture_root(evidence)
+    inventory_path = evidence / "artifact-inventory.json"
+    inventory_raw = _read_regular(inventory_path, MAX_JSON_BYTES)
+    if (
+        relative == DEVELOPMENT_EVIDENCE_ROOT
+        and EXPECTED_DEVELOPMENT_INVENTORY_SHA256 is not None
+        and _sha256(inventory_raw) != EXPECTED_DEVELOPMENT_INVENTORY_SHA256
+    ):
+        raise Refusal("development inventory differs from its frozen digest")
+    inventory = _decode_record(inventory_raw)
+    _require_fields(
+        inventory,
+        (
+            "artifacts",
+            "case_set_sha256",
+            "cohorts_sha256",
+            "loader_graph_sha256",
+            "manifest_sha256",
+            "schema",
+            "source_ref",
+            "source_tree_sha256",
+        ),
+        (
+            "artifacts",
+            "case_set_sha256",
+            "cohorts_sha256",
+            "loader_graph_sha256",
+            "manifest_sha256",
+            "schema",
+            "source_ref",
+            "source_tree_sha256",
+        ),
+        "development inventory",
+    )
+    if (
+        inventory["schema"] != f"{SCHEMA_PREFIX}-development-inventory/v1"
+        or inventory["source_ref"] != SOURCE_REF
+        or not isinstance(inventory["artifacts"], dict)
+        or set(inventory["artifacts"]) != set(DEVELOPMENT_RECORD_PATHS)
+    ):
+        raise Refusal("development inventory identity drift")
+    payloads: dict[str, bytes] = {}
+    for path in DEVELOPMENT_RECORD_PATHS:
+        identity = inventory["artifacts"][path]
+        _require_fields(identity, ("bytes", "sha256"), ("bytes", "sha256"), "development artifact")
+        target = ROOT / Path(*(fixture_root / PurePosixPath(path)).parts)
+        raw = _read_regular(target, MAX_JSON_BYTES)
+        if len(raw) != identity["bytes"] or _sha256(raw) != identity["sha256"]:
+            raise Refusal(f"development artifact inventory mismatch: {path}")
+        _decode_record(raw)
+        payloads[path] = raw
+    if _read_regular(inventory_path, MAX_JSON_BYTES) != inventory_raw:
+        raise Refusal("development inventory changed during replay read")
+    return inventory, inventory_raw, payloads
+
+
+def replay_development(args: argparse.Namespace) -> bytes:
+    if args.cohort != "development":
+        raise Refusal("only the unopened development cohort may replay in Step 2")
+    started = time.perf_counter_ns()
+    inventory, inventory_raw, observed = _load_development_evidence(args.evidence)
+    baseline_root = ROOT / Path(*BASELINE_FIXTURE_ROOT.parts)
+    manifest, _, graph, cohorts, seal = _development_baseline(
+        baseline_root / "corpus-manifest.json", baseline_root / "cohorts.json"
+    )
+    if seal["opened"] is not False:
+        raise Refusal("development replay encountered an opened holdout")
+    expected, timings = _development_payloads(manifest, graph, cohorts)
+    expected_inventory = _development_inventory(manifest, graph, cohorts, expected)
+    if inventory != expected_inventory:
+        raise Refusal("development inventory differs from deterministic replay")
+    for path in DEVELOPMENT_RECORD_PATHS:
+        if observed[path] != expected[path]:
+            raise Refusal(f"development replay drift: {path}")
+    peak = _peak_rss_bytes()
+    if peak > 2 * 1024 * 1024 * 1024:
+        raise Refusal("development replay exceeded its peak RSS limit")
+    return _result(
+        "replay-development",
+        inventory_raw,
+        {
+            **timings,
+            "artifacts": len(expected),
+            "peak_rss_bytes": peak,
+            "total_wall_time_ns": time.perf_counter_ns() - started,
+        },
+    )
+
+
 def build_baseline(args: argparse.Namespace) -> bytes:
     output = _confined_output(
         args.output,
@@ -6678,6 +10192,33 @@ def parser() -> argparse.ArgumentParser:
         default=ROOT / "docs/instruction-architecture/corpus-reconciliation.md",
     )
     build.set_defaults(handler=build_baseline)
+
+    snapshot = subparsers.add_parser("snapshot-controls")
+    snapshot.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / Path(*CONTROL_SNAPSHOT_ROOT.parts),
+    )
+    snapshot.set_defaults(handler=snapshot_controls)
+
+    development = subparsers.add_parser("build-development")
+    development.add_argument("--manifest", type=_path, required=True)
+    development.add_argument("--cohorts", type=_path, required=True)
+    development.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/evidence/development",
+    )
+    development.set_defaults(handler=build_development)
+
+    replay = subparsers.add_parser("replay")
+    replay.add_argument("--cohort", required=True)
+    replay.add_argument(
+        "--evidence",
+        type=_path,
+        default=ROOT / "tests/fixtures/instruction-architecture/evidence/development",
+    )
+    replay.set_defaults(handler=replay_development)
 
     corpus = subparsers.add_parser("verify-corpus")
     corpus.add_argument("--manifest", type=_path, required=True)

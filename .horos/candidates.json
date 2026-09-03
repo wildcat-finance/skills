@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 30650626,
+    "bytes_blob": 42607841,
     "bytes_generated": 98
   },
   "entries": [
@@ -14,7 +14,7 @@
       "path": "audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 55751,
+      "bytes": 63180,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -582,30 +582,107 @@
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     },
     {
-      "bytes": 144945,
+      "bytes": 145533,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 144945 bytes",
+      "evidence": "no newline in the first 4096 bytes of 145533 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },
     {
-      "bytes": 5034918,
+      "bytes": 104466,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 5034918 bytes",
+      "evidence": "no newline in the first 4096 bytes of 104466 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/noema.json"
+    },
+    {
+      "bytes": 56832,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 56832 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/raw.json"
+    },
+    {
+      "bytes": 1660309,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1660309 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/section-graph.json"
+    },
+    {
+      "bytes": 99172,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 99172 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/simple.json"
+    },
+    {
+      "bytes": 73291,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 73291 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/controls/wai1.json"
+    },
+    {
+      "bytes": 5188748,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 5188748 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 2094805,
+      "bytes": 1893202,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 2094805 bytes",
+      "evidence": "no newline in the first 4096 bytes of 1893202 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/noema.json"
+    },
+    {
+      "bytes": 1879412,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1879412 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/raw.json"
+    },
+    {
+      "bytes": 2488907,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 2488907 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/section-graph.json"
+    },
+    {
+      "bytes": 1596127,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1596127 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/simple.json"
+    },
+    {
+      "bytes": 1866086,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 1866086 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/evidence/development/wai1.json"
+    },
+    {
+      "bytes": 39457,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 39457 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/instruction-architecture/hostile/execution.json"
+    },
+    {
+      "bytes": 2107727,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 2107727 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/invocation-profiles.json"
     },
     {
-      "bytes": 6871484,
+      "bytes": 6896669,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 6871484 bytes",
+      "evidence": "no newline in the first 4096 bytes of 6896669 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }

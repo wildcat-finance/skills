@@ -1,8 +1,10 @@
-"""Step 1 guards for the framework-74 research boundary."""
+"""Step 1 and Step 2 guards for the framework-74 research boundary."""
 
 from __future__ import annotations
 
+import ast
 import copy
+from contextlib import contextmanager
 from functools import lru_cache
 import hashlib
 import importlib.util
@@ -14,6 +16,7 @@ import posixpath
 import re
 import selectors
 import signal
+import shutil
 import stat
 import subprocess
 import sys
@@ -36,6 +39,21 @@ SEAL = FIXTURES / "holdout-seal.json"
 INVENTORY = FIXTURES / "artifact-inventory.json"
 SCHEMA = ROOT / "research/instruction-architecture/schemas/source-bound-v1.schema.json"
 PROFILE_SCHEMA = ROOT / "research/instruction-architecture/schemas/invocation-profile-v1.schema.json"
+DEVELOPMENT_SCHEMA = ROOT / "research/instruction-architecture/schemas/development-v1.schema.json"
+DEVELOPMENT_CASES = FIXTURES / "development/cases.json"
+DEVELOPMENT_REPORT = FIXTURES / "evidence/development/report.json"
+DEVELOPMENT_INVENTORY = FIXTURES / "evidence/development/artifact-inventory.json"
+HOSTILE_SPECIMENS = FIXTURES / "hostile/specimens.json"
+HOSTILE_EXECUTION = FIXTURES / "hostile/execution.json"
+CONTROL_SNAPSHOT_MANIFEST = FIXTURES / "controls/snapshots/manifest.json"
+DEVELOPMENT_CONTROLS = {
+    arm: FIXTURES / "controls" / f"{arm}.json"
+    for arm in ("raw", "wai1", "noema", "simple", "section-graph")
+}
+DEVELOPMENT_RESULTS = {
+    arm: FIXTURES / "evidence/development" / f"{arm}.json"
+    for arm in ("raw", "wai1", "noema", "simple", "section-graph")
+}
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
@@ -165,6 +183,9 @@ def sha256(path: Path) -> str:
 
 def clear_source_cache() -> None:
     for name in (
+        "_control_ref_mode",
+        "_control_snapshot",
+        "_git_blob_at",
         "_source_mode",
         "_inventory_source_snapshot",
         "_source_object",
@@ -208,6 +229,10 @@ ORACLE_STEP1_PARENT_DEPENDENCIES = (
     "tests/fixtures/instruction-architecture/holdout-seal.json",
     "tests/fixtures/instruction-architecture/invocation-profiles.json",
     "tests/fixtures/instruction-architecture/loader-graph.json",
+)
+ORACLE_STEP2_PARENT_CODE_PATHS = (
+    "research/instruction-architecture/benchmark.py",
+    "tests/test_instruction_architecture.py",
 )
 ORACLE_BASELINE_INVENTORY_SHA256 = (
     "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
@@ -822,39 +847,103 @@ def oracle_head_oid() -> str:
     return process.stdout[:-1].decode("ascii")
 
 
-def oracle_assert_step1_parent_dependencies(oid: str) -> None:
-    """Fail closed if a live Step 1 dependency differs from the parent oid."""
-    for path in ORACLE_STEP1_PARENT_DEPENDENCIES:
-        expression = f"{oid}:{path}"
-        probe = oracle_git(
-            "cat-file",
-            "--batch-check=%(objectname) %(objecttype)",
-            input_data=f"{expression}\n".encode("ascii"),
-            limit=128,
+def oracle_parent_blob_oid(oid: str, path: str) -> str:
+    """Resolve one typed blob identity below an already-resolved commit."""
+    expression = f"{oid}:{path}"
+    probe = oracle_git(
+        "cat-file",
+        "--batch-check=%(objectname) %(objecttype)",
+        input_data=f"{expression}\n".encode("ascii"),
+        limit=128,
+    )
+    match = re.fullmatch(rb"([0-9a-f]{40}|[0-9a-f]{64}) blob\n", probe.stdout)
+    if (
+        probe.returncode != 0
+        or probe.stderr
+        or match is None
+        or len(match.group(1)) != len(oid)
+    ):
+        raise AssertionError("independent tracked oracle dependencies unavailable")
+    return match.group(1).decode("ascii")
+
+
+def oracle_blob_oid(data: bytes, oid_length: int) -> str:
+    """Compute the repository-format Git identity for exact blob bytes."""
+    header = f"blob {len(data)}\0".encode("ascii")
+    if oid_length == 40:
+        hasher = hashlib.sha1(usedforsecurity=False)
+    elif oid_length == 64:
+        hasher = hashlib.sha256()
+    else:
+        raise AssertionError("independent tracked oracle object format is invalid")
+    hasher.update(header)
+    hasher.update(data)
+    return hasher.hexdigest()
+
+
+def oracle_parent_step1_dependencies(source: bytes) -> tuple[str, ...]:
+    """Read the immutable dependency declaration from the exact parent test."""
+    try:
+        tree = ast.parse(source.decode("utf-8"), filename="<parent-test>")
+    except (SyntaxError, UnicodeError) as exc:
+        raise AssertionError(
+            "independent tracked oracle dependency declaration is malformed"
+        ) from exc
+    declarations = []
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name)
+            and target.id == "ORACLE_STEP1_PARENT_DEPENDENCIES"
+            for target in node.targets
+        ):
+            continue
+        declarations.append(node.value)
+    if len(declarations) != 1 or not isinstance(declarations[0], ast.Tuple):
+        raise AssertionError(
+            "independent tracked oracle dependency declaration is unavailable"
         )
-        match = re.fullmatch(
-            rb"([0-9a-f]{40}|[0-9a-f]{64}) blob\n", probe.stdout
-        )
-        if (
-            probe.returncode != 0
-            or probe.stderr
-            or match is None
-            or len(match.group(1)) != len(oid)
+    dependencies = []
+    for element in declarations[0].elts:
+        if not isinstance(element, ast.Constant) or not isinstance(
+            element.value, str
         ):
             raise AssertionError(
-                "independent tracked oracle dependencies unavailable"
+                "independent tracked oracle dependency declaration is malformed"
             )
+        path = element.value
+        pure = PurePosixPath(path)
+        if (
+            not path
+            or not path.isascii()
+            or len(path.encode("ascii")) > 1_024
+            or pure.is_absolute()
+            or str(pure) != path
+            or ".." in pure.parts
+        ):
+            raise AssertionError(
+                "independent tracked oracle dependency declaration is malformed"
+            )
+        dependencies.append(path)
+    if not dependencies or len(dependencies) != len(set(dependencies)):
+        raise AssertionError(
+            "independent tracked oracle dependency declaration is malformed"
+        )
+    return tuple(dependencies)
+
+
+def oracle_assert_step1_parent_dependencies(
+    oid: str, dependencies: tuple[str, ...] | None = None
+) -> None:
+    """Fail closed if a live Step 1 dependency differs from the parent oid."""
+    selected = ORACLE_STEP1_PARENT_DEPENDENCIES if dependencies is None else dependencies
+    for path in selected:
+        parent_blob_oid = oracle_parent_blob_oid(oid, path)
         live = oracle_read_regular(
             ROOT / path, ORACLE_MAX_STEP1_DEPENDENCY_BYTES
         )
-        header = f"blob {len(live)}\0".encode("ascii")
-        if len(oid) == 40:
-            hasher = hashlib.sha1(usedforsecurity=False)
-        else:
-            hasher = hashlib.sha256()
-        hasher.update(header)
-        hasher.update(live)
-        if hasher.hexdigest().encode("ascii") != match.group(1):
+        if oracle_blob_oid(live, len(oid)) != parent_blob_oid:
             raise AssertionError("independent tracked oracle dependency drift")
 
 
@@ -873,12 +962,15 @@ def oracle_tracked_source(oid: str, path: str) -> bytes:
     return process.stdout
 
 
-def oracle_tracked_benchmark(source: bytes, oid: str) -> types.ModuleType:
+def oracle_tracked_benchmark(
+    source: bytes, oid: str, blob_oid: str | None = None
+) -> types.ModuleType:
     """Compile the parent benchmark bytes without consulting the worktree."""
     module = types.ModuleType("tracked_instruction_architecture_benchmark")
     module.__file__ = str(SCRIPT)
     module.__source_oid__ = oid
     module.__source_sha256__ = hashlib.sha256(source).hexdigest()
+    module.__source_blob_oid__ = blob_oid
     try:
         code = compile(source, module.__file__, "exec")
         # phylax: allow exact tracked benchmark bytes as bounded parent evidence
@@ -889,22 +981,43 @@ def oracle_tracked_benchmark(source: bytes, oid: str) -> types.ModuleType:
 
 
 def oracle_head_module() -> types.ModuleType:
-    """Load the bounded parent helper while declared live inputs match HEAD."""
+    """Load parent code objects after its immutable live inputs match HEAD."""
     oid = oracle_head_oid()
-    oracle_assert_step1_parent_dependencies(oid)
-    benchmark_source = oracle_tracked_source(
-        oid, "research/instruction-architecture/benchmark.py"
+    code_blob_oids = {
+        path: oracle_parent_blob_oid(oid, path)
+        for path in ORACLE_STEP2_PARENT_CODE_PATHS
+    }
+    code_sources = {
+        path: oracle_tracked_source(oid, path)
+        for path in ORACLE_STEP2_PARENT_CODE_PATHS
+    }
+    for path in ORACLE_STEP2_PARENT_CODE_PATHS:
+        if oracle_blob_oid(code_sources[path], len(oid)) != code_blob_oids[path]:
+            raise AssertionError("independent tracked oracle object identity drift")
+    benchmark_path, test_path = ORACLE_STEP2_PARENT_CODE_PATHS
+    benchmark_source = code_sources[benchmark_path]
+    test_source = code_sources[test_path]
+    parent_dependencies = oracle_parent_step1_dependencies(test_source)
+    parent_code_dependencies = tuple(
+        path for path in parent_dependencies if path in ORACLE_STEP2_PARENT_CODE_PATHS
     )
-    test_source = oracle_tracked_source(
-        oid, "tests/test_instruction_architecture.py"
+    if parent_code_dependencies != (benchmark_path,) or test_path in parent_dependencies:
+        raise AssertionError(
+            "independent tracked oracle compatibility boundary drift"
+        )
+    immutable_dependencies = tuple(
+        path for path in parent_dependencies if path not in ORACLE_STEP2_PARENT_CODE_PATHS
     )
+    oracle_assert_step1_parent_dependencies(oid, immutable_dependencies)
 
     class TrackedBenchmarkLoader:
         def create_module(self, _spec):
             return None
 
         def exec_module(self, target):
-            tracked = oracle_tracked_benchmark(benchmark_source, oid)
+            tracked = oracle_tracked_benchmark(
+                benchmark_source, oid, code_blob_oids[benchmark_path]
+            )
             target.__dict__.update(tracked.__dict__)
 
     loader = TrackedBenchmarkLoader()
@@ -933,12 +1046,16 @@ def oracle_head_module() -> types.ModuleType:
         raise AssertionError("independent tracked oracle is malformed") from exc
 
     def load_tracked_benchmark():
-        return oracle_tracked_benchmark(benchmark_source, oid)
+        return oracle_tracked_benchmark(
+            benchmark_source, oid, code_blob_oids[benchmark_path]
+        )
 
     module.AI = load_tracked_benchmark()
     module.load_module = load_tracked_benchmark
     module.__source_oid__ = oid
     module.__source_sha256__ = hashlib.sha256(test_source).hexdigest()
+    module.__source_blob_oid__ = code_blob_oids[test_path]
+    module.__immutable_dependency_count__ = len(immutable_dependencies)
     return module
 
 
@@ -2585,6 +2702,8 @@ class CorpusManifestTests(unittest.TestCase):
                     "tests.test_instruction_architecture.CorpusManifestTests.test_independent_markdown_fixed_point_detects_an_unclassified_directive",
                     "tests.test_instruction_architecture.InvocationProfileTests.test_independent_source_owned_profile_and_route_oracle",
                     "tests.test_instruction_architecture.LoaderGraphTests.test_independent_runtime_semantic_evidence_coverage_is_closed",
+                    "tests.test_instruction_architecture.ControlSnapshotTests.test_snapshot_generation_refuses_unowned_entries_before_writing",
+                    "tests.test_instruction_architecture.ControlSnapshotTests.test_snapshot_generation_completes_owned_partial_and_clean_refresh",
                     "-v",
                 ],
                 cwd=checkout,
@@ -3688,6 +3807,74 @@ class CorpusManifestTests(unittest.TestCase):
             getattr(reloaded, "__source_sha256__", None),
             hashlib.sha256(expected_source).hexdigest(),
         )
+
+    def test_independent_parent_oracle_uses_exact_parent_code_not_live_bytes(self):
+        tracked = oracle_guard_module()
+        code_paths = tuple(tracked.ORACLE_STEP2_PARENT_CODE_PATHS)
+        code_targets = {tracked.ROOT / path for path in code_paths}
+        observed = []
+        real_read = tracked.oracle_read_regular
+
+        def hostile_live_code(path, limit):
+            observed.append(path)
+            if path in code_targets:
+                return b"raise AssertionError('live Step 2 code escaped')\n"
+            return real_read(path, limit)
+
+        with mock.patch.object(
+            tracked, "oracle_read_regular", side_effect=hostile_live_code
+        ):
+            parent = tracked.oracle_head_module()
+        self.assertTrue(code_targets.isdisjoint(observed))
+        self.assertEqual(parent.__immutable_dependency_count__, 12)
+        expected_oid = tracked.oracle_head_oid()
+        for path, loaded in (
+            (code_paths[0], parent.AI),
+            (code_paths[1], parent),
+        ):
+            source = tracked.oracle_tracked_source(expected_oid, path)
+            self.assertEqual(
+                loaded.__source_sha256__, hashlib.sha256(source).hexdigest()
+            )
+            self.assertEqual(
+                loaded.__source_blob_oid__,
+                tracked.oracle_parent_blob_oid(expected_oid, path),
+            )
+
+    def test_independent_parent_oracle_refuses_synchronised_immutable_rebinding(self):
+        tracked = oracle_guard_module()
+        target = next(
+            path
+            for path in tracked.ORACLE_STEP1_PARENT_DEPENDENCIES
+            if path not in tracked.ORACLE_STEP2_PARENT_CODE_PATHS
+        )
+        donor = next(
+            path
+            for path in tracked.ORACLE_STEP1_PARENT_DEPENDENCIES
+            if path != target and path not in tracked.ORACLE_STEP2_PARENT_CODE_PATHS
+        )
+        rebound = tuple(
+            donor if path == target else path
+            for path in tracked.ORACLE_STEP1_PARENT_DEPENDENCIES
+        )
+        real_read = tracked.oracle_read_regular
+
+        def synchronised_drift(path, limit):
+            data = real_read(path, limit)
+            return data + b"\n" if path == tracked.ROOT / target else data
+
+        with (
+            mock.patch.object(
+                tracked, "ORACLE_STEP1_PARENT_DEPENDENCIES", rebound
+            ),
+            mock.patch.object(
+                tracked, "oracle_read_regular", side_effect=synchronised_drift
+            ),
+            self.assertRaisesRegex(
+                AssertionError, "independent tracked oracle dependency drift"
+            ),
+        ):
+            tracked.oracle_head_module()
 
     def test_independent_parent_oracle_refuses_step1_dependency_drift(self):
         tracked = oracle_guard_module()
@@ -8044,6 +8231,1473 @@ class HoldoutSealTests(unittest.TestCase):
         )
         self.assertEqual(first.returncode, 0, first.stderr)
         self.assertEqual(first.stdout, second.stdout)
+
+
+class DevelopmentFixtureMixin:
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest = load(MANIFEST)
+        cls.graph = load(GRAPH)
+        cls.cohorts = load(COHORTS)
+        cls.cases = load(DEVELOPMENT_CASES)
+        cls.report = load(DEVELOPMENT_REPORT)
+        cls.controls = {arm: load(path) for arm, path in DEVELOPMENT_CONTROLS.items()}
+        cls.results = {arm: load(path) for arm, path in DEVELOPMENT_RESULTS.items()}
+
+    def validate_adapter_result(self, arm, record):
+        validator = AI._validate_adapter_results
+        if validator.__code__.co_argcount == 1:
+            return validator(record)
+        return validator(
+            record,
+            self.cases,
+            self.manifest,
+            self.graph,
+            self.controls[arm],
+        )
+
+
+class NeutralSchemaTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_schema_covers_every_neutral_record_and_closes_objects(self):
+        schema = load(DEVELOPMENT_SCHEMA)
+        self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
+        self.assertEqual(
+            {item["$ref"] for item in schema["oneOf"]},
+            {
+                "#/$defs/adapterResults",
+                "#/$defs/aggregateReport",
+                "#/$defs/casesFile",
+                "#/$defs/controlFile",
+                "#/$defs/controlSnapshotFile",
+                "#/$defs/developmentInventory",
+                "#/$defs/mutationsFile",
+                "#/$defs/mutationResultsFile",
+                "#/$defs/prompt",
+                "#/$defs/resourceFile",
+                "#/$defs/score",
+            },
+        )
+        objects = [
+            value
+            for value in schema["$defs"].values()
+            if value.get("type") == "object"
+        ]
+        self.assertTrue(objects)
+        self.assertTrue(all(value.get("additionalProperties") is False for value in objects))
+
+    def test_every_committed_record_is_canonical_closed_json(self):
+        paths = [
+            *DEVELOPMENT_CONTROLS.values(),
+            CONTROL_SNAPSHOT_MANIFEST,
+            DEVELOPMENT_CASES,
+            HOSTILE_SPECIMENS,
+            HOSTILE_EXECUTION,
+            DEVELOPMENT_REPORT,
+            DEVELOPMENT_INVENTORY,
+            FIXTURES / "evidence/development/resource-samples.json",
+            *DEVELOPMENT_RESULTS.values(),
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertTrue(path.is_file())
+                raw = path.read_bytes()
+                value = AI._decode_record(raw)
+                self.assertEqual(raw, canonical(value))
+
+    def test_all_arms_share_one_candidate_independent_contract(self):
+        contracts = {canonical(control["contract"]) for control in self.controls.values()}
+        self.assertEqual(len(contracts), 1)
+        for control in self.controls.values():
+            self.assertFalse(control["claims"]["candidate_defines_semantics"])
+            self.assertFalse(control["claims"]["fallback_is_native_coverage"])
+            self.assertFalse(control["claims"]["fallback_is_aggregate_success"])
+            mechanism = control["mechanism_evidence"]
+            self.assertTrue(mechanism["current_native_in_current_coverage"])
+            self.assertFalse(mechanism["synthetic_in_current_coverage"])
+            self.assertFalse(mechanism["synthetic_in_aggregate_success"])
+
+    def test_runtime_closes_cases_prompts_scores_and_reports(self):
+        try:
+            AI._validate_development_cases(
+                self.cases, self.manifest, self.cohorts, self.graph
+            )
+        except AI.Refusal as exc:
+            if str(exc) != "development cases has a non-closed field set":
+                raise
+            self.fail(f"development case validator rejected its repaired contract: {exc}")
+        try:
+            AI._validate_development_report(self.report)
+        except KeyError as err:
+            self.fail(f"development report validator crashed on its field contract: {err}")
+        for arm, result in self.results.items():
+            self.validate_adapter_result(arm, result)
+
+
+class ControlSnapshotTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest_raw = CONTROL_SNAPSHOT_MANIFEST.read_bytes()
+        cls.manifest = json.loads(cls.manifest_raw)
+
+    @contextmanager
+    def _checked_generation_source(self):
+        """Isolate publication checks from the generator's full-ref precondition."""
+        paths_by_ref: dict[str, list[str]] = {}
+        oid_by_source: dict[tuple[str, str], str] = {}
+        expected_prefixes = dict(AI.CONTROL_SNAPSHOT_GROUPS)
+        for record in self.manifest["artifacts"]:
+            ref = record["ref"]
+            path = record["path"]
+            oid = record["blob_oid"]
+            paths_by_ref.setdefault(ref, []).append(path)
+            oid_by_source[(ref, path)] = oid
+
+        def control_paths(ref: str, prefixes: tuple[str, ...]) -> list[str]:
+            if expected_prefixes.get(ref) != prefixes:
+                raise AssertionError("generation requested an unknown control source")
+            return sorted(paths_by_ref[ref])
+
+        def blob_identity(ref: str, path: str) -> str:
+            try:
+                return oid_by_source[(ref, path)]
+            except KeyError as exc:
+                raise AssertionError("generation requested an unknown control blob") from exc
+
+        with (
+            mock.patch.object(AI, "_git_control_paths", side_effect=control_paths),
+            mock.patch.object(AI, "_git_blob_identity_at", side_effect=blob_identity),
+        ):
+            yield
+
+    def test_snapshot_manifest_and_every_object_are_self_bound(self):
+        self.assertEqual(
+            hashlib.sha256(self.manifest_raw).hexdigest(),
+            AI.EXPECTED_CONTROL_SNAPSHOT_SHA256,
+        )
+        self.assertEqual(
+            self.manifest["totals"], AI.EXPECTED_CONTROL_SNAPSHOT_COUNTS
+        )
+        artifacts = self.manifest["artifacts"]
+        objects = self.manifest["objects"]
+        self.assertEqual(
+            [(item["ref"], item["path"]) for item in artifacts],
+            sorted({(item["ref"], item["path"]) for item in artifacts}),
+        )
+        self.assertEqual(
+            [item["oid"] for item in objects],
+            sorted({item["oid"] for item in objects}),
+        )
+        by_oid = {item["oid"]: item for item in objects}
+        observed = {}
+        for oid, record in by_oid.items():
+            data = (CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / oid).read_bytes()
+            self.assertEqual(len(data), record["bytes"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), record["sha256"])
+            self.assertEqual(oracle_blob_oid(data, len(oid)), oid)
+            observed[oid] = data
+        for record in artifacts:
+            source = by_oid[record["blob_oid"]]
+            self.assertEqual(record["bytes"], source["bytes"])
+            self.assertEqual(record["sha256"], source["sha256"])
+        self.assertEqual(set(observed), {item["blob_oid"] for item in artifacts})
+
+    def test_snapshot_manifest_regenerates_byte_identically_from_its_objects(self):
+        objects = {
+            item["oid"]: (
+                CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / item["oid"]
+            ).read_bytes()
+            for item in self.manifest["objects"]
+        }
+        rebuilt = AI._control_snapshot_manifest(self.manifest["artifacts"], objects)
+        self.assertEqual(canonical(rebuilt), self.manifest_raw)
+
+    def test_available_control_refs_retain_stronger_commit_path_binding(self):
+        shallow = oracle_git("rev-parse", "--is-shallow-repository", limit=16)
+        self.assertEqual(shallow.returncode, 0)
+        self.assertIn(shallow.stdout, {b"true\n", b"false\n"})
+        by_ref = {}
+        for record in self.manifest["artifacts"]:
+            by_ref.setdefault(record["ref"], []).append(record)
+        for ref, records in by_ref.items():
+            expression = f"{ref}^{{commit}}"
+            probe = oracle_git(
+                "cat-file",
+                "--batch-check=%(objectname) %(objecttype)",
+                input_data=f"{expression}\n".encode("ascii"),
+                limit=128,
+            )
+            self.assertEqual(probe.returncode, 0)
+            if probe.stdout == f"{expression} missing\n".encode("ascii"):
+                self.assertEqual(shallow.stdout, b"true\n")
+                continue
+            self.assertEqual(probe.stdout, f"{ref} commit\n".encode("ascii"))
+            for record in records:
+                self.assertEqual(
+                    oracle_parent_blob_oid(ref, record["path"]),
+                    record["blob_oid"],
+                )
+
+    def test_snapshot_mode_reads_no_git_object_or_network_fallback(self):
+        record = self.manifest["artifacts"][0]
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_control_ref_mode", return_value="snapshot"),
+                mock.patch.object(
+                    AI, "_git", side_effect=AssertionError("snapshot escaped to Git")
+                ),
+            ):
+                data = AI._git_blob_at(record["ref"], record["path"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), record["sha256"])
+        finally:
+            clear_source_cache()
+
+    def test_control_ref_snapshot_admission_fails_closed(self):
+        ref = AI.WAI1_CONTROL_REF
+        expression = f"{ref}^{{commit}}"
+
+        def missing_complete(arguments, limit=AI.MAX_GIT_OUTPUT, **kwargs):
+            if arguments[0] == "cat-file":
+                return f"{expression} missing\n".encode("ascii")
+            if arguments == ["rev-parse", "--is-shallow-repository"]:
+                return b"false\n"
+            raise AssertionError(f"unexpected Git probe: {arguments}")
+
+        def ambiguous(arguments, limit=AI.MAX_GIT_OUTPUT, **kwargs):
+            if arguments[0] == "cat-file":
+                return b"ambiguous\n"
+            raise AssertionError(f"unexpected Git probe: {arguments}")
+
+        for fake, message in (
+            (missing_complete, "absent from a non-shallow"),
+            (ambiguous, "unexpected control identity"),
+        ):
+            with self.subTest(message=message):
+                AI._control_ref_mode.cache_clear()
+                with (
+                    mock.patch.object(AI, "_git", side_effect=fake),
+                    self.assertRaisesRegex(AI.Refusal, message),
+                ):
+                    AI._control_ref_mode(ref)
+        AI._control_ref_mode.cache_clear()
+
+    def test_existing_control_path_mismatch_does_not_fall_back(self):
+        record = self.manifest["artifacts"][0]
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_control_ref_mode", return_value="git"),
+                mock.patch.object(AI, "_git_blob_identity_at", return_value="0" * 40),
+                self.assertRaisesRegex(AI.Refusal, "differs from its snapshot"),
+            ):
+                AI._git_blob_at(record["ref"], record["path"])
+        finally:
+            clear_source_cache()
+
+    def test_snapshot_object_byte_drift_refuses(self):
+        oid = self.manifest["objects"][0]["oid"]
+        target = CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / oid
+        original_read = AI._read_regular
+
+        def corrupt(path: Path, limit: int) -> bytes:
+            data = original_read(path, limit)
+            if path == target:
+                return bytes([data[0] ^ 1]) + data[1:]
+            return data
+
+        clear_source_cache()
+        try:
+            with (
+                mock.patch.object(AI, "_read_regular", side_effect=corrupt),
+                self.assertRaisesRegex(AI.Refusal, "size, digest, or blob identity"),
+            ):
+                AI._control_snapshot()
+        finally:
+            clear_source_cache()
+
+    def test_snapshot_object_directory_is_closed(self):
+        with scratch_directory("control-snapshot-extra-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            shutil.copytree(CONTROL_SNAPSHOT_MANIFEST.parent, snapshot)
+            (snapshot / "objects" / ("0" * 40)).write_bytes(b"unlisted")
+            relative = PurePosixPath(snapshot.relative_to(ROOT).as_posix())
+            clear_source_cache()
+            try:
+                with (
+                    mock.patch.object(AI, "CONTROL_SNAPSHOT_ROOT", relative),
+                    mock.patch.object(
+                        AI,
+                        "CONTROL_SNAPSHOT_MANIFEST",
+                        relative / "manifest.json",
+                    ),
+                    self.assertRaisesRegex(
+                        AI.Refusal,
+                        "object inventory exceeds its bound|object directory differs from its manifest",
+                    ),
+                ):
+                    AI._control_snapshot()
+            finally:
+                clear_source_cache()
+
+    def test_snapshot_directory_inventory_refuses_at_its_count_bound(self):
+        with scratch_directory("control-snapshot-inventory-bound-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            objects = snapshot / "objects"
+            objects.mkdir(parents=True)
+            (objects / "owned").write_bytes(b"owned")
+            (objects / "unowned").write_bytes(b"unowned")
+            relative = PurePosixPath(snapshot.relative_to(ROOT).as_posix())
+            with self.assertRaisesRegex(
+                AI.Refusal, "control snapshot object inventory exceeds its bound"
+            ):
+                AI._preflight_snapshot_publication(relative, {"owned"})
+
+    def test_snapshot_root_directory_is_closed(self):
+        with scratch_directory("control-snapshot-root-extra-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            shutil.copytree(CONTROL_SNAPSHOT_MANIFEST.parent, snapshot)
+            (snapshot / "EXTRA").write_bytes(b"unlisted")
+            relative = PurePosixPath(snapshot.relative_to(ROOT).as_posix())
+            clear_source_cache()
+            try:
+                with (
+                    mock.patch.object(AI, "CONTROL_SNAPSHOT_ROOT", relative),
+                    mock.patch.object(
+                        AI,
+                        "CONTROL_SNAPSHOT_MANIFEST",
+                        relative / "manifest.json",
+                    ),
+                    self.assertRaisesRegex(
+                        AI.Refusal,
+                        "root inventory exceeds its bound|root directory is not closed",
+                    ),
+                ):
+                    AI._control_snapshot()
+            finally:
+                clear_source_cache()
+
+    def test_snapshot_generation_refuses_unowned_entries_before_writing(self):
+        for relative_extra in ("EXTRA", "objects/EXTRA"):
+            with self.subTest(relative_extra=relative_extra):
+                with scratch_directory("control-snapshot-generate-extra-") as temporary:
+                    snapshot = Path(temporary) / "snapshot"
+                    (snapshot / "objects").mkdir(parents=True)
+                    extra = snapshot / relative_extra
+                    extra.parent.mkdir(parents=True, exist_ok=True)
+                    extra.write_bytes(b"unowned")
+                    with (
+                        self._checked_generation_source(),
+                        mock.patch.object(AI, "_atomic_write") as write,
+                        self.assertRaisesRegex(
+                            AI.Refusal, "not closed|unowned entry"
+                        ),
+                    ):
+                        AI.snapshot_controls(types.SimpleNamespace(output=snapshot))
+                    write.assert_not_called()
+
+    def test_snapshot_generation_completes_owned_partial_and_clean_refresh(self):
+        with scratch_directory("control-snapshot-generate-owned-") as temporary:
+            snapshot = Path(temporary) / "snapshot"
+            objects = snapshot / "objects"
+            objects.mkdir(parents=True)
+            first_oid = self.manifest["objects"][0]["oid"]
+            shutil.copy2(
+                CONTROL_SNAPSHOT_MANIFEST.parent / "objects" / first_oid,
+                objects / first_oid,
+            )
+            arguments = types.SimpleNamespace(output=snapshot)
+            with self._checked_generation_source():
+                first = AI.snapshot_controls(arguments)
+                second = AI.snapshot_controls(arguments)
+            self.assertEqual(first, second)
+            self.assertEqual(
+                {path.name for path in snapshot.iterdir()},
+                {"manifest.json", "objects"},
+            )
+            self.assertEqual(
+                {path.name for path in objects.iterdir()},
+                {item["oid"] for item in self.manifest["objects"]},
+            )
+            self.assertEqual(snapshot.joinpath("manifest.json").read_bytes(), self.manifest_raw)
+            for item in self.manifest["objects"]:
+                self.assertEqual(
+                    (objects / item["oid"]).read_bytes(),
+                    (
+                        CONTROL_SNAPSHOT_MANIFEST.parent
+                        / "objects"
+                        / item["oid"]
+                    ).read_bytes(),
+                )
+
+    def _one_commit_shallow_checkout(self, *, development: bool):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        checkout = Path(temporary.name) / "repo"
+        checkout.mkdir()
+        script_target = checkout / SCRIPT.relative_to(ROOT)
+        script_target.parent.mkdir(parents=True)
+        shutil.copy2(SCRIPT, script_target)
+        if development:
+            shutil.copytree(FIXTURES, checkout / FIXTURES.relative_to(ROOT))
+            live_paths = set(oracle_inventory_sources())
+            live_paths.add("docs/instruction-architecture/corpus-reconciliation.md")
+            live_paths.update(
+                record["path"]
+                for record in self.manifest["artifacts"]
+                if record["ref"] == ORACLE_SOURCE_REF
+            )
+            for relative in sorted(live_paths):
+                source = ROOT / relative
+                destination = checkout / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        else:
+            shutil.copytree(
+                CONTROL_SNAPSHOT_MANIFEST.parent,
+                checkout / CONTROL_SNAPSHOT_MANIFEST.parent.relative_to(ROOT),
+            )
+        git_environment = {
+            **ORACLE_GIT_ENV,
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00Z",
+            "GIT_AUTHOR_EMAIL": "shallow-guard@example.invalid",
+            "GIT_AUTHOR_NAME": "shallow guard",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00Z",
+            "GIT_COMMITTER_EMAIL": "shallow-guard@example.invalid",
+            "GIT_COMMITTER_NAME": "shallow guard",
+        }
+        initialise = subprocess.run(
+            [
+                "/usr/bin/git",
+                "init",
+                "--quiet",
+                str(checkout),
+            ],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env=git_environment,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(
+            initialise.returncode,
+            0,
+            initialise.stderr.decode(errors="replace"),
+        )
+        for arguments in (
+            ["add", "--all"],
+            ["commit", "--quiet", "--no-gpg-sign", "-m", "shallow guard"],
+        ):
+            result = subprocess.run(
+                ["/usr/bin/git", *arguments],
+                cwd=checkout,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                env=git_environment,
+                check=False,
+                timeout=30,
+            )
+            self.assertEqual(
+                result.returncode, 0, result.stderr.decode(errors="replace")
+            )
+        head = subprocess.run(
+            ["/usr/bin/git", "rev-parse", "HEAD"],
+            cwd=checkout,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env=git_environment,
+            check=False,
+            timeout=10,
+        )
+        self.assertEqual(head.returncode, 0, head.stderr.decode(errors="replace"))
+        (checkout / ".git/shallow").write_bytes(head.stdout)
+        self.assertEqual(
+            subprocess.run(
+                ["/usr/bin/git", "rev-list", "--count", "HEAD"],
+                cwd=checkout,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                env=git_environment,
+                check=False,
+                timeout=10,
+            ).stdout,
+            b"1\n",
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["/usr/bin/git", "rev-parse", "--is-shallow-repository"],
+                cwd=checkout,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                env=git_environment,
+                check=False,
+                timeout=10,
+            ).stdout,
+            b"true\n",
+        )
+        return checkout
+
+    def test_one_commit_shallow_checkout_reads_checked_control_snapshot(self):
+        checkout = self._one_commit_shallow_checkout(development=False)
+        checker = next(
+            record
+            for record in self.manifest["artifacts"]
+            if record["ref"] == ORACLE_SOURCE_REF
+            and record["path"] == "scripts/agent_instruction.py"
+        )
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import hashlib,importlib.util,pathlib;"
+                    "p=pathlib.Path('research/instruction-architecture/benchmark.py').resolve();"
+                    "s=importlib.util.spec_from_file_location('ai',p);"
+                    "m=importlib.util.module_from_spec(s);s.loader.exec_module(m);"
+                    "d=m._git_blob_at(m.WAI1_CONTROL_REF,'scripts/agent_instruction.py');"
+                    f"assert hashlib.sha256(d).hexdigest()=='{checker['sha256']}'"
+                ),
+            ],
+            cwd=checkout,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(probe.returncode, 0, probe.stderr.decode(errors="replace"))
+
+    def test_one_commit_shallow_checkout_replays_development_cli(self):
+        checkout = self._one_commit_shallow_checkout(development=True)
+        replay = subprocess.run(
+            [
+                sys.executable,
+                "research/instruction-architecture/benchmark.py",
+                "replay",
+                "--cohort",
+                "development",
+                "--evidence",
+                "tests/fixtures/instruction-architecture/evidence/development",
+            ],
+            cwd=checkout,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            check=False,
+            timeout=90,
+        )
+        self.assertEqual(replay.returncode, 0, replay.stderr.decode(errors="replace"))
+        self.assertIn(b'"command":"replay-development"', replay.stdout)
+
+
+class RawAdapterTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_raw_inventory_is_the_complete_physical_and_unique_corpus(self):
+        control = self.controls["raw"]
+        summary = control["coverage"]["summary"]
+        self.assertEqual(
+            (
+                summary["native_ranges"],
+                summary["native_physical_files"],
+                summary["native_physical_bytes"],
+                summary["native_unique_bytes"],
+                summary["fallback_ranges"],
+            ),
+            (191, 191, 2_290_450, 1_819_006, 0),
+        )
+        self.assertEqual(
+            hashlib.sha256(DEVELOPMENT_CONTROLS["raw"].read_bytes()).hexdigest(),
+            "bfc416cc7fd3d9a1a569fea4eaa6e6577770bf89f77b68eb23378633d57da23e",
+        )
+
+    def test_raw_ranges_recover_every_exact_source(self):
+        rows = self.controls["raw"]["coverage"]["ranges"]
+        self.assertEqual([item["path"] for item in rows], sorted(item["path"] for item in rows))
+        for row in rows:
+            data = AI._source_blob(row["path"])
+            self.assertEqual((row["start"], row["end"]), (0, len(data)))
+            self.assertEqual(hashlib.sha256(data).hexdigest(), row["sha256"])
+
+    def test_raw_prompt_follows_verified_scenario_graph(self):
+        result = self.results["raw"]["results"][0]
+        expected_paths = AI._scenario_paths(self.manifest, self.graph, result["scenario_id"])
+        components = result["prompt"]["components"][1:]
+        self.assertEqual([item["source"]["path"] for item in components], expected_paths)
+        for component in components:
+            source = component["source"]
+            data = AI._source_blob(source["path"])[source["start"] : source["end"]]
+            self.assertEqual(component["content"].encode(), data)
+
+
+class Wai1ControlTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_wai1_binds_three_exact_current_envelopes_and_checker(self):
+        control = self.controls["wai1"]
+        summary = control["coverage"]["summary"]
+        self.assertEqual(control["binding"]["product_ref"], AI.SOURCE_REF)
+        self.assertEqual(len(control["binding"]["artifacts"]), 32)
+        self.assertEqual(control["binding"]["checker"]["record_count"], 21)
+        self.assertEqual(control["mechanism_evidence"]["current_native_envelopes"], 3)
+        self.assertEqual(
+            (
+                summary["native_ranges"],
+                summary["native_physical_bytes"],
+                summary["native_unique_bytes"],
+                summary["fallback_ranges"],
+                summary["fallback_physical_bytes"],
+                summary["fallback_unique_bytes"],
+            ),
+            (3, 11_170, 11_170, 194, 2_279_280, 1_807_836),
+        )
+
+    def test_wai1_control_and_native_mappings_are_immutable(self):
+        path = DEVELOPMENT_CONTROLS["wai1"]
+        self.assertEqual(
+            hashlib.sha256(path.read_bytes()).hexdigest(),
+            "d45599ba946cf515a72491310a105db6e257847d67541f218398877ea84e0ac1",
+        )
+        for mapping in self.controls["wai1"]["native_mappings"]:
+            source = AI._source_blob(mapping["path"])[mapping["start"] : mapping["end"]]
+            compact = AI._git_blob_at(AI.WAI1_CONTROL_REF, mapping["representation_path"])
+            self.assertEqual(hashlib.sha256(source).hexdigest(), mapping["source_sha256"])
+            self.assertEqual(hashlib.sha256(compact).hexdigest(), mapping["representation_sha256"])
+
+    def test_wai1_only_claims_exact_recovery_for_prompt_carried_source_bytes(self):
+        aggregate = self.results["wai1"]["aggregate"]
+        self.assertEqual(
+            (
+                aggregate.get("exact_source_recovery_cases"),
+                aggregate.get("native_mapping_cases"),
+                aggregate.get("native_exact_source_recovery_cases"),
+                aggregate["fallback_cases"],
+            ),
+            (7, 3, 0, 7),
+        )
+        for result in self.results["wai1"]["results"]:
+            if result["score"]["fallback_used"]:
+                self.assertTrue(result["score"]["exact_source_recovery"])
+                self.assertFalse(result["score"]["native_mapping_used"])
+                self.assertFalse(result["score"]["native_exact_source_recovery"])
+            else:
+                self.assertTrue(result["score"]["native_mapping_used"])
+                self.assertFalse(result["score"]["exact_source_recovery"])
+                self.assertFalse(result["score"]["native_exact_source_recovery"])
+                self.assertEqual(result["outcome"]["status"], "exact-source-unavailable")
+                self.assertIsNone(result["outcome"]["recovery"])
+
+    def test_every_compact_prompt_carries_one_bound_decoder_bootstrap(self):
+        loader = getattr(AI, "_wai1_decoder_bootstrap", None)
+        self.assertIsNotNone(loader, "WAI1 compact prompts omit their decoder bootstrap")
+        bootstrap_path, bootstrap = loader()
+        self.assertTrue(
+            any(
+                item["path"] == bootstrap_path
+                and item["sha256"] == hashlib.sha256(bootstrap).hexdigest()
+                for item in self.controls["wai1"]["binding"]["artifacts"]
+            )
+        )
+        for result in self.results["wai1"]["results"]:
+            compact = [
+                item
+                for item in result["prompt"]["components"]
+                if item["encoding"] == "wai1-compact"
+            ]
+            bootstraps = [
+                item
+                for item in result["prompt"]["components"]
+                if item["encoding"] == "wai1-decoder-bootstrap"
+            ]
+            self.assertTrue(compact)
+            self.assertEqual(len(bootstraps), 1)
+            self.assertEqual(bootstraps[0]["content"].encode(), bootstrap)
+            self.assertIsNone(bootstraps[0]["source"])
+
+
+class NoemaControlTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_noema_binds_product_and_review_without_copying_product_paths(self):
+        control = self.controls["noema"]
+        self.assertEqual(control["binding"]["product_ref"], AI.NOEMA_PRODUCT_REF)
+        self.assertEqual(control["binding"]["review_ref"], AI.NOEMA_REVIEW_REF)
+        self.assertEqual(len(control["binding"]["artifacts"]), 140)
+        self.assertEqual(
+            hashlib.sha256(DEVELOPMENT_CONTROLS["noema"].read_bytes()).hexdigest(),
+            "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
+        )
+
+    def test_full_corpus_exact_binding_and_development_outcomes_are_separate(self):
+        control = self.controls["noema"]
+        summary = control["coverage"]["summary"]
+        self.assertEqual(
+            (
+                summary["native_ranges"],
+                summary["native_physical_bytes"],
+                summary["native_unique_bytes"],
+                summary["fallback_ranges"],
+                summary["fallback_physical_bytes"],
+                summary["fallback_unique_bytes"],
+            ),
+            (10, 655, 655, 201, 2_289_795, 1_818_351),
+        )
+        native_paths = {
+            row["path"]
+            for row in control["coverage"]["ranges"]
+            if row["mode"] == "native"
+        }
+        self.assertEqual(native_paths, {"plugins/sapheneia/skills/sapheneia/SKILL.md"})
+        self.assertTrue(native_paths <= set(self.cohorts["holdout"]["paths"]))
+        case_paths = {case["source"]["path"] for case in self.cases["cases"]}
+        self.assertFalse(native_paths & case_paths)
+        self.assertEqual(
+            self.results["noema"]["aggregate"].get("native_mapping_cases"), 0
+        )
+
+    def test_synthetic_mechanism_evidence_is_never_current_or_aggregate_success(self):
+        mechanism = self.controls["noema"]["mechanism_evidence"]
+        self.assertEqual(
+            (mechanism["synthetic_mapped_spans"], mechanism["synthetic_mapped_bytes"]),
+            (40, 3_173),
+        )
+        self.assertTrue(mechanism["current_native_in_current_coverage"])
+        self.assertFalse(mechanism["synthetic_in_current_coverage"])
+        self.assertFalse(mechanism["synthetic_in_aggregate_success"])
+        row = next(item for item in self.report["arms"] if item["arm"] == "noema")
+        self.assertFalse(row["synthetic_in_current_coverage"])
+        self.assertFalse(row["synthetic_in_aggregate_success"])
+        self.assertEqual(
+            (
+                row["full_current_corpus_native_ranges"],
+                row["full_current_corpus_native_bytes"],
+                row.get("development_native_mapping_cases"),
+                row.get("development_native_exact_source_recovery_cases"),
+            ),
+            (10, 655, 0, 0),
+        )
+
+    def test_denominator_substitution_and_fallback_relabelling_refuse(self):
+        for field, value in (
+            ("full_current_corpus_native_bytes", 0),
+            ("full_current_corpus_native_ranges", 0),
+            ("development_native_mapping_cases", 1),
+            ("development_native_exact_source_recovery_cases", 1),
+        ):
+            with self.subTest(field=field):
+                changed = copy.deepcopy(self.report)
+                row = next(item for item in changed["arms"] if item["arm"] == "noema")
+                row[field] = value
+                try:
+                    with self.assertRaisesRegex(AI.Refusal, "relabels"):
+                        AI._validate_development_report(changed)
+                except KeyError as err:
+                    self.fail(f"development report validator crashed on its field contract: {err}")
+
+    def test_holdout_owned_native_spans_are_bound_but_not_emitted_in_development(self):
+        control = self.controls["noema"]
+        self.assertEqual(len(control["native_mappings"]), 10)
+        bundles = [
+            item
+            for result in self.results["noema"]["results"]
+            for item in result["prompt"]["components"]
+            if item["encoding"] == "noema-first-use"
+        ]
+        self.assertEqual(
+            bundles,
+            [],
+            "development prompts emit a bundle whose only current mapping is holdout-owned",
+        )
+        expected = {item["representation_sha256"] for item in control["native_mappings"]}
+        bound = set()
+        for mapping in control["native_mappings"]:
+            relative_root = Path(mapping["representation_path"]).parent.relative_to(
+                Path("tests/fixtures/noema-v1")
+            )
+            path, payload = AI._noema_prompt_bundle(relative_root.as_posix())
+            self.assertEqual(path, mapping["representation_path"])
+            bound.add(hashlib.sha256(payload).hexdigest())
+        self.assertEqual(expected, bound)
+
+
+class SimpleControlTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_simple_control_is_only_file_addressing_dedup_and_selection(self):
+        control = self.controls["simple"]
+        self.assertEqual(len(control["graph"]["nodes"]), 174)
+        self.assertEqual(len(control["graph"]["edges"]), 17)
+        self.assertEqual({edge["kind"] for edge in control["graph"]["edges"]}, {"exact-content-alias"})
+        self.assertEqual(control["coverage"]["summary"]["native_physical_bytes"], 2_290_450)
+        self.assertEqual(
+            hashlib.sha256(DEVELOPMENT_CONTROLS["simple"].read_bytes()).hexdigest(),
+            "f4de11d7c9b0c05dc902c5971dc71d348e7879e6d357294627247b7faee8b5c4",
+        )
+
+    def test_simple_prompt_deduplicates_only_equal_whole_files(self):
+        for result in self.results["simple"]["results"]:
+            ids = [row["representation_id"] for row in result["selection_trace"]]
+            self.assertEqual(len(ids), len(set(ids)))
+            for row in result["selection_trace"]:
+                self.assertTrue(row["representation_id"].startswith("file:"))
+                digests = {
+                    next(item for item in self.manifest["documents"] if item["path"] == path)["sha256"]
+                    for path in row["original_paths"]
+                }
+                self.assertEqual(len(digests), 1)
+
+
+class SectionGraphTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_section_graph_has_exact_stable_nodes_dependencies_and_fallback(self):
+        control = self.controls["section-graph"]
+        summary = control["coverage"]["summary"]
+        self.assertEqual(len(control["graph"]["nodes"]), 1_471)
+        self.assertEqual(
+            (
+                summary["native_ranges"],
+                summary["native_physical_files"],
+                summary["native_physical_bytes"],
+                summary["native_unique_bytes"],
+                summary["fallback_ranges"],
+                summary["fallback_physical_bytes"],
+            ),
+            (1_896, 176, 2_071_863, 1_600_419, 15, 218_587),
+        )
+        ids = {node["id"] for node in control["graph"]["nodes"]}
+        self.assertEqual(len(ids), 1_471)
+        parent_edges = [
+            edge for edge in control["graph"]["edges"] if edge["kind"] == "section-parent"
+        ]
+        self.assertTrue(
+            all(edge["source"] in ids and edge["target"] in ids for edge in parent_edges)
+        )
+        self.assertEqual(
+            hashlib.sha256(DEVELOPMENT_CONTROLS["section-graph"].read_bytes()).hexdigest(),
+            "64f62560d56b65c782c792854a7803e90c864cb7fa590e75618f2f744c8d40a1",
+        )
+
+    def test_every_markdown_file_round_trips_by_exact_sections(self):
+        by_path = {}
+        for node in self.controls["section-graph"]["graph"]["nodes"]:
+            by_path.setdefault(node["path"], []).append(node)
+        for path, nodes in by_path.items():
+            with self.subTest(path=path):
+                data = AI._source_blob(path)
+                recovered = b"".join(
+                    data[node["start"] : node["end"]]
+                    for node in sorted(nodes, key=lambda item: item["start"])
+                )
+                self.assertEqual(recovered, data)
+
+    def test_missing_dependency_edge_refuses(self):
+        changed = copy.deepcopy(self.controls["section-graph"])
+        changed["graph"]["edges"].pop()
+        with self.assertRaisesRegex(AI.Refusal, "misses an edge"):
+            AI._validate_section_graph(changed, self.manifest)
+
+    def test_authority_selection_and_alias_mutations_refuse(self):
+        mutations = []
+        missing_selection = copy.deepcopy(self.controls["section-graph"])
+        missing_selection["graph"].pop("selection", None)
+        mutations.append(missing_selection)
+        changed_authority = copy.deepcopy(self.controls["section-graph"])
+        changed_authority["graph"]["nodes"][0]["authority_tier"] = "invented"
+        mutations.append(changed_authority)
+        missing_alias = copy.deepcopy(self.controls["section-graph"])
+        alias_index = next(
+            index
+            for index, edge in enumerate(missing_alias["graph"]["edges"])
+            if edge["kind"] == "exact-content-alias"
+        )
+        missing_alias["graph"]["edges"].pop(alias_index)
+        mutations.append(missing_alias)
+        for changed in mutations:
+            with self.subTest(), self.assertRaisesRegex(AI.Refusal, "differs|misses"):
+                AI._validate_section_graph(changed, self.manifest)
+
+    def test_section_graph_declares_authority_selection_and_exact_alias_dedup(self):
+        control = self.controls["section-graph"]
+        graph = control["graph"]
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        selection = graph.get("selection")
+        self.assertIsInstance(
+            selection,
+            dict,
+            "section graph omits its deterministic scenario-root and closure policy",
+        )
+        self.assertEqual(
+            selection,
+            {
+                "closure": "selected-sections-plus-transitive-parents",
+                "deduplication": "exact-whole-file-canonical-content",
+                "fallback": "whole-source-for-unsupported-non-markdown",
+                "roots": "all-sections-of-loader-reachable-canonical-files",
+                "scenario_source": "verified-loader-graph",
+            },
+        )
+        nodes = graph["nodes"]
+        self.assertTrue(nodes)
+        self.assertTrue(
+            all(node.get("authority_tier") == documents[node["path"]]["authority_tier"] for node in nodes),
+            "section nodes omit or misstate source-owned authority",
+        )
+        self.assertTrue(
+            all(documents[node["path"]]["canonical_content_path"] == node["path"] for node in nodes),
+            "section graph parses physical duplicates as independent authority",
+        )
+        aliases = [edge for edge in graph["edges"] if edge["kind"] == "exact-content-alias"]
+        self.assertEqual(len(aliases), len(self.cohorts["generated_duplicates_excluded"]))
+        grouped = [
+            row
+            for result in self.results["section-graph"]["results"]
+            for row in result["selection_trace"]
+            if len(row["original_paths"]) > 1
+        ]
+        self.assertTrue(grouped, "section prompts do not deduplicate exact physical aliases")
+        for row in grouped:
+            self.assertEqual(
+                1,
+                len({documents[path]["sha256"] for path in row["original_paths"]}),
+            )
+
+
+class DevelopmentCaseTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_closed_case_set_uses_only_exact_development_source_spans(self):
+        self.assertEqual(
+            [case["semantic_class"] for case in self.cases["cases"]],
+            list(AI.DEVELOPMENT_CLASSES),
+        )
+        try:
+            AI._validate_development_cases(
+                self.cases, self.manifest, self.cohorts, self.graph
+            )
+        except AI.Refusal as exc:
+            if str(exc) != "development cases has a non-closed field set":
+                raise
+            self.fail(f"development case validator rejected its repaired contract: {exc}")
+        holdout = set(self.cohorts["holdout"]["paths"])
+        self.assertFalse({case["source"]["path"] for case in self.cases["cases"]} & holdout)
+
+    def test_all_arms_run_identical_cases_and_tasks_without_scorer_keys(self):
+        expected_ids = [case["id"] for case in self.cases["cases"]]
+        expected_tasks = {case["id"]: case["task"] for case in self.cases["cases"]}
+        for arm, record in self.results.items():
+            with self.subTest(arm=arm):
+                self.assertEqual([item["case_id"] for item in record["results"]], expected_ids)
+                for item in record["results"]:
+                    prompt = item["prompt"]
+                    self.assertEqual(prompt["components"][0]["content"], expected_tasks[item["case_id"]])
+                    serialized = canonical(prompt).decode()
+                    self.assertNotIn('"expected_answer"', serialized)
+                    self.assertNotIn('"scorer_key"', serialized)
+                    self.assertNotIn('"arm"', serialized)
+
+    def test_holdout_remains_unopened_and_unaccessed(self):
+        self.assertEqual(self.report["holdout"], {"cases_accessed": 0, "opened": False})
+        seal = load(SEAL)
+        self.assertFalse(seal["opened"])
+        self.assertTrue(all(not case["id"].startswith("holdout-") for case in self.cases["cases"]))
+
+    def test_behavioral_development_cohort_meets_issue_coverage_and_isolation(self):
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        physical_paths = {
+            path
+            for case in self.cases["cases"]
+            for path in AI._scenario_paths(self.manifest, self.graph, case["scenario_id"])
+        }
+        holdout_paths = set(self.cohorts["holdout"]["paths"])
+        self.assertFalse(
+            physical_paths & holdout_paths,
+            "development prompts expose holdout-owned source paths",
+        )
+        canonical_paths = {
+            documents[path]["canonical_content_path"] for path in physical_paths
+        }
+        shared_paths = getattr(AI, "SHARED_BEHAVIORAL_PATHS", None)
+        self.assertIsNotNone(
+            shared_paths,
+            "development coverage has no explicit shared-contract inventory",
+        )
+        self.assertLessEqual(set(shared_paths), canonical_paths)
+        unique_bytes = sum(documents[path]["bytes"] for path in canonical_paths)
+        self.assertGreaterEqual(
+            unique_bytes * 2,
+            self.manifest["totals"]["unique_bytes"],
+            "behavioral development prompts cover less than 50 percent of canonical bytes",
+        )
+        logical_skills = {
+            documents[path]["logical_document"]
+            for path in canonical_paths
+            if documents[path]["logical_document"].startswith("skill:")
+        }
+        self.assertGreaterEqual(len(logical_skills), 12)
+        self.assertEqual(
+            {documents[path]["authority_tier"] for path in canonical_paths},
+            set(self.cohorts["development"]["authority_tiers"]),
+        )
+        self.assertEqual(
+            set(AI._observed_constructs(sorted(canonical_paths))),
+            set(self.cohorts["development"]["constructs"]),
+        )
+        deciles = AI._size_deciles(
+            [
+                item
+                for item in self.manifest["documents"]
+                if item["path"] == item["canonical_content_path"]
+            ]
+        )
+        self.assertEqual(
+            sorted({deciles[path] for path in canonical_paths}),
+            list(range(10)),
+        )
+        self.assertEqual(self.cases["coverage"]["size_deciles"], list(range(10)))
+
+    def test_case_validator_refuses_holdout_exposure_and_subthreshold_coverage(self):
+        holdout_exposure = copy.deepcopy(self.cases)
+        holdout_exposure["cases"][0]["scenario_id"] = (
+            "repository:skill:fiat:profile:fiat:audit-nonsol__inline__"
+            "phylax-proxy__fix-elenchus:credential:absent"
+        )
+        with self.assertRaisesRegex(AI.Refusal, "sealed holdout"):
+            AI._validate_development_cases(
+                holdout_exposure, self.manifest, self.cohorts, self.graph
+            )
+
+        subthreshold = copy.deepcopy(self.cases)
+        subthreshold["cases"][5]["scenario_id"] = (
+            "agent-skills:skill:hermes:profile:hermes:gas-operation:"
+            "credential:github-contributor"
+        )
+        with self.assertRaisesRegex(AI.Refusal, "below 50 percent"):
+            AI._validate_development_cases(
+                subthreshold, self.manifest, self.cohorts, self.graph
+            )
+
+    def test_exact_source_recovery_requires_source_bytes_in_the_complete_prompt(self):
+        self.assertEqual(
+            sum(
+                record["aggregate"].get("exact_source_recovery_cases", -1)
+                for record in self.results.values()
+            ),
+            47,
+        )
+        self.assertEqual(
+            {
+                arm: record["aggregate"].get("exact_source_recovery_cases")
+                for arm, record in self.results.items()
+            },
+            {"noema": 10, "raw": 10, "section-graph": 10, "simple": 10, "wai1": 7},
+        )
+        for record in self.results.values():
+            self.assertTrue(all(item["score"]["trace_complete"] for item in record["results"]))
+
+    def test_scores_and_outcomes_are_rederived_from_the_complete_prompt(self):
+        changed = copy.deepcopy(self.results["wai1"])
+        result = changed["results"][0]
+        compact = next(
+            item for item in result["prompt"]["components"] if item["encoding"] == "wai1-compact"
+        )
+        compact["content"] = "corrupt-but-schema-valid"
+        body = {key: value for key, value in result["prompt"].items() if key != "sha256"}
+        result["prompt"]["sha256"] = hashlib.sha256(canonical(body)).hexdigest()
+        changed["aggregate"]["prompt_bytes"] = sum(
+            len(canonical(item["prompt"])) for item in changed["results"]
+        )
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "correlation|representation-bound")
+            refused = True
+        self.assertTrue(refused, "a compact prompt mutation retained its oracle-derived score")
+        for record in self.results.values():
+            for item in record["results"]:
+                self.assertNotIn("recovered_source", item["outcome"])
+                if item["score"]["exact_source_recovery"]:
+                    self.assertEqual(item["outcome"]["status"], "exact-source-recovered")
+                    self.assertEqual(
+                        item["outcome"]["recovery"]["sha256"],
+                        item["outcome"]["source_expectation"]["sha256"],
+                    )
+                else:
+                    self.assertEqual(
+                        item["outcome"]["status"], "exact-source-unavailable"
+                    )
+                    self.assertIsNone(item["outcome"].get("recovery"))
+
+    def test_adapter_result_identity_and_case_coverage_are_context_bound(self):
+        changed = copy.deepcopy(self.results["wai1"])
+        changed["case_set_sha256"] = "0" * 64
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "identity")
+            refused = True
+        self.assertTrue(refused, "adapter results accept a substituted case set")
+
+        changed = copy.deepcopy(self.results["wai1"])
+        changed["control_sha256"] = "0" * 64
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "identity")
+            refused = True
+        self.assertTrue(refused, "adapter results accept a substituted control")
+
+        changed = copy.deepcopy(self.results["wai1"])
+        changed["results"].pop()
+        changed["aggregate"] = {
+            "cases": len(changed["results"]),
+            "exact_source_recovery_cases": sum(
+                item["score"]["exact_source_recovery"]
+                for item in changed["results"]
+            ),
+            "fallback_cases": sum(
+                item["score"]["fallback_used"] for item in changed["results"]
+            ),
+            "native_exact_source_recovery_cases": sum(
+                item["score"]["native_exact_source_recovery"]
+                for item in changed["results"]
+            ),
+            "native_mapping_cases": sum(
+                item["score"]["native_mapping_used"]
+                for item in changed["results"]
+            ),
+            "prompt_bytes": sum(
+                len(canonical(item["prompt"])) for item in changed["results"]
+            ),
+        }
+        refused = False
+        try:
+            self.validate_adapter_result("wai1", changed)
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "case order or coverage")
+            refused = True
+        self.assertTrue(refused, "adapter results accept incomplete case coverage")
+
+
+class MutationTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_hostile_inventory_is_closed_and_covers_named_failure_classes(self):
+        specimens = load(HOSTILE_SPECIMENS)["specimens"]
+        self.assertEqual(len(specimens), 12)
+        risks = {item["risk_class"] for item in specimens}
+        self.assertTrue(
+            {
+                "concurrent-change",
+                "digest",
+                "hostile-output",
+                "malformed-input",
+                "missing-edge",
+                "parser-differential",
+                "path-boundary",
+                "resource-bound",
+                "stale-source",
+            }
+            <= risks
+        )
+
+    def test_every_hostile_specimen_executes_and_refuses_on_all_five_arms(self):
+        builder = getattr(AI, "_hostile_execution", None)
+        self.assertIsNotNone(
+            builder, "hostile specimens are inventoried but never executed"
+        )
+        self.assertTrue(HOSTILE_EXECUTION.is_file())
+        committed = load(HOSTILE_EXECUTION)
+        specimens = load(HOSTILE_SPECIMENS)
+        self.assertEqual(len(committed["results"]), 60)
+        self.assertEqual(
+            {
+                (item["arm"], item["specimen_id"])
+                for item in committed["results"]
+            },
+            {
+                (arm, specimen["id"])
+                for arm in AI.DEVELOPMENT_ARMS
+                for specimen in specimens["specimens"]
+            },
+        )
+        self.assertTrue(all(item["status"] == "refused" for item in committed["results"]))
+        try:
+            rebuilt = builder(
+                specimens,
+                self.cases,
+                self.manifest,
+                self.cohorts,
+                self.graph,
+                self.controls,
+                self.results,
+            )
+        except AI.Refusal as exc:
+            if str(exc) != (
+                "hostile specimen refused for the wrong reason: "
+                "raw:hostile-02-stale-source"
+            ):
+                raise
+            self.fail(f"hostile replay rejected its repaired evidence contract: {exc}")
+        self.assertEqual(committed, rebuilt)
+
+    def test_duplicate_key_noncanonical_and_unicode_scalar_refuse(self):
+        with self.assertRaisesRegex(AI.Refusal, "duplicate JSON key"):
+            AI._decode_record(b'{"a":1,"a":2}\n')
+        with self.assertRaisesRegex(AI.Refusal, "canonical JSON"):
+            AI._decode_record(b'{ "a": 1 }\n')
+        with self.assertRaisesRegex(AI.Refusal, "non-Unicode-scalar"):
+            AI._canonical_json({"a": "\ud800"})
+
+    def test_fallback_cannot_be_relabelled_as_native_exact_source_recovery(self):
+        changed = copy.deepcopy(self.results["noema"]["results"][0]["score"])
+        changed["native_mapping_used"] = True
+        changed["native_exact_source_recovery"] = True
+        with self.assertRaisesRegex(AI.Refusal, "exclusive|predicates"):
+            AI._validate_score(changed)
+
+    def test_missing_loader_edge_refuses(self):
+        scenario = self.cases["cases"][0]["scenario_id"]
+        expected_path = self.cases["cases"][0]["source"]["path"]
+        changed = copy.deepcopy(self.graph)
+        for index, edge in enumerate(changed["scenario_edges"]):
+            if scenario in edge["active_scenarios"] and edge["target"] == expected_path:
+                changed["scenario_edges"].pop(index)
+                break
+        else:
+            self.fail("case source had no removable scenario edge")
+        with self.assertRaisesRegex(AI.Refusal, "missing or invented edge"):
+            AI._scenario_paths(self.manifest, changed, scenario)
+
+    def test_section_parser_differential_and_hostile_output_refuse(self):
+        with self.assertRaisesRegex(AI.Refusal, "unclosed fenced block"):
+            AI._markdown_sections("hostile.md", b"# admitted\n```text\nnot closed\n")
+        with self.assertRaisesRegex(AI.Refusal, "model output exceeds"):
+            AI._validate_model_output(b"x" * (AI.MAX_MODEL_OUTPUT_BYTES + 1))
+
+    def test_section_parser_keeps_nonblank_fence_markers_literal(self):
+        source = (
+            b"# outer\n"
+            b"```text\n"
+            b"```not-a-close\n"
+            b"# code heading\n"
+            b"````also-not-a-close\n"
+            b"# still code\n"
+            b"```\n"
+            b"# after\n"
+        )
+        after = source.index(b"# after")
+        try:
+            nodes = AI._markdown_sections("hostile.md", source)
+        except AI.Refusal as exc:
+            self.fail(f"valid fenced Markdown was refused: {exc}")
+        self.assertEqual(
+            [(node["start"], node["end"]) for node in nodes],
+            [(0, after), (after, len(source))],
+        )
+
+
+class PathBoundaryTests(unittest.TestCase):
+    def test_noncanonical_paths_refuse(self):
+        for path in ("../escape", "/absolute", "a//b", "a/./b", "a\\b", "a/", "\u00e9"):
+            with self.subTest(path=path), self.assertRaisesRegex(AI.Refusal, "unsafe repository path"):
+                AI._safe_relative(path)
+
+    def test_symlink_input_refuses(self):
+        with scratch_directory("development-symlink-") as temporary:
+            link = Path(temporary) / "input.json"
+            link.symlink_to(MANIFEST)
+            with self.assertRaisesRegex(AI.Refusal, "unavailable or unsafe"):
+                AI._read_regular(link, AI.MAX_JSON_BYTES)
+
+    def test_replacement_race_refuses(self):
+        with scratch_directory("development-race-") as temporary:
+            target = Path(temporary) / "input.json"
+            replacement = Path(temporary) / "replacement.json"
+            target.write_bytes(b"{}\n")
+            replacement.write_bytes(b'{"changed":true}\n')
+            original = AI._read_descriptor
+
+            def replace_after_read(descriptor, limit):
+                data, metadata = original(descriptor, limit)
+                os.replace(replacement, target)
+                return data, metadata
+
+            with mock.patch.object(AI, "_read_descriptor", side_effect=replace_after_read):
+                with self.assertRaisesRegex(AI.Refusal, "input changed during read"):
+                    AI._read_regular(target, AI.MAX_JSON_BYTES)
+
+    def test_replay_refuses_non_object_artifact_inventory(self):
+        inventory = load(DEVELOPMENT_INVENTORY)
+        inventory["artifacts"] = 7
+        evidence = AI.ROOT / "tmp/elenchus-r3/evidence/development"
+        with mock.patch.object(AI, "_read_regular", return_value=canonical(inventory)):
+            try:
+                AI._load_development_evidence(evidence)
+            except AI.Refusal as exc:
+                self.assertRegex(str(exc), "inventory identity drift")
+            except Exception as exc:
+                self.fail(f"malformed inventory escaped refusal as {type(exc).__name__}")
+            else:
+                self.fail("malformed inventory was accepted")
+
+    def test_atomic_output_round_trip(self):
+        with scratch_directory("development-atomic-") as temporary:
+            target = Path(temporary) / "result.json"
+            AI._atomic_write(target, b'{"generation":1}\n')
+            AI._atomic_write(target, b'{"generation":2}\n')
+            self.assertEqual(AI._read_regular(target, 1024), b'{"generation":2}\n')
+
+
+class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
+    def test_resource_record_accounts_for_every_executed_source_and_process(self):
+        record = load(FIXTURES / "evidence/development/resource-samples.json")
+        checker_path = "scripts/agent_instruction.py"
+        checker = AI._git_blob_at(AI.WAI1_CONTROL_REF, checker_path)
+        benchmark = AI._read_regular(Path(AI.__file__), 4 * 1024 * 1024)
+
+        sources = record.get("executable_sources")
+        self.assertIsInstance(
+            sources,
+            list,
+            "resource evidence omits the dynamically executed WAI1 checker",
+        )
+        by_path = {item["path"]: item for item in sources}
+        expected = {
+            "research/instruction-architecture/benchmark.py": (
+                "workbench",
+                None,
+                benchmark,
+            ),
+            checker_path: ("pinned-checker", AI.WAI1_CONTROL_REF, checker),
+        }
+        self.assertEqual(set(by_path), set(expected))
+        for path, (kind, ref, source) in expected.items():
+            row = by_path[path]
+            text = source.decode("utf-8", errors="strict")
+            executable_loc = sum(
+                bool(line.strip()) and not line.lstrip().startswith("#")
+                for line in text.splitlines()
+            )
+            digest_source = source
+            digest_scope = "exact"
+            if kind == "workbench":
+                self_reference = AI.EXPECTED_DEVELOPMENT_INVENTORY_SHA256.encode(
+                    "ascii"
+                )
+                self.assertEqual(source.count(self_reference), 1)
+                digest_source = source.replace(self_reference, b"0" * 64)
+                digest_scope = "development-inventory-self-reference-normalised"
+            expected_row = {
+                "digest_scope": digest_scope,
+                "kind": kind,
+                "loc": executable_loc,
+                "path": path,
+                "ref": ref,
+                "sha256": hashlib.sha256(digest_source).hexdigest(),
+            }
+            self.assertEqual(row, expected_row)
+        self.assertEqual(
+            record["executable_loc"], sum(item["loc"] for item in sources)
+        )
+
+        standard = set()
+        external = set()
+        for path, (_, _, source) in expected.items():
+            source_standard, source_external = AI._runtime_dependency_modules(
+                source.decode("utf-8", errors="strict"), filename=path
+            )
+            standard.update(source_standard)
+            external.update(source_external)
+        self.assertFalse(external)
+        self.assertEqual(
+            record["dependency_modules"]["standard_library"], sorted(standard)
+        )
+        self.assertEqual(record["dependency_modules"]["external_runtime"], ["git"])
+        self.assertEqual(record["dependency_count"]["external_runtime"], 1)
+
+    def test_resource_record_freezes_workload_limits_loc_and_dependencies(self):
+        record = load(FIXTURES / "evidence/development/resource-samples.json")
+        self.assertEqual(record["dependency_count"]["external_runtime"], 1)
+        self.assertGreater(record["dependency_count"]["standard_library_modules"], 0)
+        self.assertIn("dependency_modules", record)
+        self.assertEqual(record["dependency_modules"]["external_runtime"], ["git"])
+        self.assertEqual(
+            record["dependency_count"]["standard_library_modules"],
+            len(record["dependency_modules"]["standard_library"]),
+        )
+        self.assertGreater(record["executable_loc"], 0)
+        self.assertGreater(record["artifact_payload_bytes"], 0)
+        snapshot = record["control_snapshot"]
+        self.assertEqual(snapshot["artifact_records"], 172)
+        self.assertEqual(snapshot["objects"], 157)
+        self.assertEqual(snapshot["object_bytes"], 2_095_430)
+        self.assertEqual(
+            snapshot["published_bytes"],
+            snapshot["manifest_bytes"] + snapshot["object_bytes"],
+        )
+        self.assertEqual(
+            snapshot["manifest_sha256"], AI.EXPECTED_CONTROL_SNAPSHOT_SHA256
+        )
+        self.assertEqual([item["phase"] for item in record["samples"]], ["parse-validate", "select", "assemble"])
+
+    def test_resource_record_reconciles_the_complete_published_generation(self):
+        record = load(FIXTURES / "evidence/development/resource-samples.json")
+        inventory = load(DEVELOPMENT_INVENTORY)
+        disk = record.get("disk_bytes")
+        self.assertIsInstance(
+            disk,
+            dict,
+            "resource record reports a preliminary payload subtotal as disk bytes",
+        )
+        payload_bytes = sum(
+            (FIXTURES / relative).stat().st_size for relative in inventory["artifacts"]
+        )
+        inventory_bytes = DEVELOPMENT_INVENTORY.stat().st_size
+        self.assertEqual(disk["artifact_payloads"], payload_bytes)
+        self.assertEqual(disk["artifact_inventory"], inventory_bytes)
+        self.assertEqual(disk["published_generation"], payload_bytes + inventory_bytes)
+
+    def test_dependency_counts_are_ast_derived_and_external_imports_fail_closed(self):
+        classifier = getattr(AI, "_runtime_dependency_modules", None)
+        self.assertIsNotNone(
+            classifier, "resource evidence hardcodes zero external dependencies"
+        )
+        standard, external = classifier(
+            "import os, requests\nfrom pathlib import Path\nfrom vendor.pkg import value\n"
+        )
+        self.assertEqual(standard, ["os", "pathlib"])
+        self.assertEqual(external, ["requests", "vendor"])
+
+    def test_json_depth_and_model_output_byte_limits_refuse(self):
+        deep = b'{"x":' + b"[" * (AI.MAX_JSON_DEPTH + 1) + b"0" + b"]" * (AI.MAX_JSON_DEPTH + 1) + b"}\n"
+        with self.assertRaisesRegex(AI.Refusal, "depth"):
+            AI._decode_record(deep)
+        with self.assertRaisesRegex(AI.Refusal, "model output exceeds"):
+            AI._validate_model_output(b"0" * (AI.MAX_MODEL_OUTPUT_BYTES + 1))
+
+    def test_section_and_prompt_count_limits_refuse(self):
+        hostile = b"# x\n" * (AI.MAX_SECTION_COUNT + 1)
+        with self.assertRaisesRegex(AI.Refusal, "physical line count|section count"):
+            AI._markdown_sections("hostile.md", hostile)
+        component = {
+            "content": "x",
+            "encoding": "exact-source",
+            "id": "x",
+            "kind": "representation",
+            "source": {"end": 1, "path": "AGENTS.md", "sha256": "0" * 64, "start": 0},
+        }
+        prompt = {
+            "case_id": "x",
+            "components": [component] * (AI.MAX_PROMPT_COMPONENTS + 1),
+            "scenario_id": "x",
+            "schema": f"{AI.SCHEMA_PREFIX}-prompt/v1",
+            "sha256": "0" * 64,
+        }
+        with self.assertRaisesRegex(AI.Refusal, "component count"):
+            AI._validate_prompt(prompt)
+
+    def test_section_parser_refuses_excess_physical_lines(self):
+        hostile = b"\n" * (AI.MAX_MARKDOWN_PHYSICAL_LINES + 1)
+        with self.assertRaisesRegex(AI.Refusal, "physical line count"):
+            AI._markdown_sections("hostile.md", hostile)
+
+    def test_committed_inventory_binds_all_fifteen_payloads(self):
+        inventory = load(DEVELOPMENT_INVENTORY)
+        self.assertEqual(set(inventory["artifacts"]), set(AI.DEVELOPMENT_RECORD_PATHS))
+        self.assertEqual(len(inventory["artifacts"]), 15)
+        for relative, identity in inventory["artifacts"].items():
+            path = FIXTURES / relative
+            self.assertEqual(path.stat().st_size, identity["bytes"])
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), identity["sha256"])
 
 
 if __name__ == "__main__":
