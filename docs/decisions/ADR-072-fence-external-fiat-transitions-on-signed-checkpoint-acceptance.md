@@ -85,11 +85,15 @@ which is the ordinary case today and not a failure.
 ## Decision
 
 Keep ADR-031's fence, and state it as the external half of a local rule that
-already ships. An external run's selected transition is complete when the
-existing gates pass, the local checkpoint is saved and verified, and an
-independent validator has locked, replicated and signed an acceptance naming the
-three identities ADR-071 binds. Until then the transition is not complete and
-the run does not advance.
+already ships. Once a checkpoint service is authorised and running, an external
+run's selected transition is complete when the existing gates pass, the local
+checkpoint is saved and verified, and an independent validator has locked,
+replicated and signed an acceptance naming the three identities ADR-071 binds.
+Until then the transition is not complete and the run does not advance. Before
+that, with no service to accept anything, an external run completes its
+transition on the existing gates and the mandatory local checkpoint, exactly as
+every run does today; this record does not strand work behind a service that
+does not exist.
 
 The execution class is recorded at run creation, never inferred, and changed
 only by an ask-first append-only amendment.
