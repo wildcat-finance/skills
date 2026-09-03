@@ -233,9 +233,10 @@ publication fence, and ADR-073 for lineage. This study decides nothing that
 those records do not.
 
 The estate is nine issues under milestone 64, the Wave Delta distributed
-checkpoints milestone. #859 is the epic. #860 binds portable runs to an immutable base
-and checkpoint identity, and its controller half landed on the default branch in
-`482172e7` while this delivery was open; the issue stays open. #861 exports and
+checkpoints milestone. #859 is the epic. #860 binds portable runs to an
+immutable base and checkpoint identity, and its controller half landed on the
+default branch in `482172e7` while this delivery was open; the issue stays
+open. #861 exports and
 restores cumulative checkpoints. #862 builds intake, validation and publication.
 #863 deploys the locked authority and signed receipt path. #864 fences external
 runs. #865 represents and resolves concurrent descendants. #866 proves
