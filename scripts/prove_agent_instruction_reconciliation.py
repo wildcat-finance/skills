@@ -173,6 +173,22 @@ def candidate_choices(root: Path) -> tuple[str, ...]:
     return ids or FALLBACK_CANDIDATES
 
 
+def bound_digests(manifest: dict[str, Any]) -> tuple[tuple[str, str], ...]:
+    """Every path the manifest binds by digest, with the digest it binds.
+
+    One enumeration serves both the constructor's self-consistency check and
+    the `--report` guard, so the two cannot drift apart: a path the manifest
+    starts binding is checked and protected in the same commit that adds it.
+    """
+    entries: list[tuple[str, str]] = []
+    for entry in manifest["fixtures"]:
+        entries.append((entry["source"]["path"], entry["source"]["sha256"]))
+        for name in sorted(entry["artifacts"]):
+            artifact = entry["artifacts"][name]
+            entries.append((artifact["path"], artifact["sha256"]))
+    return tuple(sorted(set(entries)))
+
+
 def bound_targets(root: Path, manifest: dict[str, Any]) -> frozenset[Path]:
     """Every path the manifest binds by digest, resolved absolute.
 
@@ -180,11 +196,7 @@ def bound_targets(root: Path, manifest: dict[str, Any]) -> frozenset[Path]:
     the manifest binds instead of drifting from it. Both sides are resolved, so
     a symlinked route to a bound path is the same path.
     """
-    relative = {MANIFEST}
-    for entry in manifest["fixtures"]:
-        relative.add(entry["source"]["path"])
-        for artifact in entry["artifacts"].values():
-            relative.add(artifact["path"])
+    relative = {MANIFEST} | {path for path, _ in bound_digests(manifest)}
     return frozenset((Path(root) / path).resolve() for path in sorted(relative))
 
 
@@ -242,7 +254,9 @@ class Reconciliation:
 
     Construction reads the live tree and verifies it agrees with itself before
     anything is copied, so a proof never runs against a tree that was already
-    inconsistent. Nothing here writes to the live tree.
+    inconsistent. "Agrees with itself" means every path `bound_digests` reports:
+    each fixture's source and each of its artefacts, not only the subject
+    fixture's rewritten ones. Nothing here writes to the live tree.
     """
 
     def __init__(self, root: Path, checker=None) -> None:
@@ -269,11 +283,13 @@ class Reconciliation:
         if digest(self.span) != self.fixture["source"]["span_sha256"]:
             raise ProverError(f"{self.source_path} has a reviewed span off its manifest digest")
 
-        for name in ("model", "compact", "source_spans"):
-            artifact = self.fixture["artifacts"][name]
-            raw = self._live_bytes(artifact["path"])
-            if digest(raw) != artifact["sha256"]:
-                raise ProverError(f"{artifact['path']} is off its manifest digest")
+        # Every bound path, not just the subject fixture's rewritten artefacts.
+        # A proof that started against a tree already off one of these would
+        # report a refusal caused by pre-existing drift as though the edit
+        # caused it, which is the confusion this check exists to prevent.
+        for relative, expected in bound_digests(self.manifest):
+            if digest(self._live_bytes(relative)) != expected:
+                raise ProverError(f"{relative} is off its manifest digest")
 
         # Every path this tool copies, so `selftest` can prove the live tree
         # came through a run byte-identical.
