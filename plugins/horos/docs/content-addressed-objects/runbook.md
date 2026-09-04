@@ -177,3 +177,60 @@ exit codes and the drift line (study section 8). phylax: none, nothing new
 opens. metron: none, the budget was settled in step 3. elenchus: none unless
 the demo fails, which stops the line. hypomnema: the demo record's home is
 the run's audit log.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: Four written, each observed red
+against a deliberately broken rule before it is kept (study section 11): a
+tampered object under a sharded store in a disposable git repository is named
+as drift by `check` with exit 1; an unreadable store object is counted
+`files_skipped_unreadable` and never classified, skipping with a named reason
+when the suite runs as root; a deeper shard path
+`objects/sha256/ab/cd/<digest>` stays readable; an uppercase algorithm segment
+`objects/SHA256/<xx>/<digest>` stays readable. Expected count: the horos suite
+grows from 235 to 239. Elenchus runner:
+`python3 plugins/horos/tests/run_tests.py --elenchus-report {report}`, report
+format `unittest-json-v1`, report file `.hexaemeron/elenchus-step-2.json`.
+Complete replacement Files: `plugins/horos/tests/run_tests.py` (new; the
+plugin-level suite runner that emits the `elenchus.unittest.v1` report, on the
+pattern of `plugins/brevitas/tests/run_tests.py`),
+`plugins/horos/tests/test_boundary.py` (tamper and unreadable-object tests; a
+new `plugins/horos/tests/test_content_addressed.py` instead if the boundary
+module proves the wrong home), `plugins/horos/tests/test_classify.py`
+(`ContentAddressedTests`), `plugins/horos/skills/horos/SKILL.md` (rule text
+only; the frontmatter version and the marketplace-context block wait for
+step 3), `plugins/horos/examples/README.md`.
+**Why.** Audit finding S1-R1-03: the runbook's `report format unittest text
+output` is not a format `elenchus.py --report-format` accepts, so a fix with a
+guard test would classify `inconclusive`. The root runner
+`tests/run_tests.py` discovers only `tests/`, not the horos suite, so step 2
+needs a plugin-level runner for the guard tests it adds.
+**Steps touched.** Step 2.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: None written;
+`tests.test_marketplace_prose` and the two suites are the gate. Elenchus
+runner: `python3 tests/run_tests.py --elenchus-report {report}`, report
+format `unittest-json-v1`, report file `.hexaemeron/elenchus-step-3.json`.
+**Why.** Audit finding S1-R1-03: `report format unittest text output` is not a
+format `elenchus.py --report-format` accepts; the root runner emits the
+`elenchus.unittest.v1` report Elenchus parses.
+**Steps touched.** Step 3.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: None written; the demo path is
+the gate. Elenchus runner:
+`python3 tests/run_tests.py --elenchus-report {report}`, report format
+`unittest-json-v1`, report file `.hexaemeron/elenchus-step-4.json`.
+**Why.** Audit finding S1-R1-03: `report format unittest text output` is not a
+format `elenchus.py --report-format` accepts; the root runner emits the
+`elenchus.unittest.v1` report Elenchus parses.
+**Steps touched.** Step 4.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
