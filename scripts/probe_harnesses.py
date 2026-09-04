@@ -395,10 +395,15 @@ def recognise_version(*streams: str | None) -> str | None:
     manifest by having been near a version.
 
     The character bound can land inside a token, and half of a version is not
-    the version the client reported. A match that runs to the truncation point
-    is discarded rather than recorded, so a client that buries its version past
-    the bound lands in `unread` -- where a client that printed no version at all
+    the version the client reported. A match the cut could have continued is
+    discarded rather than recorded, so a client that buries its version past the
+    bound lands in `unread` -- where a client that printed no version at all
     already lands -- instead of having a fragment recorded as its exact version.
+
+    Whether the cut could have continued the token is decided by the first
+    character it removed, not by the match merely reaching the end of the line.
+    A version followed by a newline or a space is whole, and deciding this on
+    the line end alone withheld it anyway.
     """
     for stream in streams:
         if not stream:
@@ -407,16 +412,33 @@ def recognise_version(*streams: str | None) -> str | None:
         # The tail is a fragment only where the cut landed mid-line. A cut that
         # landed on a newline left every line it kept intact.
         partial_tail = len(stream) > len(bounded) and not bounded.endswith(("\n", "\r"))
+        dropped = stream[len(bounded):len(bounded) + 1]
         kept = bounded.splitlines()
         tail = len(kept) - 1
         for index, line in enumerate(kept[:MAX_CLIENT_OUTPUT_LINES]):
             match = VERSION_TOKEN.search(line)
             if match is None:
                 continue
-            if partial_tail and index == tail and match.end() == len(line):
+            if (
+                partial_tail
+                and index == tail
+                and match.end() == len(line)
+                and _extends_version(dropped)
+            ):
                 continue
             return match.group(0)
     return None
+
+
+def _extends_version(character: str) -> bool:
+    """Whether this character could have continued a `VERSION_TOKEN` match.
+
+    A digit or a dot extends the numeric part, and `-` or `+` opens the build
+    suffix that alphanumerics and dots then extend. Anything else -- a newline,
+    a space, a bracket, a comma -- cannot, so a token the cut stopped there was
+    already whole.
+    """
+    return bool(character) and (character.isalnum() or character in ".-+")
 
 
 def probe_client(
@@ -707,13 +729,22 @@ def read_manifest(path):
     This is the oracle behind the killed-write guard. A torn file is not valid
     JSON, and a file that parses but declares another schema is not this
     roster, so neither can be mistaken for a manifest somebody finished writing.
+
+    Every refusal here is a `ProbeError`, including the ones the filesystem
+    raises. A renderer told to expect one refusal type would otherwise miss an
+    absent or unreadable manifest, which are the two it is most likely to meet.
     """
     target = Path(path)
-    size = target.stat().st_size
+    try:
+        size = target.stat().st_size
+    except OSError as error:
+        raise ProbeError(f"manifest cannot be inspected ({type(error).__name__})") from error
     if size > MAX_MANIFEST_BYTES:
         raise ProbeError(f"manifest is {size} bytes, over the {MAX_MANIFEST_BYTES} cap")
     try:
         document = json.loads(target.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise ProbeError(f"manifest cannot be read ({type(error).__name__})") from error
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ProbeError(f"manifest is not readable JSON: {error}") from error
     if not isinstance(document, dict) or document.get("schema") != SCHEMA_ID:
@@ -794,6 +825,14 @@ def main(argv=None) -> int:
             write_log(_checked_out(arguments.log), recorder)
     except ProbeError as error:
         print(f"probe_harnesses: {error}", file=sys.stderr)
+        return 1
+    except OSError as error:
+        # An operator path the filesystem rejects for a reason the checks above
+        # do not enumerate -- a destination that is a directory, a read-only
+        # mount, a name too long. This is the same class of failure as a
+        # `ProbeError` from the operator's side and gets the same one line,
+        # rather than a traceback carrying the path back out.
+        print(f"probe_harnesses: {type(error).__name__} writing the output", file=sys.stderr)
         return 1
     for event in recorder.events:
         if event["event"] == "harness_probe_done":

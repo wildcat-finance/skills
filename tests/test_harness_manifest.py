@@ -227,6 +227,24 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(len(document["harnesses"]), len(HARNESSES))
         self.assert_valid(document)
 
+    def test_every_declared_field_is_either_required_or_named_optional(self):
+        # ADR-076 enumerates this entry and states which two fields are
+        # optional, so the schema and the record can be read against each
+        # other. A field added to `properties` without landing in `required`
+        # or in the optional pair is the drift that put a required
+        # `version_read` outside the record's enumeration in the first place.
+        declared = set(self.harness["properties"])
+        required = set(self.harness["required"])
+        self.assertEqual(
+            declared - required,
+            set(OPTIONAL_ENTRY_FIELDS),
+            "a declared field is neither required nor one ADR-076 calls optional",
+        )
+        self.assertEqual(
+            required,
+            {"name", "classification"} | set(REQUIRED_ENTRY_FIELDS),
+        )
+
     def test_a_harness_entry_missing_any_required_field_is_refused(self):
         for field in REQUIRED_ENTRY_FIELDS:
             with self.subTest(field=field):
@@ -789,6 +807,33 @@ class SubprocessTests(unittest.TestCase):
         # And the fixture the rest of this class uses stays exact.
         self.assertEqual(probe_harnesses.recognise_version("cursor-agent 2026.8.1\n"), "2026.8.1")
 
+    def test_only_a_cut_that_could_extend_the_token_withholds_it(self):
+        # Which side of the bound a character falls on does not decide whether
+        # a version is whole; what the cut removed does. Deciding it on the
+        # match reaching the end of the line withheld `1.2.3` from a client
+        # whose only truncated character was the newline after it.
+        cap = probe_harnesses.MAX_CLIENT_OUTPUT_CHARS
+        head = "x" * (cap - 6) + " 1.2.3"
+        self.assertEqual(len(head), cap)
+
+        for tail, expected in (
+            ("4", None),          # a digit extends the last group
+            (".4", None),         # a dot opens another group
+            ("-rc1", None),       # a dash opens the build suffix
+            ("+build", None),     # so does a plus
+            ("\n", "1.2.3"),      # a newline cannot extend anything
+            (" ", "1.2.3"),
+            (")", "1.2.3"),
+            (",", "1.2.3"),
+        ):
+            with self.subTest(dropped=tail[:1]):
+                stream = head + tail
+                self.assertGreater(len(stream), cap)
+                self.assertEqual(probe_harnesses.recognise_version(stream), expected)
+
+        # Nothing was truncated at all, so the token stands whatever it abuts.
+        self.assertEqual(probe_harnesses.recognise_version(head), "1.2.3")
+
     def test_the_default_runner_really_bounds_the_timeout(self):
         harness = probe_harnesses.Harness(
             name="fixture",
@@ -898,6 +943,50 @@ class CredentialTests(unittest.TestCase):
         ):
             with self.subTest(clean=clean[:40]):
                 self.assertEqual(probe_harnesses.credential_findings(clean), [])
+
+    def test_every_refusal_the_reader_can_meet_is_one_refusal_type(self):
+        # `read_manifest` is the oracle step 3's renderer reads through, and its
+        # docstring promises a refusal. A renderer catching `ProbeError` -- the
+        # only refusal type the rest of the module raises -- would otherwise
+        # miss the two cases it is likeliest to meet, an absent manifest and an
+        # unreadable one, because those arrive from the filesystem instead.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for label, target in (
+                ("absent", root / "absent.json"),
+                ("a directory", root),
+            ):
+                with self.subTest(target=label):
+                    # Caught broadly and then asserted on, rather than
+                    # `assertRaises(ProbeError)`. On a tree that does not
+                    # convert the filesystem error, the narrow form lets the
+                    # OSError escape as an uncaught error, and the mechanical
+                    # guard check reads an error as broken infrastructure
+                    # rather than as a guard that failed.
+                    with self.assertRaises(Exception) as caught:
+                        probe_harnesses.read_manifest(target)
+                    self.assertIsInstance(caught.exception, probe_harnesses.ProbeError)
+
+    def test_an_output_path_the_filesystem_rejects_exits_one_without_a_traceback(self):
+        # `main` reports operator-facing failures as one line and exit 1. A
+        # destination that is a directory reaches `os.replace` rather than any
+        # of the checks above it, so it arrived as an uncaught OSError and a
+        # traceback carrying the path back out.
+        with tempfile.TemporaryDirectory() as directory:
+            # The escape is turned into an assertion for the same reason as
+            # above: an uncaught OSError here would read as broken
+            # infrastructure rather than as this guard doing its job.
+            try:
+                outcome = probe_harnesses.main(["--out", directory])
+            except OSError as error:
+                self.fail(
+                    f"main let {type(error).__name__} escape instead of returning 1"
+                )
+            self.assertEqual(outcome, 1)
+            # The neighbouring case already refused cleanly, and still does.
+            self.assertEqual(
+                probe_harnesses.main(["--out", str(Path(directory) / "absent" / "m.json")]), 1
+            )
 
     def test_a_planted_leak_fails_the_write_closed(self):
         with tempfile.TemporaryDirectory() as directory:

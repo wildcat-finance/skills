@@ -51,16 +51,34 @@ test, and a later reader who does not know it was decided will reopen it.
 under the identifier `harness-classification/v1`. A manifest carries a
 `recorded` block naming the host, the date and the base ref it was written
 against, and a `harnesses` array. Each harness entry carries `name`,
-`classification`, and the five observation fields `client_present`,
-`client_version`, `auth_configured`, `launcher_contract` and `blocker`, with
-optional `testable_here` and `probe`. Objects are closed: an undeclared field is
-refused rather than ignored. `client_version` may be null only where
-`client_present` is false, so an absent client cannot be recorded as a version
-nobody read.
+`classification`, the five observation fields `client_present`,
+`client_version`, `auth_configured`, `launcher_contract` and `blocker`, and the
+derived field `version_read`. Exactly two fields are optional, `testable_here`
+and `probe`; every other field named here is required. Objects are closed: an
+undeclared field is refused rather than ignored. `client_version` may be null
+only where `client_present` is false, so an absent client cannot be recorded as
+a version nobody read.
 
 `client_present` and `auth_configured` are separate fields on purpose. A client
 that is missing and a client that is installed but unauthenticated are different
 facts, and a single verdict field would collapse them into one.
+
+**A present client that did not answer is fielded, not spelled.** Such a client
+is present with its version unread, so `client_present` stays true and
+`client_version` carries the sentinel `unread`. A sentinel is prose where a
+reader wants a field, so `version_read` carries the same fact as a boolean and
+is required: false both where no client was present and where a present client
+did not answer, true only where `client_version` holds a version a client
+reported. Nothing downstream may recognise the sentinel to tell a version from
+the absence of one, and the schema refuses a document whose two fields
+disagree. `version_read` is required rather than optional for the reason the
+closed object exists: a field a conforming producer may omit is one a consumer
+cannot rely on, which leaves it string-matching the sentinel after all.
+
+`testable_here` stays optional, and is `client_present` and `auth_configured`
+together rather than a claim that a run succeeded: a present client that never
+answered is `testable_here` with `version_read` false. Read `classification`
+for what the run earned.
 
 **Four classification names, and no fifth.** A harness is exactly one of
 `Atlas launcher`, `tested local route`, `manual route` or `unsupported`. The
