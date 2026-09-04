@@ -750,3 +750,162 @@ Warden, and every other path are unchanged.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds. Step 6: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Exit:
+`docs/shoggoth-public-front-door-study.md` and
+`docs/shoggoth-public-front-door-runbook.md` are byte-identical to the current
+receipted study and runbook.
+`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` records
+the selected `per-skill-demo-ledger` construction, and the study's one
+`hypomnema-design-bridge/v1` block binds that candidate to that record.
+`docs/design/build_shoggoth_front_door_design_evidence.py` exists at exactly
+that path, takes `--out <directory>`, and writes `design-evidence.json` plus a
+`reports/` directory of 24 `protasis-design-report/v1` objects, serialised as
+UTF-8 ASCII with `indent=2`, `sort_keys=True` and one trailing newline. Running
+it reproduces the receipted record and all 24 receipted reports byte for byte,
+and the committed copy at
+`docs/shoggoth-public-front-door-design-evidence.json` with its 24 reports
+under `docs/reports/` is byte-identical to the receipted pair and passes the
+design-lock check in its committed location. This is the whole point of the
+step: the `command` field every report carries must resolve for somebody who
+clones this repository, which is the Dokimasia `S1-R1-01` defect this run
+exists not to repeat. `scripts/shoggoth_topology.py` reads both marketplace
+manifests and discovers governed directories from `EVOLUTION.md` without
+following symlinks, anchored at `plugins/<id>/skills`. It refuses a duplicate
+id, a manifest disagreement, a governed directory without a regular `SKILL.md`,
+a symlinked skill-tree entry, a path outside `plugins/`, and a phase outside
+Hexaemeron. `tests/test_shoggoth_topology.py` asserts that the two manifests
+and tree discovery return the same plugin set, that every plugin has exactly
+one canonical entry skill with Fiat as Hexaemeron's, that canonical plus phase
+equals governed, and that
+`plugins/hexaemeron/tests/fixtures/hypomnema/design-bridge/` is not counted;
+it asserts no literal count against the live tree. Its four synthetic specimens
+keep exact literal counts and use their own arbitrary ids, and no assertion
+compares a specimen identity set with a live one. The root check graph owns the
+new module and tests. `.python-version`, `pyproject.toml`, `LICENSE`, and
+`.github/workflows/plugins.yml` are unchanged. Prove the exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/shoggoth-public-front-door-study.md
+cmp .hexaemeron/runbook.md docs/shoggoth-public-front-door-runbook.md
+work="$(mktemp -d)"
+python3 docs/design/build_shoggoth_front_door_design_evidence.py --out "$work"
+cmp .hexaemeron/design-evidence.json "$work/design-evidence.json"
+for f in .hexaemeron/reports/*.json; do cmp "$f" "$work/reports/$(basename "$f")"; done
+cmp .hexaemeron/design-evidence.json docs/shoggoth-public-front-door-design-evidence.json
+for f in .hexaemeron/reports/*.json; do cmp "$f" "docs/reports/$(basename "$f")"; done
+python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py \
+  docs/shoggoth-public-front-door-design-evidence.json --transition design-lock
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py \
+  --study docs/shoggoth-public-front-door-study.md \
+  --design-evidence docs/shoggoth-public-front-door-design-evidence.json \
+  --repo-root .
+python3 -m unittest tests.test_shoggoth_topology -v
+python3 scripts/run_checks.py --plan
+python3 scripts/run_checks.py --full --jobs 6 --report .hexaemeron/run-checks-step-1.json
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Each command exits 0, and the Horos output is read rather than discarded.
+
+Complete replacement Files: Create
+`docs/shoggoth-public-front-door-study.md`,
+`docs/shoggoth-public-front-door-runbook.md`,
+`docs/shoggoth-public-front-door-design-evidence.json`,
+`docs/design/build_shoggoth_front_door_design_evidence.py`, the 24 reports
+under `docs/reports/`,
+`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md`,
+`scripts/shoggoth_topology.py`, `tests/test_shoggoth_topology.py`, and four
+specimens under `tests/fixtures/shoggoth-topology/`. Change
+`tests/check-map-v1.json`. Permit `.horos/boundary.json` and
+`.horos/candidates.json` only when a deterministic Horos scan whose output was
+read changes them. Warden alone may append
+`audit/rounds/fiat-shoggoth-front-door-derived.md` and regenerate its
+`.synopsis.md` companion.
+
+Complete replacement Disciplines: phylax: run against
+`scripts/shoggoth_topology.py` and
+`docs/design/build_shoggoth_front_door_design_evidence.py`, because both take
+repository paths and JSON as bounded untrusted input. ephoros: run against the
+same two files; this step adds no unattended operation, so the expected result
+is a clean exit rather than new instrumentation. hypomnema: run the ordinary
+walk against `docs/shoggoth-public-front-door-study.md`,
+`docs/shoggoth-public-front-door-runbook.md`, and
+`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md`, whose
+relative links must resolve from their own directories, and run study mode
+against the study and committed design evidence to prove the selected
+candidate's one standing record. metron: none, because discovery agreement is
+a correctness fact rather than a speed claim. elenchus: the malformed,
+symlinked and new-plugin specimens guard each refusal and the derivation
+itself.
+
+**Why.** Step 1 ships the study, so Hypomnema requires the selected design to
+point at a standing record before the step is receipted. The earlier exit ran
+only the ordinary documentation walk and left that join unchecked. Current
+`main` also assigned the study's former ADR number to another decision. This
+replacement admits the correctly numbered record, checks the bridge explicitly
+and leaves the topology boundary unchanged.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds. Step 6: entry holds; exit broken.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Exit: The joined proving path runs
+clean from a fresh clone of the run branch, in this order, with network denied:
+
+```bash
+python3 scripts/check_public_front_door.py --root .
+python3 scripts/demonstrations.py check --root .
+python3 scripts/demonstrations.py run --public-set \
+  --report .hexaemeron/reports/public-set-step-6.json
+python3 scripts/run_checks.py --full --jobs 6 --report .hexaemeron/run-checks-step-6.json
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Each command exits 0. The accepted per-skill-ledger decision already exists at
+`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` from
+step 1. Two further decision records land:
+`docs/decisions/ADR-077-keep-the-root-readme-as-a-front-door.md` and
+`docs/decisions/ADR-078-derive-topology-counts-from-the-tree.md`, the last
+naming commit `67a01a6c` as the worked example of the failure it prevents and
+recording the pinned-specimen exception. An end-to-end test proves the joined
+relation rather than the parts: changing one demonstration record's status from
+`real-data` to `mixed` makes the front-door check fail on the card that binds
+it, and restoring it makes the check pass. A second end-to-end test adds a
+nineteenth plugin to a scratch tree and proves that exactly the derived numbers
+move, that the front-door check still passes once prose is regenerated from
+discovery, and that no literal needed editing. The committed
+`.horos/boundary.json` matches the delivered tree, with the scan output read
+rather than discarded. Prove the exit with the commands above plus:
+
+```bash
+python3 -m unittest tests.test_joined_front_door -v
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md docs/decisions/ADR-077-keep-the-root-readme-as-a-front-door.md docs/decisions/ADR-078-derive-topology-counts-from-the-tree.md
+```
+
+Complete replacement Files: Create
+`docs/decisions/ADR-077-keep-the-root-readme-as-a-front-door.md`,
+`docs/decisions/ADR-078-derive-topology-counts-from-the-tree.md`, and
+`tests/test_joined_front_door.py`. Change `tests/check-map-v1.json` and, only
+if the joined proof exposes a defect, `scripts/check_public_front_door.py`,
+`scripts/demonstrations.py` or `scripts/shoggoth_topology.py`. Permit the
+generated Horos files named in Step 1. Change no `EVOLUTION.md`.
+
+**Why.** The study's former ADR-068 through ADR-070 paths now name unrelated
+records on current `main`. The selected design's record moved to step 1 so the
+study bridge can resolve when the study ships; the other two decisions keep
+their original Step 6 ownership under the next collision-free numbers.
+
+**Steps touched.** Step 6.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds. Step 6: entry holds; exit holds.

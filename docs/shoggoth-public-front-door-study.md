@@ -1210,3 +1210,38 @@ The source contract is `plugins/hexaemeron/skills/hypomnema/SKILL.md`.
   pull-request bodies, audits, studies, runbooks, ADR histories, specimens, and
   `INSTALL.md`'s dated capture figures remain unchanged even where they record
   old counts or an old package topology.
+
+### Amendment -- 2026-09-04
+
+**What changed.** The selected `per-skill-demo-ledger` construction now has
+one explicit Hypomnema design bridge to
+`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md`:
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | per-skill-demo-ledger
+record | docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md
+```
+
+The integration base advanced after this study was receipted and assigned
+ADR-068 through ADR-075 to other decisions. The three planned homes therefore
+move without changing their subjects: the demonstration-ledger decision moves
+to ADR-076, the root-front-door decision to ADR-077, and the derived-topology
+decision to ADR-078. ADR-076 moves into step 1 because the committed study's
+bridge must resolve when that study ships; ADR-077 and ADR-078 remain step 6
+work.
+
+**Why.** The explicit Hypomnema study-mode check reports H008 because the
+receipted study has no design bridge, and the paths it planned now collide with
+records on current `main`. Pointing at one of those unrelated records would
+satisfy only the path shape and would falsely claim that it records the selected
+construction. The bridge needs its own standing record, and the append-only
+renumbering keeps the original plan readable without overwriting somebody
+else's decisions.
+
+**Steps touched.** Step 1's exit, files, and disciplines; Step 6's exit and
+files.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds. Step 6: entry holds; exit broken.
