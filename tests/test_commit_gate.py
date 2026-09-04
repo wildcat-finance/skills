@@ -570,6 +570,44 @@ class WorkingTreeTests(unittest.TestCase):
                 "greenlight recorded something other than this repository's tree",
             )
 
+    def test_another_repositorys_index_cannot_be_recorded_by_this_suite(self):
+        """S2-R2-01: the anchor alone is not enough, the redirection must go too.
+
+        Anchoring to the script's own directory settles which suite runs. It
+        does not settle which index `git write-tree` reads: with `GIT_DIR` still
+        exported, greenlight runs this repository's suite and writes the tree of
+        whatever repository `GIT_DIR` names, into that repository's record. The
+        suite passes and the record is a lie about a tree it never saw, which is
+        the same defect as the one above wearing different clothes.
+        """
+        with gate_repository() as here, gate_repository() as elsewhere:
+            (elsewhere / "b.txt").write_text("untested\n", encoding="utf-8")
+            git(elsewhere, "add", "-A")
+            other = git(elsewhere, "write-tree").stdout.strip()
+
+            recorded = subprocess.run(
+                [str(here / ".githooks" / "greenlight")],
+                cwd=str(here),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=clean_environment({"GIT_DIR": str(elsewhere / ".git")}),
+            )
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed in its own repository: {recorded.stderr}",
+            )
+            self.assertFalse(
+                record_path(elsewhere).exists(),
+                "this repository's suite recorded another repository's tree",
+            )
+            self.assertNotIn(other, recorded.stdout)
+            self.assertEqual(
+                record_path(here).read_text(encoding="utf-8").strip(),
+                git(here, "write-tree").stdout.strip(),
+                "greenlight recorded something other than its own tree",
+            )
+
 
 class WorktreeRecordTests(unittest.TestCase):
     """One worktree's green must not reach another's commit, either way round.
