@@ -579,3 +579,40 @@ tree actually existed.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** The previous amendment listed the section 2 sentence about
+`go/copilot` and `tested local route` among claims that hold as written. That
+was wrong, and this corrects it.
+
+The sentence reads that both strings appear nowhere in the tree. It was true of
+the tree it surveyed, at `8dc3aca54adeca49387a2bdfc174cf6e72d02a11`, where
+neither string occurs in any tracked file. It is false of the tree that ships
+it. This step committed the schema, the manifest tests, the decision record and
+the pinned copies of these two artefacts, and those files use both strings as
+their working vocabulary. The audit record for this run names them too.
+
+Read the sentence as scoped to the surveyed ref. Every other claim the previous
+amendment listed was checked against that same ref, and the amendment said so
+for the recomputed figures; this one clause asserted the present tense instead,
+which the step's own commits had already falsified.
+
+**Why.** An amendment that corrects a document and introduces a false statement
+while doing so is worse than the defect it corrects, because a reader who checks
+it against the shipped tree finds it wrong at the point where the record claims
+to have been verified. The audit raised it as a low finding and it is cheap to
+answer, so it is answered rather than carried.
+
+No quantity is restated here. Four wrong checkable quantities have been produced
+in this document across four audit rounds, three of them inside a correction
+rather than in the original work, and each restatement has been a fresh chance
+to be wrong. Nothing in this repository asserts study or decision-record prose
+against the facts it cites, which is the gap behind all four and is being
+carried forward as its own item.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
