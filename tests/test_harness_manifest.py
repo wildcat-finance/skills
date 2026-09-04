@@ -40,6 +40,7 @@ import itertools
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -1357,6 +1358,240 @@ class GateReportTests(unittest.TestCase):
             name for name in vars(KilledProbeTests) if name.startswith("test_")
         }
         self.assertEqual(declared, set(KilledProbeTests.CASES))
+
+
+MANIFEST_PATH = ROOT / "docs/harness-classification.json"
+RENDERER_PATH = ROOT / "scripts/render_harness_roster.py"
+README_PATH = ROOT / "README.md"
+GUIDE_PATH = ROOT / "docs/how-to-help-shoggoth.md"
+PDF_PATH = ROOT / "docs/pdf/how-to-help-shoggoth.pdf"
+
+# A PDF this repository already ships that carries no harness page, used to
+# prove the check reads the page rather than accepting any file it is handed.
+OTHER_PDF_PATH = ROOT / "docs/pdf/the-promise-machine-explained-properly.pdf"
+
+_RENDER_SPEC = importlib.util.spec_from_file_location(
+    "render_harness_roster", RENDERER_PATH
+)
+render_harness_roster = importlib.util.module_from_spec(_RENDER_SPEC)
+sys.modules[_RENDER_SPEC.name] = render_harness_roster
+_RENDER_SPEC.loader.exec_module(render_harness_roster)
+
+
+def landed():
+    """The manifest this host's probe actually wrote and the tree carries."""
+    return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+class RecordTests(unittest.TestCase):
+    """The landed record, held to what a probe on this host may claim.
+
+    ``SchemaTests`` holds the contract in the abstract, against constructed
+    documents. These cases hold the one document three wording surfaces are
+    generated from: it validates, it names every harness the probe declares,
+    it awards no class a client run did not earn, and nothing it could not run
+    is left without a stated reason.
+    """
+
+    def setUp(self):
+        self.document = landed()
+
+    def test_the_landed_manifest_validates_against_the_schema(self):
+        schema = load_schema()
+        self.assertEqual(self.document["schema"], schema["properties"]["schema"]["const"])
+        required = set(schema["$defs"]["harness"]["required"])
+        for record in self.document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertTrue(required.issubset(record), required - set(record))
+        checker = validator()
+        if checker is None:
+            self.skipTest("jsonschema is a Lazarus dependency and is absent here")
+        checker.validate(self.document)
+
+    def test_the_landed_manifest_names_every_declared_harness(self):
+        # The probe's own ROSTER is the declaration; a manifest that dropped or
+        # reordered a row would generate three surfaces missing a harness and
+        # nothing else would notice.
+        declared = [harness.name for harness in probe_harnesses.ROSTER]
+        self.assertEqual([record["name"] for record in self.document["harnesses"]], declared)
+        self.assertEqual(sorted(declared), sorted(HARNESSES))
+
+    def test_no_landed_entry_carries_an_earned_class(self):
+        # Not one client is installed or authenticated on this host, so an
+        # earned class here would mean the classifier was bypassed rather than
+        # that a harness improved.
+        for record in self.document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertIn(record["classification"], CLASSIFICATIONS)
+                self.assertNotIn(record["classification"], EARNED_CLASSIFICATIONS)
+                self.assertFalse(record["version_read"])
+
+    def test_every_untestable_entry_carries_a_blocker(self):
+        untestable = [
+            record for record in self.document["harnesses"]
+            if not record.get("testable_here", False)
+        ]
+        self.assertEqual(len(untestable), len(self.document["harnesses"]))
+        for record in untestable:
+            with self.subTest(harness=record["name"]):
+                self.assertIsInstance(record["blocker"], str)
+                self.assertTrue(record["blocker"].strip())
+
+    def test_the_recorded_block_is_the_staleness_signal(self):
+        # Host, date and base ref are what a later reader compares a surface
+        # against, so each has to be present and shaped rather than merely
+        # truthy.
+        recorded = self.document["recorded"]
+        self.assertEqual(set(recorded), {"host", "date", "base_ref"})
+        self.assertTrue(probe_harnesses.HOST_PATTERN.match(recorded["host"]))
+        self.assertTrue(probe_harnesses.DATE_PATTERN.match(recorded["date"]))
+        self.assertTrue(probe_harnesses.BASE_REF_PATTERN.match(recorded["base_ref"]))
+
+
+class RenderTests(unittest.TestCase):
+    """The three surfaces, held to the manifest they are generated from.
+
+    Every case works on a staged copy of the four files rather than on the
+    repository's own, so a case that fails leaves the tree exactly as it found
+    it and no case can pass by rewriting the thing it is checking.
+
+    The PDF is compared as the harness page's shown text rather than as bytes.
+    Two cases hold that from both directions: a file whose creation timestamp
+    was changed still passes, and a file that never carried the roster still
+    fails. Comparing whole bytes would invert both.
+    """
+
+    def stage(self, directory):
+        """Copies of the four files, and the keyword arguments to check them."""
+        root = Path(directory)
+        (root / "docs" / "pdf").mkdir(parents=True)
+        (root / "scripts").mkdir()
+        staged = {
+            "manifest": root / "docs/harness-classification.json",
+            "readme": root / "README.md",
+            "guide": root / "docs/how-to-help-shoggoth.md",
+            "pdf": root / "docs/pdf/how-to-help-shoggoth.pdf",
+        }
+        for key, source in (
+            ("manifest", MANIFEST_PATH),
+            ("readme", README_PATH),
+            ("guide", GUIDE_PATH),
+            ("pdf", PDF_PATH),
+        ):
+            staged[key].write_bytes(source.read_bytes())
+        return staged
+
+    def drift(self, staged):
+        _, lines = render_harness_roster.check(**staged)
+        return lines
+
+    def test_two_renders_of_one_manifest_produce_the_same_bytes(self):
+        # Nothing in the renderer reads a clock or an environment, so a second
+        # render has to be the first one. Without this the check below would be
+        # a diff of two build times rather than a drift test.
+        document = landed()
+        again = landed()
+        for name, render in (
+            ("readme", render_harness_roster.readme_block),
+            ("guide", render_harness_roster.guide_block),
+        ):
+            with self.subTest(surface=name):
+                self.assertEqual(render(document), render(again))
+        self.assertEqual(
+            render_harness_roster.pdf_expectations(document),
+            render_harness_roster.pdf_expectations(again),
+        )
+
+    def test_check_passes_on_the_surfaces_the_renderer_wrote(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.drift(self.stage(directory)), [])
+
+    def test_one_changed_character_in_a_written_surface_fails_the_check(self):
+        for surface in ("readme", "guide"):
+            with self.subTest(surface=surface):
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    target = staged[surface]
+                    text = target.read_text(encoding="utf-8")
+                    # One character, inside the generated region, in a name the
+                    # manifest supplied. Neither surface mentions a harness
+                    # before its markers, so the first occurrence is the
+                    # generated one.
+                    edited = text.replace("Windsurf", "Windsurg", 1)
+                    self.assertNotEqual(edited, text)
+                    target.write_text(edited, encoding="utf-8")
+                    lines = self.drift(staged)
+                    self.assertEqual(len(lines), 1, lines)
+                    self.assertIn(str(target), lines[0])
+
+    def test_one_changed_character_in_the_manifest_reaches_every_surface(self):
+        # The manifest is the source, so a single character changed there has to
+        # show up as drift in all three surfaces at once. This is what proves
+        # the PDF is genuinely compared rather than assumed to agree.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            raw = staged["manifest"].read_text(encoding="utf-8")
+            edited = raw.replace('"name": "Cline"', '"name": "Clins"', 1)
+            self.assertNotEqual(edited, raw)
+            staged["manifest"].write_text(edited, encoding="utf-8")
+            lines = self.drift(staged)
+            self.assertEqual(len(lines), 3, lines)
+            for surface in ("readme", "guide", "pdf"):
+                with self.subTest(surface=surface):
+                    self.assertTrue(
+                        any(str(staged[surface]) in line for line in lines), lines
+                    )
+
+    def test_a_changed_creation_timestamp_does_not_fail_the_pdf_check(self):
+        # The point of reading the page rather than the file. The replacement
+        # is the same length as what it replaces, so only the timestamp moves.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            original = staged["pdf"].read_bytes()
+            found = re.search(rb"/CreationDate \(D:\d{14}", original)
+            self.assertIsNotNone(found, "the guide PDF carries no creation date")
+            stamped = original.replace(found.group(0), b"/CreationDate (D:20310607081533", 1)
+            self.assertNotEqual(stamped, original)
+            self.assertEqual(len(stamped), len(original))
+            staged["pdf"].write_bytes(stamped)
+            self.assertEqual(self.drift(staged), [])
+
+    def test_a_pdf_without_a_harness_page_fails_the_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            staged["pdf"].write_bytes(OTHER_PDF_PATH.read_bytes())
+            lines = self.drift(staged)
+            self.assertEqual(len(lines), 1, lines)
+            self.assertIn(render_harness_roster.PDF_PAGE_MARKER, lines[0])
+
+    def test_a_missing_manifest_fails_the_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            staged["manifest"].unlink()
+            with self.assertRaises(render_harness_roster.RenderError):
+                render_harness_roster.check(**staged)
+            # And the command line answers the same way, without a traceback
+            # carrying the path back out. Its refusal line is not the subject
+            # here, so it goes to the bin rather than into the suite's output.
+            with open(os.devnull, "w", encoding="utf-8") as sink:
+                with contextlib.redirect_stderr(sink):
+                    exit_code = render_harness_roster.main(
+                        ["--check", "--manifest", str(staged["manifest"])]
+                    )
+            self.assertEqual(exit_code, 1)
+
+    def test_every_harness_the_manifest_names_reaches_every_surface(self):
+        document = landed()
+        readme = render_harness_roster.readme_block(document)
+        guide = render_harness_roster.guide_block(document)
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        for record in document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertIn(record["name"], readme)
+                self.assertIn(record["name"], guide)
+                self.assertIn(record["name"], shown)
+                # And the guide carries the exact reason, not a summary of it.
+                self.assertIn(record["blocker"], guide)
 
 
 if __name__ == "__main__":
