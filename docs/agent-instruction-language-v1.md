@@ -465,26 +465,25 @@ decoder bootstrap under the same profile. The checked report records:
 | material | bytes | tokens |
 | --- | ---: | ---: |
 | source corpus | 11,170 | 2,528 |
-| canonical-model corpus | 8,569 | 2,079 |
-| compact corpus | 6,069 | 2,175 |
+| canonical-model corpus | 8,569 | 1,989 |
+| compact corpus | 6,069 | 2,086 |
 | decoder bootstrap | 932 | 277 |
-| compact corpus plus bootstrap | 7,001 | 2,452 |
-| compact-plus-bootstrap minus source | -4,169 | -76 |
+| compact corpus plus bootstrap | 7,001 | 2,363 |
+| compact-plus-bootstrap minus source | -4,169 | -165 |
 
-The strict three-document gate passes because `2,452 < 2,528`. The report also
+The strict three-document gate passes because `2,363 < 2,528`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
-not assumed to save tokens: the Fiat fixture reports `-90`, Horos reports
-`+733`, and Promise Machine reports `-165` after adding the entire bootstrap.
-The two-document prefix reports `+366`; only the declared three-document cohort
+not assumed to save tokens: the Fiat fixture reports `-122`, Horos reports
+`+705`, and Promise Machine reports `-194` after adding the entire bootstrap.
+The two-document prefix reports `+306`; only the declared three-document cohort
 is the acceptance cohort.
 
 Those figures are the run recorded in `evidence/measurement.json` with
 `observed_on` `2026-08-30`, taken before the corpus subject and the measured
-streams moved onto the projection described above. The byte columns are
-unaffected, because the projection preserves length. The token columns are
-counts of the unprojected canonical models and compact documents and are
-superseded by the reissued report; this table is refreshed from that report
-rather than predicted here, because no count in it may be written by hand.
+streams moved onto the projection described above, and refreshed from the
+reissued report once that run existed. Every token column counts a projected
+stream; the byte columns are unchanged either way, because the projection
+preserves length. No count here was written by hand.
 
 ### Isolated family parity
 

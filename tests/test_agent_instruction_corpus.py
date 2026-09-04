@@ -351,7 +351,12 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             reports = {}
             for command, expected_exit in (
                 ("selftest", 0),
-                ("offline", 1),
+                # Step 1 expected 1 here: an out-of-span edit could not be
+                # reconciled offline, which is the fault skills#1098 reports.
+                # Step 3 removed the corpus and measured-bytes bindings that
+                # caused it, so the offline proof now goes green. `span-shift`
+                # still exits 1 because the before-span placement is step 4's.
+                ("offline", 0),
                 ("span-shift", 1),
             ):
                 target = Path(scratch) / f"{command}.json"
@@ -387,7 +392,12 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             "offline-reconciliation-green", reports["offline"]["criterion"]
         )
         self.assertEqual("boolean", reports["offline"]["unit"])
-        self.assertFalse(reports["offline"]["value"])
+        # Step 1 asserted false: an out-of-span edit could not then be
+        # reconciled without a model, which is the fault skills#1098 reports.
+        # The step 3 widening removed the corpus and measured-bytes bindings
+        # that caused it, so this criterion is met and the design record's
+        # `offline-reconciliation-green` gate has its evidence.
+        self.assertTrue(reports["offline"]["value"])
         self.assertEqual("span-shift-regression", reports["span-shift"]["criterion"])
         self.assertEqual("count", reports["span-shift"]["unit"])
         # The value, not just its shape: a report nothing checks the value of
