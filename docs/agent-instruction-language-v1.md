@@ -34,10 +34,12 @@ python3 scripts/agent_instruction.py parity --manifest tests/fixtures/agent-inst
 
 The checked 2026-08-30 run binds three round trips, 15 reviewed source
 bindings, nine questions, and 14 hostile mutations. The source corpus is
-11,170 bytes and 2,528 tokens. The compact corpus is 6,069 bytes and 2,175
+11,170 bytes and 2,528 tokens. The compact corpus is 6,069 bytes and 2,086
 tokens; its complete 932-byte, 277-token decoder bootstrap makes the compared
-total 7,001 bytes and 2,452 tokens, saving 4,169 bytes and 76 tokens on this
-three-document cohort. Both recorded model families returned the required
+total 7,001 bytes and 2,363 tokens, saving 4,169 bytes and 165 tokens on this
+three-document cohort. The token counts were re-measured on 2026-09-04 against
+the same tokenizer profile after the Fiat source digest changed; the parity
+record carries the recorded family runs. Both recorded model families returned the required
 answer for all 18 source-versus-compact pairs, across 36 isolated calls.
 
 Those figures apply only to the bound files, profiles, prompt, runtimes, and

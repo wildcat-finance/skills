@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17480256,
+    "bytes_blob": 17580118,
     "bytes_generated": 98
   },
   "entries": [
@@ -280,6 +280,13 @@
       "path": "audit/rounds/fiat-881-macos-path-repair-clean-run.synopsis.md"
     },
     {
+      "bytes": 23354,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-888-adr-merge-recovery.synopsis.md"
+    },
+    {
       "bytes": 97194,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 95146",
@@ -418,6 +425,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 76508,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 74460",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
       "bytes": 38122,
