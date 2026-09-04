@@ -3463,24 +3463,81 @@ def digest_neutral_projection(manifest: Mapping[str, Any], data: bytes) -> bytes
     return projected
 
 
+CORPUS_OMITTED_SOURCE_KEYS = ("start", "end")
+
+
+def _corpus_subject_fixtures(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """`fixtures`, with each `source` record's recorded offsets left out.
+
+    `start` and `end` say where a reviewed span sits in a file, not what it
+    says. An edit before a span start moves both and moves no reviewed byte, so
+    while they are in the digested subject the corpus digest moves for a change
+    the measurement is not evidence about. Removing them is what makes both
+    out-of-span placements neutral rather than only the one that appends.
+
+    They are *removed* rather than substituted. `digest_neutral_projection`
+    replaces byte sequences, which is sound for a 64-hex digest literal and
+    unsound for a decimal: `18445` is a substring of `184450` and of any offset
+    that extends it, so substituting one offset could rewrite part of another
+    number anywhere in the subject. The subject is canonicalised from a mapping,
+    so dropping the two keys reaches exactly the values named and nothing else.
+
+    `span_sha256` stays. It is what ties the corpus digest to the reviewed bytes
+    themselves, and removing or substituting it would make an in-span edit
+    invisible here -- which is the failure
+    `test_the_corpus_subject_still_moves_on_an_in_span_edit` exists to catch.
+
+    This is necessary for a before-span edit to reconcile and it is not
+    sufficient, which is recorded here rather than left to be found. The
+    measurement record measures `canonical_model` and `compact` through
+    `digest_neutral_projection`, and both documents carry the reviewed span's
+    offsets inside them -- `model.json` as every binding's `start` and `end`.
+    Re-deriving those after an edit before a span start moves both measured
+    streams, so `_measurement_material` still refuses `WAI-E-MEASURE.RECORD`
+    for them. That second cause is not closed here and cannot be closed the
+    same way: those streams are what the recorded counts are counts of.
+    `test_a_before_span_edit_still_moves_the_measured_artefact_streams` pins it.
+
+    Nothing is mutated: each fixture and its `source` record are copied.
+    """
+    subjects: list[dict[str, Any]] = []
+    for fixture in manifest["fixtures"]:
+        subject = dict(fixture)
+        subject["source"] = {
+            key: value
+            for key, value in fixture["source"].items()
+            if key not in CORPUS_OMITTED_SOURCE_KEYS
+        }
+        subjects.append(subject)
+    return subjects
+
+
 def _corpus_sha256(manifest: Mapping[str, Any]) -> str:
     """The measured corpus's identity: the same subject, seen through the projection.
 
     The subject's shape is unchanged -- schema, the three counts, the risk
-    classes and `fixtures` whole -- and so is everything in it that describes
-    what was reviewed: each fixture's id, its source path, its reviewed span's
-    start and end, its `span_sha256`, and every artefact path. What changes is
-    that the bytes are digested after `digest_neutral_projection` has run over
-    them, so each fixture's whole-file `source.sha256` and all five of its
-    `artifacts.*.sha256` read as the marker instead of as themselves.
+    classes and `fixtures` -- and so is everything in it that describes what was
+    reviewed: each fixture's id, its source path, its `span_sha256`, and every
+    artefact path. Two things change. The bytes are digested after
+    `digest_neutral_projection` has run over them, so each fixture's whole-file
+    `source.sha256` and all five of its `artifacts.*.sha256` read as the marker
+    instead of as themselves; and each `source` record's `start` and `end` are
+    left out of the subject entirely, by `_corpus_subject_fixtures`.
 
     The effect is that the corpus's identity is the reviewed span digest and the
-    projected digests rather than the whole-file digest and the raw artefact
-    digests. An edit outside a reviewed span moves the whole-file digest and the
-    three artefact digests that embed it; all four are substituted, so the
+    projected digests rather than the whole-file digest, the raw artefact
+    digests and the positions the spans happen to sit at. An edit outside a
+    reviewed span moves the whole-file digest and the three artefact digests
+    that embed it; all four are substituted. An edit before a span start moves
+    the recorded offsets as well; those are not in the subject. Either way the
     subject is byte-identical before and after and the corpus digest does not
     move. An edit inside a reviewed span moves `span_sha256`, which is never
-    substituted, so the subject differs and the corpus digest does move.
+    substituted and never removed, so the subject differs and the corpus digest
+    does move.
+
+    A neutral corpus digest is not on its own a reconciliation. For the
+    before-span placement `_corpus_subject_fixtures` records what still
+    refuses behind it.
 
     This narrows what the corpus digest is evidence *of*, and only that. The
     manifest still binds every whole-file and artefact digest, and `check` still
@@ -3494,6 +3551,14 @@ def _corpus_sha256(manifest: Mapping[str, Any]) -> str:
     the measurement record is still staled by an out-of-span edit at a node this
     switch does not reach.
 
+    What the offsets' removal costs is stated rather than deferred: the corpus
+    digest stops distinguishing a moved offset whose span digest is unchanged.
+    `check` still catches that against the bytes on disk, at
+    `WAI-E-DIGEST.SOURCE_SPAN` and `WAI-E-DIGEST.ARTIFACT`, and
+    `WAI-E-REFERENCE.SPAN`, `WAI-E-DIGEST.SPAN` and `WAI-E-MANIFEST.BINDINGS` in
+    `_validate_source_spans` are what make a moved offset onto a byte-identical
+    window unreachable.
+
     The subject is projected through `manifest` itself, so a caller holding an
     edited manifest gets that manifest's own bound set. That is what makes the
     two sides of the comparison above line up: the digests substituted after the
@@ -3506,7 +3571,7 @@ def _corpus_sha256(manifest: Mapping[str, Any]) -> str:
         "binding_count": manifest["binding_count"],
         "question_count": manifest["question_count"],
         "mutation_count": manifest["mutation_count"],
-        "fixtures": manifest["fixtures"],
+        "fixtures": _corpus_subject_fixtures(manifest),
     }
     return _digest(digest_neutral_projection(manifest, canonical_record_bytes(subject)))
 

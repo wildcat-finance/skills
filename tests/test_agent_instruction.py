@@ -4098,6 +4098,324 @@ class DigestNeutralProjectionTests(unittest.TestCase):
                     AI.digest_neutral_projection(after_manifest, after),
                 )
 
+    # --- step 5: the recorded offsets, projected out of the subject --------
+
+    # Prepended at the very start of the file, which is before every fixture's
+    # reviewed span, so every recorded binding offset moves and no reviewed
+    # byte does. The placement `edited_fixture` does not cover, and the one
+    # #1098's first acceptance check was not met for.
+    BEFORE_SPAN_EDIT = b"<!-- skills#1098 before-span edit -->\n"
+
+    def before_span_edited_fixture(self, fixture: dict) -> tuple[dict, dict[str, bytes]]:
+        """One bound source edited before its span, with the mechanical passes run.
+
+        The sibling of `edited_fixture`, at the other placement. Everything that
+        pass does is done here too, and one thing more: the reviewed span has
+        moved, so `source.start` and `source.end` are re-derived rather than
+        left where they were. They are re-derived the way
+        `prove_agent_instruction_reconciliation.py` does it -- by locating the
+        reviewed bytes in the edited source and reading the offsets off from
+        where they were found -- and the located window is digest-checked
+        against `span_sha256`, so this cannot pass by adding the edit's length
+        to two numbers.
+
+        The artefacts' own internal offsets are not rewritten here. That is
+        deliberate and it is checked rather than waved past: their digests are
+        in `_bound_digest_values`, so the corpus subject reads them as the
+        marker whatever they are, and the on-disk rewrite is the prover's job
+        and `test_agent_instruction_corpus.py`'s claim. Nothing is written: the
+        edit and every derived artefact are built in memory.
+        """
+        source_record = fixture["source"]
+        source = (ROOT / source_record["path"]).read_bytes()
+        old = source_record["sha256"]
+        self.assertEqual(old, hashlib.sha256(source).hexdigest())
+
+        start = int(source_record["start"])
+        end = int(source_record["end"])
+        span = source[start:end]
+        self.assertEqual(source_record["span_sha256"], hashlib.sha256(span).hexdigest())
+
+        edited = self.BEFORE_SPAN_EDIT + source
+        # Located, not shifted, and located unambiguously: reviewed bytes that
+        # occur twice identify no offset, and re-deriving from an ambiguous
+        # anchor would be arithmetic wearing a search's clothes.
+        self.assertEqual(1, edited.count(span), "the reviewed bytes are not unique")
+        span_start = edited.index(span)
+        span_end = span_start + len(span)
+        self.assertNotEqual(start, span_start, "the before-span edit moved no offset")
+        self.assertEqual(
+            source_record["span_sha256"],
+            hashlib.sha256(edited[span_start:span_end]).hexdigest(),
+        )
+
+        new = hashlib.sha256(edited).hexdigest()
+        self.assertNotEqual(old, new)
+
+        rewritten: dict[str, bytes] = {}
+        for name in ("model", "source_spans"):
+            record = fixture["artifacts"][name]
+            raw = (ROOT / record["path"]).read_bytes()
+            self.assertEqual(1, raw.count(old.encode("ascii")))
+            rewritten[record["path"]] = raw.replace(
+                old.encode("ascii"), new.encode("ascii")
+            )
+        model_path = fixture["artifacts"]["model"]["path"]
+        rewritten[fixture["artifacts"]["compact"]["path"]] = AI.format_compact(
+            AI.load_canonical_record(rewritten[model_path])
+        )
+
+        manifest = copy.deepcopy(self.manifest)
+        entry = next(item for item in manifest["fixtures"] if item["id"] == fixture["id"])
+        entry["source"]["sha256"] = new
+        entry["source"]["start"] = str(span_start)
+        entry["source"]["end"] = str(span_end)
+        for name in ("model", "source_spans", "compact"):
+            record = entry["artifacts"][name]
+            record["sha256"] = hashlib.sha256(rewritten[record["path"]]).hexdigest()
+        return manifest, rewritten
+
+    def test_the_corpus_subject_carries_no_recorded_offset(self):
+        """`start` and `end` are removed from the subject, not substituted in it.
+
+        The mechanism matters as much as the effect.
+        `digest_neutral_projection` replaces byte sequences, which is sound for
+        a 64-hex digest literal and unsound for a decimal: `18445` is a
+        substring of `184450` and of any offset extending it, so substituting
+        an offset could rewrite part of an unrelated number anywhere in the
+        subject. The subject is canonicalised from a mapping instead, so
+        dropping the two keys reaches exactly the values named.
+
+        Three claims, and each fails on its own if the removal regresses. The
+        two keys are gone from every `source` record in the subject and every
+        other key of that record survives, so this is a removal and not a
+        rebuild. No `"start"` or `"end"` key survives anywhere in the
+        canonicalised subject bytes, which is what says three offset pairs were
+        the whole reachable set. And moving both offsets in a manifest and
+        nothing else leaves the corpus digest exactly where it was, which is
+        the property an edit before a reviewed span start needs.
+        """
+        subjects = AI._corpus_subject_fixtures(self.manifest)
+        self.assertEqual(len(self.manifest["fixtures"]), len(subjects))
+        self.assertEqual(("start", "end"), AI.CORPUS_OMITTED_SOURCE_KEYS)
+
+        for fixture, subject in zip(self.manifest["fixtures"], subjects):
+            with self.subTest(fixture=fixture["id"]):
+                self.assertEqual(fixture["id"], subject["id"])
+                recorded = fixture["source"]
+                # Present before, so the removal is removing something.
+                self.assertIn("start", recorded)
+                self.assertIn("end", recorded)
+                self.assertEqual(
+                    set(recorded) - {"start", "end"}, set(subject["source"])
+                )
+                for key, value in subject["source"].items():
+                    self.assertEqual(recorded[key], value)
+                # Every key of the fixture other than `source` is untouched.
+                self.assertEqual(set(fixture), set(subject))
+                for key in set(fixture) - {"source"}:
+                    self.assertEqual(fixture[key], subject[key])
+
+        subject_bytes = AI.canonical_record_bytes(
+            {
+                "schema": self.manifest["schema"],
+                "risk_classes": self.manifest["risk_classes"],
+                "binding_count": self.manifest["binding_count"],
+                "question_count": self.manifest["question_count"],
+                "mutation_count": self.manifest["mutation_count"],
+                "fixtures": subjects,
+            }
+        )
+        self.assertNotIn(b'"start"', subject_bytes)
+        self.assertNotIn(b'"end"', subject_bytes)
+
+        corpus = AI._corpus_sha256(self.manifest)
+        moved = copy.deepcopy(self.manifest)
+        for fixture in moved["fixtures"]:
+            fixture["source"]["start"] = str(int(fixture["source"]["start"]) + 47)
+            fixture["source"]["end"] = str(int(fixture["source"]["end"]) + 47)
+        # Known to differ before the subject is built, so this cannot pass by
+        # the edit having been a no-op.
+        self.assertNotEqual(
+            AI.canonical_record_bytes(self.manifest), AI.canonical_record_bytes(moved)
+        )
+        self.assertEqual(corpus, AI._corpus_sha256(moved))
+
+    def test_a_before_span_edit_leaves_the_corpus_digest_where_it_was(self):
+        """The corpus digest, and only the corpus digest.
+
+        Step 4's audit established by hand that a comment prepended to a bound
+        source, with every mechanical pass applied and the offsets re-derived,
+        left `check` refusing `WAI-E-DIGEST.CORPUS` where the same comment
+        appended exited 0. The study's assumption 5 is what chooses this design
+        and a before-span edit satisfies it exactly: the reviewed bytes are
+        untouched, so the recorded counts are still counts of what they say.
+
+        What this case establishes is that the corpus digest is now neutral to
+        that placement, checked for all three bound sources rather than the one
+        the prover edits, and contrasted against the after-span placement in
+        the same run so the two are not separately true of two different edits.
+
+        What it does **not** establish, and must not be read as establishing,
+        is that a before-span edit reconciles at exit 0.
+        `test_a_before_span_edit_still_moves_the_measured_artefact_streams`
+        records the refusal that waits behind this one: the measured
+        `canonical_model` and `compact` streams carry the recorded offsets
+        inside them, so re-deriving those offsets moves the streams the counts
+        are counts of, and `WAI-E-DIGEST.CORPUS` was only the first of two
+        reasons a before-span edit refuses.
+        """
+        corpus = AI._corpus_sha256(self.manifest)
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                before_span, _ = self.before_span_edited_fixture(fixture)
+                entry = next(
+                    item for item in before_span["fixtures"] if item["id"] == fixture["id"]
+                )
+                # The edit really did move what it is supposed to move: the
+                # whole-file digest and both recorded offsets.
+                self.assertNotEqual(fixture["source"]["sha256"], entry["source"]["sha256"])
+                self.assertNotEqual(fixture["source"]["start"], entry["source"]["start"])
+                self.assertNotEqual(fixture["source"]["end"], entry["source"]["end"])
+                self.assertEqual(
+                    fixture["source"]["span_sha256"], entry["source"]["span_sha256"]
+                )
+                self.assertNotEqual(
+                    AI.canonical_record_bytes(self.manifest),
+                    AI.canonical_record_bytes(before_span),
+                )
+
+                self.assertEqual(
+                    corpus,
+                    AI._corpus_sha256(before_span),
+                    "an edit before a reviewed span start still moves the corpus digest",
+                )
+                after_span, _ = self.edited_fixture(fixture)
+                self.assertEqual(corpus, AI._corpus_sha256(after_span))
+
+    def test_the_corpus_subject_still_carries_every_reviewed_span_digest(self):
+        """The guard against the widening going too far.
+
+        `span_sha256` is the one thing in the subject that ties the corpus
+        digest to the reviewed bytes themselves. Remove it, or extend
+        `digest_neutral_projection` to substitute it, and an in-span edit stops
+        moving the corpus digest -- which would make the measurement records
+        survive a change to the very bytes they are counts of. That is the
+        failure mode the offsets' removal sits next to, and it is one key away.
+
+        Written to fail at the projection rather than at the edit, so a tree
+        that substituted `span_sha256` fails on the mechanism it changed
+        instead of only on a downstream consequence. The three claims are: the
+        span digest survives the projection byte for byte in the subject it is
+        digested from; it is not a value `_bound_digest_values` enumerates, so
+        there is nothing for the substitution to match; and it is not among the
+        keys the subject drops. The in-span edit is asserted after them, for
+        all three fixtures, so the consequence is checked as well as the cause.
+        """
+        subjects = AI._corpus_subject_fixtures(self.manifest)
+        bound = set(AI._bound_digest_values(self.manifest))
+        subject_bytes = AI.canonical_record_bytes(
+            {
+                "schema": self.manifest["schema"],
+                "risk_classes": self.manifest["risk_classes"],
+                "binding_count": self.manifest["binding_count"],
+                "question_count": self.manifest["question_count"],
+                "mutation_count": self.manifest["mutation_count"],
+                "fixtures": subjects,
+            }
+        )
+        projected = AI.digest_neutral_projection(self.manifest, subject_bytes)
+
+        for fixture, subject in zip(self.manifest["fixtures"], subjects):
+            with self.subTest(fixture=fixture["id"]):
+                span_digest = fixture["source"]["span_sha256"]
+                self.assertEqual(span_digest, subject["source"]["span_sha256"])
+                self.assertNotIn("span_sha256", AI.CORPUS_OMITTED_SOURCE_KEYS)
+                self.assertNotIn(span_digest, bound)
+                self.assertIn(
+                    span_digest.encode("ascii"),
+                    projected,
+                    "the projection now substitutes the reviewed span digest",
+                )
+
+        corpus = AI._corpus_sha256(self.manifest)
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"], edit="in-span"):
+                self.assertNotEqual(
+                    corpus,
+                    AI._corpus_sha256(self.in_span_edited_fixture(fixture)),
+                    "an in-span edit no longer moves the corpus digest",
+                )
+
+    def test_a_before_span_edit_still_moves_the_measured_artefact_streams(self):
+        """The refusal behind the corpus one, recorded rather than discovered later.
+
+        Removing `start` and `end` from the corpus subject is necessary for a
+        before-span edit to reconcile and it is not sufficient. The measurement
+        record measures each fixture's `canonical_model` and `compact` through
+        `digest_neutral_projection`, and both documents carry the reviewed
+        span's recorded offsets *inside* them -- `model.json` as every
+        binding's `start` and `end`, and `compact.wai` as the codec's rendering
+        of the same model. The projection substitutes digests; an offset is not
+        a digest, so re-deriving the offsets after a before-span edit moves
+        both measured streams and `_measurement_material` refuses
+        `WAI-E-MEASURE.RECORD` for them.
+
+        Which means #1098's first acceptance check is still not met for the
+        before-span placement after this step, and the study's diagnosis --
+        `_corpus_sha256` taking `fixtures` whole -- named one of two causes.
+        The second cannot be closed the same way: `digest_neutral_projection`
+        replaces byte sequences, which is unsound for a decimal, and these
+        streams are what the recorded token counts are counts of, so making the
+        corpus digest ignore them is not the same kind of narrowing at all.
+
+        The offsets are shifted here the way the prover's re-derivation writes
+        them back, so this reproduces the on-disk case without a copy, a
+        subprocess or a model. It is expected to fail if that second cause is
+        ever closed, and should then be replaced deliberately rather than found
+        mysteriously red.
+        """
+        measurement = AI.load_canonical_record(
+            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
+            allow_integers=True,
+        )
+        measured = {item["fixture_id"]: item for item in measurement["documents"]}
+        delta = len(self.BEFORE_SPAN_EDIT)
+
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                recorded = measured[fixture["id"]]
+                model_path = ROOT / fixture["artifacts"]["model"]["path"]
+                model = AI.load_canonical_record(model_path.read_bytes())
+
+                # The committed streams are the ones the record measured, so a
+                # difference below is the edit's and not a stale fixture's.
+                self.assertEqual(
+                    recorded["canonical_model"]["sha256"],
+                    AI._digest(
+                        AI.digest_neutral_projection(self.manifest, model_path.read_bytes())
+                    ),
+                )
+
+                self.assertTrue(model["bindings"])
+                for binding in model["bindings"]:
+                    binding["start"] = str(int(binding["start"]) + delta)
+                    binding["end"] = str(int(binding["end"]) + delta)
+                shifted = AI.canonical_record_bytes(model)
+                self.assertNotEqual(model_path.read_bytes(), shifted)
+
+                self.assertNotEqual(
+                    recorded["canonical_model"]["sha256"],
+                    AI._digest(AI.digest_neutral_projection(self.manifest, shifted)),
+                    "the measured canonical model survived a before-span edit",
+                )
+                self.assertNotEqual(
+                    recorded["compact"]["sha256"],
+                    AI._digest(
+                        AI.digest_neutral_projection(self.manifest, AI.format_compact(model))
+                    ),
+                    "the measured compact document survived a before-span edit",
+                )
 
 if __name__ == "__main__":
     unittest.main()
