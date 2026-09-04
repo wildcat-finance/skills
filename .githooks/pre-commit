@@ -33,10 +33,20 @@ fi
 # own `git write-tree` on git 2.50.1. Dropping GIT_CONFIG_COUNT is what
 # disables the indexed pairs; they are inert without it.
 #
-# GIT_CONFIG_GLOBAL, GIT_CONFIG_SYSTEM and GIT_CONFIG_NOSYSTEM are left alone
-# on purpose. They name which of the caller's own configuration files git
-# reads rather than smuggling a value in-band, and a hook that ignored them
-# would read files the caller had deliberately stepped away from.
+# GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM reach the same end one indirection
+# further out, so they are handled rather than left alone. A file either of
+# them names can carry `core.fsmonitor` itself, and on git 2.50.1 that command
+# ran during this hook's own `git write-tree` exactly as the in-band forms did.
+# Unsetting them would be worse than leaving them: git then falls back to
+# `$HOME/.gitconfig` and `/etc/gitconfig`, and a `core.fsmonitor` in
+# `$HOME/.gitconfig` still ran. They are pointed at nothing instead, which is
+# git's documented way to skip a configuration level outright, so the gate's
+# own git calls read no global and no system configuration at all. The
+# repository's own config is untouched, because that is the repository being
+# gated rather than something an inherited variable can move. The trade is a
+# clone that needs `safe.directory` from global config: `git rev-parse
+# --git-dir` then fails here, which refuses the commit and names the cause,
+# which is the direction this gate is meant to fail.
 #
 # The index git exports is left alone too, and must be. Git runs this hook for
 # one particular commit and names that commit's index in GIT_INDEX_FILE --
@@ -47,9 +57,14 @@ fi
 # leaves its staged state alone.
 unset GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
 
+# Every git call this gate makes goes through here, and nothing else does.
+gate_git() {
+    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git "$@"
+}
+
 fix='run .githooks/greenlight on the staged tree, or commit with FIAT_SKIP_PRECOMMIT=1'
 
-if ! git_dir="$(git rev-parse --git-dir 2>/dev/null)"; then
+if ! git_dir="$(gate_git rev-parse --git-dir 2>/dev/null)"; then
     printf 'pre-commit: refused, git rev-parse --git-dir failed, so the green record cannot be located; %s\n' "$fix" >&2
     exit 1
 fi
@@ -58,7 +73,7 @@ fi
 # one worktree's green cannot authorise another worktree's commit.
 record="$git_dir/LAST_GREEN"
 
-if ! staged="$(git write-tree 2>/dev/null)"; then
+if ! staged="$(gate_git write-tree 2>/dev/null)"; then
     printf 'pre-commit: refused, git write-tree failed, so the staged tree is unknown; %s\n' "$fix" >&2
     exit 1
 fi

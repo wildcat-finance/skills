@@ -39,25 +39,36 @@ set -eu
 # GIT_CONFIG_COUNT with the indexed GIT_CONFIG_KEY_<n>/GIT_CONFIG_VALUE_<n>
 # pairs it drives; the pairs are inert once the count is gone. Either form
 # supplying `core.fsmonitor` makes the git calls below start a command nobody
-# here named, measured on git 2.50.1. Which of the caller's own configuration
-# *files* git reads, through GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM, is left
-# alone: those name files the caller owns rather than smuggling a value
-# in-band.
+# here named, measured on git 2.50.1.
+#
+# GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM reach the same end one indirection
+# further out, because a file either of them names can carry `core.fsmonitor`
+# itself. Unsetting them would be worse than leaving them: git then falls back
+# to `$HOME/.gitconfig` and `/etc/gitconfig`, and a `core.fsmonitor` in
+# `$HOME/.gitconfig` still ran. They are pointed at nothing instead, which is
+# git's documented way to skip a configuration level outright. That is scoped
+# to this script's own git calls through `gate_git` below, because the suite
+# this script runs is not the gate and must keep running in the contributor's
+# own configuration.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX \
     GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
 
+gate_git() {
+    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git "$@"
+}
+
 here="$(dirname "$0")"
 cd "$here/.."
 
 # Assignment form, so a rev-parse failure reaches `set -e`.
-toplevel="$(git rev-parse --show-toplevel)"
+toplevel="$(gate_git rev-parse --show-toplevel)"
 cd "$toplevel"
 
 python3 -m unittest discover -s tests
 
-tree="$(git write-tree)"
-record="$(git rev-parse --git-dir)/LAST_GREEN"
+tree="$(gate_git write-tree)"
+record="$(gate_git rev-parse --git-dir)/LAST_GREEN"
 printf '%s\n' "$tree" > "$record"
 printf 'greenlight: recorded tree %s in %s\n' "$tree" "$record"

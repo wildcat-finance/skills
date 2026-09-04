@@ -166,6 +166,11 @@ INHERITED_GIT_VARIABLES = (
     "GIT_INTERNAL_SUPER_PREFIX",
     "GIT_CONFIG_PARAMETERS",
     "GIT_CONFIG_COUNT",
+    # The file selectors reach the same end one indirection out, so a fixture
+    # that inherited one would be measuring the caller's configuration rather
+    # than the case's.
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
 )
 
 PASSING_SUITE = """import unittest
@@ -764,18 +769,29 @@ printf '/\\0'
 
 
 def staged_state(root: Path) -> bytes:
-    """Everything the index says is staged, as bytes.
+    """What the index, the working tree and the refs of one repository say.
 
-    Mode, object id, stage and path for every entry, plus the cached diff the
-    original incident showed up in as 1487 deletions. Not the index file
-    itself: `git write-tree` persists a cache tree into whatever index it is
-    given, so the file's bytes move while nothing staged does, and asserting on
-    them would fail on a repository whose staged state is untouched.
+    Mode, object id, stage and path for every index entry, plus the cached diff
+    the original incident showed up in as 1487 deletions, plus the working
+    tree's porcelain status and every ref. The last two are here because the
+    index alone is blind to a file written into the outer repository's working
+    tree, and a command the gate starts by accident can write one.
+    `--no-optional-locks` keeps this measurement from refreshing the index it
+    is measuring.
+
+    Not the index file's own bytes. `git write-tree` does persist a cache tree
+    into an index that lacks one, so those bytes can move while nothing staged
+    does. Measured on git 2.50.1, that does not happen along this path: driving
+    the gate at an outer index leaves the file byte-identical. They are still
+    left out, because asserting them would pin where write-tree happened to
+    persist rather than the staged state the incident class is about.
     """
     entries = git(root, "ls-files", "--stage").stdout
     cached = git(root, "diff", "--cached", "--name-status", "--").stdout
     head = git(root, "rev-parse", "HEAD").stdout
-    return "\0".join((entries, cached, head)).encode("utf-8")
+    worktree = git(root, "--no-optional-locks", "status", "--porcelain").stdout
+    refs = git(root, "for-each-ref").stdout
+    return "\0".join((entries, cached, head, worktree, refs)).encode("utf-8")
 
 
 def polluted_at(outer: Path, extra: dict[str, str] | None = None) -> dict[str, str]:
@@ -797,6 +813,13 @@ def config_override(command: Path) -> dict[str, str]:
         "GIT_CONFIG_KEY_0": "core.fsmonitor",
         "GIT_CONFIG_VALUE_0": str(command),
     }
+
+
+def config_file_override(directory: Path, command: Path) -> Path:
+    """The same `core.fsmonitor`, in a file a selector variable can name."""
+    path = directory / "gitconfig"
+    path.write_text(f"[core]\n\tfsmonitor = {command}\n", encoding="utf-8")
+    return path
 
 
 def fsmonitor_script(directory: Path) -> tuple[Path, Path]:
@@ -954,6 +977,56 @@ class HookIndexMutationTests(unittest.TestCase):
                 "greenlight recorded a green in the repository the override "
                 "named",
             )
+
+    def _no_file_selector_redirects(self, gate: str):
+        """Drive one half of the gate down all three configuration-file routes.
+
+        `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM` carry no value in-band;
+        each names a file, and a file either names can hold `core.fsmonitor`
+        itself. Unsetting the two selectors does not close that, because git
+        then reads `$HOME/.gitconfig`, so the third route drives that one with
+        both selectors absent. Every route fails without the control it guards.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+            script, marker = fsmonitor_script(here.parent)
+            config = config_file_override(here.parent, script)
+            home = here.parent / "home"
+            home.mkdir()
+            (home / ".gitconfig").write_bytes(config.read_bytes())
+
+            for route in (
+                {"GIT_CONFIG_GLOBAL": str(config)},
+                {"GIT_CONFIG_SYSTEM": str(config)},
+                {"HOME": str(home)},
+            ):
+                if marker.exists():
+                    marker.unlink()
+                run_gate(gate, here, polluted_at(outer, route))
+                self.assertFalse(
+                    marker.exists(),
+                    f"{gate}: an inherited configuration file made the gate "
+                    f"start a process nothing in the gate names, via {route}",
+                )
+                self.assertEqual(
+                    staged_state(outer), before,
+                    f"{gate}: an outer repository's state changed under {route}",
+                )
+                self.assertFalse(
+                    record_path(outer).exists(),
+                    f"{gate}: a green was written into the outer repository "
+                    f"under {route}",
+                )
+
+    def test_the_hook_reads_no_configuration_a_file_selector_could_redirect(self):
+        """The reading half, down all three configuration-file routes."""
+        self._no_file_selector_redirects(HOOK_NAME)
+
+    def test_greenlight_reads_no_configuration_a_file_selector_could_redirect(self):
+        """The recording half, down the same three."""
+        self._no_file_selector_redirects(GREENLIGHT_NAME)
 
     def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
         """`git rev-parse --git-dir`, not `--git-common-dir`.
