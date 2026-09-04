@@ -1599,6 +1599,40 @@ class RenderTests(unittest.TestCase):
                 with self.subTest(surface=key):
                     self.assertEqual(path.read_bytes(), before[key])
 
+    def test_a_credential_refuses_before_any_surface_is_written(self):
+        # S3-R2-02. The sweep used to run as each surface's turn came round,
+        # so the refusal was only as early as the surface carrying the token.
+        # A blocker reaches the guide body and no other, and a blocker is
+        # where captured client output lands, so a token there refused after
+        # the README had already been rewritten.
+        #
+        # The case above cannot catch that. It plants the token in a blocker
+        # and changes nothing else, so the README it renders is byte-identical
+        # to the staged one and goes unwritten whichever order the sweep runs
+        # in; its "nothing was written" assertion is vacuous for the README.
+        # This one moves the README body too, which is what a real re-render
+        # does, and no token reaches disk either way -- what is at stake is
+        # one surface regenerated against two left stale.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
+            document["recorded"]["base_ref"] = "0" * 40
+            document["harnesses"][0]["blocker"] = f"bearer: {LEAKED_SECRET}"
+            staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
+            # The precondition that makes this a real hole: the README body
+            # does move, so the old order wrote it before it refused.
+            self.assertNotIn(
+                render_harness_roster.readme_block(document),
+                staged["readme"].read_text(encoding="utf-8"),
+            )
+            before = {key: path.read_bytes() for key, path in staged.items()}
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.write(**staged)
+            self.assertIn("token", str(refused.exception))
+            for key, path in staged.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(path.read_bytes(), before[key])
+
     def test_an_operator_path_the_renderer_rejects_exits_one(self):
         with open(os.devnull, "w", encoding="utf-8") as sink:
             with contextlib.redirect_stderr(sink):
@@ -1660,6 +1694,56 @@ class RenderTests(unittest.TestCase):
         shown = render_harness_roster.harness_page_text(PDF_PATH)
         drift = render_harness_roster.pdf_drift(document, shown)
         self.assertTrue(any("empty string" in line for line in drift), drift)
+
+    def test_a_page_showing_an_unsupported_list_the_manifest_dropped_is_drift(self):
+        # S3-R2-01, the containment hole S3-R1-02 closed on the roster line,
+        # one field over. The unsupported clause is optional, so dropping the
+        # LAST unsupported harness removes it rather than shortening it, and
+        # the manifest's detail becomes a strict prefix of the page's. Nothing
+        # else moves -- an unsupported entry is in neither the roster line nor
+        # the label -- so every other expectation still matched and the whole
+        # check exited 0 on a page still advertising the harness that left.
+        document = landed()
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        self.assertEqual(render_harness_roster.pdf_drift(document, shown), [])
+        unsupported = render_harness_roster.names_in_class(
+            document, render_harness_roster.UNSUPPORTED
+        )
+        self.assertEqual(len(unsupported), 1, unsupported)
+        trimmed = json.loads(json.dumps(document))
+        trimmed["harnesses"] = [
+            record for record in trimmed["harnesses"]
+            if record["classification"] != render_harness_roster.UNSUPPORTED
+        ]
+        # The precondition that makes this a hole rather than a hypothetical:
+        # every expectation IS still contained, and the other two are byte
+        # for byte what they were.
+        for expected in render_harness_roster.pdf_expectations(trimmed):
+            with self.subTest(expected=expected):
+                self.assertIn(render_harness_roster._normalise(expected), shown)
+        self.assertEqual(
+            render_harness_roster.pdf_roster_line(trimmed),
+            render_harness_roster.pdf_roster_line(document),
+        )
+        self.assertEqual(
+            render_harness_roster.pdf_label(trimmed),
+            render_harness_roster.pdf_label(document),
+        )
+        self.assertEqual(len(render_harness_roster.pdf_drift(trimmed, shown)), 1)
+        # Dropping one of several was already caught, because the list is
+        # comma-separated and full-stopped: `Unsupported: A.` is not a prefix
+        # of `Unsupported: A, B.`. Only the fall to zero hid, which is why the
+        # case above drops the only one there is.
+        two = json.loads(json.dumps(document))
+        two["harnesses"][0]["classification"] = render_harness_roster.UNSUPPORTED
+        one = json.loads(json.dumps(two))
+        one["harnesses"] = [
+            record for record in one["harnesses"] if record["name"] != unsupported[0]
+        ]
+        self.assertNotIn(
+            render_harness_roster.pdf_detail(one),
+            render_harness_roster.pdf_detail(two),
+        )
 
     def test_a_recorded_date_that_is_not_a_calendar_date_is_refused(self):
         # S3-R1-04, handed here by step 2's round 4. `manifest_document`

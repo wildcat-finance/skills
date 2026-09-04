@@ -100,6 +100,12 @@ PDF_ESCAPES = {
 
 PDF_DETAIL = "Read AGENTS.md, then paste job.prompt. No checked Atlas launcher here."
 
+# What introduces the unsupported names in the harness page's detail. `pdf_drift`
+# needs it for the same reason it needs `ROSTER_SEPARATOR`: the clause is
+# optional, so a manifest that renders none leaves `PDF_DETAIL` a strict prefix
+# of a page that still shows one, and containment alone cannot tell them apart.
+UNSUPPORTED_CLAUSE = " Unsupported: "
+
 
 class RenderError(Exception):
     """A surface could not be read, derived or written."""
@@ -300,7 +306,7 @@ def pdf_detail(document):
     unsupported = names_in_class(document, UNSUPPORTED)
     if not unsupported:
         return PDF_DETAIL
-    return f"{PDF_DETAIL} Unsupported: {', '.join(unsupported)}."
+    return f"{PDF_DETAIL}{UNSUPPORTED_CLAUSE}{', '.join(unsupported)}."
 
 
 def pdf_expectations(document):
@@ -328,6 +334,18 @@ def pdf_drift(document, shown):
     name on either side of it is drift rather than a longer match. And an empty
     expectation is refused instead of being vacuously contained, because an
     empty string proves nothing about a page.
+
+    The detail carries the same hole one field over, and it is not closed by
+    either of those. `pdf_detail` appends `UNSUPPORTED_CLAUSE` only when some
+    harness is unsupported, so dropping the *last* unsupported name does not
+    shorten the clause, it removes it: the manifest then renders bare
+    `PDF_DETAIL`, which is a strict prefix of a page still naming the harness
+    that left. Dropping one of several is caught already, because the list is
+    comma-separated and full-stopped, so `Unsupported: A.` is not contained in
+    `Unsupported: A, B.`. Only the fall to zero hides, and it hides the whole
+    check: the roster line and the label are untouched by an unsupported entry
+    leaving, so `--check` exits 0 on a page advertising a dropped harness. A
+    matched detail must therefore not be the head of a longer one.
     """
     drift = []
     for expected in pdf_expectations(document):
@@ -341,7 +359,29 @@ def pdf_drift(document, shown):
         drift.append(
             f"the harness page shows a longer roster than {pdf_roster_line(document)!r}"
         )
+    detail = _normalise(pdf_detail(document))
+    if detail in shown and not _terminal(shown, detail):
+        drift.append(
+            "the harness page shows an unsupported list the manifest does not render"
+        )
     return drift
+
+
+def _terminal(shown, detail):
+    """Whether some occurrence of `detail` is not the head of a longer detail.
+
+    The same shape as `_bounded`, against the other optional tail. The clause is
+    rebuilt with its surrounding spaces rather than passed through `_normalise`,
+    which strips them; getting that wrong fails the same silent way, by never
+    firing.
+    """
+    clause = f" {_normalise(UNSUPPORTED_CLAUSE)} "
+    index = shown.find(detail)
+    while index >= 0:
+        if not shown[index + len(detail) :].startswith(clause):
+            return True
+        index = shown.find(detail, index + 1)
+    return False
 
 
 def _bounded(shown, line):
@@ -504,15 +544,27 @@ def write(
     The PDF is always rebuilt and so is always written. The two Markdown
     surfaces are written only where the rendered text differs from what is
     already there, so a no-op render leaves their modification times alone.
+
+    Every credential sweep runs before any surface is written. Sweeping each
+    body as its turn came round meant the refusal was only as early as the
+    surface that carried the token: a blocker reaches the guide body and no
+    other, and a blocker is exactly where captured client output lands, so
+    `refuse_leak` fired after the README had already been rewritten from a
+    manifest the renderer went on to refuse. No token reached disk either way,
+    the guide and the PDF being the surfaces that never got written, but one
+    surface was left regenerated and two stale, which is the drift the next
+    `--check` reports rather than the closed write this promises.
     """
     document = load_manifest(manifest)
-    refuse_leak("harness page", " ".join(pdf_expectations(document)))
-    written = []
-    for path, body in (
+    surfaces = (
         (README_PATH if readme is None else Path(readme), readme_block(document)),
         (GUIDE_PATH if guide is None else Path(guide), guide_block(document)),
-    ):
+    )
+    refuse_leak("harness page", " ".join(pdf_expectations(document)))
+    for path, body in surfaces:
         refuse_leak(f"{path.name} region", body)
+    written = []
+    for path, body in surfaces:
         text = _read_surface(path)
         rendered = rendered_surface(text, body, path)
         if rendered != text:
