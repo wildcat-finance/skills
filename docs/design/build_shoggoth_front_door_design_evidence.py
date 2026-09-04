@@ -27,7 +27,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 
 SCHEMA = "protasis-design-evidence/v1"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -126,6 +128,76 @@ SELECTED = "per-skill-demo-ledger"
 SELECTION_RULE = "unique-frontier"
 
 
+def _output_flags(*, directory: bool) -> int:
+    """Return the flags required for confined, no-follow output access."""
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    directory_only = getattr(os, "O_DIRECTORY", None)
+    if not isinstance(no_follow, int) or no_follow == 0:
+        raise SystemExit("platform lacks O_NOFOLLOW for confined output")
+    if directory and (
+        not isinstance(directory_only, int) or directory_only == 0
+    ):
+        raise SystemExit("platform lacks O_DIRECTORY for confined output")
+
+    flags = no_follow | getattr(os, "O_CLOEXEC", 0)
+    if directory:
+        flags |= os.O_RDONLY | directory_only
+    else:
+        flags |= os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    return flags
+
+
+def _open_output_directory(out: Path) -> int:
+    """Open the caller's output root without following its final component."""
+    try:
+        out.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(out, _output_flags(directory=True))
+    except OSError as exc:
+        raise SystemExit(f"cannot open output directory {out}: {exc}") from exc
+    try:
+        if not stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            raise SystemExit(f"output target is not a directory: {out}")
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _require_absent(parent_fd: int, name: str, *, display: Path) -> None:
+    """Refuse every existing directory entry, including a dangling symlink."""
+    try:
+        os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise SystemExit(f"cannot inspect output target {display}: {exc}") from exc
+    raise SystemExit(f"refusing to overwrite an existing target: {display}")
+
+
+def _write_new(parent_fd: int, name: str, text: str, *, display: Path) -> None:
+    """Create one new regular output through the already-open parent."""
+    try:
+        descriptor = os.open(
+            name,
+            _output_flags(directory=False),
+            0o644,
+            dir_fd=parent_fd,
+        )
+    except OSError as exc:
+        raise SystemExit(f"refusing to overwrite output target {display}: {exc}") from exc
+    try:
+        remaining = memoryview(text.encode("utf-8"))
+        while remaining:
+            written = os.write(descriptor, remaining)
+            if written <= 0:
+                raise OSError("write made no progress")
+            remaining = remaining[written:]
+    except OSError as exc:
+        raise SystemExit(f"cannot write output target {display}: {exc}") from exc
+    finally:
+        os.close(descriptor)
+
+
 def dump(obj: object) -> str:
     """Serialise one artefact.
 
@@ -168,65 +240,79 @@ def build(out: Path) -> dict:
     """Write the record and its reports below `out`, and return the record."""
     record_path = out / "design-evidence.json"
     reports = out / "reports"
-    for target in (record_path, reports):
-        if target.exists():
-            raise SystemExit(f"refusing to overwrite an existing target: {target}")
-    reports.mkdir(parents=True)
-
-    results: list[dict] = []
-    for candidate_id, _summary in CANDIDATES:
-        for cid, _concern, kind, _owner, unit, _cmp, threshold in SELECTION:
-            value = VALUES[candidate_id][cid]
-            text = dump({
-                "schema": REPORT_SCHEMA,
-                "candidate": candidate_id,
-                "criterion": cid,
-                "value": value,
-                "unit": unit,
-                "command": COMMAND,
-                "exit": 0,
-            })
-            name = f"{candidate_id}-{cid}.json"
-            (reports / name).write_text(text, encoding="utf-8")
-            # A metric carries no threshold, so it records its measurement
-            # rather than a verdict; a gate is compared with its threshold.
-            state = "pass" if kind == "metric" else (
-                "pass" if value == threshold else "fail"
+    out_fd = _open_output_directory(out)
+    reports_fd = -1
+    try:
+        _require_absent(out_fd, record_path.name, display=record_path)
+        _require_absent(out_fd, reports.name, display=reports)
+        try:
+            os.mkdir(reports.name, 0o755, dir_fd=out_fd)
+            reports_fd = os.open(
+                reports.name,
+                _output_flags(directory=True),
+                dir_fd=out_fd,
             )
-            results.append({
-                "candidate": candidate_id,
-                "criterion": cid,
-                "state": state,
-                "report": {
-                    "path": f"reports/{name}",
-                    "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
-                },
-            })
-        for cid, _concern, _owner, blocks, resolver in CONFORMANCE:
-            results.append({
-                "candidate": candidate_id,
-                "criterion": cid,
-                "state": "pending",
-                "resolver": resolver,
-                "report": f"reports/{candidate_id}-{cid}.json",
-                "blocks": blocks,
-            })
+        except OSError as exc:
+            raise SystemExit(f"cannot create reports directory {reports}: {exc}") from exc
 
-    record = {
-        "schema": SCHEMA,
-        "candidates": [
-            {"id": cid, "summary": summary} for cid, summary in CANDIDATES
-        ],
-        "criteria": criteria(),
-        "results": results,
-        "selection": {
-            "candidate": SELECTED,
-            "rule": SELECTION_RULE,
-            "policy_ref": None,
-        },
-    }
-    record_path.write_text(dump(record), encoding="utf-8")
-    return record
+        results: list[dict] = []
+        for candidate_id, _summary in CANDIDATES:
+            for cid, _concern, kind, _owner, unit, _cmp, threshold in SELECTION:
+                value = VALUES[candidate_id][cid]
+                text = dump({
+                    "schema": REPORT_SCHEMA,
+                    "candidate": candidate_id,
+                    "criterion": cid,
+                    "value": value,
+                    "unit": unit,
+                    "command": COMMAND,
+                    "exit": 0,
+                })
+                name = f"{candidate_id}-{cid}.json"
+                _write_new(reports_fd, name, text, display=reports / name)
+                # A metric carries no threshold, so it records its measurement
+                # rather than a verdict; a gate is compared with its threshold.
+                state = "pass" if kind == "metric" else (
+                    "pass" if value == threshold else "fail"
+                )
+                results.append({
+                    "candidate": candidate_id,
+                    "criterion": cid,
+                    "state": state,
+                    "report": {
+                        "path": f"reports/{name}",
+                        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                    },
+                })
+            for cid, _concern, _owner, blocks, resolver in CONFORMANCE:
+                results.append({
+                    "candidate": candidate_id,
+                    "criterion": cid,
+                    "state": "pending",
+                    "resolver": resolver,
+                    "report": f"reports/{candidate_id}-{cid}.json",
+                    "blocks": blocks,
+                })
+
+        record = {
+            "schema": SCHEMA,
+            "candidates": [
+                {"id": cid, "summary": summary} for cid, summary in CANDIDATES
+            ],
+            "criteria": criteria(),
+            "results": results,
+            "selection": {
+                "candidate": SELECTED,
+                "rule": SELECTION_RULE,
+                "policy_ref": None,
+            },
+        }
+        _write_new(out_fd, record_path.name, dump(record), display=record_path)
+        return record
+    finally:
+        if reports_fd >= 0:
+            os.close(reports_fd)
+        os.close(out_fd)
 
 
 def main() -> int:

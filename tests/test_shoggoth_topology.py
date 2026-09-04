@@ -24,6 +24,7 @@ specimen identity set with a live one.
 from pathlib import Path
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -35,6 +36,9 @@ sys.path.insert(0, str(ROOT / "scripts"))  # noqa: E402  (locates shoggoth_topol
 import shoggoth_topology  # noqa: E402
 
 SPECIMENS = ROOT / "tests" / "fixtures" / "shoggoth-topology"
+DESIGN_GENERATOR = (
+    ROOT / "docs" / "design" / "build_shoggoth_front_door_design_evidence.py"
+)
 
 # The one live structural constant this repository declares about itself: the
 # phase host and the entry skill that stands in for its own name.
@@ -517,6 +521,12 @@ class RefusalTests(unittest.TestCase):
                             shoggoth_topology._open_confined_directory(root, ())
                     self.assertEqual(caught.exception.code, "unsupported-platform")
 
+    def test_platform_without_nonblocking_file_open_is_refused(self):
+        with patch.object(shoggoth_topology.os, "O_NONBLOCK", 0):
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                shoggoth_topology._open_flags(directory=False)
+        self.assertEqual(caught.exception.code, "unsupported-platform")
+
     def test_regular_file_open_is_nonblocking_before_type_check(self):
         if not getattr(shoggoth_topology.os, "O_NONBLOCK", 0):
             self.skipTest("platform does not expose O_NONBLOCK")
@@ -552,6 +562,29 @@ class RefusalTests(unittest.TestCase):
             with self.assertRaises(shoggoth_topology.TopologyError) as caught:
                 self._read(root)
         self.assertEqual(caught.exception.code, "unsafe-path")
+
+
+class DesignEvidenceGeneratorBoundaryTests(unittest.TestCase):
+    def test_a_dangling_record_symlink_cannot_escape_the_output_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = root / "out"
+            out.mkdir()
+            escaped = root / "escaped.json"
+            (out / "design-evidence.json").symlink_to(escaped)
+
+            completed = subprocess.run(
+                [sys.executable, str(DESIGN_GENERATOR), "--out", str(out)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertFalse(escaped.exists())
+            self.assertFalse((out / "reports").exists())
 
 
 class LiveTreeAgreementTests(unittest.TestCase):

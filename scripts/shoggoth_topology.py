@@ -193,6 +193,14 @@ def _open_flags(*, directory: bool) -> int:
             "unsupported-platform",
             "platform lacks O_DIRECTORY for confined traversal",
         )
+    nonblocking = getattr(os, "O_NONBLOCK", None)
+    if not directory and (
+        not isinstance(nonblocking, int) or nonblocking == 0
+    ):
+        raise TopologyError(
+            "unsupported-platform",
+            "platform lacks O_NONBLOCK for bounded regular-file admission",
+        )
 
     flags = os.O_RDONLY | no_follow
     close_on_exec = getattr(os, "O_CLOEXEC", 0)
@@ -203,9 +211,7 @@ def _open_flags(*, directory: bool) -> int:
     else:
         # A fixed manifest leaf can still be a FIFO. Non-blocking open lets the
         # regular-file check refuse it instead of waiting for a writer forever.
-        nonblocking = getattr(os, "O_NONBLOCK", 0)
-        if isinstance(nonblocking, int):
-            flags |= nonblocking
+        flags |= nonblocking
     return flags
 
 
