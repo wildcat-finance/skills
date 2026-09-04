@@ -4,7 +4,7 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "797a2aa71214a8cf5f21225c18f89ec21a5fca6ad5fe1d8bb151bb68fc8e78d4"
+      "sha256": "50db4948ab96bce60a73a97d061e1401dd60c0103e428068ce9dc2068c888249"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
@@ -29,7 +29,7 @@
       },
       {
         "path": "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
-        "sha256": "2897a223b06ec2b7dbc3cd1bcf9089ba622a1cba807e887eb8bfa429283b9dde"
+        "sha256": "6bfb5ad4293f3c1151ce0e24a0217768f019425f3b88f4c9eed0b79a4cd5bf0d"
       }
     ],
     "fixtures": [
@@ -122,7 +122,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "f924634552ce593618f80dfb8aa49515474eba617b98b8050d876cd6f5bc22cc",
+      "sha256": "5dcd25863c25a5a203e61577319351cb50108f4109c141cb9f24060c5ea90164",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
