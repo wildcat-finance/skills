@@ -320,7 +320,7 @@
     {"path": "docs/dead-code", "scope": "dead-code"},
     {"path": "docs/dead-code-checkout-suppressions", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
-    {"path": "docs/decisions/ADR-069-bind-promise-obligations-to-gates.md", "scope": "promise-machine"},
+    {"path": "docs/decisions/ADR-076-bind-promise-obligations-to-gates.md", "scope": "promise-machine"},
     {"path": "docs/promise-machine/obligation-gates", "scope": "promise-machine"},
     {"path": "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-064-check-current-dead-code-suppressions-separately.md", "scope": "dead-code"},

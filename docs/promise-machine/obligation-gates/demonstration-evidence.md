@@ -240,7 +240,7 @@ commit message stands as written history.
 ## References
 
 - Study and runbook: [`study.md`](study.md), [`runbook.md`](runbook.md)
-- Standing decision record: `docs/decisions/ADR-069-bind-promise-obligations-to-gates.md`
+- Standing decision record: `docs/decisions/ADR-076-bind-promise-obligations-to-gates.md`
 - Evaluation packet contract and the run it verifies:
   [`evaluation-run.json`](evaluation-run.json),
   [`evaluation-answers.json`](evaluation-answers.json)

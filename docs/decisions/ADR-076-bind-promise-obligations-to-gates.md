@@ -1,4 +1,4 @@
-# ADR-069: Bind explicit Promise Machine obligations to production gates
+# ADR-076: Bind explicit Promise Machine obligations to production gates
 
 ## Status
 
