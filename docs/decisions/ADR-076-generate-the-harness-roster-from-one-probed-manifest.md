@@ -125,7 +125,7 @@ a roster that cannot outrun its evidence.
 
 Field names in `harness-classification/v1` are now read by the schema, the
 manifest, the renderer, three wording surfaces and the suite. Renaming one is a
-change to all six at once, and needs a successor record rather than an edit.
+change to all seven at once, and needs a successor record rather than an edit.
 
 Five harnesses ship classified `manual route` or `unsupported` with a named
 blocker rather than as untested blanks. A reader learns what was tried and why
@@ -141,7 +141,8 @@ a silent edit to either.
 
 This record was written as ADR-074, which was free when the run checked. Pull
 request 1181 merged `ADR-074-shape-every-written-record-through-sapheneia.md`
-into `main` about ninety minutes later. `tests/test_decision_records.py`
+into `main` fifty-five minutes later, at 2026-09-04T01:40:30Z against this
+record's own commit at 00:45:16Z. `tests/test_decision_records.py`
 compares numbers against the default branch, so the collision turned the step's
 own exit gate red. ADR-075 was already claimed by open pull request 1185, so
 this record took 076. Issue 888 is rebuilding ADR numbering to assign at merge
@@ -155,7 +156,8 @@ Study amendments are append-only, and Hypomnema refuses a study that declares
 more than one design bridge home, so the block cannot be repointed and cannot be
 removed. The study at `docs/atlas-harness-handoff/study.md` therefore names a
 file that does not exist, and `hypomnema --study` reports H008 against it. The
-repository suite does not run study mode, so nothing here goes red on it.
+repository suite exercises study mode only against its own fixtures and never
+against this study, so nothing here goes red on it.
 
 The decision the bridge was meant to reach is this file. Anyone following that
 block should read it here.
