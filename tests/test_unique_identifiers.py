@@ -19,6 +19,7 @@ somebody found a check inconvenient.
 from __future__ import annotations
 
 import collections
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -74,6 +75,43 @@ def declared_promises(text):
 
 def coverage_document():
     return json.loads(COVERAGE.read_text(encoding="utf-8"))
+
+
+def records_with(document, field):
+    """Every object anywhere in the coverage file carrying `field`, with its location.
+
+    The walk is recursive and blind to the shape of what holds a record, on
+    purpose. Its predecessors read one level of named fields off each capability
+    entry and skipped anything a list held, so `run_observation_capture.tests` --
+    a list where the other capabilities use an object -- recorded a digest that
+    no check recomputed. `tests/test_run_observation_capture.py` then drifted
+    from its recorded bytes in 62a0cb87, which rebound nothing, and every check
+    went on reporting clean until an unrelated re-pin sweep read the file.
+
+    Reaching a record was conditional on two things beyond the record itself:
+    the entry above it carrying a `promise_id`, which `run_observation_binding`
+    does not, and the field holding it being an object rather than a list. A
+    walker that has to be taught each new container is the honour system with
+    extra steps, which is the failure the digest check below already names for
+    hand-rolled per-capability tests.
+
+    The location is returned as a dotted trail so a failure names the record
+    rather than only the file, because two entries can bind one path.
+    """
+    found = []
+
+    def walk(node, trail):
+        if isinstance(node, dict):
+            if field in node:
+                found.append((".".join(trail) or "<root>", node))
+            for name in sorted(node):
+                walk(node[name], trail + [name])
+        elif isinstance(node, list):
+            for index, item in enumerate(node):
+                walk(item, trail + [f"[{index}]"])
+
+    walk(document, [])
+    return found
 
 
 def bound_promise_ids(document):
@@ -163,46 +201,82 @@ class PromiseIdentifiers(unittest.TestCase):
         )
 
     def test_every_bound_capability_digest_matches_the_file_it_names(self):
-        """Recompute every capability digest, rather than trusting one per capability.
+        """Recompute every digest the register records, wherever it sits.
 
-        The digests in a capability entry were checked by a test written for that
-        one capability: `test_run_observation_coverage_binds_the_exact_release_surface`
+        The digests in a capability entry were once checked by a test written for
+        that one capability: `test_run_observation_coverage_binds_the_exact_release_surface`
         covers run-observation and nothing covered contributor-ranking, so its
         entry could name any digest at all and every check still reported clean.
         Enforcement that depends on somebody remembering to write the next
         hand-rolled test is the honour system with extra steps.
 
-        This recomputes them all, so a capability added later is bound by
-        construction.
-        """
-        import hashlib
+        Replacing that with a walk over named object fields under a `promise_id`
+        moved the same failure one level up rather than removing it. Nineteen of
+        the register's 126 digests fell outside those two conditions, and
+        seventeen were caught only because somebody had written the capability's
+        own test after all: nine by `assert_bound_paths` in
+        `tests/test_agent_instruction.py`, eight by
+        `test_run_observation_binding_coverage_binds_the_exact_release_surface`
+        in `tests/test_promise_machine_contract.py`.
 
+        The remaining two were `run_observation_capture.tests`, whose capability
+        test binds only its `reporter`. Zeroing both digests left the root suite
+        green at 166d3e21, and one of them was already stale. skills#1205.
+
+        `records_with` reaches a record by its own contents instead, so nothing
+        in this file records a digest that goes unchecked, and
+        `test_the_digest_walk_reaches_every_digest_the_register_records` is what
+        holds that true.
+        """
         checked, wrong = 0, []
-        for key, value in sorted(coverage_document().items()):
-            if not isinstance(value, dict) or "promise_id" not in value:
+        for trail, record in records_with(coverage_document(), "sha256"):
+            # Capability entries name their file `path` and the runtime bindings
+            # name it `source`. Both record a digest over whole file bytes, so
+            # both are recomputed the same way.
+            named, recorded = record.get("path") or record.get("source"), record["sha256"]
+            if not isinstance(named, str) or not isinstance(recorded, str):
+                wrong.append(f"{trail}: records a digest and names no file")
                 continue
-            for field, entry in sorted(value.items()):
-                if not isinstance(entry, dict):
-                    continue
-                path, recorded = entry.get("path"), entry.get("sha256")
-                if not path or not recorded:
-                    continue
-                target = REPOSITORY_ROOT / path
-                if not target.is_file():
-                    wrong.append(f"{key}.{field}: {path} is absent")
-                    continue
-                actual = hashlib.sha256(target.read_bytes()).hexdigest()
-                checked += 1
-                if actual != recorded:
-                    wrong.append(
-                        f"{key}.{field}: {path} is {actual[:12]} and the entry "
-                        f"records {recorded[:12]}"
-                    )
-        self.assertTrue(checked, "no capability digests were checked, so this proves nothing")
+            target = REPOSITORY_ROOT / named
+            if not target.is_file():
+                wrong.append(f"{trail}: {named} is absent")
+                continue
+            actual = hashlib.sha256(target.read_bytes()).hexdigest()
+            checked += 1
+            if actual != recorded:
+                wrong.append(
+                    f"{trail}: {named} is {actual[:12]} and the entry "
+                    f"records {recorded[:12]}"
+                )
+        self.assertTrue(checked, "no digests were checked, so this proves nothing")
         self.assertEqual(
             wrong, [],
-            "a capability entry records a digest that does not match the file it "
-            f"names, so the promise is bound to bytes that have changed: {wrong}",
+            "an entry records a digest that does not match the file it names, so "
+            "the promise is bound to bytes that have changed. Nothing regenerates "
+            "tests/promise_machine_coverage.json: recompute with `shasum -a 256 "
+            "<path>` and write the value into the matching sha256, as the last "
+            f"edit before you commit rather than the first: {wrong}",
+        )
+
+    def test_the_digest_walk_reaches_every_digest_the_register_records(self):
+        """The check above proves nothing about a record it does not reach.
+
+        That is not a hypothetical: reaching a record used to depend on the shape
+        of the field holding it, and the digest that went stale was one the walk
+        never visited, so its own count told it nothing was wrong.
+
+        The count here is lexical rather than structural, so it does not share a
+        traversal with the thing it is checking. A filter reinstated inside
+        `records_with` narrows that walk and fails here, instead of quietly
+        narrowing what the digest check covers.
+        """
+        recorded = COVERAGE.read_text(encoding="utf-8").count('"sha256"')
+        reached = len(records_with(coverage_document(), "sha256"))
+        self.assertEqual(
+            reached, recorded,
+            f"the digest walk reaches {reached} of the {recorded} digests "
+            "tests/promise_machine_coverage.json records, so the difference is "
+            "bound to bytes nothing recomputes",
         )
 
     def test_every_bound_capability_names_its_fixtures(self):
@@ -223,8 +297,6 @@ class PromiseIdentifiers(unittest.TestCase):
                     missing.append(f"{key}: {path} is absent")
                     continue
                 if isinstance(fixture, dict) and fixture.get("sha256"):
-                    import hashlib
-
                     actual = hashlib.sha256(target.read_bytes()).hexdigest()
                     if actual != fixture["sha256"]:
                         missing.append(
@@ -234,21 +306,32 @@ class PromiseIdentifiers(unittest.TestCase):
         self.assertEqual(missing, [], f"fixtures named but absent: {missing}")
 
     def test_every_bound_capability_selector_exists_in_its_test_file(self):
-        """A selector naming no test binds the promise to nothing."""
+        """A selector naming no test binds the promise to nothing.
+
+        Read through the same walk as the digests, and for the same reason: this
+        read `value["tests"]` as an object under a `promise_id`, so two of the
+        register's nine selector lists were never opened. A bogus selector
+        planted in `run_observation_capture.tests[1]` left the root suite green
+        at 166d3e21. The eleven selectors those two lists name all resolve, but
+        nothing was checking that they did.
+
+        An absent file is a failure here rather than a skip. It was a `continue`
+        before, which reported a missing test file as a clean selector list.
+        """
         stray = []
-        for key, value in sorted(coverage_document().items()):
-            if not isinstance(value, dict) or "promise_id" not in value:
+        for trail, record in records_with(coverage_document(), "selectors"):
+            named = record.get("path")
+            if not isinstance(named, str):
+                stray.append(f"{trail}: records selectors and names no test file")
                 continue
-            tests = value.get("tests")
-            if not isinstance(tests, dict) or not tests.get("path"):
-                continue
-            target = REPOSITORY_ROOT / tests["path"]
+            target = REPOSITORY_ROOT / named
             if not target.is_file():
+                stray.append(f"{trail}: {named} is absent")
                 continue
             source = target.read_text(encoding="utf-8")
-            for selector in tests.get("selectors", []) or []:
+            for selector in record["selectors"] or []:
                 if f"def {selector}(" not in source:
-                    stray.append(f"{key}: {selector} is not defined in {tests['path']}")
+                    stray.append(f"{trail}: {selector} is not defined in {named}")
         self.assertEqual(stray, [], f"selectors naming no test: {stray}")
 
     def test_every_bound_capability_names_a_document_that_exists(self):
