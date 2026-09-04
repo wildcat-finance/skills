@@ -140,8 +140,8 @@
       "name": "sapheneia",
       "displayName": "Sapheneia",
       "source": "./plugins/sapheneia",
-      "description": "AuDHD-shaped replies, audit records, issues and comments.",
-      "version": "0.1.2",
+      "description": "AuDHD-shaped replies and every record the agent writes.",
+      "version": "0.2.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
