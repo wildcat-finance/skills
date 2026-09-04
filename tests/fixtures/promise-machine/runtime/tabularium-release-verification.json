@@ -8,7 +8,7 @@
             "id": "promise-owner:tabularium-release-verification",
             "reference": {
               "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-              "sha256": "79c5efc446cdcb4402df553efca76cca93790cc6ebd20db8775288b65ea7dbee"
+              "sha256": "708461d5ed40dca3949a50425f5fabc6942018594c7f6d16f6848483f4ca9018"
             }
           },
           "binding": {
@@ -25,13 +25,13 @@
           "inspectable": {
             "evidence_class": "checked",
             "path": "plugins/tabularium/tests/test_release.py",
-            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+            "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
           },
           "references": [
             {
               "evidence_class": "checked",
               "path": "plugins/tabularium/tests/test_release.py",
-              "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+              "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -53,7 +53,7 @@
           "id": "promise-owner:tabularium-release-verification",
           "reference": {
             "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-            "sha256": "79c5efc446cdcb4402df553efca76cca93790cc6ebd20db8775288b65ea7dbee"
+            "sha256": "708461d5ed40dca3949a50425f5fabc6942018594c7f6d16f6848483f4ca9018"
           }
         },
         "evidence_classes": [
@@ -63,7 +63,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/tabularium/tests/test_release.py",
-            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+            "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
           }
         ],
         "exception": {
@@ -72,7 +72,7 @@
         "inspectable_evidence": {
           "evidence_class": "checked",
           "path": "plugins/tabularium/tests/test_release.py",
-          "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+          "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
         },
         "promise_id": "tabularium-release-verification",
         "scope": "structural binding for tabularium-release-verification",
@@ -99,7 +99,7 @@
             "id": "promise-owner:tabularium-release-verification",
             "reference": {
               "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-              "sha256": "79c5efc446cdcb4402df553efca76cca93790cc6ebd20db8775288b65ea7dbee"
+              "sha256": "708461d5ed40dca3949a50425f5fabc6942018594c7f6d16f6848483f4ca9018"
             }
           },
           "binding": {
@@ -116,16 +116,16 @@
           "inspectable": {
             "evidence_class": "checked",
             "path": "plugins/tabularium/tests/test_release.py",
-            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+            "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
           },
           "references": [
             {
               "evidence_class": "checked",
               "path": "plugins/tabularium/tests/test_release.py",
-              "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+              "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
             }
           ],
-          "source_digest": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+          "source_digest": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754",
           "transition": {
             "action": "structurally bind tabularium-release-verification without running its domain operation",
             "operation_ran": false,
@@ -144,7 +144,7 @@
           "id": "promise-owner:tabularium-release-verification",
           "reference": {
             "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-            "sha256": "79c5efc446cdcb4402df553efca76cca93790cc6ebd20db8775288b65ea7dbee"
+            "sha256": "708461d5ed40dca3949a50425f5fabc6942018594c7f6d16f6848483f4ca9018"
           }
         },
         "evidence_classes": [
@@ -154,7 +154,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/tabularium/tests/test_release.py",
-            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+            "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
           }
         ],
         "exception": {
@@ -163,11 +163,11 @@
         "inspectable_evidence": {
           "evidence_class": "checked",
           "path": "plugins/tabularium/tests/test_release.py",
-          "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
+          "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
         },
         "promise_id": "tabularium-release-verification",
         "scope": "structural binding for tabularium-release-verification",
-        "source_digest": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+        "source_digest": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754",
         "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites",
         "transition": {
           "action": "structurally bind tabularium-release-verification without running its domain operation",

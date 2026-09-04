@@ -132,7 +132,7 @@
   "composition": {
     "fixture": {
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "4513dd956d6faa04c3852428313651b847b789a059a2a9236647e127608d99f0"
+      "sha256": "112f898050ceebf1236a03f6fc4dbe79f0411e9f53c1ce2a0aff94e8ec42e053"
     },
     "relations": [
       {
@@ -3758,7 +3758,10 @@
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      }
+      },
+      "group": "executable",
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
     },
     {
       "cases": {
@@ -4138,59 +4141,119 @@
     },
     "anamnesis-corpus-curation": {
       "bindings": {
-        "evidence_classes": "checked, recomputed and recorded values joined to the canonical Evidence classes field",
-        "evidence_references": "source locators, native fields and the mapper",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "the admitted sources and the named curation policy",
-        "subject": "assertion id and kind",
-        "transition": "successful curate status joined to the canonical Authorises field",
-        "unknowns": "counted unknowns and the quarantine list, kept distinct from none"
+        "evidence_classes": "native_document.anamnesis_corpus_curation.evidence.classes",
+        "evidence_references": "native_document.anamnesis_corpus_curation.evidence.references",
+        "exception": "native_document.anamnesis_corpus_curation.exception_state",
+        "promise_id": "native_document.anamnesis_corpus_curation.promise",
+        "scope": "native_document.anamnesis_corpus_curation.target.scope",
+        "source_digest": "native_document.anamnesis_corpus_curation.source.sha256",
+        "subject": "native_document.anamnesis_corpus_curation.target.subject",
+        "transition": "native_document.anamnesis_corpus_curation.authorised_transition",
+        "unknowns": "native_document.anamnesis_corpus_curation.open_unknowns"
       },
-      "sha256": "c49b552b1747f95a1dff894fefd4cfad7d9a1fb3e2903da38130edbc29aba5ef",
-      "source": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-curation.json",
+        "selector": "negative",
+        "sha256": "8d5d3c6da6c4269c7da4a1eb2dcea3d939519ab64995dd5d2d05a8473011f13f"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-curation.json",
+        "selector": "positive",
+        "sha256": "8d5d3c6da6c4269c7da4a1eb2dcea3d939519ab64995dd5d2d05a8473011f13f"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_one_remediation_can_address_several_findings",
+      "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35",
+      "source": "plugins/anamnesis/tests/test_s2_curation.py"
     },
     "anamnesis-corpus-release": {
       "bindings": {
-        "evidence_classes": "checked, recomputed and recorded values joined to the canonical Evidence classes field",
-        "evidence_references": "sources, components and policy",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "the components the manifest names",
-        "subject": "release_id and component paths",
-        "transition": "successful release and verify status joined to the canonical Authorises field",
-        "unknowns": "the manifest's unknowns map and its exclusions"
+        "evidence_classes": "native_document.anamnesis_corpus_release.evidence.classes",
+        "evidence_references": "native_document.anamnesis_corpus_release.evidence.references",
+        "exception": "native_document.anamnesis_corpus_release.exception_state",
+        "promise_id": "native_document.anamnesis_corpus_release.promise",
+        "scope": "native_document.anamnesis_corpus_release.target.scope",
+        "source_digest": "native_document.anamnesis_corpus_release.source.sha256",
+        "subject": "native_document.anamnesis_corpus_release.target.subject",
+        "transition": "native_document.anamnesis_corpus_release.authorised_transition",
+        "unknowns": "native_document.anamnesis_corpus_release.open_unknowns"
       },
-      "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
-      "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-release.json",
+        "selector": "negative",
+        "sha256": "2e7b61e42c295ecee16617b3158bc9832bb120a450c349b84a50771ba47d532c"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-release.json",
+        "selector": "positive",
+        "sha256": "2e7b61e42c295ecee16617b3158bc9832bb120a450c349b84a50771ba47d532c"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_a_release_verifies_from_its_own_bytes",
+      "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35",
+      "source": "plugins/anamnesis/tests/test_s2_curation.py"
     },
     "anamnesis-deterministic-rebuild": {
       "bindings": {
-        "evidence_classes": "checked and recomputed values joined to the canonical Evidence classes field",
-        "evidence_references": "the two builds' components and their compared bytes",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "the specimen's declared inputs and its curation policy",
-        "subject": "release_id and the compared component set",
-        "transition": "successful verify-rebuild status joined to the canonical Authorises field",
-        "unknowns": "platform and interpreter dependence, stated as outside the claim"
+        "evidence_classes": "native_document.anamnesis_deterministic_rebuild.evidence.classes",
+        "evidence_references": "native_document.anamnesis_deterministic_rebuild.evidence.references",
+        "exception": "native_document.anamnesis_deterministic_rebuild.exception_state",
+        "promise_id": "native_document.anamnesis_deterministic_rebuild.promise",
+        "scope": "native_document.anamnesis_deterministic_rebuild.target.scope",
+        "source_digest": "native_document.anamnesis_deterministic_rebuild.source.sha256",
+        "subject": "native_document.anamnesis_deterministic_rebuild.target.subject",
+        "transition": "native_document.anamnesis_deterministic_rebuild.authorised_transition",
+        "unknowns": "native_document.anamnesis_deterministic_rebuild.open_unknowns"
       },
-      "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
-      "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-deterministic-rebuild.json",
+        "selector": "negative",
+        "sha256": "56866d97afe66a5d614207658ecafffcce9d6fe8349d5cc2de99c8a945254693"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-deterministic-rebuild.json",
+        "selector": "positive",
+        "sha256": "56866d97afe66a5d614207658ecafffcce9d6fe8349d5cc2de99c8a945254693"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_two_fresh_builds_agree_byte_for_byte",
+      "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7",
+      "source": "plugins/anamnesis/tests/test_s3_consumers.py"
     },
     "anamnesis-source-admission": {
       "bindings": {
-        "evidence_classes": "checked digest, recomputed size and recorded rights joined to the canonical Evidence classes field",
-        "evidence_references": "sources, provenance and rights",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "the policy's declared sources and records",
-        "subject": "source id, path and sha256",
-        "transition": "successful admit and admit-seed status joined to the canonical Authorises field",
-        "unknowns": "absent optional provenance and rights fields, kept distinct from none"
+        "evidence_classes": "native_document.anamnesis_source_admission.evidence.classes",
+        "evidence_references": "native_document.anamnesis_source_admission.evidence.references",
+        "exception": "native_document.anamnesis_source_admission.exception_state",
+        "promise_id": "native_document.anamnesis_source_admission.promise",
+        "scope": "native_document.anamnesis_source_admission.target.scope",
+        "source_digest": "native_document.anamnesis_source_admission.source.sha256",
+        "subject": "native_document.anamnesis_source_admission.target.subject",
+        "transition": "native_document.anamnesis_source_admission.authorised_transition",
+        "unknowns": "native_document.anamnesis_source_admission.open_unknowns"
       },
-      "sha256": "6349a4747ae141f18513cb5c9384f96320cd7e99dfbaa5aef34a69cec7607f23",
-      "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-source-admission.json",
+        "selector": "negative",
+        "sha256": "b3eaa51afdb07f08bf814c2e30dc8b293834c709ec1a2374fb292bd5464e751c"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/anamnesis-source-admission.json",
+        "selector": "positive",
+        "sha256": "b3eaa51afdb07f08bf814c2e30dc8b293834c709ec1a2374fb292bd5464e751c"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_the_pilot_admits_every_declared_source_and_record",
+      "sha256": "b6ba78b15de5769c24e75fe30203206ad431fc51436550a06f0363e056c8415f",
+      "source": "plugins/anamnesis/tests/test_s1_admission.py"
     },
     "ariadne-replay-command": {
       "bindings": {
@@ -4240,12 +4303,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
-        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
+        "sha256": "ffb84114eb50e5a71d87529d4fe47e2ce83df389828a6f38484a62934035793a"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
+        "sha256": "ffb84114eb50e5a71d87529d4fe47e2ce83df389828a6f38484a62934035793a"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",
@@ -4271,12 +4334,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
         "selector": "negative",
-        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
+        "sha256": "cfaeee3ca5e9d4defd9ea1618022b014897f99016e29fe34fe17c37445507b94"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
         "selector": "positive",
-        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
+        "sha256": "cfaeee3ca5e9d4defd9ea1618022b014897f99016e29fe34fe17c37445507b94"
       },
       "reader": "native-json-v1",
       "selector": "test_a_clean_report_promotes_and_the_release_is_active",
@@ -4285,73 +4348,148 @@
     },
     "dokimasia-disposition-closure": {
       "bindings": {
-        "evidence_classes": "checked for the vocabulary, the oracles and the digest currency, recorded for the ratio and the gap list, joined to the canonical Evidence classes field",
-        "evidence_references": "dispositions, each naming the scoped item it answers for and the oracle or reason it carries",
-        "exception": "canonical Exceptions field, which declares none",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "counts, caps, the recorded vocabulary and the separately stated numerator and denominator of the closure ratio, with confirmed dispositions, unconfirmed entries and undisposed items counted apart",
-        "subject": "the inventory and workbook sha256 pair the set was written against",
-        "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
-        "unknowns": "scoped items no disposition answered for, entries a person has not confirmed and which therefore answer for nothing, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
+        "evidence_classes": "native_document.dokimasia_disposition_closure.evidence.classes",
+        "evidence_references": "native_document.dokimasia_disposition_closure.evidence.references",
+        "exception": "native_document.dokimasia_disposition_closure.exception_state",
+        "promise_id": "native_document.dokimasia_disposition_closure.promise",
+        "scope": "native_document.dokimasia_disposition_closure.target.scope",
+        "source_digest": "native_document.dokimasia_disposition_closure.source.sha256",
+        "subject": "native_document.dokimasia_disposition_closure.target.subject",
+        "transition": "native_document.dokimasia_disposition_closure.authorised_transition",
+        "unknowns": "native_document.dokimasia_disposition_closure.open_unknowns"
       },
-      "sha256": "f8dad00c8c30cacdab0ad71f7d0a7feadb18a713969d7cc0d55c454dcc884ec8",
-      "source": "plugins/dokimasia/schemas/coverage-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-disposition-closure.json",
+        "selector": "negative",
+        "sha256": "9b3a581dc7d3cc1117f6de66b544198d6c6e2053f7589cc8d31c0373fb9f8623"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-disposition-closure.json",
+        "selector": "positive",
+        "sha256": "9b3a581dc7d3cc1117f6de66b544198d6c6e2053f7589cc8d31c0373fb9f8623"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_one_is_reached_only_when_nothing_is_unanswered",
+      "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0",
+      "source": "plugins/dokimasia/tests/test_reconcile.py"
     },
     "dokimasia-drafted-dispositions": {
       "bindings": {
-        "evidence_classes": "checked for the completeness of the draft, the emitted vocabulary and the preserved entries, recorded for the per-entry draft digest, joined to the canonical Evidence classes field",
-        "evidence_references": "dispositions, each naming the scoped item it was drafted for and the record field its reason was quoted from",
-        "exception": "canonical Exceptions field, which declares none",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "the drafted entries, their two draftable states and the declared reason cap, with every entry unconfirmed",
-        "subject": "the inventory and workbook sha256 pair the draft was written against",
-        "transition": "a complete draft a reviewer may edit, joined to the canonical Authorises field",
-        "unknowns": "whether a drafted state is the right one for its item, whether a drafted reason is a good reason, and whether anybody has read the draft"
+        "evidence_classes": "native_document.dokimasia_drafted_dispositions.evidence.classes",
+        "evidence_references": "native_document.dokimasia_drafted_dispositions.evidence.references",
+        "exception": "native_document.dokimasia_drafted_dispositions.exception_state",
+        "promise_id": "native_document.dokimasia_drafted_dispositions.promise",
+        "scope": "native_document.dokimasia_drafted_dispositions.target.scope",
+        "source_digest": "native_document.dokimasia_drafted_dispositions.source.sha256",
+        "subject": "native_document.dokimasia_drafted_dispositions.target.subject",
+        "transition": "native_document.dokimasia_drafted_dispositions.authorised_transition",
+        "unknowns": "native_document.dokimasia_drafted_dispositions.open_unknowns"
       },
-      "sha256": "ace9997023fdf4c73813f1ef2cead473f5fee07edef54f214f2481112cf23e6d",
-      "source": "plugins/dokimasia/schemas/dispositions-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-drafted-dispositions.json",
+        "selector": "negative",
+        "sha256": "c77238c1f79308dd9e04630a529d388a325eedec720620317038f4182905e4f2"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-drafted-dispositions.json",
+        "selector": "positive",
+        "sha256": "c77238c1f79308dd9e04630a529d388a325eedec720620317038f4182905e4f2"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_every_scoped_item_gets_exactly_one_entry",
+      "sha256": "c85e2e2e12649c76d46121307f7c6d224f1048941e07dac07faa2d4261321b4b",
+      "source": "plugins/dokimasia/tests/test_propose.py"
     },
     "dokimasia-pinned-scrutiny": {
       "bindings": {
-        "evidence_classes": "checked for the pinned commit and the deterministic digest, recorded for the closure figures and the gap counts, measured for the observed duration, joined to the canonical Evidence classes field",
-        "evidence_references": "the inventory, workbook and coverage digests, and the committed coverage record and scrutiny prose the run wrote",
-        "exception": "canonical Exceptions field, which declares none",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "the scoped count with its two sides, the separately stated numerator and denominator, and the observed duration beside its declared budget",
-        "subject": "the pinned application commit and the workbook label and sha256",
-        "transition": "a scrutiny whose result either matches an earlier one or names the identity that moved, joined to the canonical Authorises field",
-        "unknowns": "items carrying no disposition, and a moved result no identity explains, which is reported as unattributed"
+        "evidence_classes": "native_document.dokimasia_pinned_scrutiny.evidence.classes",
+        "evidence_references": "native_document.dokimasia_pinned_scrutiny.evidence.references",
+        "exception": "native_document.dokimasia_pinned_scrutiny.exception_state",
+        "promise_id": "native_document.dokimasia_pinned_scrutiny.promise",
+        "scope": "native_document.dokimasia_pinned_scrutiny.target.scope",
+        "source_digest": "native_document.dokimasia_pinned_scrutiny.source.sha256",
+        "subject": "native_document.dokimasia_pinned_scrutiny.target.subject",
+        "transition": "native_document.dokimasia_pinned_scrutiny.authorised_transition",
+        "unknowns": "native_document.dokimasia_pinned_scrutiny.open_unknowns"
       },
-      "sha256": "0baceaf58dd6f1a24acfcca9c3c3d91d53636d113026e0d9d2c8dfb1fc62b577",
-      "source": "plugins/dokimasia/schemas/scrutiny-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-pinned-scrutiny.json",
+        "selector": "negative",
+        "sha256": "f07e1ea2cd0d91b8500881bb17ad4a0f1a7039ac9e16dd617acc9619cd68ef62"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-pinned-scrutiny.json",
+        "selector": "positive",
+        "sha256": "f07e1ea2cd0d91b8500881bb17ad4a0f1a7039ac9e16dd617acc9619cd68ef62"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_two_scrutinies_of_the_same_inputs_agree",
+      "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4",
+      "source": "plugins/dokimasia/tests/test_demonstration.py"
     },
     "dokimasia-source-inventory": {
       "bindings": {
-        "evidence_classes": "checked for the compile and its exercised refusals, recorded for the digest, joined to the canonical Evidence classes field",
-        "evidence_references": "items, each naming the source file the rule recognised it from",
-        "exception": "canonical Exceptions field, which declares none",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "counts, scoped_items, rules and caps",
-        "subject": "subject label and commit",
-        "transition": "a compile whose two runs agree, joined to the canonical Authorises field",
-        "unknowns": "conventions the declared rules do not name, and client-side gates outside the declared name list"
+        "evidence_classes": "native_document.dokimasia_source_inventory.evidence.classes",
+        "evidence_references": "native_document.dokimasia_source_inventory.evidence.references",
+        "exception": "native_document.dokimasia_source_inventory.exception_state",
+        "promise_id": "native_document.dokimasia_source_inventory.promise",
+        "scope": "native_document.dokimasia_source_inventory.target.scope",
+        "source_digest": "native_document.dokimasia_source_inventory.source.sha256",
+        "subject": "native_document.dokimasia_source_inventory.target.subject",
+        "transition": "native_document.dokimasia_source_inventory.authorised_transition",
+        "unknowns": "native_document.dokimasia_source_inventory.open_unknowns"
       },
-      "sha256": "da92d7ae5231871131c375a0b074d0d8063c4da3b883c2e8a5541b8bd3e3fc2b",
-      "source": "plugins/dokimasia/schemas/inventory-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-source-inventory.json",
+        "selector": "negative",
+        "sha256": "5fe6164d502e4de939cce53feca98f6b7b65d5d4d7506ff71b3a169b024ac60c"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-source-inventory.json",
+        "selector": "positive",
+        "sha256": "5fe6164d502e4de939cce53feca98f6b7b65d5d4d7506ff71b3a169b024ac60c"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_the_record_carries_exactly_the_declared_keys",
+      "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4",
+      "source": "plugins/dokimasia/tests/test_inventory.py"
     },
     "dokimasia-workbook-lineage": {
       "bindings": {
-        "evidence_classes": "checked for the archive caps and the round trip, recorded for the digest, joined to the canonical Evidence classes field",
-        "evidence_references": "cases, each naming the sheet, row and identifier it was read from",
-        "exception": "canonical Exceptions field, which declares none",
-        "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "counts, caps, the lineage identifier, and what every sheet contributed including the ones that contributed nothing and why",
-        "subject": "subject label and workbook sha256",
-        "transition": "an import whose source rows rebuild, joined to the canonical Authorises field",
-        "unknowns": "statuses kept as written because no declared value matches, and rows no reviewer declared a split for"
+        "evidence_classes": "native_document.dokimasia_workbook_lineage.evidence.classes",
+        "evidence_references": "native_document.dokimasia_workbook_lineage.evidence.references",
+        "exception": "native_document.dokimasia_workbook_lineage.exception_state",
+        "promise_id": "native_document.dokimasia_workbook_lineage.promise",
+        "scope": "native_document.dokimasia_workbook_lineage.target.scope",
+        "source_digest": "native_document.dokimasia_workbook_lineage.source.sha256",
+        "subject": "native_document.dokimasia_workbook_lineage.target.subject",
+        "transition": "native_document.dokimasia_workbook_lineage.authorised_transition",
+        "unknowns": "native_document.dokimasia_workbook_lineage.open_unknowns"
       },
-      "sha256": "96916b226f910156a8fc3954ceb2187fc075286af0fdf66b3dbe804265b11b9c",
-      "source": "plugins/dokimasia/schemas/workbook-v1.json"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-workbook-lineage.json",
+        "selector": "negative",
+        "sha256": "579d803b9fbec7d8b21aaa1e29d94d11fb3179ad373064c2ec5fbb8559e9f1eb"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/dokimasia-workbook-lineage.json",
+        "selector": "positive",
+        "sha256": "579d803b9fbec7d8b21aaa1e29d94d11fb3179ad373064c2ec5fbb8559e9f1eb"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone",
+      "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9",
+      "source": "plugins/dokimasia/tests/test_workbook.py"
     },
     "elenchus-fixed-and-guarded": {
       "bindings": {
@@ -4428,12 +4566,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "negative",
-        "sha256": "24b21877cd99a9ed1b01288bb31a443422812b5a137ca52b839d9e4023b31832"
+        "sha256": "19bc0d625d2654b14674c24b1efefa604dd45c6c5cb946eba53fbb0629af4329"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "positive",
-        "sha256": "24b21877cd99a9ed1b01288bb31a443422812b5a137ca52b839d9e4023b31832"
+        "sha256": "19bc0d625d2654b14674c24b1efefa604dd45c6c5cb946eba53fbb0629af4329"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_restore_after_source_clone_loss",
@@ -4442,17 +4580,32 @@
     },
     "fiat-design-evidence": {
       "bindings": {
-        "evidence_classes": "checked record and report results plus recorded transition receipts joined to the canonical Evidence classes field",
-        "evidence_references": "record and report digests, selected candidate, runbook lock, transition spine, ledger events and replay result",
-        "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the design-evidence schema, controller transitions and canonical promise heading",
-        "scope": "one new design-evidence run and only the design transition reached so far",
-        "subject": "fixed candidate matrix, selected candidate, exact report bytes and current controller transition",
-        "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
-        "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
+        "evidence_classes": "native_document.fiat_design_evidence.evidence.classes",
+        "evidence_references": "native_document.fiat_design_evidence.evidence.references",
+        "exception": "native_document.fiat_design_evidence.exception_state",
+        "promise_id": "native_document.fiat_design_evidence.promise",
+        "scope": "native_document.fiat_design_evidence.target.scope",
+        "source_digest": "native_document.fiat_design_evidence.source.sha256",
+        "subject": "native_document.fiat_design_evidence.target.subject",
+        "transition": "native_document.fiat_design_evidence.authorised_transition",
+        "unknowns": "native_document.fiat_design_evidence.open_unknowns"
       },
-      "sha256": "4cda944fb8289008402a0fabbf05bebf2d0a3437c4945c7c00ba4a4c186c8c4e",
-      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-design-evidence.json",
+        "selector": "negative",
+        "sha256": "9075bb1cff1d54d58f47a549c7f4ddf1710d113653163dee67c39b252bdbb5bf"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-design-evidence.json",
+        "selector": "positive",
+        "sha256": "9075bb1cff1d54d58f47a549c7f4ddf1710d113653163dee67c39b252bdbb5bf"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_draft_design_lock_and_progressive_step_gate",
+      "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6",
+      "source": "plugins/hexaemeron/tests/test_protasis_design_evidence.py"
     },
     "fiat-final-integration": {
       "bindings": {
@@ -4473,12 +4626,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
+        "sha256": "133040b0cf49e2c488f4ed2792a933164449756e3a05847e4421b9343bbd660c"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
+        "sha256": "133040b0cf49e2c488f4ed2792a933164449756e3a05847e4421b9343bbd660c"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -4502,12 +4655,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
         "selector": "negative",
-        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
+        "sha256": "a3f2c21192b239c4bf7a3c6a89ae20340fbd98f6ce8b488047baf311eb30914d"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
         "selector": "positive",
-        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
+        "sha256": "a3f2c21192b239c4bf7a3c6a89ae20340fbd98f6ce8b488047baf311eb30914d"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_terminal_archive_is_local_and_ignored_by_git",
@@ -4531,12 +4684,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "negative",
-        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
+        "sha256": "994c466ac8b662ca9149f04e5e273d4c1f23d09ef6842325b8723ce00dc2812d"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "positive",
-        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
+        "sha256": "994c466ac8b662ca9149f04e5e273d4c1f23d09ef6842325b8723ce00dc2812d"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_push_advances_steps_then_the_stack_integrates",
@@ -4589,12 +4742,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
-        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
+        "sha256": "19d2197017ec174cbc1087fc0630cd5f3ed1baf71ee3ecc2d409f8c5264c68d3"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
+        "sha256": "19d2197017ec174cbc1087fc0630cd5f3ed1baf71ee3ecc2d409f8c5264c68d3"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
@@ -4618,12 +4771,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "negative",
-        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
+        "sha256": "826a94bd8a91463b204d67b7cacee10a40e1745a99f4a517d21bf5cd87e5f11b"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "positive",
-        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
+        "sha256": "826a94bd8a91463b204d67b7cacee10a40e1745a99f4a517d21bf5cd87e5f11b"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
@@ -4647,12 +4800,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "negative",
-        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
+        "sha256": "e466baa46e843425608228943e4367a9ff38739bea5801c996381beb456e153b"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "positive",
-        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
+        "sha256": "e466baa46e843425608228943e4367a9ff38739bea5801c996381beb456e153b"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
@@ -4914,12 +5067,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "negative",
-        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
+        "sha256": "c36839fc9549f33d83ced68b268bf9d55fd6223002aae7428fb3d91d9aa53e70"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "positive",
-        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
+        "sha256": "c36839fc9549f33d83ced68b268bf9d55fd6223002aae7428fb3d91d9aa53e70"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_gate1_and_gate2_honest_deposit",
@@ -4945,12 +5098,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "negative",
-        "sha256": "36c3ad9d9dc712584a87c4833906c093d93f810fea2254a7a517b77cdd8ac69d"
+        "sha256": "9bf3a90f896f85c2ac614ad7ce60970d7003a349258f87b013845e9ab53c2b73"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "positive",
-        "sha256": "36c3ad9d9dc712584a87c4833906c093d93f810fea2254a7a517b77cdd8ac69d"
+        "sha256": "9bf3a90f896f85c2ac614ad7ce60970d7003a349258f87b013845e9ab53c2b73"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -5003,12 +5156,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
         "selector": "negative",
-        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
+        "sha256": "8215de1e78f2142fe60a6f29e9596283e02596e4cb0ff5d5a1f324d37f8554bc"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
         "selector": "positive",
-        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
+        "sha256": "8215de1e78f2142fe60a6f29e9596283e02596e4cb0ff5d5a1f324d37f8554bc"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
@@ -5032,12 +5185,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
         "selector": "negative",
-        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
+        "sha256": "899ba82f62959829894a8c7b12e7ac2739932727c19e1dbedd07efa9f62cd8f5"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
         "selector": "positive",
-        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
+        "sha256": "899ba82f62959829894a8c7b12e7ac2739932727c19e1dbedd07efa9f62cd8f5"
       },
       "reader": "native-json-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
@@ -5063,12 +5216,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "negative",
-        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
+        "sha256": "77cf49912d10e45c63fe87b4903401abd942bd828bff70dc6b592596ba829c4b"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "positive",
-        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
+        "sha256": "77cf49912d10e45c63fe87b4903401abd942bd828bff70dc6b592596ba829c4b"
       },
       "reader": "native-json-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
@@ -5123,12 +5276,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
         "selector": "negative",
-        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
+        "sha256": "f1c0ba16823d2a4a133d7ba9b303b3acdac999e820e92acc05f5f4fea3fe0b70"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
         "selector": "positive",
-        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
+        "sha256": "f1c0ba16823d2a4a133d7ba9b303b3acdac999e820e92acc05f5f4fea3fe0b70"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_a_law_with_every_part_passes",
@@ -5183,12 +5336,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "negative",
-        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
+        "sha256": "37fdbfbe3ffb16a30fdc5c2bd74d37b1cadecdef6d97c396197c5354fb1003c8"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "positive",
-        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
+        "sha256": "37fdbfbe3ffb16a30fdc5c2bd74d37b1cadecdef6d97c396197c5354fb1003c8"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_it_exits_zero",
@@ -5212,12 +5365,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "negative",
-        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
+        "sha256": "64d9c9eaa906110dc0b2aa04f144f9b5e17e8deb78bcfcc2dcc08224c1c7b751"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "positive",
-        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
+        "sha256": "64d9c9eaa906110dc0b2aa04f144f9b5e17e8deb78bcfcc2dcc08224c1c7b751"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
@@ -5243,12 +5396,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "negative",
-        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
+        "sha256": "01263bfe9f16ab72c086d59ad0f2231a13071067508d66ed8c0fdff6fa2f11c5"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "positive",
-        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
+        "sha256": "01263bfe9f16ab72c086d59ad0f2231a13071067508d66ed8c0fdff6fa2f11c5"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",

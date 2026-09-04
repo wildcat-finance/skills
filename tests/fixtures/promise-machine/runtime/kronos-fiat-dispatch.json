@@ -8,7 +8,7 @@
             "id": "promise-owner:kronos-fiat-dispatch",
             "reference": {
               "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
-              "sha256": "12f844fd9c1c84a77fab28810fccb313be6968f5cd82d78c21955bc8ca6fdb09"
+              "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
             }
           },
           "binding": {
@@ -53,7 +53,7 @@
           "id": "promise-owner:kronos-fiat-dispatch",
           "reference": {
             "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
-            "sha256": "12f844fd9c1c84a77fab28810fccb313be6968f5cd82d78c21955bc8ca6fdb09"
+            "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
           }
         },
         "evidence_classes": [
@@ -99,7 +99,7 @@
             "id": "promise-owner:kronos-fiat-dispatch",
             "reference": {
               "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
-              "sha256": "12f844fd9c1c84a77fab28810fccb313be6968f5cd82d78c21955bc8ca6fdb09"
+              "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
             }
           },
           "binding": {
@@ -144,7 +144,7 @@
           "id": "promise-owner:kronos-fiat-dispatch",
           "reference": {
             "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
-            "sha256": "12f844fd9c1c84a77fab28810fccb313be6968f5cd82d78c21955bc8ca6fdb09"
+            "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
           }
         },
         "evidence_classes": [

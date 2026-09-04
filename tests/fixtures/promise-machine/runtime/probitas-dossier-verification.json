@@ -8,7 +8,7 @@
             "id": "promise-owner:probitas-dossier-verification",
             "reference": {
               "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-              "sha256": "8174569051082a4770162b4f2eee91a2638fb8e97560bffc2c7fe9bdf73f5b47"
+              "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
             }
           },
           "binding": {
@@ -53,7 +53,7 @@
           "id": "promise-owner:probitas-dossier-verification",
           "reference": {
             "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-            "sha256": "8174569051082a4770162b4f2eee91a2638fb8e97560bffc2c7fe9bdf73f5b47"
+            "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
           }
         },
         "evidence_classes": [
@@ -99,7 +99,7 @@
             "id": "promise-owner:probitas-dossier-verification",
             "reference": {
               "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-              "sha256": "8174569051082a4770162b4f2eee91a2638fb8e97560bffc2c7fe9bdf73f5b47"
+              "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
             }
           },
           "binding": {
@@ -144,7 +144,7 @@
           "id": "promise-owner:probitas-dossier-verification",
           "reference": {
             "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-            "sha256": "8174569051082a4770162b4f2eee91a2638fb8e97560bffc2c7fe9bdf73f5b47"
+            "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
           }
         },
         "evidence_classes": [

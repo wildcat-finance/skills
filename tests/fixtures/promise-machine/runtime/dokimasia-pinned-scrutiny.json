@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "dokimasia_pinned_scrutiny": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-pinned-scrutiny without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "measured",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_demonstration.py",
+                "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+              },
+              {
+                "evidence_class": "measured",
+                "path": "plugins/dokimasia/tests/test_demonstration.py",
+                "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_demonstration.py",
+                "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-pinned-scrutiny",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-pinned-scrutiny",
+            "subject": "runtime source plugins/dokimasia/tests/test_demonstration.py#test_two_scrutinies_of_the_same_inputs_agree"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "measured",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_demonstration.py",
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          },
+          {
+            "evidence_class": "measured",
+            "path": "plugins/dokimasia/tests/test_demonstration.py",
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_demonstration.py",
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-pinned-scrutiny",
+        "scope": "structural binding for dokimasia-pinned-scrutiny",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/dokimasia/tests/test_demonstration.py#test_two_scrutinies_of_the_same_inputs_agree",
+        "transition": {
+          "action": "structurally bind dokimasia-pinned-scrutiny without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "dokimasia_pinned_scrutiny": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-pinned-scrutiny without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "measured",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_demonstration.py",
+                "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+              },
+              {
+                "evidence_class": "measured",
+                "path": "plugins/dokimasia/tests/test_demonstration.py",
+                "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_demonstration.py",
+                "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-pinned-scrutiny",
+          "source": {
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-pinned-scrutiny",
+            "subject": "runtime source plugins/dokimasia/tests/test_demonstration.py#test_two_scrutinies_of_the_same_inputs_agree"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "measured",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_demonstration.py",
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          },
+          {
+            "evidence_class": "measured",
+            "path": "plugins/dokimasia/tests/test_demonstration.py",
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_demonstration.py",
+            "sha256": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-pinned-scrutiny",
+        "scope": "structural binding for dokimasia-pinned-scrutiny",
+        "source_digest": "4e7c689c4a5d9adc8e6c6d2d8fa49d5dfdf862fc6180f94bf2c03bc3d3e4dae4",
+        "subject": "runtime source plugins/dokimasia/tests/test_demonstration.py#test_two_scrutinies_of_the_same_inputs_agree",
+        "transition": {
+          "action": "structurally bind dokimasia-pinned-scrutiny without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

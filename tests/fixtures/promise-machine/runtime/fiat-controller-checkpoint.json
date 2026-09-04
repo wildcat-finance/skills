@@ -19,7 +19,7 @@
             {
               "evidence_class": "checked",
               "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
-              "sha256": "c72a370f69fdbe1d0d3350f1bb0e4ab03caf0e3eb1108c2b201cf3eca85a8a45"
+              "sha256": "7869db93162ab3b3f70b5670e4fbf810fab18437193df0109cb711a33f65b54b"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -44,7 +44,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
-            "sha256": "c72a370f69fdbe1d0d3350f1bb0e4ab03caf0e3eb1108c2b201cf3eca85a8a45"
+            "sha256": "7869db93162ab3b3f70b5670e4fbf810fab18437193df0109cb711a33f65b54b"
           }
         ],
         "exception": {
@@ -86,10 +86,10 @@
             {
               "evidence_class": "checked",
               "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
-              "sha256": "c72a370f69fdbe1d0d3350f1bb0e4ab03caf0e3eb1108c2b201cf3eca85a8a45"
+              "sha256": "7869db93162ab3b3f70b5670e4fbf810fab18437193df0109cb711a33f65b54b"
             }
           ],
-          "source_digest": "c72a370f69fdbe1d0d3350f1bb0e4ab03caf0e3eb1108c2b201cf3eca85a8a45",
+          "source_digest": "7869db93162ab3b3f70b5670e4fbf810fab18437193df0109cb711a33f65b54b",
           "transition": {
             "action": "structurally bind fiat-controller-checkpoint without running its domain operation",
             "operation_ran": false,
@@ -111,7 +111,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
-            "sha256": "c72a370f69fdbe1d0d3350f1bb0e4ab03caf0e3eb1108c2b201cf3eca85a8a45"
+            "sha256": "7869db93162ab3b3f70b5670e4fbf810fab18437193df0109cb711a33f65b54b"
           }
         ],
         "exception": {
@@ -119,7 +119,7 @@
         },
         "promise_id": "fiat-controller-checkpoint",
         "scope": "structural binding for fiat-controller-checkpoint",
-        "source_digest": "c72a370f69fdbe1d0d3350f1bb0e4ab03caf0e3eb1108c2b201cf3eca85a8a45",
+        "source_digest": "7869db93162ab3b3f70b5670e4fbf810fab18437193df0109cb711a33f65b54b",
         "subject": "runtime source plugins/hexaemeron/tests/test_hexctl_checkpoint.py#test_restore_after_source_clone_loss",
         "transition": {
           "action": "structurally bind fiat-controller-checkpoint without running its domain operation",

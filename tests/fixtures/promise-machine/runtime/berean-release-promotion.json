@@ -13,7 +13,7 @@
             "id": "promise-owner:berean-release-promotion",
             "reference": {
               "path": "plugins/berean/skills/berean/EVOLUTION.md",
-              "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+              "sha256": "6371f43da34ee573a86fcc4943f1a7074515d64a4dd80f6930b0ebc25da621b5"
             }
           },
           "evidence": {
@@ -57,7 +57,7 @@
           "id": "promise-owner:berean-release-promotion",
           "reference": {
             "path": "plugins/berean/skills/berean/EVOLUTION.md",
-            "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+            "sha256": "6371f43da34ee573a86fcc4943f1a7074515d64a4dd80f6930b0ebc25da621b5"
           }
         },
         "evidence_classes": [
@@ -108,7 +108,7 @@
             "id": "promise-owner:berean-release-promotion",
             "reference": {
               "path": "plugins/berean/skills/berean/EVOLUTION.md",
-              "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+              "sha256": "6371f43da34ee573a86fcc4943f1a7074515d64a4dd80f6930b0ebc25da621b5"
             }
           },
           "evidence": {
@@ -152,7 +152,7 @@
           "id": "promise-owner:berean-release-promotion",
           "reference": {
             "path": "plugins/berean/skills/berean/EVOLUTION.md",
-            "sha256": "dd28abeec7ddb2f2fba1ef38502985b568b7d1cd8a028b02d78cf3d7ab5c48c3"
+            "sha256": "6371f43da34ee573a86fcc4943f1a7074515d64a4dd80f6930b0ebc25da621b5"
           }
         },
         "evidence_classes": [
