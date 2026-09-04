@@ -298,8 +298,8 @@ Version 1 reserves these stable refusal families:
 | `WAI-E-DIGEST` | stale profile, prompt, bootstrap, or report binding | refuse |
 | `WAI-E-ADAPTER` | executable, identity, argv, environment, runtime, timeout, cap, or response | refuse |
 | `WAI-E-TOKENIZER` | vocabulary identity or real-model token count | refuse |
-| `WAI-E-MEASURE` | bootstrap accounting, cohort comparison, or compression gate | refuse |
-| `WAI-E-PARITY` | family identity, fresh context, answer, or required equality | refuse |
+| `WAI-E-MEASURE` | bootstrap accounting, declared projection, cohort comparison, or compression gate | refuse |
+| `WAI-E-PARITY` | family identity, fresh context, declared projection, answer, or required equality | refuse |
 
 Implementations may append a stable dot-separated detail, such as
 `WAI-E-COMPACT.OPCODE`, without changing the family. A new family or changed
@@ -423,6 +423,41 @@ integer `prompt_eval_count` as the count. A different executable, runtime versio
 model manifest, blob, vocabulary, model name, non-integer count, or negative
 count refuses.
 
+#### What a recorded count is a count of
+
+Every measured stream in the report carries a `projection` field naming the rule
+applied to the bytes before they were counted. Two values are defined:
+
+| `projection` | meaning |
+| --- | --- |
+| `none` | the bytes on disk, unchanged |
+| `digest-neutral-bound-sha256/v1` | every digest the manifest binds a path by, replaced in place by 64 `f` characters |
+
+The reviewed spans are recorded as `none`. A span's recorded `sha256` is its
+`span_sha256`, and that equality is the review boundary, so a span is never
+substituted.
+
+The canonical models and the compact documents are recorded as
+`digest-neutral-bound-sha256/v1`. Each embeds its source's whole-file digest, so
+counting the bytes on disk would let an edit that changed nothing inside a
+reviewed span invalidate a count of bytes that did not change. The projection
+replaces each bound digest with a fixed marker of the same length, so byte
+counts are unaffected and token counts are counts of the projected stream. The
+same field appears on each parity result's `source` and `compact` records, where
+it names the stream that was put to the model.
+
+The consequence a reader needs: a `canonical_model.sha256` or `compact.sha256`
+in the measurement report is **not** the digest of the file on disk, and the
+manifest's own `artifacts.*.sha256` is. Both are checked on every `check` run,
+against different bytes, and neither substitutes for the other. A record whose
+`projection` names a rule this version does not define refuses with
+`WAI-E-MEASURE.PROJECTION` or `WAI-E-PARITY.PROJECTION`.
+
+The rule is versioned because it identifies what a count means. Widening or
+narrowing what the projection substitutes requires a new projection name, so a
+record written under one rule cannot read as though it were written under
+another.
+
 The baseline is the three source spans under that profile. The comparison then
 counts the canonical models, compact documents, and the complete 932-byte
 decoder bootstrap under the same profile. The checked report records:
@@ -430,18 +465,25 @@ decoder bootstrap under the same profile. The checked report records:
 | material | bytes | tokens |
 | --- | ---: | ---: |
 | source corpus | 11,170 | 2,528 |
-| canonical-model corpus | 8,569 | 2,079 |
-| compact corpus | 6,069 | 2,175 |
+| canonical-model corpus | 8,569 | 1,989 |
+| compact corpus | 6,069 | 2,086 |
 | decoder bootstrap | 932 | 277 |
-| compact corpus plus bootstrap | 7,001 | 2,452 |
-| compact-plus-bootstrap minus source | -4,169 | -76 |
+| compact corpus plus bootstrap | 7,001 | 2,363 |
+| compact-plus-bootstrap minus source | -4,169 | -165 |
 
-The strict three-document gate passes because `2,452 < 2,528`. The report also
+The strict three-document gate passes because `2,363 < 2,528`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
-not assumed to save tokens: the Fiat fixture reports `-90`, Horos reports
-`+733`, and Promise Machine reports `-165` after adding the entire bootstrap.
-The two-document prefix reports `+366`; only the declared three-document cohort
+not assumed to save tokens: the Fiat fixture reports `-122`, Horos reports
+`+705`, and Promise Machine reports `-194` after adding the entire bootstrap.
+The two-document prefix reports `+306`; only the declared three-document cohort
 is the acceptance cohort.
+
+Those figures are the run recorded in `evidence/measurement.json` with
+`observed_on` `2026-08-30`, taken before the corpus subject and the measured
+streams moved onto the projection described above, and refreshed from the
+reissued report once that run existed. Every token column counts a projected
+stream; the byte columns are unchanged either way, because the projection
+preserves length. No count here was written by hand.
 
 ### Isolated family parity
 

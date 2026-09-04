@@ -617,7 +617,19 @@ def prove_selftest(reconciliation: Reconciliation) -> tuple[int, dict[str, Any],
     if len(distinct) != len(MECHANICAL_PASSES):
         raise ProverError("two mechanical passes share a refusal signature")
     checks["mechanical-pass-signatures"] = signatures
-    checks["complete-reconciliation-refusal"] = complete["refusals"][0]
+
+    # Step 1 recorded a refusal here: a complete reconciliation of an
+    # out-of-span edit still refused, because the corpus subject carried the
+    # bound whole-file digest and the measurement counted raw artefact bytes.
+    # Step 3 removed both, so the same reconciliation now goes green and the
+    # check asserts that instead. A refusal here means the projection stopped
+    # reaching something it reaches today.
+    checks["complete-reconciliation-accepted"] = complete["accepted"]
+    if not complete["accepted"]:
+        raise ProverError(
+            "a complete reconciliation of an out-of-span edit refused: "
+            f"{complete['refusals']}"
+        )
 
     # The confinement refuses what it is there to refuse, rather than being
     # trusted because it is imported.
