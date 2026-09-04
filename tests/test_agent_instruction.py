@@ -3921,6 +3921,184 @@ class AdapterRefusalDetailTests(unittest.TestCase):
                     self.assertNotIn((function, code), self.EXCLUSIONS)
 
 
+class UnmeasuredEvidenceGuaranteeTests(unittest.TestCase):
+    """#1098's fourth acceptance check, made a gate instead of a circumstance.
+
+    The claim: `measurement.json` cannot record a token count or an
+    `observed_on` date for bytes no tokenizer read. It holds today because
+    nobody can re-measure, which is not a guarantee -- it is an absence of
+    opportunity, and the second `measure` run this delivery spends is exactly
+    the opportunity it depends on.
+
+    What the two cases below establish, precisely: a count and a date are
+    admissible only while the stream beside them is byte-for-byte the stream
+    the record says it is, and only while the date is the one the profile that
+    read those bytes recorded. Move the bytes and leave the count; move the
+    date and leave the bytes; either way `check` refuses.
+
+    What they do **not** establish is S3-R2-05, and this class does not claim
+    to close it. `_measurement_material` carries `tokens` over from the
+    supplied record into the value it compares against, so a count that is
+    wrong for bytes that are right is invisible here and stays invisible;
+    `test_a_consistent_token_count_edit_is_not_detected` pins that hole
+    deliberately. What closes is narrower and worth having: a count cannot be
+    carried across a change to the bytes it counted.
+
+    `_validate_measurement_record` is called directly rather than through
+    `check_manifest`. Two reasons, both about isolation. It puts the refusal
+    the case is about first, ahead of the manifest-level digest comparisons
+    that would otherwise answer for it; and it lets the record's own
+    `corpus_sha256` and correlation ids be realigned in memory, so these cases
+    say what they say today rather than waiting on the pending reissue. No
+    count and no date is realigned -- only the two identifiers the checker
+    recomputes from `_corpus_sha256` -- which is the whole point of doing it
+    here and not on disk.
+    """
+
+    def setUp(self) -> None:
+        self.manifest = manifest_record()
+        self.evidence = {
+            name: (ROOT / record["path"]).read_bytes()
+            for name, record in self.manifest["evidence"].items()
+        }
+        self.profile = AI.load_canonical_record(
+            self.evidence["tokenizer_profile"], allow_integers=True
+        )
+
+    def realigned_record(self, evidence: dict[str, bytes]) -> dict:
+        """The committed measurement record with its two derived ids recomputed.
+
+        `corpus_sha256` and every `correlation_id` are the only fields
+        `_validate_measurement_record` derives from `_corpus_sha256` and the
+        bootstrap digest, and both are pending the second `measure` run. They
+        are recomputed here so a case about counts fails on a count. Nothing
+        else is touched: no `tokens`, no `bytes`, no `sha256` of a measured
+        stream, and no `observed_on`.
+        """
+        record = AI.load_canonical_record(
+            evidence["measurement_record"], allow_integers=True
+        )
+        correlation = AI._digest(
+            (
+                AI._corpus_sha256(self.manifest)
+                + AI._digest(evidence["tokenizer_profile"])
+                + AI._digest(evidence["decoder_bootstrap"])
+            ).encode("ascii")
+        )
+        record["corpus_sha256"] = AI._corpus_sha256(self.manifest)
+        record["correlation_id"] = correlation
+        for event in record["events"]:
+            event["correlation_id"] = correlation
+        record["summary"]["correlation_id"] = correlation
+        return record
+
+    def assertMeasurementRefuses(self, record, evidence, code, node_path):
+        with self.assertRaises(AI.CodecError) as raised:
+            AI._validate_measurement_record(
+                ROOT, record, self.manifest, evidence, self.profile
+            )
+        self.assertEqual(code, raised.exception.code)
+        self.assertEqual(node_path, raised.exception.node_path)
+
+    def assertControlAccepted(self) -> None:
+        """The untampered record, accepted.
+
+        A refusal is evidence only if the same record without the tamper is
+        accepted. Otherwise a case would pass against a record refusing for
+        some fourth reason, and the guarantee would read as established while
+        nothing was being guarded. Asserted inside each case rather than beside
+        them, so neither depends on a sibling having run.
+        """
+        AI._validate_measurement_record(
+            ROOT,
+            self.realigned_record(self.evidence),
+            self.manifest,
+            self.evidence,
+            self.profile,
+        )
+
+    def test_a_recorded_token_count_is_refused_for_bytes_no_tokenizer_read(self):
+        """Grow a measured stream, leave its count: refused.
+
+        The decoder bootstrap is the measured stream with no derived artefact
+        behind it, so growing it moves exactly one thing -- the bytes a
+        tokenizer read -- and every other binding can be rebound around it
+        without rebuilding a document. `bootstrap_sha256` is rebound and the
+        correlation ids are recomputed, so nothing earlier answers first, and
+        the record is left carrying `bootstrap.tokens` for a stream that is now
+        eleven bytes longer than the one that produced it.
+
+        The refusal is at `bootstrap.bytes`, and that is the honest shape of
+        this guarantee: it is the recorded byte length and digest that pin the
+        count, not the count itself. Nothing recomputes `tokens`, because
+        recomputing it means consulting a model.
+        """
+        self.assertControlAccepted()
+        evidence = dict(self.evidence)
+        evidence["decoder_bootstrap"] = self.evidence["decoder_bootstrap"] + b"unmeasured\n"
+        self.assertNotEqual(
+            self.evidence["decoder_bootstrap"], evidence["decoder_bootstrap"]
+        )
+        record = self.realigned_record(evidence)
+        record["bootstrap_sha256"] = AI._digest(evidence["decoder_bootstrap"])
+        # The count is left exactly as the committed record has it, which is
+        # what makes this a count for bytes no tokenizer read.
+        committed = AI.load_canonical_record(
+            self.evidence["measurement_record"], allow_integers=True
+        )
+        self.assertEqual(
+            committed["bootstrap"]["tokens"], record["bootstrap"]["tokens"]
+        )
+        self.assertMeasurementRefuses(
+            record,
+            evidence,
+            "WAI-E-MEASURE.RECORD",
+            "$.evidence.measurement_record.bootstrap",
+        )
+
+    def test_a_recorded_observed_on_date_is_refused_unless_the_profile_carries_it(self):
+        """Move the date, leave the bytes: refused, on either side.
+
+        `observed_on` is the record's statement of when a tokenizer read the
+        bytes, and the checker takes it from `profile["observed_on"]` rather
+        than from the record. So a date written into the record that the
+        profile does not carry is refused, and a date changed in the profile
+        while the record keeps the old one is refused too -- the second by the
+        profile's own digest binding, which is what stops the pair being
+        rewritten together without leaving a trace.
+
+        Both directions are asserted, because a guarantee holding on one side
+        only would let a date be moved by moving the other record.
+        """
+        self.assertControlAccepted()
+        moved = self.realigned_record(self.evidence)
+        self.assertEqual(self.profile["observed_on"], moved["observed_on"])
+        moved["observed_on"] = "2026-08-31"
+        self.assertNotEqual(self.profile["observed_on"], moved["observed_on"])
+        self.assertMeasurementRefuses(
+            moved,
+            self.evidence,
+            "WAI-E-MEASURE.RECORD",
+            "$.evidence.measurement_record",
+        )
+
+        # The other side: the profile's date moves and the record keeps its
+        # own. The record now agrees with no profile the manifest binds.
+        profile = copy.deepcopy(self.profile)
+        profile["observed_on"] = "2026-08-31"
+        rewritten = AI.canonical_record_bytes(profile, allow_integers=True)
+        evidence = dict(self.evidence)
+        evidence["tokenizer_profile"] = rewritten
+        record = self.realigned_record(evidence)
+        record["tokenizer_profile_sha256"] = AI._digest(rewritten)
+        self.assertEqual(self.profile["observed_on"], record["observed_on"])
+        with self.assertRaises(AI.CodecError) as raised:
+            AI._validate_measurement_record(
+                ROOT, record, self.manifest, evidence, profile
+            )
+        self.assertEqual("WAI-E-MEASURE.RECORD", raised.exception.code)
+
+
 class DigestNeutralProjectionTests(unittest.TestCase):
     """`digest_neutral_projection`, and the corpus subject that now runs through it.
 
@@ -4711,6 +4889,7 @@ class DigestNeutralProjectionTests(unittest.TestCase):
                     ),
                     "the measured compact document survived a before-span edit",
                 )
+
 
 if __name__ == "__main__":
     unittest.main()
