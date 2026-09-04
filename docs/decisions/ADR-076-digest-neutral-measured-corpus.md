@@ -1,4 +1,4 @@
-# ADR-075: Measure the instruction corpus through a digest-neutral projection
+# ADR-076: Measure the instruction corpus through a digest-neutral projection
 
 ## Status
 
@@ -7,11 +7,16 @@ Accepted, 2026-09-04, for
 
 The Fiat runbook allocated this decision as `ADR-<next>`, which was ADR-069 on
 the branch the step was cut from. Concurrent work landed ADR-069 through
-ADR-074 on `main` while the run was in flight, so the decision lands as
-ADR-075. It was renumbered twice for this reason, the second time during the
-step's prose pass, after ADR-074 was taken on `main` between the step's
-implementation and its prose. Whoever renumbers it again should expect the same
-cause and check the default branch immediately before merging.
+ADR-075 on `main` while the run was in flight, so the decision lands as
+ADR-076. It was renumbered three times for this reason: once during the step's
+prose pass, after ADR-074 was taken on `main` between the step's implementation
+and its prose, and again during step 4's audit, after ADR-075 was taken by
+[skills#1187](https://github.com/wildcat-finance/skills/pull/1187) at 07:55 on
+the day this run reached step 5. Each renumber was found by
+`test_no_number_collides_with_one_already_on_the_default_branch`, which is the
+only thing standing between this file and a silent duplicate. Whoever renumbers
+it again should expect the same cause and check the default branch immediately
+before merging.
 
 Depends on [ADR-062](ADR-062-encode-a-closed-agent-instruction-model.md), which
 settled two things this record does not reopen: that the bound corpus retains

@@ -27,7 +27,7 @@ than shifted by a byte count, and the two cases that state that difference are
 where the placements part company: an after-span edit reconciles green, and a
 before-span edit gets past the reviewed span digest and then refuses at the
 measurement record, because the corpus subject carries the recorded offsets.
-ADR-075 records that as a consequence of the design rather than a gap in it.
+ADR-076 records that as a consequence of the design rather than a gap in it.
 
 What the switch does not reach is pinned by
 `test_the_measurement_record_binds_the_projected_artefact_digests`, which reads
@@ -573,7 +573,7 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         explicit about why. `_corpus_sha256` digests a subject carrying
         `fixtures` whole, and `digest_neutral_projection` substitutes only the
         digests the manifest binds a path by. A reviewed span's `start` and
-        `end` are neither, so they stay in the subject: ADR-075 records that the
+        `end` are neither, so they stay in the subject: ADR-076 records that the
         corpus digest still distinguishes a change to any recorded offset.
 
         So an after-span edit reconciles green, and a before-span edit gets past
