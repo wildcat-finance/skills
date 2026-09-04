@@ -117,6 +117,47 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             outcome["refusals"][0],
         )
 
+    def assertPlantedSpanRefuses(self, plant, message):
+        """`plant` one drift into `source-spans.json`, then re-derive against it.
+
+        The copy is left self-consistent by every digest the manifest binds --
+        the planted record's own artefact digest is rebound before the
+        constructor reads it -- so the refusal comes from the re-derivation and
+        not from the tree already disagreeing with itself. That rebinding is
+        what makes the plant reachable at all: it sits in the one place the
+        constructor's whole-file check cannot see.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            relative = self.work.fixture["artifacts"]["source_spans"]["path"]
+            record = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, relative)
+            )
+            plant(record)
+            written = self.checker.canonical_record_bytes(record)
+            self.checker.write_confined_atomic(tree, relative, written)
+
+            manifest = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, self.prover.MANIFEST)
+            )
+            entry = next(
+                item for item in manifest["fixtures"]
+                if item["id"] == self.prover.SUBJECT
+            )
+            entry["artifacts"]["source_spans"]["sha256"] = self.prover.digest(written)
+            self.checker.write_confined_atomic(
+                tree,
+                self.prover.MANIFEST,
+                self.checker.canonical_record_bytes(manifest),
+            )
+
+            drifted = self.prover.Reconciliation(tree, checker=self.checker)
+            with self.assertRaises(self.prover.ProverError) as raised:
+                drifted.rederive_offsets(
+                    drifted.edited_source(self.prover.BEFORE_SPAN_PLACEMENT)
+                )
+            self.assertIn(message, str(raised.exception))
+
     def test_out_of_span_edit_leaves_the_corpus_digest_where_it_was(self):
         """Inverted from step 1's `..._refuses_the_corpus_digest_...`, replacing it.
 
@@ -320,12 +361,18 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         delta to each recorded number would land on the same integers here
         while proving nothing about where the span went.
 
-        Three assertions separate the two, and a shift passes none of them: the
-        digest at every re-derived position is checked against the recorded one;
-        bytes that occur twice refuse rather than resolving to their first
-        occurrence; and bytes that are gone return `None` instead of a number.
-        The uniform delta is asserted as a consequence of the located offsets,
-        not as their source.
+        What separates the two is bounded by the fixture, and saying which
+        assertions do the work matters. A prepend moves every span by one
+        uniform delta, so the re-derived integers and the shifted integers are
+        equal here, and no assertion on them can tell the two apart. The
+        refusals can: bytes that occur twice identify no offset and refuse
+        rather than resolving to their first occurrence; bytes that are gone
+        return `None` instead of a number; and a recorded span that is not the
+        bytes it claims refuses instead of being carried into the copy. Those
+        are asserted for the anchor and, in the ambiguous-node case below, for
+        the node loop, which is the only thing separating that loop from
+        arithmetic. The uniform delta is asserted as a consequence of the
+        located offsets, not as their source.
 
         An absent re-derivation is asserted rather than raised, so a tree
         without it fails on the claim this case makes instead of erroring on a
@@ -399,39 +446,34 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         # rewrite; a shift would carry the disagreement into the copy and let
         # the refusal arrive attributed to the edit. Planted in a throwaway
         # copy, in the one field the constructor's whole-file check cannot see.
-        with tempfile.TemporaryDirectory() as scratch:
-            tree = self.work.copy_tree(Path(scratch))
-            relative = self.work.fixture["artifacts"]["source_spans"]["path"]
-            record = self.checker.load_canonical_record(
-                self.checker.read_confined(tree, relative)
-            )
+        def wrong_digest(record):
             record["spans"][0]["sha256"] = self.prover.digest(b"")
-            written = self.checker.canonical_record_bytes(record)
-            self.checker.write_confined_atomic(tree, relative, written)
 
-            manifest = self.checker.load_canonical_record(
-                self.checker.read_confined(tree, self.prover.MANIFEST)
-            )
-            entry = next(
-                item for item in manifest["fixtures"]
-                if item["id"] == self.prover.SUBJECT
-            )
-            entry["artifacts"]["source_spans"]["sha256"] = self.prover.digest(written)
-            self.checker.write_confined_atomic(
-                tree,
-                self.prover.MANIFEST,
-                self.checker.canonical_record_bytes(manifest),
-            )
+        self.assertPlantedSpanRefuses(wrong_digest, "off its own digest")
 
-            # The copy is self-consistent by every digest the manifest binds,
-            # so the refusal below comes from the re-derivation and not from
-            # the constructor.
-            drifted = self.prover.Reconciliation(tree, checker=self.checker)
-            with self.assertRaises(self.prover.ProverError) as raised:
-                drifted.rederive_offsets(
-                    drifted.edited_source(self.prover.BEFORE_SPAN_PLACEMENT)
-                )
-            self.assertIn("off its own digest", str(raised.exception))
+        # The same refusal, one level down. The two assertions above are the
+        # anchor's; this one is the node loop's, and it is the only thing
+        # separating that loop from arithmetic. A prepend moves every node by
+        # one uniform delta, so no assertion on the integers can tell a located
+        # node from a node moved by `delta`; bytes that occur twice inside the
+        # reviewed span can, because locating refuses where adding does not.
+        span = self.work.span
+        width = 8
+        repeated = next(
+            index
+            for index in range(len(span) - width)
+            if span.count(span[index : index + width]) > 1
+        )
+        node_start = self.work.start + repeated
+        node_end = node_start + width
+
+        def ambiguous_node(record):
+            entry = record["spans"][-1]
+            entry["start"] = str(node_start)
+            entry["end"] = str(node_end)
+            entry["sha256"] = self.prover.digest(self.work.source[node_start:node_end])
+
+        self.assertPlantedSpanRefuses(ambiguous_node, "more than once")
 
         # The re-derived offsets reach all three records that carry them, and
         # `check` accepts the reviewed span at its new position.
@@ -488,6 +530,41 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             "WAI-E-DIGEST.SOURCE_SPAN",
             f"$.fixtures.{self.prover.SUBJECT}.source.span_sha256",
         )
+
+    def test_the_manifests_own_offsets_are_read_as_recorded_decimals(self):
+        """The anchor pair, held to the rule every other recorded offset obeys.
+
+        `recorded_offset` exists because `int()` accepts `"+1"`, `" 1"`,
+        `"1_0"` and a Unicode digit, and raises `ValueError` rather than a
+        `ProverError` on the rest, so a record that had drifted would reach the
+        reader as a crash instead of a refusal naming the field. The manifest's
+        `source.start` and `source.end` are the anchor the whole re-derivation
+        hangs off, and reading them any other way would exempt the one pair
+        that matters most from the rule.
+
+        Planted in a throwaway copy, on a value the constructor's other checks
+        pass over: `int("018445")` is `18445`, so the reviewed span is still
+        found at its recorded digest and nothing else in the tree disagrees.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            manifest = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, self.prover.MANIFEST)
+            )
+            entry = next(
+                item for item in manifest["fixtures"]
+                if item["id"] == self.prover.SUBJECT
+            )
+            entry["source"]["start"] = "0" + entry["source"]["start"]
+            self.checker.write_confined_atomic(
+                tree,
+                self.prover.MANIFEST,
+                self.checker.canonical_record_bytes(manifest),
+            )
+
+            with self.assertRaises(self.prover.ProverError) as raised:
+                self.prover.Reconciliation(tree, checker=self.checker)
+            self.assertIn("padded decimal", str(raised.exception))
 
     def test_a_before_span_edit_still_stales_the_measurement_record(self):
         """What the before-span placement costs once its offsets are reconciled.
