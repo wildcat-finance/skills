@@ -3369,5 +3369,236 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         )
 
 
+class DigestNeutralProjectionTests(unittest.TestCase):
+    """`digest_neutral_projection`, before anything is measured through it.
+
+    The projection exists so that editing a bound instruction document outside
+    its reviewed span stops moving the corpus digest. Step 3 of the skills#1098
+    runbook switches `_corpus_sha256` onto it; this step only adds it, so every
+    case here runs against the committed fixture as it stands and none of them
+    writes a file. The bound sources are read and never written: the edit these
+    cases reason about is applied to bytes in memory.
+
+    Each case is written to fail if its property is removed. A projection that
+    did nothing would pass "changes only the digest positions" vacuously and
+    would pass idempotence trivially, so both cases also require the projection
+    to have moved the artefacts that carry a bound digest, and the out-of-span
+    case compares two byte strings that are known to differ before projection.
+    """
+
+    # Appended at end of file, which is past every fixture's reviewed span, so
+    # no recorded binding offset and no reviewed byte moves. The edit shape the
+    # design is meant to stop charging for.
+    OUT_OF_SPAN_EDIT = b"\n<!-- skills#1098 out-of-span edit -->\n"
+
+    PLACEHOLDER = "f" * 64
+
+    def setUp(self) -> None:
+        self.manifest = manifest_record()
+        self.source_digests = sorted(
+            {fixture["source"]["sha256"] for fixture in self.manifest["fixtures"]}
+        )
+
+    def bound_artifacts(self) -> dict[str, bytes]:
+        """Every file the manifest binds that this projection could touch.
+
+        `mutations` and `questions` are in deliberately. They are bound
+        artefacts that embed no source digest, so they are the control on
+        "changes nothing else": a projection reaching further than the digest
+        would show up as a change to one of them.
+        """
+        artifacts = {str(MANIFEST.relative_to(ROOT)): MANIFEST.read_bytes()}
+        for fixture in self.manifest["fixtures"]:
+            for record in fixture["artifacts"].values():
+                artifacts[record["path"]] = (ROOT / record["path"]).read_bytes()
+        return artifacts
+
+    def occurrences(self, data: bytes) -> list[int]:
+        """Every offset at which a bound whole-file source digest starts."""
+        found = []
+        for digest in self.source_digests:
+            needle = digest.encode("ascii")
+            start = data.find(needle)
+            while start >= 0:
+                found.append(start)
+                start = data.find(needle, start + 1)
+        return sorted(found)
+
+    def test_projection_is_idempotent(self):
+        """Projecting a projection changes nothing further.
+
+        The fixed point is reached in one pass, so a caller cannot get a
+        different answer by applying the projection a different number of
+        times, and step 3 can digest the result without recording how many
+        passes produced it. Applying it to the marker itself is the same
+        claim from the other side: the marker is not itself rewritten, so the
+        substitution cannot cascade.
+
+        Idempotence is trivially true of a projection that does nothing, so
+        this also requires the first pass to have moved every artefact that
+        carries a bound digest.
+        """
+        moved = 0
+        for path, raw in sorted(self.bound_artifacts().items()):
+            with self.subTest(path=path):
+                once = AI.digest_neutral_projection(self.manifest, raw)
+                twice = AI.digest_neutral_projection(self.manifest, once)
+                self.assertEqual(once, twice)
+                if self.occurrences(raw):
+                    self.assertNotEqual(raw, once, "the projection left the digest in place")
+                    moved += 1
+        # manifest, plus model, source_spans and compact for each of three
+        # fixtures: the four places a bound whole-file digest is embedded.
+        self.assertEqual(10, moved)
+
+        marker = self.PLACEHOLDER.encode("ascii")
+        self.assertEqual(marker, AI.digest_neutral_projection(self.manifest, marker))
+
+    def test_projection_changes_only_the_bound_source_digest_positions(self):
+        """Byte-identical to the committed fixture except where a digest sat.
+
+        Length is preserved, every differing byte falls inside a bound digest's
+        own 64 bytes, and each of those runs now reads as the marker. The two
+        artefacts that embed no digest come through untouched, which is what
+        makes "changes nothing else" an observation rather than a claim.
+        """
+        for path, raw in sorted(self.bound_artifacts().items()):
+            with self.subTest(path=path):
+                projected = AI.digest_neutral_projection(self.manifest, raw)
+                self.assertEqual(len(raw), len(projected))
+
+                starts = self.occurrences(raw)
+                covered = {
+                    offset for start in starts for offset in range(start, start + 64)
+                }
+                differing = {
+                    offset
+                    for offset in range(len(raw))
+                    if raw[offset] != projected[offset]
+                }
+                self.assertLessEqual(
+                    differing, covered, "the projection changed a byte outside a digest"
+                )
+
+                for start in starts:
+                    self.assertEqual(
+                        self.PLACEHOLDER, projected[start : start + 64].decode("ascii")
+                    )
+                if not starts:
+                    self.assertEqual(raw, projected)
+
+    def edited_fixture(self, fixture: dict) -> tuple[dict, dict[str, bytes]]:
+        """One bound source edited past its span, with the mechanical passes run.
+
+        Returns the manifest as the passes leave it and the artefacts they
+        rewrite. Nothing is written: the edit and every derived artefact are
+        built in memory, so the bound documents in the repository are read and
+        never touched.
+        """
+        source_record = fixture["source"]
+        source = (ROOT / source_record["path"]).read_bytes()
+        old = source_record["sha256"]
+        self.assertEqual(old, hashlib.sha256(source).hexdigest())
+
+        start = int(source_record["start"])
+        end = int(source_record["end"])
+        edited = source + self.OUT_OF_SPAN_EDIT
+        self.assertEqual(
+            source[start:end], edited[start:end], "the edit moved the reviewed span"
+        )
+        new = hashlib.sha256(edited).hexdigest()
+        self.assertNotEqual(old, new)
+
+        rewritten: dict[str, bytes] = {}
+        for name in ("model", "source_spans"):
+            record = fixture["artifacts"][name]
+            raw = (ROOT / record["path"]).read_bytes()
+            self.assertEqual(1, raw.count(old.encode("ascii")))
+            rewritten[record["path"]] = raw.replace(
+                old.encode("ascii"), new.encode("ascii")
+            )
+        model_path = fixture["artifacts"]["model"]["path"]
+        rewritten[fixture["artifacts"]["compact"]["path"]] = AI.format_compact(
+            AI.load_canonical_record(rewritten[model_path])
+        )
+
+        manifest = copy.deepcopy(self.manifest)
+        entry = next(item for item in manifest["fixtures"] if item["id"] == fixture["id"])
+        entry["source"]["sha256"] = new
+        for name in ("model", "source_spans", "compact"):
+            record = entry["artifacts"][name]
+            record["sha256"] = hashlib.sha256(rewritten[record["path"]]).hexdigest()
+        return manifest, rewritten
+
+    def test_projection_is_unchanged_by_an_out_of_span_edit(self):
+        """The property the whole design rests on, for all three bound sources.
+
+        An edit appended past the reviewed span changes no measured byte: the
+        span, its digest and every recorded binding offset stay where they
+        were, and `evidence/measurement.json` records the span's byte count as
+        the measured source. What it does change is the whole-file digest, and
+        with it the three artefacts that embed it. Under the projection those
+        three artefacts are identical before and after, so nothing the corpus
+        would digest through it has moved.
+
+        The comparison is between two byte strings shown to differ first, so
+        this cannot pass by the projection returning its input.
+        """
+        measurement = AI.load_canonical_record(
+            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
+            allow_integers=True,
+        )
+        measured = {item["fixture_id"]: item["source"] for item in measurement["documents"]}
+
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                # What was measured is the reviewed span, not the whole file:
+                # the recorded byte count is the span's length and the recorded
+                # digest is the span digest. An out-of-span edit therefore
+                # leaves every measured byte alone and moves only the digest
+                # this projection neutralises.
+                recorded = measured[fixture["id"]]
+                span = fixture["source"]
+                self.assertEqual(int(span["end"]) - int(span["start"]), recorded["bytes"])
+                self.assertEqual(span["span_sha256"], recorded["sha256"])
+
+                after_manifest, rewritten = self.edited_fixture(fixture)
+                for path, edited in sorted(rewritten.items()):
+                    with self.subTest(path=path):
+                        committed = (ROOT / path).read_bytes()
+                        self.assertNotEqual(
+                            committed, edited, "the edit did not move the artefact"
+                        )
+                        self.assertEqual(
+                            AI.digest_neutral_projection(self.manifest, committed),
+                            AI.digest_neutral_projection(after_manifest, edited),
+                        )
+
+    def test_the_corpus_subject_still_carries_the_whole_file_source_digest(self):
+        """This step adds the projection and does not switch the subject onto it.
+
+        Both committed evidence records still agree with `_corpus_sha256` as it
+        stands, which is why no file under `evidence/` changes here, and an
+        out-of-span edit still moves that digest -- the refusal skills#1098
+        reports is still exactly where step 1 pinned it.
+
+        Step 3 is what inverts the second half of this case, together with the
+        one `measure` and one `parity` run that reissue both records. Until
+        then, a change that quietly moved the subject early would strand two
+        evidence records this repository cannot honestly reissue on demand.
+        """
+        corpus = AI._corpus_sha256(self.manifest)
+        for key in ("measurement_record", "parity_record"):
+            with self.subTest(evidence=key):
+                path = ROOT / self.manifest["evidence"][key]["path"]
+                record = AI.load_canonical_record(path.read_bytes(), allow_integers=True)
+                self.assertEqual(corpus, record["corpus_sha256"])
+
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                after_manifest, _ = self.edited_fixture(fixture)
+                self.assertNotEqual(corpus, AI._corpus_sha256(after_manifest))
+
+
 if __name__ == "__main__":
     unittest.main()
