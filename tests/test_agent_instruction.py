@@ -3453,6 +3453,60 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             "WAI-E-PARITY.RECORD",
         )
 
+    def assert_undefined_projection_refuses(self, evidence_key: str, locate, code: str) -> None:
+        """One recorded stream renamed to a projection this version does not define.
+
+        `docs/agent-instruction-language-v1.md` says a record whose
+        `projection` names an undefined rule refuses, and names both codes. The
+        refusals existed from the commit that added the field and nothing
+        exercised either: deleting both membership checks from
+        `agent_instruction.py` left the whole suite green apart from the
+        checker's own whole-file digest binding, which notices any edit to that
+        file and says nothing about behaviour. S3-R1-01.
+
+        The substituted name is well-formed and versioned, so this separates
+        "this rule is not defined in version 1" from a malformed or missing
+        field, which the closed-object check already refuses. Widening
+        `MEASURED_PROJECTIONS` to accept it would turn this red, which is the
+        point: the versioned name is what stops a record written under one rule
+        reading as though it were written under another.
+
+        The report is rewritten in a copy and its manifest binding rebound, so
+        the refusal reached is the projection check and not the stale-record
+        digest that would otherwise refuse first.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            manifest_path = copied / MANIFEST.relative_to(ROOT)
+            manifest = AI.load_canonical_record(manifest_path.read_bytes())
+            report_path = copied / manifest["evidence"][evidence_key]["path"]
+            report = AI.load_canonical_record(report_path.read_bytes(), allow_integers=True)
+            target = locate(report)
+            # Known defined before the edit, so this cannot pass by having
+            # renamed something that was already outside the set.
+            self.assertIn(target["projection"], AI.MEASURED_PROJECTIONS)
+            target["projection"] = "digest-neutral-bound-sha256/v2"
+            self.assertNotIn(target["projection"], AI.MEASURED_PROJECTIONS)
+            changed = AI.canonical_record_bytes(report, allow_integers=True)
+            report_path.write_bytes(changed)
+            manifest["evidence"][evidence_key]["sha256"] = hashlib.sha256(changed).hexdigest()
+            manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+            self.assertRefusal(code, AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT)))
+
+    def test_undefined_measurement_projection_refuses(self):
+        self.assert_undefined_projection_refuses(
+            "measurement_record",
+            lambda report: report["documents"][0]["compact"],
+            "WAI-E-MEASURE.PROJECTION",
+        )
+
+    def test_undefined_parity_projection_refuses(self):
+        self.assert_undefined_projection_refuses(
+            "parity_record",
+            lambda report: report["results"][0]["compact"],
+            "WAI-E-PARITY.PROJECTION",
+        )
+
 
 class DigestNeutralProjectionTests(unittest.TestCase):
     """`digest_neutral_projection`, and the corpus subject that now runs through it.

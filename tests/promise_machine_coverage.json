@@ -21,7 +21,7 @@
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "f529d31a19bf5c03e4afea13fe01b1b9ddab70acb96199811fc274c78b8c2acf"
+        "sha256": "72c39d73417e72abd7569392ad04eb0a2451238f48c632dbdeb9c63c3bb10756"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
@@ -122,7 +122,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "8c8f118ed3e531a6dd2d0d2d15e95683d4165fb658b02d8a735eb895ca80f3d3",
+      "sha256": "5a4b1fbeb0e0ca80480ecad17a891efea9675bbd398ae997e94bbbd2a8c5e84e",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
@@ -137,7 +137,9 @@
         "test_plugin_promise_machine_copies_are_current",
         "test_portable_promise_machine_package_is_current",
         "test_stale_measurement_report_refuses",
-        "test_stale_parity_report_refuses"
+        "test_stale_parity_report_refuses",
+        "test_undefined_measurement_projection_refuses",
+        "test_undefined_parity_projection_refuses"
       ]
     },
     "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
