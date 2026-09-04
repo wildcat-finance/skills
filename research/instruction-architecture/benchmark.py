@@ -201,7 +201,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "670918b82f3ac0d760527e0b237715492a3acbe7cecc8fdb1d9ae91c8a8c47f5"
+    "ad422f5f312040277a798f5a6159f9c8fb61794177723d50ead7f3b796a67b9e"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -11515,7 +11515,9 @@ def behavioral_pair_comparability(rows: list[dict[str, Any]]) -> dict[str, Any]:
         raise Refusal("behavioral pair does not contain one row per frozen arm")
     for required in ("model_id", "provider_name"):
         values = [row.get(required) for row in rows]
-        if any(not isinstance(value, str) or not value for value in values):
+        if any(
+            not isinstance(value, str) or not value.strip() for value in values
+        ):
             return {"comparable": False, "identity_quality": "required-unknown"}
         if len(set(values)) != 1:
             return {"comparable": False, "identity_quality": "required-mismatch"}
@@ -11525,7 +11527,9 @@ def behavioral_pair_comparability(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if all(value is None for value in values):
             qualified_unknown.append(optional)
             continue
-        if any(not isinstance(value, str) or not value for value in values):
+        if any(
+            not isinstance(value, str) or not value.strip() for value in values
+        ):
             return {"comparable": False, "identity_quality": f"{optional}-unknown"}
         if len(set(values)) != 1:
             return {"comparable": False, "identity_quality": f"{optional}-mismatch"}
@@ -12244,6 +12248,8 @@ def native_vector_dominates(left: dict[str, Any], right: dict[str, Any]) -> bool
     axes = ("complete_logical_context_high_water", "cumulative_fresh_token_churn")
     if any(type(left.get(key)) is not int or type(right.get(key)) is not int for key in axes):
         return False
+    if any(left[key] < 0 or right[key] < 0 for key in axes):
+        raise Refusal("native token vector axis is negative")
     return all(left[key] <= right[key] for key in axes) and any(
         left[key] < right[key] for key in axes
     )
@@ -13816,8 +13822,9 @@ def preflight_spend(args: argparse.Namespace) -> bytes:
         if field in data and data[field] is not None:
             _decimal(data[field], f"OpenRouter {field}")
     remaining = data.get("limit_remaining")
+    key_limit_remaining: Decimal | None = None
     if remaining is not None:
-        _decimal(remaining, "OpenRouter limit remaining")
+        key_limit_remaining = _decimal(remaining, "OpenRouter limit remaining")
     credit_data = credits.get("data", credits)
     if not isinstance(credit_data, dict):
         raise Refusal("OpenRouter credit metadata shape drift")
@@ -13829,7 +13836,12 @@ def preflight_spend(args: argparse.Namespace) -> bytes:
     )
     if total_usage > total_credits:
         raise Refusal("OpenRouter credit usage exceeds total credits")
-    available_credit = total_credits - total_usage
+    account_available_credit = total_credits - total_usage
+    available_credit = (
+        account_available_credit
+        if key_limit_remaining is None
+        else min(account_available_credit, key_limit_remaining)
+    )
     endpoints = _catalog_rows(
         _http_json(OPENROUTER_ENDPOINTS["zdr"]), "OpenRouter ZDR endpoint"
     )

@@ -10219,6 +10219,31 @@ class BehavioralCaseGeneratorTests(ExperimentFixtureMixin, unittest.TestCase):
         self.assertFalse(observed["comparable"])
         self.assertEqual(observed["identity_quality"], "model_revision-unknown")
 
+    def test_pair_comparability_rejects_blank_identity_values(self):
+        rows = [
+            {
+                "arm": arm,
+                "model_id": "m",
+                "provider_name": "p",
+                "model_revision": None,
+                "tokenizer_digest": None,
+            }
+            for arm in AI.DEVELOPMENT_ARMS
+        ]
+        for field in (
+            "model_id",
+            "provider_name",
+            "model_revision",
+            "tokenizer_digest",
+        ):
+            changed = copy.deepcopy(rows)
+            for row in changed:
+                row[field] = " \t "
+            with self.subTest(field=field):
+                observed = AI.behavioral_pair_comparability(changed)
+                self.assertFalse(observed["comparable"])
+                self.assertIn("unknown", observed["identity_quality"])
+
 
 class PromptContaminationTests(unittest.TestCase):
     def test_scorer_and_answer_material_refuse_in_behavioral_prompt(self):
@@ -10435,6 +10460,41 @@ class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):
                     ) as publish:
                         with self.assertRaisesRegex(AI.Refusal, "does not cover"):
                             AI.preflight_spend(args)
+        publish.assert_not_called()
+
+    def test_key_spend_limit_must_cover_the_next_atomic_reservation(self):
+        responses = [
+            {"data": {"limit_remaining": "0.50", "usage": "1"}},
+            {"data": {"total_credits": "5000", "total_usage": "0"}},
+            {"data": []},
+        ]
+        with scratch_directory("step3-key-limit-") as directory:
+            authority = Path(directory) / "authority.json"
+            authority.write_bytes(canonical(authority_fixture()))
+            args = types.SimpleNamespace(
+                authority=authority,
+                candidate=AI.EVALUATOR_CANDIDATES[0],
+                max_gross_usd="4500.00",
+                report=ROOT
+                / ".hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json",
+            )
+            with (
+                mock.patch.object(AI, "_external_secret", return_value=b"test-key"),
+                mock.patch.object(AI, "_http_json", side_effect=responses),
+                mock.patch.object(
+                    AI,
+                    "_matrix_gross_bound",
+                    return_value=(
+                        AI.Decimal("100"),
+                        {},
+                        AI.Decimal("1"),
+                        {"call_id": "frozen"},
+                    ),
+                ),
+                mock.patch.object(AI, "_publish_preflight_report") as publish,
+            ):
+                with self.assertRaisesRegex(AI.Refusal, "does not cover"):
+                    AI.preflight_spend(args)
         publish.assert_not_called()
 
 
@@ -11104,6 +11164,26 @@ class NativeCacheAccountingTests(ExperimentFixtureMixin, unittest.TestCase):
         changed["comparison"]["dollar_weighting"] = True
         with self.assertRaisesRegex(AI.Refusal, "objective drift"):
             AI._validate_native_cache_accounting(changed)
+
+    def test_negative_token_axis_refuses_before_dominance(self):
+        baseline = {
+            "runtime_id": "codex",
+            "model_id": "gpt-5.6-sol",
+            "tokenizer_id": "frozen-tokenizer",
+            "complete_logical_context_high_water": 1,
+            "cumulative_fresh_token_churn": 1,
+        }
+        for side in ("left", "right"):
+            for axis in (
+                "complete_logical_context_high_water",
+                "cumulative_fresh_token_churn",
+            ):
+                with self.subTest(side=side, axis=axis):
+                    left = copy.deepcopy(baseline)
+                    right = copy.deepcopy(baseline)
+                    (left if side == "left" else right)[axis] = -1
+                    with self.assertRaisesRegex(AI.Refusal, "axis is negative"):
+                        AI.native_vector_dominates(left, right)
 
     def test_invalidation_is_not_a_fourth_token_category(self):
         changed = copy.deepcopy(self.accounting)
