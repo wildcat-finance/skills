@@ -772,6 +772,12 @@ class QualificationAndProofTests(unittest.TestCase):
             "production race freedom is not claimed",
             " ".join(text.casefold().split()),
         )
+        # The live ruleset has strict up-to-date checks off; the later
+        # operation must turn them on, because no event re-evaluates a head
+        # when main moves under it.
+        self.assertIn("strict up-to-date checks off", text)
+        self.assertIn("turn strict up-to-date checks on", text)
+        self.assertNotIn("retain strict", text)
         self.assertIn("assign-adr-numbers-at-merge-not-at-authoring.md", text)
         self.assertIn("hypomnema/EVOLUTION.md", text)
         self.assertIn("fiat/EVOLUTION.md", text)

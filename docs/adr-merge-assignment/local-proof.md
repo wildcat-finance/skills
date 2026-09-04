@@ -56,7 +56,11 @@ not been verified for this context by a live canary. Production race freedom
 is not claimed.
 
 A later separately authorised operation must observe the status on its exact
-head, require integration `15368`, retain strict up-to-date checks, keep the
-bypass set empty, and activate the ruleset. The local status model refuses a
-missing context or any other integration identifier; it supplies test evidence
-only and does not perform that external operation.
+head, require integration `15368`, turn strict up-to-date checks on, keep the
+bypass set empty, and activate the ruleset. Strict up-to-date checks are the
+merge-time half of stale-base exclusion: no `pull_request_target` event fires
+when `main` moves, so a success status posted against an earlier base stays on
+the head until the branch is updated, and only the strict policy forces that
+update and its re-evaluation before the merge. The local status model refuses
+a missing context or any other integration identifier; it supplies test
+evidence only and does not perform that external operation.
