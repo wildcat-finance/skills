@@ -796,6 +796,15 @@ class LiveReconciliation:
     its own. A tree off somewhere else is refused rather than reconciled around,
     because the passes below would then rebind drift nobody asked about.
 
+    The six passes are not one transaction. Every individual write is atomic
+    through the checker's own writer, so no single artefact is left half-written,
+    but a run killed between two passes leaves the tree part-reconciled. That
+    state is recoverable and refuses rather than compounding: a re-run stops on
+    the artefact the interrupted run had already rewritten, and the refusal names
+    the one command that restores the bound tree. A single staged swap across all
+    six would remove the step, and is a larger change than the one this tool was
+    added for.
+
     Only the after-span placement is reconcilable here. Re-deriving a recorded
     offset needs the pre-edit bytes to locate, and a tree already carrying the
     edit no longer has them. That is not a gap this tool can close by trying
@@ -828,13 +837,23 @@ class LiveReconciliation:
 
         # Every bound path except the subject's own source, which is the one
         # the edit is expected to have moved.
+        #
+        # An interrupted run lands here too, and the two causes are named
+        # together because the tree cannot tell them apart. Each write is
+        # atomic on its own; the six passes are not one transaction, so a run
+        # killed between them leaves an artefact rewritten and the manifest
+        # still recording the old digest. Re-running then refuses on the
+        # artefact it already rewrote, which looks like drift and is not.
         for relative, expected in bound_digests(self.manifest):
             if relative == self.source_path:
                 continue
             if digest(self._bytes(relative)) != expected:
                 raise ProverError(
-                    f"{relative} is off its manifest digest; this tool reconciles one "
-                    "edited source and refuses a tree that has drifted elsewhere"
+                    f"{relative} is off its manifest digest. This tool reconciles one "
+                    "edited source and refuses a tree that has drifted elsewhere. If a "
+                    "previous reconcile was interrupted, this is the artefact it had "
+                    "already rewritten: restore the bound tree with `git checkout -- "
+                    f"{FIXTURE_ROOT} {COVERAGE}` and run it again"
                 )
 
     def _bytes(self, relative: str) -> bytes:

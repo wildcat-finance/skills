@@ -1236,3 +1236,37 @@ class LiveReconcileTests(unittest.TestCase):
             self.assertNotIn("measure", arguments)
             self.assertNotIn("parity", arguments)
             self.assertIn("format", arguments)
+
+    def test_an_interrupted_reconciliation_refuses_and_names_its_recovery(self):
+        """The six passes are not one transaction, and the refusal says so.
+
+        Each write is atomic on its own, so no artefact is left half-written.
+        The sequence is not, so a run killed between two passes leaves an
+        artefact rewritten and the manifest still recording the old digest.
+        Re-running stops on that artefact, which is indistinguishable from drift
+        the tool refuses on purpose. Recorded as a round finding rather than
+        removed: what the refusal has to do is name both causes and the one
+        command that recovers, which is what this pins.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.live_copy(
+                Path(scratch),
+                self.work.edited_source(self.prover.AFTER_SPAN_PLACEMENT),
+            )
+            # A kill after the model pass and before the manifest pass.
+            live = self.prover.LiveReconciliation(tree, checker=self.checker)
+            relative = live.fixture["artifacts"]["model"]["path"]
+            raw = self.checker.read_confined(tree, relative)
+            self.checker.write_confined_atomic(
+                tree,
+                relative,
+                raw.replace(live.old_digest.encode("ascii"), live.new_digest.encode("ascii")),
+            )
+
+            with self.assertRaises(self.prover.ProverError) as raised:
+                self.prover.LiveReconciliation(tree, checker=self.checker)
+            message = str(raised.exception)
+            self.assertIn("interrupted", message)
+            self.assertIn("git checkout --", message)
+            self.assertIn(self.prover.FIXTURE_ROOT, message)
+            self.assertIn(self.prover.COVERAGE, message)
