@@ -44,7 +44,7 @@ EVIDENCE_ARTIFACTS = {
     "tokenizer_profile": "tokenizer-profile.json",
 }
 TRUSTED_PROFILE_SHA256 = {
-    "family_profiles": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703",
+    "family_profiles": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363",
     "tokenizer_profile": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd",
 }
 TOKENIZER_PROFILE_SCHEMA = "wildcat-agent-instruction-tokenizer-profile/v1"
