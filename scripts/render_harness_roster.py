@@ -272,6 +272,34 @@ def load_manifest(path=None):
     return document
 
 
+def _echoable(value):
+    """One refused value as a message may carry it, or a shape standing for it.
+
+    `refuse_forged_field` names the field and never the value, because it runs
+    inside `load_manifest` and therefore before `refuse_leak` sweeps anything,
+    and a `blocker` is where captured client output lands. The two refusals
+    above it kept `{value!r}` and had the same reach. Driven on staged copies of
+    this tree: a `blocker` of `['Absent.', 'ghp_' + 'b' * 36]` is refused by the
+    type map as `blocker ['Absent.', 'ghp_bbbb...'] is not str or NoneType`, and
+    a `client_version` of `{'stdout': <token>}` the same way, both printing the
+    planted token to stderr through `main`; a `recorded.host` of 100 characters
+    beginning `github_pat_11` fails `HOST_PATTERN` and is echoed whole. The
+    probe's own `credential_findings` returns `['token']` for each of the three,
+    which is the sweep this uses rather than a second judgement.
+
+    A value carrying a credential shape is named by that shape. A non-string is
+    named by its type, which is what a type refusal is about and costs the
+    message nothing. Everything else is echoed as before, so an operator's
+    `20260904` still reads back as `20260904`.
+    """
+    if not isinstance(value, str):
+        return f"a {type(value).__name__}"
+    found = _probe().credential_findings(value)
+    if found:
+        return f"a {', '.join(found)} shape"
+    return repr(value)
+
+
 def refuse_unrecorded_shape(document):
     """Refuse a manifest the probe's own writer would not have produced.
 
@@ -420,7 +448,8 @@ def refuse_unrecorded_shape(document):
         value = block[field]
         if not isinstance(value, str) or not pattern.fullmatch(value):
             raise RenderError(
-                f"manifest refused: recorded {field} {value!r} is not {shape}"
+                f"manifest refused: recorded {field} is not {shape}: "
+                f"{_echoable(value)}"
             )
     for position, entry in enumerate(harnesses(document)):
         if not isinstance(entry, dict):
@@ -437,11 +466,12 @@ def refuse_unrecorded_shape(document):
             if not isinstance(value, allowed):
                 names = " or ".join(one.__name__ for one in allowed)
                 raise RenderError(
-                    f"manifest refused: harness {shown!r} {field} {value!r} "
-                    f"is not {names}"
+                    f"manifest refused: harness {shown!r} {field} "
+                    f"is not {names}: {_echoable(value)}"
                 )
         for field in PUBLISHED_TEXT_FIELDS:
             refuse_forged_field(field, entry[field], shown)
+        refuse_unobserved_version(entry, shown)
 
 
 def refuse_forged_name(name):
@@ -488,6 +518,23 @@ def refuse_forged_field(field, value, shown):
     is refused as `the rendered guide.md region carries a token shape`. `name`
     is echoed because the name is the subject of its own refusal and no client
     output reaches it.
+
+    The value is compared in the form it is written and in the form a
+    comparison sees. `_comparison_forms` derives the collapsed form of each
+    *token* and left the *value* raw, which closed one whitespace class and no
+    other: `_normalise` collapses every run of whitespace, so `' / '` is only
+    the space spelling of a separator a name can carry. Driven against the
+    committed page, by the merge S3-R6-02 was found with: a manifest folding
+    `Gemini CLI` and `Windsurf` into one entry named `Gemini CLI\\t/\\tWindsurf`
+    validates against the schema with zero errors, was admitted here, and
+    renders a roster line `_normalise` makes byte-identical to the five-name
+    line the committed six-harness page draws, so `pdf_drift` returned `[]`
+    against a page recording one harness more. `\\xa0`, `\\u2003` and `\\x0c`
+    between the same two names do the same, and the control separates the
+    collision from a broken check: an ordinary rename of that entry reports
+    `the harness page does not show ...`. Both forms are checked rather than
+    the collapsed one alone, because `_normalise` also *removes* `\\n` and
+    `\\r`, which are structure in the two Markdown surfaces.
     """
     if value is None:
         return
@@ -495,9 +542,11 @@ def refuse_forged_field(field, value, shown):
         raise RenderError(
             f"manifest refused: harness {shown!r} carries an empty {field}"
         )
-    folded = value.upper()
+    folded = (value.upper(), _normalise(value).upper())
     carried = tuple(
-        token for token in PUBLISHED_TEXT_FIELDS[field] if token.upper() in folded
+        token
+        for token in PUBLISHED_TEXT_FIELDS[field]
+        if any(token.upper() in form for form in folded)
     )
     if not carried:
         return
@@ -507,6 +556,69 @@ def refuse_forged_field(field, value, shown):
         f"{', '.join(repr(token) for token in carried)}, "
         "which these surfaces use as structure"
     )
+
+
+def refuse_unobserved_version(entry, shown):
+    """Refuse an observation whose version and its own flags contradict.
+
+    Every guard above this one checks a field on its own. The schema does not:
+    it carries three conditionals binding `client_version` to `client_present`
+    and to `version_read`, and none of them was read here, so a document the
+    schema refuses reached all three surfaces. `_version` is why that shows.
+    ADR-077 tells a reader to consult `version_read` rather than recognise the
+    sentinel, so `_version` returns `entry["client_version"]` whenever
+    `version_read` is true and never asks what it holds.
+
+    Four states were driven on staged copies of this tree, each one schema-
+    invalid with exactly one error and each one admitted by `load_manifest`.
+
+    `version_read` true with `client_version` null rendered the guide table row
+    `| GitHub Copilot | manual route | no | None | no |`, publishing Python's
+    `None` as a version, while `_answered` counted the entry and the README
+    read `1 of the 6 clients answered there`. `version_read` true with
+    `client_version` `unread` rendered `| ... | unread | ... |`, which publishes
+    the sentinel as the version in the one surface the schema's own description
+    says no reader should have to recognise, against the same README sentence.
+    Both surfaces therefore claim a client answered while the cell beside the
+    claim holds no version, which is the `absent-versus-unavailable` row's
+    property: absence and a failed read are separate fields and may not collapse
+    into one verdict.
+
+    The other two under-publish rather than mis-publish, and are refused with
+    them because the schema refuses them and one guard is cheaper than a rule
+    about which halves matter. `version_read` false with a real
+    `client_version` hid a recorded version behind `not read`; `client_present`
+    true with a null `client_version` published `yes` beside `not read` for a
+    client the schema says must have reported something, if only the sentinel.
+
+    The sentinel is read off the probe rather than restated, as the three
+    `recorded` patterns are, and no message here echoes `client_version`. That
+    field is what a client printed, and this runs inside `load_manifest`,
+    before `refuse_leak` sweeps anything, which is `refuse_forged_field`'s rule
+    for the same field. `_echoable` is not enough on its own: it stands a shape
+    in for a value the sweep recognises, and a secret shaped like nothing in
+    `CREDENTIAL_PATTERNS` would still be printed. The two values this may name
+    are the sentinel and null, and neither came from a client.
+    """
+    unread = _probe().UNREAD_VERSION
+    version = entry["client_version"]
+    if entry["version_read"]:
+        if version is None or version == unread:
+            held = "the unread sentinel" if version == unread else "null"
+            raise RenderError(
+                f"manifest refused: harness {shown!r} says version_read and its "
+                f"client_version is {held}"
+            )
+    elif isinstance(version, str) and version != unread:
+        raise RenderError(
+            f"manifest refused: harness {shown!r} carries a client_version its "
+            "version_read says was not read"
+        )
+    if entry["client_present"] and version is None:
+        raise RenderError(
+            f"manifest refused: harness {shown!r} was found here and reports no "
+            f"client_version, not even {unread!r}"
+        )
 
 
 def refuse_unpublished_class(document):
@@ -979,6 +1091,25 @@ def write(
     the guide and the PDF being the surfaces that never got written, but one
     surface was left regenerated and two stale, which is the drift the next
     `--check` reports rather than the closed write this promises.
+
+    Every fallible step runs before any surface is written, for the same
+    reason. The PDF used to be built last, and the builder is the one surface
+    whose failure the manifest can reach: `para` refuses text that overflows
+    its box, and that box is far smaller than the schema's `maxLength` of 4096.
+    Measured on staged copies of this tree with `reportlab` 5.0.1, replacing
+    `Cursor`: a 27-character manual-route name still draws and 28 does not, and
+    holding the committed names, the card draws 7 manual-route names and fails
+    at 8. The committed roster carries 5, so two more harnesses through the
+    documented path -- change the roster in `scripts/probe_harnesses.py`,
+    re-run the probe, then re-run the renderer -- reaches it. Each failure left
+    `README.md` and the guide rewritten and the PDF byte-identical, and no
+    manifest then checks clean: the new one reports harness-page drift and the
+    committed one reports both Markdown regions. Building first makes that
+    state need a disk fault rather than a name. A failed build writes nothing,
+    which is what makes the order safe: `reportlab` opens the output at `save`,
+    so a build that raises in `draw_harness_page` leaves a fresh path absent
+    and an existing PDF untouched, both measured. The builder reads neither
+    Markdown surface, so nothing here depends on writing them first.
     """
     document = load_manifest(manifest)
     surfaces = (
@@ -988,15 +1119,19 @@ def write(
     refuse_leak("harness page", " ".join(pdf_expectations(document)))
     for path, body in surfaces:
         refuse_leak(f"{path.name} region", body)
-    written = []
-    for path, body in surfaces:
-        text = _read_surface(path)
-        rendered = rendered_surface(text, body, path)
+    pending = [
+        (path, _read_surface(path), body) for path, body in surfaces
+    ]
+    pending = [
+        (path, text, rendered_surface(text, body, path))
+        for path, text, body in pending
+    ]
+    build_pdf(builder=builder, target=pdf, python=python, manifest=manifest)
+    written = [PDF_PATH if pdf is None else Path(pdf)]
+    for path, text, rendered in pending:
         if rendered != text:
             path.write_text(rendered, encoding="utf-8")
             written.append(path)
-    build_pdf(builder=builder, target=pdf, python=python, manifest=manifest)
-    written.append(PDF_PATH if pdf is None else Path(pdf))
     return document, written
 
 

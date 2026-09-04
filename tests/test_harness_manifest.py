@@ -2250,10 +2250,13 @@ class RenderTests(unittest.TestCase):
         # S3-R6-01. The guard named one field, so the fields beside it stayed
         # open with the same consequence. This derives the coverage instead of
         # listing it: it drives a sentinel through every string-typed harness
-        # field and asserts that the fields whose sentinel reaches a surface
-        # are exactly the ones `PUBLISHED_TEXT_FIELDS` guards. A later change
-        # that publishes `launcher_contract`, or any new string field, goes red
-        # here rather than shipping an unguarded string to three surfaces.
+        # field the schema *requires* and asserts that the fields whose
+        # sentinel reaches a surface are exactly the ones
+        # `PUBLISHED_TEXT_FIELDS` guards. A later change that publishes
+        # `launcher_contract`, or any new required string field, goes red here
+        # rather than shipping an unguarded string to three surfaces. S3-R7-05
+        # records that the walk is `HARNESS_FIELD_TYPES`, which is the required
+        # eight, and drives the optional strings under `probe` beside it.
         sentinel = "ZQXSENTINELXQZ"
 
         def published(document):
@@ -2415,6 +2418,278 @@ class RenderTests(unittest.TestCase):
                 self.assertNotIn(
                     "&", render_harness_roster.PUBLISHED_TEXT_FIELDS[field]
                 )
+
+    def merged(self, separator):
+        """`Gemini CLI` and `Windsurf` folded into one name joined by it."""
+        document = landed()
+        keep = [one for one in document["harnesses"] if one["name"] != "Windsurf"]
+        for one in keep:
+            if one["name"] == "Gemini CLI":
+                one["name"] = f"Gemini CLI{separator}Windsurf"
+        document["harnesses"] = keep
+        return document
+
+    def test_a_structural_token_is_refused_in_every_whitespace_it_collapses_from(self):
+        # S3-R7-01. S3-R6-02's fix derived the collapsed form of each *token*
+        # and left the *value* raw, so it closed the space spelling of the
+        # separator and no other. `_normalise` collapses every run of
+        # whitespace, so a tab, a non-breaking space, an em space or a form
+        # feed between the same two names reaches the page's text as ` / ` just
+        # as two spaces do. Driven against the committed six-harness page: each
+        # merge below renders a five-name roster line that normalises
+        # byte-identically to the one the page draws, and `pdf_drift` returned
+        # `[]` before this guard.
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        committed = render_harness_roster._normalise(
+            render_harness_roster.pdf_roster_line(landed())
+        )
+        for separator in ("\t/\t", "\xa0/\xa0", " \t/ ", " / ", "\x0c/\x0c"):
+            with self.subTest(separator=separator):
+                document = self.merged(separator)
+                # The collision itself, asserted rather than assumed.
+                self.assertEqual(
+                    render_harness_roster._normalise(
+                        render_harness_roster.pdf_roster_line(document)
+                    ),
+                    committed,
+                )
+                self.assertNotEqual(
+                    len(document["harnesses"]), len(landed()["harnesses"])
+                )
+                self.assertEqual(render_harness_roster.pdf_drift(document, shown), [])
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # The control separates the collision from a broken check: an ordinary
+        # rename of the same entry is reported against the same page.
+        renamed = landed()
+        for one in renamed["harnesses"]:
+            if one["name"] == "Windsurf":
+                one["name"] = "Windsurf X"
+        self.assertNotEqual(render_harness_roster.pdf_drift(renamed, shown), [])
+        # The raw form is still checked, because `_normalise` *removes* the two
+        # tokens the Markdown surfaces care about most.
+        for token in ("\n", "\r"):
+            with self.subTest(token=token):
+                self.assertEqual(render_harness_roster._normalise(f"a{token}b"), "a b")
+                document = landed()
+                document["harnesses"][0]["name"] = f"Cursor{token}tail"
+                with self.assertRaises(render_harness_roster.RenderError):
+                    render_harness_roster.refuse_unrecorded_shape(document)
+        # And a name carrying ordinary inner whitespace is still a name.
+        self.assertIsNone(render_harness_roster.refuse_forged_name("Gemini CLI"))
+        self.assertIsNone(render_harness_roster.refuse_forged_name("a/b"))
+
+    def test_a_refusal_above_the_sweep_never_echoes_a_credential(self):
+        # S3-R7-02. `refuse_forged_field` names the field and never the value,
+        # because it runs inside `load_manifest` and therefore before
+        # `refuse_leak` sweeps anything, and a `blocker` is where captured
+        # client output lands. The two refusals above it kept `{value!r}` and
+        # had the same reach: a wrong-typed `blocker` or `client_version`
+        # holding a token printed it to stderr through `main`, and so did a
+        # `recorded.host` too long for `HOST_PATTERN`.
+        planted = LEAKED_SECRET
+        self.assertEqual(probe_harnesses.credential_findings(planted), ["token"])
+        for field, value in (
+            ("blocker", ["Absent.", planted]),
+            ("client_version", {"stdout": planted}),
+            ("launcher_contract", [planted]),
+        ):
+            with self.subTest(field=field):
+                document = landed()
+                document["harnesses"][0][field] = value
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                message = str(refused.exception)
+                self.assertIn(field, message)
+                self.assertIn("is not", message)
+                self.assertNotIn(planted, message)
+        # The `recorded` patterns, the same way. A token shaped like a host
+        # passes `HOST_PATTERN` and reaches `refuse_leak`; one that does not is
+        # refused here, which is why the shape stands in for the value.
+        for field, value in (
+            ("host", planted[:64] + "!"),
+            ("base_ref", planted),
+            ("date", planted),
+        ):
+            with self.subTest(recorded=field):
+                document = landed()
+                document["recorded"][field] = value
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertNotIn(planted, str(refused.exception))
+                self.assertIn("shape", str(refused.exception))
+        # An operator's ordinary mistake still reads back verbatim, which is
+        # what the echo was for.
+        document = landed()
+        document["recorded"]["date"] = "20260904"
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(document)
+        self.assertIn("is not YYYY-MM-DD", str(refused.exception))
+        self.assertIn("20260904", str(refused.exception))
+        # And a wrong type is named by its type, which is what the message is
+        # about and costs it nothing.
+        document = landed()
+        document["harnesses"][0]["client_present"] = "false"
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(document)
+        self.assertIn("is not bool: 'false'", str(refused.exception))
+
+    def test_the_version_a_surface_publishes_agrees_with_its_own_flags(self):
+        # S3-R7-03. Every guard before this one checks a field on its own. The
+        # schema does not: three `allOf` conditionals bind `client_version` to
+        # `client_present` and to `version_read`, none was read here, and
+        # `_version` returns `client_version` unexamined whenever `version_read`
+        # is true. Each state below is schema-invalid and each was admitted:
+        # `version_read` true with a null version published Python's `None` in
+        # the guide table's Version cell, and with the sentinel it published
+        # `unread` there, both against a README reading `1 of the 6 clients
+        # answered there`.
+        schema = load_schema()
+        conditionals = schema["$defs"]["harness"]["allOf"]
+        self.assertEqual(len(conditionals), 3)
+        # The sentinel is the schema's own, read off the probe rather than
+        # restated here or in the renderer.
+        self.assertEqual(
+            probe_harnesses.UNREAD_VERSION,
+            conditionals[1]["then"]["properties"]["client_version"]["not"]["const"],
+        )
+        check = validator()
+        for label, patch, published in (
+            ("read a version it does not hold", {"version_read": True, "client_version": None}, "None"),
+            ("read the sentinel", {"version_read": True, "client_version": "unread"}, "unread"),
+            ("hides a version it read", {"version_read": False, "client_version": "1.2.3"}, None),
+            ("present with no version", {"client_present": True, "client_version": None, "version_read": False}, None),
+        ):
+            with self.subTest(state=label):
+                document = landed()
+                document["harnesses"][0].update(patch)
+                if check is not None:
+                    self.assertNotEqual(list(check.iter_errors(document)), [])
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("GitHub Copilot", str(refused.exception))
+                self.assertNotIn("1.2.3", str(refused.exception))
+                if published is not None:
+                    # The consequence, asserted rather than described: the cell
+                    # the refusal prevents.
+                    row = [
+                        line
+                        for line in render_harness_roster.guide_block(document).splitlines()
+                        if line.startswith("| GitHub Copilot |")
+                    ]
+                    self.assertEqual(len(row), 1)
+                    self.assertIn(f"| {published} |", row[0])
+                    self.assertIn(
+                        "1 of the 6 clients answered there",
+                        render_harness_roster.readme_block(document),
+                    )
+        # The landed document, and the two states the schema does admit.
+        self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(landed()))
+        for patch in (
+            {"client_present": True, "client_version": "unread", "version_read": False},
+            {"client_present": True, "client_version": "1.2.3", "version_read": True},
+        ):
+            with self.subTest(admitted=patch["client_version"]):
+                document = landed()
+                document["harnesses"][0].update(patch)
+                self.assertIsNone(
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                )
+
+    def test_a_builder_that_refuses_leaves_every_surface_where_it_found_it(self):
+        # S3-R7-04. The PDF was built last, and the builder is the one surface
+        # whose failure the manifest can reach: `para` refuses text that
+        # overflows the roster card, and that box is far below the schema's
+        # `maxLength` of 4096. Measured with `reportlab` 5.0.1, replacing
+        # `Cursor`: 27 characters still draw and 28 do not, and at the
+        # committed name lengths the card draws 7 manual-route names and fails
+        # at 8 against the 5 the roster carries. Each failure left `README.md`
+        # and the guide rewritten and the PDF byte-identical, and no manifest
+        # then checked clean.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
+            for one in document["harnesses"]:
+                if one["name"] == "Cursor":
+                    one["name"] = "C" * 28
+            staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
+            # The precondition that makes this a real hole: both Markdown
+            # bodies move, so the old order wrote them before the build failed.
+            for key, render in (
+                ("readme", render_harness_roster.readme_block),
+                ("guide", render_harness_roster.guide_block),
+            ):
+                self.assertNotIn(
+                    render(document), staged[key].read_text(encoding="utf-8")
+                )
+            # The name is admitted: the bound belongs to the builder's box, not
+            # to the schema, which allows 4096.
+            self.assertIsNone(render_harness_roster.refuse_forged_name("C" * 28))
+            self.assertEqual(
+                load_schema()["$defs"]["nonEmptyString"]["maxLength"], 4096
+            )
+            before = {key: path.read_bytes() for key, path in staged.items()}
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.write(**staged)
+            self.assertIn("the guide builder exited", str(refused.exception))
+            for key, path in staged.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(path.read_bytes(), before[key])
+
+    def test_the_schema_binding_reads_the_lengths_and_the_nested_strings(self):
+        # S3-R7-05. `test_the_harness_field_types_are_the_schema_s_own` reads
+        # `type` and `enum` and no length keyword, so the `minLength: 1` all
+        # three published strings carry was enforced by hand in
+        # `refuse_forged_field` and bound to nothing. And the sentinel walk in
+        # `test_every_manifest_string_a_surface_publishes_is_guarded` iterates
+        # `HARNESS_FIELD_TYPES`, which is the schema's *required* eight, so the
+        # strings under `probe` were outside a claim that read `every
+        # string-typed harness field`.
+        schema = load_schema()
+        harness = schema["$defs"]["harness"]["properties"]
+
+        def length(node):
+            while "$ref" in node:
+                node = schema["$defs"][node["$ref"].rsplit("/", 1)[-1]]
+            return node.get("minLength")
+
+        for field in render_harness_roster.PUBLISHED_TEXT_FIELDS:
+            with self.subTest(field=field):
+                self.assertEqual(length(harness[field]), 1)
+                # The renderer refuses at exactly that length rather than near
+                # it: the empty string is refused and one character is not.
+                document = landed()
+                document["harnesses"][0][field] = ""
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn(f"empty {field}", str(refused.exception))
+                document = landed()
+                document["harnesses"][0][field] = "x"
+                if field == "client_version":
+                    document["harnesses"][0]["client_present"] = True
+                    document["harnesses"][0]["version_read"] = True
+                self.assertIsNone(
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                )
+        # The nested strings, driven the same way the required ones are. None
+        # reaches a surface, which is what makes the coverage claim true rather
+        # than narrow.
+        sentinel = "ZQXNESTEDXQZ"
+        document = landed()
+        entry = document["harnesses"][0]
+        entry["probe"] = {"command": [sentinel], "result": sentinel}
+        self.assertEqual(length(schema["$defs"]["probe"]["properties"]["result"]), 1)
+        published = "\n".join((
+            render_harness_roster.readme_block(document),
+            render_harness_roster.guide_block(document),
+            " ".join(render_harness_roster.pdf_expectations(document)),
+        ))
+        self.assertNotIn(sentinel, published)
+        # `maxLength` is declared and is not the operative bound: the builder's
+        # box refuses far sooner, which is S3-R7-04's subject.
+        self.assertEqual(schema["$defs"]["nonEmptyString"]["maxLength"], 4096)
+        self.assertIsNone(render_harness_roster.refuse_forged_name("C" * 4096))
 
 
 if __name__ == "__main__":
