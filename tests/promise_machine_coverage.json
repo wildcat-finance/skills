@@ -29,7 +29,7 @@
       },
       {
         "path": "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
-        "sha256": "305d73cfc224b8947a71a153a1cf9596adb580e05e420f870e62981b7cfda4fe"
+        "sha256": "2897a223b06ec2b7dbc3cd1bcf9089ba622a1cba807e887eb8bfa429283b9dde"
       }
     ],
     "fixtures": [
