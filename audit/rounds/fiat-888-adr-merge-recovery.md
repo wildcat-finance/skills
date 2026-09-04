@@ -100,3 +100,19 @@ Elenchus verdict: guarded
 | S3-R1-06 | low | .horos/boundary.json | The committed boundary recorded files_walked 2478 after Step 3 created plugins/hexaemeron/tests/test_fiat_decision_assignments.py; a fresh scan reports 2479 and lists the enlarged fiat SKILL.md as a blob candidate, and tests.test_boundary_currency and the scaffold currency test failed on it. Rescanned after the coverage re-pin and portable sync, twice, as the two read each other's output. | fixed in this commit |
 
 Leads not pursued: test_filter_added_after_preflight_cannot_execute_during_status and test_repository_without_clean_filters_still_verifies pass on the parent 6351c6e7 as well as on the fixed tree, so they are positive controls rather than parent-red guards; the other seven new tests fail on the parent and pass on the fix. A detached worktree at /private/tmp/fiat888-step3-parent.u0MrKj, left by the earlier session at 6351c6e7, is registered against this repository and was not touched.
+
+## Step 3, round 2 -- 2026-09-04T21:01:45Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: git-object-input=reviewed; candidate-bytes=reviewed; stale-base=reviewed; workflow-input=reviewed; partial-state=reviewed; provenance=reviewed; hostile-config=reviewed; publication-state=reviewed
+
+Not checked: none
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Three fail-closed limits in plugins/hexaemeron/skills/fiat/scripts/hexctl.py were seen and left: the worktree index snapshot refuses an index over GIT_OUTPUT_MAX (2,097,152 bytes; this linked worktree's index is 336,538 bytes); the private status observation reads neither the operator's info/exclude nor core.excludesFile, so a file ignored only there reads as untracked and refuses as dirty (on this worktree at f996412b29bcfc4cffbec6d90e08fb2f49292565 the private observation and git status --porcelain=v1 -z --untracked-files=all --ignore-submodules=all both returned 0 bytes); and the trailer check is exact-line, so a leading-whitespace continuation line that git interpret-trailers would fold into an ADR-Assignment value is invisible to it while the exact lines stay required and any other adr-assignment-prefixed line still refuses. Two hostile-config probes on git 2.50.1 returned negative: a repo-local core.fsmonitor hook did not execute under any of the ten operator-repository reads hexctl issues (rev-parse --shared-index-path, rev-parse --verify for commit and tree, rev-parse identity, show -s, diff --name-only A..B, ls-tree, merge-base --is-ancestor, config --local, verify-commit) with a positive control on git status and git diff HEAD, and git init run with its cwd inside a repository carrying init.templateDir and filter.hostile.clean copied no template into the private replay repository. The security suite is waived for this run (Python, Markdown and controller work; no Solidity), so x-ray, solidity-auditor and fizz did not run. The detached worktree /private/tmp/fiat888-step3-parent.u0MrKj was not touched.
