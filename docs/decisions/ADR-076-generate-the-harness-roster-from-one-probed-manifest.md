@@ -1,4 +1,4 @@
-# ADR-074: Generate the harness roster from one probed manifest
+# ADR-076: Generate the harness roster from one probed manifest
 
 ## Status
 
@@ -123,10 +123,9 @@ means running the probe and regenerating three surfaces, rather than editing
 whichever one the writer was looking at. That is the cost bought deliberately:
 a roster that cannot outrun its evidence.
 
-Field names in `harness-classification/v1` are now load-bearing across the
-schema, the manifest, the renderer, three wording surfaces and the suite.
-Renaming one is a change to all of them at once, and needs a successor record
-rather than an edit.
+Field names in `harness-classification/v1` are now read by the schema, the
+manifest, the renderer, three wording surfaces and the suite. Renaming one is a
+change to all six at once, and needs a successor record rather than an edit.
 
 Five harnesses ship classified `manual route` or `unsupported` with a named
 blocker rather than as untested blanks. A reader learns what was tried and why
@@ -137,3 +136,26 @@ The acceptance-condition-2 reading is recorded with the test lines it conflicts
 with. If a later reader decides the PR #479 clause should be honoured after all,
 the change is to those two assertions and to this record, in that order, and not
 a silent edit to either.
+
+## Numbering, and one stale pointer this leaves behind
+
+This record was written as ADR-074, which was free when the run checked. Pull
+request 1181 merged `ADR-074-shape-every-written-record-through-sapheneia.md`
+into `main` about ninety minutes later. `tests/test_decision_records.py`
+compares numbers against the default branch, so the collision turned the step's
+own exit gate red. ADR-075 was already claimed by open pull request 1185, so
+this record took 076. Issue 888 is rebuilding ADR numbering to assign at merge
+instead of at authoring, which is the general answer to the race; renumbering
+here is the local one.
+
+One pointer did not survive the renumber. Between the two events the run's study
+gained a `hypomnema-design-bridge/v1` block naming
+`docs/decisions/ADR-074-generate-the-harness-roster-from-one-probed-manifest.md`.
+Study amendments are append-only, and Hypomnema refuses a study that declares
+more than one design bridge home, so the block cannot be repointed and cannot be
+removed. The study at `docs/atlas-harness-handoff/study.md` therefore names a
+file that does not exist, and `hypomnema --study` reports H008 against it. The
+repository suite does not run study mode, so nothing here goes red on it.
+
+The decision the bridge was meant to reach is this file. Anyone following that
+block should read it here.

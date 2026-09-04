@@ -253,3 +253,23 @@ demonstration is where the two recorded questions get their answers read back.
 metron: none, step 3 holds the budget evidence. elenchus: none, no failure is in
 hand. hypomnema: none, the demonstration record is evidence rather than a
 decision.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Exit: `docs/atlas-harness-handoff/study.md` and `docs/atlas-harness-handoff/runbook.md` are byte-identical copies of the two `.hexaemeron/` artefacts. `schemas/harness-classification-v1.json` validates the four classification names and the per-harness observation fields. `docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md` records the schema, the four names and the acceptance-condition-2 reading. `tests/test_harness_manifest.py` exists and its schema cases pass. Proved by `python3 scripts/run_checks.py --full` at exit zero on the committed tree. Complete replacement Files: `docs/atlas-harness-handoff/study.md`, `docs/atlas-harness-handoff/runbook.md`, `schemas/harness-classification-v1.json`, `docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`, and `tests/test_harness_manifest.py`. No check-map row is added: `scripts/run_checks.py --plan` reports no unowned path, because `docs`, `schemas` and `tests` already own all five by longest prefix, and a row exists in this repository only to override that default. Complete replacement Disciplines: phylax: none, this step adds no input path and spawns nothing. ephoros: none, nothing here runs unattended. metron: none, no performance claim is made. elenchus: none, no failure is in hand. hypomnema: the schema and the four classification names are costly to reverse once prose is generated from them, so ADR-076 is their home.
+
+**Why.** The decision record was authored as ADR-074 when that number was free. Pull request 1181 merged `ADR-074-shape-every-written-record-through-sapheneia.md` into `main` ninety minutes later, and `tests/test_decision_records.py` compares numbers against the default branch, so the step's own exit gate went red for a reason outside this run. ADR-075 is already claimed by open pull request 1185, so this record takes 076. Issue 888 is reconstructing ADR numbering to assign at merge rather than at authoring, which is the systemic answer; this amendment is the local one. The Files field also now states the check-map position that was already true rather than requiring a row the repository's own convention does not use.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Disciplines: phylax: this step spawns client binaries and reads what they print, so the fixed argv, the bounded timeout and the credential sweep all apply. ephoros: the manifest carries the probe command and result per harness, which is the signal answering why a harness got its class. metron: none, the probe's cost is dominated by client startup this repository does not control. elenchus: the killed-write guard is a cause-level test that fails without the atomic rename. hypomnema: none, ADR-076 already holds the decision this step implements.
+
+**Why.** Step 2's Disciplines field named the decision record by its old number. The record is ADR-076 for the reason the previous amendment gives, so this reference is corrected to match. Nothing about step 2's work changes.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
