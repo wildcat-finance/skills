@@ -280,7 +280,7 @@ def read_json(path, what):
 def quantity(value, what):
     """A hex quantity string from the wire, as the integer this predicate compares.
 
-    `"0xc7da16" < "0x2"` is true, because that orders text. The predicate refuses the
+    `"0x18ac22c" < "0x2"` is true, because that orders text. The predicate refuses the
     wire form for that reason, so the conversion happens here or not at all.
     """
     if not isinstance(value, str) or not value.startswith("0x"):

@@ -21,9 +21,9 @@
       }
     },
     {
-      "id": "full-capture", "component": "full-response", "venue": "goldfinch", "chain": "eip155:1", "evidence_class": "hosted-indexer",
+      "id": "full-capture", "component": "full-response", "venue": "aave-v4", "chain": "eip155:1", "evidence_class": "hosted-indexer",
       "source": {"kind": "hosted-indexer", "locator_class": "local-fixture", "reference": "full-dataset.json"},
-      "scope": {"kind": "full-dataset", "deployment": "goldfinch-v1", "finality": "provider-reported", "interval": {"kind": "snapshot", "observed_at": "2022-11-04T00:00:00Z"}},
+      "scope": {"kind": "full-dataset", "deployment": "aave-v4-mainnet", "finality": "provider-reported", "interval": {"kind": "snapshot", "observed_at": "2022-11-04T00:00:00Z"}},
       "coverage": {
         "status": "complete", "record_count": 3,
         "collections": [

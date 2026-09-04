@@ -28,12 +28,12 @@ overlay, runs inside that Node 26 wrapper; without it one checker fixture
 fails on the Node version and would be read as an assertion failure that has
 nothing to do with this change.
 
-## Step 1: add the RPC-boundary fixture procedure to Elenchus, guard it with the Goldfinch replay example, record elenchus-v1.3.0 and demonstrate
+## Step 1: add the RPC-boundary fixture procedure to Elenchus, guard it with the Aave v4 replay example, record elenchus-v1.3.0 and demonstrate
 
 **Goal.** Give the Elenchus skill file one section that says how a failure at
 the RPC boundary is pinned into a Lazarus fixture and reproduced offline
 behind `lazarus replay`, ship the worked example as one standard-library test
-module that drives the shipped Goldfinch fixture over loopback and skips by
+module that drives the shipped Aave v4 fixture over loopback and skips by
 name where Lazarus's dependencies are absent, and record the generation, the
 package version and the committed study and runbook that go with the rule.
 
@@ -45,7 +45,7 @@ runbook receipted; the root suite at 396 OK on Python 3.9.6 and 3.12.13;
 and `coverage --check` clean; `audit_synopsis.py --check .` exit 0 with
 fourteen pairs at `committed=match`; the Lazarus suite at 414 OK under `uv run
 --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt`; the
-Goldfinch demo and `verify` exit 0 under the same `uv` command at fixture
+Aave v4 demo and `verify` exit 0 under the same `uv` command at fixture
 digest `d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49`;
 the Hexaemeron suite at `1168/1168 tests passed` under
 `npx --yes --package=node@26.6.0 --call` with the `uv` command above, the
@@ -96,7 +96,7 @@ reason naming the five import names and the `uv` command:
 python3 -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture -v
 uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture -v
 uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus
-uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python plugins/lazarus/examples/goldfinch-v0/demo.py
+uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python plugins/lazarus/examples/aave-v4-spoke-v0/demo.py
 npx --yes --package=node@26.6.0 --call 'uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python plugins/hexaemeron/tests/run_tests.py'
 /usr/bin/python3 -B -m unittest discover -s tests
 python3 -m unittest discover -s tests
@@ -143,7 +143,7 @@ specifies: `setUpClass` probes `eth_hash`, `Crypto`, `jsonschema`, `rlp` and
 `trie` with `importlib.util.find_spec` and raises `unittest.SkipTest` with the
 fixed reason when any is missing; otherwise it starts `[sys.executable,
 "plugins/lazarus/scripts/lazarus.py", "replay",
-"plugins/lazarus/examples/goldfinch-v0", "--port", "0"]` with the repository
+"plugins/lazarus/examples/aave-v4-spoke-v0", "--port", "0"]` with the repository
 root as `cwd`, closed stdin, piped stdout and stderr, reads the first stdout
 line under a thirty-second timer that kills the process, and parses the port
 from the prefix `lazarus replay listening on http://127.0.0.1:`; under a

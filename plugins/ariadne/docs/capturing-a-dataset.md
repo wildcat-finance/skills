@@ -11,17 +11,17 @@ producer, reaches no network, and guesses nothing.
 ```bash
 python3 scripts/ariadne.py capture-dataset \
   --release tests/fixtures/dataset-release/v2 \
-  --name goldfinch-credit-events-v2 \
+  --name aave-v4-credit-events-v2 \
   --coverage-dimension block \
   --coverage-start 11370000 --coverage-end 15000000 \
   --gap 'start=12000000,end=12000100,reason=the archive node returned no receipts here' \
-  --input 'name=goldfinch capture,locator=alexandria://goldfinch/2024-01,file=<path>' \
+  --input 'name=aave-v4 capture,locator=alexandria://aave-v4/2024-01,file=<path>' \
   --producer-tool tabularium --producer-version 0.3.0 \
   --producer-command python3 --producer-command scripts/tabularium.py \
-  --parameter venue=goldfinch \
+  --parameter venue=aave-v4 \
   --record-count mapping.json=1 \
   --previous tests/fixtures/dataset-release/v1 \
-  --previous-name goldfinch-credit-events-v1 \
+  --previous-name aave-v4-credit-events-v1 \
   --out release.json
 ```
 

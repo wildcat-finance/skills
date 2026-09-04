@@ -15,7 +15,7 @@ Assuming, unless corrected:
 4. A declared anchor source is required. A transport failure, malformed answer,
    wrong chain, wrong block number, or hash disagreement aborts the staged
    capture, matching the existing primary-provider rule.
-5. Existing plan-v1 fixtures and the shipped Goldfinch release remain valid
+5. Existing plan-v1 fixtures and the shipped Aave v4 release remain valid
    without byte changes. The extension uses new versioned documents rather than
    editing a released v1 schema in place.
 
@@ -50,7 +50,7 @@ The proving paths are:
 python3 -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus -v
 python3 plugins/lazarus/scripts/lazarus.py verify <anchored-fixture>
 python3 plugins/lazarus/scripts/lazarus.py verify \
-  plugins/lazarus/examples/goldfinch-v0
+  plugins/lazarus/examples/aave-v4-spoke-v0
 ```
 
 The first command must cover capture, schema, manifest, verification, secret,
@@ -104,7 +104,7 @@ refreshed collective documentation, and
 Promise Machine contract. Neither body carries unfinished Lazarus product work
 into #386.
 
-The in-scope historical audit is the `Goldfinch preservation release` sequence
+The in-scope historical audit is the `Aave v4 preservation release` sequence
 in `audit/AUDIT.md` (21 rounds across five steps, as recorded by #227). The
 relevant findings and guards are retained here: refuse fields that are present
 but unread; cap both input and diagnostic size; protect against symlink and
@@ -166,7 +166,7 @@ Non-goals:
 
 Always: run the Lazarus and root Python suites before a commit; validate every
 new schema and example; run Imprimatur on shipped prose; and re-run the
-Goldfinch verification and preservation-release demonstrations. Ask first:
+Aave v4 verification and preservation-release demonstrations. Ask first:
 add a dependency, alter an existing v1 schema, touch CI, add optional/fail-open
 anchor semantics, widen release or Ariadne claims, or rewrite a released
 digest. Never: persist a provider URL, header, credential, or raw error; edit a
@@ -279,10 +279,10 @@ release-compatibility | an anchored fixture passing through release-v1 | the fix
 - `plugins/lazarus/schemas/{plan-v1.json,manifest-v1.json,release-v1.json}`.
 - `plugins/lazarus/scripts/lazarus.py` and
   `plugins/lazarus/scripts/lazarus_lib/{capture,manifest,verifier,rpc,scrub,schemas,release,binding}.py`.
-- `plugins/lazarus/tests/` and the checked-in Goldfinch fixture and release.
+- `plugins/lazarus/tests/` and the checked-in Aave v4 fixture and release.
 - `plugins/lazarus/docs/{study.md,runbook.md,preservation-release.md}` and
-  `docs/lazarus-goldfinch-preservation-release/`.
-- `audit/AUDIT.md`, especially `Goldfinch preservation release` steps 1 to 5.
+  `docs/lazarus-aave-v4-preservation-release/`.
+- `audit/AUDIT.md`, especially `Aave v4 preservation release` steps 1 to 5.
 - Merged pull requests [#59](https://github.com/wildcat-finance/skills/pull/59),
   [#227](https://github.com/wildcat-finance/skills/pull/227),
   [#577](https://github.com/wildcat-finance/skills/pull/577), and
@@ -305,7 +305,7 @@ metrics backend.
   schema, or coverage without echoing provider data.
 - Did verification preserve the epistemic boundary? The report and CLI retain
   both false claim booleans and the unchanged three evidence counts.
-- Did the compatibility path move? The Goldfinch demo reports its existing
+- Did the compatibility path move? The Aave v4 demo reports its existing
   digest and counts, while a focused anchored-fixture demo reports the new
   count.
 

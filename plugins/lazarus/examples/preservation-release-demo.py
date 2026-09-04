@@ -3,7 +3,7 @@
 
     python3 plugins/lazarus/examples/preservation-release-demo.py
 
-Verifies the checked-in Goldfinch fixture, captures an Ariadne statement over it,
+Verifies the checked-in Aave v4 fixture, captures an Ariadne statement over it,
 writes a release, reads that release back, and reads the shipped release back
 too. Then the two refusals that matter, because a path that only succeeds
 demonstrates nothing:
@@ -12,7 +12,7 @@ demonstrates nothing:
    document is entirely self-consistent. Lazarus recomputes the three evidence
    counts from the records and refuses it. Ariadne reads the counts from the
    manifest and does not re-derive them, so it accepts the same fixture and
-   writes a statement reporting six proof-backed records where two exist.
+   writes a statement reporting nine proof-backed records where five exist.
 2. An honest fixture with a statement that overstates it. This is the one the
    release path exists for: the binding holds a statement to what verification
    recomputed rather than to what the manifest claims, and names the class and
@@ -39,8 +39,8 @@ PLUGIN = Path(__file__).resolve().parents[1]
 REPOSITORY = PLUGIN.parents[1]
 LAZARUS = PLUGIN / "scripts" / "lazarus.py"
 ARIADNE = REPOSITORY / "plugins" / "ariadne" / "scripts" / "ariadne.py"
-FIXTURE = PLUGIN / "examples" / "goldfinch-v0"
-SHIPPED = PLUGIN / "examples" / "goldfinch-v0-release"
+FIXTURE = PLUGIN / "examples" / "aave-v4-spoke-v0"
+SHIPPED = PLUGIN / "examples" / "aave-v4-spoke-v0-release"
 
 
 def run(tool: Path, *arguments: object) -> subprocess.CompletedProcess:
@@ -70,7 +70,7 @@ def capture(fixture: Path, out: Path, reason: str) -> subprocess.CompletedProces
         ARIADNE,
         "capture-state-fixture",
         "--fixture", fixture,
-        "--name", "goldfinch-v0",
+        "--name", "aave-v4-spoke-v0",
         "--capture-tool", "lazarus",
         "--capture-command", "python3 plugins/lazarus/scripts/lazarus.py capture",
         "--first-capture-reason", reason,
@@ -81,7 +81,7 @@ def capture(fixture: Path, out: Path, reason: str) -> subprocess.CompletedProces
 def tampered_copy(source: Path, target: Path) -> None:
     """One integer moved, and the fixture digest recomputed to match.
 
-    Four recorded RPC responses presented as proved state, in a document with
+    Seven recorded RPC responses presented as proved state, in a document with
     nothing else wrong with it.
     """
     shutil.copytree(source, target)
@@ -90,7 +90,7 @@ def tampered_copy(source: Path, target: Path) -> None:
     from lazarus_lib.manifest import fixture_digest
 
     manifest = loads((target / "manifest.json").read_bytes())
-    manifest["evidence_counts"]["proof_backed"] = 6
+    manifest["evidence_counts"]["proof_backed"] = 9
     manifest["evidence_counts"]["recorded_rpc"] = 0
     manifest["fixture_digest"] = "0" * 64
     manifest["fixture_digest"] = fixture_digest(manifest)
@@ -100,7 +100,7 @@ def tampered_copy(source: Path, target: Path) -> None:
 def overstating_statement(source: Path, target: Path) -> None:
     """The same claim, made in the statement instead of the manifest."""
     document = json.loads(source.read_bytes())
-    document["predicate"]["evidence"]["proof_backed"] = 6
+    document["predicate"]["evidence"]["proof_backed"] = 9
     document["predicate"]["evidence"]["recorded_rpc"] = 0
     target.write_bytes(json.dumps(document, indent=2).encode())
 
@@ -115,7 +115,7 @@ def main() -> int:
         workspace = Path(directory)
         print("the whole path, on the checked-in fixture:")
         expect("verify the fixture", run(LAZARUS, "verify", FIXTURE), 0,
-               "proof-backed: 2", "recorded-rpc: 4")
+               "proof-backed: 5", "recorded-rpc: 7")
 
         statement = workspace / "statement.json"
         expect(
@@ -130,10 +130,10 @@ def main() -> int:
                                        "--statement", statement, "--out", release),
                0, "checks: statement-type")
         expect("read the release back", run(LAZARUS, "verify-release", release), 0,
-               "proof-backed: 2", "recorded-rpc: 4")
+               "proof-backed: 5", "recorded-rpc: 7")
         expect("read the shipped release back",
                run(LAZARUS, "verify-release", SHIPPED), 0,
-               "proof-backed: 2", "recorded-rpc: 4")
+               "proof-backed: 5", "recorded-rpc: 7")
 
         print()
         print("a manifest with one integer edited and its digest recomputed:")
@@ -149,7 +149,7 @@ def main() -> int:
         )
         claimed = json.loads(elsewhere.read_bytes())["predicate"]["evidence"]
         print("  the statement it wrote reports %d proof-backed record(s), "
-              "where two exist" % claimed["proof_backed"])
+              "where five exist" % claimed["proof_backed"])
         expect("and the release refuses it",
                run(LAZARUS, "release", tampered, "--statement", elsewhere,
                    "--out", workspace / "never-written"),

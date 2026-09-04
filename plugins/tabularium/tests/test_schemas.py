@@ -4,6 +4,7 @@ import json
 import unittest
 
 from . import support
+from tabularium_lib.release_v2 import KNOWN_GAPS
 
 
 class SchemaDocumentTests(unittest.TestCase):
@@ -11,10 +12,10 @@ class SchemaDocumentTests(unittest.TestCase):
         return json.loads((support.PLUGIN_ROOT / "schemas" / name).read_text())
 
     def test_event_schema_is_draft_2020_12_and_requires_every_dimension(self):
-        schema = self.load("canonical-event-v1.json")
+        schema = self.load("canonical-event-v2.json")
         self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
-        self.assertEqual(schema["properties"]["schema_version"]["const"], 1)
-        for key in ("event_family", "action", "chain", "transaction", "parties", "instrument", "asset", "amount", "provenance", "native_record"):
+        self.assertEqual(schema["properties"]["schema_version"]["const"], 2)
+        for key in ("event_family", "action", "chain", "transaction", "parties", "instrument", "amounts", "provenance", "native_record"):
             self.assertIn(key, schema["required"])
         provenance = schema["properties"]["provenance"]
         self.assertIn("source_contract", provenance["required"])
@@ -24,20 +25,24 @@ class SchemaDocumentTests(unittest.TestCase):
         )
 
     def test_coverage_schema_binds_all_three_artifacts_and_unsupported_kinds(self):
-        schema = self.load("coverage-manifest-v1.json")
-        self.assertEqual(schema["properties"]["schema_version"]["const"], 1)
+        schema = self.load("coverage-manifest-v2.json")
+        self.assertEqual(schema["properties"]["schema_version"]["const"], 2)
         self.assertIn("capture_manifest", schema["required"])
-        self.assertIn("unsupported_entities", schema["properties"]["coverage"]["required"])
-        unsupported = schema["properties"]["coverage"]["properties"]["unsupported_entities"]
+        coverage = schema["properties"]["coverage"]
         self.assertEqual(
-            set(unsupported["required"]),
-            {"_meta", "callableLoans", "creditLines", "tranchedPools"},
+            set(coverage["required"]), {"included_events", "unsupported_events"}
         )
-        gaps = schema["properties"]["known_gaps"]["const"]
-        self.assertEqual(len(gaps), 4)
+        self.assertFalse(coverage["additionalProperties"])
+        for key in ("included_events", "unsupported_events"):
+            counts = coverage["properties"][key]["additionalProperties"]
+            self.assertEqual(counts["type"], "integer")
+            self.assertEqual(counts["minimum"], 0)
+        gaps = schema["properties"]["known_gaps"]
+        self.assertGreaterEqual(gaps["minItems"], 4)
+        self.assertTrue(gaps["uniqueItems"])
         self.assertIn(
             "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity",
-            gaps,
+            KNOWN_GAPS["aave-v4"],
         )
 
     def test_event_schema_v2_separates_protocol_and_source_api(self):

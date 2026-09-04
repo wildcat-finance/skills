@@ -21,6 +21,14 @@ from .schemas import validate_document
 from .trieproof import trie_root
 
 
+# Every typed receipt since EIP-2718 shares one payload,
+# rlp([status, cumulative_gas_used, logs_bloom, logs]), behind its own type
+# byte: 0x1 (EIP-2930), 0x2 (EIP-1559), 0x3 (EIP-4844) and 0x4 (EIP-7702).
+# Refusing the later two left the receipt trie unbuildable for any block
+# carrying a blob or set-code transaction, which is nearly every mainnet
+# block since March 2024.
+SUPPORTED_RECEIPT_TYPES = frozenset({"legacy", "0x1", "0x2", "0x3", "0x4"})
+
 MAX_RECEIPTS = 100_000
 MAX_LOGS = 100_000
 MAX_TOPICS = 4
@@ -35,7 +43,7 @@ def encode_receipt(receipt: dict[str, Any]) -> bytes:
     if not isinstance(receipt, dict):
         raise FormatError("receipt must be an object")
     receipt_type = receipt.get("receipt_type")
-    if receipt_type not in {"legacy", "0x1", "0x2"}:
+    if receipt_type not in SUPPORTED_RECEIPT_TYPES:
         raise FormatError("unsupported receipt type")
     has_status = "status" in receipt
     has_root = "root" in receipt
@@ -335,7 +343,7 @@ def _rpc_receipt(
     receipt_type = value.get("type", "0x0")
     if receipt_type == "0x0":
         receipt_type = "legacy"
-    if receipt_type not in {"legacy", "0x1", "0x2"}:
+    if receipt_type not in SUPPORTED_RECEIPT_TYPES:
         raise FormatError("recorded receipt has an unsupported type")
     projected: dict[str, Any] = {
         "transaction_index": hex(index),

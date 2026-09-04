@@ -7,7 +7,7 @@
 
 Berean pins the corpus, chain reads, recorded answers and evaluation needed to check a grounded protocol-agent release without rerunning its model.
 
-**Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Goldfinch mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+**Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
 
 **Next Fiat job.** Use /hexaemeron:fiat to ship the first berean release grounded in captured Wildcat documentation and Wildcat market reads, replacing the demonstration corpus in the reference deployment. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
@@ -20,7 +20,7 @@ corpus, verifies citation spans and block-bound reads, runs recorded evaluation
 cases, and records promotion or rollback without needing the original model.
 
 The machinery ships, but the reference release is still a demonstration using
-a frozen corpus and preserved Goldfinch reads. There is no live Wildcat
+a frozen corpus and preserved Aave v4 reads. There is no live Wildcat
 reference release and no Ariadne statement binds a Berean release yet.
 
 ## Place in the collective
@@ -75,10 +75,10 @@ records to the promotion chain; nothing edits a published release in place.
 
 Chain evidence arrives as preserved read records in the Lazarus record
 shape, held by recomputed request keys. The shipped reference release under
-[`examples/goldfinch-demo-v0`](./examples/goldfinch-demo-v0) answers,
+[`examples/aave-v4-demo-v0`](./examples/aave-v4-demo-v0) answers,
 refuses and discloses a time-domain disagreement against a frozen
-demonstration corpus and preserved Goldfinch mainnet reads at block
-13097494, entirely offline. Its `reads.jsonl` is the Lazarus goldfinch
+demonstration corpus and preserved Aave v4 mainnet reads at block
+25870892, entirely offline. Its `reads.jsonl` is the Lazarus aave-v4
 fixture's records copied byte for byte, held by a drift test.
 
 ## What it ships
@@ -117,9 +117,9 @@ evaluation that release passed.
 ## Run it
 
 ```text
-python3 scripts/berean.py verify-release examples/goldfinch-demo-v0/release
-python3 scripts/berean.py run-evals examples/goldfinch-demo-v0/release
-python3 examples/goldfinch-demo-v0/demo.py
+python3 scripts/berean.py verify-release examples/aave-v4-demo-v0/release
+python3 scripts/berean.py run-evals examples/aave-v4-demo-v0/release
+python3 examples/aave-v4-demo-v0/demo.py
 ```
 
 Run Berean with the exact interpreter in the suite

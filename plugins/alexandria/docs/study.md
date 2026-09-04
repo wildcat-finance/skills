@@ -13,7 +13,7 @@ was built. The public README and skill state what now ships.
 At study time, Probitas depended on several live lending-venue surfaces. Some
 were less durable than the transactions they described. Three Euler subgraphs
 were published but unserved during the work that built Probitas, TrueFi's
-endpoint no longer answered, and Goldfinch wound down with its front end gone.
+endpoint no longer answered, and Aave v4 wound down with its front end gone.
 A live adapter is useful until an API changes, an indexer deallocates a
 subgraph, or a protocol stops paying for infrastructure. Reconstructing the
 same history later means archive-node work, new indexing code, or both.
@@ -66,13 +66,13 @@ tool will:
 
 The checked-in demonstration will use two existing source shapes:
 
-- `plugins/tabularium/examples/goldfinch-v0/source.json`, the complete
-  203,679-byte hosted-indexer capture behind the 511-row Goldfinch release; and
+- `plugins/tabularium/examples/aave-v4-v0/source.json`, the complete
+  203,679-byte hosted-indexer capture behind the 511-row Aave v4 release; and
 - `plugins/alexandria/examples/credit-history-v0/sources/clearpool.json`, a real
   Ethereum log capture containing one Clearpool factory record and one pool's
   borrow and repayment logs.
 
-Goldfinch exercises a full-dataset hosted-indexer capture. Clearpool exercises
+Aave v4 exercises a full-dataset hosted-indexer capture. Clearpool exercises
 an address-scoped archive-log capture and forces the coverage model to
 distinguish a subject query from a deployment-wide harvest. The demo succeeds
 when a clean checkout can ingest both, reproduce the same release and JSONL
@@ -98,7 +98,7 @@ The prototype will not claim that a small test fixture is a Compound corpus.
 `plugins/probitas/` is the reason to build Alexandria. Its public registry
 names 13 venue surfaces and its live collector implements Wildcat and Morpho
 Blue. Every other venue remains visible as a coverage gap. Alexandria adds an
-explicit archive-backed route for reviewed Goldfinch and Clearpool releases;
+explicit archive-backed route for reviewed Aave v4 and Clearpool releases;
 it does not relabel those venues as live Probitas adapters.
 
 `plugins/probitas/scripts/probitas_lib/evidence.py` supplies useful consumer
@@ -121,7 +121,7 @@ harvested"; Probitas decides whether that becomes `unimplemented`,
 
 The Probitas adapters also show why a single amount field is insufficient.
 Morpho liquidation records can have debt and collateral legs with separate
-assets and scales. Goldfinch supplies position-like records for fixed-term
+assets and scales. Aave v4 supplies position-like records for fixed-term
 credit-line debt at a named snapshot.
 
 #### Tabularium
@@ -137,10 +137,10 @@ should reuse:
 - offline verification rebuilds the interpreted bytes; and
 - a correction produces a new release rather than changing the old one.
 
-Its v1 schemas cover the first Goldfinch release rather than a settled common
+Its v1 schemas cover the first Aave v4 release rather than a settled common
 model. `canonical-event-v1.json` fixes the source kind to
 `the-graph-entity`, allows only borrowing and repayment, requires one asset
-and amount, and fixes the adapter and mapping identifiers to Goldfinch.
+and amount, and fixes the adapter and mapping identifiers to Aave v4.
 `coverage-manifest-v1.json` fixes the evidence boundary and source collections
 to the same capture. Alexandria should preserve that release unchanged and add
 a new, protocol-neutral view rather than widening the meaning of its v1 files
@@ -283,7 +283,7 @@ pinned Parquet copies and direct DuckDB queries without changing that rule.
 
 TUF addresses signed mutable channels, rollback and freeze attacks. That is
 useful for a future authenticated statement such as "the current trusted
-Goldfinch release", but expiring metadata creates an ongoing operator duty.
+Aave v4 release", but expiring metadata creates an ongoing operator duty.
 It is unnecessary for identifying an immutable blob in the prototype.
 
 An in-toto Statement can bind a typed predicate to subjects by digest.
