@@ -79,3 +79,40 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: two run_checks attempts returned one WAI-E-ADAPTER.TIMEOUT in the host adapter's fake-chat test under concurrent repository checks; the direct root suite passed 1116/1116 and the full Hexaemeron runner passed 2240/2240 after warm-up, so the transient adapter result was not a product finding.
+
+## Step 3, round 1 -- 2026-09-04T20:53:58Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: git-object-input=reviewed; candidate-bytes=reviewed; stale-base=reviewed; workflow-input=reviewed; partial-state=reviewed; provenance=reviewed; hostile-config=reviewed; publication-state=reviewed
+
+Not checked: none
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | Fiat's assignment worktree observation ran git status against the operator's repository without first refusing a clean or process filter configured in the local or enabled worktree config scope, so a configured filter could execute while worktree bytes were read; the observation now runs through a private repository whose index and HEAD are fixed copies. | fixed in 3208db33 |
+| S3-R1-02 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | Receipt replay required the report's mutable base ref to still resolve to the recorded base commit, so a base ref legitimately advanced after assignment made a retained receipt unreplayable on recovery, and the ref was checked only before the policy replay rather than around it, so a ref moved during evidence collection went undetected. | fixed in 3208db33 |
+| S3-R1-03 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | Supersession history was walked one step: only the immediately superseded sync's assignment receipt was excluded from active ancestry and reached receipt replay, so a candidate superseded two or more syncs back could remain in the active ancestry unnoticed. | fixed in 3208db33 |
+| S3-R1-04 | low | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | The read-only verify-decision-assignments command accepted a missing --candidate-ref and proceeded without the ref it was meant to verify against. | fixed in 3208db33 |
+| S3-R1-05 | high | plugins/hexaemeron/skills/fiat/SKILL.md | The implement commit changed the reviewed sync-run row of the loop table inside the agent-instruction manifest's measured span (bytes 18445 to 22773) and changed the whole-file digest bound by model.json, source-spans.json, compact.wai, manifest.json and tests/promise_machine_coverage.json without re-pinning them; the implement receipt named Hexaemeron suites only, and the root suite at 020837bb ran 1116 tests with 18 failures and 7 errors, 23 of them in tests.test_agent_instruction. The row is restored to its reviewed bytes (the --decision-assignments flag stays documented in the Integrate phase note and push-discipline.md), all seven reviewed sub-spans match at their recorded offsets, the digest chain is re-pinned, and the checker reports WAI-OK. The measurement record is a fresh accepted run against the pinned gpt-oss:120b profile: the fiat model measures 783 tokens and compact 743 (previously 784 and 744), total delta -77 (previously -76). The parity record is re-pinned, not re-run: its 36 job_ids follow the new correlation id, and the 12 fiat-fixture legs carry the 2026-08-30 responses and prompt_tokens as recorded observations over inputs that differ only in the embedded source digest. docs/agent-instruction-language-v1.md restates the moved figures (compact 2,174 tokens, compared total 2,451, saving 77, Fiat one-document -91, two-document prefix +365) and says when the counts were re-measured; its digest is re-pinned in tests/promise_machine_coverage.json. | fixed in this commit |
+| S3-R1-06 | low | .horos/boundary.json | The committed boundary recorded files_walked 2478 after Step 3 created plugins/hexaemeron/tests/test_fiat_decision_assignments.py; a fresh scan reports 2479 and lists the enlarged fiat SKILL.md as a blob candidate, and tests.test_boundary_currency and the scaffold currency test failed on it. Rescanned after the coverage re-pin and portable sync, twice, as the two read each other's output. | fixed in this commit |
+
+Leads not pursued: test_filter_added_after_preflight_cannot_execute_during_status and test_repository_without_clean_filters_still_verifies pass on the parent 6351c6e7 as well as on the fixed tree, so they are positive controls rather than parent-red guards; the other seven new tests fail on the parent and pass on the fix. A detached worktree at /private/tmp/fiat888-step3-parent.u0MrKj, left by the earlier session at 6351c6e7, is registered against this repository and was not touched.
+
+## Step 3, round 2 -- 2026-09-04T21:01:45Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: git-object-input=reviewed; candidate-bytes=reviewed; stale-base=reviewed; workflow-input=reviewed; partial-state=reviewed; provenance=reviewed; hostile-config=reviewed; publication-state=reviewed
+
+Not checked: none
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Three fail-closed limits in plugins/hexaemeron/skills/fiat/scripts/hexctl.py were seen and left: the worktree index snapshot refuses an index over GIT_OUTPUT_MAX (2,097,152 bytes; this linked worktree's index is 336,538 bytes); the private status observation reads neither the operator's info/exclude nor core.excludesFile, so a file ignored only there reads as untracked and refuses as dirty (on this worktree at f996412b29bcfc4cffbec6d90e08fb2f49292565 the private observation and git status --porcelain=v1 -z --untracked-files=all --ignore-submodules=all both returned 0 bytes); and the trailer check is exact-line, so a leading-whitespace continuation line that git interpret-trailers would fold into an ADR-Assignment value is invisible to it while the exact lines stay required and any other adr-assignment-prefixed line still refuses. Two hostile-config probes on git 2.50.1 returned negative: a repo-local core.fsmonitor hook did not execute under any of the ten operator-repository reads hexctl issues (rev-parse --shared-index-path, rev-parse --verify for commit and tree, rev-parse identity, show -s, diff --name-only A..B, ls-tree, merge-base --is-ancestor, config --local, verify-commit) with a positive control on git status and git diff HEAD, and git init run with its cwd inside a repository carrying init.templateDir and filter.hostile.clean copied no template into the private replay repository. The security suite is waived for this run (Python, Markdown and controller work; no Solidity), so x-ray, solidity-auditor and fizz did not run. The detached worktree /private/tmp/fiat888-step3-parent.u0MrKj was not touched.

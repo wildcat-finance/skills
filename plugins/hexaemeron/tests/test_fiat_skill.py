@@ -464,6 +464,33 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
 
+    def test_decision_assignment_contract_is_read_only_and_source_bound(self):
+        fiat = " ".join(self.fiat.split())
+        push = " ".join(self.push_discipline.split())
+        for text in (fiat, push):
+            self.assertIn("fiat-decision-assignments/v1", text)
+            self.assertIn("fiat-decision-assignment-composition/v1", text)
+            self.assertIn("verify-decision-assignments", text)
+            self.assertIn("read-only", text)
+            self.assertIn("ADR-Assignment-Base: <base>", text)
+            self.assertIn("ADR-Assignment: adr/<slug>=ADR-NNN", text)
+            self.assertIn("sibling", text)
+        self.assertIn("--decision-assignments", push)
+        self.assertIn("fiat_decision_assignments_v1", push)
+        self.assertIn("must not remain in active ancestry", push)
+
+    def test_decision_assignment_promise_keeps_hypomnema_authority(self):
+        promise = self.fiat.split(
+            "### fiat-decision-assignment-composition", 1
+        )[1].split("### ", 1)[0]
+        self.assertIn("- Consequence: 2", promise)
+        self.assertIn("- Authorises:", promise)
+        self.assertIn("Hypomnema alone owns allocation policy", promise)
+        self.assertIn("does not reserve a number", promise)
+        self.assertIn("does not", promise)
+        self.assertIn("mutate a draft", promise)
+        self.assertIn("superseded assignment retained in active ancestry", promise)
+
     def test_issue_556_generation_records_retain_the_declared_relation(self):
         ledgers = {
             "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
