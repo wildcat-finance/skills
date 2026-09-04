@@ -1,7 +1,7 @@
 # What shaped each component
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Berean.** Berean pins the corpus, chain readings and evaluation record a protocol agent's answers rest on, so a release can be checked without the model that produced it. Use Lemma to produce source-linked chunks, Lazarus to preserve the chain evidence itself, and Ariadne to bind a released artefact digest to its evidence. **Current frontier:** The reference release answers against a frozen demonstration corpus and preserved Goldfinch mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+> **Marketplace context: Berean.** Berean pins the corpus, chain readings and evaluation record a protocol agent's answers rest on, so a release can be checked without the model that produced it. Use Lemma to produce source-linked chunks, Lazarus to preserve the chain evidence itself, and Ariadne to bind a released artefact digest to its evidence. **Current frontier:** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
 <!-- marketplace-context:end -->
 
 The specification at [spec.md](spec.md) names three inputs: Project Aleph,
@@ -49,7 +49,7 @@ text, re-sliced and re-hashed at check time.
   evidence bundle and the binding pattern: recorded reads keyed by the
   digest of their canonical request, canonical JSON with floats refused,
   and two artefacts held together by recomputation rather than by runtime
-  import. The reference release's `reads.jsonl` is its goldfinch fixture's
+  import. The reference release's `reads.jsonl` is its aave-v4 fixture's
   records, copied byte for byte and held by a drift test.
 - Alexandria (`plugins/alexandria/docs/study.md`) named evidence-class
   inflation as a standing risk; berean's closed source and evidence

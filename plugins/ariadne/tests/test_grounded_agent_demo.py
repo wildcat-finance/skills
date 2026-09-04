@@ -14,7 +14,7 @@ DEMO = (
     Path(support.PLUGIN_ROOT) / "examples" / "grounded_agent_demo.py"
 )
 STATEMENT_SHA256 = (
-    "03fb54176a417248447a5e92ce702acce229855b0378215fd68a4286130165bc"
+    "3da25eb77f22c83697f28118afd140bec15bdeea87bf84c7c7b5000c2851729f"
 )
 
 
@@ -63,10 +63,10 @@ class GroundedAgentDemoTests(unittest.TestCase):
             self.assertIn("== %s ==" % stage, output)
 
         self.assertIn("statement sha256: %s" % STATEMENT_SHA256, output)
-        self.assertIn("subjects: 12; declared bytes: 93165", output)
+        self.assertIn("subjects: 12; declared bytes: 28542", output)
         self.assertIn(
             "producer argv: python3 "
-            "plugins/berean/examples/goldfinch-demo-v0/rebuild.py",
+            "plugins/berean/examples/aave-v4-demo-v0/rebuild.py",
             output,
         )
         self.assertIn("parent socket guard: active", output)

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Rebuild the goldfinch-demo-v0 reference release from its preserved inputs.
+"""Rebuild the aave-v4-demo-v0 reference release from its preserved inputs.
 
 The one preserved input is `release/reads.jsonl`, copied byte for byte from
-the Lazarus goldfinch-v0 preservation release; this script never rewrites
+the Lazarus aave-v4-spoke-v0 preservation release; this script never rewrites
 it. Everything else in `release/` is derived deterministically from the
 texts below plus that file, so a reader can delete the derived artefacts,
 run this, and compare bytes. The corpus documents are written for the
@@ -23,16 +23,19 @@ from berean_lib import BereanError  # noqa: E402
 from berean_lib import canonical, corpus, digests, evals, promote, reads, release  # noqa: E402
 
 DEFAULT_RELEASE_DIR = os.path.join(HERE, "release")
-CONTRACT = "0x8bbd80f88e662e56b918c353da635e210ece93c6"
+CONTRACT = "0x973a023a77420ba610f06b3858ad991df6d85a08"
+# The preserved reads also touch the Core hub, so the allowlist names both
+# contracts the records actually reference rather than only the subject.
+HUB = "0xcca852bc40e560adc3b1cc58ca5b55638ce826c9"
 CHAIN_ID = 1
-BLOCK_NUMBER = 13097494
-BLOCK_HASH = "0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc"
+BLOCK_NUMBER = 25870892
+BLOCK_HASH = "0x11e9be2ff9ff6a04319af0b04c24b95f3f1117c2df79f44f94d208857d01af07"
 READS_SOURCE = (
-    "Copied byte for byte from the Lazarus goldfinch-v0 preservation release "
-    "(plugins/lazarus/examples/goldfinch-v0-release/fixture/rpc.jsonl), which "
-    "preserves these responses for Ethereum mainnet block 13097494 and records "
-    "the block hash provenance in its plan. The records stay recorded-rpc "
-    "evidence here; nothing upgrades them."
+    "Copied byte for byte from the Lazarus aave-v4-spoke-v0 preservation "
+    "release (plugins/lazarus/examples/aave-v4-spoke-v0-release/fixture/"
+    "rpc.jsonl), which preserves these responses for Ethereum mainnet block "
+    "25870892 and records the block hash provenance in its plan. The records "
+    "stay recorded-rpc evidence here; nothing upgrades them."
 )
 QUESTION_FAMILIES = (
     "demonstration subject state",
@@ -46,13 +49,14 @@ REFUSAL_CONDITIONS = (
 TERMS = """# Demonstration subject terms
 
 These documents demonstrate Berean's evidence discipline. Their subject is
-the contract at 0x8bbd80f88e662e56b918c353da635e210ece93c6 on Ethereum
-mainnet, as preserved at block 13097494; the prose is written for this
+the contract at 0x973a023a77420ba610f06b3858ad991df6d85a08 on Ethereum
+mainnet, as preserved at block 25870892; the prose is written for this
 corpus and cites only that preserved evidence.
 
-Slot zero of the subject contract holds its pause flag. A value of one
-means the subject is paused; a value of zero means it accepts new entries.
-At the preserved block, slot zero holds the value one.
+At the preserved block, slot zero of the subject contract holds the value
+eleven. This corpus states what the preserved reading says and makes no
+claim about what that slot means inside the protocol, because the
+preserved evidence does not establish a meaning.
 
 This document is version 2 of the terms and supersedes version 1, whose
 recorded reading survives in the history notes.
@@ -64,7 +68,7 @@ Version 1 of the demonstration terms, written before the preserved block
 was chosen, recorded slot zero of the subject contract as holding the
 value zero. That recording is kept here unchanged, as version 1 stated it,
 so the corpus carries a document claim an on-chain reading can disagree
-with. A grounded answer about the flag reports both the version 1 claim
+with. A grounded answer about the slot reports both the version 1 claim
 and the preserved block's reading rather than choosing silently.
 """
 
@@ -119,12 +123,12 @@ def read_reference(record, identifier):
 def grounded_answer(record):
     return {
         "format": "berean-answer/v1",
-        "question": "Is the demonstration subject paused at the preserved block?",
+        "question": "What does slot zero of the demonstration subject hold at the preserved block?",
         "kind": "answer",
         "refusal": None,
         "sentences": [
             {
-                "text": "The terms say a slot-zero value of one means the subject is paused.",
+                "text": "The terms state that slot zero holds the value eleven at the preserved block.",
                 "source_class": "document",
                 "evidence": ["c-terms"],
             },
@@ -143,7 +147,7 @@ def grounded_answer(record):
             citation(
                 TERMS,
                 "terms.md",
-                "A value of one\nmeans the subject is paused",
+                "slot zero of the subject contract holds the value\neleven",
                 "c-terms",
             )
         ],
@@ -184,7 +188,7 @@ def discrepancy_answer(record):
                 "evidence": ["c-history"],
             },
             {
-                "text": "The preserved block reads slot zero as one.",
+                "text": "The preserved block reads slot zero as eleven.",
                 "source_class": "chain_read",
                 "evidence": ["r-slot"],
             },
@@ -205,7 +209,7 @@ def discrepancy_answer(record):
                 "chain_evidence": "r-slot",
                 "note": (
                     "the document speaks as of version 1; the reading speaks as of "
-                    "block 13097494; both are reported"
+                    "block 25870892; both are reported"
                 ),
             }
         ],
@@ -430,10 +434,10 @@ def main():
 
     document = release.build(
         release_dir,
-        "goldfinch-demo-v0",
+        "aave-v4-demo-v0",
         QUESTION_FAMILIES,
         REFUSAL_CONDITIONS,
-        {"chains": [CHAIN_ID], "contracts": [CONTRACT]},
+        {"chains": [CHAIN_ID], "contracts": sorted([CONTRACT, HUB])},
         "none",
         reads_context={
             "chain_id": CHAIN_ID,
@@ -449,7 +453,7 @@ def main():
         os.remove(chain_path)
     promote.promote(
         release_dir,
-        "goldfinch-demo-v0 promoted on its own graded report; see the release README",
+        "aave-v4-demo-v0 promoted on its own graded report; see the release README",
     )
     print(f"rebuilt; release digest {document['release_digest']}")
     return 0

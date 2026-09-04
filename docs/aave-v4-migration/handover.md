@@ -4,10 +4,14 @@ Branch `claude/remove-goldfinch-demo-6d9730`. Written 2026-09-02, mid-migration,
 for whoever continues it.
 
 The task began as "delete the Goldfinch demo" and became a data-provenance
-migration across seven plugins. Two plugins are done and green. The rest is
-blocked on one open decision, recorded in section 8. Read sections 3 and 7
-before touching anything: section 3 changes what the remaining work *is*, and
-section 7 lists traps that each cost an hour to find.
+migration across seven plugins. Four are done and green: lazarus, tabularium,
+alexandria and probitas. Berean, ariadne and the repository-level records
+remain. Read section 7 before touching anything; those traps each cost an
+hour to find.
+
+Section 8's open decision is **resolved**: Tabularium was recaptured from
+pure archive RPC in `d2f3e6fa`, and that dissolved the wall Alexandria had hit
+rather than requiring it to be managed.
 
 ## 1. Why this is happening
 
@@ -34,37 +38,42 @@ that supersedes it.
 
 ## 2. State of the branch
 
-Four commits, all green when landed:
+Nine commits, each green when landed:
 
 | Commit | What |
 | --- | --- |
 | `f960fe58` | `lazarus/rpc.py`: default User-Agent, batch chunking |
-| `be4e12fd` | `lazarus/receipts.py`: receipt types `0x3`/`0x4`; `aave-v4-spoke-v0` example |
-| `c899d7a0` | Lazarus Goldfinch → Aave v4, complete (110 files, +688/−1098) |
-| `bcbeb995` | Tabularium `aave-v4` adapter; **event schema v1 path deleted** |
+| `be4e12fd` | `lazarus/receipts.py`: receipt types `0x3`/`0x4` |
+| `c899d7a0` | Lazarus Goldfinch to Aave v4, complete |
+| `bcbeb995` | Tabularium `aave-v4` adapter; event schema v1 path deleted |
+| `cc78906d` | This handover, plus five root-scope repairs |
+| `d2ae0fd5` | Merge of `origin/main` |
+| `d2f3e6fa` | **Tabularium recaptured from consensus logs**; section 8 resolved |
+| `ecd09bf2` | Widened audit exemption; corrected the RPC resolution record |
+| `c48484b1` | **Alexandria derives Aave v4 from those logs** |
 
-Suite state as of this writing:
+Suite state:
 
-| Suite | Result | Cause |
-| --- | --- | --- |
-| lazarus | 629/629 | n/a |
-| tabularium | 132/132 | n/a |
-| root | 1116/1116 | n/a |
-| berean | 162 OK (2 skipped) | green, but see 6.3 |
-| ariadne | 881, **1 failure** | demo reads deleted `lazarus/examples/goldfinch-v0-release/fixture/rpc.jsonl` |
-| probitas | 445, **1 error** | downstream of alexandria; resolves when 6.2 does |
-| alexandria | 471, **2 failures + 129 errors** | pins deleted `tabularium/examples/goldfinch-v0/source.json` |
+| Suite | Result |
+| --- | --- |
+| lazarus | 629/629 |
+| tabularium | 137/137 |
+| alexandria | 471/471 |
+| probitas | 453/453 |
+| berean | 162 OK, 2 skipped, but see 6.3 |
+| root | 1116/1116 |
+| hexaemeron | 2204/2204 |
+| ariadne | 881, **1 failure**: its demo reads a deleted Lazarus release fixture |
 
-Remaining Goldfinch references: **153 files** on this branch against **225 on main**, independently counted from a clean checkout. Main is gaining references while this branch removes them, so a later merge inherits new ones. That argues for finishing rather than pausing.
+Remaining Goldfinch references: **135 files**, of which the byte-protected
+audit set is deliberate and permanent.
 
-**Merge debt.** The branch forks from `ff47f307`; `origin/main` has since
-reached `244b6729`, so it is **34 commits behind** and 4 ahead. Whoever
-carries this forward owes that merge, and should do it before recapturing
-anything, since a moved main can change the pinned digests and generated
-inventories listed in section 7. Re-check the count rather than trusting this
-line; main moves several times a day.
+**Merge debt.** Re-check before trusting this line; main moves several times a
+day. At the last check the branch was 66 behind and 9 ahead. `d2ae0fd5`
+already merged once cleanly: the only conflicts were the generated Horos
+inventories, resolved by taking main's copy and rescanning.
 
-Shipped Aave v4 artefacts and their digests:
+Shipped Aave v4 artefacts:
 
 | Artefact | Digest |
 | --- | --- |
@@ -73,11 +82,13 @@ Shipped Aave v4 artefacts and their digests:
 | `lazarus/examples/aave-v4-spoke-v1` fixture | `ea047af74636f278d1641807edbce7860bc831e6822db187fd8d5290d0dc937b` |
 | `lazarus/examples/aave-v4-spoke-v1-release` | `a104fc78d4c7b6b1df8fe0abd9daa74236b382154f4246604662040d1298aa39` |
 | `lazarus/tests/fixtures/aave-v4-receipt-proof-v1` | `a1007c769291b0ae4f3a9cf20ca8316ea05b63f10e78511d73c9eb29c3109d2d` |
-| `tabularium/examples/aave-v4-v0` canonical | `a54a7ff15cfe9aa43639b00bb07036f0ebc2e832ac37f44fcee2b0dd0684daa4` |
+| `tabularium/examples/aave-v4-v0` source | `1d88fdb5bca293995fd02e5a59f060d74541c80405e7bf1987544e5f334a8744` |
+| `tabularium/examples/aave-v4-v0` canonical | `490d3f6399f84af8a81a5401b3cc92bf7ecfbe98a6bb02f07215b9099625ccf7` |
 
 Shared boundary: **block 25870892**, hash
 `0x11e9be2ff9ff6a04319af0b04c24b95f3f1117c2df79f44f94d208857d01af07`. Both
-Lazarus fixtures preserve that block; the Tabularium window closes on it.
+Lazarus fixtures preserve that block, the Tabularium window closes on it, and
+the RPC recapture read that hash independently and got the same value.
 
 ## 3. The decisive finding: pure archive RPC beats the subgraph
 
@@ -322,28 +333,26 @@ Each of these cost real time. They are ordered by how much.
    `WAI-E-ADAPTER.TIMEOUT` failures that are load, not diff. Re-run before
    believing a red.
 
-## 8. The open decision
+## 8. The decision that was open, and how it went
 
-**Recapture Tabularium from pure archive RPC, or keep the committed subgraph
-release?**
+**Resolved: Tabularium was recaptured from pure archive RPC.**
 
-Recapturing means replacing `bcbeb995`'s data: a new adapter that decodes
-logs rather than mapping rows, a new source, new digests, and repinned tests.
-Estimated 40 to 60 tool calls. Lazarus is unaffected; it was always native RPC.
+The recapture reproduced the subgraph release's counts exactly, 282 borrow and
+218 repay, and **all 500 decoded amounts matched their subgraph row**. So the
+indexer had been reporting the chain faithfully; it was only dropping context.
+What the recapture added: a block hash, transaction index and block timestamp
+on every event, and a real underlying token on every value leg.
 
-The case for recapturing: the original complaint was that the in-repo data
-came from a scrape potentially "WILDLY different" from the chain. The
-subgraph route reproduces exactly that weakness, an indexer's self-reported
-boundary with no chain proof, and it is what blocks Alexandria. Section 3
-shows the RPC route is proven and complete.
+That removed three walls at once. Tabularium's evidence class rose from
+`hosted-indexer-reported-block-window` to `native-log`. Alexandria could
+satisfy its own asset schema for all 500 events instead of 317. And the
+Probitas bridge regained a checked venue, carrying 49 records where it carried
+11.
 
-The case against: `bcbeb995` is green, and the subgraph release is honest
-about its limits: it declares six known gaps including the null assets and
-the unproven boundary.
-
-**Recommendation: recapture.** Then Alexandria's blocker disappears rather
-than being managed, and both releases carry `native-log` evidence bound to
-block `25870892`.
+Two boundaries were kept rather than closed. A repay log carries five data
+words and only the first two are established, because the last three were zero
+in all 218 preserved logs; the adapter never reads them. And the share leg
+names no asset, because shares are the spoke's own accounting unit.
 
 ## 9. Verification
 
