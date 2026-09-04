@@ -1621,6 +1621,102 @@ class RenderTests(unittest.TestCase):
                 # And the guide carries the exact reason, not a summary of it.
                 self.assertIn(record["blocker"], guide)
 
+    def test_a_page_showing_a_longer_roster_than_the_manifest_is_drift(self):
+        # S3-R1-02. The PDF half of `check` compares by containment, and the
+        # roster line is names joined by a separator, so dropping the FIRST or
+        # LAST name leaves the shorter line contained in the page's longer one.
+        # Both ends are driven here; the tail case is the one the committed
+        # page actually admitted before the delimiter guard existed.
+        document = landed()
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        self.assertEqual(render_harness_roster.pdf_drift(document, shown), [])
+        manual = render_harness_roster.names_in_class(
+            document, render_harness_roster.MANUAL_ROUTE
+        )
+        self.assertGreater(len(manual), 2, manual)
+        for dropped in (manual[0], manual[-1]):
+            with self.subTest(dropped=dropped):
+                trimmed = json.loads(json.dumps(document))
+                trimmed["harnesses"] = [
+                    record for record in trimmed["harnesses"]
+                    if record["name"] != dropped
+                ]
+                shorter = render_harness_roster.pdf_roster_line(trimmed)
+                # The precondition that makes this a real hole rather than a
+                # hypothetical one: the shorter line IS still contained.
+                self.assertIn(render_harness_roster._normalise(shorter), shown)
+                self.assertEqual(
+                    len(render_harness_roster.pdf_drift(trimmed, shown)), 1
+                )
+
+    def test_a_manifest_rendering_an_empty_roster_line_is_drift(self):
+        # An empty expectation is contained in every page ever written, so
+        # containment alone would report a clean check against a page that says
+        # nothing at all. Reachable whenever no harness holds `manual route`.
+        document = landed()
+        for record in document["harnesses"]:
+            record["classification"] = render_harness_roster.UNSUPPORTED
+        self.assertEqual(render_harness_roster.pdf_roster_line(document), "")
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        drift = render_harness_roster.pdf_drift(document, shown)
+        self.assertTrue(any("empty string" in line for line in drift), drift)
+
+    def test_a_recorded_date_that_is_not_a_calendar_date_is_refused(self):
+        # S3-R1-04, handed here by step 2's round 4. `manifest_document`
+        # matches the shape and nothing more, so an operator `--date` of
+        # `2026-13-45` reaches a written manifest. This is the last gate before
+        # that string is published in three surfaces at once.
+        for bad in ("2026-13-45", "2026-02-31", "0000-00-00"):
+            with self.subTest(date=bad):
+                document = landed()
+                document["recorded"]["date"] = bad
+                # The shape check the probe applies still passes it, which is
+                # what makes this refusal load-bearing rather than redundant.
+                self.assertTrue(probe_harnesses.DATE_PATTERN.match(bad))
+                for render in (
+                    render_harness_roster.readme_block,
+                    render_harness_roster.guide_block,
+                    render_harness_roster.pdf_label,
+                ):
+                    with self.assertRaises(render_harness_roster.RenderError):
+                        render(document)
+        # A real date still renders, so the guard refuses the calendar and not
+        # the field.
+        self.assertIn("2026-09-04", render_harness_roster.pdf_label(landed()))
+
+    def test_the_readme_states_how_many_clients_answered(self):
+        # S3-R1-03. The sentence used to claim the probe "read every client
+        # below"; no client was read on this host. The count is derived from
+        # `version_read`, so it cannot drift from the manifest.
+        document = landed()
+        self.assertFalse(any(record["version_read"] for record in document["harnesses"]))
+        block = render_harness_roster.readme_block(document)
+        self.assertIn("no client answered there", block)
+        self.assertNotIn("read every client", block)
+        answered = json.loads(json.dumps(document))
+        answered["harnesses"][0]["version_read"] = True
+        answered["harnesses"][0]["client_version"] = "1.2.3"
+        self.assertIn(
+            f"1 of the {len(answered['harnesses'])} clients answered there",
+            render_harness_roster.readme_block(answered),
+        )
+
+    def test_neither_surface_names_a_roster_harness_outside_the_markers(self):
+        # The provenance comment published in both files makes this claim, so
+        # something has to hold it. Codex and Claude Code are named outside the
+        # markers on purpose and are not in the roster; the comment now says
+        # exactly that rather than claiming no harness name appears at all.
+        names = [record["name"] for record in landed()["harnesses"]]
+        self.assertNotIn("Codex", names)
+        self.assertNotIn("Claude Code", names)
+        for label, path in (("README", README_PATH), ("guide", GUIDE_PATH)):
+            text = path.read_text(encoding="utf-8")
+            head, _, tail = render_harness_roster.split_surface(text, path)
+            outside = head + tail
+            for name in names:
+                with self.subTest(surface=label, harness=name):
+                    self.assertNotIn(name, outside)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,9 +16,12 @@ Three properties are load-bearing, and each has a case in
 **The surfaces are derived, never authored.** Every harness name, class and
 blocker in a surface comes out of the manifest. The two Markdown surfaces carry
 their generated text between `<!-- harness-roster:begin -->` and
-`<!-- harness-roster:end -->`, and nothing outside those markers names a
-harness. The builder holds no harness name at all: it calls the four
-`pdf_*` functions below at draw time, so the PDF cannot drift from the manifest
+`<!-- harness-roster:end -->`, and nothing outside those markers names a harness
+the manifest records. Both surfaces do name Codex and Claude Code outside the
+markers, deliberately: they are not in the probed roster, the guide says so in
+its own prose, and the claim made here is about the six harnesses the manifest
+carries. The builder holds no harness name at all: it calls the four `pdf_*`
+functions below at draw time, so the PDF cannot drift from the manifest
 without the manifest moving first.
 
 **Rendering is deterministic.** Nothing here reads a clock, a random source, an
@@ -35,12 +38,17 @@ says and stays silent about when it was built.
 `--check` needs no PDF library: it reads the finished file with `zlib` from the
 standard library. `--write` rebuilds the PDF by running
 `scripts/build_contributor_guide.py`, which does need `reportlab`, and reports
-the failure rather than leaving a stale page behind.
+the failure rather than leaving a stale page behind. The committed PDF's exact
+byte count is recorded in `.horos/boundary.json`, and two boundary cases go red
+when it moves, so a rebuild under a different `reportlab` is a tree-wide change
+rather than a private one. `build_contributor_guide.py` prints the version it
+built with for that reason.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import importlib.util
 import re
 import subprocess
@@ -63,6 +71,10 @@ END_MARKER = "<!-- harness-roster:end -->"
 
 MANUAL_ROUTE = "manual route"
 UNSUPPORTED = "unsupported"
+
+# What joins the manual-route names on the harness page. `pdf_drift` needs it
+# as well, to tell a whole roster line from the head of a longer one.
+ROSTER_SEPARATOR = "  /  "
 
 # The heading the harness page draws, and the only page whose text this module
 # reads. A PDF that does not carry it is not the guide.
@@ -150,9 +162,26 @@ def names_in_class(document, classification):
 
 
 def recorded(document):
-    """The host, date and base ref this manifest was written against."""
+    """The host, date and base ref this manifest was written against.
+
+    The date is checked as a calendar date here rather than only as a shape.
+    `probe_harnesses.manifest_document` matches it against
+    `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` and no more, so an operator `--date` of
+    `2026-13-45` or `2026-02-31` reaches a written manifest; this is the last
+    gate before that string is published in the README, the guide table and the
+    PDF's roster card at once, which is where an unreadable date does its
+    damage. Refusing here leaves the probe's own contract alone: a date the
+    renderer will not publish is a manifest defect, not a rendering one.
+    """
     block = document["recorded"]
-    return block["host"], block["date"], block["base_ref"]
+    date = block["date"]
+    try:
+        datetime.date.fromisoformat(date)
+    except (TypeError, ValueError):
+        raise RenderError(
+            f"manifest refused: recorded date {date!r} is not a calendar date"
+        ) from None
+    return block["host"], date, block["base_ref"]
 
 
 def _version(entry):
@@ -175,8 +204,28 @@ def _provenance(document, surface):
         f"docs/harness-classification.json, recorded on {host} on {date} against "
         f"{base_ref}. Change the roster in scripts/probe_harnesses.py, re-run the "
         f"probe, then re-run the renderer. Nothing between these markers is "
-        f"edited by hand, and {surface} carries no harness name outside them. -->"
+        f"edited by hand, and {surface} names no harness from the probed roster "
+        f"outside them. Codex and Claude Code are named outside them on purpose: "
+        f"they are not in the roster and no probe reads them. -->"
     )
+
+
+def _answered(document):
+    """How many clients answered, as a clause, derived rather than asserted.
+
+    The sentence this feeds used to say the probe "read every client below".
+    No client was read: every row on this host records a binary that did not
+    resolve on PATH, or a harness that declares no binary at all. A count taken
+    from `version_read` cannot drift from the manifest the way a fixed claim
+    can, and it stays true on the day a client does answer.
+    """
+    entries = harnesses(document)
+    answered = tuple(entry for entry in entries if entry["version_read"])
+    if not answered:
+        return "no client answered there"
+    if len(answered) == 1:
+        return f"1 of the {len(entries)} clients answered there"
+    return f"{len(answered)} of the {len(entries)} clients answered there"
 
 
 def readme_block(document):
@@ -188,8 +237,8 @@ def readme_block(document):
         _provenance(document, "the README"),
         "",
         "No local harness holds a checked one-click Atlas launcher. A probe on "
-        f"{host} read every client below on {date}, and the roster states what it "
-        "found rather than what anybody hoped for:",
+        f"{host} recorded every harness below on {date} and {_answered(document)}, "
+        "so the roster states what it found rather than what anybody hoped for:",
         "",
     ]
     if manual:
@@ -243,7 +292,7 @@ def pdf_label(document):
 
 def pdf_roster_line(document):
     """The harness page's roster line."""
-    return "  /  ".join(names_in_class(document, MANUAL_ROUTE))
+    return ROSTER_SEPARATOR.join(names_in_class(document, MANUAL_ROUTE))
 
 
 def pdf_detail(document):
@@ -261,6 +310,57 @@ def pdf_expectations(document):
         pdf_roster_line(document),
         pdf_detail(document),
     )
+
+
+def pdf_drift(document, shown):
+    """Every way the harness page's text disagrees with the manifest.
+
+    Containment alone is not enough, and the gap is not hypothetical. The
+    roster line joins the manual-route names with `ROSTER_SEPARATOR`, so a page
+    built when the roster was one name longer still *contains* the shorter line
+    whenever the dropped name was the last one. Measured against the committed
+    page: delete `Cline` from the manifest and all three expectations are still
+    contained, so the PDF half of `--check` passes on a page that goes on
+    advertising a harness the roster no longer carries. The two Markdown
+    surfaces are compared by equality and do not have this hole.
+
+    Two guards close it. A matched roster line must be delimiter-bounded, so a
+    name on either side of it is drift rather than a longer match. And an empty
+    expectation is refused instead of being vacuously contained, because an
+    empty string proves nothing about a page.
+    """
+    drift = []
+    for expected in pdf_expectations(document):
+        wanted = _normalise(expected)
+        if not wanted:
+            drift.append("the manifest renders an empty string for the harness page")
+        elif wanted not in shown:
+            drift.append(f"the harness page does not show {expected!r}")
+    line = _normalise(pdf_roster_line(document))
+    if line and line in shown and not _bounded(shown, line):
+        drift.append(
+            f"the harness page shows a longer roster than {pdf_roster_line(document)!r}"
+        )
+    return drift
+
+
+def _bounded(shown, line):
+    """Whether some occurrence of `line` is not part of a longer roster.
+
+    The separator is rebuilt with its surrounding spaces rather than passed
+    through `_normalise`, which strips them and would leave a bare `/` that
+    never matches the ` / ` the page actually shows. Getting this wrong is
+    silent: the guard returns `True` for every input and reports no drift.
+    """
+    separator = f" {_normalise(ROSTER_SEPARATOR)} "
+    index = shown.find(line)
+    while index >= 0:
+        before = shown[:index].endswith(separator)
+        after = shown[index + len(line) :].startswith(separator)
+        if not before and not after:
+            return True
+        index = shown.find(line, index + 1)
+    return False
 
 
 def _normalise(text):
@@ -437,16 +537,12 @@ def check(*, manifest=None, readme=None, guide=None, pdf=None):
                 drift.append(f"{path}: the roster region does not match the manifest")
         except RenderError as error:
             drift.append(f"{path}: {error}")
+    target = PDF_PATH if pdf is None else Path(pdf)
     try:
         shown = harness_page_text(pdf)
-        for expected in pdf_expectations(document):
-            if _normalise(expected) not in shown:
-                drift.append(
-                    f"{PDF_PATH if pdf is None else Path(pdf)}: the harness page does "
-                    f"not show {expected!r}"
-                )
+        drift.extend(f"{target}: {line}" for line in pdf_drift(document, shown))
     except RenderError as error:
-        drift.append(f"{PDF_PATH if pdf is None else Path(pdf)}: {error}")
+        drift.append(f"{target}: {error}")
     return document, drift
 
 

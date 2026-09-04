@@ -13,6 +13,12 @@ and its detail all come from scripts/render_harness_roster.py, which derives
 them from docs/harness-classification.json. No harness name appears anywhere in
 this file, which is what stops the PDF and the two Markdown surfaces disagreeing
 about a roster nobody re-probed.
+
+The reportlab version is load-bearing for the committed file rather than only
+for this run. .horos/boundary.json records the PDF's exact byte count, and two
+boundary cases go red when it moves, so the same page built under a different
+reportlab is a change the whole tree sees. The version that built a file is
+readable from its /Producer string, and this builder prints it on every run.
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import reportlab
 from reportlab import rl_config
 from reportlab.lib.colors import Color, HexColor, white
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -583,7 +590,12 @@ def main() -> int:
     args = parser.parse_args()
     build(args.output.resolve())
     size = args.output.resolve().stat().st_size
-    print(f"wrote {args.output.resolve()} ({size} bytes)")
+    # The reportlab version decides these bytes, and the byte count is recorded
+    # in .horos/boundary.json, so a rebuild under a different version turns two
+    # boundary cases red. Nothing else in the tree said which version produced
+    # the committed file; this line does, and the PDF's own /Producer string
+    # carries the same fact inside the artefact.
+    print(f"wrote {args.output.resolve()} ({size} bytes, reportlab {reportlab.Version})")
     return 0
 
 
