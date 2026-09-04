@@ -164,6 +164,29 @@ subject, stated three paragraphs below, rather than contradicting the paragraph
 above; the two placements are recorded here together because a reader who takes
 "out-of-span edit" to mean both would otherwise be wrong about one of them.
 
+Removing the recorded offsets from that subject does not clear the refusal, and
+the paragraph above names one of two causes. skills#1098 made the removal and
+backed it out at `a629a25d`, having measured it necessary and not sufficient:
+with the offsets out of the subject and both evidence records rebound onto the
+new corpus identity, a before-span edit refuses one check further on, at
+`WAI-E-MEASURE.RECORD` on
+`$.evidence.measurement_record.documents[*].canonical_model`. The measured
+streams carry the offsets themselves -- `model.json` as every binding's `start`
+and `end`, `compact.wai` as the codec's rendering of the same model -- and the
+projection substitutes digests, which an offset is not.
+
+The technique cannot be extended to reach them. Those streams are what the
+recorded counts are counts of, so making the corpus digest ignore them is not
+the narrowing this record's argument licenses; and `digest_neutral_projection`
+substitutes byte sequences, which is unsound for a decimal, because `18445` is a
+substring of `184450` and of any offset extending it.
+`test_a_before_span_edit_still_moves_the_measured_artefact_streams` pins that
+behaviour and is expected to fail when it changes. Closing the before-span
+placement means storing the model's binding offsets relative to the reviewed
+span start, which changes an artefact schema and the codec ADR-062 settled; it
+is filed as wildcat-finance/skills#1192 with its own decision record. The
+Decision above is unchanged.
+
 An in-span edit still moves the corpus digest and still refuses, at
 `WAI-E-DIGEST.SOURCE_SPAN` before any evidence record is consulted and at
 `WAI-E-DIGEST.CORPUS` behind a rebound span digest.
