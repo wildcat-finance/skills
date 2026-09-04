@@ -13,7 +13,9 @@ git config core.hooksPath .githooks
 Run that once per clone. The value is relative, so every linked worktree of the
 clone resolves it against its own top level and runs its own tracked copy.
 
-Until it is set, the root suite fails and names this command.
+The root suite is to fail and name this command in a checkout where it is unset.
+That assertion arrives with step 4 of the run behind this directory; until it
+lands, an unactivated checkout is silent.
 
 ## Skip it for one commit
 
