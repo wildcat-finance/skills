@@ -4,24 +4,24 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "489593b9e8c46ae8f50cf210c5b2131486c8b7e6be266c59ac439ec5c121dda8"
+      "sha256": "4266527191298ffce23c7191979f22e1da6b8f45b2c21bf1518901bd609a13c1"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "c7f0bea52aee68f3c561fd95f8648a74695cf25182b89d9f177ef4d5e3d71775"
+      "sha256": "c652f948ae98ec27dc4fd90f1cb96064ccede7f961e03ad5419a0afc2bc75b45"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "6b6326e5176e672efefa41234e9c707170749e9b2ff4f227963b5459173c3eb8"
+      "sha256": "6ec2810010f5cd0047afb2ca428ea698a8754632c1b2c2f5b02d41b88515e95b"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "6ed70eac5253d996219716aecda36bd7544cbc864380048dbb5aa257694c395a"
+      "sha256": "04ad81497111ac313a8bef6fb172766bced23993939b976b8c6b77ccf391102f"
     },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "ac6cb5ecf5f0131ca9348a63549d05291e7a469189e35436a2c56f6b71182768"
+        "sha256": "f529d31a19bf5c03e4afea13fe01b1b9ddab70acb96199811fc274c78b8c2acf"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
@@ -101,11 +101,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
-        "sha256": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703"
+        "sha256": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "2af54575ac07eade7a81a2a39322e90d52cbce9e95ecc836395f2daee06c73b8"
+        "sha256": "3c44a2415f4cc2592a45a22cf1fdb6759ba24b2b90cc4c810f42d4aa31c65a27"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -113,7 +113,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "74ab855ceb19e7d033a981341db03ecf1d4d7bc4711831bf9c306ed17ef1b816"
+        "sha256": "e6be0e27bbb5ec28e164c6d8acbc4ec214d550b18c5bf83eeaa4640024acf1f5"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
