@@ -1,0 +1,170 @@
+{
+  "$id": "https://wildcat.finance/schemas/harness-classification-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "harness-classification/v1",
+  "description": "The one record every Atlas hand-off roster surface is generated from. Each harness entry carries what the host actually showed, so a class can never outrun the observation behind it. Pinned by docs/decisions/ADR-074-generate-the-harness-roster-from-one-probed-manifest.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "recorded",
+    "harnesses"
+  ],
+  "properties": {
+    "schema": {
+      "const": "harness-classification/v1"
+    },
+    "recorded": {
+      "$ref": "#/$defs/recorded"
+    },
+    "harnesses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/harness"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "recorded": {
+      "description": "The staleness signal. A renderer compares these against the run that produced the surfaces it is checking.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host",
+        "date",
+        "base_ref"
+      ],
+      "properties": {
+        "host": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "base_ref": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "classification": {
+      "description": "The four roster classes. Atlas launcher and tested local route are earned classes: neither may be recorded without a client run.",
+      "enum": [
+        "Atlas launcher",
+        "tested local route",
+        "manual route",
+        "unsupported"
+      ]
+    },
+    "probe": {
+      "description": "What the probe ran for this harness and what came back.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "result"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "result": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "harness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "classification",
+        "client_present",
+        "client_version",
+        "auth_configured",
+        "launcher_contract",
+        "blocker"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "classification": {
+          "$ref": "#/$defs/classification"
+        },
+        "client_present": {
+          "description": "Whether the client itself was found on this host. A left-behind configuration directory is residue and is not presence.",
+          "type": "boolean"
+        },
+        "client_version": {
+          "description": "The exact version the client reported. Null only where no client was present to report one.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "auth_configured": {
+          "description": "Whether an authentication method is configured here. Kept separate from client_present so absence and a failed authentication never collapse into one verdict.",
+          "type": "boolean"
+        },
+        "launcher_contract": {
+          "description": "What the client's current published contract offers, or the recorded reason it could not be read.",
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "blocker": {
+          "description": "The exact named reason this harness could not reach an earned class. Null only where nothing blocked it.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "testable_here": {
+          "description": "Whether an authenticated read-only client run was possible on this host.",
+          "type": "boolean"
+        },
+        "probe": {
+          "$ref": "#/$defs/probe"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "client_present"
+            ],
+            "properties": {
+              "client_present": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "client_version": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
