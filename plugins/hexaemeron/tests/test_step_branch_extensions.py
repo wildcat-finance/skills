@@ -298,6 +298,7 @@ class DescendantMergeReceiptCase(HexctlCase):
             self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
         self.run_ctl("done", "audit")
+        self.next_prose_head = format(number, "x") * 40
         self.run_ctl(
             "done",
             "prose",
@@ -324,6 +325,7 @@ class DescendantMergeReceiptCase(HexctlCase):
 
         state = self.state()
         original_push = copy.deepcopy(state["steps"][1]["receipts"]["push"])
+        self.make_prose_receipt_legacy(step_no=2)
         branch = self.step_branch(2, state)
         url = original_push["pr_url"]
         extended = "7" * 40
