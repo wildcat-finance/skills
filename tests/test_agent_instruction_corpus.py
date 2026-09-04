@@ -16,13 +16,21 @@ Step 3 switched `_corpus_sha256` onto the widened digest-neutral projection, so
 the two cases that pinned the out-of-span refusal are inverted here and assert
 that the corpus digest no longer moves. The in-span cases are unchanged and
 still refuse: `span_sha256` is never projected, so the review boundary is
-exactly where it was. Both inverted cases, and the prover's own `selftest`, are
-red until one `measure` run and one `parity` run reissue the two evidence
-records against the new subject; nothing in either record can be written by
-hand, so the red is the reissue's absence and not a defect in the switch.
+exactly where it was.
+
+Step 4 adds the placement nothing covered: an edit *before* a reviewed span
+start, which moves every recorded binding offset where an edit after it moves
+none. Those offsets are re-derived from the reviewed span's own bytes rather
+than shifted by a byte count, and the two cases that state that difference are
+`test_a_before_span_edit_has_its_offsets_re_derived_rather_than_shifted` and
+`test_a_before_span_edit_still_stales_the_measurement_record`. The second is
+where the placements part company: an after-span edit reconciles green, and a
+before-span edit gets past the reviewed span digest and then refuses at the
+measurement record, because the corpus subject carries the recorded offsets.
+ADR-075 records that as a consequence of the design rather than a gap in it.
 
 What the switch does not reach is pinned by
-`test_the_measurement_record_still_binds_the_raw_artefact_digests`, which reads
+`test_the_measurement_record_binds_the_projected_artefact_digests`, which reads
 as the gap it is rather than as a closed question.
 
 Every proof runs against a throwaway copy of the tree, through
@@ -296,6 +304,254 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             )
         self.assertIn("tests/fixtures/agent-instruction-v1/manifest.json", bound)
 
+    def test_a_before_span_edit_has_its_offsets_re_derived_rather_than_shifted(self):
+        """#1098's third acceptance check, on the placement that moves offsets.
+
+        An edit before a reviewed span start moves every recorded binding
+        offset: the manifest's `source.start` and `source.end`, every
+        `source-spans.json` span's pair, and every `model.json` binding's pair.
+        An edit after the span moves none, which is why the two placements are
+        separate claims and why nothing before step 4 covered this one.
+
+        What the offsets pass writes back is re-derived and not shifted. The
+        reviewed span's bytes are the anchor, their digest is what an
+        out-of-span edit leaves alone, and the new offsets are read off from
+        where those bytes were found in the edited source. Adding the byte
+        delta to each recorded number would land on the same integers here
+        while proving nothing about where the span went.
+
+        Three assertions separate the two, and a shift passes none of them: the
+        digest at every re-derived position is checked against the recorded one;
+        bytes that occur twice refuse rather than resolving to their first
+        occurrence; and bytes that are gone return `None` instead of a number.
+        The uniform delta is asserted as a consequence of the located offsets,
+        not as their source.
+
+        An absent re-derivation is asserted rather than raised, so a tree
+        without it fails on the claim this case makes instead of erroring on a
+        missing attribute and reading as inconclusive.
+        """
+        self.assertTrue(
+            hasattr(self.work, "rederive_offsets"),
+            "the prover re-derives no offsets, so a before-span edit cannot reconcile",
+        )
+        before_span = self.work.edited_source(self.prover.BEFORE_SPAN_PLACEMENT)
+
+        # The placement really is the one that moves offsets: the reviewed
+        # bytes survived the edit, and they are no longer where they were.
+        self.assertIn(self.work.span, before_span)
+        self.assertTrue(
+            self.work.span_moved(before_span),
+            "the before-span edit left the reviewed bytes at their recorded offsets",
+        )
+
+        offsets = self.work.rederive_offsets(before_span)
+        self.assertIsNotNone(offsets, "the anchor was not found in the edited source")
+        self.assertEqual(len(self.prover.OUT_OF_SPAN_EDIT), offsets["delta"])
+        self.assertEqual(
+            [self.work.start, self.work.end], offsets["governed"]["recorded"]
+        )
+
+        # Located, then digest-checked at the position found. This is the
+        # assertion a shift cannot satisfy by construction: it says the bytes
+        # at the new offsets are the reviewed bytes, not that the number
+        # changed by the right amount.
+        span_start, span_end = offsets["governed"]["rederived"]
+        self.assertEqual(
+            self.work.fixture["source"]["span_sha256"],
+            self.prover.digest(before_span[span_start:span_end]),
+        )
+        self.assertNotEqual(self.work.start, span_start)
+
+        spans = self.work._live_record(
+            self.work.fixture["artifacts"]["source_spans"]["path"]
+        )
+        self.assertEqual(len(spans["spans"]), len(offsets["nodes"]))
+        for entry in spans["spans"]:
+            node = entry["node"]
+            with self.subTest(node=node):
+                located = offsets["nodes"][node]
+                start, end = located["rederived"]
+                self.assertEqual(
+                    entry["sha256"], self.prover.digest(before_span[start:end])
+                )
+                self.assertEqual(
+                    [int(entry["start"]), int(entry["end"])], located["recorded"]
+                )
+                # Every offset moved, so no assertion above is passing on a
+                # span the edit happened to leave alone.
+                self.assertNotEqual(located["recorded"], located["rederived"])
+                self.assertEqual(int(entry["start"]) + offsets["delta"], start)
+
+        # Bytes that do not identify one position refuse. A shift has no
+        # opinion here, which is the difference this case exists to state.
+        with self.assertRaises(self.prover.ProverError) as raised:
+            self.work.rederive_offsets(self.work.source + self.work.span)
+        self.assertIn("more than once", str(raised.exception))
+
+        # Bytes that are gone are an in-span edit, and there is nothing to
+        # re-derive. A shift would return numbers for this too.
+        self.assertIsNone(self.work.rederive_offsets(self.work.in_span_source()))
+
+        # A recorded span that is not the bytes it says it is refuses, so the
+        # re-derivation is anchored on digests it checked rather than on
+        # offsets it trusted. `check` catches this too, but only after the
+        # rewrite; a shift would carry the disagreement into the copy and let
+        # the refusal arrive attributed to the edit. Planted in a throwaway
+        # copy, in the one field the constructor's whole-file check cannot see.
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            relative = self.work.fixture["artifacts"]["source_spans"]["path"]
+            record = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, relative)
+            )
+            record["spans"][0]["sha256"] = self.prover.digest(b"")
+            written = self.checker.canonical_record_bytes(record)
+            self.checker.write_confined_atomic(tree, relative, written)
+
+            manifest = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, self.prover.MANIFEST)
+            )
+            entry = next(
+                item for item in manifest["fixtures"]
+                if item["id"] == self.prover.SUBJECT
+            )
+            entry["artifacts"]["source_spans"]["sha256"] = self.prover.digest(written)
+            self.checker.write_confined_atomic(
+                tree,
+                self.prover.MANIFEST,
+                self.checker.canonical_record_bytes(manifest),
+            )
+
+            # The copy is self-consistent by every digest the manifest binds,
+            # so the refusal below comes from the re-derivation and not from
+            # the constructor.
+            drifted = self.prover.Reconciliation(tree, checker=self.checker)
+            with self.assertRaises(self.prover.ProverError) as raised:
+                drifted.rederive_offsets(
+                    drifted.edited_source(self.prover.BEFORE_SPAN_PLACEMENT)
+                )
+            self.assertIn("off its own digest", str(raised.exception))
+
+        # The re-derived offsets reach all three records that carry them, and
+        # `check` accepts the reviewed span at its new position.
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.work.copy_tree(Path(scratch))
+            self.work.apply_passes(tree, before_span)
+
+            manifest = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, self.prover.MANIFEST)
+            )
+            written = next(
+                entry for entry in manifest["fixtures"]
+                if entry["id"] == self.prover.SUBJECT
+            )
+            self.assertEqual(str(span_start), written["source"]["start"])
+            self.assertEqual(str(span_end), written["source"]["end"])
+            self.assertEqual(
+                self.work.fixture["source"]["span_sha256"],
+                written["source"]["span_sha256"],
+                "an out-of-span edit rebound the reviewed span digest",
+            )
+
+            written_spans = self.checker.load_canonical_record(
+                self.checker.read_confined(
+                    tree, self.work.fixture["artifacts"]["source_spans"]["path"]
+                )
+            )
+            written_model = self.checker.load_canonical_json(
+                self.checker.read_confined(
+                    tree, self.work.fixture["artifacts"]["model"]["path"]
+                )
+            )
+            expected = [
+                [str(start), str(end)]
+                for start, end in (
+                    offsets["nodes"][entry["node"]]["rederived"]
+                    for entry in spans["spans"]
+                )
+            ]
+            for label, entries in (
+                ("source-spans", written_spans["spans"]),
+                ("model", written_model["bindings"]),
+            ):
+                with self.subTest(record=label):
+                    self.assertEqual(
+                        expected, [[item["start"], item["end"]] for item in entries]
+                    )
+
+        # And the pass is load-bearing: omitted, the same edit leaves the
+        # recorded offsets pointing at bytes the edit displaced.
+        omitted = self.work.reconcile(before_span, skip=(self.prover.OFFSET_PASS,))
+        self.assertRefused(
+            omitted,
+            "WAI-E-DIGEST.SOURCE_SPAN",
+            f"$.fixtures.{self.prover.SUBJECT}.source.span_sha256",
+        )
+
+    def test_a_before_span_edit_still_stales_the_measurement_record(self):
+        """What the before-span placement costs once its offsets are reconciled.
+
+        The two placements do not cost the same thing, and the design record is
+        explicit about why. `_corpus_sha256` digests a subject carrying
+        `fixtures` whole, and `digest_neutral_projection` substitutes only the
+        digests the manifest binds a path by. A reviewed span's `start` and
+        `end` are neither, so they stay in the subject: ADR-075 records that the
+        corpus digest still distinguishes a change to any recorded offset.
+
+        So an after-span edit reconciles green, and a before-span edit gets past
+        the reviewed span digest and then refuses `WAI-E-DIGEST.CORPUS` at the
+        measurement record. That is the design behaving as recorded and not a
+        gap in the offsets pass, and the distinction matters: the refusal a
+        before-span edit produces is at the corpus, not at the span, which is
+        what says the offsets were reconciled before it was reached.
+
+        The cause is asserted directly rather than inferred from the refusal,
+        by moving the two offsets in a manifest and nothing else. Otherwise a
+        refusal arriving for some other reason would read as this one.
+        """
+        before_span = self.work.edited_source(self.prover.BEFORE_SPAN_PLACEMENT)
+        unmoved = self.work.corpus_digest(self.work.manifest)
+
+        # The contrast, in one line: the sibling placement changes nothing.
+        after = self.work.reconcile(self.after_span)
+        self.assertTrue(after["accepted"], after["refusals"])
+        self.assertEqual(unmoved, after["corpus_sha256"])
+
+        outcome = self.work.reconcile(before_span)
+        self.assertRefused(outcome, CORPUS_REFUSAL, MEASUREMENT_NODE)
+        self.assertNotEqual(
+            unmoved,
+            outcome["corpus_sha256"],
+            "the recorded offsets moved and the corpus digest did not",
+        )
+
+        # The refusal is at the corpus and not at the span, so the offsets were
+        # reconciled before the evidence record was consulted.
+        self.assertNotIn(
+            "WAI-E-DIGEST.SOURCE_SPAN",
+            {refusal["code"] for refusal in outcome["refusals"]},
+        )
+
+        # The cause, isolated: the offsets alone, with every digest, path, count
+        # and risk class left where it was.
+        shifted = json.loads(json.dumps(self.work.manifest))
+        fixture = next(
+            entry for entry in shifted["fixtures"]
+            if entry["id"] == self.prover.SUBJECT
+        )
+        delta = len(self.prover.OUT_OF_SPAN_EDIT)
+        fixture["source"]["start"] = str(self.work.start + delta)
+        fixture["source"]["end"] = str(self.work.end + delta)
+        self.assertNotEqual(unmoved, self.work.corpus_digest(shifted))
+
+        # And the projection is not what fails to cover them: an offset is not
+        # a digest the manifest binds a path by, so there is nothing here for
+        # `digest_neutral_projection` to substitute.
+        bound = set(self.checker._bound_digest_values(self.work.manifest))
+        for offset in (self.work.start, self.work.end):
+            self.assertNotIn(str(offset), bound)
+
     def test_proofs_run_against_a_copy_and_leave_the_live_tree_untouched(self):
         """The boundary that lets any of this be a test at all.
 
@@ -341,23 +597,24 @@ class AgentInstructionCorpusTests(unittest.TestCase):
     def test_prover_selftest_exits_zero_and_writes_a_closed_report(self):
         """The prover, as a contributor runs it, not as this module imports it.
 
-        `selftest` is the one subcommand that must be green before the design
-        lands: it checks the tool's own machinery rather than the repository's
-        behaviour. `offline` and `span-shift` report the state of a criterion
-        that is still unmet at this step, so they are asserted to write a
-        closed report rather than to exit zero.
+        `selftest` checks the tool's own machinery rather than the repository's
+        behaviour. `offline` and `span-shift` are the two criteria the design
+        record schedules at `integration`, and both are met at step 4, so all
+        three subcommands are asserted to exit zero and to write a closed
+        report at the paths the record's own resolver commands name.
         """
         with tempfile.TemporaryDirectory() as scratch:
             reports = {}
             for command, expected_exit in (
                 ("selftest", 0),
-                # Step 1 expected 1 here: an out-of-span edit could not be
-                # reconciled offline, which is the fault skills#1098 reports.
-                # Step 3 removed the corpus and measured-bytes bindings that
-                # caused it, so the offline proof now goes green. `span-shift`
-                # still exits 1 because the before-span placement is step 4's.
+                # Step 1 expected 1 from `offline`: an out-of-span edit could
+                # not be reconciled offline, which is the fault skills#1098
+                # reports. Step 3 removed the corpus and measured-bytes
+                # bindings that caused it. Step 1 and step 3 expected 1 from
+                # `span-shift` because the before-span placement was uncovered;
+                # step 4 covers it, so the gate is met and this expects 0.
                 ("offline", 0),
-                ("span-shift", 1),
+                ("span-shift", 0),
             ):
                 target = Path(scratch) / f"{command}.json"
                 completed = subprocess.run(
@@ -386,8 +643,8 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertEqual("count", reports["selftest"]["unit"])
         self.assertGreater(reports["selftest"]["value"], 0)
 
-        # The two criteria the design record schedules at `integration`, still
-        # unmet, reported as what they are.
+        # The two criteria the design record schedules at `integration`, both
+        # met at step 4, reported as what they are.
         self.assertEqual(
             "offline-reconciliation-green", reports["offline"]["criterion"]
         )
@@ -401,10 +658,12 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertEqual("span-shift-regression", reports["span-shift"]["criterion"])
         self.assertEqual("count", reports["span-shift"]["unit"])
         # The value, not just its shape: a report nothing checks the value of
-        # is not evidence. One placement is covered today, `after-span`, and
-        # the runbook schedules `before-span` at step 4. When that lands this
-        # assertion is what says so.
-        self.assertEqual(1, reports["span-shift"]["value"])
+        # is not evidence. Both placements are covered at step 4, which is the
+        # threshold the design record sets, and this assertion is what says the
+        # count came from covering the second rather than from counting the
+        # first twice.
+        self.assertEqual(len(self.prover.SPAN_PLACEMENTS), 2)
+        self.assertEqual(2, reports["span-shift"]["value"])
 
     def test_a_report_path_the_manifest_binds_is_refused(self):
         """The one write outside the copy, aimed at a bound document.
