@@ -19,3 +19,8 @@ were not observed on any chain.
 pinned Comet registry and exact RPC corpus for one old and one recent Ethereum
 USDC transaction. It rebuilds and checks the raw release offline; it is a
 method proof, not an interval history.
+
+[`proof-backed-state-v0`](proof-backed-state-v0/README.md) embeds a small
+synthetic Lazarus fixture in an Alexandria release. Verification reconstructs
+the fixture by digest, reruns Lazarus and accepts only the proved block and
+subjects; the fixture establishes nothing about a real chain.

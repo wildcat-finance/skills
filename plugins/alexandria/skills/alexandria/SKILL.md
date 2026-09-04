@@ -10,7 +10,7 @@ description: >
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
   collector are available.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <p align="center">
@@ -98,6 +98,17 @@ redistribution classes, capture source, scope, evidence and finality classes,
 collection counts, declared gaps, correction links and exact release-tree
 membership. It does not establish publisher identity, source completeness or
 chain finality.
+
+A `proof-backed-state` capture earns that class only during `verify`: its
+component must be a Lazarus manifest, every named fixture file must be present
+by digest and byte count, Alexandria must reconstruct and rerun Lazarus, and
+the capture must stay within the proved block and targets. Finality must be
+`unknown` because Lazarus proves block binding but reports no finality class.
+The scope must be subject-scoped and remain within the proof targets because a
+finite proof set is not a full dataset. Missing Lazarus or its pinned packages
+is a refusal because the claim is not earned until Lazarus has rechecked it;
+install `plugins/lazarus/requirements.lock` beside this checkout. The refusal
+names the capture that failed.
 
 Emit a deterministic statement only after verification:
 
@@ -329,4 +340,16 @@ reported block is canonical. Those claims require separate evidence.
 - Consequence: 1
 - Refuses: Generalising the witness to another deployment, transaction, interval, implementation, layout or evidence class.
 - Recovery: Inspect the named registry, implementation, state, call, write or selector mismatch, recapture under an amended fixed plan and rerun the check.
+- Exceptions: none
+
+### alexandria-proof-backed-state
+
+- Promise: A successful `verify` of a release whose capture claims `proof-backed-state` establishes that the capture component is an embedded Lazarus fixture manifest, every file it names is present by digest, Lazarus's offline verifier accepted the reconstructed fixture, and the capture's chain, block, finality and subjects claim no more than that fixture proves.
+- Evidence: The verified Alexandria manifest and components, digest-and-byte-count fixture reconstruction, Lazarus verification report, bound capture fields and executable P/M/O/R/S cases in `plugins/alexandria/tests/test_proof_backed.py`.
+- Evidence classes: recorded, checked, recomputed, proved: EIP-1186 state relation
+- Boundary: The result does not establish canonical-chain membership, provider independence, source completeness or anything outside the named proof targets at the bound block; it borrows no verdict because Alexandria reruns Lazarus instead of trusting one.
+- Authorises: Retaining or handing off the verified capture's `proof-backed-state` class for its named subjects at the bound block.
+- Consequence: 1
+- Refuses: Describing such a capture as verified when the sibling verifier is absent, the fixture is incomplete or altered, or the claim exceeds the proof.
+- Recovery: Repair the plan or fixture, ingest into a new output and rerun `verify`.
 - Exceptions: none

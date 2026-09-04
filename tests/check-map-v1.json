@@ -294,7 +294,7 @@
     "homologia": ["repo-lints"],
     "horos": ["repo-lints", "root", "dead-code"],
     "janus": ["repo-lints"],
-    "lazarus": ["repo-lints"],
+    "lazarus": ["repo-lints", "alexandria"],
     "lemma": ["repo-lints"],
     "pandects": ["repo-lints"],
     "probitas": ["repo-lints"],

@@ -120,6 +120,10 @@ gaps, correction links and exact release-tree membership without using the
 network or changing the release. Repeating an ingest from fixed inputs
 produces the same objects, manifest and release ID.
 
+For `proof-backed-state`, verification also reconstructs the embedded Lazarus
+fixture by digest, reruns its offline verifier and bounds the capture to the
+proved block and targets. This earns the class instead of trusting its label.
+
 The `statement` command first performs that complete offline verification. It
 then projects the logical release and every manifest component into a
 canonical unsigned in-toto Statement v1 and writes it atomically outside the
@@ -258,9 +262,11 @@ python3 plugins/alexandria/tests/run_tests.py \
   --elenchus-report .elenchus/alexandria-unittest.json
 ```
 
-The implementation uses Python's standard library. The six core Alexandria
-commands, Compound build/check commands and checked-in demonstrations reach no
-network. Only the explicit Compound `capture` command performs network I/O.
+Alexandria's own implementation uses Python's standard library. Verifying a
+`proof-backed-state` capture loads the sibling Lazarus verifier from the same
+checkout with Lazarus's pinned packages. The six core Alexandria commands,
+Compound build/check commands and checked-in demonstrations reach no network.
+Only the explicit Compound `capture` command performs network I/O.
 
 ## Licence
 
