@@ -143,9 +143,23 @@ measured byte.
 
 ## Consequences
 
-An out-of-span edit to a bound instruction document, with the five mechanical
-passes applied, no longer moves the corpus digest, and neither evidence record
-is staled by it. An in-span edit still moves it and still refuses, at
+An out-of-span edit to a bound instruction document *after* the reviewed span
+end, with the five mechanical passes applied, no longer moves the corpus digest,
+and neither evidence record is staled by it.
+
+An out-of-span edit *before* the reviewed span start does not cost the same
+thing, and this record does not close it. Such an edit leaves the reviewed bytes
+identical but moves every recorded offset, including the `source.start` and
+`source.end` the corpus subject carries. Reconciling it needs a sixth pass,
+`span-offsets`, which re-derives those offsets from the reviewed span's own
+bytes; with that pass applied the edit gets past `WAI-E-DIGEST.SOURCE_SPAN` and
+then refuses `WAI-E-DIGEST.CORPUS` at `$.evidence.measurement_record`. Only a
+`measure` run clears it. That follows from keeping recorded offsets in the
+subject, stated three paragraphs below, rather than contradicting the paragraph
+above; the two placements are recorded here together because a reader who takes
+"out-of-span edit" to mean both would otherwise be wrong about one of them.
+
+An in-span edit still moves the corpus digest and still refuses, at
 `WAI-E-DIGEST.SOURCE_SPAN` before any evidence record is consulted and at
 `WAI-E-DIGEST.CORPUS` behind a rebound span digest.
 
