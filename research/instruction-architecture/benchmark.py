@@ -201,7 +201,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "28eae688b7315ded2b480ff4739fc900960dcfab7611526bca996ba19daaa741"
+    "131cb09fd5af7b52a75bc4ee77a4025190b0f2bf928deaf62c73fd951d1630d8"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -10846,6 +10846,17 @@ def _validate_development_selection_structure(record: dict[str, Any]) -> None:
         raise Refusal("development selection arm set is malformed")
     for arm in arms:
         _validate_development_arm_structure(arm)
+    nominees = record.get("development_nominee")
+    if (
+        not isinstance(nominees, list)
+        or not nominees
+        or any(
+            not isinstance(nominee, str) or nominee not in DEVELOPMENT_ARMS
+            for nominee in nominees
+        )
+        or len(nominees) != len(set(nominees))
+    ):
+        raise Refusal("development selection nominee set is malformed")
     expected_admission = {
         "after_behavioral_holdout": {
             "admit_if_behavior_equal_and_any": [
@@ -10880,12 +10891,10 @@ def _validate_development_selection_structure(record: dict[str, Any]) -> None:
         raise Refusal("development selection identity or control boundary drift")
     if any(
         item.get("deterministic_critical_failure") is True
-        and item["arm"] in record.get("development_nominee", [])
+        and item["arm"] in nominees
         for item in record["arms"]
     ):
         raise Refusal("development selection admits a deterministic critical failure")
-    if not record.get("development_nominee"):
-        raise Refusal("development selection has no provisional nominee")
     eligible = [
         item
         for item in record["arms"]

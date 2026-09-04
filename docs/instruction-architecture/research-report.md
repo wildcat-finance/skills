@@ -124,13 +124,13 @@ argument parsing or any credential, network or answer-session access.
 the holdout remains `opened: false`; Step 3 read no task, expected answer,
 scorer key, model output or holdout source content. it made no production-path
 change. the development evidence is committed by inventory SHA-256
-`28eae688b7315ded2b480ff4739fc900960dcfab7611526bca996ba19daaa741`;
+`131cb09fd5af7b52a75bc4ee77a4025190b0f2bf928deaf62c73fd951d1630d8`;
 the selection record's self-digest is
-`b34a5519ba8953d781d3bff1c2e72c609d1b39f94a1d04799c6c1b7268c32ac3`.
+`a2ba7dc1cd2c4eb4c5c1fb2709053cc75a28d1976fa623660f8a0e07ea72cccd`.
 the behavioural commitment-file SHA-256 is
-`87dcc5ff08049107bf6c6b3f5dc377f047f19cc38eef20c118c698c3e7efb32f`;
+`c27c8b2fb7adbd4acb59abe958154aa96b08be79417b67b3c63143632c645e74`;
 the native commitment-file SHA-256 is
-`3b230fcaabf12b6bcb0c22393d77676aca0bfd848f8a111065b655f7b911a500`.
+`e11a5cfe4917df785f0e558e35ca8da75c84c8a28786ddc1c9f970e2c308daa3`.
 
 tracked fixtures own reproducible selection, preregistration, accounting,
 runtime manifests and answer-free packet commitments. ignored

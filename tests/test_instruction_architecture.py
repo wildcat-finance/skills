@@ -10028,7 +10028,18 @@ class ExperimentFixtureMixin:
 
 class DevelopmentAggregateTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_development_aggregate_reconciles_every_arm_and_denominator(self):
-        AI._validate_development_selection(self.selection)
+        try:
+            AI._validate_development_selection(self.selection)
+        except AI.Refusal as exc:
+            cause = exc.__cause__
+            if (
+                str(exc) == "development selection repository evidence is malformed"
+                and isinstance(cause, AI.Refusal)
+                and str(cause)
+                == "development inventory differs from its frozen digest"
+            ):
+                self.fail("development evidence requires the current frozen validator")
+            raise
         self.assertEqual(
             [item["arm"] for item in self.selection["arms"]],
             list(AI.DEVELOPMENT_ARMS),
@@ -10051,6 +10062,20 @@ class DevelopmentAggregateTests(ExperimentFixtureMixin, unittest.TestCase):
         self.assertTrue(identity["live_peak_rss_and_timing_are_observations"])
         self.assertTrue(identity["selection_rebuild_is_not_claimed_byte_identical"])
         self.assertTrue(identity["committed_selection_is_bound_by_digest"])
+
+    def test_nonlist_development_nominee_refuses_before_membership(self):
+        for malformed in (None, 0, True):
+            with self.subTest(malformed=malformed):
+                changed = copy.deepcopy(self.selection)
+                changed["development_nominee"] = malformed
+                changed.pop("sha256")
+                changed = AI._digested_record(changed)
+                try:
+                    AI._validate_development_selection_structure(changed)
+                except Exception as exc:
+                    self.assertIsInstance(exc, AI.Refusal)
+                else:
+                    self.fail("malformed development nominee set was accepted")
 
     def test_development_selection_replays_repository_owned_evidence(self):
         changed = copy.deepcopy(self.selection)
@@ -10187,6 +10212,20 @@ class CandidateSelectionTests(ExperimentFixtureMixin, unittest.TestCase):
 
 
 class AdmissionRuleTests(ExperimentFixtureMixin, unittest.TestCase):
+    def admitted(self, rows):
+        try:
+            return AI.admitted_native_arms(self.selection, rows)
+        except AI.Refusal as exc:
+            cause = exc.__cause__
+            if (
+                str(exc) == "development selection repository evidence is malformed"
+                and isinstance(cause, AI.Refusal)
+                and str(cause)
+                == "development inventory differs from its frozen digest"
+            ):
+                self.fail("admission evidence requires the current frozen validator")
+            raise
+
     def rows(self):
         return [
             {
@@ -10204,14 +10243,14 @@ class AdmissionRuleTests(ExperimentFixtureMixin, unittest.TestCase):
         next(row for row in rows if row["arm"] == "noema")[
             "paired_interval_overlaps_frontier"
         ] = True
-        self.assertIn("noema", AI.admitted_native_arms(self.selection, rows))
+        self.assertIn("noema", self.admitted(rows))
 
     def test_sole_compatible_survivor_requires_admission(self):
         rows = self.rows()
         next(row for row in rows if row["arm"] == "section-graph")[
             "sole_compatible_survivor"
         ] = True
-        self.assertIn("section-graph", AI.admitted_native_arms(self.selection, rows))
+        self.assertIn("section-graph", self.admitted(rows))
 
     def test_unknown_behavior_is_not_equal_and_critical_failure_stays_excluded(self):
         rows = self.rows()
@@ -10220,7 +10259,7 @@ class AdmissionRuleTests(ExperimentFixtureMixin, unittest.TestCase):
         noema["paired_interval_overlaps_frontier"] = True
         wai1 = next(row for row in rows if row["arm"] == "wai1")
         wai1["sole_compatible_survivor"] = True
-        admitted = AI.admitted_native_arms(self.selection, rows)
+        admitted = self.admitted(rows)
         self.assertNotIn("noema", admitted)
         self.assertNotIn("wai1", admitted)
 

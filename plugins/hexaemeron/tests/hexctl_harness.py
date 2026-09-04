@@ -459,11 +459,17 @@ elif args and args[0] == "ls-tree":
     if mode == "baseline-unavailable":
         raise SystemExit(128)
     path_text = args[-1]
-    payload_hex = (
-        os.environ.get("FAKE_GIT_CONFORMANCE_HEX")
-        if path_text == ".fiat/conformance-overlay-contract.json"
-        else os.environ.get("FAKE_GIT_BASELINE_HEX")
-    )
+    if path_text == ".fiat/conformance-overlay-contract.json":
+        by_commit = json.loads(
+            os.environ.get("FAKE_GIT_CONFORMANCE_BY_COMMIT", "{{}}")
+        )
+        payload_hex = (
+            by_commit[args[-3]]
+            if args[-3] in by_commit
+            else os.environ.get("FAKE_GIT_CONFORMANCE_HEX")
+        )
+    else:
+        payload_hex = os.environ.get("FAKE_GIT_BASELINE_HEX")
     if payload_hex is not None:
         baseline = bytes.fromhex(payload_hex)
         object_id = hashlib.sha1(
@@ -484,10 +490,13 @@ elif args and args[:2] == ["cat-file", "-s"]:
     wanted = args[-1]
     payloads = [
         bytes.fromhex(value)
-        for value in (
+        for value in [
             os.environ.get("FAKE_GIT_BASELINE_HEX"),
             os.environ.get("FAKE_GIT_CONFORMANCE_HEX"),
-        )
+            *json.loads(
+                os.environ.get("FAKE_GIT_CONFORMANCE_BY_COMMIT", "{{}}")
+            ).values(),
+        ]
         if value is not None
     ]
     baseline = next((
@@ -506,10 +515,13 @@ elif args and args[:2] == ["cat-file", "blob"]:
     wanted = args[-1]
     payloads = [
         bytes.fromhex(value)
-        for value in (
+        for value in [
             os.environ.get("FAKE_GIT_BASELINE_HEX"),
             os.environ.get("FAKE_GIT_CONFORMANCE_HEX"),
-        )
+            *json.loads(
+                os.environ.get("FAKE_GIT_CONFORMANCE_BY_COMMIT", "{{}}")
+            ).values(),
+        ]
         if value is not None
     ]
     baseline = next((

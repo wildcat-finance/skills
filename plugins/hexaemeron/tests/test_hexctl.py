@@ -499,6 +499,67 @@ class TestDesignEvidenceLifecycle(HexctlCase):
         )
         self.assertIn("report pair digest changed", refused.stderr)
 
+    def _prepare_third_step_for_push(self):
+        self.to_steps(("One", "Two", "Three", "Four"))
+        self.run_ctl("record", "security_suite", SUITE)
+        self.finish_step(1)
+        self.finish_step(2)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(3), "--commit", "abc3"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        state = self.state()
+        step = state["steps"][2]
+        head = self.fake_sha("head3")
+        branch = self.step_branch(3, state)
+        url = "https://github.com/wildcat-finance/example/pull/3"
+        self.fake_refs[branch] = head
+        self.fake_prs[url] = self.fake_pr(
+            url, branch, self.step_base(3, state), head
+        )
+        return state, step, head, url
+
+    def test_push_head_contains_the_last_locally_reviewed_commit(self):
+        state, step, head, url = self._prepare_third_step_for_push()
+        reviewed = hexctl_module().last_local_commit(step)
+        self.env["FAKE_GIT_MODE"] = "not-ancestor"
+        self.env["FAKE_GIT_NOT_ANCESTOR"] = reviewed
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push", "--pr-url", url, "--head-commit", head,
+            "--pr-base", self.step_base(3, state), expect=2,
+        )
+        self.assertIn(
+            "does not contain its last locally reviewed commit", refused.stderr
+        )
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_push_head_retains_the_exact_locally_reviewed_contract(self):
+        state, step, head, url = self._prepare_third_step_for_push()
+        reviewed = hexctl_module().last_local_commit(step)
+        contract = (
+            json.dumps(
+                self.conformance_contract(), sort_keys=True, separators=(",", ":")
+            )
+            + "\n"
+        ).encode()
+        self.env["FAKE_GIT_CONFORMANCE_BY_COMMIT"] = json.dumps({
+            reviewed: contract.hex(),
+            head: None,
+        })
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push", "--pr-url", url, "--head-commit", head,
+            "--pr-base", self.step_base(3, state), expect=2,
+        )
+        self.assertIn("locally reviewed conformance contract", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
     def test_verify_conformance_emits_only_the_state_snapshot_verify_replayed(self):
         module = hexctl_module()
         if "verified_conformance" not in module.verify_run.__annotations__:

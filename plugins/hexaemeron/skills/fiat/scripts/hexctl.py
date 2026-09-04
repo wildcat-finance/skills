@@ -6584,6 +6584,32 @@ def _require_conformance_contract_at_head(
             die("pushed head changes the receipted conformance contract", 1)
 
 
+def _require_reviewed_step_push_head(
+    base_dir: str, step: dict, head_commit: str
+) -> None:
+    """Keep a pushed step tied to the exact code and gate contract Warden reviewed."""
+    reviewed_ref = last_local_commit(step)
+    if not isinstance(reviewed_ref, str) or not reviewed_ref:
+        die(f"step {step['n']} push has no locally reviewed commit")
+    reviewed = resolved_commit(
+        base_dir, reviewed_ref, f"step {step['n']} locally reviewed commit"
+    )
+    if not commit_is_ancestor(
+        base_dir, reviewed, head_commit, f"step {step['n']} push"
+    ):
+        die(
+            f"step {step['n']} push head does not contain its last locally "
+            "reviewed commit"
+        )
+    reviewed_contract = _conformance_contract_at(base_dir, reviewed)
+    head_contract = _conformance_contract_at(base_dir, head_commit)
+    if head_contract != reviewed_contract:
+        die(
+            f"step {step['n']} push head changes, adds, or removes its locally "
+            "reviewed conformance contract"
+        )
+
+
 def _design_receipt(state: dict) -> dict:
     receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     design = receipt.get("design_evidence")
@@ -7495,6 +7521,7 @@ def done_push(args, state: dict) -> None:
     supplied_head = resolved_commit(
         args.dir, args.head_commit, f"step {step['n']} push head"
     )
+    _require_reviewed_step_push_head(args.dir, step, supplied_head)
     _require_conformance_contract_at_head(args.dir, state, supplied_head)
     remaining = [item for item in state["steps"] if item["status"] == "pending"]
     next_transition = None
