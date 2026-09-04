@@ -286,17 +286,71 @@
                     "required": [
                       "maximum_regenerated_bytes_per_edited_source_byte",
                       "median_regenerated_bytes_per_edited_source_byte",
-                      "samples"
+                      "mutation_classes",
+                      "rebind_attempts",
+                      "samples",
+                      "touched_artifacts",
+                      "touched_prompt_components"
                     ],
                     "properties": {
                       "maximum_regenerated_bytes_per_edited_source_byte": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 1
                       },
                       "median_regenerated_bytes_per_edited_source_byte": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "mutation_classes": {
+                        "type": "array",
+                        "prefixItems": [
+                          {"const": "one-byte-replacement"},
+                          {"const": "version-length-insertion"}
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "rebind_attempts": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "attempts",
+                          "failure_messages",
+                          "p50_ns",
+                          "p95_ns",
+                          "successful"
+                        ],
+                        "properties": {
+                          "attempts": {"type": "integer", "minimum": 1},
+                          "failure_messages": {
+                            "type": "array",
+                            "items": {"type": "string", "minLength": 1},
+                            "minItems": 1
+                          },
+                          "p50_ns": {"type": "integer", "minimum": 1},
+                          "p95_ns": {"type": "integer", "minimum": 1},
+                          "successful": {"const": 0}
+                        }
                       },
                       "samples": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "touched_artifacts": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1},
+                        "minItems": 1,
+                        "uniqueItems": true
+                      },
+                      "touched_prompt_components": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["maximum", "median"],
+                        "properties": {
+                          "maximum": {"type": "integer", "minimum": 1},
+                          "median": {"type": "integer", "minimum": 1}
+                        }
                       }
                     }
                   },
@@ -532,17 +586,71 @@
                     "required": [
                       "maximum_regenerated_bytes_per_edited_source_byte",
                       "median_regenerated_bytes_per_edited_source_byte",
-                      "samples"
+                      "mutation_classes",
+                      "rebind_attempts",
+                      "samples",
+                      "touched_artifacts",
+                      "touched_prompt_components"
                     ],
                     "properties": {
                       "maximum_regenerated_bytes_per_edited_source_byte": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 1
                       },
                       "median_regenerated_bytes_per_edited_source_byte": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "mutation_classes": {
+                        "type": "array",
+                        "prefixItems": [
+                          {"const": "one-byte-replacement"},
+                          {"const": "version-length-insertion"}
+                        ],
+                        "items": false,
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "rebind_attempts": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "attempts",
+                          "failure_messages",
+                          "p50_ns",
+                          "p95_ns",
+                          "successful"
+                        ],
+                        "properties": {
+                          "attempts": {"type": "integer", "minimum": 1},
+                          "failure_messages": {
+                            "type": "array",
+                            "items": {"type": "string", "minLength": 1},
+                            "minItems": 1
+                          },
+                          "p50_ns": {"type": "integer", "minimum": 1},
+                          "p95_ns": {"type": "integer", "minimum": 1},
+                          "successful": {"const": 0}
+                        }
                       },
                       "samples": {
-                        "type": "integer"
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "touched_artifacts": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1},
+                        "minItems": 1,
+                        "uniqueItems": true
+                      },
+                      "touched_prompt_components": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["maximum", "median"],
+                        "properties": {
+                          "maximum": {"type": "integer", "minimum": 1},
+                          "median": {"type": "integer", "minimum": 1}
+                        }
                       }
                     }
                   },

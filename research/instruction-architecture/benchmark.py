@@ -201,7 +201,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "ad422f5f312040277a798f5a6159f9c8fb61794177723d50ead7f3b796a67b9e"
+    "6f4055728f3438e501b85a4713e8e569ace1f3dbe3e22dad76d9c14fba9f6dbe"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -10420,8 +10420,18 @@ def _locally_available_tokenizers() -> tuple[list[dict[str, Any]], list[str]]:
     return available, unavailable
 
 
-def _source_edit_amplification(record: dict[str, Any]) -> dict[str, Any]:
-    samples: list[int] = []
+def _source_edit_amplification(
+    arm: str,
+    record: dict[str, Any],
+    cases_record: dict[str, Any],
+    control: dict[str, Any],
+) -> dict[str, Any]:
+    amplification_samples: list[int] = []
+    component_samples: list[int] = []
+    failure_messages: set[str] = set()
+    rebind_times: list[int] = []
+    control_ranges = control["coverage"]["ranges"]
+    mutation_classes = ("one-byte-replacement", "version-length-insertion")
     for result in record["results"]:
         source = result["outcome"]["source_expectation"]
         components = {item["id"]: item for item in result["prompt"]["components"]}
@@ -10433,53 +10443,100 @@ def _source_edit_amplification(record: dict[str, Any]) -> dict[str, Any]:
             len(components[identifier]["content"].encode("utf-8"))
             for identifier in affected
         )
-        edited_span = source["end"] - source["start"]
-        if edited_span <= 0 or regenerated <= 0:
+        if source["end"] <= source["start"] or regenerated <= 0 or not affected:
             raise Refusal("source-edit amplification has an empty source or projection")
-        samples.append(math.ceil(regenerated / edited_span))
+        target_indexes = [
+            index
+            for index, row in enumerate(control_ranges)
+            if row["path"] == source["path"]
+            and row["start"] <= source["start"] < row["end"]
+        ]
+        if len(target_indexes) != 1:
+            raise Refusal("source-edit amplification has no unique rebind range")
+        target_index = target_indexes[0]
+        target = control_ranges[target_index]
+        original = _source_blob(source["path"])[target["start"] : target["end"]]
+        if not original or len(original) != target["bytes"]:
+            raise Refusal("source-edit amplification range differs from source bytes")
+        offset = source["start"] - target["start"]
+        for mutation_class in mutation_classes:
+            if mutation_class == "one-byte-replacement":
+                changed = bytearray(original)
+                changed[offset] = (changed[offset] + 1) % 256
+                mutated = bytes(changed)
+            else:
+                mutated = original[:offset] + b"x" + original[offset:]
+            mutated_row = {
+                **target,
+                "bytes": len(mutated),
+                "end": target["start"] + len(mutated),
+                "sha256": _sha256(mutated),
+            }
+            mutated_ranges = list(control_ranges)
+            mutated_ranges[target_index] = mutated_row
+            mutated_control = {
+                **control,
+                "coverage": {**control["coverage"], "ranges": mutated_ranges},
+            }
+            started = time.perf_counter_ns()
+            try:
+                _validate_adapter_results(
+                    record,
+                    cases_record,
+                    {},
+                    {},
+                    mutated_control,
+                )
+            except Refusal as exc:
+                failure_messages.add(str(exc))
+            else:
+                raise Refusal("source-edit rebind attempt accepted stale evidence")
+            finally:
+                rebind_times.append(max(1, time.perf_counter_ns() - started))
+            amplification_samples.append(
+                regenerated
+                + (1 if mutation_class == "version-length-insertion" else 0)
+            )
+            component_samples.append(len(affected))
+    touched_artifacts = [
+        f"controls/{arm}.json",
+        f"evidence/development/{arm}.json",
+        "evidence/development/report.json",
+        "evidence/development/artifact-inventory.json",
+        "development-selection.json",
+    ]
     return {
-        "maximum_regenerated_bytes_per_edited_source_byte": max(samples),
-        "median_regenerated_bytes_per_edited_source_byte": _nearest_rank(
-            samples, Decimal("0.50")
+        "maximum_regenerated_bytes_per_edited_source_byte": max(
+            amplification_samples
         ),
-        "samples": len(samples),
+        "median_regenerated_bytes_per_edited_source_byte": _nearest_rank(
+            amplification_samples, Decimal("0.50")
+        ),
+        "mutation_classes": list(mutation_classes),
+        "rebind_attempts": {
+            "attempts": len(rebind_times),
+            "failure_messages": sorted(failure_messages),
+            "p50_ns": _nearest_rank(rebind_times, Decimal("0.50")),
+            "p95_ns": _nearest_rank(rebind_times, Decimal("0.95")),
+            "successful": 0,
+        },
+        "samples": len(amplification_samples),
+        "touched_artifacts": touched_artifacts,
+        "touched_prompt_components": {
+            "maximum": max(component_samples),
+            "median": _nearest_rank(component_samples, Decimal("0.50")),
+        },
     }
 
 
-def _development_arm_summary(
+def _development_arm_projection(
     arm: str,
     control: dict[str, Any],
     result: dict[str, Any],
+    cases_record: dict[str, Any],
     hostile_rows: list[dict[str, Any]],
-    tokenizer_specs: list[dict[str, Any]],
 ) -> dict[str, Any]:
     aggregate = result["aggregate"]
-    prompt_texts = [
-        _canonical_json(item["prompt"]).decode("utf-8") for item in result["results"]
-    ]
-    token_counts = [
-        {
-            "aggregation": "sum-of-complete-prompts-with-no-cross-case-merges",
-            "tokenizer_id": item["id"],
-            "tokens": sum(item["count"](text) for text in prompt_texts),
-        }
-        for item in tokenizer_specs
-    ]
-    parse_timing = _timing_summary(
-        lambda: _decode_record(_canonical_json(result)), repetitions=9
-    )
-    select_timing = _timing_summary(
-        lambda: sum(
-            len(item["selection_trace"]) for item in result["results"]
-        ),
-        repetitions=9,
-    )
-    assemble_timing = _timing_summary(
-        lambda: b"".join(
-            _canonical_json(item["prompt"]) for item in result["results"]
-        ),
-        repetitions=9,
-    )
     cases = aggregate["cases"]
     unavailable_cases = cases - aggregate["exact_source_recovery_cases"]
     critical_failure = unavailable_cases > 0
@@ -10522,11 +10579,52 @@ def _development_arm_summary(
             "all_cases_native": native_complete,
             "fallback_cases": fallback_cases,
         },
-        "source_edit_amplification": _source_edit_amplification(result),
+        "source_edit_amplification": _source_edit_amplification(
+            arm, result, cases_record, control
+        ),
+    }
+
+
+def _development_arm_summary(
+    arm: str,
+    control: dict[str, Any],
+    result: dict[str, Any],
+    cases_record: dict[str, Any],
+    hostile_rows: list[dict[str, Any]],
+    tokenizer_specs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    projection = _development_arm_projection(
+        arm, control, result, cases_record, hostile_rows
+    )
+    prompt_texts = [
+        _canonical_json(item["prompt"]).decode("utf-8") for item in result["results"]
+    ]
+    token_counts = [
+        {
+            "aggregation": "sum-of-complete-prompts-with-no-cross-case-merges",
+            "tokenizer_id": item["id"],
+            "tokens": sum(item["count"](text) for text in prompt_texts),
+        }
+        for item in tokenizer_specs
+    ]
+    return {
+        **projection,
         "timing": {
-            "assembly": assemble_timing,
-            "parse_validate": parse_timing,
-            "select": select_timing,
+            "assembly": _timing_summary(
+                lambda: b"".join(
+                    _canonical_json(item["prompt"]) for item in result["results"]
+                ),
+                repetitions=9,
+            ),
+            "parse_validate": _timing_summary(
+                lambda: _decode_record(_canonical_json(result)), repetitions=9
+            ),
+            "select": _timing_summary(
+                lambda: sum(
+                    len(item["selection_trace"]) for item in result["results"]
+                ),
+                repetitions=9,
+            ),
         },
         "token_counts": token_counts,
     }
@@ -10639,12 +10737,99 @@ def _selection_from_development(
         "source_ref": SOURCE_REF,
     }
     record = _digested_record(body)
-    _validate_development_selection(record)
+    _validate_development_selection_structure(record)
+    _validate_selection_observations(record)
     return record
 
 
-def _validate_development_selection(record: dict[str, Any]) -> None:
+def _validate_development_arm_structure(arm: dict[str, Any]) -> None:
+    fields = {
+        "arm",
+        "complete_assembled_bytes",
+        "control_sha256",
+        "coverage",
+        "deterministic_critical_failure",
+        "failure_causes",
+        "fidelity",
+        "hostile",
+        "maximum_complete_prompt_bytes",
+        "nondeterminism",
+        "operational_feasibility",
+        "source_edit_amplification",
+        "timing",
+        "token_counts",
+    }
+    _require_fields(arm, fields, fields, "development selection arm")
+    coverage = arm.get("coverage")
+    feasibility = arm.get("operational_feasibility")
+    fidelity = arm.get("fidelity")
+    hostile = arm.get("hostile")
+    nondeterminism = arm.get("nondeterminism")
+    counts = (
+        coverage.get("cases"),
+        coverage.get("exact_source_recovery_cases"),
+        coverage.get("fallback_cases"),
+        coverage.get("native_exact_source_recovery_cases"),
+        coverage.get("native_mapping_cases"),
+    ) if isinstance(coverage, dict) else ()
+    failures = arm.get("failure_causes")
+    if (
+        not isinstance(arm.get("arm"), str)
+        or re.fullmatch(r"[a-z0-9-]{1,128}", arm["arm"]) is None
+        or not isinstance(arm.get("control_sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", arm["control_sha256"]) is None
+        or type(arm.get("complete_assembled_bytes")) is not int
+        or arm["complete_assembled_bytes"] <= 0
+        or type(arm.get("maximum_complete_prompt_bytes")) is not int
+        or arm["maximum_complete_prompt_bytes"] <= 0
+        or not isinstance(coverage, dict)
+        or set(coverage)
+        != {
+            "cases",
+            "exact_source_recovery_cases",
+            "fallback_cases",
+            "native_exact_source_recovery_cases",
+            "native_mapping_cases",
+        }
+        or len(counts) != 5
+        or any(type(value) is not int or value < 0 for value in counts)
+        or counts[0] <= 0
+        or any(value > counts[0] for value in counts[1:])
+        or type(arm.get("deterministic_critical_failure")) is not bool
+        or not isinstance(failures, list)
+        or len(failures) > len(DEVELOPMENT_CLASSES)
+        or any(not isinstance(value, str) or not value for value in failures)
+        or not isinstance(feasibility, dict)
+        or set(feasibility)
+        != {"all_cases_exact", "all_cases_native", "fallback_cases"}
+        or type(feasibility.get("all_cases_exact")) is not bool
+        or type(feasibility.get("all_cases_native")) is not bool
+        or type(feasibility.get("fallback_cases")) is not int
+        or not isinstance(fidelity, dict)
+        or set(fidelity) != {"exact_source_recovery_ratio", "native_complete"}
+        or not isinstance(fidelity.get("exact_source_recovery_ratio"), str)
+        or type(fidelity.get("native_complete")) is not bool
+        or not isinstance(hostile, dict)
+        or set(hostile) != {"crashes", "mutations_exercised", "refusals"}
+        or any(type(value) is not int or value < 0 for value in hostile.values())
+        or not isinstance(nondeterminism, dict)
+        or set(nondeterminism) != {"distinct_digests", "replays"}
+        or any(type(value) is not int or value < 0 for value in nondeterminism.values())
+    ):
+        raise Refusal("development selection arm shape is malformed")
+
+
+def _validate_development_selection_structure(record: dict[str, Any]) -> None:
     _validate_digested_record(record, "development selection")
+    arms = record.get("arms")
+    if (
+        not isinstance(arms, list)
+        or len(arms) != len(DEVELOPMENT_ARMS)
+        or not all(isinstance(item, dict) for item in arms)
+    ):
+        raise Refusal("development selection arm set is malformed")
+    for arm in arms:
+        _validate_development_arm_structure(arm)
     expected_admission = {
         "after_behavioral_holdout": {
             "admit_if_behavior_equal_and_any": [
@@ -10662,20 +10847,19 @@ def _validate_development_selection(record: dict[str, Any]) -> None:
         },
         "final_architecture_decided": False,
     }
+    expected_measurement_identity = {
+        "committed_selection_is_bound_by_digest": True,
+        "live_peak_rss_and_timing_are_observations": True,
+        "selection_rebuild_is_not_claimed_byte_identical": True,
+    }
     if (
         record.get("schema") != f"{SCHEMA_PREFIX}-development-selection/v1"
         or record.get("source_ref") != SOURCE_REF
         or record.get("holdout") != {"cases_accessed": 0, "opened": False}
         or record.get("mandatory_native_baselines") != ["raw", "simple"]
-        or record.get("measurement_identity", {}).get(
-            "selection_rebuild_is_not_claimed_byte_identical"
-        )
-        is not True
-        or record.get("admission_rule", {}).get("final_architecture_decided") is not False
-        or record.get("legacy_prompt_ratios", {}).get("admission_veto") is not False
+        or record.get("measurement_identity") != expected_measurement_identity
         or record.get("admission_rule") != expected_admission
-        or [item.get("arm") for item in record.get("arms", [])]
-        != list(DEVELOPMENT_ARMS)
+        or [item.get("arm") for item in arms] != list(DEVELOPMENT_ARMS)
     ):
         raise Refusal("development selection identity or control boundary drift")
     if any(
@@ -10711,13 +10895,236 @@ def _validate_development_selection(record: dict[str, Any]) -> None:
     expected_near = sorted(
         item["arm"] for item in frontier if item["arm"] not in expected_nominees
     )
+    raw_bytes = next(item for item in arms if item["arm"] == "raw").get(
+        "complete_assembled_bytes"
+    )
+    if type(raw_bytes) is not int or raw_bytes <= 0:
+        raise Refusal("development selection raw denominator is invalid")
+    expected_excluded = [
+        {
+            "arm": item["arm"],
+            "causes": item["failure_causes"],
+            "reason": "deterministic-critical-failure",
+        }
+        for item in arms
+        if item["deterministic_critical_failure"]
+    ]
+    expected_legacy = {
+        "admission_veto": False,
+        "cold_threshold": "0.80",
+        "observations": [
+            {
+                "arm": item["arm"],
+                "cold_complete_byte_ratio": (
+                    f"{item['complete_assembled_bytes'] / raw_bytes:.6f}"
+                ),
+                "warm_ratio": None,
+            }
+            for item in arms
+        ],
+        "role": "descriptive-only",
+        "warm_threshold": "0.70",
+    }
     if (
         record.get("development_frontier")
         != sorted(item["arm"] for item in frontier)
         or record.get("development_nominee") != expected_nominees
         or record.get("near_frontier") != expected_near
+        or record.get("excluded") != expected_excluded
+        or record.get("legacy_prompt_ratios") != expected_legacy
     ):
         raise Refusal("development selection does not reproduce its frozen rule")
+
+
+def _validate_selection_observations(record: dict[str, Any]) -> None:
+    resources = record.get("resources")
+    if not isinstance(resources, dict):
+        raise Refusal("development selection resource observations are malformed")
+    known_tokenizers = {"tiktoken:cl100k_base", "tiktoken:o200k_base"}
+    available = resources.get("locally_available_tokenizers")
+    unavailable = resources.get("unavailable_known_tokenizers")
+    if (
+        not isinstance(available, list)
+        or not isinstance(unavailable, list)
+        or any(value not in known_tokenizers for value in available)
+        or len(available) != len(set(available))
+        or any(
+            not isinstance(value, str)
+            or not any(
+                value == tokenizer or value.startswith(tokenizer + ":")
+                for tokenizer in known_tokenizers
+            )
+            for value in unavailable
+        )
+        or {
+            value.split(":", 2)[0] + ":" + value.split(":", 2)[1]
+            for value in unavailable
+        }
+        != known_tokenizers - set(available)
+    ):
+        raise Refusal("development selection tokenizer observations are malformed")
+    peak = resources.get("peak_rss_bytes")
+    if type(peak) is not int or peak <= 0 or peak > 2 * 1024 * 1024 * 1024:
+        raise Refusal("development selection peak RSS observation is invalid")
+    for arm in record["arms"]:
+        amplification = arm.get("source_edit_amplification")
+        rebind = (
+            amplification.get("rebind_attempts")
+            if isinstance(amplification, dict)
+            else None
+        )
+        touched = (
+            amplification.get("touched_prompt_components")
+            if isinstance(amplification, dict)
+            else None
+        )
+        if (
+            not isinstance(amplification, dict)
+            or amplification.get("mutation_classes")
+            != ["one-byte-replacement", "version-length-insertion"]
+            or amplification.get("samples") != 2 * len(DEVELOPMENT_CLASSES)
+            or not isinstance(amplification.get("touched_artifacts"), list)
+            or len(amplification["touched_artifacts"])
+            != len(set(amplification["touched_artifacts"]))
+            or not isinstance(touched, dict)
+            or set(touched) != {"maximum", "median"}
+            or any(type(value) is not int or value <= 0 for value in touched.values())
+            or not isinstance(rebind, dict)
+            or set(rebind)
+            != {"attempts", "failure_messages", "p50_ns", "p95_ns", "successful"}
+            or rebind.get("attempts") != amplification.get("samples")
+            or rebind.get("successful") != 0
+            or not isinstance(rebind.get("failure_messages"), list)
+            or not rebind["failure_messages"]
+            or any(
+                not isinstance(message, str) or not message
+                for message in rebind["failure_messages"]
+            )
+            or type(rebind.get("p50_ns")) is not int
+            or type(rebind.get("p95_ns")) is not int
+            or rebind["p50_ns"] <= 0
+            or rebind["p95_ns"] < rebind["p50_ns"]
+        ):
+            raise Refusal("development selection source-edit observation is invalid")
+        timing = arm.get("timing")
+        if not isinstance(timing, dict) or set(timing) != {
+            "assembly", "parse_validate", "select"
+        }:
+            raise Refusal("development selection timing observation is malformed")
+        for summary in timing.values():
+            if (
+                not isinstance(summary, dict)
+                or set(summary) != {"p50_ns", "p95_ns", "repetitions"}
+                or summary.get("repetitions") != 9
+                or type(summary.get("p50_ns")) is not int
+                or type(summary.get("p95_ns")) is not int
+                or summary["p50_ns"] <= 0
+                or summary["p95_ns"] < summary["p50_ns"]
+            ):
+                raise Refusal("development selection timing observation is invalid")
+        token_counts = arm.get("token_counts")
+        if (
+            not isinstance(token_counts, list)
+            or [item.get("tokenizer_id") for item in token_counts] != available
+            or any(
+                not isinstance(item, dict)
+                or set(item) != {"aggregation", "tokenizer_id", "tokens"}
+                or item.get("aggregation")
+                != "sum-of-complete-prompts-with-no-cross-case-merges"
+                or type(item.get("tokens")) is not int
+                or item["tokens"] <= 0
+                for item in token_counts
+            )
+        ):
+            raise Refusal("development selection token observation is invalid")
+
+
+def _validate_development_selection(record: dict[str, Any]) -> None:
+    _validate_development_selection_structure(record)
+    _validate_selection_observations(record)
+    try:
+        _, inventory_raw, payloads = _load_development_evidence(
+            ROOT / Path(*DEVELOPMENT_EVIDENCE_ROOT.parts)
+        )
+        controls = {
+            arm: _decode_record(payloads[f"controls/{arm}.json"])
+            for arm in DEVELOPMENT_ARMS
+        }
+        results = {
+            arm: _decode_record(payloads[f"evidence/development/{arm}.json"])
+            for arm in DEVELOPMENT_ARMS
+        }
+        cases_record = _decode_record(payloads["development/cases.json"])
+        hostile = _decode_record(payloads["hostile/execution.json"])
+        tokenizer_specs, unavailable_tokenizers = _locally_available_tokenizers()
+        expected_arms = [
+            _development_arm_projection(
+                arm,
+                controls[arm],
+                results[arm],
+                cases_record,
+                [item for item in hostile["results"] if item["arm"] == arm],
+            )
+            for arm in DEVELOPMENT_ARMS
+        ]
+        resource_record = _decode_record(
+            payloads["evidence/development/resource-samples.json"]
+        )
+    except (KeyError, TypeError, ValueError, IndexError) as exc:
+        raise Refusal("development selection repository evidence is malformed") from exc
+    if record.get("development_evidence_sha256") != _sha256(inventory_raw):
+        raise Refusal("development selection does not bind repository inputs")
+    for observed, expected in zip(record["arms"], expected_arms, strict=True):
+        stable_observed = {
+            key: value
+            for key, value in observed.items()
+            if key not in {"timing", "token_counts"}
+        }
+        stable_expected = dict(expected)
+        for stable in (stable_observed, stable_expected):
+            amplification = dict(stable["source_edit_amplification"])
+            rebind = dict(amplification["rebind_attempts"])
+            rebind.pop("p50_ns", None)
+            rebind.pop("p95_ns", None)
+            amplification["rebind_attempts"] = rebind
+            stable["source_edit_amplification"] = amplification
+        if stable_observed != stable_expected:
+            raise Refusal("development selection does not bind repository inputs")
+        prompt_texts = [
+            _canonical_json(item["prompt"]).decode("utf-8")
+            for item in results[observed["arm"]]["results"]
+        ]
+        expected_tokens = [
+            {
+                "aggregation": "sum-of-complete-prompts-with-no-cross-case-merges",
+                "tokenizer_id": item["id"],
+                "tokens": sum(item["count"](text) for text in prompt_texts),
+            }
+            for item in tokenizer_specs
+        ]
+        if observed["token_counts"] != expected_tokens:
+            raise Refusal("development selection does not bind tokenizer observations")
+    expected_resources = {
+        key: resource_record[key]
+        for key in (
+            "dependency_count",
+            "dependency_modules",
+            "disk_bytes",
+            "executable_loc",
+        )
+    }
+    if any(
+        record["resources"].get(key) != value
+        for key, value in expected_resources.items()
+    ):
+        raise Refusal("development selection does not bind repository inputs")
+    if (
+        record["resources"].get("locally_available_tokenizers")
+        != [item["id"] for item in tokenizer_specs]
+        or record["resources"].get("unavailable_known_tokenizers")
+        != unavailable_tokenizers
+    ):
+        raise Refusal("development selection does not bind tokenizer availability")
 
 
 def admitted_native_arms(
@@ -10792,12 +11199,14 @@ def aggregate_development(args: argparse.Namespace) -> bytes:
             MAX_JSON_BYTES,
         )
     )
+    cases_record = _decode_record(payloads["development/cases.json"])
     tokenizer_specs, unavailable_tokenizers = _locally_available_tokenizers()
     arms = [
         _development_arm_summary(
             arm,
             controls[arm],
             results[arm],
+            cases_record,
             [item for item in hostile["results"] if item["arm"] == arm],
             tokenizer_specs,
         )
@@ -11565,7 +11974,11 @@ def behavioral_inferential_gate(
         return {"status": "fail", "upper_bound": None}
     bound = paired_degradation_upper_bound(0, pairs)
     return {
-        "status": "pass" if bound <= BEHAVIORAL_MAX_DEGRADATION else "fail",
+        "status": (
+            "pass"
+            if bound <= BEHAVIORAL_MAX_DEGRADATION
+            else "inconclusive"
+        ),
         "upper_bound": str(bound),
     }
 
@@ -12223,6 +12636,8 @@ def claude_expiry_wait_seconds(usage: dict[str, Any]) -> int | None:
         "ephemeral_1h_input_tokens": 3600,
         "ephemeral_5m_input_tokens": 300,
     }
+    if set(creation) - set(classes):
+        return None
     active: list[int] = []
     for field, ttl in classes.items():
         value = creation.get(field, 0)
@@ -13821,7 +14236,9 @@ def preflight_spend(args: argparse.Namespace) -> bytes:
     for field in usage_fields:
         if field in data and data[field] is not None:
             _decimal(data[field], f"OpenRouter {field}")
-    remaining = data.get("limit_remaining")
+    if "limit_remaining" not in data:
+        raise Refusal("OpenRouter key metadata omits limit remaining")
+    remaining = data["limit_remaining"]
     key_limit_remaining: Decimal | None = None
     if remaining is not None:
         key_limit_remaining = _decimal(remaining, "OpenRouter limit remaining")
@@ -13917,7 +14334,9 @@ def preflight_model_matrix(args: argparse.Namespace) -> bytes:
     by_model: dict[str, dict[str, Any]] = {}
     for row in models:
         identifier = row.get("id")
-        if isinstance(identifier, str) and identifier not in by_model:
+        if isinstance(identifier, str):
+            if identifier in by_model:
+                raise Refusal(f"model catalog contains duplicate id: {identifier}")
             by_model[identifier] = row
     endpoint_rows: dict[str, list[dict[str, Any]]] = {
         identifier: [] for identifier in MODEL_IDS
@@ -14561,63 +14980,285 @@ def _read_generated_schema_bundle(root: Path) -> tuple[str, list[dict[str, Any]]
     return _sha256(digest_input), records
 
 
-def _schema_contains_property_set(value: Any, required: set[str]) -> bool:
-    if isinstance(value, dict):
-        properties = value.get("properties")
-        if isinstance(properties, dict) and required <= set(properties):
-            return True
-        return any(
-            _schema_contains_property_set(child, required)
-            for child in value.values()
-        )
-    if isinstance(value, list):
-        return any(_schema_contains_property_set(child, required) for child in value)
-    return False
+def _schema_bundle_root(
+    records: list[dict[str, Any]], path: str
+) -> dict[str, Any]:
+    matches = [
+        item.get("value")
+        for item in records
+        if isinstance(item, dict) and item.get("path") == path
+    ]
+    if len(matches) != 1 or not isinstance(matches[0], dict):
+        raise Refusal(f"Codex experimental protocol schema omits exact {path}")
+    return matches[0]
 
 
-def _schema_contains_string(value: Any, needle: str) -> bool:
-    if isinstance(value, dict):
-        return needle in value or any(
-            _schema_contains_string(child, needle) for child in value.values()
+def _schema_definition(root: dict[str, Any], name: str) -> dict[str, Any]:
+    definitions = root.get("definitions")
+    value = definitions.get(name) if isinstance(definitions, dict) else None
+    if not isinstance(value, dict):
+        raise Refusal(f"Codex experimental protocol schema omits {name!r}")
+    return value
+
+
+def _schema_method_definition(
+    root: dict[str, Any], method: str, definition: str, required: set[str]
+) -> dict[str, Any]:
+    variants = root.get("oneOf")
+    if not isinstance(variants, list):
+        raise Refusal("Codex experimental protocol schema method union is malformed")
+    matches = []
+    for variant in variants:
+        properties = variant.get("properties") if isinstance(variant, dict) else None
+        method_schema = (
+            properties.get("method") if isinstance(properties, dict) else None
         )
-    if isinstance(value, list):
-        return any(_schema_contains_string(child, needle) for child in value)
-    return value == needle
+        if isinstance(method_schema, dict) and method_schema.get("enum") == [method]:
+            matches.append(variant)
+    if len(matches) != 1:
+        raise Refusal(
+            f"Codex experimental protocol schema does not uniquely bind {method!r}"
+        )
+    variant = matches[0]
+    properties = variant.get("properties")
+    params = properties.get("params") if isinstance(properties, dict) else None
+    required_fields = variant.get("required")
+    if (
+        variant.get("type") != "object"
+        or not isinstance(required_fields, list)
+        or any(not isinstance(field, str) for field in required_fields)
+        or not required <= set(required_fields)
+        or not isinstance(params, dict)
+        or params.get("$ref") != f"#/definitions/{definition}"
+    ):
+        raise Refusal(
+            f"Codex experimental protocol schema does not link {method!r} parameters"
+        )
+    return _schema_definition(root, definition)
+
+
+def _schema_object_fields(
+    value: dict[str, Any], fields: set[str], required: set[str] = frozenset()
+) -> None:
+    properties = value.get("properties")
+    required_fields = value.get("required", [])
+    if (
+        value.get("type") != "object"
+        or not isinstance(properties, dict)
+        or not fields <= set(properties)
+        or not isinstance(required_fields, list)
+        or any(not isinstance(field, str) for field in required_fields)
+        or not required <= set(required_fields)
+    ):
+        raise Refusal("Codex experimental protocol schema object linkage drift")
+
+
+def _schema_property(
+    value: dict[str, Any], field: str
+) -> dict[str, Any]:
+    properties = value.get("properties")
+    item = properties.get(field) if isinstance(properties, dict) else None
+    if not isinstance(item, dict):
+        raise Refusal("Codex experimental protocol schema property linkage drift")
+    return item
+
+
+def _schema_property_type(
+    value: dict[str, Any], field: str, expected: str
+) -> None:
+    item = _schema_property(value, field)
+    observed = item.get("type")
+    allowed = {observed} if isinstance(observed, str) else observed
+    if not isinstance(allowed, (list, set)) or expected not in allowed:
+        raise Refusal("Codex experimental protocol schema property type drift")
+
+
+def _schema_property_ref(
+    value: dict[str, Any], field: str, expected: str
+) -> None:
+    if _schema_property(value, field).get("$ref") != expected:
+        raise Refusal("Codex experimental protocol schema reference linkage drift")
+
+
+def _schema_nullable_ref(
+    value: dict[str, Any], field: str, expected: str
+) -> None:
+    item = _schema_property(value, field)
+    variants = item.get("anyOf")
+    if not isinstance(variants, list) or not any(
+        isinstance(variant, dict) and variant.get("$ref") == expected
+        for variant in variants
+    ):
+        raise Refusal("Codex experimental protocol schema reference linkage drift")
+
+
+def _schema_enum_literal(
+    root: dict[str, Any], definition: str, literal: str
+) -> None:
+    value = _schema_definition(root, definition)
+    candidates = value.get("oneOf", [value])
+    if not isinstance(candidates, list) or not any(
+        isinstance(candidate, dict)
+        and candidate.get("type") == "string"
+        and isinstance(candidate.get("enum"), list)
+        and literal in candidate["enum"]
+        for candidate in candidates
+    ):
+        raise Refusal("Codex experimental protocol schema enum linkage drift")
 
 
 def _validate_codex_schema_bundle(records: list[dict[str, Any]]) -> None:
-    for token in (
-        "thread/start",
-        "thread/resume",
+    if not isinstance(records, list) or not all(
+        isinstance(item, dict) for item in records
+    ):
+        raise Refusal("Codex experimental protocol schema bundle is malformed")
+    paths = [item.get("path") for item in records]
+    if any(not isinstance(path, str) for path in paths) or len(paths) != len(
+        set(paths)
+    ):
+        raise Refusal("Codex experimental protocol schema paths are malformed or duplicated")
+
+    client = _schema_bundle_root(records, "ClientRequest.json")
+    start = _schema_method_definition(
+        client, "thread/start", "ThreadStartParams", {"id", "method", "params"}
+    )
+    resume = _schema_method_definition(
+        client, "thread/resume", "ThreadResumeParams", {"id", "method", "params"}
+    )
+    compact = _schema_method_definition(
+        client,
         "thread/compact/start",
-        "turn/start",
-        "contextCompaction",
-        "inputTokens",
-        "cachedInputTokens",
-        "cacheWriteInputTokens",
-        "outputSchema",
+        "ThreadCompactStartParams",
+        {"id", "method", "params"},
+    )
+    turn = _schema_method_definition(
+        client, "turn/start", "TurnStartParams", {"id", "method", "params"}
+    )
+    _schema_object_fields(
+        start,
+        {
+            "allowProviderModelFallback",
+            "approvalPolicy",
+            "baseInstructions",
+            "cwd",
+            "dynamicTools",
+            "environments",
+            "ephemeral",
+            "experimentalRawEvents",
+            "model",
+            "sandbox",
+        },
+    )
+    for field, expected_type in {
+        "allowProviderModelFallback": "boolean",
+        "baseInstructions": "string",
+        "cwd": "string",
+        "dynamicTools": "array",
+        "environments": "array",
+        "ephemeral": "boolean",
+        "experimentalRawEvents": "boolean",
+        "model": "string",
+    }.items():
+        _schema_property_type(start, field, expected_type)
+    _schema_nullable_ref(
+        start, "approvalPolicy", "#/definitions/AskForApproval"
+    )
+    _schema_nullable_ref(start, "sandbox", "#/definitions/SandboxMode")
+    _schema_enum_literal(client, "AskForApproval", "never")
+    _schema_enum_literal(client, "SandboxMode", "read-only")
+    _schema_object_fields(resume, {"threadId"}, {"threadId"})
+    _schema_object_fields(compact, {"threadId"}, {"threadId"})
+    _schema_object_fields(
+        turn, {"input", "outputSchema", "threadId"}, {"input", "threadId"}
+    )
+    _schema_property_type(resume, "threadId", "string")
+    _schema_property_type(compact, "threadId", "string")
+    _schema_property_type(turn, "threadId", "string")
+    _schema_property_type(turn, "input", "array")
+    turn_input = _schema_property(turn, "input")
+    if (
+        not isinstance(turn_input.get("items"), dict)
+        or turn_input["items"].get("$ref") != "#/definitions/UserInput"
     ):
-        if not any(
-            _schema_contains_string(item["value"], token) for item in records
-        ):
-            raise Refusal(f"Codex experimental protocol schema omits {token!r}")
-    start_fields = {
-        "allowProviderModelFallback",
-        "approvalPolicy",
-        "baseInstructions",
-        "cwd",
-        "dynamicTools",
-        "environments",
-        "ephemeral",
-        "experimentalRawEvents",
-        "model",
-        "sandbox",
-    }
-    if not any(
-        _schema_contains_property_set(item["value"], start_fields)
-        for item in records
-    ):
-        raise Refusal("Codex thread/start request does not validate against its schema")
+        raise Refusal("Codex experimental protocol schema reference linkage drift")
+    user_input = _schema_definition(client, "UserInput")
+    text_variants = []
+    if isinstance(user_input.get("oneOf"), list):
+        for item in user_input["oneOf"]:
+            properties = item.get("properties") if isinstance(item, dict) else None
+            input_type = (
+                properties.get("type") if isinstance(properties, dict) else None
+            )
+            if isinstance(input_type, dict) and input_type.get("enum") == ["text"]:
+                text_variants.append(item)
+    if len(text_variants) != 1:
+        raise Refusal("Codex user-input union does not uniquely bind text input")
+    _schema_object_fields(text_variants[0], {"text", "type"}, {"text", "type"})
+    _schema_property_type(text_variants[0], "text", "string")
+
+    notifications = _schema_bundle_root(records, "ServerNotification.json")
+    usage_update = _schema_method_definition(
+        notifications,
+        "thread/tokenUsage/updated",
+        "ThreadTokenUsageUpdatedNotification",
+        {"method", "params"},
+    )
+    _schema_object_fields(
+        usage_update,
+        {"threadId", "tokenUsage", "turnId"},
+        {"threadId", "tokenUsage", "turnId"},
+    )
+    _schema_property_type(usage_update, "threadId", "string")
+    _schema_property_type(usage_update, "turnId", "string")
+    _schema_property_ref(
+        usage_update, "tokenUsage", "#/definitions/ThreadTokenUsage"
+    )
+    usage = _schema_definition(notifications, "ThreadTokenUsage")
+    _schema_object_fields(usage, {"last", "total"}, {"last", "total"})
+    for field in ("last", "total"):
+        _schema_property_ref(
+            usage, field, "#/definitions/TokenUsageBreakdown"
+        )
+    breakdown = _schema_definition(notifications, "TokenUsageBreakdown")
+    _schema_object_fields(
+        breakdown,
+        {"inputTokens", "cachedInputTokens", "cacheWriteInputTokens"},
+        {"inputTokens", "cachedInputTokens"},
+    )
+    for field in ("inputTokens", "cachedInputTokens", "cacheWriteInputTokens"):
+        _schema_property_type(breakdown, field, "integer")
+
+    completed = _schema_method_definition(
+        notifications,
+        "item/completed",
+        "ItemCompletedNotification",
+        {"method", "params"},
+    )
+    _schema_object_fields(
+        completed,
+        {"item", "threadId", "turnId"},
+        {"item", "threadId", "turnId"},
+    )
+    _schema_property_type(completed, "threadId", "string")
+    _schema_property_type(completed, "turnId", "string")
+    _schema_property_ref(completed, "item", "#/definitions/ThreadItem")
+    thread_item = _schema_definition(notifications, "ThreadItem")
+    variants = thread_item.get("oneOf")
+    context_variants = []
+    if isinstance(variants, list):
+        for item in variants:
+            properties = item.get("properties") if isinstance(item, dict) else None
+            item_type = properties.get("type") if isinstance(properties, dict) else None
+            if isinstance(item_type, dict) and item_type.get("enum") == [
+                "contextCompaction"
+            ]:
+                context_variants.append(item)
+    if len(context_variants) != 1:
+        raise Refusal("Codex item union does not uniquely bind context compaction")
+    _schema_object_fields(
+        context_variants[0], {"id", "type"}, {"id", "type"}
+    )
+    _schema_property_type(context_variants[0], "id", "string")
 
 
 @contextmanager

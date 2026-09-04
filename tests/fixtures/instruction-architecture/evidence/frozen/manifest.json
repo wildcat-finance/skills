@@ -1,1 +1,1 @@
-{"artifacts":{"packet.json":{"bytes":486305,"sha256":"6d434698a5f68f66ec08e45230177c5a224035802b5f271166862badf35ddb4d"}},"preregistration_sha256":"7d387134810fe82af451f4c60052c98ab92bbc04024f2e7bb78bfa3ee700048c","schema":"wildcat-instruction-architecture-answer-free-packet-manifest/v1"}
+{"artifacts":{"packet.json":{"bytes":486305,"sha256":"c25bce43fa709ea1ca157e36b878633f78065d49e69825f4530c403e931575da"}},"preregistration_sha256":"e69c7778185066dbeb88f72b370a722a6e677035f7645da9fb516982608de650","schema":"wildcat-instruction-architecture-answer-free-packet-manifest/v1"}

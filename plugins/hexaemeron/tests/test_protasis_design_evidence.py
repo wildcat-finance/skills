@@ -29,7 +29,7 @@ class DesignEvidenceCase(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def report(self, candidate, criterion, value, unit, *, name=None):
+    def report(self, candidate, criterion, value, unit, *, command=None, name=None):
         name = name or f"{candidate}-{criterion}.json"
         path = self.reports / name
         payload = {
@@ -38,7 +38,7 @@ class DesignEvidenceCase(unittest.TestCase):
             "criterion": criterion,
             "value": value,
             "unit": unit,
-            "command": f"measure {candidate} {criterion}",
+            "command": command or f"measure {candidate} {criterion}",
             "exit": 0,
         }
         data = (json.dumps(payload, sort_keys=True) + "\n").encode()
@@ -173,6 +173,7 @@ class DesignEvidenceCase(unittest.TestCase):
 
         self.report(
             "streaming", "restart-safe", True, "boolean",
+            command="python3 tests/prove_restart.py",
             name="streaming-restart-safe.json",
         )
         findings, _, consumed = design.evaluate(self.record_path, "step:2")
@@ -210,7 +211,9 @@ class DesignEvidenceCase(unittest.TestCase):
             item for item in record["criteria"] if item["id"] == "restart-safe"
         )
         criterion["blocks"] = "integration"
-        pending = next(item for item in record["results"] if item["state"] == "pending")
+        pending = next(
+            item for item in record["results"] if item["state"] == "pending"
+        )
         pending["blocks"] = "integration"
         self.write_record(record)
         self.assertEqual(self.codes("step:4"), [])
@@ -231,6 +234,32 @@ class DesignEvidenceCase(unittest.TestCase):
                 self.write_record(candidate)
                 self.assertIn("D004", self.codes())
         self.assertEqual(pending["blocks"], "step:2")
+
+    def test_pending_report_command_must_match_its_exact_resolver(self):
+        record = self.base_record()
+        pending = next(item for item in record["results"] if item["state"] == "pending")
+        self.report(
+            pending["candidate"],
+            pending["criterion"],
+            True,
+            "boolean",
+            command="python3 different_measurement.py",
+            name="streaming-restart-safe.json",
+        )
+        self.write_record(record)
+        found = design.check(self.record_path, "step:2")
+        self.assertEqual([item.code for item in found], ["D008"])
+        self.assertIn("exact resolver", found[0].message)
+
+        self.report(
+            pending["candidate"],
+            pending["criterion"],
+            True,
+            "boolean",
+            command=pending["resolver"],
+            name="streaming-restart-safe.json",
+        )
+        self.assertEqual(design.check(self.record_path, "step:2"), [])
 
     def test_report_digest_identity_unit_exit_and_state_are_checked(self):
         mutations = (

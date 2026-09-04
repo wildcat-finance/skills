@@ -24,6 +24,10 @@ unavailable. the table therefore reports complete assembled bytes, not pooled
 or guessed token counts. live p50/p95 timings, peak RSS and the resulting
 selection record are observations; rebuild does not promise byte-identical
 timing or RSS. the committed selection digest binds this observation.
+each arm also runs 20 in-memory source-edit probes: one byte replacement and
+one length-changing insertion for every development case. the record names the
+five touched development artifacts, prompt-component fanout, rebind-attempt
+p50/p95 and the exact stale-evidence refusal; it does not repair #1030.
 
 ## sealed behavioural comparison
 
@@ -111,13 +115,13 @@ version and binary digest, never a host-absolute path or credential material.
 the holdout remains `opened: false`; Step 3 read no task, expected answer,
 scorer key, model output or holdout source content. it made no production-path
 change. the development evidence is committed by inventory SHA-256
-`8879361a57f9270dbbc5b7d8ef0fe5900e20555afbed7ee27a256a02328660cd`;
+`6f4055728f3438e501b85a4713e8e569ace1f3dbe3e22dad76d9c14fba9f6dbe`;
 the selection record's self-digest is
-`82a4915377f43dd7c7f7f25553522c8af87154b71f6e69395a73a8bc6551a565`.
+`658b9e05e7388a8f296e866577dc0cf67392ad31da947161d85a410bd7bf866c`.
 the behavioural commitment-file SHA-256 is
-`ec63c42b89454189e657abca88b9b9ca2b0e4d602a643f38659a8e9f66b5d863`;
+`794f75066984aac792eec9ffdbba8c4e8ef50bdb67a8910b8c87b81d2726c9a2`;
 the native commitment-file SHA-256 is
-`940f7278f83a5aa18c8885c7ee3d077aeac3fbcfda82eefec7cff329a6fbb3eb`.
+`c3a54eaffd0f404b1f8ffd53ba1b9e7e73ad756962d4cf578dfad4d9632a2f6a`.
 
 tracked fixtures own reproducible selection, preregistration, accounting,
 runtime manifests and answer-free packet commitments. ignored

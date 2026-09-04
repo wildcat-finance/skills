@@ -70,6 +70,7 @@ NATIVE_PACKET_COMMITMENT = FIXTURES / "native-lifecycle-packet-commitment.json"
 FROZEN_NATIVE_ROOT = FROZEN_PACKET_ROOT / "native"
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
+RESEARCH_REPORT = ROOT / "docs/instruction-architecture/research-report.md"
 RECEIPTED_STUDY_SHA256 = (
     "fdc6db5b11af226b488a2f02fd9c99df25ad4405990269491b58679eb40d6129"
 )
@@ -189,6 +190,169 @@ def canonical(value: object) -> bytes:
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
     ).encode()
+
+
+def linked_codex_schema_records():
+    request_definitions = {
+        "ThreadStartParams": {
+            "type": "object",
+            "properties": {
+                "allowProviderModelFallback": {"type": "boolean"},
+                "approvalPolicy": {
+                    "anyOf": [
+                        {"$ref": "#/definitions/AskForApproval"},
+                        {"type": "null"},
+                    ]
+                },
+                "baseInstructions": {"type": ["string", "null"]},
+                "cwd": {"type": ["string", "null"]},
+                "dynamicTools": {"type": ["array", "null"]},
+                "environments": {"type": ["array", "null"]},
+                "ephemeral": {"type": ["boolean", "null"]},
+                "experimentalRawEvents": {"type": "boolean"},
+                "model": {"type": ["string", "null"]},
+                "sandbox": {
+                    "anyOf": [
+                        {"$ref": "#/definitions/SandboxMode"},
+                        {"type": "null"},
+                    ]
+                },
+            },
+        },
+        "ThreadResumeParams": {
+            "type": "object",
+            "properties": {"threadId": {"type": "string"}},
+            "required": ["threadId"],
+        },
+        "ThreadCompactStartParams": {
+            "type": "object",
+            "properties": {"threadId": {"type": "string"}},
+            "required": ["threadId"],
+        },
+        "TurnStartParams": {
+            "type": "object",
+            "properties": {
+                "input": {
+                    "items": {"$ref": "#/definitions/UserInput"},
+                    "type": "array",
+                },
+                "outputSchema": {},
+                "threadId": {"type": "string"},
+            },
+            "required": ["input", "threadId"],
+        },
+        "AskForApproval": {
+            "oneOf": [
+                {"enum": ["untrusted", "on-request", "never"], "type": "string"}
+            ]
+        },
+        "SandboxMode": {
+            "enum": ["read-only", "workspace-write", "danger-full-access"],
+            "type": "string",
+        },
+        "UserInput": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string"},
+                        "type": {"enum": ["text"], "type": "string"},
+                    },
+                    "required": ["text", "type"],
+                }
+            ]
+        },
+    }
+
+    def method_variant(method, definition, *, request):
+        required = ["method", "params"]
+        properties = {
+            "method": {"enum": [method]},
+            "params": {"$ref": f"#/definitions/{definition}"},
+        }
+        if request:
+            required.insert(0, "id")
+            properties["id"] = {}
+        return {"type": "object", "properties": properties, "required": required}
+
+    client = {
+        "definitions": request_definitions,
+        "oneOf": [
+            method_variant(method, definition, request=True)
+            for method, definition in (
+                ("thread/start", "ThreadStartParams"),
+                ("thread/resume", "ThreadResumeParams"),
+                ("thread/compact/start", "ThreadCompactStartParams"),
+                ("turn/start", "TurnStartParams"),
+            )
+        ],
+    }
+    notification_definitions = {
+        "ThreadTokenUsageUpdatedNotification": {
+            "type": "object",
+            "properties": {
+                "threadId": {"type": "string"},
+                "tokenUsage": {"$ref": "#/definitions/ThreadTokenUsage"},
+                "turnId": {"type": "string"},
+            },
+            "required": ["threadId", "tokenUsage", "turnId"],
+        },
+        "ThreadTokenUsage": {
+            "type": "object",
+            "properties": {
+                "last": {"$ref": "#/definitions/TokenUsageBreakdown"},
+                "total": {"$ref": "#/definitions/TokenUsageBreakdown"},
+            },
+            "required": ["last", "total"],
+        },
+        "TokenUsageBreakdown": {
+            "type": "object",
+            "properties": {
+                "inputTokens": {"type": "integer"},
+                "cachedInputTokens": {"type": "integer"},
+                "cacheWriteInputTokens": {"type": "integer"},
+            },
+            "required": ["inputTokens", "cachedInputTokens"],
+        },
+        "ItemCompletedNotification": {
+            "type": "object",
+            "properties": {
+                "item": {"$ref": "#/definitions/ThreadItem"},
+                "threadId": {"type": "string"},
+                "turnId": {"type": "string"},
+            },
+            "required": ["item", "threadId", "turnId"],
+        },
+        "ThreadItem": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "type": {"enum": ["contextCompaction"]},
+                    },
+                    "required": ["id", "type"],
+                }
+            ]
+        },
+    }
+    notifications = {
+        "definitions": notification_definitions,
+        "oneOf": [
+            method_variant(
+                "thread/tokenUsage/updated",
+                "ThreadTokenUsageUpdatedNotification",
+                request=False,
+            ),
+            method_variant(
+                "item/completed", "ItemCompletedNotification", request=False
+            ),
+        ],
+    }
+    return [
+        {"path": "ClientRequest.json", "value": client},
+        {"path": "ServerNotification.json", "value": notifications},
+    ]
 
 
 def authority_fixture() -> dict:
@@ -9871,6 +10035,111 @@ class DevelopmentAggregateTests(ExperimentFixtureMixin, unittest.TestCase):
         self.assertTrue(identity["selection_rebuild_is_not_claimed_byte_identical"])
         self.assertTrue(identity["committed_selection_is_bound_by_digest"])
 
+    def test_development_selection_replays_repository_owned_evidence(self):
+        changed = copy.deepcopy(self.selection)
+        changed["development_evidence_sha256"] = "0" * 64
+        changed.pop("sha256")
+        substitutions = [("inventory", AI._digested_record(changed))]
+
+        changed = copy.deepcopy(self.selection)
+        changed["arms"][0]["control_sha256"] = "0" * 64
+        changed.pop("sha256")
+        substitutions.append(("control", AI._digested_record(changed)))
+
+        arms = copy.deepcopy(self.selection["arms"])
+        wai1 = next(item for item in arms if item["arm"] == "wai1")
+        wai1["deterministic_critical_failure"] = False
+        wai1["failure_causes"] = []
+        substitutions.append(
+            (
+                "derived-critical-state",
+                AI._selection_from_development(
+                    arms,
+                    self.selection["development_evidence_sha256"],
+                    self.selection["resources"],
+                ),
+            )
+        )
+        malformed_observation = copy.deepcopy(self.selection["arms"])
+        malformed_observation[0]["timing"] = {}
+        with self.assertRaisesRegex(AI.Refusal, "timing observation"):
+            AI._selection_from_development(
+                malformed_observation,
+                self.selection["development_evidence_sha256"],
+                self.selection["resources"],
+            )
+        for field, value in (
+            ("complete_assembled_bytes", "not-an-integer"),
+            ("coverage", []),
+            ("failure_causes", None),
+            ("operational_feasibility", []),
+        ):
+            with self.subTest(hostile_field=field):
+                malformed = copy.deepcopy(self.selection)
+                malformed["arms"][0][field] = value
+                malformed.pop("sha256")
+                malformed = AI._digested_record(malformed)
+                try:
+                    AI._validate_development_selection_structure(malformed)
+                except Exception as exc:
+                    self.assertIsInstance(exc, AI.Refusal)
+                else:
+                    self.fail("malformed selection arm was accepted")
+        for label, substituted in substitutions:
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(AI.Refusal, "repository inputs"):
+                    AI._validate_development_selection(substituted)
+
+    def test_research_report_replays_current_artifact_identities(self):
+        report = RESEARCH_REPORT.read_text(encoding="utf-8")
+        expected = (
+            hashlib.sha256(DEVELOPMENT_INVENTORY.read_bytes()).hexdigest(),
+            load(DEVELOPMENT_SELECTION)["sha256"],
+            hashlib.sha256(HOLDOUT_PACKET_COMMITMENT.read_bytes()).hexdigest(),
+            hashlib.sha256(NATIVE_PACKET_COMMITMENT.read_bytes()).hexdigest(),
+        )
+        for digest in expected:
+            with self.subTest(digest=digest):
+                self.assertIn(f"`{digest}`", report)
+
+    def test_source_edit_measurement_executes_both_mutations_for_every_arm(self):
+        builder = AI._source_edit_amplification
+        raw_result = load(DEVELOPMENT_RESULTS["raw"])
+        if builder.__code__.co_argcount == 1:
+            measured = builder(raw_result)
+        else:
+            measured = builder(
+                "raw",
+                raw_result,
+                load(DEVELOPMENT_CASES),
+                load(DEVELOPMENT_CONTROLS["raw"]),
+            )
+        self.assertEqual(
+            measured.get("mutation_classes"),
+            ["one-byte-replacement", "version-length-insertion"],
+        )
+        self.assertEqual(measured.get("samples"), 2 * len(AI.DEVELOPMENT_CLASSES))
+        self.assertEqual(
+            measured.get("rebind_attempts", {}).get("successful"), 0
+        )
+        for arm in self.selection["arms"]:
+            measurement = arm["source_edit_amplification"]
+            with self.subTest(arm=arm["arm"]):
+                self.assertEqual(
+                    measurement.get("mutation_classes"),
+                    ["one-byte-replacement", "version-length-insertion"],
+                )
+                self.assertEqual(
+                    measurement.get("samples"), 2 * len(AI.DEVELOPMENT_CLASSES)
+                )
+                self.assertEqual(
+                    measurement.get("rebind_attempts", {}).get("successful"), 0
+                )
+                self.assertTrue(measurement.get("touched_artifacts"))
+                self.assertTrue(
+                    measurement.get("rebind_attempts", {}).get("failure_messages")
+                )
+
 
 class CandidateSelectionTests(ExperimentFixtureMixin, unittest.TestCase):
     def test_simple_control_is_a_valid_provisional_winner(self):
@@ -10324,6 +10593,16 @@ class StatisticsTests(ExperimentFixtureMixin, unittest.TestCase):
             "fail",
         )
 
+    def test_underpowered_zero_event_sample_remains_inconclusive(self):
+        observed = AI.behavioral_inferential_gate(
+            0, 148, independent_stateless_dispatch=True
+        )
+        self.assertEqual(observed["status"], "inconclusive")
+        self.assertGreater(
+            AI.Decimal(observed["upper_bound"]),
+            AI.BEHAVIORAL_MAX_DEGRADATION,
+        )
+
 
 class BudgetLedgerTests(unittest.TestCase):
     def setUp(self):
@@ -10379,6 +10658,34 @@ class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):
         )
         with mock.patch.object(AI, "_http_json", side_effect=[model_rows, {"data": []}]):
             with self.assertRaisesRegex(AI.Refusal, "no active frozen ZDR route"):
+                AI.preflight_model_matrix(args)
+
+    def test_duplicate_model_catalog_identity_refuses(self):
+        rows = [
+            {
+                "architecture": {"tokenizer": row["tokenizer"]},
+                "context_length": row["context_length"],
+                "id": row["id"],
+                "pricing": {"completion": "0.1", "prompt": "0.1"},
+            }
+            for row in self.model_manifest["models"]
+        ]
+        rows.append(
+            {
+                **copy.deepcopy(rows[0]),
+                "architecture": {"tokenizer": "hostile-duplicate"},
+            }
+        )
+        args = types.SimpleNamespace(
+            candidate=AI.EVALUATOR_CANDIDATES[0],
+            models=",".join(AI.MODEL_IDS),
+            require_zdr=True,
+            report=ROOT / AI.NATIVE_REPORT_PATHS[AI.EVALUATOR_CANDIDATES[0]],
+        )
+        with mock.patch.object(
+            AI, "_http_json", side_effect=[{"data": rows}, {"data": []}]
+        ):
+            with self.assertRaisesRegex(AI.Refusal, "duplicate id"):
                 AI.preflight_model_matrix(args)
 
     def test_malformed_zdr_supported_parameters_refuse(self):
@@ -10494,6 +10801,41 @@ class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):
                 mock.patch.object(AI, "_publish_preflight_report") as publish,
             ):
                 with self.assertRaisesRegex(AI.Refusal, "does not cover"):
+                    AI.preflight_spend(args)
+        publish.assert_not_called()
+
+    def test_missing_key_spend_limit_refuses_before_report_publication(self):
+        responses = [
+            {"data": {"usage": "1"}},
+            {"data": {"total_credits": "5000", "total_usage": "0"}},
+            {"data": []},
+        ]
+        with scratch_directory("step3-missing-key-limit-") as directory:
+            authority = Path(directory) / "authority.json"
+            authority.write_bytes(canonical(authority_fixture()))
+            args = types.SimpleNamespace(
+                authority=authority,
+                candidate=AI.EVALUATOR_CANDIDATES[0],
+                max_gross_usd="4500.00",
+                report=ROOT
+                / ".hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json",
+            )
+            with (
+                mock.patch.object(AI, "_external_secret", return_value=b"test-key"),
+                mock.patch.object(AI, "_http_json", side_effect=responses),
+                mock.patch.object(
+                    AI,
+                    "_matrix_gross_bound",
+                    return_value=(
+                        AI.Decimal("100"),
+                        {},
+                        AI.Decimal("1"),
+                        {"call_id": "frozen"},
+                    ),
+                ),
+                mock.patch.object(AI, "_publish_preflight_report") as publish,
+            ):
+                with self.assertRaisesRegex(AI.Refusal, "omits limit remaining"):
                     AI.preflight_spend(args)
         publish.assert_not_called()
 
@@ -10850,6 +11192,13 @@ class NativePreflightBoundaryTests(unittest.TestCase):
                 AI._read_generated_schema_bundle(root)
 
     def test_codex_schema_validation_tolerates_exact_external_decimals(self):
+        records = linked_codex_schema_records()
+        records[0]["value"]["definitions"]["ExternalDecimal"] = {
+            "minimum": AI.Decimal("0.1")
+        }
+        AI._validate_codex_schema_bundle(records)
+
+    def test_codex_schema_tokens_must_be_linked_to_exact_protocol_roots(self):
         tokens = {
             token: {}
             for token in (
@@ -10864,7 +11213,6 @@ class NativePreflightBoundaryTests(unittest.TestCase):
                 "outputSchema",
             )
         }
-        tokens["minimum"] = AI.Decimal("0.1")
         tokens["request"] = {
             "properties": {
                 name: {}
@@ -10882,7 +11230,31 @@ class NativePreflightBoundaryTests(unittest.TestCase):
                 )
             }
         }
-        AI._validate_codex_schema_bundle([{"value": tokens}])
+        with self.assertRaisesRegex(AI.Refusal, "exact ClientRequest.json"):
+            AI._validate_codex_schema_bundle(
+                [{"path": "unrelated.json", "value": tokens}]
+            )
+
+        unlinked = linked_codex_schema_records()
+        unlinked[1]["value"]["definitions"][
+            "ThreadTokenUsageUpdatedNotification"
+        ]["properties"]["tokenUsage"] = []
+        with self.assertRaisesRegex(AI.Refusal, "(property|reference) linkage"):
+            AI._validate_codex_schema_bundle(unlinked)
+
+        incompatible = linked_codex_schema_records()
+        incompatible[0]["value"]["definitions"]["ThreadResumeParams"][
+            "properties"
+        ]["threadId"] = {"type": "integer"}
+        with self.assertRaisesRegex(AI.Refusal, "property type"):
+            AI._validate_codex_schema_bundle(incompatible)
+
+        uncorrelated = linked_codex_schema_records()
+        uncorrelated[1]["value"]["definitions"][
+            "ThreadTokenUsageUpdatedNotification"
+        ]["required"] = ["tokenUsage"]
+        with self.assertRaisesRegex(AI.Refusal, "object linkage"):
+            AI._validate_codex_schema_bundle(uncorrelated)
 
 
 class NativeRuntimeManifestTests(ExperimentFixtureMixin, unittest.TestCase):
@@ -11335,6 +11707,18 @@ class NativeLifecyclePreregistrationTests(ExperimentFixtureMixin, unittest.TestC
                 {"cache_creation": {"ephemeral_5m_input_tokens": 10}}
             ),
             360,
+        )
+
+    def test_unknown_claude_cache_creation_class_is_inconclusive(self):
+        self.assertIsNone(
+            AI.claude_expiry_wait_seconds(
+                {
+                    "cache_creation": {
+                        "ephemeral_5m_input_tokens": 10,
+                        "future_ttl_input_tokens": 10,
+                    }
+                }
+            )
         )
 
     def test_no_session_flag_is_mandatory(self):
