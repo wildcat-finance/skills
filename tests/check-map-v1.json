@@ -298,6 +298,7 @@
     {"path": ".github", "scope": "ci"},
     {"path": ".github/workflows/dead-code.yml", "scope": "dead-code"},
     {"path": ".gitattributes", "scope": "root"},
+    {"path": ".githooks", "scope": "root"},
     {"path": ".gitignore", "scope": "root"},
     {"path": ".python-version", "scope": "root"},
     {"path": ".horos", "scope": "root"},

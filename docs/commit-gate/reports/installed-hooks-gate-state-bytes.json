@@ -1,0 +1,9 @@
+{
+  "candidate": "installed-hooks",
+  "command": "python3 .hexaemeron/design/evaluate_commit_gate.py --candidate installed-hooks --criterion gate-state-bytes",
+  "criterion": "gate-state-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 497
+}
