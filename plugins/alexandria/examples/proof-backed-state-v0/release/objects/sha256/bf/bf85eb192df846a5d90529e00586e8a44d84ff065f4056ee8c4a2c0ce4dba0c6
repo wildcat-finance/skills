@@ -1,0 +1,1 @@
+{"evidence":"recorded-rpc","method":"eth_chainId","name":"chain-id","outcome":{"result":"0x1"},"params":[],"request_key":"37047d9fa98f2102688f6d8f5163bbe33308161d4f482b3e5853043ce6c7163b","required":true,"schema_version":1}

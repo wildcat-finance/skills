@@ -1,12 +1,12 @@
 {
   "counts": {
     "bytes_binary": 43942223,
-    "bytes_content_addressed": 7844971,
+    "bytes_content_addressed": 7850052,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 2494
+    "files_walked": 2511
   },
   "entries": [
     {
@@ -596,6 +596,48 @@
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/release/objects/sha256/ff/ff544298cc52691fb55e78265bb9f64c492dd41a9938788e6e4e28acf438407f"
+    },
+    {
+      "bytes": 1669,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/alexandria/examples/proof-backed-state-v0/release/objects/sha256/67/672163e70dc105dab4b5505b8b4d29664dd6db90732ad46182670b3b45715c92"
+    },
+    {
+      "bytes": 1009,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/alexandria/examples/proof-backed-state-v0/release/objects/sha256/75/75a2b103ad3a31dd3c34aba98768abbe05e23e07bd9a17da5fabc3ddbc137a69"
+    },
+    {
+      "bytes": 911,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/alexandria/examples/proof-backed-state-v0/release/objects/sha256/ac/ac5b542222977eb7c44697c401c9078454918b62f0ee580cc073e2778aa7f669"
+    },
+    {
+      "bytes": 224,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/alexandria/examples/proof-backed-state-v0/release/objects/sha256/bf/bf85eb192df846a5d90529e00586e8a44d84ff065f4056ee8c4a2c0ce4dba0c6"
+    },
+    {
+      "bytes": 738,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/alexandria/examples/proof-backed-state-v0/release/objects/sha256/db/db83b67de692d07c40836bacb0539ba69888bcb47891d09004d1c2b917101457"
+    },
+    {
+      "bytes": 530,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/alexandria/examples/proof-backed-state-v0/release/objects/sha256/fb/fb1761a6bceea077412402c0a4586fb5c0950968d3325833bdebe11c15ac8d18"
     },
     {
       "bytes": 58214,
