@@ -82,7 +82,7 @@ class SapheneiaContractTests(unittest.TestCase):
         positions = [publication.index(item) for item in ordered]
         self.assertEqual(positions, sorted(positions))
         self.assertIn("GitHub does not enforce this repository rule", publication)
-        self.assertIn("Do not publish", publication)
+        self.assertRegex(publication, r"Do\s+not\s+publish")
 
 
 if __name__ == "__main__":

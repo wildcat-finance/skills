@@ -1,0 +1,7 @@
+<instruction-context>
+{{representation}}
+</instruction-context>
+<task>
+{{task}}
+</task>
+return one bounded json object matching the supplied response schema. do not identify or compare the instruction encoding.

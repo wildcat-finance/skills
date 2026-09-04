@@ -381,6 +381,12 @@ def _report_findings(
             record_path, "D005",
             f"{candidate_id}/{criterion_id} report command is missing or unbounded",
         ))
+    elif pending_at_transition and raw["command"] != result["resolver"]:
+        findings.append(Finding(
+            record_path, "D008",
+            f"{candidate_id}/{criterion_id} report command does not match "
+            "its exact resolver",
+        ))
     if isinstance(raw.get("exit"), bool) or raw.get("exit") != 0:
         findings.append(Finding(
             record_path, "D005",

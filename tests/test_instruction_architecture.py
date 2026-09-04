@@ -29,6 +29,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "research/instruction-architecture/benchmark.py"
+HEXCTL = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
 FIXTURES = ROOT / "tests/fixtures/instruction-architecture"
 MANIFEST = FIXTURES / "corpus-manifest.json"
 PROFILES = FIXTURES / "invocation-profiles.json"
@@ -54,13 +55,35 @@ DEVELOPMENT_RESULTS = {
     arm: FIXTURES / "evidence/development" / f"{arm}.json"
     for arm in ("raw", "wai1", "noema", "simple", "section-graph")
 }
+EXPERIMENT_SCHEMA = ROOT / "research/instruction-architecture/schemas/experiment-v1.schema.json"
+CONFORMANCE_CONTRACT = ROOT / ".fiat/conformance-overlay-contract.json"
+CONFORMANCE_CONTRACT_SCHEMA = (
+    ROOT / "research/instruction-architecture/schemas/conformance-contract-v1.schema.json"
+)
+CONFORMANCE_OVERLAY_SCHEMA = (
+    ROOT / "research/instruction-architecture/schemas/conformance-overlay-v1.schema.json"
+)
+DEVELOPMENT_SELECTION = FIXTURES / "development-selection.json"
+PREREGISTRATION = FIXTURES / "preregistration.json"
+MODEL_RUNTIME_MANIFEST = FIXTURES / "model-runtime-manifest.json"
+PROMPT_TEMPLATE = FIXTURES / "prompt-template.txt"
+SCORER = FIXTURES / "scorer.json"
+HOLDOUT_PACKET_COMMITMENT = FIXTURES / "holdout-packet-commitment.json"
+FROZEN_PACKET_ROOT = FIXTURES / "evidence/frozen"
+NATIVE_PREREGISTRATION = FIXTURES / "native-deployment-preregistration.json"
+NATIVE_RUNTIME_MANIFEST = FIXTURES / "native-runtime-manifest.json"
+NATIVE_CACHE_ACCOUNTING = FIXTURES / "native-cache-accounting.json"
+NATIVE_PROMPT_TEMPLATE = FIXTURES / "native-prompt-template.txt"
+NATIVE_PACKET_COMMITMENT = FIXTURES / "native-lifecycle-packet-commitment.json"
+FROZEN_NATIVE_ROOT = FROZEN_PACKET_ROOT / "native"
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
+RESEARCH_REPORT = ROOT / "docs/instruction-architecture/research-report.md"
 RECEIPTED_STUDY_SHA256 = (
-    "8e7236de8321431f295647f9fdf0a4cd782fa4def89b260a98fd13402fea545a"
+    "fdc6db5b11af226b488a2f02fd9c99df25ad4405990269491b58679eb40d6129"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "4d2f1af3ff6a42a5ba7d90068be842942907351c62a29ec57dae2fcf3ecd0d1d"
+    "fc9bb7487c74d30b1f683418061854fdcb49a1e5c0a817739d909076f1172609"
 )
 EXPECTED_KRONOS_RANKING_LEDGERS = {
     "plugins/alexandria/skills/alexandria/EVOLUTION.md",
@@ -166,6 +189,15 @@ def load_module():
 AI = load_module()
 
 
+def load_hexctl_module():
+    spec = importlib.util.spec_from_file_location("fiat_hexctl", HEXCTL)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"could not load {HEXCTL}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -175,6 +207,218 @@ def canonical(value: object) -> bytes:
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
     ).encode()
+
+
+def linked_codex_schema_records():
+    request_definitions = {
+        "ThreadStartParams": {
+            "type": "object",
+            "properties": {
+                "allowProviderModelFallback": {"type": "boolean"},
+                "approvalPolicy": {
+                    "anyOf": [
+                        {"$ref": "#/definitions/AskForApproval"},
+                        {"type": "null"},
+                    ]
+                },
+                "baseInstructions": {"type": ["string", "null"]},
+                "cwd": {"type": ["string", "null"]},
+                "dynamicTools": {"type": ["array", "null"]},
+                "environments": {"type": ["array", "null"]},
+                "ephemeral": {"type": ["boolean", "null"]},
+                "experimentalRawEvents": {"type": "boolean"},
+                "model": {"type": ["string", "null"]},
+                "sandbox": {
+                    "anyOf": [
+                        {"$ref": "#/definitions/SandboxMode"},
+                        {"type": "null"},
+                    ]
+                },
+            },
+        },
+        "ThreadResumeParams": {
+            "type": "object",
+            "properties": {"threadId": {"type": "string"}},
+            "required": ["threadId"],
+        },
+        "ThreadCompactStartParams": {
+            "type": "object",
+            "properties": {"threadId": {"type": "string"}},
+            "required": ["threadId"],
+        },
+        "TurnStartParams": {
+            "type": "object",
+            "properties": {
+                "input": {
+                    "items": {"$ref": "#/definitions/UserInput"},
+                    "type": "array",
+                },
+                "outputSchema": {},
+                "threadId": {"type": "string"},
+            },
+            "required": ["input", "threadId"],
+        },
+        "AskForApproval": {
+            "oneOf": [
+                {"enum": ["untrusted", "on-request", "never"], "type": "string"}
+            ]
+        },
+        "SandboxMode": {
+            "enum": ["read-only", "workspace-write", "danger-full-access"],
+            "type": "string",
+        },
+        "UserInput": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string"},
+                        "type": {"enum": ["text"], "type": "string"},
+                    },
+                    "required": ["text", "type"],
+                }
+            ]
+        },
+    }
+
+    def method_variant(method, definition, *, request):
+        required = ["method", "params"]
+        properties = {
+            "method": {"enum": [method]},
+            "params": {"$ref": f"#/definitions/{definition}"},
+        }
+        if request:
+            required.insert(0, "id")
+            properties["id"] = {}
+        return {"type": "object", "properties": properties, "required": required}
+
+    client = {
+        "definitions": request_definitions,
+        "oneOf": [
+            method_variant(method, definition, request=True)
+            for method, definition in (
+                ("thread/start", "ThreadStartParams"),
+                ("thread/resume", "ThreadResumeParams"),
+                ("thread/compact/start", "ThreadCompactStartParams"),
+                ("turn/start", "TurnStartParams"),
+            )
+        ],
+    }
+    notification_definitions = {
+        "ThreadTokenUsageUpdatedNotification": {
+            "type": "object",
+            "properties": {
+                "threadId": {"type": "string"},
+                "tokenUsage": {"$ref": "#/definitions/ThreadTokenUsage"},
+                "turnId": {"type": "string"},
+            },
+            "required": ["threadId", "tokenUsage", "turnId"],
+        },
+        "ThreadTokenUsage": {
+            "type": "object",
+            "properties": {
+                "last": {"$ref": "#/definitions/TokenUsageBreakdown"},
+                "total": {"$ref": "#/definitions/TokenUsageBreakdown"},
+            },
+            "required": ["last", "total"],
+        },
+        "TokenUsageBreakdown": {
+            "type": "object",
+            "properties": {
+                "inputTokens": {"type": "integer"},
+                "cachedInputTokens": {"type": "integer"},
+                "cacheWriteInputTokens": {"type": "integer"},
+            },
+            "required": ["inputTokens", "cachedInputTokens"],
+        },
+        "ItemCompletedNotification": {
+            "type": "object",
+            "properties": {
+                "item": {"$ref": "#/definitions/ThreadItem"},
+                "threadId": {"type": "string"},
+                "turnId": {"type": "string"},
+            },
+            "required": ["item", "threadId", "turnId"],
+        },
+        "ThreadItem": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "type": {"enum": ["contextCompaction"]},
+                    },
+                    "required": ["id", "type"],
+                }
+            ]
+        },
+    }
+    notifications = {
+        "definitions": notification_definitions,
+        "oneOf": [
+            method_variant(
+                "thread/tokenUsage/updated",
+                "ThreadTokenUsageUpdatedNotification",
+                request=False,
+            ),
+            method_variant(
+                "item/completed", "ItemCompletedNotification", request=False
+            ),
+        ],
+    }
+    return [
+        {"path": "ClientRequest.json", "value": client},
+        {"path": "ServerNotification.json", "value": notifications},
+    ]
+
+
+def authority_fixture() -> dict:
+    return {
+        "authority": {
+            "amended_on": "2026-09-03",
+            "authorized_on": "2026-08-31",
+            "scope": "framework-74 seven-model behavioral holdout only",
+        },
+        "budget": {
+            "currency": "USD",
+            "gross_ceiling": "4500.00",
+            "objective_role": "hard-guard-only-never-a-selection-weight",
+        },
+        "credential": {
+            "file": "/not-opened-in-unit-tests",
+            "label": "openrouter-api-key",
+            "report_value": False,
+        },
+        "current_credit_observation": {
+            "account_endpoint": AI.OPENROUTER_ENDPOINTS["account"],
+            "available_credit": "1.00",
+            "credit_endpoint": AI.OPENROUTER_ENDPOINTS["credits"],
+            "observed_on": "2026-09-03",
+            "state": "proved-from-credits-endpoint",
+            "total_credits": "1.00",
+            "total_usage": "0.00",
+        },
+        "ledger": {
+            "reserved_gross": "0.00",
+            "settled_gross": "0.00",
+            "uncertain_gross": "0.00",
+        },
+        "redaction": {
+            "forbidden": [
+                "credential bytes",
+                "authorization header",
+                "key hash",
+            ]
+        },
+        "reservation": {
+            "fee_rate": "0.055",
+            "lost_or_uncertain_attempt": (
+                "retain reservation as uncertain until provider settlement is proved"
+            ),
+        },
+        "retry_cap": 1,
+        "schema": "wildcat-instruction-architecture-model-evaluation-authority/v1",
+    }
 
 
 def sha256(path: Path) -> str:
@@ -233,6 +477,10 @@ ORACLE_STEP1_PARENT_DEPENDENCIES = (
 ORACLE_STEP2_PARENT_CODE_PATHS = (
     "research/instruction-architecture/benchmark.py",
     "tests/test_instruction_architecture.py",
+)
+ORACLE_RECEIPTED_APPEND_ONLY_DEPENDENCIES = (
+    "docs/instruction-architecture/runbook.md",
+    "docs/instruction-architecture/study.md",
 )
 ORACLE_BASELINE_INVENTORY_SHA256 = (
     "7e8566c5e9148ca151323636f51d7d69d7ff0215fb937619eefd4b621fc5bcb9"
@@ -936,14 +1184,36 @@ def oracle_parent_step1_dependencies(source: bytes) -> tuple[str, ...]:
 def oracle_assert_step1_parent_dependencies(
     oid: str, dependencies: tuple[str, ...] | None = None
 ) -> None:
-    """Fail closed if a live Step 1 dependency differs from the parent oid."""
+    """Accept exact parent bytes or the two exact receipted append-only copies."""
     selected = ORACLE_STEP1_PARENT_DEPENDENCIES if dependencies is None else dependencies
     for path in selected:
         parent_blob_oid = oracle_parent_blob_oid(oid, path)
         live = oracle_read_regular(
             ROOT / path, ORACLE_MAX_STEP1_DEPENDENCY_BYTES
         )
-        if oracle_blob_oid(live, len(oid)) != parent_blob_oid:
+        if oracle_blob_oid(live, len(oid)) == parent_blob_oid:
+            continue
+        if path not in ORACLE_RECEIPTED_APPEND_ONLY_DEPENDENCIES:
+            raise AssertionError("independent tracked oracle dependency drift")
+        parent = oracle_tracked_source(oid, path)
+        prefix_is_exact = len(live) > len(parent) and live.startswith(parent)
+        if path == "docs/instruction-architecture/runbook.md":
+            terminal_is_receipted = (
+                hashlib.sha256(live).hexdigest() == AMENDED_RUNBOOK_SHA256
+            )
+        elif path == "docs/instruction-architecture/study.md":
+            terminal_is_receipted = (
+                live.count(b"](../../plugins/") == 10
+                and hashlib.sha256(
+                    live.replace(b"](../../plugins/", b"](../plugins/")
+                ).hexdigest()
+                == RECEIPTED_STUDY_SHA256
+            )
+        else:
+            terminal_is_receipted = False
+        if (
+            not prefix_is_exact or not terminal_is_receipted
+        ):
             raise AssertionError("independent tracked oracle dependency drift")
 
 
@@ -3888,6 +4158,50 @@ class CorpusManifestTests(unittest.TestCase):
         with (
             mock.patch.object(
                 tracked, "oracle_read_regular", side_effect=hidden_drift
+            ),
+            self.assertRaisesRegex(
+                AssertionError, "independent tracked oracle dependency drift"
+            ),
+        ):
+            tracked.oracle_head_module()
+
+    def test_independent_parent_oracle_refuses_unreceipted_document_append(self):
+        tracked = oracle_guard_module()
+        real_read = tracked.oracle_read_regular
+        target = tracked.ROOT / "docs/instruction-architecture/runbook.md"
+
+        def unreceipted_append(path, limit):
+            data = real_read(path, limit)
+            return data + b"\n" if path == target else data
+
+        with (
+            mock.patch.object(
+                tracked, "oracle_read_regular", side_effect=unreceipted_append
+            ),
+            self.assertRaisesRegex(
+                AssertionError, "independent tracked oracle dependency drift"
+            ),
+        ):
+            tracked.oracle_head_module()
+
+    def test_independent_parent_oracle_refuses_receipted_nonprefix_rebinding(self):
+        tracked = oracle_guard_module()
+        real_read = tracked.oracle_read_regular
+        target = tracked.ROOT / "docs/instruction-architecture/runbook.md"
+        live = real_read(target, tracked.ORACLE_MAX_STEP1_DEPENDENCY_BYTES)
+        rebound = bytes([live[0] ^ 1]) + live[1:]
+
+        def nonprefix_rebinding(path, limit):
+            return rebound if path == target else real_read(path, limit)
+
+        with (
+            mock.patch.object(
+                tracked,
+                "AMENDED_RUNBOOK_SHA256",
+                hashlib.sha256(rebound).hexdigest(),
+            ),
+            mock.patch.object(
+                tracked, "oracle_read_regular", side_effect=nonprefix_rebinding
             ),
             self.assertRaisesRegex(
                 AssertionError, "independent tracked oracle dependency drift"
@@ -9698,6 +10012,2171 @@ class ResourceBoundTests(DevelopmentFixtureMixin, unittest.TestCase):
             path = FIXTURES / relative
             self.assertEqual(path.stat().st_size, identity["bytes"])
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), identity["sha256"])
+
+
+class ExperimentFixtureMixin:
+    @classmethod
+    def setUpClass(cls):
+        cls.selection = load(DEVELOPMENT_SELECTION)
+        cls.preregistration = load(PREREGISTRATION)
+        cls.model_manifest = load(MODEL_RUNTIME_MANIFEST)
+        cls.scorer = load(SCORER)
+        cls.native_preregistration = load(NATIVE_PREREGISTRATION)
+        cls.native_manifest = load(NATIVE_RUNTIME_MANIFEST)
+        cls.accounting = load(NATIVE_CACHE_ACCOUNTING)
+
+
+class DevelopmentAggregateTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_development_aggregate_reconciles_every_arm_and_denominator(self):
+        try:
+            AI._validate_development_selection(self.selection)
+        except AI.Refusal as exc:
+            cause = exc.__cause__
+            if (
+                str(exc) == "development selection repository evidence is malformed"
+                and isinstance(cause, AI.Refusal)
+                and str(cause)
+                == "development inventory differs from its frozen digest"
+            ):
+                self.fail("development evidence requires the current frozen validator")
+            raise
+        self.assertEqual(
+            [item["arm"] for item in self.selection["arms"]],
+            list(AI.DEVELOPMENT_ARMS),
+        )
+        for item in self.selection["arms"]:
+            coverage = item["coverage"]
+            cases = coverage["cases"]
+            self.assertLessEqual(coverage["exact_source_recovery_cases"], cases)
+            self.assertLessEqual(coverage["native_exact_source_recovery_cases"], cases)
+            self.assertLessEqual(coverage["native_mapping_cases"], cases)
+            self.assertGreater(item["maximum_complete_prompt_bytes"], 0)
+            for count in item["token_counts"]:
+                self.assertEqual(
+                    count["aggregation"],
+                    "sum-of-complete-prompts-with-no-cross-case-merges",
+                )
+
+    def test_live_measurements_are_not_claimed_rebuild_identical(self):
+        identity = self.selection["measurement_identity"]
+        self.assertTrue(identity["live_peak_rss_and_timing_are_observations"])
+        self.assertTrue(identity["selection_rebuild_is_not_claimed_byte_identical"])
+        self.assertTrue(identity["committed_selection_is_bound_by_digest"])
+
+    def test_nonlist_development_nominee_refuses_before_membership(self):
+        for malformed in (None, 0, True):
+            with self.subTest(malformed=malformed):
+                changed = copy.deepcopy(self.selection)
+                changed["development_nominee"] = malformed
+                changed.pop("sha256")
+                changed = AI._digested_record(changed)
+                try:
+                    AI._validate_development_selection_structure(changed)
+                except Exception as exc:
+                    self.assertIsInstance(exc, AI.Refusal)
+                else:
+                    self.fail("malformed development nominee set was accepted")
+
+    def test_development_selection_replays_repository_owned_evidence(self):
+        changed = copy.deepcopy(self.selection)
+        changed["development_evidence_sha256"] = "0" * 64
+        changed.pop("sha256")
+        substitutions = [("inventory", AI._digested_record(changed))]
+
+        changed = copy.deepcopy(self.selection)
+        changed["arms"][0]["control_sha256"] = "0" * 64
+        changed.pop("sha256")
+        substitutions.append(("control", AI._digested_record(changed)))
+
+        arms = copy.deepcopy(self.selection["arms"])
+        wai1 = next(item for item in arms if item["arm"] == "wai1")
+        wai1["deterministic_critical_failure"] = False
+        wai1["failure_causes"] = []
+        substitutions.append(
+            (
+                "derived-critical-state",
+                AI._selection_from_development(
+                    arms,
+                    self.selection["development_evidence_sha256"],
+                    self.selection["resources"],
+                ),
+            )
+        )
+        malformed_observation = copy.deepcopy(self.selection["arms"])
+        malformed_observation[0]["timing"] = {}
+        with self.assertRaisesRegex(AI.Refusal, "timing observation"):
+            AI._selection_from_development(
+                malformed_observation,
+                self.selection["development_evidence_sha256"],
+                self.selection["resources"],
+            )
+        for field, value in (
+            ("complete_assembled_bytes", "not-an-integer"),
+            ("coverage", []),
+            ("failure_causes", None),
+            ("operational_feasibility", []),
+        ):
+            with self.subTest(hostile_field=field):
+                malformed = copy.deepcopy(self.selection)
+                malformed["arms"][0][field] = value
+                malformed.pop("sha256")
+                malformed = AI._digested_record(malformed)
+                try:
+                    AI._validate_development_selection_structure(malformed)
+                except Exception as exc:
+                    self.assertIsInstance(exc, AI.Refusal)
+                else:
+                    self.fail("malformed selection arm was accepted")
+        for label, substituted in substitutions:
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(AI.Refusal, "repository inputs"):
+                    AI._validate_development_selection(substituted)
+
+    def test_research_report_replays_current_artifact_identities(self):
+        report = RESEARCH_REPORT.read_text(encoding="utf-8")
+        expected = (
+            hashlib.sha256(DEVELOPMENT_INVENTORY.read_bytes()).hexdigest(),
+            load(DEVELOPMENT_SELECTION)["sha256"],
+            hashlib.sha256(HOLDOUT_PACKET_COMMITMENT.read_bytes()).hexdigest(),
+            hashlib.sha256(NATIVE_PACKET_COMMITMENT.read_bytes()).hexdigest(),
+        )
+        for digest in expected:
+            with self.subTest(digest=digest):
+                self.assertIn(f"`{digest}`", report)
+
+    def test_source_edit_measurement_executes_both_mutations_for_every_arm(self):
+        builder = AI._source_edit_amplification
+        raw_result = load(DEVELOPMENT_RESULTS["raw"])
+        if builder.__code__.co_argcount == 1:
+            measured = builder(raw_result)
+        else:
+            measured = builder(
+                "raw",
+                raw_result,
+                load(DEVELOPMENT_CASES),
+                load(DEVELOPMENT_CONTROLS["raw"]),
+            )
+        self.assertEqual(
+            measured.get("mutation_classes"),
+            ["one-byte-replacement", "version-length-insertion"],
+        )
+        self.assertEqual(measured.get("samples"), 2 * len(AI.DEVELOPMENT_CLASSES))
+        self.assertEqual(
+            measured.get("rebind_attempts", {}).get("successful"), 0
+        )
+        for arm in self.selection["arms"]:
+            measurement = arm["source_edit_amplification"]
+            with self.subTest(arm=arm["arm"]):
+                self.assertEqual(
+                    measurement.get("mutation_classes"),
+                    ["one-byte-replacement", "version-length-insertion"],
+                )
+                self.assertEqual(
+                    measurement.get("samples"), 2 * len(AI.DEVELOPMENT_CLASSES)
+                )
+                self.assertEqual(
+                    measurement.get("rebind_attempts", {}).get("successful"), 0
+                )
+                self.assertTrue(measurement.get("touched_artifacts"))
+                self.assertTrue(
+                    measurement.get("rebind_attempts", {}).get("failure_messages")
+                )
+
+
+class CandidateSelectionTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_simple_control_is_a_valid_provisional_winner(self):
+        self.assertEqual(self.selection["development_nominee"], ["simple"])
+        self.assertIn("simple", self.selection["development_frontier"])
+        self.assertEqual(self.selection["mandatory_native_baselines"], ["raw", "simple"])
+
+    def test_deterministic_critical_failure_cannot_be_nominated(self):
+        failed = {
+            item["arm"]
+            for item in self.selection["arms"]
+            if item["deterministic_critical_failure"]
+        }
+        self.assertEqual(failed, {"wai1"})
+        self.assertTrue(failed.isdisjoint(self.selection["development_nominee"]))
+
+    def test_legacy_prompt_ratio_is_descriptive_and_never_a_veto(self):
+        changed = copy.deepcopy(self.selection["arms"])
+        raw = next(item for item in changed if item["arm"] == "raw")
+        raw["complete_assembled_bytes"] *= 100
+        rebuilt = AI._selection_from_development(
+            changed,
+            self.selection["development_evidence_sha256"],
+            self.selection["resources"],
+        )
+        self.assertFalse(rebuilt["legacy_prompt_ratios"]["admission_veto"])
+        self.assertEqual(rebuilt["development_nominee"], ["simple"])
+
+
+class AdmissionRuleTests(ExperimentFixtureMixin, unittest.TestCase):
+    def admitted(self, rows):
+        try:
+            return AI.admitted_native_arms(self.selection, rows)
+        except AI.Refusal as exc:
+            cause = exc.__cause__
+            if (
+                str(exc) == "development selection repository evidence is malformed"
+                and isinstance(cause, AI.Refusal)
+                and str(cause)
+                == "development inventory differs from its frozen digest"
+            ):
+                self.fail("admission evidence requires the current frozen validator")
+            raise
+
+    def rows(self):
+        return [
+            {
+                "arm": arm,
+                "behavior_equal": True,
+                "paired_interval_overlaps_frontier": False,
+                "sole_compatible_survivor": False,
+                "strictly_dominated_on_available_token_axes": True,
+            }
+            for arm in AI.DEVELOPMENT_ARMS
+        ]
+
+    def test_interval_overlap_requires_admission(self):
+        rows = self.rows()
+        next(row for row in rows if row["arm"] == "noema")[
+            "paired_interval_overlaps_frontier"
+        ] = True
+        self.assertIn("noema", self.admitted(rows))
+
+    def test_sole_compatible_survivor_requires_admission(self):
+        rows = self.rows()
+        next(row for row in rows if row["arm"] == "section-graph")[
+            "sole_compatible_survivor"
+        ] = True
+        self.assertIn("section-graph", self.admitted(rows))
+
+    def test_unknown_behavior_is_not_equal_and_critical_failure_stays_excluded(self):
+        rows = self.rows()
+        noema = next(row for row in rows if row["arm"] == "noema")
+        noema["behavior_equal"] = None
+        noema["paired_interval_overlaps_frontier"] = True
+        wai1 = next(row for row in rows if row["arm"] == "wai1")
+        wai1["sole_compatible_survivor"] = True
+        admitted = self.admitted(rows)
+        self.assertNotIn("noema", admitted)
+        self.assertNotIn("wai1", admitted)
+
+    def test_unhashable_behavioral_arm_refuses(self):
+        try:
+            AI.admitted_native_arms(self.selection, [{"arm": []}])
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "unknown arm")
+        except Exception as exc:
+            self.fail(f"unhashable arm escaped as {type(exc).__name__}")
+        else:
+            self.fail("unhashable arm was accepted")
+
+
+class PreregistrationTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_behavioral_preregistration_binds_full_answer_matrix(self):
+        seal = load(SEAL)
+        try:
+            AI._validate_behavioral_preregistration(self.preregistration, seal)
+        except AI.Refusal as exc:
+            self.fail(f"frozen behavioral preregistration refused: {exc}")
+        self.assertEqual(self.preregistration["logical_calls_before_retries"], 1120)
+        self.assertEqual(len(self.preregistration["case_slots"]), 16)
+        self.assertEqual(len(self.preregistration["arms"]), 5)
+        self.assertEqual(len(self.model_manifest["models"]), 7)
+        self.assertEqual(
+            self.preregistration["pair_comparability"].get("required_arm_set"),
+            list(AI.DEVELOPMENT_ARMS),
+        )
+
+    def test_experiment_schema_closes_every_declared_object(self):
+        schema = load(EXPERIMENT_SCHEMA)
+        refs = {item["$ref"] for item in schema["oneOf"]}
+        self.assertIn("#/$defs/developmentSelection", refs)
+        self.assertIn("#/$defs/nativePreregistration", refs)
+
+        def walk(value):
+            if isinstance(value, dict):
+                if value.get("type") == "object":
+                    self.assertFalse(value.get("additionalProperties", True))
+                    self.assertNotIn("patternProperties", value)
+                    self.assertEqual(
+                        set(value.get("required", [])),
+                        set(value.get("properties", {})),
+                    )
+                    self.assertNotIn("hostile_extra", value["properties"])
+                for child in value.values():
+                    walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child)
+
+        walk(schema)
+
+    def test_behavioral_preregistration_replays_every_repository_input_binding(self):
+        seal = load(SEAL)
+        base = copy.deepcopy(self.preregistration)
+        base["pair_comparability"]["required_arm_set"] = list(AI.DEVELOPMENT_ARMS)
+        mutations = []
+        for path in (
+            ("model_runtime_manifest_sha256",),
+            ("prompt_template_sha256",),
+            ("scorer_sha256",),
+            ("arms", 0, "control_sha256"),
+        ):
+            changed = copy.deepcopy(base)
+            target = changed
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = "0" * 64
+            changed.pop("sha256")
+            mutations.append((path, AI._digested_record(changed)))
+        for path, changed in mutations:
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(AI.Refusal, "repository inputs"):
+                    AI._validate_behavioral_preregistration(changed, seal)
+
+    def test_experiment_schema_has_no_wildcard_extra_key_escape(self):
+        schema = load(EXPERIMENT_SCHEMA)
+
+        def walk(value):
+            if isinstance(value, dict):
+                if value.get("type") == "object":
+                    properties = value.get("properties", {})
+                    hostile = dict.fromkeys(properties, None)
+                    hostile["hostile_extra"] = "accepted-by-old-patternProperties"
+                    admitted = {
+                        key
+                        for key in hostile
+                        if key in properties
+                        or any(
+                            re.fullmatch(pattern, key)
+                            for pattern in value.get("patternProperties", {})
+                        )
+                    }
+                    self.assertNotIn("hostile_extra", admitted)
+                    self.assertFalse(value["additionalProperties"])
+                for child in value.values():
+                    walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child)
+
+        walk(schema)
+
+    def test_post_freeze_rule_change_invalidates_selection(self):
+        changed = copy.deepcopy(self.selection)
+        changed["admission_rule"]["final_architecture_decided"] = True
+        with self.assertRaisesRegex(AI.Refusal, "digest drift"):
+            AI._validate_development_selection(changed)
+
+    def test_model_id_substitution_refuses(self):
+        changed = copy.deepcopy(self.model_manifest)
+        changed["models"][0]["id"] = "anthropic/substitute"
+        with self.assertRaisesRegex(AI.Refusal, "matrix drift"):
+            AI._validate_model_runtime_manifest(changed)
+
+    def test_batching_is_one_tuple_in_an_immutable_full_permutation(self):
+        batching = self.model_manifest["batching"]
+        self.assertEqual(batching["logical_calls_per_batch"], 1)
+        self.assertEqual(batching["batch_count"], 1120)
+        self.assertEqual(batching["block_count"], 224)
+        self.assertEqual(batching["block_size"], 5)
+        self.assertFalse(batching["may_reorder_or_shrink"])
+        packet = load(FROZEN_PACKET_ROOT / "packet.json")
+        order = packet["logical_call_order"]
+        self.assertEqual(len(order), 1120)
+        self.assertEqual(
+            [item["batch_index"] for item in order], list(range(1120))
+        )
+        pair_counts = {}
+        for item in order:
+            pair_counts[item["pair_id"]] = pair_counts.get(item["pair_id"], 0) + 1
+        self.assertEqual(set(pair_counts.values()), {5})
+        for offset in range(0, len(order), 5):
+            block = order[offset : offset + 5]
+            self.assertEqual(len({item["pair_id"] for item in block}), 1)
+            self.assertEqual([item["arm_index"] for item in block], list(range(5)))
+            self.assertEqual(
+                {item["block_index"] for item in block}, {offset // 5}
+            )
+
+
+class BehavioralCaseGeneratorTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_post_freeze_generator_mutation_refuses_after_coherent_reseal(self):
+        changed = copy.deepcopy(self.preregistration)
+        changed["case_generator"]["algorithm"] = "mutable-after-open"
+        changed.pop("sha256")
+        changed = AI._digested_record(changed)
+        with self.assertRaisesRegex(
+            AI.Refusal, "case generator drift|differs from repository inputs"
+        ):
+            AI._validate_behavioral_preregistration(changed, load(SEAL))
+
+    def test_synthetic_exact_literal_is_objective_and_source_bound(self):
+        skill_path = "plugins/probitas/skills/probitas/SKILL.md"
+        fixed_path = ".python-version"
+        skill_raw = b"source-owned obligation"
+        fixed_raw = b"3.14.6\n"
+        evidence = {
+            "end": len(skill_raw),
+            "obligation": skill_path,
+            "path": skill_path,
+            "source_sha256": hashlib.sha256(skill_raw).hexdigest(),
+            "span_sha256": hashlib.sha256(skill_raw).hexdigest(),
+            "start": 0,
+        }
+        profiles = {
+            "profiles": [
+                {
+                    "applicability": "bounded-operation:probitas:add venue",
+                    "branch_state": ["add-venue"],
+                    "fixed_inputs": [
+                        {"load_semantics": "mandatory-executable", "path": fixed_path}
+                    ],
+                    "id": "probitas:add-venue",
+                    "phase": "add venue",
+                    "required_documents": [fixed_path, skill_path],
+                    "selected_skill": "probitas",
+                    "source_evidence": [evidence],
+                }
+            ],
+            "source_ref": AI.SOURCE_REF,
+        }
+        manifest = {
+            "documents": [
+                {
+                    "bytes": len(fixed_raw),
+                    "path": fixed_path,
+                    "sha256": hashlib.sha256(fixed_raw).hexdigest(),
+                }
+            ],
+            "source": {"ref": AI.SOURCE_REF},
+        }
+        plan = {
+            "corpus_manifest_sha256": AI._artifact_digest(manifest),
+            "generator_sha256": "1" * 64,
+            "invocation_profiles_sha256": AI._artifact_digest(profiles),
+            "logical_skill": "probitas",
+            "profile_selection_seed": "2" * 64,
+            "response_schema": AI._behavioral_response_schema(
+                "exact-literal", "structured-plan"
+            ),
+            "response_shape": "structured-plan",
+            "scorer_sha256": "3" * 64,
+            "semantic_class": "exact-literal",
+            "slot_id": "synthetic-01",
+            "witness_rule": AI.SEMANTIC_WITNESS_RULES["exact-literal"],
+        }
+        materialized = AI.materialize_behavioral_case(
+            plan,
+            profiles,
+            manifest,
+            {skill_path: skill_raw, fixed_path: fixed_raw},
+        )
+        self.assertNotIn("3.14.6", materialized["task"])
+        self.assertEqual(
+            materialized["oracle"]["result"]["fixed_input"]["text"],
+            "3.14.6\n",
+        )
+        score = AI.score_behavioral_response(
+            materialized["oracle"], AI._canonical_json(materialized["oracle"])
+        )
+        self.assertTrue(score["success"])
+        adversarial = {**materialized["oracle"], "success": True}
+        score = AI.score_behavioral_response(
+            materialized["oracle"], AI._canonical_json(adversarial)
+        )
+        self.assertFalse(score["success"])
+        self.assertTrue(score["critical_policy_violation"])
+        with self.assertRaisesRegex(AI.Refusal, "differs from its manifest"):
+            AI.materialize_behavioral_case(
+                plan,
+                profiles,
+                manifest,
+                {skill_path: skill_raw, fixed_path: b"3.13.0\n"},
+            )
+
+    def test_pair_comparability_qualifies_both_unknown_but_refuses_one_known(self):
+        rows = [
+            {
+                "arm": arm,
+                "model_id": "m",
+                "provider_name": "p",
+                "model_revision": None,
+                "tokenizer_digest": None,
+            }
+            for arm in AI.DEVELOPMENT_ARMS
+        ]
+        observed = AI.behavioral_pair_comparability(rows)
+        self.assertTrue(observed["comparable"])
+        self.assertFalse(observed["token_pooling_allowed"])
+        rows[0]["model_revision"] = "r1"
+        self.assertFalse(AI.behavioral_pair_comparability(rows)["comparable"])
+
+    def test_pair_comparability_refuses_non_object_rows(self):
+        try:
+            AI.behavioral_pair_comparability([None] * len(AI.DEVELOPMENT_ARMS))
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "malformed")
+        except Exception as exc:
+            self.fail(f"malformed row escaped as {type(exc).__name__}")
+        else:
+            self.fail("malformed row was accepted")
+
+    def test_pair_comparability_requires_closed_arms_and_valid_identity_types(self):
+        rows = [
+            {
+                "arm": arm,
+                "model_id": "m",
+                "provider_name": "p",
+                "model_revision": None,
+                "tokenizer_digest": None,
+            }
+            for arm in AI.DEVELOPMENT_ARMS
+        ]
+        duplicated = [dict(rows[0]) for _ in AI.DEVELOPMENT_ARMS]
+        with self.assertRaisesRegex(AI.Refusal, "one row per frozen arm"):
+            AI.behavioral_pair_comparability(duplicated)
+        rows[0]["model_revision"] = 7
+        observed = AI.behavioral_pair_comparability(rows)
+        self.assertFalse(observed["comparable"])
+        self.assertEqual(observed["identity_quality"], "model_revision-unknown")
+
+    def test_pair_comparability_rejects_blank_identity_values(self):
+        rows = [
+            {
+                "arm": arm,
+                "model_id": "m",
+                "provider_name": "p",
+                "model_revision": None,
+                "tokenizer_digest": None,
+            }
+            for arm in AI.DEVELOPMENT_ARMS
+        ]
+        for field in (
+            "model_id",
+            "provider_name",
+            "model_revision",
+            "tokenizer_digest",
+        ):
+            changed = copy.deepcopy(rows)
+            for row in changed:
+                row[field] = " \t "
+            with self.subTest(field=field):
+                observed = AI.behavioral_pair_comparability(changed)
+                self.assertFalse(observed["comparable"])
+                self.assertIn("unknown", observed["identity_quality"])
+
+
+class PromptContaminationTests(unittest.TestCase):
+    def test_scorer_and_answer_material_refuse_in_behavioral_prompt(self):
+        raw = PROMPT_TEMPLATE.read_bytes()
+        for contamination in (b"\nexpected_answer\n", b"\nscorer_key\n"):
+            with self.subTest(contamination=contamination):
+                with self.assertRaisesRegex(AI.Refusal, "contaminated"):
+                    AI._validate_behavioral_prompt_template(raw + contamination)
+
+    def test_competing_representation_name_refuses_in_native_prompt(self):
+        raw = NATIVE_PROMPT_TEMPLATE.read_bytes()
+        with self.assertRaisesRegex(AI.Refusal, "forbidden material"):
+            AI._validate_native_prompt_template(raw + b"\nnoema\n")
+
+    def test_unstable_prefix_order_refuses(self):
+        raw = NATIVE_PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        changed = raw.replace("{{representation}}", "TEMP", 1).replace(
+            "{{task_suffix}}", "{{representation}}", 1
+        ).replace("TEMP", "{{task_suffix}}", 1)
+        with self.assertRaisesRegex(AI.Refusal, "stable prefix|placeholders"):
+            AI._validate_native_prompt_template(changed.encode())
+
+    def test_native_prompt_partition_freezes_prefix_once_and_suffix_per_turn(self):
+        partitioner = getattr(AI, "_native_prompt_partition", None)
+        self.assertIsNotNone(partitioner)
+        partition = partitioner(NATIVE_PROMPT_TEMPLATE.read_bytes())
+        self.assertEqual(partition["stable_prefix_injections_per_chain"], 1)
+        self.assertEqual(
+            partition["first_turn_input"], "{stable_prefix}{task_suffix}"
+        )
+        self.assertEqual(partition["continuation_input"], "{task_suffix}")
+        self.assertNotEqual(
+            partition["stable_prefix_template_sha256"],
+            partition["task_suffix_template_sha256"],
+        )
+
+
+class StatisticsTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_exact_loss_event_bound_is_powered_at_frozen_pair_count(self):
+        minimum = AI._minimum_zero_event_pairs(
+            AI.BEHAVIORAL_ALPHA, AI.BEHAVIORAL_MAX_DEGRADATION
+        )
+        self.assertEqual(minimum, 149)
+        self.assertGreater(
+            AI.paired_degradation_upper_bound(0, minimum - 1),
+            AI.BEHAVIORAL_MAX_DEGRADATION,
+        )
+        self.assertLessEqual(
+            AI.paired_degradation_upper_bound(0, minimum),
+            AI.BEHAVIORAL_MAX_DEGRADATION,
+        )
+
+    def test_estimand_is_raw_only_loss_not_net_paired_difference(self):
+        self.assertIn("raw-only success", self.scorer["aggregation"]["degradation_event"])
+        estimand = self.scorer["aggregation"]["estimand"]
+        self.assertIn("raw-only loss probability", estimand)
+        self.assertIn("net paired success-rate difference", estimand)
+
+    def test_heterogeneous_bound_requires_zero_events_and_independent_dispatch(self):
+        with self.assertRaisesRegex(AI.Refusal, "only for zero events"):
+            AI.paired_degradation_upper_bound(1, 224)
+        self.assertEqual(
+            AI.behavioral_inferential_gate(
+                0, 224, independent_stateless_dispatch=False
+            )["status"],
+            "inconclusive",
+        )
+        self.assertEqual(
+            AI.behavioral_inferential_gate(
+                0, 224, independent_stateless_dispatch=True
+            )["status"],
+            "pass",
+        )
+        self.assertEqual(
+            AI.behavioral_inferential_gate(
+                1, 224, independent_stateless_dispatch=True
+            )["status"],
+            "fail",
+        )
+
+    def test_underpowered_zero_event_sample_remains_inconclusive(self):
+        observed = AI.behavioral_inferential_gate(
+            0, 148, independent_stateless_dispatch=True
+        )
+        self.assertEqual(observed["status"], "inconclusive")
+        self.assertGreater(
+            AI.Decimal(observed["upper_bound"]),
+            AI.BEHAVIORAL_MAX_DEGRADATION,
+        )
+
+
+class BudgetLedgerTests(unittest.TestCase):
+    def setUp(self):
+        self.authority = authority_fixture()
+
+    def test_missing_fee_refuses(self):
+        changed = copy.deepcopy(self.authority)
+        changed["reservation"].pop("fee_rate")
+        with self.assertRaisesRegex(AI.Refusal, "fee is missing"):
+            AI._validate_authority(changed, AI.Decimal("4500.00"))
+
+    def test_over_budget_reservation_refuses(self):
+        with self.assertRaisesRegex(AI.Refusal, "exceeds"):
+            AI.budget_reservation(self.authority, AI.Decimal("4500.01"))
+
+    def test_lost_attempt_stays_in_gross_exposure(self):
+        ledger = {
+            "reserved_gross": "7.50",
+            "settled_gross": "1.00",
+            "uncertain_gross": "2.00",
+        }
+        observed = AI.budget_attempt_outcome(ledger, AI.Decimal("7.50"), "lost")
+        self.assertEqual(observed["reserved_gross"], "0.00")
+        self.assertEqual(observed["uncertain_gross"], "9.50")
+
+
+class ConformanceOverlayTests(unittest.TestCase):
+    def setUp(self):
+        required_paths = (
+            CONFORMANCE_CONTRACT,
+            CONFORMANCE_CONTRACT_SCHEMA,
+            CONFORMANCE_OVERLAY_SCHEMA,
+        )
+        required_symbols = (
+            "CONFORMANCE_OVERLAY",
+            "STEP4_GATED_COMMANDS",
+            "_requires_step4_conformance",
+            "_validate_conformance_contract",
+            "build_conformance_overlay",
+        )
+        missing = [str(path) for path in required_paths if not path.is_file()]
+        missing.extend(name for name in required_symbols if not hasattr(AI, name))
+        if not missing:
+            return
+        causal = {
+            "test_contract_closes_exact_three_by_three_commands_and_immutable_base",
+            "test_every_step4_effect_boundary_checks_controller_before_parsing",
+        }
+        if self._testMethodName in causal:
+            self.fail("parent lacks the tracked conformance overlay gate")
+        self.skipTest("requires the tracked conformance overlay gate")
+
+    def contract(self):
+        return load(CONFORMANCE_CONTRACT)
+
+    @contextmanager
+    def exact_private_inputs(self, *, omit_evidence=None, stale_command=None):
+        with tempfile.TemporaryDirectory(prefix="step3-conformance-") as temporary:
+            root = Path(temporary)
+            (root / ".hexaemeron/design-reports").mkdir(parents=True)
+            (root / ".fiat").mkdir()
+            contract = copy.deepcopy(self.contract())
+            base = {
+                "results": [
+                    {
+                        "candidate": row["candidate"],
+                        "criterion": row["criterion"],
+                        "state": "pending",
+                        **row["base_pending"],
+                    }
+                    for row in contract["rows"]
+                    if row["base_pending"] is not None
+                ],
+                "schema": "protasis-design-evidence/v1",
+            }
+            base_raw = (json.dumps(base, indent=2, sort_keys=True) + "\n").encode()
+            contract["base"]["sha256"] = hashlib.sha256(base_raw).hexdigest()
+            contract_raw = canonical(contract)
+            (root / ".fiat/conformance-overlay-contract.json").write_bytes(contract_raw)
+            (root / ".hexaemeron/design-evidence.json").write_bytes(base_raw)
+            for row in contract["rows"]:
+                identity = (row["candidate"], row["criterion"])
+                command = row["command"]
+                if stale_command == identity:
+                    command = command.replace("--max-gross-usd 4500", "--max-gross-usd 100")
+                report = {
+                    "candidate": row["candidate"],
+                    "command": command,
+                    "criterion": row["criterion"],
+                    "exit": 0,
+                    "schema": "protasis-design-report/v1",
+                    "unit": "boolean",
+                    "value": True,
+                }
+                evidence = AI._digested_record({
+                    "candidate": row["candidate"],
+                    "criterion": row["criterion"],
+                    "facts": row["required_facts"],
+                    "invocation": command,
+                    "schema": f"{AI.SCHEMA_PREFIX}-preflight-evidence/v1",
+                })
+                (root / row["report_path"]).write_bytes(canonical(report))
+                if omit_evidence != identity:
+                    (root / row["evidence_path"]).write_bytes(canonical(evidence))
+            with (
+                mock.patch.object(AI, "ROOT", root),
+                mock.patch.object(
+                    AI, "_tracked_conformance_contract", return_value=(contract, contract_raw)
+                ),
+            ):
+                yield root, contract
+
+    def test_contract_closes_exact_three_by_three_commands_and_immutable_base(self):
+        contract = self.contract()
+        AI._validate_conformance_contract(contract)
+        self.assertEqual(len(contract["rows"]), 9)
+        self.assertEqual(
+            "117dd4d94d8f7b464f069332e0845d3ee9fd789950020a553b6b2096cafa6f48",
+            contract["base"]["sha256"],
+        )
+        self.assertEqual(
+            {(row["candidate"], row["criterion"]) for row in contract["rows"]},
+            set(itertools.product(contract["candidates"], contract["criteria"])),
+        )
+        paid = [row for row in contract["rows"] if row["criterion"] == "paid-evaluation-preflight"]
+        self.assertTrue(all("--max-gross-usd 4500" in row["command"] for row in paid))
+        self.assertTrue(all(
+            "--max-gross-usd 100" in row["base_pending"]["resolver"]
+            for row in paid
+        ))
+
+    def test_overlay_builds_nine_bound_pairs_without_touching_the_immutable_base(self):
+        with self.exact_private_inputs() as (root, contract):
+            before = (root / contract["base"]["path"]).read_bytes()
+            output = root / AI.CONFORMANCE_OVERLAY
+            result = AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            record = load(output)
+            self.assertEqual(len(record["rows"]), 9)
+            self.assertEqual(result.count(b'"sessions_launched":0'), 1)
+            self.assertEqual((root / contract["base"]["path"]).read_bytes(), before)
+            self.assertEqual(hashlib.sha256(before).hexdigest(), contract["base"]["sha256"])
+
+    def test_private_overlay_changes_only_six_bound_resolvers(self):
+        controller = load_hexctl_module()
+        with self.exact_private_inputs() as (root, contract):
+            base = root / contract["base"]["path"]
+            before = base.read_bytes()
+            output = root / AI.CONFORMANCE_OVERLAY
+            AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            checked = controller._validate_conformance_bundle(
+                str(root),
+                contract_raw=(root / AI.CONFORMANCE_CONTRACT).read_bytes(),
+                overlay_raw=output.read_bytes(),
+            )
+            original = json.loads(before)
+            patched = json.loads(checked["patched_base"])
+            self.assertEqual(len(checked["design_reports"]), 6)
+            for old, new in zip(original["results"], patched["results"]):
+                self.assertEqual(
+                    {key: value for key, value in old.items() if key != "resolver"},
+                    {key: value for key, value in new.items() if key != "resolver"},
+                )
+                if old["criterion"] == "paid-evaluation-preflight":
+                    self.assertIn("--max-gross-usd 100", old["resolver"])
+                else:
+                    self.assertEqual(old["resolver"], new["resolver"])
+                self.assertEqual(
+                    next(
+                        row["command"] for row in contract["rows"]
+                        if (row["candidate"], row["criterion"])
+                        == (old["candidate"], old["criterion"])
+                    ),
+                    new["resolver"],
+                )
+            self.assertEqual(base.read_bytes(), before)
+
+    def test_missing_native_evidence_refuses_before_overlay_publication(self):
+        identity = ("neutral-evidence-workbench", "native-gate-preflight")
+        with self.exact_private_inputs(omit_evidence=identity) as (root, _):
+            output = root / AI.CONFORMANCE_OVERLAY
+            with self.assertRaisesRegex(AI.Refusal, "unavailable or unsafe"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertFalse(output.exists())
+
+    def test_stale_resolver_report_cannot_be_relabelled_by_the_overlay(self):
+        identity = ("neutral-evidence-workbench", "paid-evaluation-preflight")
+        with self.exact_private_inputs(stale_command=identity) as (root, _):
+            output = root / AI.CONFORMANCE_OVERLAY
+            with self.assertRaisesRegex(AI.Refusal, "exact frozen pass"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertFalse(output.exists())
+
+    def test_partial_or_stale_overlay_is_never_replaced(self):
+        with self.exact_private_inputs() as (root, _):
+            output = root / AI.CONFORMANCE_OVERLAY
+            output.write_bytes(b'{"partial":')
+            with self.assertRaisesRegex(AI.Refusal, "stale bytes"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertEqual(output.read_bytes(), b'{"partial":')
+
+    def test_changed_immutable_base_refuses_before_overlay_publication(self):
+        with self.exact_private_inputs() as (root, contract):
+            base = root / contract["base"]["path"]
+            base.write_bytes(base.read_bytes() + b" ")
+            output = root / AI.CONFORMANCE_OVERLAY
+            with self.assertRaisesRegex(AI.Refusal, "base digest changed"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertFalse(output.exists())
+
+    def test_every_step4_effect_boundary_checks_controller_before_parsing(self):
+        commands = sorted(AI.STEP4_GATED_COMMANDS)
+        for command in commands:
+            with self.subTest(command=command):
+                with (
+                    mock.patch.object(
+                        AI,
+                        "_verify_step4_conformance",
+                        side_effect=AI.Refusal("missing"),
+                    ) as verify,
+                    mock.patch.object(AI, "parser") as parser_mock,
+                ):
+                    self.assertEqual(AI.main([command]), 2)
+                verify.assert_called_once_with()
+                parser_mock.assert_not_called()
+        self.assertTrue(AI._requires_step4_conformance(["replay", "--cohort", "holdout"]))
+        self.assertTrue(AI._requires_step4_conformance(["replay", "--cohort=holdout"]))
+        self.assertTrue(AI._requires_step4_conformance(["replay", "--coh", "holdout"]))
+        self.assertTrue(AI._requires_step4_conformance([
+            "replay", "--cohort", "development", "--cohort", "holdout",
+        ]))
+        self.assertFalse(AI._requires_step4_conformance(["replay", "--cohort", "development"]))
+
+    def test_step4_checker_requires_the_exact_bounded_controller_result(self):
+        valid = {
+            "schema": "fiat-conformance-overlay-receipt/v1",
+            "transition": "step:4",
+            "overlay_sha256": "a" * 64,
+            "rows": 9,
+            "ledger_entries": 61,
+        }
+        with mock.patch.object(
+            AI,
+            "_bounded_process",
+            return_value=(0, canonical(valid), b""),
+        ):
+            AI._verify_step4_conformance()
+
+        hostile = []
+        extra = dict(valid)
+        extra["unverified"] = True
+        hostile.append(extra)
+        for field, value in (
+            ("rows", True),
+            ("ledger_entries", True),
+            ("ledger_entries", 0),
+            ("ledger_entries", "61"),
+        ):
+            changed = dict(valid)
+            changed[field] = value
+            hostile.append(changed)
+        for record in hostile:
+            with (
+                self.subTest(record=record),
+                mock.patch.object(
+                    AI,
+                    "_bounded_process",
+                    return_value=(0, canonical(record), b""),
+                ),
+                self.assertRaisesRegex(AI.Refusal, "wrong receipt"),
+            ):
+                AI._verify_step4_conformance()
+
+    def test_conformance_schemas_close_every_object(self):
+        expected_path = {
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": (
+                r"^(?!/)(?!.*//)(?!.*(?:^|/)\.\.?(?:/|$))(?!.*\\)"
+                r"(?!.*\/$)[\u0020-\u007e]+(?![\s\S])"
+            ),
+            "type": "string",
+        }
+        for path in (CONFORMANCE_CONTRACT_SCHEMA, CONFORMANCE_OVERLAY_SCHEMA):
+            schema = load(path)
+            self.assertEqual(schema["$defs"]["path"], expected_path)
+
+            def walk(value):
+                if isinstance(value, dict):
+                    if value.get("type") == "object":
+                        self.assertFalse(value.get("additionalProperties", True))
+                        self.assertEqual(
+                            set(value.get("required", [])),
+                            set(value.get("properties", {})),
+                        )
+                    for child in value.values():
+                        walk(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        walk(child)
+
+            walk(schema)
+
+
+class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_manifest_requires_one_exact_ordered_policy_and_zdr(self):
+        AI._validate_model_runtime_manifest(self.model_manifest)
+        self.assertTrue(self.model_manifest["provider"]["zdr"])
+        self.assertFalse(self.model_manifest["allow_model_substitution"])
+        self.assertTrue(
+            all(model["ordered_provider_policy"] for model in self.model_manifest["models"])
+        )
+
+    def test_non_zdr_route_refuses_before_report_publication(self):
+        model_rows = {
+            "data": [
+                {
+                    "architecture": {"tokenizer": row["tokenizer"]},
+                    "context_length": row["context_length"],
+                    "id": row["id"],
+                    "pricing": {"completion": "0.1", "prompt": "0.1"},
+                }
+                for row in self.model_manifest["models"]
+            ]
+        }
+        args = types.SimpleNamespace(
+            candidate=AI.EVALUATOR_CANDIDATES[0],
+            models=",".join(AI.MODEL_IDS),
+            require_zdr=True,
+            report=ROOT / AI.NATIVE_REPORT_PATHS[AI.EVALUATOR_CANDIDATES[0]],
+        )
+        with mock.patch.object(AI, "_http_json", side_effect=[model_rows, {"data": []}]):
+            with self.assertRaisesRegex(AI.Refusal, "no active frozen ZDR route"):
+                AI.preflight_model_matrix(args)
+
+    def test_duplicate_model_catalog_identity_refuses(self):
+        rows = [
+            {
+                "architecture": {"tokenizer": row["tokenizer"]},
+                "context_length": row["context_length"],
+                "id": row["id"],
+                "pricing": {"completion": "0.1", "prompt": "0.1"},
+            }
+            for row in self.model_manifest["models"]
+        ]
+        rows.append(
+            {
+                **copy.deepcopy(rows[0]),
+                "architecture": {"tokenizer": "hostile-duplicate"},
+            }
+        )
+        args = types.SimpleNamespace(
+            candidate=AI.EVALUATOR_CANDIDATES[0],
+            models=",".join(AI.MODEL_IDS),
+            require_zdr=True,
+            report=ROOT / AI.NATIVE_REPORT_PATHS[AI.EVALUATOR_CANDIDATES[0]],
+        )
+        with mock.patch.object(
+            AI, "_http_json", side_effect=[{"data": rows}, {"data": []}]
+        ):
+            with self.assertRaisesRegex(AI.Refusal, "duplicate id"):
+                AI.preflight_model_matrix(args)
+
+    def test_malformed_zdr_supported_parameters_refuse(self):
+        frozen = self.model_manifest["models"][0]
+        route = {
+            "model_id": frozen["id"],
+            "pricing": {"completion": "0.1", "prompt": "0.1"},
+            "provider_name": frozen["ordered_provider_policy"][0],
+            "status": 0,
+            "supported_parameters": None,
+        }
+        try:
+            AI._eligible_zdr_routes(frozen, [route])
+        except AI.Refusal as exc:
+            self.assertRegex(str(exc), "supported parameters")
+        except Exception as exc:
+            self.fail(f"malformed supported parameters escaped as {type(exc).__name__}")
+        else:
+            self.fail("malformed supported parameters were accepted")
+
+    def test_worst_fallback_price_is_reserved(self):
+        frozen = self.model_manifest["models"][0]
+        routes = [
+            {
+                "model_id": frozen["id"],
+                "pricing": {"prompt": "0.1", "completion": "0.2"},
+                "provider_name": frozen["ordered_provider_policy"][0],
+                "status": 0,
+                "supported_parameters": ["response_format", "structured_outputs"],
+            },
+            {
+                "model_id": frozen["id"],
+                "pricing": {"prompt": "0.3", "completion": "0.4"},
+                "provider_name": frozen["ordered_provider_policy"][1],
+                "status": 0,
+                "supported_parameters": ["response_format", "structured_outputs"],
+            },
+        ]
+        self.assertEqual(
+            AI._worst_eligible_prices(frozen, routes),
+            (AI.Decimal("0.3"), AI.Decimal("0.4")),
+        )
+
+    def test_null_key_limit_does_not_replace_credit_balance_proof(self):
+        endpoint_rows = {
+            "data": [
+                {
+                    "model_id": row["id"],
+                    "pricing": {"completion": "0.000001", "prompt": "0.000001"},
+                    "provider_name": row["ordered_provider_policy"][0],
+                    "status": 0,
+                    "supported_parameters": [
+                        "response_format",
+                        "structured_outputs",
+                    ],
+                }
+                for row in self.model_manifest["models"]
+            ]
+        }
+        responses = [
+            {"data": {"limit_remaining": None, "usage": "1"}},
+            {"data": {"total_credits": "1", "total_usage": "1"}},
+            endpoint_rows,
+        ]
+        with scratch_directory("step3-authority-") as directory:
+            authority = Path(directory) / "authority.json"
+            authority.write_bytes(canonical(authority_fixture()))
+            args = types.SimpleNamespace(
+                authority=authority,
+                candidate=AI.EVALUATOR_CANDIDATES[0],
+                max_gross_usd="4500.00",
+                report=ROOT
+                / ".hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json",
+            )
+            with mock.patch.object(AI, "_external_secret", return_value=b"test-key"):
+                with mock.patch.object(AI, "_http_json", side_effect=responses):
+                    with mock.patch.object(
+                        AI, "_publish_preflight_report"
+                    ) as publish:
+                        with self.assertRaisesRegex(AI.Refusal, "does not cover"):
+                            AI.preflight_spend(args)
+        publish.assert_not_called()
+
+    def test_key_spend_limit_must_cover_the_next_atomic_reservation(self):
+        responses = [
+            {"data": {"limit_remaining": "0.50", "usage": "1"}},
+            {"data": {"total_credits": "5000", "total_usage": "0"}},
+            {"data": []},
+        ]
+        with scratch_directory("step3-key-limit-") as directory:
+            authority = Path(directory) / "authority.json"
+            authority.write_bytes(canonical(authority_fixture()))
+            args = types.SimpleNamespace(
+                authority=authority,
+                candidate=AI.EVALUATOR_CANDIDATES[0],
+                max_gross_usd="4500.00",
+                report=ROOT
+                / ".hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json",
+            )
+            with (
+                mock.patch.object(AI, "_external_secret", return_value=b"test-key"),
+                mock.patch.object(AI, "_http_json", side_effect=responses),
+                mock.patch.object(
+                    AI,
+                    "_matrix_gross_bound",
+                    return_value=(
+                        AI.Decimal("100"),
+                        {},
+                        AI.Decimal("1"),
+                        {"call_id": "frozen"},
+                    ),
+                ),
+                mock.patch.object(AI, "_publish_preflight_report") as publish,
+            ):
+                with self.assertRaisesRegex(AI.Refusal, "does not cover"):
+                    AI.preflight_spend(args)
+        publish.assert_not_called()
+
+    def test_missing_key_spend_limit_refuses_before_report_publication(self):
+        responses = [
+            {"data": {"usage": "1"}},
+            {"data": {"total_credits": "5000", "total_usage": "0"}},
+            {"data": []},
+        ]
+        with scratch_directory("step3-missing-key-limit-") as directory:
+            authority = Path(directory) / "authority.json"
+            authority.write_bytes(canonical(authority_fixture()))
+            args = types.SimpleNamespace(
+                authority=authority,
+                candidate=AI.EVALUATOR_CANDIDATES[0],
+                max_gross_usd="4500.00",
+                report=ROOT
+                / ".hexaemeron/design-reports/neutral-evidence-workbench-paid-evaluation-preflight.json",
+            )
+            with (
+                mock.patch.object(AI, "_external_secret", return_value=b"test-key"),
+                mock.patch.object(AI, "_http_json", side_effect=responses),
+                mock.patch.object(
+                    AI,
+                    "_matrix_gross_bound",
+                    return_value=(
+                        AI.Decimal("100"),
+                        {},
+                        AI.Decimal("1"),
+                        {"call_id": "frozen"},
+                    ),
+                ),
+                mock.patch.object(AI, "_publish_preflight_report") as publish,
+            ):
+                with self.assertRaisesRegex(AI.Refusal, "omits limit remaining"):
+                    AI.preflight_spend(args)
+        publish.assert_not_called()
+
+
+class BoundedProcessTests(unittest.TestCase):
+    def test_reaped_leader_with_descendant_held_pipes_still_kills_group(self):
+        stdout_read, stdout_write = os.pipe()
+        stderr_read, stderr_write = os.pipe()
+
+        class ReapedLeader:
+            pid = 424242
+            returncode = 0
+            stdout = os.fdopen(stdout_read, "rb", buffering=0)
+            stderr = os.fdopen(stderr_read, "rb", buffering=0)
+
+            @staticmethod
+            def wait(timeout=None):
+                return 0
+
+            @staticmethod
+            def poll():
+                return 0
+
+            @staticmethod
+            def kill():
+                return None
+
+        leader = ReapedLeader()
+        try:
+            with mock.patch.object(AI.subprocess, "Popen", return_value=leader):
+                with mock.patch.object(AI.os, "killpg") as kill_group:
+                    with self.assertRaisesRegex(AI.Refusal, "timed out"):
+                        AI._bounded_process(
+                            ["fake-runtime"], environment={}, cwd=ROOT, timeout=1
+                        )
+            kill_group.assert_called_once_with(leader.pid, signal.SIGKILL)
+        finally:
+            leader.stdout.close()
+            leader.stderr.close()
+            os.close(stdout_write)
+            os.close(stderr_write)
+
+
+class NativePreflightBoundaryTests(unittest.TestCase):
+    def test_system_temp_ignores_repository_tmp_symlink(self):
+        with tempfile.TemporaryDirectory(
+            prefix="step3-hostile-repository-"
+        ) as temporary:
+            parent = Path(temporary)
+            repository = parent / "repository"
+            repository.mkdir()
+            redirect = parent / "redirect"
+            redirect.mkdir()
+            (repository / "tmp").symlink_to(redirect, target_is_directory=True)
+            real_temporary_directory = AI.tempfile.TemporaryDirectory
+
+            def system_only(*args, **kwargs):
+                self.assertIsNone(kwargs.get("dir"))
+                return real_temporary_directory(*args, **kwargs)
+
+            with mock.patch.object(AI, "ROOT", repository):
+                with mock.patch.object(
+                    AI.tempfile,
+                    "TemporaryDirectory",
+                    side_effect=system_only,
+                ):
+                    with AI._private_system_temporary_directory() as private:
+                        self.assertEqual(stat.S_IMODE(private.stat().st_mode), 0o700)
+                        self.assertFalse(
+                            private.resolve().is_relative_to(redirect.resolve())
+                        )
+                        (private / "marker").write_bytes(b"private")
+            self.assertTrue((repository / "tmp").is_symlink())
+            self.assertEqual(list(redirect.iterdir()), [])
+
+    def test_auth_copy_compares_opened_source_identity(self):
+        with scratch_directory("step3-auth-identity-") as temporary:
+            source = Path(temporary) / "auth.json"
+            destination = Path(temporary) / "copy.json"
+            replacement = Path(temporary) / "replacement.json"
+            source.write_bytes(b"secret")
+            source.chmod(0o600)
+            replacement.write_bytes(b"other")
+            replacement.chmod(0o600)
+            real_lstat = Path.lstat
+
+            def replaced_identity(candidate):
+                if candidate == source:
+                    return real_lstat(replacement)
+                return real_lstat(candidate)
+
+            with mock.patch.object(
+                Path, "lstat", autospec=True, side_effect=replaced_identity
+            ):
+                with self.assertRaisesRegex(AI.Refusal, "changed during access"):
+                    AI._copy_external_auth(source, destination, 64)
+            self.assertFalse(destination.exists())
+
+    def test_auth_copy_closes_source_when_destination_open_fails(self):
+        with scratch_directory("step3-auth-close-") as temporary:
+            source = Path(temporary) / "auth.json"
+            destination = Path(temporary) / "copy.json"
+            source.write_bytes(b"secret")
+            source.chmod(0o600)
+            real_open = AI.os.open
+            source_descriptor = []
+
+            def guarded_open(path, *args, **kwargs):
+                if Path(path) == destination:
+                    raise OSError("synthetic destination failure")
+                descriptor = real_open(path, *args, **kwargs)
+                if Path(path) == source:
+                    source_descriptor.append(descriptor)
+                return descriptor
+
+            with mock.patch.object(AI.os, "open", side_effect=guarded_open):
+                with self.assertRaisesRegex(AI.Refusal, "unavailable or unsafe"):
+                    AI._copy_external_auth(source, destination, 64)
+            self.assertEqual(len(source_descriptor), 1)
+            with self.assertRaises(OSError):
+                os.fstat(source_descriptor[0])
+
+    def test_auth_copy_reopens_source_nonblocking_and_nofollow(self):
+        with scratch_directory("step3-auth-nonblocking-") as temporary:
+            source = Path(temporary) / "auth.json"
+            destination = Path(temporary) / "copy.json"
+            source.write_bytes(b"secret")
+            source.chmod(0o600)
+            real_open = AI.os.open
+
+            def guarded_open(path, flags, *args, **kwargs):
+                if Path(path) == source:
+                    self.assertTrue(flags & os.O_NONBLOCK)
+                    self.assertTrue(flags & os.O_NOFOLLOW)
+                return real_open(path, flags, *args, **kwargs)
+
+            with mock.patch.object(AI.os, "open", side_effect=guarded_open):
+                AI._copy_external_auth(source, destination, 64)
+            self.assertEqual(destination.read_bytes(), b"secret")
+
+    def test_external_digest_refuses_named_replacement_during_read(self):
+        with scratch_directory("step3-executable-race-") as temporary:
+            target = Path(temporary) / "runtime"
+            replacement = Path(temporary) / "replacement"
+            target.write_bytes(b"original-runtime")
+            replacement.write_bytes(b"replacement-runtime")
+            target.chmod(0o700)
+            replacement.chmod(0o700)
+            real_read = AI.os.read
+            replaced = False
+
+            def racing_read(descriptor, size):
+                nonlocal replaced
+                chunk = real_read(descriptor, size)
+                if chunk and not replaced:
+                    replaced = True
+                    os.replace(replacement, target)
+                return chunk
+
+            with (
+                mock.patch.object(AI.os, "read", side_effect=racing_read),
+                self.assertRaisesRegex(AI.Refusal, "changed during (access|hashing)"),
+            ):
+                AI._external_file_digest(target)
+
+    def test_external_attestation_detects_swap_back(self):
+        attester = getattr(AI, "_external_file_attestation", None)
+        self.assertIsNotNone(attester)
+        with scratch_directory("step3-executable-swap-back-") as temporary:
+            root = Path(temporary)
+            target = root / "runtime"
+            original = root / "original"
+            hostile = root / "hostile"
+            target.write_bytes(b"original-runtime")
+            hostile.write_bytes(b"hostile-runtime")
+            target.chmod(0o700)
+            hostile.chmod(0o700)
+            before = attester(target)
+            os.replace(target, original)
+            os.replace(hostile, target)
+            self.assertEqual(target.read_bytes(), b"hostile-runtime")
+            os.replace(target, hostile)
+            os.replace(original, target)
+            after = attester(target)
+            self.assertEqual(before[0], after[0])
+            self.assertNotEqual(before[1], after[1])
+
+    def test_external_executable_stage_binds_verified_private_copy(self):
+        stage = getattr(AI, "_stage_external_executable", None)
+        self.assertIsNotNone(stage)
+        with scratch_directory("step3-executable-stage-") as temporary:
+            root = Path(temporary)
+            private = root / "private"
+            private.mkdir(mode=0o700)
+            source = root / "runtime"
+            source.write_bytes(b"runtime")
+            source.chmod(0o700)
+            destination = private / "runtime"
+            attestation = stage(source, destination)
+            self.assertEqual(destination.read_bytes(), b"runtime")
+            self.assertEqual(stat.S_IMODE(destination.stat().st_mode), 0o500)
+            self.assertEqual(attestation, AI._external_file_attestation(destination))
+
+    def test_source_swap_back_cannot_change_staged_execution(self):
+        stage = getattr(AI, "_stage_external_executable", None)
+        self.assertIsNotNone(stage)
+        with scratch_directory("step3-executable-stage-swap-back-") as temporary:
+            root = Path(temporary)
+            private = root / "private"
+            private.mkdir(mode=0o700)
+            source = root / "runtime"
+            original = root / "original"
+            hostile = root / "hostile"
+            source.write_bytes(b"#!/bin/sh\nprintf 'original\\n'\n")
+            hostile.write_bytes(b"#!/bin/sh\nprintf 'hostile\\n'\n")
+            source.chmod(0o700)
+            hostile.chmod(0o700)
+            before = AI._external_file_attestation(source)
+            destination = private / "runtime"
+            staged = stage(source, destination)
+            private.chmod(0o500)
+            os.replace(source, original)
+            os.replace(hostile, source)
+            try:
+                code, stdout, stderr = AI._bounded_process(
+                    [str(destination)],
+                    environment={"LANG": "C", "PATH": os.environ["PATH"]},
+                    cwd=root,
+                )
+            finally:
+                os.replace(source, hostile)
+                os.replace(original, source)
+                private.chmod(0o700)
+            after = AI._external_file_attestation(source)
+            self.assertEqual(after[0], before[0])
+            self.assertEqual(after[1][:-1], before[1][:-1])
+            self.assertEqual(staged[0], before[0])
+            self.assertEqual((code, stdout, stderr), (0, b"original\n", b""))
+
+    def test_external_digest_refuses_fifo_without_blocking(self):
+        with scratch_directory("step3-executable-fifo-") as temporary:
+            fifo = Path(temporary) / "runtime"
+            os.mkfifo(fifo)
+            probe = "\n".join(
+                (
+                    "from pathlib import Path",
+                    "import sys",
+                    "from tests.test_instruction_architecture import AI",
+                    "try:",
+                    "    AI._external_file_digest(Path(sys.argv[1]))",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO executable was accepted')",
+                )
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", probe, str(fifo)],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                stdout, stderr = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                self.fail("executable digest open blocked on a FIFO")
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertEqual(stdout.strip(), "external file metadata is unsafe")
+
+    def test_external_digest_refuses_symlink_and_unsafe_mode(self):
+        with scratch_directory("step3-executable-kind-") as temporary:
+            root = Path(temporary)
+            executable = root / "runtime"
+            executable.write_bytes(b"runtime")
+            executable.chmod(0o700)
+            linked = root / "linked-runtime"
+            linked.symlink_to(executable)
+            with self.assertRaisesRegex(AI.Refusal, "unavailable or unsafe"):
+                AI._external_file_digest(linked)
+            executable.chmod(0o722)
+            with self.assertRaisesRegex(AI.Refusal, "metadata is unsafe"):
+                AI._external_file_digest(executable)
+
+    def test_external_process_text_is_strict_utf8(self):
+        decoder = getattr(AI, "_decode_external_utf8", None)
+        self.assertIsNotNone(decoder)
+        with self.assertRaisesRegex(AI.Refusal, "not UTF-8"):
+            decoder(b"\xff", "native version output")
+
+    def test_external_secret_refuses_fifo_without_blocking(self):
+        with scratch_directory("step3-secret-fifo-") as temporary:
+            fifo = Path(temporary) / "credential"
+            os.mkfifo(fifo)
+            probe = "\n".join(
+                (
+                    "from pathlib import Path",
+                    "import sys",
+                    "from tests.test_instruction_architecture import AI",
+                    "try:",
+                    "    AI._external_secret(str(Path(sys.argv[1]).resolve()))",
+                    "except AI.Refusal as exc:",
+                    "    print(exc)",
+                    "else:",
+                    "    raise AssertionError('FIFO credential was accepted')",
+                )
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", probe, str(fifo)],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                stdout, stderr = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                self.fail("credential open blocked on a FIFO")
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertEqual(stdout.strip(), "credential metadata is unsafe")
+
+    def test_external_secret_refuses_symlink_and_directory(self):
+        with scratch_directory("step3-secret-kind-") as temporary:
+            root = Path(temporary)
+            secret = root / "secret"
+            secret.write_bytes(b"secret")
+            secret.chmod(0o600)
+            linked = root / "linked"
+            linked.symlink_to(secret)
+            for hostile in (linked, root):
+                with self.subTest(hostile=hostile):
+                    with self.assertRaisesRegex(
+                        AI.Refusal, "unavailable or unsafe|metadata is unsafe"
+                    ):
+                        AI._external_secret(str(hostile))
+
+    def test_generated_schema_walk_refuses_symlink_and_oversized_cardinality(self):
+        with scratch_directory("step3-schema-walk-") as temporary:
+            root = Path(temporary)
+            target = root / "target.json"
+            target.write_bytes(b"{}\n")
+            (root / "linked.json").symlink_to(target)
+            with self.assertRaisesRegex(AI.Refusal, "symlink"):
+                AI._read_generated_schema_bundle(root)
+        with scratch_directory("step3-schema-count-") as temporary:
+            root = Path(temporary)
+            for index in range(2049):
+                (root / f"{index:04d}.json").write_bytes(b"{}\n")
+            with self.assertRaisesRegex(AI.Refusal, "cardinality"):
+                AI._read_generated_schema_bundle(root)
+
+    def test_codex_schema_validation_tolerates_exact_external_decimals(self):
+        records = linked_codex_schema_records()
+        records[0]["value"]["definitions"]["ExternalDecimal"] = {
+            "minimum": AI.Decimal("0.1")
+        }
+        AI._validate_codex_schema_bundle(records)
+
+    def test_codex_schema_tokens_must_be_linked_to_exact_protocol_roots(self):
+        tokens = {
+            token: {}
+            for token in (
+                "thread/start",
+                "thread/resume",
+                "thread/compact/start",
+                "turn/start",
+                "contextCompaction",
+                "inputTokens",
+                "cachedInputTokens",
+                "cacheWriteInputTokens",
+                "outputSchema",
+            )
+        }
+        tokens["request"] = {
+            "properties": {
+                name: {}
+                for name in (
+                    "allowProviderModelFallback",
+                    "approvalPolicy",
+                    "baseInstructions",
+                    "cwd",
+                    "dynamicTools",
+                    "environments",
+                    "ephemeral",
+                    "experimentalRawEvents",
+                    "model",
+                    "sandbox",
+                )
+            }
+        }
+        with self.assertRaisesRegex(AI.Refusal, "exact ClientRequest.json"):
+            AI._validate_codex_schema_bundle(
+                [{"path": "unrelated.json", "value": tokens}]
+            )
+
+        unlinked = linked_codex_schema_records()
+        unlinked[1]["value"]["definitions"][
+            "ThreadTokenUsageUpdatedNotification"
+        ]["properties"]["tokenUsage"] = []
+        with self.assertRaisesRegex(AI.Refusal, "(property|reference) linkage"):
+            AI._validate_codex_schema_bundle(unlinked)
+
+        incompatible = linked_codex_schema_records()
+        incompatible[0]["value"]["definitions"]["ThreadResumeParams"][
+            "properties"
+        ]["threadId"] = {"type": "integer"}
+        with self.assertRaisesRegex(AI.Refusal, "property type"):
+            AI._validate_codex_schema_bundle(incompatible)
+
+        uncorrelated = linked_codex_schema_records()
+        uncorrelated[1]["value"]["definitions"][
+            "ThreadTokenUsageUpdatedNotification"
+        ]["required"] = ["tokenUsage"]
+        with self.assertRaisesRegex(AI.Refusal, "object linkage"):
+            AI._validate_codex_schema_bundle(uncorrelated)
+
+
+class NativeRuntimeManifestTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_native_runtime_manifest_is_portable_isolated_and_schema_bound(self):
+        try:
+            AI._validate_native_runtime_manifest(self.native_manifest)
+        except AI.Refusal as exc:
+            self.fail(f"frozen native runtime manifest refused: {exc}")
+        self.assertNotIn("/Users/", json.dumps(self.native_manifest))
+        for runtime in self.native_manifest["runtimes"]:
+            self.assertEqual(
+                runtime.get("isolated_workspace"),
+                {
+                    "cwd": "{isolated_workspace}",
+                    "mode": "0700",
+                    "must_be_fresh_empty_directory": True,
+                },
+            )
+        codex = self.native_manifest["runtimes"][1]
+        claude = self.native_manifest["runtimes"][0]
+        self.assertEqual(
+            claude["invocation"].get("start_input", {}).get("message", {}).get("content"),
+            "{stable_prefix}{task_suffix}",
+        )
+        self.assertEqual(
+            claude["invocation"]
+            .get("continuation_input", {})
+            .get("message", {})
+            .get("content"),
+            "{task_suffix}",
+        )
+        params = codex["invocation"]["start_request"]["params"]
+        self.assertEqual(params["baseInstructions"], "{stable_prefix}")
+        self.assertEqual(
+            codex["invocation"]["turn_request"]["params"]["input"][0]["text"],
+            "{task_suffix}",
+        )
+        self.assertFalse(params["ephemeral"])
+        self.assertFalse(params["allowProviderModelFallback"])
+        self.assertEqual(params["dynamicTools"], [])
+        self.assertEqual(params["environments"], [])
+        self.assertIn("--experimental", codex["protocol_schema"]["command"])
+
+    def test_enabled_response_reuse_refuses(self):
+        changed = copy.deepcopy(self.native_manifest)
+        changed["response_reuse"]["enabled"] = True
+        with self.assertRaisesRegex(AI.Refusal, "response-cache"):
+            AI._validate_native_runtime_manifest(changed)
+
+    def test_mismatched_runtime_id_refuses(self):
+        changed = copy.deepcopy(self.native_manifest)
+        changed["runtimes"][0]["id"] = "claude-api"
+        with self.assertRaisesRegex(AI.Refusal, "identity"):
+            AI._validate_native_runtime_manifest(changed)
+
+    def test_safe_invocation_values_are_exactly_committed(self):
+        mutations = []
+
+        changed = copy.deepcopy(self.native_manifest)
+        changed["runtimes"][1]["invocation"]["start_request"]["params"][
+            "sandbox"
+        ] = "danger-full-access"
+        mutations.append(changed)
+
+        changed = copy.deepcopy(self.native_manifest)
+        changed["runtimes"][1]["invocation"]["start_request"]["params"][
+            "approvalPolicy"
+        ] = "on-request"
+        mutations.append(changed)
+
+        for replacement in (
+            ["-p", "--permission-mode", "bypassPermissions"],
+            ["-p", "--safe-mode", "--tools", "Bash"],
+        ):
+            changed = copy.deepcopy(self.native_manifest)
+            changed["runtimes"][0]["invocation"]["common_argv"] = replacement
+            mutations.append(changed)
+
+        for changed in mutations:
+            with self.subTest(changed=changed):
+                with self.assertRaisesRegex(AI.Refusal, "safe invocation"):
+                    AI._validate_native_runtime_manifest(changed)
+
+    def test_claude_stable_prefix_reinjection_contract_refuses(self):
+        changed = copy.deepcopy(self.native_manifest)
+        continuation = changed["runtimes"][0]["invocation"].get(
+            "continuation_input"
+        )
+        self.assertIsNotNone(continuation)
+        continuation["message"]["content"] = "{stable_prefix}{task_suffix}"
+        with self.assertRaisesRegex(AI.Refusal, "safe invocation|isolation"):
+            AI._validate_native_runtime_manifest(changed)
+
+    def test_preflight_refuses_mutated_executable_command_before_subprocess(self):
+        changed = copy.deepcopy(self.native_manifest)
+        changed["runtimes"][1]["protocol_schema"]["command"] = [
+            "codex",
+            "exec",
+            "answer-producing-prompt",
+        ]
+        args = types.SimpleNamespace(
+            no_session=True,
+            runtimes="claude-code,codex",
+        )
+        with mock.patch.object(
+            AI,
+            "_load_fixture_record",
+            return_value=(changed, canonical(changed)),
+        ):
+            with mock.patch.object(AI, "_bounded_process") as bounded:
+                with self.assertRaisesRegex(AI.Refusal, "executable command drift"):
+                    AI.preflight_native_gate(args)
+        bounded.assert_not_called()
+
+    def test_native_preflight_executes_only_in_manifest_bound_isolation(self):
+        calls = []
+        auth_calls = {"claude": 0, "codex": 0}
+
+        def resolved(name):
+            return Path(f"/opt/frozen-runtime/{name}")
+
+        def staged(_source, destination):
+            return "0" * 64, (1,) * 7
+
+        def bounded(argv, *, environment, cwd, **_kwargs):
+            executable_path = Path(argv[0])
+            executable = executable_path.name
+            calls.append(
+                (executable_path, tuple(argv[1:]), dict(environment), Path(cwd))
+            )
+            if argv[1:] == ["--version"]:
+                version = next(
+                    row["version"]["expected"]
+                    for row in self.native_manifest["runtimes"]
+                    if row["executable"] == executable
+                )
+                return 0, version.encode(), b""
+            if executable == "claude" and argv[1:4] == ["auth", "status", "--json"]:
+                auth_calls[executable] += 1
+                logged_in = auth_calls[executable] == 2
+                return (
+                    0 if logged_in else 1,
+                    canonical({"loggedIn": logged_in}),
+                    b"",
+                )
+            if executable == "codex" and argv[1:3] == ["login", "status"]:
+                auth_calls[executable] += 1
+                logged_in = auth_calls[executable] == 2
+                return (
+                    0 if logged_in else 1,
+                    b"Logged in using ChatGPT" if logged_in else b"Not logged in",
+                    b"",
+                )
+            if executable == "codex" and argv[1:4] == [
+                "app-server",
+                "generate-json-schema",
+                "--experimental",
+            ]:
+                return 0, b"", b""
+            self.fail(f"unexpected native preflight command: {argv}")
+
+        args = types.SimpleNamespace(
+            candidate=AI.EVALUATOR_CANDIDATES[0],
+            no_session=True,
+            report=ROOT / AI.NATIVE_REPORT_PATHS[AI.EVALUATOR_CANDIDATES[0]],
+            runtimes=",".join(AI.NATIVE_RUNTIMES),
+        )
+        with (
+            mock.patch.object(AI, "_resolved_runtime_executable", side_effect=resolved),
+            mock.patch.object(
+                AI, "_stage_external_executable", create=True, side_effect=staged
+            ) as executable_stage,
+            mock.patch.object(AI, "_bounded_process", side_effect=bounded),
+            mock.patch.object(
+                AI,
+                "_external_file_attestation",
+                create=True,
+                return_value=("0" * 64, (1,) * 7),
+            ) as executable_attestation,
+            mock.patch.object(
+                AI, "_external_file_digest", return_value="0" * 64
+            ) as executable_digest,
+            mock.patch.object(AI, "_macos_claude_credential", return_value=b"secret"),
+            mock.patch.object(AI, "_write_isolated_secret"),
+            mock.patch.object(AI, "_copy_external_auth"),
+            mock.patch.object(
+                AI, "_read_generated_schema_bundle", return_value=("1" * 64, [{}])
+            ),
+            mock.patch.object(AI, "_validate_codex_schema_bundle"),
+            mock.patch.object(AI, "_publish_preflight_report", return_value=b"{}\n") as publish,
+        ):
+            try:
+                AI.preflight_native_gate(args)
+            except AI.Refusal as exc:
+                self.fail(f"frozen native preflight refused: {exc}")
+
+        self.assertEqual(auth_calls, {"claude": 2, "codex": 2})
+        attested = [
+            Path(call.args[0]).name
+            for call in executable_attestation.call_args_list
+        ]
+        self.assertEqual(attested.count("claude"), 1)
+        self.assertEqual(attested.count("codex"), 2)
+        self.assertEqual(executable_digest.call_count, 0)
+        self.assertEqual(executable_stage.call_count, 2)
+        self.assertTrue(calls)
+        for executable_path, argv, environment, cwd in calls:
+            executable = executable_path.name
+            self.assertEqual(executable_path.parent.name, "executables")
+            self.assertNotEqual(cwd, ROOT)
+            self.assertEqual(cwd.name, f"{executable if executable == 'codex' else 'claude-code'}-workspace")
+            state_name = "CLAUDE_CONFIG_DIR" if executable == "claude" else "CODEX_HOME"
+            expected_leaf = (
+                "claude"
+                if executable == "claude"
+                else "codex-schema-state"
+                if argv[:3]
+                == ("app-server", "generate-json-schema", "--experimental")
+                else "codex"
+            )
+            self.assertEqual(Path(environment[state_name]).name, expected_leaf)
+        evidence = publish.call_args.args[2]
+        self.assertTrue(evidence.get("isolated_workspace_proved"))
+
+
+class NativeCacheAccountingTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_cached_tokens_count_in_full_and_churn_excludes_reads(self):
+        try:
+            AI._validate_native_cache_accounting(self.accounting)
+        except AI.Refusal as exc:
+            self.fail(f"frozen native cache accounting refused: {exc}")
+        claude = AI.native_token_vector(
+            "claude-code",
+            {
+                "input_tokens": 7,
+                "cache_creation_input_tokens": 11,
+                "cache_read_input_tokens": 13,
+            },
+        )
+        self.assertEqual(claude["complete_logical_input_tokens"], 31)
+        self.assertEqual(claude["fresh_token_churn"], 18)
+        codex = AI.native_token_vector(
+            "codex",
+            {"inputTokens": 31, "cachedInputTokens": 13, "cacheWriteInputTokens": 11},
+        )
+        self.assertEqual(codex["uncached_suffix_or_miss_tokens"], 7)
+        self.assertEqual(codex["fresh_token_churn"], 18)
+
+    def test_overlapping_cache_categories_refuse(self):
+        with self.assertRaisesRegex(AI.Refusal, "overlap"):
+            AI.native_token_vector(
+                "codex",
+                {"inputTokens": 10, "cachedInputTokens": 8, "cacheWriteInputTokens": 4},
+            )
+
+    def test_missing_write_telemetry_keeps_split_unknown_but_churn_exact(self):
+        observed = AI.native_token_vector(
+            "codex", {"inputTokens": 10, "cachedInputTokens": 8}
+        )
+        self.assertIsNone(observed["cache_write_tokens"])
+        self.assertIsNone(observed["uncached_suffix_or_miss_tokens"])
+        self.assertEqual(observed["fresh_token_churn"], 2)
+
+    def test_cross_tokenizer_pooling_refuses_and_dollar_weighting_refuses(self):
+        left = {
+            "runtime_id": "codex",
+            "model_id": "m",
+            "tokenizer_id": "a",
+            "complete_logical_context_high_water": 1,
+            "cumulative_fresh_token_churn": 1,
+        }
+        right = {**left, "tokenizer_id": "b"}
+        with self.assertRaisesRegex(AI.Refusal, "pool"):
+            AI.native_vector_dominates(left, right)
+        for absent in ({}, {"runtime_id": None}, {"runtime_id": ""}):
+            with self.assertRaisesRegex(AI.Refusal, "identity is missing"):
+                AI.native_vector_dominates(absent, copy.deepcopy(absent))
+        changed = copy.deepcopy(self.accounting)
+        changed["comparison"]["dollar_weighting"] = True
+        with self.assertRaisesRegex(AI.Refusal, "objective drift"):
+            AI._validate_native_cache_accounting(changed)
+
+    def test_negative_token_axis_refuses_before_dominance(self):
+        baseline = {
+            "runtime_id": "codex",
+            "model_id": "gpt-5.6-sol",
+            "tokenizer_id": "frozen-tokenizer",
+            "complete_logical_context_high_water": 1,
+            "cumulative_fresh_token_churn": 1,
+        }
+        for side in ("left", "right"):
+            for axis in (
+                "complete_logical_context_high_water",
+                "cumulative_fresh_token_churn",
+            ):
+                with self.subTest(side=side, axis=axis):
+                    left = copy.deepcopy(baseline)
+                    right = copy.deepcopy(baseline)
+                    (left if side == "left" else right)[axis] = -1
+                    with self.assertRaisesRegex(AI.Refusal, "axis is negative"):
+                        AI.native_vector_dominates(left, right)
+
+    def test_invalidation_is_not_a_fourth_token_category(self):
+        changed = copy.deepcopy(self.accounting)
+        changed["categories"]["invalidation_tokens"] = "wrong"
+        with self.assertRaisesRegex(AI.Refusal, "overlap or are incomplete"):
+            AI._validate_native_cache_accounting(changed)
+
+    def test_reinjected_stable_prefix_is_fresh_churn(self):
+        self.assertEqual(
+            self.accounting["categories"].get("reinjected_stable_prefix"),
+            "ordinary cache-write or uncached suffix-or-miss tokens included in "
+            "cumulative fresh-token churn",
+        )
+        changed = copy.deepcopy(self.accounting)
+        changed["categories"]["reinjected_stable_prefix"] = "ignored"
+        with self.assertRaisesRegex(AI.Refusal, "reinjection"):
+            AI._validate_native_cache_accounting(changed)
+
+    def test_formula_aggregation_and_none_selection_are_exactly_committed(self):
+        mutations = []
+        changed = copy.deepcopy(self.accounting)
+        changed["runtime_semantics"]["codex"]["fresh_churn"] = "inputTokens"
+        mutations.append(changed)
+        changed = copy.deepcopy(self.accounting)
+        changed["axes"]["complete_logical_context_high_water"][
+            "aggregation"
+        ] = "sum"
+        mutations.append(changed)
+        changed = copy.deepcopy(self.accounting)
+        changed["comparison"]["selection_may_be_none"] = False
+        mutations.append(changed)
+        for changed in mutations:
+            with self.subTest(changed=changed):
+                with self.assertRaisesRegex(AI.Refusal, "frozen formula"):
+                    AI._validate_native_cache_accounting(changed)
+
+
+class NativeLifecyclePreregistrationTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_native_preregistration_freezes_lifecycle_and_baselines(self):
+        try:
+            AI._validate_native_preregistration(self.native_preregistration)
+        except AI.Refusal as exc:
+            self.fail(f"frozen native preregistration refused: {exc}")
+        self.assertEqual(
+            self.native_preregistration["lifecycle_order"], list(AI.NATIVE_LIFECYCLES)
+        )
+        self.assertEqual(
+            self.native_preregistration["admission"]["mandatory_baselines"],
+            ["raw", "simple"],
+        )
+        workload = self.native_preregistration["workload"]
+        self.assertEqual(workload["scheduled_task_count"], 5)
+        self.assertEqual(workload["maximum_chains_before_admission_filter"], 10)
+        self.assertEqual(workload["maximum_observations_before_admission_filter"], 50)
+        self.assertEqual(
+            [item["lifecycle_id"] for item in workload["task_slots"]],
+            list(AI.NATIVE_LIFECYCLES),
+        )
+        self.assertEqual(
+            len({item["task_commitment"] for item in workload["task_slots"]}), 5
+        )
+        partition = self.native_preregistration["prompt"].get("partition")
+        self.assertIsNotNone(partition)
+        self.assertEqual(partition["stable_prefix_injections_per_chain"], 1)
+        self.assertEqual(partition["continuation_input"], "{task_suffix}")
+
+    def test_native_packet_binds_baseline_first_five_task_chains(self):
+        packet = load(FROZEN_NATIVE_ROOT / "packet.json")
+        self.assertEqual(
+            packet.get("prompt_partition_sha256"),
+            hashlib.sha256(
+                canonical(self.native_preregistration["prompt"]["partition"])
+            ).hexdigest(),
+        )
+        chains = packet["chain_order"]
+        self.assertEqual(len(chains), 10)
+        for runtime_offset in (0, 5):
+            runtime = chains[runtime_offset : runtime_offset + 5]
+            self.assertEqual(
+                [item["execution_tier"] for item in runtime[:2]],
+                ["mandatory-baseline", "mandatory-baseline"],
+            )
+            for chain in runtime:
+                self.assertEqual(
+                    [item["lifecycle_id"] for item in chain["observations"]],
+                    list(AI.NATIVE_LIFECYCLES),
+                )
+                self.assertEqual(
+                    len(
+                        {
+                            item["task_commitment"]
+                            for item in chain["observations"]
+                        }
+                    ),
+                    5,
+                )
+
+    def test_task_repetition_and_scorer_mutations_refuse_after_reseal(self):
+        for mutate in ("task", "repetition", "scorer"):
+            changed = copy.deepcopy(self.native_preregistration)
+            if mutate == "task":
+                changed["workload"]["task_slots"][0]["task_commitment"] = "0" * 64
+            elif mutate == "repetition":
+                changed["workload"]["repetitions_per_runtime_arm_chain"] = 2
+            else:
+                changed["behavior_scoring"]["scorer_sha256"] = "0" * 64
+            changed.pop("sha256")
+            changed = AI._digested_record(changed)
+            with self.subTest(mutate=mutate):
+                with self.assertRaisesRegex(
+                    AI.Refusal, "contract drift|task or repetition|behavior scorer"
+                ):
+                    AI._validate_native_preregistration(changed)
+
+    def test_native_preregistration_replays_every_repository_input_binding(self):
+        mutations = []
+        for path in (
+            ("runtime_manifest_sha256",),
+            ("cache_accounting_sha256",),
+            ("selection_sha256",),
+            ("prompt", "template_sha256"),
+        ):
+            changed = copy.deepcopy(self.native_preregistration)
+            target = changed
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = "0" * 64
+            changed.pop("sha256")
+            mutations.append((path, AI._digested_record(changed)))
+        for path, changed in mutations:
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(AI.Refusal, "repository inputs"):
+                    AI._validate_native_preregistration(changed)
+
+    def test_unproved_or_mixed_claude_expiry_is_inconclusive(self):
+        self.assertIsNone(AI.claude_expiry_wait_seconds({}))
+        self.assertIsNone(
+            AI.claude_expiry_wait_seconds(
+                {
+                    "cache_creation": {
+                        "ephemeral_1h_input_tokens": 1,
+                        "ephemeral_5m_input_tokens": 1,
+                    }
+                }
+            )
+        )
+        self.assertEqual(
+            AI.claude_expiry_wait_seconds(
+                {"cache_creation": {"ephemeral_5m_input_tokens": 10}}
+            ),
+            360,
+        )
+
+    def test_unknown_claude_cache_creation_class_is_inconclusive(self):
+        self.assertIsNone(
+            AI.claude_expiry_wait_seconds(
+                {
+                    "cache_creation": {
+                        "ephemeral_5m_input_tokens": 10,
+                        "future_ttl_input_tokens": 10,
+                    }
+                }
+            )
+        )
+
+    def test_no_session_flag_is_mandatory(self):
+        args = types.SimpleNamespace(
+            no_session=False,
+            preregistration=NATIVE_PREREGISTRATION,
+            commitment=NATIVE_PACKET_COMMITMENT,
+        )
+        with self.assertRaisesRegex(AI.Refusal, "requires --no-session"):
+            AI.verify_native_preregistration(args)
+
+
+class PacketCommitmentTests(ExperimentFixtureMixin, unittest.TestCase):
+    def test_both_frozen_packets_reproduce_from_repository_bytes(self):
+        seal = load(SEAL)
+        try:
+            behavioral = AI._opaque_behavioral_packet(self.preregistration, seal)
+            loaded_behavioral = AI._load_frozen_packet(
+                AI.FROZEN_BEHAVIORAL_ROOT,
+                behavioral,
+                allowed_directories=("native",),
+            )
+            AI._verify_packet_commitment(
+                self.preregistration,
+                load(HOLDOUT_PACKET_COMMITMENT),
+                f"{AI.SCHEMA_PREFIX}-holdout-packet-commitment/v1",
+                loaded_behavioral,
+            )
+            native = AI._opaque_native_packet(self.native_preregistration)
+            loaded_native = AI._load_frozen_packet(AI.FROZEN_NATIVE_ROOT, native)
+            AI._verify_packet_commitment(
+                self.native_preregistration,
+                load(NATIVE_PACKET_COMMITMENT),
+                f"{AI.SCHEMA_PREFIX}-native-lifecycle-packet-commitment/v1",
+                loaded_native,
+            )
+        except AI.Refusal as exc:
+            self.fail(f"frozen packet refused: {exc}")
+
+    def test_packet_mutation_and_removal_refuse(self):
+        expected = AI._opaque_native_packet(self.native_preregistration)
+        with scratch_directory("step3-packet-mutation-") as temporary:
+            root = Path(temporary)
+            relative = PurePosixPath(root.relative_to(ROOT).as_posix())
+            for name, raw in expected.items():
+                (root / name).write_bytes(raw)
+            (root / "packet.json").write_bytes(b"{}\n")
+            with self.assertRaisesRegex(AI.Refusal, "differ"):
+                AI._load_frozen_packet(relative, expected)
+            (root / "packet.json").unlink()
+            with self.assertRaisesRegex(AI.Refusal, "non-closed"):
+                AI._load_frozen_packet(relative, expected)
+
+    def test_frozen_packet_enumeration_refuses_at_the_exact_entry_bound(self):
+        expected = AI._opaque_native_packet(self.native_preregistration)
+        with scratch_directory("step3-packet-bound-") as temporary:
+            root = Path(temporary)
+            relative = PurePosixPath(root.relative_to(ROOT).as_posix())
+            for name, raw in expected.items():
+                (root / name).write_bytes(raw)
+            (root / "excess.json").write_bytes(b"{}\n")
+            with self.assertRaisesRegex(AI.Refusal, "entry bound"):
+                AI._load_frozen_packet(relative, expected)
+
+    def test_terminal_commitment_never_precedes_payload_and_stale_mix_refuses(self):
+        with scratch_directory("step3-publication-") as temporary:
+            root = Path(temporary)
+            payload = root / "packet.json"
+            terminal = root / "commitment.json"
+            AI._publish_committed_set(
+                [(payload, b"payload\n"), (terminal, b"commitment\n")],
+                terminal=terminal,
+            )
+            self.assertEqual(payload.read_bytes(), b"payload\n")
+            with self.assertRaisesRegex(AI.Refusal, "stale bytes"):
+                AI._publish_committed_set(
+                    [(payload, b"changed\n"), (terminal, b"commitment\n")],
+                    terminal=terminal,
+                )
+
+    def test_committed_publication_never_overwrites_a_concurrent_target(self):
+        with scratch_directory("step3-publication-race-") as temporary:
+            root = Path(temporary)
+            payload = root / "packet.json"
+            terminal = root / "commitment.json"
+            original_write = AI._atomic_write
+
+            def collide(path, raw, **kwargs):
+                if path == payload and not path.exists():
+                    path.write_bytes(b"concurrent\n")
+                return original_write(path, raw, **kwargs)
+
+            with (
+                mock.patch.object(AI, "_atomic_write", side_effect=collide),
+                self.assertRaisesRegex(AI.Refusal, "changed during publication"),
+            ):
+                AI._publish_committed_set(
+                    [(payload, b"payload\n"), (terminal, b"commitment\n")],
+                    terminal=terminal,
+                )
+            self.assertEqual(payload.read_bytes(), b"concurrent\n")
+            self.assertFalse(terminal.exists())
+
+    def test_progressive_report_is_publish_once(self):
+        with scratch_directory("step3-report-") as temporary:
+            target = Path(temporary) / "report.json"
+            args = types.SimpleNamespace(
+                candidate=AI.EVALUATOR_CANDIDATES[0],
+                models=",".join(AI.MODEL_IDS),
+                report=target,
+            )
+            with mock.patch.object(AI, "_expected_report", return_value=target):
+                AI._publish_preflight_report(args, "seven-model-preflight", {"run": 1})
+                report = load(target)
+                self.assertEqual(
+                    report["command"],
+                    AI._preflight_invocation(args, "seven-model-preflight"),
+                )
+                self.assertFalse(report["command"].startswith("{"))
+                evidence = load(target.with_name("report-evidence.json"))
+                AI._validate_digested_record(evidence, "preflight evidence")
+                with self.assertRaisesRegex(AI.Refusal, "stale bytes"):
+                    AI._publish_preflight_report(
+                        args, "seven-model-preflight", {"run": 2}
+                    )
 
 
 if __name__ == "__main__":

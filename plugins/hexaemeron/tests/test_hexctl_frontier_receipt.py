@@ -154,6 +154,7 @@ class FrontierReceiptCase(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",

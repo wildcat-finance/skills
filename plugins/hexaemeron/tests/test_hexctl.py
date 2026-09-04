@@ -146,6 +146,111 @@ class TestDesignEvidenceLifecycle(HexctlCase):
         self.run_ctl("done", "study", "--artifact", study)
         return study
 
+    def conformance_contract(self):
+        candidates = ["alpha", "beta", "gamma"]
+        criteria = [
+            "native-gate-preflight",
+            "paid-evaluation-preflight",
+            "seven-model-preflight",
+        ]
+        rows = []
+        for candidate in candidates:
+            for criterion in criteria:
+                report = f".hexaemeron/design-reports/{candidate}-{criterion}.json"
+                facts = {"paid_or_answer_calls": 0}
+                if criterion == "native-gate-preflight":
+                    facts.update({
+                        "isolated_authentication_proved": True,
+                        "metadata_get_count": 0,
+                        "metadata_get_endpoints": [],
+                        "no_native_session": True,
+                        "runtime_count": 2,
+                    })
+                rows.append({
+                    "base_pending": None,
+                    "candidate": candidate,
+                    "command": f"fixture preflight {candidate} {criterion}",
+                    "criterion": criterion,
+                    "evidence_path": report[:-5] + "-evidence.json",
+                    "report_path": report,
+                    "required_facts": facts,
+                })
+        design = self.state()["receipts"]["study"]["design_evidence"]
+        return {
+            "base": {
+                "path": ".hexaemeron/design-evidence.json",
+                "sha256": design["sha256"],
+            },
+            "candidates": candidates,
+            "criteria": criteria,
+            "overlay": {
+                "path": ".hexaemeron/conformance-overlay.json",
+                "schema": "fiat-conformance-overlay/v1",
+            },
+            "rows": rows,
+            "schema": "fiat-conformance-overlay-contract/v1",
+            "transition": "step:4",
+        }
+
+    def write_conformance_inputs(self, contract):
+        module = hexctl_module()
+
+        def encoded(value):
+            return (module.canonical(value) + "\n").encode()
+
+        overlay_rows = []
+        for row in contract["rows"]:
+            report = {
+                "candidate": row["candidate"],
+                "command": row["command"],
+                "criterion": row["criterion"],
+                "exit": 0,
+                "schema": "protasis-design-report/v1",
+                "unit": "boolean",
+                "value": True,
+            }
+            evidence_unsigned = {
+                "candidate": row["candidate"],
+                "criterion": row["criterion"],
+                "facts": row["required_facts"],
+                "invocation": row["command"],
+                "schema": "wildcat-instruction-architecture-preflight-evidence/v1",
+            }
+            evidence = dict(evidence_unsigned)
+            evidence["sha256"] = hashlib.sha256(encoded(evidence_unsigned)).hexdigest()
+            report_raw = encoded(report)
+            evidence_raw = encoded(evidence)
+            report_path = os.path.join(self.target, *row["report_path"].split("/"))
+            evidence_path = os.path.join(self.target, *row["evidence_path"].split("/"))
+            os.makedirs(os.path.dirname(report_path), exist_ok=True)
+            Path(report_path).write_bytes(report_raw)
+            Path(evidence_path).write_bytes(evidence_raw)
+            overlay_rows.append({
+                "candidate": row["candidate"],
+                "criterion": row["criterion"],
+                "command": row["command"],
+                "report_path": row["report_path"],
+                "report_sha256": hashlib.sha256(report_raw).hexdigest(),
+                "evidence_path": row["evidence_path"],
+                "evidence_sha256": hashlib.sha256(evidence_raw).hexdigest(),
+                "pass": {"exit": 0, "unit": "boolean", "value": True},
+                "facts": row["required_facts"],
+            })
+        contract_raw = encoded(contract)
+        overlay_unsigned = {
+            "schema": "fiat-conformance-overlay/v1",
+            "contract_sha256": hashlib.sha256(contract_raw).hexdigest(),
+            "transition": contract["transition"],
+            "base": contract["base"],
+            "rows": overlay_rows,
+        }
+        overlay = dict(overlay_unsigned)
+        overlay["sha256"] = hashlib.sha256(encoded(overlay_unsigned)).hexdigest()
+        relative = contract["overlay"]["path"]
+        output = os.path.join(self.target, *relative.split("/"))
+        Path(output).write_bytes(encoded(overlay))
+        return relative, contract_raw
+
     def test_study_lock_requires_the_fixed_checked_record_without_mutation(self):
         self.init()
         os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
@@ -303,6 +408,260 @@ class TestDesignEvidenceLifecycle(HexctlCase):
             [("bounded", "restart-safe")],
         )
 
+    def test_tracked_conformance_contract_blocks_step4_without_an_overlay(self):
+        self.to_steps(("One", "Two", "Three", "Four"))
+        contract = (
+            json.dumps(self.conformance_contract(), sort_keys=True, separators=(",", ":"))
+            + "\n"
+        ).encode()
+        self.env["FAKE_GIT_CONFORMANCE_HEX"] = contract.hex()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.finish_step(1)
+        self.finish_step(2)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(3), "--commit", "abc3"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/3",
+            "--head-commit", self.fake_sha("head3"),
+            "--pr-base", self.step_base(3),
+            expect=2,
+        )
+        self.assertIn("requires --conformance-overlay", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_conformance_receipt_replays_every_pair_and_blocks_tampering(self):
+        self.to_steps(("One", "Two", "Three", "Four"))
+        contract = self.conformance_contract()
+        overlay, contract_raw = self.write_conformance_inputs(contract)
+        self.env["FAKE_GIT_CONFORMANCE_HEX"] = contract_raw.hex()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.finish_step(1)
+        self.finish_step(2)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(3), "--commit", "abc3"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/3",
+            "--head-commit", self.fake_sha("head3"),
+            "--pr-base", self.step_base(3),
+            "--conformance-overlay", overlay,
+        )
+        receipt = self.state()["steps"][2]["receipts"]["push"]["conformance_overlay"]
+        self.assertEqual(len(receipt["rows"]), 9)
+        verified = json.loads(
+            self.run_ctl("verify-conformance", "--transition", "step:4").stdout
+        )
+        self.assertEqual(verified["rows"], 9)
+
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(4), "--commit", "abc4"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        before = self.controller_bytes()
+        del self.env["FAKE_GIT_CONFORMANCE_HEX"]
+        refused = self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/4",
+            "--head-commit", self.fake_sha("head4"),
+            "--pr-base", self.step_base(4),
+            expect=1,
+        )
+        self.assertIn("removes the receipted conformance contract", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+        self.env["FAKE_GIT_CONFORMANCE_HEX"] = contract_raw.hex()
+
+        evidence = os.path.join(self.target, *receipt["rows"][0]["evidence_path"].split("/"))
+        with open(evidence, "ab") as handle:
+            handle.write(b" ")
+        refused = self.run_ctl(
+            "verify-conformance", "--transition", "step:4", expect=2
+        )
+        self.assertIn("report pair digest changed", refused.stderr)
+
+    def _prepare_third_step_for_push(self):
+        self.to_steps(("One", "Two", "Three", "Four"))
+        self.run_ctl("record", "security_suite", SUITE)
+        self.finish_step(1)
+        self.finish_step(2)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(3), "--commit", "abc3"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        state = self.state()
+        step = state["steps"][2]
+        head = self.fake_sha("head3")
+        branch = self.step_branch(3, state)
+        url = "https://github.com/wildcat-finance/example/pull/3"
+        self.fake_refs[branch] = head
+        self.fake_prs[url] = self.fake_pr(
+            url, branch, self.step_base(3, state), head
+        )
+        return state, step, head, url
+
+    def test_push_head_contains_the_last_locally_reviewed_commit(self):
+        state, step, head, url = self._prepare_third_step_for_push()
+        reviewed = hexctl_module().last_local_commit(step)
+        self.env["FAKE_GIT_MODE"] = "not-ancestor"
+        self.env["FAKE_GIT_NOT_ANCESTOR"] = reviewed
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push", "--pr-url", url, "--head-commit", head,
+            "--pr-base", self.step_base(3, state), expect=2,
+        )
+        self.assertIn(
+            "not descended from its audited source commit", refused.stderr
+        )
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_push_head_retains_the_exact_locally_reviewed_contract(self):
+        state, step, head, url = self._prepare_third_step_for_push()
+        reviewed = hexctl_module().last_local_commit(step)
+        contract = (
+            json.dumps(
+                self.conformance_contract(), sort_keys=True, separators=(",", ":")
+            )
+            + "\n"
+        ).encode()
+        self.env["FAKE_GIT_CONFORMANCE_BY_COMMIT"] = json.dumps({
+            reviewed: contract.hex(),
+            head: None,
+        })
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push", "--pr-url", url, "--head-commit", head,
+            "--pr-base", self.step_base(3, state), expect=2,
+        )
+        self.assertIn("locally reviewed conformance contract", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_verify_conformance_emits_only_the_state_snapshot_verify_replayed(self):
+        module = hexctl_module()
+        if "verified_conformance" not in module.verify_run.__annotations__:
+            self.skipTest("requires verified conformance snapshot output")
+        self.init()
+        self.study()
+        contract = self.conformance_contract()
+        rows = [
+            {
+                "candidate": row["candidate"],
+                "criterion": row["criterion"],
+                "report_path": row["report_path"],
+                "report_sha256": "1" * 64,
+                "evidence_path": row["evidence_path"],
+                "evidence_sha256": "2" * 64,
+            }
+            for row in contract["rows"]
+        ]
+        receipt = {
+            "schema": module.CONFORMANCE_RECEIPT_SCHEMA,
+            "transition": "step:4",
+            "contract": {
+                "path": module.CONFORMANCE_CONTRACT_FILE,
+                "commit": "a" * 40,
+                "object": "b" * 40,
+                "sha256": "c" * 64,
+            },
+            "overlay": {
+                "path": module.CONFORMANCE_OVERLAY_FILE.replace(os.sep, "/"),
+                "sha256": "d" * 64,
+            },
+            "base": contract["base"],
+            "rows": rows,
+        }
+
+        def verified(_base_dir, *, verified_conformance, **_kwargs):
+            verified_conformance["step:4"] = receipt
+            return 17
+
+        with (
+            mock.patch.object(module, "verify_run", side_effect=verified),
+            mock.patch.object(
+                module,
+                "load_state",
+                side_effect=AssertionError("unverified second state snapshot"),
+            ) as load,
+            mock.patch("builtins.print") as output,
+        ):
+            module.cmd_verify_conformance(
+                argparse.Namespace(dir=self.target, transition="step:4")
+            )
+        load.assert_not_called()
+        emitted = json.loads(output.call_args.args[0])
+        self.assertEqual(emitted["overlay_sha256"], "d" * 64)
+        self.assertEqual(emitted["ledger_entries"], 17)
+
+    def test_conformance_reader_rejects_links_fifos_and_unstable_selection(self):
+        module = hexctl_module()
+        if not hasattr(module, "read_conformance_source"):
+            self.skipTest("requires the conformance evidence reader")
+        regular = os.path.join(self.target, "regular.json")
+        Path(regular).write_bytes(b"{}\n")
+        linked = os.path.join(self.target, "linked.json")
+        os.symlink("regular.json", linked)
+        with self.assertRaises(SystemExit):
+            module.read_conformance_source(self.target, "linked.json", "fixture")
+
+        fifo = os.path.join(self.target, "fifo.json")
+        os.mkfifo(fifo)
+        with self.assertRaises(SystemExit):
+            module.read_conformance_source(self.target, "fifo.json", "fixture")
+
+        unsafe = os.path.join(self.target, "unsafe.json")
+        Path(unsafe).write_bytes(b"{}\n")
+        os.chmod(unsafe, 0o666)
+        with self.assertRaises(SystemExit):
+            module.read_conformance_source(self.target, "unsafe.json", "fixture")
+
+        for hostile in ("line\nbreak.json", "caf\N{LATIN SMALL LETTER E WITH ACUTE}.json", "x" * 1025):
+            with self.subTest(path=repr(hostile)), self.assertRaises(SystemExit):
+                module.read_conformance_source(self.target, hostile, "fixture")
+
+        nested = b"[" * (module.CHECKPOINT_JSON_DEPTH_MAX + 1)
+        nested += b"]" * (module.CHECKPOINT_JSON_DEPTH_MAX + 1)
+        with self.assertRaises(SystemExit):
+            module._decode_conformance_json(nested, "fixture")
+        with (
+            mock.patch.object(module.json, "loads", side_effect=RecursionError),
+            self.assertRaises(SystemExit),
+        ):
+            module._decode_conformance_json(b"{}\n", "fixture")
+
+        with (
+            mock.patch.object(
+                module,
+                "_read_conformance_source_once",
+                side_effect=[(b"{}\n", (1, 2, 3)), (b"{}\n", (1, 9, 3))],
+            ),
+            self.assertRaises(SystemExit),
+        ):
+            module.read_conformance_source(self.target, "regular.json", "fixture")
+
     def test_verify_replays_report_receipts_and_detects_tampering(self):
         self.to_steps(("Core",))
         self.run_ctl("verify")
@@ -445,7 +804,13 @@ class TestDelegationPackets(HexctlCase):
         self.run_ctl("done", "audit")
         scribe = self.next_json()
         self.assert_packet(
-            scribe, "scribe", ("files", "pr_base", "pr_draft_path", "plugin_root")
+            scribe,
+            "scribe",
+            (
+                "files", "review_files", "pr_base", "pr_draft_path",
+                "plugin_root", "source_commit", "writable_files",
+                "writable_baselines", "writable_sha256",
+            ),
         )
         # The harness commits the audit records on the run branch, so they
         # reach this step's diff as deletions.  A removed path carries no prose
@@ -458,7 +823,8 @@ class TestDelegationPackets(HexctlCase):
         self.assertEqual((push["do"], push["agent"], push["brief"]),
                          ("push", None, {}))
         self.run_ctl("done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-                     "--head-commit", "abc", "--pr-base", self.step_base(1))
+                     "--head-commit", self.fake_sha("head1"),
+                     "--pr-base", self.step_base(1))
         merge = self.next_json()
         self.assertEqual((merge["do"], merge["agent"], merge["brief"]),
                          ("merge-step", None, {}))
@@ -661,15 +1027,17 @@ class TestDelegationPackets(HexctlCase):
             self.write(name, name)
         self.git("add", "zeta.md", "alpha.md")
         self.git("commit", "-m", "step")
+        diffs = json.loads(self.env.get("FAKE_GIT_DIFF_PATHS", "{}"))
+        diffs[f"{self.step_base(1)}..{branch}"] = ["alpha.md", "zeta.md"]
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
         # The two audit records sit on the run branch rather than this one, so
         # they arrive as deletions and the packet drops them.  The ceiling that
         # remains is PROSE_PATHS_MAX, exercised over a mocked path list in
         # test_hexctl_prose_packet_bounds rather than by writing four thousand
         # files through this fixture.
-        self.assertEqual(
-            self.next_json()["brief"]["files"],
-            ["alpha.md", "zeta.md"],
-        )
+        packet = self.next_json()["brief"]
+        self.assertEqual(packet["files"], [])
+        self.assertEqual(packet["review_files"], ["alpha.md", "zeta.md"])
 
     def test_git_output_and_returned_path_caps_refuse(self):
         module = hexctl_module()
@@ -1369,6 +1737,7 @@ class TestMergedAttribution(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -1554,6 +1923,7 @@ class TestMergedState(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -1641,6 +2011,7 @@ class TestMergedState(HexctlCase):
 
     def test_an_unanswerable_ancestry_call_refuses_rather_than_reporting_no(self):
         self.to_integrate()
+        self.make_prose_receipt_legacy()
         proc = self.integrate(expect=2, git_mode="ancestry-error")
         self.assertIn("ancestry", proc.stderr)
         self.assertIn("could not be determined", proc.stderr)
@@ -1745,6 +2116,7 @@ class TestMergedState(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -1755,6 +2127,7 @@ class TestMergedState(HexctlCase):
             "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
         )
         self.env.pop("FAKE_GH_MODE", None)
+        self.make_prose_receipt_legacy()
         branch = self.step_branch(1)
         self.fake_refs[branch] = "c" * 40
         self.fake_prs[self.URL]["head"]["sha"] = "c" * 40
@@ -1780,7 +2153,13 @@ class TestMergedState(HexctlCase):
 
 
 class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
-    def to_push(self, base=None):
+    def controller_bytes(self):
+        return tuple(
+            Path(self.target, ".hexaemeron", name).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+    def to_push(self, base=None, prose_head="d" * 40):
         self.to_steps(("Ship",), base=base)
         self.run_ctl(
             "done", "implement", "--branch", self.step_branch(1),
@@ -1789,6 +2168,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = prose_head
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -1849,6 +2229,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
 
     def test_merge_repairs_signed_post_push_head(self):
         self.to_merge_step()
+        self.make_prose_receipt_legacy()
         repaired_head = "7" * 40
         self.set_post_push_head(repaired_head)
         self.run_ctl(
@@ -1859,6 +2240,18 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertTrue(repair["repaired"])
         self.assertEqual(repair["head"], repaired_head)
 
+    def test_merge_refuses_a_post_prose_branch_head(self):
+        self.to_merge_step()
+        self.set_post_push_head("7" * 40)
+        self.prime_step_merge()
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "merge-step", "--step", "1",
+            "--merge-commit", "e" * 40, expect=2,
+        )
+        self.assertIn("not the exact receipted prose head", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
     def test_merge_time_repair_refuses_invalid_local_signature(self):
         self.to_merge_step()
         self.edit_push_receipt(lambda receipt: receipt.pop("github_verified", None))
@@ -1868,11 +2261,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             "done", "merge-step", "--step", "1",
             "--merge-commit", "e" * 40, expect=2,
         )
-        self.assertIn("valid local signature", proc.stderr)
+        self.assertIn("valid native local signature", proc.stderr)
 
     def test_merge_time_repair_refuses_invalid_github_verification(self):
         self.to_merge_step()
-        self.set_post_push_head("7" * 40)
+        self.edit_push_receipt(lambda receipt: receipt.pop("github_verified", None))
         self.prime_step_merge()
         self.env["FAKE_GH_MODE"] = "verified-false"
         proc = self.run_ctl(
@@ -1913,22 +2306,22 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
 
     def test_push_refuses_cross_repository_pr_and_mismatched_head(self):
         self.to_push()
-        branch = self.step_branch(1)
-        self.fake_refs[branch] = self.fake_sha("def456")
         proc = self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/elsewhere/example/pull/1",
-            "--head-commit", "def456", "--pr-base", self.step_base(1),
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
             expect=2,
         )
         self.assertIn("repository", proc.stderr)
 
     def test_push_head_must_equal_pushed_branch_tip(self):
         self.to_push()
+        branch = self.step_branch(1)
+        self.fake_refs[branch] = self.fake_sha("def456")
         proc = self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "def456", "--pr-base", self.step_base(1),
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
             expect=2,
         )
         self.assertIn("branch tip", proc.stderr)
@@ -1958,7 +2351,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertFalse(os.path.exists(log_path))
 
     def test_merge_step_refuses_pr_topology_mismatch(self):
-        self.to_push()
+        self.to_push(prose_head="def456")
         self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
@@ -1972,7 +2365,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertIn("pull request", proc.stderr)
 
     def test_integrate_refuses_pr_topology_mismatch(self):
-        self.to_push()
+        self.to_push(prose_head="def456")
         self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
@@ -2060,7 +2453,8 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
         self.env["FAKE_GIT_MERGE_BASE"] = base_before
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+        diffs = json.loads(self.env.get("FAKE_GIT_DIFF_PATHS", "{}"))
+        diffs.update(
             {
                 f"{base_before}..{final_merge}": [
                     "product.py",
@@ -2076,6 +2470,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 ],
             }
         )
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
         return state, sync_sha, base_sha
 
     def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
@@ -2169,7 +2564,8 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_refs[state["run_branch"]] = sync_sha
         self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+        diffs = json.loads(self.env.get("FAKE_GIT_DIFF_PATHS", "{}"))
+        diffs.update(
             {
                 f"{base_before}..{final_merge}": [
                     "product.py",
@@ -2187,6 +2583,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 ],
             }
         )
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
         return self.write_integration_revalidation(
             affected_paths=["controller.py", "shared.json", "upstream.py"]
         )
@@ -2551,7 +2948,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             "--base-commit", base_sha, "--revalidation", revalidation,
             expect=2,
         )
-        self.assertIn("valid local signature", proc.stderr)
+        self.assertIn("valid native local signature", proc.stderr)
 
     def test_sync_run_refuses_stale_remote_base(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
@@ -2621,6 +3018,7 @@ class TestDelegationPacketLifecycle(HexctlCase):
         self.stable_next("close-audit", None)
         self.run_ctl("done", "audit")
         self.stable_next("prose", "scribe")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -2839,12 +3237,29 @@ class TestAuditLoop(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl(
             "audit-round", "--findings", "1", "--fixes-commit", "b1",
-            "--elenchus-verdict", "guarded",
+            "--elenchus-verdict", "guarded", "--no-prose-writes",
         )
         proc = self.run_ctl("done", "audit", "--no-further-leads", expect=2)
         self.assertIn("--reason", proc.stderr)
         self.run_ctl("done", "audit", "--no-further-leads",
                      "--reason", "remaining lead is a gas nit, out of scope")
+        declaration = self.state()["steps"][0]["receipts"]["audit"][
+            "prose_writable"
+        ]
+        self.assertEqual(declaration["paths"], [])
+
+    def test_no_further_leads_requires_a_final_prose_binding(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl(
+            "audit-round", "--findings", "1", "--fixes-commit", "b1",
+            "--elenchus-verdict", "guarded",
+        )
+        refused = self.run_ctl(
+            "done", "audit", "--no-further-leads",
+            "--reason", "bounded accepted residual", expect=2,
+        )
+        self.assertIn("final finding round to declare", refused.stderr)
 
     def test_max_rounds_forces_verdict(self):
         self.to_audit()
@@ -3123,7 +3538,7 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("--pr-base", proc.stderr)
         self.run_ctl(
             "done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "abc123", "--pr-base", self.step_base(1),
+            "--head-commit", self.fake_sha("head1"), "--pr-base", self.step_base(1),
         )
 
     def test_step_pull_request_may_not_target_the_repository_base(self):
@@ -3359,7 +3774,7 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("--merge-commit", proc.stderr)
         self.run_ctl(
             "done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "abc123", "--merge-commit", "d" * 40,
+            "--head-commit", self.fake_sha("head1"), "--merge-commit", "d" * 40,
         )
         out = self.next_json()
         self.assertEqual((out["do"], out["step"]), ("implement", 2))
@@ -3379,7 +3794,7 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("integrate phase", proc.stderr)
         self.run_ctl(
             "done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "abc123", "--pr-base", self.step_base(1),
+            "--head-commit", self.fake_sha("head1"), "--pr-base", self.step_base(1),
         )
         self.finish_step(2)
         self.merge_stack()

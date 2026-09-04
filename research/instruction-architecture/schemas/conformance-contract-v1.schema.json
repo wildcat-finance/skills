@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/instruction-architecture/conformance-contract-v1.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "base": {"$ref": "#/$defs/digestedPath"},
+    "candidates": {"$ref": "#/$defs/threeIds"},
+    "criteria": {"$ref": "#/$defs/threeIds"},
+    "overlay": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {"const": ".hexaemeron/conformance-overlay.json"},
+        "schema": {"const": "fiat-conformance-overlay/v1"}
+      },
+      "required": ["path", "schema"],
+      "type": "object"
+    },
+    "rows": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "base_pending": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "blocks": {"const": "step:4"},
+                  "report": {"$ref": "#/$defs/path"},
+                  "resolver": {"maxLength": 4096, "minLength": 1, "type": "string"}
+                },
+                "required": ["blocks", "report", "resolver"],
+                "type": "object"
+              }
+            ]
+          },
+          "candidate": {"$ref": "#/$defs/id"},
+          "command": {"maxLength": 4096, "minLength": 1, "type": "string"},
+          "criterion": {"$ref": "#/$defs/id"},
+          "evidence_path": {"$ref": "#/$defs/path"},
+          "report_path": {"$ref": "#/$defs/path"},
+          "required_facts": {"$ref": "#/$defs/facts"}
+        },
+        "required": ["base_pending", "candidate", "command", "criterion", "evidence_path", "report_path", "required_facts"],
+        "type": "object"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "type": "array"
+    },
+    "schema": {"const": "fiat-conformance-overlay-contract/v1"},
+    "transition": {"const": "step:4"}
+  },
+  "required": ["base", "candidates", "criteria", "overlay", "rows", "schema", "transition"],
+  "type": "object",
+  "$defs": {
+    "digestedPath": {
+      "additionalProperties": false,
+      "properties": {"path": {"$ref": "#/$defs/path"}, "sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"}},
+      "required": ["path", "sha256"],
+      "type": "object"
+    },
+    "id": {"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "type": "string"},
+    "facts": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {"paid_or_answer_calls": {"const": 0}},
+          "required": ["paid_or_answer_calls"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "isolated_authentication_proved": {"const": true},
+            "metadata_get_count": {"const": 0},
+            "metadata_get_endpoints": {"maxItems": 0, "type": "array"},
+            "no_native_session": {"const": true},
+            "paid_or_answer_calls": {"const": 0},
+            "runtime_count": {"const": 2}
+          },
+          "required": ["isolated_authentication_proved", "metadata_get_count", "metadata_get_endpoints", "no_native_session", "paid_or_answer_calls", "runtime_count"],
+          "type": "object"
+        }
+      ]
+    },
+    "path": {"maxLength": 1024, "minLength": 1, "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)(?!.*\\/$)[\\u0020-\\u007e]+(?![\\s\\S])", "type": "string"},
+    "threeIds": {"items": {"$ref": "#/$defs/id"}, "maxItems": 3, "minItems": 3, "type": "array", "uniqueItems": true}
+  }
+}
