@@ -7,11 +7,19 @@ skills#1030 records.  This tool runs that sequence against a throwaway copy of
 the tree and reports what the repository's own checker says afterwards, so the
 cost of an edit is observed rather than argued about.
 
-    offline      an out-of-span edit, every mechanical pass applied: does
-                 `agent_instruction.py check` go green with no model consulted?
+    offline      an out-of-span edit *after* the reviewed span end, every
+                 mechanical pass applied: does `agent_instruction.py check` go
+                 green with no model consulted?  It answers for that placement
+                 and says nothing about the other one.
     span-shift   the edit placements whose reconciliation outcome is proved,
                  because only an edit before a reviewed span start moves the
-                 recorded binding offsets.
+                 recorded binding offsets.  Its count is placements covered,
+                 not placements green, and the two do not agree: the after-span
+                 placement reconciles accepted, and the before-span placement
+                 refuses `WAI-E-DIGEST.CORPUS` at
+                 `$.evidence.measurement_record` once its offsets are
+                 reconciled.  The seven-key report carries the count and the
+                 exit; the outcome of each placement is on `--detail`.
     selftest     the tool's own machinery: fixture-copy isolation, a no-op
                  reconciliation that reproduces the committed bytes, and the
                  path confinement that keeps every write inside the copy.
@@ -30,7 +38,36 @@ identifiable from the refusal it produces:
                          own `format`, because it embeds the digest as `h64:`
     manifest-artifacts   manifest `artifacts.{compact,model,source_spans}.sha256`
 
-A live reconciliation owes a sixth pass this tool does not exercise: the
+One further pass runs beside those five, and only an edit before a reviewed
+span start needs it:
+
+    span-offsets         the manifest's `source.start` and `source.end`, every
+                         `source-spans.json` span's `start` and `end`, and every
+                         `model.json` binding's `start` and `end`
+
+It is not in `MECHANICAL_PASSES` because it is a no-op for the placement those
+five were characterised against: an edit after the reviewed span moves no
+offset, so skipping it there leaves the tree accepted and it cannot be shown to
+be needed the way the five are. `span-shift` shows it needed where it is needed,
+against a before-span edit. What it writes is re-derived rather than shifted:
+each recorded span is located in the edited source by its own bytes, whose
+digest an out-of-span edit does not move, and the offsets are read off from
+where those bytes now are. Adding a byte delta to each recorded number would
+produce the same integers here while proving nothing about where the span went,
+so `rederive_offsets` computes the uniform delta from the anchor and then checks
+every independently located span against it rather than assuming it.
+
+What a test can separate from arithmetic is bounded by the fixture. A prepend
+moves every span by one uniform delta, so a node located by its own bytes and a
+node moved by `delta` land on the same integers, and no assertion on the
+integers can tell the two apart. What separates them is the refusal a shift has
+no opinion about: bytes that occur more than once inside the reviewed span
+identify no offset, and the node loop refuses instead of taking the first
+occurrence. `test_a_before_span_edit_has_its_offsets_re_derived_rather_than_shifted`
+pins that refusal for a node as well as for the anchor, which is where the claim
+in this paragraph is held rather than merely stated.
+
+A live reconciliation owes one more pass this tool does not exercise: the
 matching digests in the `agent_instruction` row of
 `tests/promise_machine_coverage.json`.  `agent_instruction.py check` never
 reads that file, so a fixture copy cannot observe it; `tests/test_agent_instruction.py`
@@ -95,20 +132,27 @@ MECHANICAL_PASSES = (
     "manifest-artifacts",
 )
 
+# The pass that re-derives the recorded offsets. Kept out of MECHANICAL_PASSES
+# deliberately: it is a no-op after the reviewed span, so omitting it there
+# leaves the tree accepted and `prove_selftest`'s five-way omission loop cannot
+# demonstrate it. Its own demonstration is against a before-span edit.
+OFFSET_PASS = "span-offsets"
+
 # The pass a live reconciliation owes that a fixture copy cannot observe,
 # because `agent_instruction.py check` does not read the coverage register.
 UNOBSERVED_PASS = "coverage-register"
 
-# An out-of-span edit appended at end of file. After the reviewed span, so the
-# recorded binding offsets do not move: the edit shape that should stop costing
-# a measurement.
-AFTER_SPAN_EDIT = b"\n<!-- prove: skills#1098 out-of-span edit -->\n"
+# The out-of-span edit, applied at either placement. Prepended it lands before
+# the reviewed span start and moves every recorded offset; appended it lands
+# after the reviewed span end and moves none.
+OUT_OF_SPAN_EDIT = b"\n<!-- prove: skills#1098 out-of-span edit -->\n"
 
-# An out-of-span edit before the reviewed span start moves every recorded
-# offset. Named here so `span-shift` can report it as uncovered rather than
-# silently omit it; the runbook schedules it at step 4.
+# The two placements an out-of-span edit can take relative to the reviewed span.
+# `span-shift` covers both, because they are separate claims: only the first
+# moves the recorded binding offsets, which is #1098's third acceptance check.
 BEFORE_SPAN_PLACEMENT = "before-span"
 AFTER_SPAN_PLACEMENT = "after-span"
+SPAN_PLACEMENTS = (BEFORE_SPAN_PLACEMENT, AFTER_SPAN_PLACEMENT)
 
 CHECK_TIMEOUT_SECONDS = 600
 MAX_OUTPUT_BYTES = 1 << 20
@@ -134,6 +178,27 @@ class ProverError(RuntimeError):
 
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def recorded_offset(value: Any, label: str, limit: int) -> int:
+    """One offset, read the way the canonical records write it.
+
+    An unsigned ASCII decimal with no padding, inside the file it indexes.
+    `int()` on its own would take `"+1"`, `" 1"`, `"1_0"`, a Unicode digit and
+    a run of digits of any length, and it raises `ValueError` rather than a
+    `ProverError` on the rest -- so a record that had drifted would reach the
+    reader as a crash instead of a refusal naming the field. These records are
+    read from a tree this tool does not control, which is the whole reason the
+    constructor checks the tree against itself first.
+    """
+    if not isinstance(value, str) or not value.isascii() or not value.isdigit():
+        raise ProverError(f"{label} is not a recorded decimal offset")
+    if len(value) > 1 and value.startswith("0"):
+        raise ProverError(f"{label} is a padded decimal, which no record writes")
+    number = int(value)
+    if number > limit:
+        raise ProverError(f"{label} is past the end of the source it indexes")
+    return number
 
 
 def report_bytes(record: dict[str, Any]) -> bytes:
@@ -267,8 +332,6 @@ class Reconciliation:
         self.manifest = self._live_record(MANIFEST)
         self.fixture = self._subject_fixture(self.manifest)
         self.source_path = self.fixture["source"]["path"]
-        self.start = int(self.fixture["source"]["start"])
-        self.end = int(self.fixture["source"]["end"])
         self.source = self._live_bytes(self.source_path)
         self.old_digest = self.fixture["source"]["sha256"]
 
@@ -277,8 +340,22 @@ class Reconciliation:
                 f"{self.source_path} is already off its manifest digest; "
                 "reconcile the live tree before proving anything about it"
             )
-        if len(self.source) < self.end:
-            raise ProverError(f"{self.source_path} is shorter than its reviewed span")
+
+        # Read the way every other recorded offset in this tool is read. These
+        # two are the anchor the whole re-derivation hangs off, so leaving them
+        # on bare `int()` would exempt the one pair that matters most from the
+        # rule `recorded_offset` exists to state.
+        limit = len(self.source)
+        self.start = recorded_offset(
+            self.fixture["source"]["start"], "the reviewed span's start", limit
+        )
+        self.end = recorded_offset(
+            self.fixture["source"]["end"], "the reviewed span's end", limit
+        )
+        if self.end <= self.start:
+            raise ProverError(
+                f"{self.source_path} has a reviewed span that ends at or before it starts"
+            )
         self.span = self.source[self.start : self.end]
         if digest(self.span) != self.fixture["source"]["span_sha256"]:
             raise ProverError(f"{self.source_path} has a reviewed span off its manifest digest")
@@ -341,9 +418,9 @@ class Reconciliation:
     def edited_source(self, placement: str) -> bytes:
         """The bound source after one out-of-span edit at the named placement."""
         if placement == AFTER_SPAN_PLACEMENT:
-            edited = self.source + AFTER_SPAN_EDIT
+            edited = self.source + OUT_OF_SPAN_EDIT
         elif placement == BEFORE_SPAN_PLACEMENT:
-            edited = AFTER_SPAN_EDIT + self.source
+            edited = OUT_OF_SPAN_EDIT + self.source
         else:
             raise ProverError(f"unknown span placement {placement}")
         return edited
@@ -370,6 +447,154 @@ class Reconciliation:
 
     def span_moved(self, edited: bytes) -> bool:
         return edited[self.start : self.end] != self.span
+
+    # --- re-deriving the recorded offsets ---------------------------------
+
+    @staticmethod
+    def _locate(haystack: bytes, needle: bytes, label: str, base: int = 0) -> int:
+        """Where `needle` sits in `haystack`, refusing anything but one answer.
+
+        Absent means the edit reached inside the reviewed bytes, so there is no
+        span to re-derive an offset for. More than once means the bytes do not
+        identify a position, and picking the first would be a guess dressed as a
+        measurement. Both refuse rather than returning a number.
+        """
+        first = haystack.find(needle)
+        if first < 0:
+            raise ProverError(f"the recorded bytes of {label} are not in the edited source")
+        if haystack.find(needle, first + 1) >= 0:
+            raise ProverError(
+                f"the recorded bytes of {label} occur more than once in the edited "
+                "source, so they do not identify an offset"
+            )
+        return base + first
+
+    def rederive_offsets(self, edited: bytes) -> dict[str, Any] | None:
+        """Where every recorded span sits in the edited source, read off its bytes.
+
+        The reviewed span digest is the anchor. An edit outside the reviewed
+        span leaves the span's bytes intact, so the span can be found in the
+        edited source and its new offsets read off from where it was found;
+        `span_sha256` is recomputed at those offsets rather than carried over,
+        so a location that is not the reviewed span refuses instead of being
+        recorded.
+
+        Each node span is then located the same way, inside the re-derived
+        reviewed span rather than the whole file, and each one's own recorded
+        `sha256` is checked at its new offsets. So every number written back
+        comes from a located, digest-checked position.
+
+        The uniform delta is computed from the anchor and used as a check, not
+        as the source of the answer: if an independently located node has not
+        moved by the same delta as the reviewed span, the recorded offsets and
+        the bytes disagree about the document's shape, and that is a finding
+        rather than something to average away. It refuses.
+
+        Returns `None` when the anchor's bytes are gone from the edited source.
+        That is an in-span edit, where there is nothing to re-derive: the
+        reviewed bytes themselves changed, and `check` refuses at
+        `WAI-E-DIGEST.SOURCE_SPAN` for that reason and not for a stale offset.
+        """
+        if self.span not in edited:
+            return None
+
+        anchor = self.fixture["source"]["span_sha256"]
+        governed_start = self._locate(edited, self.span, "the reviewed span")
+        governed_end = governed_start + len(self.span)
+        if digest(edited[governed_start:governed_end]) != anchor:
+            raise ProverError("the re-derived reviewed span is off its recorded digest")
+        delta = governed_start - self.start
+
+        spans = self._live_record(self.fixture["artifacts"]["source_spans"]["path"])
+        governed = edited[governed_start:governed_end]
+        nodes: dict[str, dict[str, Any]] = {}
+        for entry in spans["spans"]:
+            node = str(entry["node"])
+            limit = len(self.source)
+            start = recorded_offset(entry["start"], f"{node}.start", limit)
+            end = recorded_offset(entry["end"], f"{node}.end", limit)
+            if end <= start:
+                raise ProverError(f"the recorded span for {node} ends at or before it starts")
+            recorded = self.source[start:end]
+            if digest(recorded) != entry["sha256"]:
+                raise ProverError(f"the recorded span for {node} is off its own digest")
+            new_start = self._locate(governed, recorded, node, base=governed_start)
+            new_end = new_start + len(recorded)
+            if digest(edited[new_start:new_end]) != entry["sha256"]:
+                raise ProverError(f"the re-derived span for {node} is off its recorded digest")
+            if new_start - start != delta:
+                raise ProverError(
+                    f"the re-derived span for {node} moved by {new_start - start} bytes "
+                    f"and the reviewed span moved by {delta}; the recorded offsets and "
+                    "the source disagree about the document's shape"
+                )
+            nodes[node] = {
+                "recorded": [start, end],
+                "rederived": [new_start, new_end],
+                "sha256": entry["sha256"],
+            }
+
+        return {
+            "anchor_sha256": anchor,
+            "delta": delta,
+            "governed": {
+                "recorded": [self.start, self.end],
+                "rederived": [governed_start, governed_end],
+            },
+            "nodes": nodes,
+        }
+
+    def _write_rederived_offsets(
+        self, entries: list[dict[str, Any]], offsets: dict[str, Any]
+    ) -> None:
+        """Write each entry's re-derived offsets back, keyed on where it was.
+
+        Keyed on the recorded pair rather than on the node alone, because two
+        nodes may cover the same bytes, and keyed at all rather than adding
+        `delta`, so an entry the re-derivation did not locate refuses instead of
+        being moved by arithmetic.
+        """
+        located = {
+            (node, tuple(value["recorded"])): value["rederived"]
+            for node, value in offsets["nodes"].items()
+        }
+        for entry in entries:
+            node = str(entry["node"])
+            limit = len(self.source)
+            key = (
+                node,
+                (
+                    recorded_offset(entry["start"], f"{node}.start", limit),
+                    recorded_offset(entry["end"], f"{node}.end", limit),
+                ),
+            )
+            if key not in located:
+                raise ProverError(f"no re-derived offset for {key[0]} at {key[1]}")
+            start, end = located[key]
+            entry["start"] = str(start)
+            entry["end"] = str(end)
+
+    def _rewritten_offsets(self, artifact: str, raw: bytes, offsets: dict[str, Any]) -> bytes:
+        """One artefact's bytes with its recorded offsets re-derived.
+
+        Round-tripped through the checker's own canonical serialiser, and the
+        untouched record is required to reproduce its own bytes first, so a
+        rewrite cannot smuggle in a formatting difference and call it an offset
+        change.
+        """
+        if artifact == "source_spans":
+            record = self.checker.load_canonical_record(raw)
+            if self.checker.canonical_record_bytes(record) != raw:
+                raise ProverError("source-spans.json is not its own canonical bytes")
+            self._write_rederived_offsets(record["spans"], offsets)
+            return self.checker.canonical_record_bytes(record)
+        if artifact == "model":
+            model = self.checker.load_canonical_json(raw)
+            if self.checker.canonical_json_bytes(model) != raw:
+                raise ProverError("model.json is not its own canonical bytes")
+            self._write_rederived_offsets(model["bindings"], offsets)
+            return self.checker.canonical_json_bytes(model)
+        raise ProverError(f"no offsets are recorded in {artifact}")
 
     # --- the throwaway copy ----------------------------------------------
 
@@ -405,25 +630,41 @@ class Reconciliation:
 
         `skip` leaves out one named pass. That is how each pass is shown to
         be needed: leave one out and a refusal comes back, and it names the
-        pass that is missing. Returns the manifest as written.
+        pass that is missing. `OFFSET_PASS` is skippable on the same terms,
+        which is how a before-span edit is shown to need it. Returns the
+        manifest as written.
         """
         for name in skip:
-            if name not in MECHANICAL_PASSES:
+            if name not in MECHANICAL_PASSES and name != OFFSET_PASS:
                 raise ProverError(f"unknown mechanical pass {name}")
 
         manifest = json.loads(json.dumps(self.manifest))
         fixture = self._subject_fixture(manifest)
         new_digest = digest(edited)
 
+        # Re-derived before anything is written, so a refusal to locate the
+        # spans stops the reconciliation rather than leaving a half-rewritten
+        # copy behind. `None` means the reviewed bytes themselves changed, and
+        # there is no offset to re-derive.
+        offsets = None if OFFSET_PASS in skip else self.rederive_offsets(edited)
+        span_start, span_end = self.start, self.end
+        if offsets is not None:
+            span_start, span_end = offsets["governed"]["rederived"]
+
         self._write(tree, self.source_path, edited)
 
         if "manifest-source" not in skip:
             fixture["source"]["sha256"] = new_digest
+        if offsets is not None:
+            fixture["source"]["start"] = str(span_start)
+            fixture["source"]["end"] = str(span_end)
         if rebind_span:
             # Not a mechanical pass. The reviewed span digest is the review
             # boundary, and moving it is what a re-review means. `span-shift`
-            # uses it only to show the refusal that waits behind it.
-            fixture["source"]["span_sha256"] = digest(edited[self.start : self.end])
+            # uses it only to show the refusal that waits behind it. Taken at
+            # the effective offsets, so it rebinds the reviewed span and not
+            # whatever the edit pushed into its old position.
+            fixture["source"]["span_sha256"] = digest(edited[span_start:span_end])
 
         substitutions = {"model": "model", "source-spans": "source_spans"}
         for pass_name, artifact in substitutions.items():
@@ -436,6 +677,8 @@ class Reconciliation:
                         f"{relative} carries the source digest {occurrences} times, expected 1"
                     )
                 raw = raw.replace(self.old_digest.encode("ascii"), new_digest.encode("ascii"))
+            if offsets is not None:
+                raw = self._rewritten_offsets(artifact, raw, offsets)
             self._write(tree, relative, raw)
 
         compact_relative = fixture["artifacts"]["compact"]["path"]
@@ -562,26 +805,36 @@ def prove_span_shift(reconciliation: Reconciliation) -> tuple[int, dict[str, Any
 
     An edit before a reviewed span start moves every recorded binding offset
     and an edit after it moves none, so the two placements are separate claims
-    and the value counts placements rather than cases. The runbook schedules
-    the before-span placement at step 4; until it is covered this reports the
-    criterion unmet, because a count that reached its threshold while a
-    placement went unexercised would be the wrong kind of green.
+    and the value counts placements rather than cases. Both are covered here,
+    which is #1098's third acceptance check; a count that reached its threshold
+    while a placement went unexercised would be the wrong kind of green, so
+    `uncovered` is derived from `SPAN_PLACEMENTS` rather than assumed empty.
+
+    The before-span placement carries its own evidence in `offsets`: what each
+    recorded offset was, where the span's bytes were found in the edited source,
+    and the uniform delta the anchor moved by, against which every
+    independently located span was checked. `offset-pass-omitted` is the same
+    edit with the re-derivation skipped, which is what makes the pass load-
+    bearing rather than merely present.
 
     The in-span cases travel in the detail rather than the count. They are
     characterisation of the boundary the placements sit either side of, not a
     placement of their own.
     """
+    before = reconciliation.edited_source(BEFORE_SPAN_PLACEMENT)
+    after = reconciliation.edited_source(AFTER_SPAN_PLACEMENT)
     placements: dict[str, Any] = {
-        AFTER_SPAN_PLACEMENT: reconciliation.reconcile(
-            reconciliation.edited_source(AFTER_SPAN_PLACEMENT)
-        ),
+        BEFORE_SPAN_PLACEMENT: reconciliation.reconcile(before),
+        AFTER_SPAN_PLACEMENT: reconciliation.reconcile(after),
     }
-    uncovered = [name for name in (BEFORE_SPAN_PLACEMENT,) if name not in placements]
+    uncovered = [name for name in SPAN_PLACEMENTS if name not in placements]
 
     in_span = reconciliation.in_span_source()
     detail = {
         "placements": placements,
         "uncovered": uncovered,
+        "offsets": reconciliation.rederive_offsets(before),
+        "offset-pass-omitted": reconciliation.reconcile(before, skip=(OFFSET_PASS,)),
         "in_span": {
             "every-mechanical-pass": reconciliation.reconcile(in_span),
             "span-digest-also-rebound": reconciliation.reconcile(in_span, rebind_span=True),
@@ -630,6 +883,23 @@ def prove_selftest(reconciliation: Reconciliation) -> tuple[int, dict[str, Any],
             "a complete reconciliation of an out-of-span edit refused: "
             f"{complete['refusals']}"
         )
+
+    # The offsets pass, shown to be needed where it is needed. It is a no-op
+    # after the reviewed span, so the loop above cannot reach it; a before-span
+    # edit with it omitted leaves the recorded offsets pointing at bytes the
+    # edit displaced, and the reviewed span digest is what catches that.
+    before_span = reconciliation.edited_source(BEFORE_SPAN_PLACEMENT)
+    omitted = reconciliation.reconcile(before_span, skip=(OFFSET_PASS,))
+    if omitted["accepted"]:
+        raise ProverError(f"omitting the {OFFSET_PASS} pass left the tree accepted")
+    if omitted["refusals"][0] != {
+        "code": "WAI-E-DIGEST.SOURCE_SPAN",
+        "node_path": f"$.fixtures.{SUBJECT}.source.span_sha256",
+    }:
+        raise ProverError(
+            f"omitting the {OFFSET_PASS} pass refused somewhere else: {omitted['refusals']}"
+        )
+    checks[OFFSET_PASS] = omitted["refusals"][0]
 
     # The confinement refuses what it is there to refuse, rather than being
     # trusted because it is imported.

@@ -478,12 +478,14 @@ not assumed to save tokens: the Fiat fixture reports `-122`, Horos reports
 The two-document prefix reports `+306`; only the declared three-document cohort
 is the acceptance cohort.
 
-Those figures are the run recorded in `evidence/measurement.json` with
-`observed_on` `2026-08-30`, taken before the corpus subject and the measured
-streams moved onto the projection described above, and refreshed from the
-reissued report once that run existed. Every token column counts a projected
-stream; the byte columns are unchanged either way, because the projection
-preserves length. No count here was written by hand.
+Those figures are copied from `evidence/measurement.json`, which holds one run:
+the reissue made after the corpus subject and the measured streams moved onto
+the projection described above. Its `observed_on` of `2026-08-30` is the pinned
+tokenizer profile's observation date, carried into the record and checked
+against it on every `check` run, so it dates the profile and not the run. Every
+token column counts a projected stream; the byte columns are unchanged either
+way, because the projection preserves length. No count here was written by
+hand.
 
 ### Isolated family parity
 

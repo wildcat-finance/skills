@@ -3280,8 +3280,8 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
     def test_specialised_coverage_binds_runtime_documentation_and_manifest(self):
         """The records a reader needs to interpret this capability, bound by digest.
 
-        ADR-074 joins the list at step 3. The row binds the capability's own
-        decision records, and ADR-074 is one: it is what a reader consults on
+        ADR-076 joins the list at step 3. The row binds the capability's own
+        decision records, and ADR-076 is one: it is what a reader consults on
         finding that a measurement record's `compact.sha256` does not match
         `compact.wai` on disk. Leaving it unbound would be the same drift
         S2-R2-04 filed against the prover -- a document the behaviour depends on,
@@ -3298,7 +3298,7 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             [
                 "docs/agent-instruction-language-v1.md",
                 "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
-                "docs/decisions/ADR-074-digest-neutral-measured-corpus.md",
+                "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
             ],
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
@@ -3452,6 +3452,178 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             ("summary", "passed"),
             "WAI-E-PARITY.RECORD",
         )
+
+    def assert_undefined_projection_refuses(self, evidence_key: str, locate, code: str) -> None:
+        """One recorded stream renamed to a projection this version does not define.
+
+        `docs/agent-instruction-language-v1.md` says a record whose
+        `projection` names an undefined rule refuses, and names both codes. The
+        refusals existed from the commit that added the field and nothing
+        exercised either: deleting both membership checks from
+        `agent_instruction.py` left the whole suite green apart from the
+        checker's own whole-file digest binding, which notices any edit to that
+        file and says nothing about behaviour. S3-R1-01.
+
+        The substituted name is well-formed and versioned, so this separates
+        "this rule is not defined in version 1" from a malformed or missing
+        field, which the closed-object check already refuses. Widening
+        `MEASURED_PROJECTIONS` to accept it would turn this red, which is the
+        point: the versioned name is what stops a record written under one rule
+        reading as though it were written under another.
+
+        The report is rewritten in a copy and its manifest binding rebound, so
+        the refusal reached is the projection check and not the stale-record
+        digest that would otherwise refuse first.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            manifest_path = copied / MANIFEST.relative_to(ROOT)
+            manifest = AI.load_canonical_record(manifest_path.read_bytes())
+            report_path = copied / manifest["evidence"][evidence_key]["path"]
+            report = AI.load_canonical_record(report_path.read_bytes(), allow_integers=True)
+            target = locate(report)
+            # Known defined before the edit, so this cannot pass by having
+            # renamed something that was already outside the set.
+            self.assertIn(target["projection"], AI.MEASURED_PROJECTIONS)
+            target["projection"] = "digest-neutral-bound-sha256/v2"
+            self.assertNotIn(target["projection"], AI.MEASURED_PROJECTIONS)
+            changed = AI.canonical_record_bytes(report, allow_integers=True)
+            report_path.write_bytes(changed)
+            manifest["evidence"][evidence_key]["sha256"] = hashlib.sha256(changed).hexdigest()
+            manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+            self.assertRefusal(code, AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT)))
+
+    def test_undefined_measurement_projection_refuses(self):
+        self.assert_undefined_projection_refuses(
+            "measurement_record",
+            lambda report: report["documents"][0]["compact"],
+            "WAI-E-MEASURE.PROJECTION",
+        )
+
+    def test_undefined_parity_projection_refuses(self):
+        self.assert_undefined_projection_refuses(
+            "parity_record",
+            lambda report: report["results"][0]["compact"],
+            "WAI-E-PARITY.PROJECTION",
+        )
+
+    def edited_token_count_tree(self, destination: Path, shift: int, *, consistent: bool) -> Path:
+        """A copy whose measurement record has one token count moved by hand.
+
+        `consistent` decides how far the edit is carried. False moves
+        `documents[0].compact.tokens` and nothing else. True moves every field
+        the checker recomputes from it -- that document's `one_document.tokens`
+        and `delta_tokens`, the three `totals` token fields, the
+        `compact_plus_bootstrap_tokens` and `delta_tokens` of every `amortised`
+        prefix that includes it, and the `measurement.result` event that carries
+        it -- using the same formulas `measure_manifest` uses.
+
+        The record's manifest binding is rebound either way, so what the two
+        cases separate is the record's internal arithmetic and nothing else. No
+        byte of any measured stream moves, so every `sha256` and `bytes` in the
+        record stays exactly right; only counts change.
+        """
+        copied = self.copied_root(destination)
+        manifest_path = copied / MANIFEST.relative_to(ROOT)
+        manifest = AI.load_canonical_record(manifest_path.read_bytes())
+        report_path = copied / manifest["evidence"]["measurement_record"]["path"]
+        report = AI.load_canonical_record(report_path.read_bytes(), allow_integers=True)
+
+        bootstrap = report["bootstrap"]["tokens"]
+        documents = report["documents"]
+        documents[0]["compact"]["tokens"] += shift
+        if consistent:
+            for document in documents:
+                compact = document["compact"]["tokens"]
+                source = document["source"]["tokens"]
+                document["one_document"]["tokens"] = compact + bootstrap
+                document["one_document"]["delta_tokens"] = str(compact + bootstrap - source)
+            source_total = sum(item["source"]["tokens"] for item in documents)
+            compact_total = sum(item["compact"]["tokens"] for item in documents)
+            report["totals"]["compact_tokens"] = compact_total
+            report["totals"]["compact_plus_bootstrap_tokens"] = compact_total + bootstrap
+            report["totals"]["delta_tokens"] = str(compact_total + bootstrap - source_total)
+            for count, row in enumerate(report["amortised"], 1):
+                selected = documents[:count]
+                sources = sum(item["source"]["tokens"] for item in selected)
+                compacts = sum(item["compact"]["tokens"] for item in selected)
+                row["compact_plus_bootstrap_tokens"] = compacts + bootstrap
+                row["delta_tokens"] = str(compacts + bootstrap - sources)
+            for event in report["events"]:
+                if event["event"] == "measurement.result":
+                    document = next(
+                        item for item in documents if item["fixture_id"] == event["fixture_id"]
+                    )
+                    event["tokens"] = document["compact"]["tokens"]
+
+        changed = AI.canonical_record_bytes(report, allow_integers=True)
+        report_path.write_bytes(changed)
+        manifest["evidence"]["measurement_record"]["sha256"] = hashlib.sha256(changed).hexdigest()
+        manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+        return copied
+
+    def test_an_edited_token_count_refuses_on_its_own(self):
+        """One count moved and nothing else: the record's own arithmetic catches it.
+
+        `check` recomputes `one_document`, `totals`, `amortised` and every
+        `measurement.result` event from `documents[*]`, so a count that moves
+        alone contradicts the numbers derived from it and the whole document
+        comparison refuses. This is the half of the guard that works, and it is
+        recorded so the sibling case below cannot be read as saying the counts
+        are unguarded altogether.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.edited_token_count_tree(Path(temporary), -5, consistent=False)
+            self.assertRefusal(
+                "WAI-E-MEASURE.RECORD", AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT))
+            )
+
+    def test_a_consistent_token_count_edit_is_not_detected(self):
+        """The same count moved with every derived number moved to match: accepted.
+
+        S3-R2-05, pinned rather than argued. `_measurement_material` carries
+        `tokens` over from the supplied record into the value it compares
+        against, so the count is the one field in the record that `check` never
+        recomputes; it verifies each measured stream's `sha256` and `bytes`
+        against the exact projected bytes and takes the count beside them on
+        trust. Recomputing it means consulting the model, which `check` must not
+        do.
+
+        The consequence this fixes in place: `delta_tokens` moves from `-165` to
+        `-170` and `check` still exits 0 with no refusal, so the number the
+        delivery is accepted on, and `WAI-E-MEASURE.NON_NEGATIVE_DELTA` with it,
+        rest on the run having been honest rather than on anything mechanical.
+        An edit in the other direction passes the same way.
+
+        What still constrains a tamper is recorded by the sibling case above and
+        by the rebinding this helper has to do: the edit must be carried through
+        every derived field, the record's manifest binding must be rebound, and
+        `tests/promise_machine_coverage.json` binds the record too, so it is
+        visible in a diff and invisible to every gate.
+
+        This case is expected to fail the moment the counts are bound to the run
+        that produced them. Deleting it is then the right move, and it should be
+        deleted deliberately rather than found mysteriously red.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.edited_token_count_tree(Path(temporary), -5, consistent=True)
+            records = AI.check_manifest(copied, str(MANIFEST.relative_to(ROOT)))
+            self.assertFalse(
+                [item for item in records if item["outcome"] == "refused"],
+                "check now detects a consistent token-count edit; delete this case",
+            )
+            self.assertEqual(records[-1]["event"], "run.summary")
+            self.assertEqual(records[-1]["outcome"], "accepted")
+            report = AI.load_canonical_record(
+                (copied / "tests/fixtures/agent-instruction-v1/evidence/measurement.json").read_bytes(),
+                allow_integers=True,
+            )
+            self.assertEqual("-170", report["totals"]["delta_tokens"])
+            committed = AI.load_canonical_record(
+                (ROOT / "tests/fixtures/agent-instruction-v1/evidence/measurement.json").read_bytes(),
+                allow_integers=True,
+            )
+            self.assertEqual("-165", committed["totals"]["delta_tokens"])
 
 
 class DigestNeutralProjectionTests(unittest.TestCase):

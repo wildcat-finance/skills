@@ -3487,7 +3487,7 @@ def _corpus_sha256(manifest: Mapping[str, Any]) -> str:
     verifies each one against the bytes on disk -- `WAI-E-DIGEST.SOURCE` and
     `WAI-E-DIGEST.ARTIFACT` are untouched -- so a tampered bound document is
     caught exactly where it was before. What stops happening is a *measurement*
-    being declared stale by a change that moved no measured byte. ADR-074
+    being declared stale by a change that moved no measured byte. ADR-076
     records the choice and the alternatives that were rejected for it, including
     what it deliberately leaves alone: `measure` still records each document's
     `canonical_model` and `compact` as digests of the *raw* artefact bytes, so
