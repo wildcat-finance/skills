@@ -4,7 +4,7 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "4266527191298ffce23c7191979f22e1da6b8f45b2c21bf1518901bd609a13c1"
+      "sha256": "28db0c71286ade17b6f3a281c8b9127f53b288d35943aff1d5e48ff1873d84ea"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
@@ -28,8 +28,8 @@
         "sha256": "7cfd343c6d8fd498ea1084f8ed93e0dcf5fe1262afc1ee00fb8f4ac43b348c93"
       },
       {
-        "path": "docs/decisions/ADR-074-digest-neutral-measured-corpus.md",
-        "sha256": "504ed674633e3fb807837128a95faa50618206d696b7b847abdbd3a65fdfc4ff"
+        "path": "docs/decisions/ADR-075-digest-neutral-measured-corpus.md",
+        "sha256": "c3023689accf21432f078e10fa5a86cffa00e113eb1885b800bd879aa7c85ca4"
       }
     ],
     "fixtures": [
@@ -122,7 +122,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "c63a4daf33e93e0979712eade1353b701f8fc9bef6ba6619ff9837dbb0c21ddf",
+      "sha256": "b9551e2e63c5013037b4c7fdc28885243145d405d0eacf747b672d4f978dc782",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",

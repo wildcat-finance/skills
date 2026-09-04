@@ -3280,8 +3280,8 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
     def test_specialised_coverage_binds_runtime_documentation_and_manifest(self):
         """The records a reader needs to interpret this capability, bound by digest.
 
-        ADR-074 joins the list at step 3. The row binds the capability's own
-        decision records, and ADR-074 is one: it is what a reader consults on
+        ADR-075 joins the list at step 3. The row binds the capability's own
+        decision records, and ADR-075 is one: it is what a reader consults on
         finding that a measurement record's `compact.sha256` does not match
         `compact.wai` on disk. Leaving it unbound would be the same drift
         S2-R2-04 filed against the prover -- a document the behaviour depends on,
@@ -3298,7 +3298,7 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             [
                 "docs/agent-instruction-language-v1.md",
                 "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
-                "docs/decisions/ADR-074-digest-neutral-measured-corpus.md",
+                "docs/decisions/ADR-075-digest-neutral-measured-corpus.md",
             ],
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]

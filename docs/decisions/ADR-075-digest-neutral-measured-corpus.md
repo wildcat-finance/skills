@@ -1,4 +1,4 @@
-# ADR-074: Measure the instruction corpus through a digest-neutral projection
+# ADR-075: Measure the instruction corpus through a digest-neutral projection
 
 ## Status
 
@@ -7,8 +7,11 @@ Accepted, 2026-09-04, for
 
 The Fiat runbook allocated this decision as `ADR-<next>`, which was ADR-069 on
 the branch the step was cut from. Concurrent work landed ADR-069 through
-ADR-073 on `main` while the run was in flight, so the decision lands as
-ADR-074.
+ADR-074 on `main` while the run was in flight, so the decision lands as
+ADR-075. It was renumbered twice for this reason, the second time during the
+step's prose pass, after ADR-074 was taken on `main` between the step's
+implementation and its prose. Whoever renumbers it again should expect the same
+cause and check the default branch immediately before merging.
 
 Depends on [ADR-062](ADR-062-encode-a-closed-agent-instruction-model.md), which
 settled two things this record does not reopen: that the bound corpus retains
@@ -22,18 +25,18 @@ whole-file binding.
 
 Three instruction documents are bound into `tests/fixtures/agent-instruction-v1`
 by whole-file SHA-256. Each is bound four times over: the manifest records the
-document's whole-file digest, the three artefacts derived from it — `model.json`,
-`source-spans.json`, and the compact document's `h64:` literal — each embed that
-same digest, and the manifest then binds each of those artefacts by a digest of
-the bytes the embedding sits inside.
+document's whole-file digest, the three artefacts derived from it, namely
+`model.json`, `source-spans.json`, and the compact document's `h64:` literal,
+each embed that same digest, and the manifest then binds each of those artefacts
+by a digest of the bytes the embedding sits inside.
 
 `_corpus_sha256` digested a subject carrying `fixtures` whole, so it carried all
 four. Editing a bound document *outside* its reviewed span therefore moved the
 corpus digest, even though the reviewed span, its digest, every recorded binding
 offset, and every byte the measurement actually counted were untouched.
 
-Both committed evidence records — `evidence/measurement.json` and
-`evidence/parity.json` — carry that corpus digest, and `check` compares each one
+Both committed evidence records, `evidence/measurement.json` and
+`evidence/parity.json`, carry that corpus digest, and `check` compares each one
 against the recomputed value. So a typo fix past the end of a reviewed span
 refused the whole fixture with `WAI-E-DIGEST.CORPUS`, and clearing that refusal
 required reissuing both records.
@@ -57,9 +60,9 @@ subject stales the record wholesale rather than in one place.
 Keep the manifest's bindings exactly as they are, and change only what the
 measured corpus's identity is computed from.
 
-`digest_neutral_projection` substitutes one fixed marker — 64 `f` characters,
-well-formed lowercase hexadecimal that is not a plausible SHA-256 output — for
-every digest the manifest binds a path by. That set is each fixture's
+`digest_neutral_projection` substitutes one fixed marker for every digest the
+manifest binds a path by. The marker is 64 `f` characters, well-formed lowercase
+hexadecimal that is not a plausible SHA-256 output. That set is each fixture's
 whole-file `source.sha256` and all five of its `artifacts.*.sha256`: six per
 fixture, eighteen across the committed corpus. It is the same enumeration
 `bound_digests` reports in
@@ -72,8 +75,8 @@ Substitution is by byte rather than by field path, because one embedding has no
 addressable path: the compact document carries the digest as an `h64:` literal
 inside a codec's byte stream, not as JSON.
 
-`_corpus_sha256` keeps its subject's shape — schema, the three counts, the risk
-classes, and `fixtures` whole — and digests those canonical bytes *after* the
+`_corpus_sha256` keeps its subject's shape: schema, the three counts, the risk
+classes, and `fixtures` whole. It digests those canonical bytes *after* the
 projection has run over them. The corpus's identity is therefore the reviewed
 span digest and the projected digests, in place of the whole-file digest and the
 raw artefact digests.
@@ -110,8 +113,8 @@ measured byte.
 ## Alternatives
 
 - **Vendor a deterministic tokenizer and leave the corpus definition alone.**
-  This is the direct fix for the underlying grievance — that reissuing evidence
-  needs a machine almost nobody has — and it would make the measurement
+  This is the direct fix for the underlying grievance, which is that reissuing
+  evidence needs a machine almost nobody has, and it would make the measurement
   reproducible anywhere. Rejected because it reissues the recorded counts
   against different model bytes: the committed measurement is an observation of
   `gpt-oss:120b`, and replacing the tokenizer replaces the thing observed while
@@ -148,11 +151,11 @@ is staled by it. An in-span edit still moves it and still refuses, at
 
 Switching the subject moves the corpus digest once, as a one-off. Both committed
 evidence records, their `correlation_id`, and every `events[*].correlation_id`
-are stale against the new subject from the moment this lands, and only one
-`measure` run and one `parity` run can replace them. The tests that compare a
-committed record against the recomputed digest assert the post-reissue value and
-are red until that run happens, which is the honest way to make the reissue's
-absence visible.
+went stale against the new subject the moment the subject changed, and only a
+`measure` run and a `parity` run can replace them. This step spent one of each
+and reissued both records, so the tests that compare a committed record against
+the recomputed digest assert the reissued value and pass. Any later change that
+moves the subject again costs the same pair of runs, on the same pinned machine.
 
 The corpus digest is now weaker evidence than it was, and deliberately so. It no
 longer distinguishes two revisions of the corpus that differ only in a bound
