@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..errors import AlexandriaError
-from . import clearpool, goldfinch
+from . import aave_v4, clearpool
 
 
 @dataclass(frozen=True)
@@ -16,8 +16,8 @@ class MappingResult:
 
 
 REGISTRY = {
+    "aave-v4": aave_v4.map_capture,
     "clearpool": clearpool.map_capture,
-    "goldfinch": goldfinch.map_capture,
 }
 
 

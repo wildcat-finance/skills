@@ -561,6 +561,7 @@ class PromiseStructureTests(unittest.TestCase):
                 "alexandria-release-statement",
                 "alexandria-address-query",
                 "alexandria-compound-method-proof",
+                "alexandria-proof-backed-state",
             },
             "plugins/ariadne/skills/ariadne/SKILL.md": {
                 "ariadne-capture-statement",

@@ -353,7 +353,8 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             out,
             "surveyor",
-            ("topic", "target_dir", "base_ref", "output_path", "design_output_path"),
+            ("topic", "target_dir", "base_ref", "output_path",
+             "design_output_path", "plugin_root"),
         )
         self.assertEqual(out["brief"]["topic"], "packet work")
         self.assertEqual(out["brief"]["target_dir"], os.path.realpath(self.target))
@@ -397,7 +398,8 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             mason,
             "mason",
-            ("runbook_step", "branch", "branch_from", "design_evidence"),
+            ("runbook_step", "branch", "branch_from", "design_evidence",
+             "plugin_root"),
         )
         self.assertEqual(
             set(mason["brief"]["design_evidence"]),
@@ -429,8 +431,9 @@ class TestDelegationPackets(HexctlCase):
             warden,
             "warden",
             ("step_branch", "stacked_branch", "security_suite", "plugin_root",
-             "audit_log_path", "round", "audit_filter", "risk_register",
-             "runbook_step", "design_evidence"),
+             "audit_log_path", "step", "round", "warden_continuity",
+             "audit_filter", "risk_register", "runbook_step",
+             "design_evidence"),
         )
         risk = warden["brief"]["risk_register"]
         self.assertEqual(set(risk), {"markdown", "path", "sha256"})
@@ -698,6 +701,65 @@ class TestDelegationPackets(HexctlCase):
                 module.bounded_git(self.dir, ["diff"])
         self.assertIn("2097152-byte output cap", error.getvalue())
 
+
+    def test_brief_out_diverts_the_body_and_leaves_the_directive_readable(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        inline = self.next_json()
+        self.assertTrue(inline["brief"])
+        diverted = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(diverted["brief"], {})
+        self.assertEqual(
+            diverted["brief_path"],
+            os.path.realpath(os.path.join(self.target, ".hexaemeron", "brief.json")),
+        )
+        with open(diverted["brief_path"], encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), inline["brief"])
+        for key in ("do", "agent", "step", "round", "state_sha256", "audit_filter"):
+            self.assertEqual(diverted.get(key), inline.get(key))
+
+    def test_brief_out_refuses_a_path_outside_the_target(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("next", "--brief-out", "../escape.json", expect=2)
+
+    def test_brief_out_leaves_an_inline_directive_alone(self):
+        self.init("packet work")
+        self.run_ctl("halt", "--reason", "waiting on the user")
+        out = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(out["do"], "halted")
+        self.assertNotIn("brief_path", out)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.target, ".hexaemeron", "brief.json"))
+        )
+
+    def test_status_field_returns_one_value_not_the_state(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        one = self.run_ctl("status", "--field", "observation_run_id").stdout
+        self.assertEqual(json.loads(one), whole["observation_run_id"])
+        self.assertLess(len(one), len(json.dumps(whole)))
+        for absent in ("steps", "receipts", "config"):
+            self.assertNotIn(absent, one)
+
+    def test_status_field_walks_a_dotted_path(self):
+        self.to_audit()
+        whole = json.loads(self.run_ctl("status", "--json").stdout)
+        out = self.run_ctl("status", "--field", "config.audit.max_rounds").stdout
+        self.assertEqual(json.loads(out), whole["config"]["audit"]["max_rounds"])
+
+    def test_status_field_refuses_an_unknown_path(self):
+        self.to_audit()
+        self.run_ctl("status", "--field", "config.audit.nope", expect=2)
+        self.run_ctl("status", "--field", "not_a_key", expect=2)
+
+    def test_status_field_and_json_are_mutually_exclusive(self):
+        self.to_audit()
+        self.run_ctl("status", "--json", "--field", "observation_run_id", expect=2)
 
 class XRayReuseStateSeparationTests(HexctlCase):
     FORBIDDEN_FIELDS = frozenset(
@@ -1998,7 +2060,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_prs[url] = self.fake_pr(
             url,
             state["run_branch"],
-            state["base"],
+            self.integration_base(state),
             self.fake_refs[state["run_branch"]],
             "f" * 40,
         )
@@ -2039,7 +2101,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_prs[url] = self.fake_pr(
             url,
             state["run_branch"],
-            state["base"],
+            self.integration_base(state),
             divergent_tip,
             "f" * 40,
         )
@@ -3005,7 +3067,8 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.assertEqual(mason_first, mason_second)
         self.assertEqual(
             set(mason_first["brief"]),
-            {"runbook_step", "branch", "branch_from", "design_evidence"},
+            {"runbook_step", "branch", "branch_from", "design_evidence",
+             "plugin_root"},
         )
         expected_markdown = "## Step 1: Core\n\n**Goal.** Ship Core.\n"
         expected_source = {
@@ -3037,8 +3100,9 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             set(warden_first["brief"]),
             {
                 "step_branch", "stacked_branch", "security_suite", "plugin_root",
-                "audit_log_path", "round", "audit_filter", "risk_register",
-                "runbook_step", "design_evidence",
+                "audit_log_path", "step", "round", "warden_continuity",
+                "audit_filter", "risk_register", "runbook_step",
+                "design_evidence",
             },
         )
         self.assertEqual(
@@ -3306,13 +3370,21 @@ class TestProseAndPush(HexctlCase):
         with open(state_path, encoding="utf-8") as handle:
             state = json.load(handle)
         state["receipts"]["task_issue"] = issue
+        state["receipts"].pop("run_anchor")
         with open(ledger_path, encoding="utf-8") as handle:
             entries = [json.loads(line) for line in handle if line.strip()]
         controller = hexctl_module()
-        entry = entries[-1]
-        entry.pop("hash")
-        entry["state"] = controller.state_fingerprint(state)
-        entry["hash"] = hashlib.sha256(controller.canonical(entry).encode()).hexdigest()
+        entries[0]["data"].pop("run_anchor_sha256")
+        previous = "genesis"
+        for index, entry in enumerate(entries):
+            entry["prev"] = previous
+            entry.pop("hash")
+            if index == len(entries) - 1:
+                entry["state"] = controller.state_fingerprint(state)
+            entry["hash"] = hashlib.sha256(
+                controller.canonical(entry).encode()
+            ).hexdigest()
+            previous = entry["hash"]
         with open(state_path, "w", encoding="utf-8") as handle:
             json.dump(state, handle, indent=2)
             handle.write("\n")
@@ -5515,3 +5587,133 @@ class RewrittenStackRefusal(unittest.TestCase):
         state["steps"][2]["receipts"] = {}
         message = self._refusal(state, 2, {})
         self.assertIsNone(message)
+
+
+class WardenContinuityTests(HexctlCase):
+    """The audit-round brief says which Warden a round belongs to."""
+
+    PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    WARDEN_DOC = os.path.join(PLUGIN, "agents", "warden.md")
+    LOOP_DOC = os.path.join(
+        PLUGIN, "skills", "fiat", "references", "audit-loop.md"
+    )
+
+    WAIVED = '"waived: prose-only repo"'
+
+    def to_ready_audit(self, titles=("Scaffold", "Core")):
+        self.to_steps(titles=titles)
+        self.run_ctl("record", "security_suite", self.WAIVED)
+
+    def audit_brief(self):
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "audit-round")
+        return directive["brief"]
+
+    def another_round(self):
+        self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
+
+    def close_step(self, number):
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit", "--fixes-ref", "deadbeef")
+        self.run_ctl(
+            "done", "prose", "--files", "3",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl(
+            "done", "push",
+            "--pr-url",
+            f"https://github.com/wildcat-finance/example/pull/{number}",
+            "--head-commit", self.fake_sha(f"head{number}"),
+            "--pr-base", self.step_base(number),
+        )
+
+    def test_a_steps_first_round_starts_a_new_warden(self):
+        self.to_ready_audit()
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        brief = self.audit_brief()
+        self.assertEqual(brief["warden_continuity"], "new")
+        self.assertEqual(brief["step"], 1)
+        self.assertEqual(brief["round"], 1)
+
+    def test_later_rounds_of_one_step_continue_the_same_warden(self):
+        self.to_ready_audit()
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        self.another_round()
+        second = self.audit_brief()
+        self.assertEqual(second["round"], 2)
+        self.assertEqual(second["warden_continuity"], "same-agent")
+        self.another_round()
+        third = self.audit_brief()
+        self.assertEqual(third["round"], 3)
+        self.assertEqual(third["warden_continuity"], "same-agent")
+        self.assertEqual(third["step"], 1)
+
+    def test_a_new_step_starts_its_own_warden(self):
+        self.to_ready_audit()
+        self.finish_step(1)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(2),
+            "--commit", "abc2",
+        )
+        brief = self.audit_brief()
+        self.assertEqual(brief["step"], 2)
+        self.assertEqual(brief["round"], 1)
+        self.assertEqual(brief["warden_continuity"], "new")
+
+    def test_four_steps_of_three_rounds_start_exactly_four_wardens(self):
+        titles = ("Scaffold", "Core", "Wire", "Polish")
+        self.to_ready_audit(titles=titles)
+        observed = []
+        for number in range(1, len(titles) + 1):
+            self.run_ctl(
+                "done", "implement", "--branch", self.step_branch(number),
+                "--commit", f"abc{number}",
+            )
+            observed.append(self.audit_brief())
+            self.another_round()
+            observed.append(self.audit_brief())
+            self.another_round()
+            observed.append(self.audit_brief())
+            self.close_step(number)
+        self.assertEqual(len(observed), 3 * len(titles))
+        fresh = [item for item in observed if item["warden_continuity"] == "new"]
+        self.assertEqual(len(fresh), len(titles))
+        self.assertEqual(
+            [item["step"] for item in fresh], list(range(1, len(titles) + 1))
+        )
+        self.assertEqual([item["round"] for item in fresh], [1] * len(titles))
+        for item in observed:
+            if item["round"] > 1:
+                self.assertEqual(item["warden_continuity"], "same-agent")
+
+    def test_the_field_never_claims_a_document_was_read(self):
+        self.to_ready_audit()
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        self.another_round()
+        brief = self.audit_brief()
+        self.assertEqual(brief["warden_continuity"], "same-agent")
+        self.assertNotIn("read", json.dumps(brief).lower())
+
+    @staticmethod
+    def flowed(path):
+        """The document as one line, so a wrapped sentence still matches."""
+        with open(path, encoding="utf-8") as handle:
+            return " ".join(handle.read().split())
+
+    def test_both_documents_keep_the_unreadable_host_fallback(self):
+        warden = self.flowed(self.WARDEN_DOC)
+        loop = self.flowed(self.LOOP_DOC)
+        self.assertIn("warden_continuity", warden)
+        self.assertIn("does not mean the suite documents are", warden)
+        self.assertIn("cannot keep an agent", loop)
+        self.assertIn("reads the suite documents in full", loop)
+        self.assertIn("still pays for the full read", loop)

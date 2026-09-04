@@ -162,7 +162,7 @@ last filesystem boundary to check.
 
 - Three `.gitattributes` lines binding about 9.3 MB of the 9.43 MB JSON weight
   at hard grade, in `plugins/alexandria/examples/compound-v3-phase0-v0/input/responses`,
-  `plugins/tabularium/examples/goldfinch-v0` and `plugins/horos/docs/evidence`.
+  `plugins/tabularium/examples/aave-v4-v0` and `plugins/horos/docs/evidence`.
 - A JSON structure map, if the maintainer wants it inside this run instead.
 - The held frontier job: marker self-exclusion, then the content-addressed rule
   receipt, then the Markdown outline extractor.

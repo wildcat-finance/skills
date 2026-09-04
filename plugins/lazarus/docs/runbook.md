@@ -135,25 +135,25 @@ caller IDs, notifications, mixed batches, malformed JSON-RPC, unsupported and
 write methods, fixtures that fail verification, stable miss payloads,
 concurrent reads, loopback binding and blocked outbound sockets.
 
-## Step 6: Ship and run the Goldfinch demonstration
+## Step 6: Ship and run the Aave v4 demonstration
 
-**Goal.** Prove the prototype with a checked-in, offline-verifiable Goldfinch
+**Goal.** Prove the prototype with a checked-in, offline-verifiable Aave v4
 fixture and an application test using ordinary JSON-RPC.
 
 **Entry.** The pushed tip of `step-5-replay-exact-requests-and-fail-closed`.
 
-**Exit.** `plugins/lazarus/examples/goldfinch-v0/` contains the fixed plan,
+**Exit.** `plugins/lazarus/examples/aave-v4-spoke-v0/` contains the fixed plan,
 captured header, proof-backed account/code/slot data, the named transaction
 receipt, a small log query, schemas and manifest. Its demo script verifies the
 fixture, starts replay, reads the committed code, slot, receipt and logs,
 observes a miss for slot `0x1`, rejects a one-nibble proof mutation and rebuilds
 the same manifest bytes and digests. `python3
-plugins/lazarus/examples/goldfinch-v0/demo.py` and every repository check named
+plugins/lazarus/examples/aave-v4-spoke-v0/demo.py` and every repository check named
 in root `AGENTS.md` pass.
 
-**Files.** `plugins/lazarus/examples/goldfinch-v0/{README.md,plan.json,header.json,rpc.jsonl,proofs.jsonl,manifest.json,demo.py}`,
-`plugins/lazarus/examples/goldfinch-v0/schemas/`,
-`plugins/lazarus/tests/test_goldfinch.py`, `plugins/lazarus/README.md`,
+**Files.** `plugins/lazarus/examples/aave-v4-spoke-v0/{README.md,plan.json,header.json,rpc.jsonl,proofs.jsonl,manifest.json,demo.py}`,
+`plugins/lazarus/examples/aave-v4-spoke-v0/schemas/`,
+`plugins/lazarus/tests/test_aave_v4.py`, `plugins/lazarus/README.md`,
 `README.md` and `specs/lazarus.md`.
 
 **Tests.** Add the end-to-end demo test, byte-for-byte rebuild check, replay

@@ -19,7 +19,7 @@ venue-qualified event interpretation. Each output row keeps its source selector,
 native record, mapping rule, adapter version, and coverage gap so a common
 format does not erase what the venue meant.
 
-Goldfinch, Euler v1, and Euler v2 releases ship, along with one non-canonical
+Aave v4, Euler v1, and Euler v2 releases ship, along with one non-canonical
 Compound v3 Phase 0 execution witness. The canonical Compound adapter and
 Ethereum USDC interval specimen remain Phase 1 work.
 
@@ -40,8 +40,8 @@ credit claim.
 A public record of on-chain credit events that keeps the venue's source record
 beside every common row.
 
-The checked-in releases preserve three narrow credit records: Goldfinch's
-borrower-side index, one Euler v1 canonical-proxy block and one Euler V2 owner
+The checked-in releases preserve three narrow credit records: an Aave v4
+consensus-log window, one Euler v1 canonical-proxy block and one Euler V2 owner
 activity response from the Euler V3 API. Each can be rebuilt after its source
 endpoint changes or disappears.
 
@@ -52,7 +52,7 @@ prove the recorded method for one transaction; they are not canonical credit
 events or a market history.
 
 The common event families do not flatten the venue. A row says
-`goldfinch.borrow`, `euler-v1.borrow` or `euler-v2.interest-accrued`, keeps the
+`aave-v4.borrow`, `euler-v1.borrow` or `euler-v2.interest-accrued`, keeps the
 complete native entity, and names the mapping rule and adapter version that
 produced it. A repayment row records the venue event; it does not say that the
 borrower's whole debt was settled. Euler interest remains accrual rather than
@@ -70,8 +70,10 @@ Three rules hold the release together:
 
 ## How it works
 
-The first release captures Goldfinch's borrower-side record: 34 borrow and 477
-repay entities mapped into 511 canonical rows. Two Euler releases now add a
+The first release captures an Aave v4 credit window from Ethereum consensus
+logs: 282 borrow and 218 repay logs across blocks 25855441 to 25870892, mapped
+into 500 canonical rows, with each amount's underlying token read from the
+spoke and the token itself. Two Euler releases now add a
 real Euler v1 canonical-proxy borrow log and a fixed Euler V2 owner/second
 activity response from the Euler V3 API. Each row keeps the complete
 venue-native record and names the source selector, adapter version and mapping
@@ -100,11 +102,11 @@ publisher authenticity or an independent chain proof.
 
 - the standard-library [`tabularium.py`](./scripts/tabularium.py)
   builder and offline verifier;
-- versioned event schemas [v1](./schemas/canonical-event-v1.json)
+- versioned event schemas [v1](./schemas/canonical-event-v2.json)
   and [v2](./schemas/canonical-event-v2.json), plus coverage
-  schemas [v1](./schemas/coverage-manifest-v1.json) and
+  schemas [v1](./schemas/coverage-manifest-v2.json) and
   [v2](./schemas/coverage-manifest-v2.json);
-- the complete [`goldfinch-v0`](./examples/goldfinch-v0/README.md)
+- the complete [`aave-v4-v0`](./examples/aave-v4-v0/README.md)
   release, its data dictionary and a fresh-directory rebuild demonstration;
 - source-bound [`euler-v1-v0`](./examples/euler-v1-v0/README.md)
   and [`euler-v2-v0`](./examples/euler-v2-v0/README.md)
@@ -139,7 +141,7 @@ From this directory, `plugins/tabularium`:
 
 ```bash
 python3 scripts/tabularium.py build \
-  --adapter <goldfinch|euler-v1|euler-v2> \
+  --adapter <aave-v4|euler-v1|euler-v2> \
   --source <release-dir>/source.json \
   --capture-manifest <release-dir>/capture.json \
   --out <release-dir>/events.jsonl \
@@ -157,7 +159,7 @@ python3 scripts/tabularium.py verify-compound-witness \
 ```
 
 `build` refuses a capture whose source digest, byte count, adapter, scope or
-source metadata disagrees with the preserved bytes. Goldfinch remains the
+source metadata disagrees with the preserved bytes. Aave v4 remains the
 default adapter for backward compatibility. It writes canonical JSONL and a
 coverage manifest only inside the release directory.
 
@@ -168,7 +170,7 @@ that do not match a fresh source rebuild.
 
 ## The checked-in releases
 
-[`examples/goldfinch-v0`](examples/goldfinch-v0/README.md) contains the
+[`examples/aave-v4-v0`](examples/aave-v4-v0/README.md) contains the
 unchanged source and capture manifest, the 511-row ledger, its coverage
 manifest, a data dictionary and a rebuild demonstration.
 
@@ -187,7 +189,7 @@ transition.
 From the repository root:
 
 ```bash
-python3 plugins/tabularium/examples/goldfinch-v0/rebuild.py
+python3 plugins/tabularium/examples/aave-v4-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v1-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v2-v0/rebuild.py
 python3 plugins/tabularium/examples/compound-v3-phase0-v0/rebuild.py
@@ -198,9 +200,11 @@ builds there, makes all four release files read-only, verifies them offline and
 compares the canonical and coverage bytes with the committed release. It never
 rewrites the example.
 
-The Goldfinch source also contains `_meta`, `callableLoans`, `creditLines` and
-`tranchedPools`. Their counts remain visible in the coverage manifest, but this
-adapter does not turn them into canonical events.
+The Aave v4 capture is a topic pair over a block range, so it has no unmapped
+remainder: `unsupported_events` is empty. Supply, withdraw and collateral-flag
+activity falls outside the two captured topics and is neither preserved nor
+counted. A repay log's last three data words were zero throughout and are
+never named.
 
 ## What it never proves
 
@@ -246,7 +250,7 @@ request.
 
 ## Reading further
 
-- [`examples/goldfinch-v0/DATA-DICTIONARY.md`](examples/goldfinch-v0/DATA-DICTIONARY.md)
+- [`examples/aave-v4-v0/DATA-DICTIONARY.md`](examples/aave-v4-v0/DATA-DICTIONARY.md)
   -- every canonical field and the limits of its meaning.
 - [`examples/euler-v1-v0/DATA-DICTIONARY.md`](examples/euler-v1-v0/DATA-DICTIONARY.md)
   and [`examples/euler-v2-v0/DATA-DICTIONARY.md`](examples/euler-v2-v0/DATA-DICTIONARY.md)

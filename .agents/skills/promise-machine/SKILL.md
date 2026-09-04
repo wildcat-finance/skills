@@ -52,7 +52,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Produce source-linked Solidity or Markdown chunks | [Lemma](../../../plugins/lemma/AGENTS.md) | `lemma` |
 | Apply executable credit laws | [Pandects](../../../plugins/pandects/AGENTS.md) | `pandects` |
 | Build a declared-address counterparty dossier | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
-| Shape the agent's own replies for an AuDHD reader, or shape durable agent-authored audit records and GitHub issue titles, bodies and comments | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
+| Shape the agent's own replies for an AuDHD reader, or shape every record it writes down, including durable agent-authored audit records, GitHub issue titles, bodies and comments, pull requests, repository documents and commit messages | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
 | Compare validated run observations across runs, or inspect the cross-run comparison boundary | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
 | Build a venue-qualified credit-event release | [Tabularium](../../../plugins/tabularium/AGENTS.md) | `tabularium` |
 

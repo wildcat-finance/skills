@@ -85,7 +85,7 @@ The issue-429 audit guard must preserve the exact pinned base bytes while
 permitting later append-only audit records, and its release proof must bind the
 generator digest recorded by that historical release rather than today's
 generator. The checkpoint reader gains an explicit JSON nesting ceiling under
-its existing byte ceiling. The published Goldfinch v1 producer stays
+its existing byte ceiling. The published Aave v4 v1 producer stays
 byte-identical: its descriptor-stage tests execute on hosted Ubuntu and report
 an explicit capability skip only on a host, such as macOS, that cannot expose a
 traversable process file-descriptor path; every other Lazarus test still runs.

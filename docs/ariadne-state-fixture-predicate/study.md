@@ -11,7 +11,7 @@ Assuming, unless corrected:
    exists on disk and never speaks to a node.
 4. Signing and signature checking stay outside Ariadne. `cosign` owns both.
 5. Lazarus is the producer this predicate describes. Its committed
-   `examples/goldfinch-v0/` fixture is the one the capture path is built against, which is the
+   `examples/aave-v4-spoke-v0/` fixture is the one the capture path is built against, which is the
    same release Lazarus's own held job names.
 6. Ariadne's own suite is not run by any workflow, so the evidence for this run is local. That
    is recorded rather than assumed.
@@ -43,11 +43,11 @@ A working prototype means all of these hold:
 
 ```text
 python3 plugins/ariadne/scripts/ariadne.py capture-state-fixture \
-  --fixture plugins/lazarus/examples/goldfinch-v0 \
-  --name goldfinch-v0 \
+  --fixture plugins/lazarus/examples/aave-v4-spoke-v0 \
+  --name aave-v4-spoke-v0 \
   --capture-tool lazarus --capture-version 0.1.0 \
   --capture-command python3 --capture-command scripts/lazarus.py \
-  --first-release-reason "the first preserved Goldfinch fixture" \
+  --first-release-reason "the first preserved Aave v4 fixture" \
   --out /tmp/fixture.json
 python3 plugins/ariadne/scripts/ariadne.py verify /tmp/fixture.json
 python3 -m unittest discover -s tests
@@ -76,7 +76,7 @@ code carries the three-way split as literal keys -- `proof_backed`, `header_boun
 `"canonical_chain_claim": False`, because nothing there establishes that the pinned block is on
 the canonical chain.
 
-The committed `examples/goldfinch-v0/manifest.json` carries `chain_id`, `block` with a hash and
+The committed `examples/aave-v4-spoke-v0/manifest.json` carries `chain_id`, `block` with a hash and
 number, eleven `components` each with a path, byte count and sha256, `evidence_counts`, a
 `fixture_digest` and a `tool_version`. `header.json` beside it carries `state_root`.
 
@@ -229,5 +229,5 @@ describes, and a canonical-chain claim is a boundary nothing here proved.
 - `plugins/lazarus/skills/lazarus/SKILL.md` -- the refusal this predicate enforces.
 - `plugins/lazarus/scripts/lazarus_lib/manifest.py`, `capture.py`, `verifier.py` -- the three
   class names and `canonical_chain_claim`, in code.
-- `plugins/lazarus/examples/goldfinch-v0/` -- the committed fixture the capture path reads.
+- `plugins/lazarus/examples/aave-v4-spoke-v0/` -- the committed fixture the capture path reads.
 - `audit/AUDIT.md`, `S4-R6-06` -- the recorded hole and its proposed patch.

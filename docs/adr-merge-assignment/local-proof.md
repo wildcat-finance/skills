@@ -6,8 +6,9 @@ Status: repository bootstrap, 4 September 2026.
 
 This proof covers the local allocator and the base-owned workflow contract.
 
-- The standing choice remains in
-  [the unnumbered decision](../decisions/drafts/assign-adr-numbers-at-merge-not-at-authoring.md).
+- The standing choice remains in the decision record
+  `adr/assign-adr-numbers-at-merge-not-at-authoring`, which keeps that identity
+  before and after its number is assigned.
 - Hypomnema's governed row remains in
   [`hypomnema/EVOLUTION.md`](../../plugins/hexaemeron/skills/hypomnema/EVOLUTION.md).
 - Fiat's composition evidence remains in

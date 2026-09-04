@@ -10,12 +10,12 @@ grade answers, reach a network, or mutate the release.
 
 ```bash
 python3 scripts/ariadne.py capture-grounded-agent \
-  --release ../berean/examples/goldfinch-demo-v0/release \
-  --name goldfinch-demo-v0 \
+  --release ../berean/examples/aave-v4-demo-v0/release \
+  --name aave-v4-demo-v0 \
   --producer-tool berean \
   --producer-version 0.2.0 \
   --producer-command python3 \
-  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
+  --producer-command plugins/berean/examples/aave-v4-demo-v0/rebuild.py \
   --first-capture-reason 'first Ariadne capture of this Berean release' \
   --output grounded-agent.intoto.json
 

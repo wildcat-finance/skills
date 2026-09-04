@@ -778,7 +778,7 @@ class QualificationAndProofTests(unittest.TestCase):
         self.assertIn("strict up-to-date checks off", text)
         self.assertIn("turn strict up-to-date checks on", text)
         self.assertNotIn("retain strict", text)
-        self.assertIn("assign-adr-numbers-at-merge-not-at-authoring.md", text)
+        self.assertIn("adr/assign-adr-numbers-at-merge-not-at-authoring", text)
         self.assertIn("hypomnema/EVOLUTION.md", text)
         self.assertIn("fiat/EVOLUTION.md", text)
 

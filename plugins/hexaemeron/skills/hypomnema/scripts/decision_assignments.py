@@ -102,6 +102,14 @@ class DecisionState:
     finals: dict[bytes, TreeEntry]
     numbers: dict[int, bytes]
     records: dict[bytes, TreeEntry]
+    # Final slugs carried by more than one numbered record. Legacy history may
+    # hold such pairs; they are tolerated only when every copy is inherited
+    # unchanged from the base, which the inherited-record checks establish.
+    duplicate_finals: frozenset[bytes]
+    # Markdown files directly under docs/decisions that are neither numbered
+    # records nor drafts. Legacy history may hold such a file; it is tolerated
+    # only when it is inherited unchanged from the base.
+    misplaced: dict[bytes, TreeEntry]
 
 
 def refuse(code: str) -> None:
@@ -454,6 +462,8 @@ def decision_state(entries: dict[bytes, TreeEntry]) -> DecisionState:
     finals: dict[bytes, TreeEntry] = {}
     numbers: dict[int, bytes] = {}
     records: dict[bytes, TreeEntry] = {}
+    duplicate_finals: set[bytes] = set()
+    misplaced: dict[bytes, TreeEntry] = {}
     for path, entry in entries.items():
         if path.startswith(DRAFTS):
             relative = path[len(DRAFTS):]
@@ -473,7 +483,9 @@ def decision_state(entries: dict[bytes, TreeEntry]) -> DecisionState:
         if b"/" in relative:
             continue
         if relative.endswith(b".md") and not relative.startswith(b"ADR-"):
-            refuse("draft-placement")
+            regular_blob(entry)
+            misplaced[path] = entry
+            continue
         if not relative.startswith(b"ADR-"):
             continue
         legacy_match = LEGACY_FINAL.fullmatch(path)
@@ -491,9 +503,12 @@ def decision_state(entries: dict[bytes, TreeEntry]) -> DecisionState:
         if match is not None:
             slug = valid_slug(match.group(2))
             if slug in finals:
-                refuse("identity-duplicate")
+                duplicate_finals.add(slug)
+                continue
             finals[slug] = entry
-    return DecisionState(drafts, finals, numbers, records)
+    return DecisionState(
+        drafts, finals, numbers, records, frozenset(duplicate_finals), misplaced
+    )
 
 
 def read_blob(repo: Repository, entry: TreeEntry) -> bytes:
@@ -582,6 +597,11 @@ def build_report(
             refuse("inherited-record-drift")
     if set(product_state.drafts) & set(product_state.finals):
         refuse("identity-duplicate")
+    if product_state.duplicate_finals - base_state.duplicate_finals:
+        refuse("identity-duplicate")
+    for path, entry in product_state.misplaced.items():
+        if base_state.misplaced.get(path) != entry:
+            refuse("draft-placement")
     if set(product_state.records) != set(base_state.records):
         refuse("numbered-addition")
     if not product_state.drafts:

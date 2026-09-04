@@ -1,8 +1,8 @@
 ---
 name: sapheneia
-description: Shape the agent's own replies for AuDHD readers with explicit actions, boundaries, state, evidence and next steps, or shape one agent-authored audit record, GitHub issue, or issue comment without dropping protected evidence. Session shaping persists until the user turns it off; the bounded durable-record operation does not activate session mode.
+description: Shape the agent's own replies for AuDHD readers with explicit actions, boundaries, state, evidence and next steps, and shape every piece of prose the agent writes down, including an agent-authored audit record, a GitHub issue title and body, a GitHub issue comment, a pull request, a repository document and a commit message, to the shortest form that keeps its protected evidence intact. Session shaping persists until the user turns it off; the bounded durable-record operation does not activate session mode.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 <p align="center">
@@ -21,7 +21,7 @@ another frontier pass after that ledger becomes mature.
 <!-- marketplace-context:start -->
 ## Where this sits
 
-Sapheneia keeps actions, boundaries, state, evidence, unknowns, and next steps visible for an AuDHD reader, or reshapes one bounded durable record without dropping protected evidence.
+Sapheneia keeps actions, boundaries, state, evidence, unknowns, and next steps visible for an AuDHD reader, and shortens every record the agent writes down to the least prose its protected evidence allows.
 
 **Current frontier.** Cross-model behaviour has not yet been held against a published AuDHD task corpus.
 <!-- marketplace-context:end -->
@@ -31,10 +31,11 @@ meaning plain and unambiguous. Shape output so an AuDHD engineer can start,
 inspect and act on it without recovering hidden state or decoding a social
 hint.
 
-Warden uses the bounded durable-record operation for Fiat audit records.
-Imprimatur and Vulgate govern wording, and Brevitas governs engineering-prose
-structure. Sapheneia changes none of their facts or gates. Shaping one durable
-record does not activate the session contract.
+Warden uses the bounded durable-record operation for Fiat audit records, and
+every other written surface goes through the same operation. Imprimatur and
+Vulgate govern wording, and Brevitas governs engineering-prose structure.
+Sapheneia changes none of their facts or gates. Shaping one durable record does
+not activate the session contract.
 
 A Synkrisis report may pass through the prose layers, but Sapheneia will not
 change its evidence or conclusion. Synkrisis renders that report from fixed
@@ -44,31 +45,49 @@ reshaping happens after the verification, never inside it.
 ## Activation contract
 
 Apply this skill to the agent itself. It governs commentary, progress updates,
-questions, error reports and final answers, not only documents the agent
-writes. It sits upstream of every artefact and every other skill's hand-off.
+questions, error reports and final answers, and it governs what the agent
+writes down as well. It sits upstream of every artefact and every other skill's
+hand-off.
 
 Keep it active for the rest of the session. Topic changes and context
 compaction do not turn it off. Stop only when the user says `stop sapheneia`,
 `stop audhd mode`, `stop adhd mode` or `normal mode`; confirm that once, then
 return to the default response style.
 
+Two operations do that work. Session shaping, below, holds the agent's replies
+to the ten ranked rules. The bounded durable-record operation holds every piece
+of prose the agent writes to a file or publishes to a host. Run the second one
+on every such record before writing or publishing it, whether or not session
+shaping is active.
+
 The reader's stated preference outranks this default. System, safety and
-target-repository rules still outrank it. During session shaping, when another
-skill controls an artefact's substance or format, preserve that contract and
-apply Sapheneia to the interaction around it. The bounded durable-record
-operation below is separate and preserves the owning format directly.
+target-repository rules still outrank it. Where another skill controls an
+artefact's substance or format, keep that substance and format exactly and
+shape only the prose it leaves free.
 
 Do not infer a diagnosis, ability, mood or intent from terse wording, delayed
 replies or a stated communication preference.
 
 ## Bounded durable-record operation
 
-Use `sapheneia-durable-record-shape` only for one of these agent-authored
-subjects:
+A durable record is any prose the agent writes down: anything that leaves the
+transcript for a file, a commit, or a host that somebody else reads. Use
+`sapheneia-durable-record-shape` on each one before it is written or published.
 
-- one agent-authored audit record;
-- one GitHub issue title and body; or
-- one GitHub issue comment.
+These surfaces are in scope, and the list does not close:
+
+1. audit prose, including one agent-authored audit record and its synopsis;
+2. one GitHub issue title and body, or one GitHub issue comment;
+3. one pull request title, body, or review comment;
+4. one repository document, such as a study, a runbook, a decision record, a README, or a runtime contract; and
+5. one commit message, or one comment the agent writes into source.
+
+Four subjects sit outside it. Bytes fixed by a generator, a digest, a manifest,
+or another skill's fixed template are not prose to shorten, so a generated
+copy, a receipt, a digest-bound document and a fixed-template report stay byte
+for byte as their owner produced them. An existing record stays as it was
+written, because the pass is prospective. Code, data and configuration values
+are not the subject. A quotation keeps the wording of whoever wrote it.
 
 This operation does not activate session-wide Sapheneia. Session activation
 and deactivation remain governed by their own promises.
@@ -78,13 +97,20 @@ evidence inventory. The inventory includes claims, qualifications, unknowns,
 negative evidence, identifiers, paths, `file:line` locations, hashes,
 addresses, selectors, numbers, dates, links, quotations, severities, findings,
 verdicts, status, and attributions. Required host structure includes the audit
-schema and fields, the issue queue's title prefix and body opening, or the
+schema and fields, the issue queue's title prefix and body opening, the pull
+request body's required sections, a document's own heading contract, or the
 comment context named by its owning workflow.
 
-Shorten only connective prose and process narration whose removal does not
-change a claim. Reorder prose only when every logical relation and attribution
-survives. Keep exact tokens byte-for-byte when their exact form carries
-evidence. Brevity yields to evidence and required host structure.
+Aim at the shortest candidate that still carries the whole inventory and the
+required structure. Cut process narration, restatement, hedges that carry no
+information, and connective prose whose removal changes no claim. Stop cutting
+where one more removal would drop or weaken an inventory item. Length is the
+only thing this operation trades: parity of fact, number, qualification and
+unknown is not negotiable.
+
+Reorder prose only when every logical relation and attribution survives. Keep
+exact tokens byte-for-byte when their exact form carries evidence. Brevity
+yields to evidence and required host structure.
 
 Check the shaped candidate before hand-off:
 
@@ -95,8 +121,8 @@ Check the shaped candidate before hand-off:
 5. Hand only the checked candidate to the next gate named by the owning workflow.
 
 The operation applies only before the new record is appended or published. It
-never rewrites existing durable records and does not claim that GitHub or an
-audit host enforced the checklist.
+never rewrites existing durable records, and it does not claim that GitHub, a
+repository check or an audit host enforced the checklist.
 
 ## What AuDHD changes here
 
@@ -225,13 +251,13 @@ default contract that yields immediately to the person using it.
 
 ### sapheneia-durable-record-shape
 
-- Promise: A completed durable-record pass establishes that one named agent-authored audit record, GitHub issue title and body, or GitHub issue comment retained its protected evidence inventory and required host structure while only claim-neutral connective or process prose changed.
+- Promise: A completed durable-record pass establishes that one named piece of agent-authored prose written to a file or published to a host, such as an audit record, a GitHub issue title and body, a GitHub issue comment, a pull request, a repository document or a commit message, retained its protected evidence inventory and required host structure while only claim-neutral connective or process prose changed.
 - Evidence: The named subject, exact source and candidate bytes, protected evidence inventory, required host structure, item-by-item comparison, and completed five-step durable-record check.
 - Evidence classes: recorded, checked, inferred
-- Boundary: The pass does not establish factual truth, completeness outside the inventory, server-side GitHub enforcement, audit-host enforcement, human authorship, or session-wide Sapheneia activation, and it never authorises changes to existing durable records.
+- Boundary: The pass does not establish factual truth, completeness outside the inventory, that the candidate is the shortest form available, server-side GitHub enforcement, audit-host enforcement, human authorship, or session-wide Sapheneia activation, and it never authorises changes to existing durable records.
 - Authorises: Handing the checked candidate to the next prose or publication gate named by the owning workflow, with its evidence gaps and structure still visible.
 - Consequence: 1
-- Refuses: A subject outside the three named surfaces, missing or mismatched inventory evidence, changed host structure, dropped uncertainty, changed severity or verdict, altered exact evidence, or a claim that the pass itself authorised publication.
+- Refuses: A subject whose bytes another owner fixes by generator, digest, manifest or fixed template, an existing record, code or data rather than prose, missing or mismatched inventory evidence, changed host structure, dropped uncertainty, changed severity or verdict, altered exact evidence, or a claim that the pass itself authorised publication.
 - Recovery: Restore the source content or required structure in the candidate, rebuild the inventory where needed, repeat the comparison, and rerun the bounded pass without editing an existing record.
 - Exceptions: none
 

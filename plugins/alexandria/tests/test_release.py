@@ -1,7 +1,6 @@
 """Raw release ingestion and hostile offline verification cases."""
 
 from copy import deepcopy
-import hashlib
 import json
 import os
 from pathlib import Path

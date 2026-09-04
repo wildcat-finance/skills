@@ -1135,7 +1135,12 @@ def stable_index(paths: list[Path]) -> tuple[set[str], list[Finding]]:
         if slug is not None:
             indexed.setdefault(slug, []).append(path)
     for slug, records in indexed.items():
-        if len(records) > 1:
+        # Two numbered records that share a slug are legacy numeric
+        # identities the repository already carries; the allocator tolerates
+        # them while they are inherited unchanged and refuses a draft that
+        # takes the slug, so only a draft makes the duplication a finding.
+        if len(records) > 1 and any(
+                path.parent.name == "drafts" for path in records):
             for path in records:
                 findings.append(Finding(
                     path, 1, "H008",

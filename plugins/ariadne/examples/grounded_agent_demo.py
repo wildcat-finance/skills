@@ -16,7 +16,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 ARIADNE = ROOT / "plugins" / "ariadne" / "scripts" / "ariadne.py"
 BEREAN_REBUILD = (
-    ROOT / "plugins" / "berean" / "examples" / "goldfinch-demo-v0" / "rebuild.py"
+    ROOT / "plugins" / "berean" / "examples" / "aave-v4-demo-v0" / "rebuild.py"
 )
 BEREAN_RELEASE = BEREAN_REBUILD.parent / "release"
 LAZARUS_READS = (
@@ -24,27 +24,27 @@ LAZARUS_READS = (
     / "plugins"
     / "lazarus"
     / "examples"
-    / "goldfinch-v0-release"
+    / "aave-v4-spoke-v0-release"
     / "fixture"
     / "rpc.jsonl"
 )
-SHIPPED = HERE / "goldfinch-demo-v0-agent.json"
-TAMPERED = HERE / "tampered" / "goldfinch-demo-v0-agent-policy-byte-changed.json"
+SHIPPED = HERE / "aave-v4-demo-v0-agent.json"
+TAMPERED = HERE / "tampered" / "aave-v4-demo-v0-agent-policy-byte-changed.json"
 
-NAME = "goldfinch-demo-v0"
+NAME = "aave-v4-demo-v0"
 FIRST_CAPTURE_REASON = "first Ariadne capture of this Berean release"
 PRODUCER_COMMAND = [
     "python3",
-    "plugins/berean/examples/goldfinch-demo-v0/rebuild.py",
+    "plugins/berean/examples/aave-v4-demo-v0/rebuild.py",
 ]
 EXPECTED_RELEASE_DIGEST = (
-    "7b104766e0df92de73d2b2cf98379e417151c0f824ada105c37eafdd367a7e8c"
+    "bf607a6f1ede680b13c6491cd4ffd92ba1f598f1ee7fc8615de23a90eefbdf84"
 )
 EXPECTED_STATEMENT_SHA256 = (
-    "03fb54176a417248447a5e92ce702acce229855b0378215fd68a4286130165bc"
+    "3da25eb77f22c83697f28118afd140bec15bdeea87bf84c7c7b5000c2851729f"
 )
 EXPECTED_SUBJECTS = 12
-EXPECTED_DECLARED_BYTES = 93165
+EXPECTED_DECLARED_BYTES = 28542
 
 
 class DemoError(Exception):
@@ -192,7 +192,7 @@ def prepare_producer_workspace(holder, source_reads):
         producer_plugin / "scripts",
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
     )
-    producer_example = producer_plugin / "examples" / "goldfinch-demo-v0"
+    producer_example = producer_plugin / "examples" / "aave-v4-demo-v0"
     producer_example.mkdir(parents=True)
     shutil.copyfile(BEREAN_REBUILD, producer_example / "rebuild.py")
     release = producer_example / "release"
@@ -305,8 +305,8 @@ def main():
         def identity_mutation(root):
             replace_one_byte(
                 root / "release.json",
-                b'"release_version":"goldfinch-demo-v0"',
-                b'"release_version":"goldfinch-demo-w0"',
+                b'"release_version":"aave-v4-demo-v0"',
+                b'"release_version":"aave-v4-demo-w0"',
             )
 
         def input_mutation(root):

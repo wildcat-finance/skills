@@ -29,7 +29,7 @@ return to the named source before accepting the answer.
 Berean pins the corpus, chain reads, recorded answers and evaluation needed to
 check a grounded protocol-agent release without rerunning its model.
 
-**Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Goldfinch mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+**Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
 <!-- marketplace-context:end -->
 
 Lemma can prepare source-linked material for the pinned corpus, and Lazarus can
@@ -130,15 +130,15 @@ python3 scripts/berean.py check-citation quote.json --corpus corpus-manifest.jso
 Verify the shipped reference release and its evaluation record offline:
 
 ```text
-python3 scripts/berean.py verify-release examples/goldfinch-demo-v0/release
-python3 scripts/berean.py run-evals examples/goldfinch-demo-v0/release
+python3 scripts/berean.py verify-release examples/aave-v4-demo-v0/release
+python3 scripts/berean.py run-evals examples/aave-v4-demo-v0/release
 ```
 
 Export the evaluation cases for an external runner in the Agent Skills case
 shape:
 
 ```text
-python3 scripts/berean.py export-cases examples/goldfinch-demo-v0/release --out cases.json
+python3 scripts/berean.py export-cases examples/aave-v4-demo-v0/release --out cases.json
 ```
 
 ## What this skill must refuse

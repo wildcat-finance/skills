@@ -92,7 +92,10 @@ What this makes easy, what it makes hard, and what it commits us to.
 Name that file `<slug>.md`, where the slug is lowercase ASCII kebab-case and
 at most 96 bytes. Cite it as `adr/<slug>` in Markdown and supported source
 comments before and after assignment. One slug names exactly one draft or
-final record. Existing `ADR-NNN-<slug>.md` records and `ADR-NNN` references
+final record; numbered records inherited unchanged from the base may share a
+slug, and a draft never takes one they hold. A Markdown file directly under
+`docs/decisions/` that is neither is tolerated only while it is inherited
+unchanged from the base; the product may not add or change one. Existing `ADR-NNN-<slug>.md` records and `ADR-NNN` references
 remain valid and are not rewritten to adopt the stable form.
 
 ## Assign the number from the integration base

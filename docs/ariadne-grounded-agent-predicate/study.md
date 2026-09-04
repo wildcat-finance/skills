@@ -6,10 +6,10 @@ Assumptions: issue #402 means the `ariadne-next` frontier job recorded at Ariadn
 
 Build `https://ariadne.wildcat.finance/grounded-agent/v1` for maintainers who need an in-toto statement joining a grounded-agent release to the corpus, preserved chain reads, recorded answers, evaluation material, promotion state, and explicit absences behind it. The predicate needs a published schema, registration, gates 2 and 5, predicate checks, conformance fixtures, a bounded local capture path, CLI wiring, and user-facing documentation consistent with Ariadne's existing release model.
 
-A working prototype can capture `plugins/berean/examples/goldfinch-demo-v0/release` without importing Berean at runtime or reaching a network, verify the resulting statement, and refuse a one-byte-tampered declared component. The demo commands are:
+A working prototype can capture `plugins/berean/examples/aave-v4-demo-v0/release` without importing Berean at runtime or reaching a network, verify the resulting statement, and refuse a one-byte-tampered declared component. The demo commands are:
 
 ```bash
-python3 plugins/ariadne/scripts/ariadne.py capture-grounded-agent --release plugins/berean/examples/goldfinch-demo-v0/release --name goldfinch-demo-v0 --first-capture-reason "first Ariadne capture of this Berean release" --output /tmp/grounded-agent.intoto.json
+python3 plugins/ariadne/scripts/ariadne.py capture-grounded-agent --release plugins/berean/examples/aave-v4-demo-v0/release --name aave-v4-demo-v0 --first-capture-reason "first Ariadne capture of this Berean release" --output /tmp/grounded-agent.intoto.json
 python3 plugins/ariadne/scripts/ariadne.py verify /tmp/grounded-agent.intoto.json
 ```
 
@@ -19,7 +19,7 @@ The test suite must also demonstrate the negative path without relying on `/tmp`
 
 The local design is already split along the right seams. `plugins/ariadne/scripts/ariadne_lib/registry.py` maps a predicate URI to its module; `core_predicate.py` owns common claims and commands; predicate modules own gates 2 and 5 plus domain checks; `schemas/*.json` publish the corresponding closed body shape; `tests/test_schema_drift.py` compares each schema with its module tables; and `tests/fixtures/conformance/` supplies minimal passing and breaching statements. `capture/state_fixture.py` is the closest bounded local adapter: it reads a sibling skill's public format without a runtime import, constrains files and paths, preserves evidence class rather than upgrading it, and constructs an Ariadne statement. `plugins/ariadne/docs/state-fixture.md` and `docs/capturing-a-state-fixture.md` separate predicate semantics from operator procedure.
 
-The producer contract is `plugins/berean/scripts/berean_lib/release.py`. `berean-release/v1` closes its fields, defines `release_digest` as sha-256 over canonical JSON of the named identity fields, pins corpus, optional reads, answers, optional evaluation files, retention and allowlists, and treats `promotions.jsonl` as a separately verified chain. `plugins/berean/README.md` says Berean owns corpus/read/answer/evaluation verification and Ariadne may bind the finished release. The reference producer bytes are under `plugins/berean/examples/goldfinch-demo-v0/release`.
+The producer contract is `plugins/berean/scripts/berean_lib/release.py`. `berean-release/v1` closes its fields, defines `release_digest` as sha-256 over canonical JSON of the named identity fields, pins corpus, optional reads, answers, optional evaluation files, retention and allowlists, and treats `promotions.jsonl` as a separately verified chain. `plugins/berean/README.md` says Berean owns corpus/read/answer/evaluation verification and Ariadne may bind the finished release. The reference producer bytes are under `plugins/berean/examples/aave-v4-demo-v0/release`.
 
 The last two merged pull requests that changed this subject were read before choosing a design:
 
@@ -92,7 +92,7 @@ The audit loop must enumerate every id as reviewed or not applicable. A clean ge
 - Frontier and contracts: `plugins/ariadne/skills/ariadne/EVOLUTION.md`, `plugins/ariadne/skills/ariadne/SKILL.md`, `plugins/ariadne/AGENTS.md`, root `PROMISE_MACHINE.md`.
 - Ariadne implementation: `plugins/ariadne/scripts/ariadne_lib/registry.py`, `core_predicate.py`, `gates.py`, `statement.py`, `capture/state_fixture.py`, `plugins/ariadne/scripts/ariadne.py`.
 - Ariadne public and test surface: `plugins/ariadne/schemas/state-fixture-v2.json`, `plugins/ariadne/docs/state-fixture.md`, `plugins/ariadne/docs/capturing-a-state-fixture.md`, `plugins/ariadne/docs/conformance.md`, `plugins/ariadne/tests/test_schema_drift.py`, `plugins/ariadne/tests/test_conformance.py`.
-- Berean producer contract: `plugins/berean/README.md`, `plugins/berean/scripts/berean_lib/release.py`, `plugins/berean/scripts/berean_lib/promote.py`, `plugins/berean/examples/goldfinch-demo-v0/release`.
+- Berean producer contract: `plugins/berean/README.md`, `plugins/berean/scripts/berean_lib/release.py`, `plugins/berean/scripts/berean_lib/promote.py`, `plugins/berean/examples/aave-v4-demo-v0/release`.
 - Prior deliveries and evidence: GitHub pull requests #219 and #665; fresh verified Ariadne and `fiat-383` audit synopses named in item 2.
 - Standards: `https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md` and `https://json-schema.org/draft/2020-12/json-schema-core`.
 

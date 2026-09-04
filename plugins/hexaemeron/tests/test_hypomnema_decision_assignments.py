@@ -603,6 +603,67 @@ class DecisionAssignments(unittest.TestCase):
         )
         self.assert_refused(result, "repository-graft")
 
+    def _base_with_duplicate_final_slugs(self) -> Repository:
+        repo = Repository(drafts=())
+        self.addCleanup(repo.close)
+        for number in ("070", "071"):
+            repo.commit_path(
+                f"docs/decisions/ADR-{number}-shared-choice.md",
+                complete_record(f"# ADR-{number}: Shared choice"),
+            )
+        repo.base = repo.product
+        run_git(repo.path, "update-ref", repo.base_ref, repo.base)
+        return repo
+
+    def test_inherited_duplicate_final_slugs_in_the_base_are_tolerated(self):
+        repo = self._base_with_duplicate_final_slugs()
+        repo.commit_path(
+            "docs/decisions/drafts/later-choice.md",
+            complete_record("# Decision: Later choice"),
+        )
+        result = run_assignment(repo, "plan", base=repo.base, product=repo.product)
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+        report = json.loads((repo.path / repo.report).read_text(encoding="utf-8"))
+        self.assertEqual(
+            [(row["slug"], row["number"]) for row in report["mappings"]],
+            [("later-choice", 72)],
+        )
+
+    def test_a_draft_matching_an_inherited_duplicate_final_is_refused(self):
+        repo = self._base_with_duplicate_final_slugs()
+        repo.commit_path(
+            "docs/decisions/drafts/shared-choice.md",
+            complete_record("# Decision: Shared choice"),
+        )
+        result = run_assignment(repo, "plan", base=repo.base, product=repo.product)
+        self.assert_refused(result, "identity-duplicate")
+
+    def test_an_inherited_misplaced_record_in_the_base_is_tolerated(self):
+        repo = Repository(drafts=())
+        self.addCleanup(repo.close)
+        repo.commit_path(
+            "docs/decisions/draft-unfiled-choice.md",
+            complete_record("# Unfiled choice"),
+        )
+        repo.base = repo.product
+        run_git(repo.path, "update-ref", repo.base_ref, repo.base)
+        repo.commit_path(
+            "docs/decisions/drafts/later-choice.md",
+            complete_record("# Decision: Later choice"),
+        )
+        result = run_assignment(repo, "plan", base=repo.base, product=repo.product)
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+
+    def test_a_new_misplaced_record_in_the_product_is_refused(self):
+        self.repo.commit_path(
+            "docs/decisions/draft-unfiled-choice.md",
+            complete_record("# Unfiled choice"),
+        )
+        result = run_assignment(
+            self.repo, "plan", base=self.repo.base, product=self.repo.product
+        )
+        self.assert_refused(result, "draft-placement")
+
     def test_a_draft_already_in_the_base_is_refused(self):
         self.repo.base = self.repo.product
         run_git(self.repo.path, "update-ref", self.repo.base_ref, self.repo.base)
@@ -693,6 +754,12 @@ class StableIdentityLint(unittest.TestCase):
         )
         self.assertEqual(status, 1)
         self.assertIn("H008", [finding["code"] for finding in findings])
+
+    def test_two_numbered_records_sharing_a_slug_are_not_a_finding(self):
+        status, findings = self.run_lint(
+            finals=("061:shared-choice", "062:shared-choice")
+        )
+        self.assertNotIn("H008", [finding["code"] for finding in findings])
 
     def test_hostile_draft_identity_is_reported(self):
         for slug in (

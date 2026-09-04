@@ -1,4 +1,4 @@
-"""Checked-in Goldfinch release, documentation and demonstration gates."""
+"""Checked-in Aave v4 release, documentation and demonstration gates."""
 
 from collections import Counter
 import hashlib
@@ -14,25 +14,25 @@ from . import support
 from tabularium_lib.verifier import verify
 
 
-RELEASE = support.PLUGIN_ROOT / "examples" / "goldfinch-v0"
+RELEASE = support.PLUGIN_ROOT / "examples" / "aave-v4-v0"
 SOURCE = RELEASE / "source.json"
 CAPTURE = RELEASE / "capture.json"
 EVENTS = RELEASE / "events.jsonl"
 COVERAGE = RELEASE / "coverage.json"
 DEMO = RELEASE / "rebuild.py"
 EXPECTED_HASHES = {
-    "source.json": "644b706804b6e28d69b1028b87937e0e36c882f703419d0e2bf568b056892bc9",
-    "capture.json": "b8b8e46d7d688accd32826b3c228758f8fb84ed678e4c36edf228d67ce65da50",
-    "events.jsonl": "751754a2f913691cf95f3e9f859b156f9ccd7963b1d72d4fc3379348924469b1",
-    "coverage.json": "58184a75d8eca6ae8d9b44653c36ce8c482549c5d3cecd1a2a991b0936561f6d",
+    "source.json": "1d88fdb5bca293995fd02e5a59f060d74541c80405e7bf1987544e5f334a8744",
+    "capture.json": "3cd14d1852561ec2aa9f498f37d6156b74ce321ec0965e81264925c4ba2e24ee",
+    "events.jsonl": "490d3f6399f84af8a81a5401b3cc92bf7ecfbe98a6bb02f07215b9099625ccf7",
+    "coverage.json": "b1538b633f1dfcfcc493afd033a52b4b199350b3a2221afb3c627a289d9de793",
 }
 
 
 class CheckedInReleaseTests(unittest.TestCase):
     def test_preserved_source_matches_the_capture_claim(self):
         capture = json.loads(CAPTURE.read_text(encoding="utf-8"))
-        self.assertEqual(capture["sha256"], EXPECTED_HASHES["source.json"])
-        self.assertEqual(capture["bytes"], len(SOURCE.read_bytes()))
+        self.assertEqual(capture["source"]["sha256"], EXPECTED_HASHES["source.json"])
+        self.assertEqual(capture["source"]["bytes"], len(SOURCE.read_bytes()))
 
     def test_all_four_release_hashes_are_fixed(self):
         for name, expected in EXPECTED_HASHES.items():
@@ -41,7 +41,7 @@ class CheckedInReleaseTests(unittest.TestCase):
 
     def test_coverage_binds_the_named_release_and_safe_local_paths(self):
         manifest = json.loads(COVERAGE.read_text(encoding="utf-8"))
-        self.assertEqual(manifest["release"], "goldfinch-borrower-record-v0")
+        self.assertEqual(manifest["release"], "aave-v4-mainnet-credit-window-v0")
         self.assertEqual(
             [manifest[key]["path"] for key in ("source", "capture_manifest", "canonical")],
             ["source.json", "capture.json", "events.jsonl"],
@@ -53,22 +53,17 @@ class CheckedInReleaseTests(unittest.TestCase):
 
     def test_release_has_the_declared_event_and_coverage_counts(self):
         rows = [json.loads(line) for line in EVENTS.read_text().splitlines()]
-        self.assertEqual(len(rows), 511)
+        self.assertEqual(len(rows), 500)
         self.assertEqual(Counter(row["event_family"] for row in rows), {
-            "borrowing": 34,
-            "repayment": 477,
+            "borrowing": 282,
+            "repayment": 218,
         })
         coverage = json.loads(COVERAGE.read_text())
-        self.assertEqual(coverage["coverage"]["included_entities"], {
-            "borrows": 34,
-            "repays": 477,
+        self.assertEqual(coverage["coverage"]["included_events"], {
+            "borrow": 282,
+            "repay": 218,
         })
-        self.assertEqual(coverage["coverage"]["unsupported_entities"], {
-            "_meta": 1,
-            "callableLoans": 1,
-            "creditLines": 31,
-            "tranchedPools": 24,
-        })
+        self.assertEqual(coverage["coverage"]["unsupported_events"], {})
 
     def test_committed_release_verifies_offline_and_without_rewrites(self):
         paths = (SOURCE, CAPTURE, EVENTS, COVERAGE)
@@ -84,8 +79,8 @@ class CheckedInReleaseTests(unittest.TestCase):
         finally:
             for path, mode in modes.items():
                 path.chmod(mode)
-        self.assertEqual(report.release, "goldfinch-borrower-record-v0")
-        self.assertEqual(report.rows, 511)
+        self.assertEqual(report.release, "aave-v4-mainnet-credit-window-v0")
+        self.assertEqual(report.rows, 500)
         self.assertEqual({path: path.read_bytes() for path in paths}, before)
 
     def test_documented_demo_rebuilds_and_compares_in_a_fresh_directory(self):
@@ -97,7 +92,7 @@ class CheckedInReleaseTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("verified goldfinch-borrower-record-v0 offline", result.stdout)
+        self.assertIn("verified aave-v4-mainnet-credit-window-v0 offline", result.stdout)
         self.assertIn(EXPECTED_HASHES["events.jsonl"], result.stdout)
 
     def test_data_dictionary_names_every_canonical_top_level_field(self):
@@ -105,7 +100,7 @@ class CheckedInReleaseTests(unittest.TestCase):
         fields = json.loads(EVENTS.read_text().splitlines()[0]).keys()
         for field in fields:
             self.assertIn("`%s`" % field, dictionary)
-        self.assertIn("complete source entity retained", dictionary)
+        self.assertIn("the consensus log, unchanged", dictionary)
 
     def test_release_docs_state_counts_and_semantic_limits(self):
         prose = "\n".join(
@@ -114,11 +109,11 @@ class CheckedInReleaseTests(unittest.TestCase):
         )
         prose = " ".join(prose.split())
         for phrase in (
-            "34 `borrows`",
-            "477 `repays`",
-            "hosted indexer",
+            "282 `borrowing`",
+            "218 `repayment`",
+            "native-log",
             "not publisher identity or authenticity",
-            "does not by itself prove that the borrower's full debt was settled",
+            "does not independently prove the chain boundary",
         ):
             self.assertIn(phrase, prose)
 
@@ -144,10 +139,10 @@ class CheckedInReleaseTests(unittest.TestCase):
         plugin = (support.PLUGIN_ROOT / "README.md").read_text()
         skill = (support.PLUGIN_ROOT / "skills/tabularium/SKILL.md").read_text()
         for prose in (plugin, skill):
-            self.assertIn("goldfinch-v0", prose)
+            self.assertIn("aave-v4-v0", prose)
         self.assertIn("[Tabularium](./plugins/tabularium)", root)
         commons = root.split("### Lending and credit records", 1)[1].split("\n### ", 1)[0]
-        for protocol in ("Compound", "Euler", "Goldfinch"):
+        for protocol in ("Compound", "Euler", "Aave"):
             self.assertNotIn(protocol, commons)
 
 

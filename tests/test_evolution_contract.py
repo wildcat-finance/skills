@@ -90,7 +90,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "sapheneia" / "skills" / "sapheneia" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "sapheneia-v0.2.0")
+        self.assertEqual(field(ledger, "Current version"), "sapheneia-v0.3.0")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "cross-model-corpus")
         self.assertEqual(
@@ -101,14 +101,18 @@ class EvolutionContractTests(unittest.TestCase):
             field(ledger, "Next Fiat job"),
             "Build and publish a held cross-model corpus covering debugging, explanation, destructive-action and long-running task turns, then reconcile the ten rules against its results. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose.",
         )
-        latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "sapheneia-v0.2.0")
+        rows = history_rows(ledger)
+        latest = rows[-1]
+        self.assertEqual(latest["version"], "sapheneia-v0.3.0")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "cross-model-corpus")
         self.assertEqual(
             latest["digest"],
             "06034ab3a9291b328ab65bef2436652833ac137dcb5726dee911a08fa632df87",
         )
+        self.assertIn("ADR-074", latest["evidence"])
+        self.assertIn("every piece of prose the agent writes", latest["change"])
+        self.assertIn("Next Fiat job stay unchanged", latest["change"])
 
     def test_fiat_state_shape_frontier_holds_the_task_identity_successor(self):
         ledger = (
