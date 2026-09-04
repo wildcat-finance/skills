@@ -1,4 +1,4 @@
-# ADR-076: Generate the harness roster from one probed manifest
+# ADR-077: Generate the harness roster from one probed manifest
 
 ## Status
 

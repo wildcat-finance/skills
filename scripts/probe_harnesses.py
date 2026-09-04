@@ -3,7 +3,7 @@
 
 The roster's single source is a `harness-classification/v1` manifest, validated
 by `schemas/harness-classification-v1.json` and pinned by
-`docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`.
+`docs/decisions/ADR-077-generate-the-harness-roster-from-one-probed-manifest.md`.
 This module is the generator. It observes each client, classifies it, and
 writes the manifest three later wording surfaces are rendered from.
 
@@ -90,7 +90,7 @@ UNSUPPORTED = "unsupported"
 
 CLASSIFICATIONS = (ATLAS_LAUNCHER, TESTED_LOCAL_ROUTE, MANUAL_ROUTE, UNSUPPORTED)
 
-# The two classes a harness only reaches by a recorded client run. ADR-076
+# The two classes a harness only reaches by a recorded client run. ADR-077
 # makes the classifier, not the schema, the thing that enforces that.
 EARNED_CLASSIFICATIONS = (ATLAS_LAUNCHER, TESTED_LOCAL_ROUTE)
 
@@ -560,7 +560,7 @@ def recorded_client_run(observation: Observation) -> bool:
 def classify(observation: Observation) -> str:
     """The one class this observation earns.
 
-    The first branch is the gate ADR-076 puts here rather than in the schema:
+    The first branch is the gate ADR-077 puts here rather than in the schema:
     with no recorded client run, neither earned name is reachable from any input
     shape, whatever else the record claims.
     """

@@ -616,3 +616,94 @@ carried forward as its own item.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Section 3 now carries the known false reds of the root suite.
+The runbook's shared preamble already attributes them to this study's
+constraints, and section 3 did not state them. The pair is corrected as well,
+because the version the runbook carries describes one red and this run met the
+other.
+
+A red reported as `WAI-E-ADAPTER.TIMEOUT` always arrives from a child, never
+from the check harness. `scripts/run_checks.py` holds no `WAI-` string at all.
+Every refusal carrying that code is raised in `scripts/agent_instruction.py`, at
+lines 1376, 1408 and 1413, and it reaches a suite report through
+`tests/test_agent_instruction.py`, which asserts on the code at line 2560 and is
+discovered by `root-suite`. Under parallel load those adapter timeouts fire and
+the code appears in the failure text. That red is load, and `--jobs 1` answers
+it.
+
+A suite that outruns its own per-check ceiling reports nothing of the kind. The
+ceiling is `DEFAULT_TIMEOUT_SECONDS = 1_800` at `scripts/run_checks.py:51`, and
+`hexaemeron-suite` inherits it, declaring no `timeout_seconds` of its own in
+`tests/check-map-v1.json`. A breach is recorded with
+`failure_class="command-failure"` and `reason="timeout"` at
+`scripts/run_checks.py:2292`, and carries no `WAI-` code. This is the red step
+2's first audit round met, as `hexaemeron-suite failed at 1800.4s` with that
+suite alone green when run by itself.
+
+The two are separable by the field the harness sets. A suite whose tests fail is
+recorded `test-failure` at `scripts/run_checks.py:2316`, so `command-failure`
+with `reason: timeout` on a `kind: suite` check is a ceiling breach rather than
+a defect. Rerun the named suite on its own, or the root suite with `--jobs 1`.
+
+The third constraint stands as the runbook states it. A Python pin check that
+comes back one short is usually a stale sibling under `.claude/worktrees/`
+rather than the diff.
+
+**Why.** Step 2's first audit round found that the runbook's clause did not
+cover the red this run hit, so a reader meeting a ceiling breach had no written
+ground to call it load, and the clause they did have pointed at a subsystem that
+was not running. That clause sits in the runbook's shared preamble, and
+`hexctl amend runbook` replaces only a step's `Goal`, `Entry`, `Exit`, `Files`,
+`Tests` or `Disciplines` field, so no amendment can reach the preamble. The
+correction goes where the preamble already says the constraint lives. The
+runbook's own narrower sentence stays as receipted, and that residue is carried
+forward rather than reported as fixed.
+
+**Steps touched.** Step 2, step 3, step 4, step 5.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** The decision record this run wrote is renumbered from
+`docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`
+to `docs/decisions/ADR-077-generate-the-harness-roster-from-one-probed-manifest.md`.
+
+`origin/main` acquired a different `ADR-076-digest-neutral-measured-corpus.md`
+in `530efcec`, which is not an ancestor of this run's branches, so the number
+this run had held since `be5ded32` collided when that ref reached this clone.
+`tests/test_decision_records.py` compares numbers against the default branch, so
+the root suite turned red between step 2's second and third audit rounds with
+nothing in the run having changed. On `origin/main` the numbered records run to
+ADR-076, and no open pull request and no remote branch carries an ADR-077 file,
+so ADR-077 is free as read today. Nothing reserves it, so it is rechecked
+immediately before the step is pushed rather than trusted from this reading.
+
+Two references to the superseded number cannot be corrected, and are recorded
+here rather than left to look like oversights. The `design-bridge` block added by
+the first amendment above names ADR-074, inside a fenced block an amendment can
+only follow and never rewrite. Step 1's baseline `Exit` and `Files` fields in the
+runbook name ADR-074 as well, and step 1 is complete, so `hexctl amend runbook`
+refuses to touch them. Both keep a name no file in the tree carries. The path
+this amendment states is the record's real one, and it is the path the schema,
+the probe and the shipped copies are corrected to.
+
+**Why.** The collision is the second one this run has taken on the same record,
+and it arrives from outside: issue 888 is reconstructing ADR numbering to assign
+at merge rather than at authoring, and until that lands any number held across a
+run is a number that can be taken. Recording the renumber in the study matters
+more than the number itself, because three wording surfaces are generated from
+this record in the steps that follow, and a reader who finds ADR-076 in the
+runbook's completed fields needs the reason stated somewhere reachable. The two
+uncorrectable references are named for the same reason: an append-only amendment
+mechanism cannot revise a baseline field of a finished step or the inside of a
+fenced block, so the honest record is that they are stale and why.
+
+**Steps touched.** Step 2, step 3, step 4, step 5.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

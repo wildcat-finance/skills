@@ -273,3 +273,43 @@ decision.
 **Steps touched.** Step 2.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Disciplines: phylax: this step spawns client binaries and reads what they print, so the fixed argv, the bounded timeout and the credential sweep all apply. ephoros: the manifest carries the probe command and result per harness, which is the signal answering why a harness got its class. metron: none, the probe's cost is dominated by client startup this repository does not control. elenchus: the killed-write guard is a cause-level test that fails without the atomic rename. hypomnema: none, the decision this step implements is held by `docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`.
+
+**Why.** An earlier amendment already corrected this field from ADR-074 to the renumbered record, but it recorded the study digest current at that time. Two later study amendments moved that digest, so the repair stopped binding and step 2's effective source reverted to naming a decision record path that does not exist. This reissues the same correction against the current study, and names the record by full path rather than by number so a further renumber is visible rather than silent. Step 2's work is unchanged.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Disciplines: phylax: this step spawns client binaries and reads what they print, so the fixed argv, the bounded timeout and the credential sweep all apply. ephoros: the manifest carries the probe command and result per harness, which is the signal answering why a harness got its class. metron: none, the probe's cost is dominated by client startup this repository does not control. elenchus: the killed-write guard is a cause-level test that fails without the atomic rename. hypomnema: none, the decision this step implements is held by `docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`.
+
+**Why.** This reissues the previous amendment verbatim against the current study. That one recorded the study digest current when it was written, and the false-red correction appended to the study has moved the digest again, so the repair stopped binding for the third time and step 2's effective source reverted to naming a decision record path that does not exist. The reissue was made in the same sitting as the study amendment that caused it, and the reverted state was observed rather than assumed: `hexctl next` reported zero bound amendments and an effective Disciplines field naming ADR-074. Step 2's work is unchanged. The treadmill itself is a controller defect, because any study amendment invalidates every runbook repair regardless of subject, and it is carried forward rather than answered here.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Disciplines: phylax: this step spawns client binaries and reads what they print, so the fixed argv, the bounded timeout and the credential sweep all apply. ephoros: the manifest carries the probe command and result per harness, which is the signal answering why a harness got its class. metron: none, the probe's cost is dominated by client startup this repository does not control. elenchus: the killed-write guard is a cause-level test that fails without the atomic rename. hypomnema: this step makes `version_read` a required field, and the decision record it implements, `docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`, enumerates a closed entry that never names it, so that record is updated to name the field and to state which fields stay optional. Invoke `hypomnema.py` with `docs/decisions` in its path list, because it builds its decision-record index from the paths it is given and reports H006 against a record it was never shown.
+
+**Why.** Step 2's second audit round found both halves. The schema change round 1 asked for made `version_read` required, which left the decision record describing a closed entry that omits a required field, and the step's Disciplines said `hypomnema: none`, so no discipline claimed the repair. That is corrected here rather than carried, because the step introduced the obligation and the record is the documentation the three wording surfaces are generated against. The same round found that the lint's own H006 against ADR-076 is a false red produced by the path list rather than by the record, so the invocation is stated with the field it checks. Neither half changes what step 2 builds. This correction is made in the runbook rather than the study on purpose: a study amendment un-binds every runbook repair in the run, and this one needs no study change.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-04
+
+**What changed.** Complete replacement Disciplines: phylax: this step spawns client binaries and reads what they print, so the fixed argv, the bounded timeout and the credential sweep all apply. ephoros: the manifest carries the probe command and result per harness, which is the signal answering why a harness got its class. metron: none, the probe's cost is dominated by client startup this repository does not control. elenchus: the killed-write guard is a cause-level test that fails without the atomic rename. hypomnema: this step makes `version_read` a required field, and the decision record it implements, `docs/decisions/ADR-077-generate-the-harness-roster-from-one-probed-manifest.md`, must name that field and state which fields stay optional. Invoke `hypomnema.py` with `docs/decisions` in its path list, because it builds its decision-record index from the paths it is given and reports H006 against a record it was never shown.
+
+**Why.** This reissues the previous Disciplines field against the current study and corrects the record's number. `origin/main` took ADR-076 for a different record in `530efcec`, which is not an ancestor of this run, so the root suite went red between step 2's second and third audit rounds and the record renumbers to ADR-077. The study amendment made in the same sitting carries the collision evidence and the recheck obligation before push. The reissue is required because that study amendment moved the study digest, which un-binds every runbook repair in the run; this is the fourth such reissue and the treadmill is carried forward as a controller defect rather than answered here. Two references keep the superseded name and cannot be reached by any amendment: the `design-bridge` block inside the study's first amendment, and step 1's baseline `Exit` and `Files` fields, which name ADR-074 and belong to a completed step the controller refuses to rewrite. Step 2's work is unchanged.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
