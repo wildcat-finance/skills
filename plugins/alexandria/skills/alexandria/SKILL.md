@@ -10,7 +10,7 @@ description: >
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
   collector are available.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <p align="center">
@@ -98,6 +98,17 @@ redistribution classes, capture source, scope, evidence and finality classes,
 collection counts, declared gaps, correction links and exact release-tree
 membership. It does not establish publisher identity, source completeness or
 chain finality.
+
+A `proof-backed-state` capture earns that class only during `verify`: its
+component must be a Lazarus manifest, every named fixture file must be present
+by digest and byte count, Alexandria must reconstruct and rerun Lazarus, and
+the capture must stay within the proved block and targets. Finality must be
+`unknown` because Lazarus proves block binding but reports no finality class.
+The scope must be subject-scoped and remain within the proof targets because a
+finite proof set is not a full dataset. Missing Lazarus or its pinned packages
+is a refusal because the claim is not earned until Lazarus has rechecked it;
+install `plugins/lazarus/requirements.lock` beside this checkout. The refusal
+names the capture that failed.
 
 Emit a deterministic statement only after verification:
 

@@ -292,7 +292,7 @@
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
       "description": "Digest-bound lending-data releases with a resumable Ethereum USDC interval collector, unsigned evidence statements, reviewed credit views and address queries.",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
