@@ -2246,6 +2246,176 @@ class RenderTests(unittest.TestCase):
         for entry in landed()["harnesses"]:
             self.assertIsNone(render_harness_roster.refuse_forged_name(entry["name"]))
 
+    def test_every_manifest_string_a_surface_publishes_is_guarded(self):
+        # S3-R6-01. The guard named one field, so the fields beside it stayed
+        # open with the same consequence. This derives the coverage instead of
+        # listing it: it drives a sentinel through every string-typed harness
+        # field and asserts that the fields whose sentinel reaches a surface
+        # are exactly the ones `PUBLISHED_TEXT_FIELDS` guards. A later change
+        # that publishes `launcher_contract`, or any new string field, goes red
+        # here rather than shipping an unguarded string to three surfaces.
+        sentinel = "ZQXSENTINELXQZ"
+
+        def published(document):
+            return "\n".join((
+                render_harness_roster.readme_block(document),
+                render_harness_roster.guide_block(document),
+                " ".join(render_harness_roster.pdf_expectations(document)),
+            ))
+
+        reaching = set()
+        for field, allowed in render_harness_roster.HARNESS_FIELD_TYPES.items():
+            if str not in allowed:
+                continue
+            document = landed()
+            entry = document["harnesses"][0]
+            if field == "client_version":
+                # The one field a surface reads only when another says to.
+                entry["client_present"] = True
+                entry["version_read"] = True
+            entry[field] = sentinel
+            if sentinel in published(document):
+                reaching.add(field)
+        # `classification` reaches the guide table and is closed by the schema's
+        # enum and `refuse_unpublished_class`, not by a token set.
+        self.assertIn("classification", reaching)
+        self.assertEqual(
+            reaching - {"classification"},
+            set(render_harness_roster.PUBLISHED_TEXT_FIELDS),
+        )
+        # `launcher_contract` is a `nonEmptyString` with no pattern too, and is
+        # unguarded here because it is published nowhere.
+        self.assertNotIn("launcher_contract", reaching)
+
+    def test_a_published_free_text_field_cannot_forge_a_surface(self):
+        # S3-R6-01, driven. A `blocker` carrying END_MARKER closed the guide's
+        # region exactly as a name did: `--write` exited 0 printing `rendered 6
+        # harnesses into three surfaces`, the guide came back with 1 begin and
+        # 2 end markers, and every later `--check` and `--write` refused,
+        # including one from the committed manifest. A schema-valid
+        # `client_version` of `1.0 | forged | yes | no |` gave its table row
+        # eight cells against a five-column header.
+        for field, value in (
+            ("blocker", f"Absent. {render_harness_roster.END_MARKER}"),
+            ("blocker", f"Absent. {render_harness_roster.BEGIN_MARKER}"),
+            ("blocker", "one\ntwo"),
+            ("client_version", "1.0 | forged | yes | no |"),
+        ):
+            with self.subTest(field=field, value=value):
+                document = landed()
+                document["harnesses"][0][field] = value
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # The schema gives all three `minLength: 1`, which the type map cannot
+        # carry, so an empty string is refused and `null` is not: an empty
+        # `blocker` would render `nothing blocked it.`, which `null` means.
+        for field in ("name", "client_version", "blocker"):
+            with self.subTest(field=field, value=""):
+                document = landed()
+                document["harnesses"][0][field] = ""
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn(f"empty {field}", str(refused.exception))
+        for field in ("client_version", "blocker"):
+            with self.subTest(field=field, value=None):
+                document = landed()
+                document["harnesses"][0][field] = None
+                document["harnesses"][0]["version_read"] = False
+                self.assertIsNone(
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                )
+        # This guard runs before `refuse_leak` sweeps anything, and a blocker
+        # is where captured client output lands, so the refusal names the
+        # field and never echoes its value. A first draft echoed `value!r` and
+        # printed a planted token to stderr.
+        token = "ghp_" + "a" * 36
+        document = landed()
+        document["harnesses"][0]["blocker"] = f"Absent.\n{token}"
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(document)
+        self.assertIn("blocker carries", str(refused.exception))
+        self.assertNotIn(token, str(refused.exception))
+
+    def test_a_structural_token_is_refused_in_the_form_a_comparison_sees(self):
+        # S3-R6-02. The forbidden tokens were the forms a manifest writes, and
+        # every comparison here runs over `_normalise`d text. `ROSTER_SEPARATOR`
+        # is written `'  /  '` and reaches the page as `' / '`, so a name
+        # carrying the collapsed form was admitted and then indistinguishable
+        # from the separator. Driven against the committed page: merging two
+        # harnesses into one named `Gemini CLI / Windsurf` renders a roster line
+        # that normalises byte-identically to the five-name line the page draws,
+        # and `--check` exited 0 printing `three surfaces match 5 recorded
+        # harnesses` against a page built from a manifest recording six.
+        collapsed = render_harness_roster._normalise
+        merged, split = landed(), landed()
+        keep = [one for one in merged["harnesses"] if one["name"] != "Windsurf"]
+        for one in keep:
+            if one["name"] == "Gemini CLI":
+                one["name"] = "Gemini CLI / Windsurf"
+        merged["harnesses"] = keep
+        self.assertEqual(
+            collapsed(render_harness_roster.pdf_roster_line(merged)),
+            collapsed(render_harness_roster.pdf_roster_line(split)),
+        )
+        self.assertNotEqual(len(merged["harnesses"]), len(split["harnesses"]))
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(merged)
+        self.assertIn("structure", str(refused.exception))
+        # The guard's alphabet is tied to the comparison's: these are the exact
+        # strings `_bounded` and `_terminal` rebuild to bound a match, so a
+        # change to either rebuild goes red here.
+        for token in (
+            render_harness_roster.ROSTER_SEPARATOR,
+            render_harness_roster.UNSUPPORTED_CLAUSE,
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    f" {collapsed(token)} ", render_harness_roster.NAME_FORBIDDEN
+                )
+                for form in render_harness_roster._comparison_forms(token):
+                    document = landed()
+                    document["harnesses"][0]["name"] = f"Cursor{form}tail"
+                    with self.assertRaises(render_harness_roster.RenderError):
+                        render_harness_roster.refuse_unrecorded_shape(document)
+        # A bare separator character is not structure and stays admitted.
+        self.assertIsNone(render_harness_roster.refuse_forged_name("a/b"))
+
+    def test_a_name_the_page_builder_reads_as_markup_is_refused(self):
+        # S3-R6-03. The page draws names through `reportlab`'s paragraph
+        # parser, which reads `<` as a tag and `&` as an entity, so the drawn
+        # text is not the string the manifest renders and the page can never
+        # match it. Measured through real built pages: `Cline <font
+        # color="#ff0000">EXTRA</font>` drew as `Cline EXTRA`, so `--write`
+        # exited 0 and the `--check` after it exited 1 on every run; `AT&T
+        # route` drew as `AT &T; route`; and `Cline <notatag` failed the build
+        # after both Markdown surfaces were already rewritten, reporting only
+        # `the guide builder exited 1:  para`.
+        for name in (
+            'Cline <font color="#ff0000">EXTRA</font>',
+            "Cline <notatag",
+            "AT&T route",
+            "Cline &amp; Co",
+        ):
+            with self.subTest(name=name):
+                document = landed()
+                document["harnesses"][0]["name"] = name
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # `>` was measured and left admitted: `a > b` draws as `a > b` and
+        # `--check` exits 0, so refusing it would cost a name for nothing.
+        self.assertIsNone(render_harness_roster.refuse_forged_name("a > b"))
+        # Neither character is refused in the two fields the page never draws.
+        for field in ("client_version", "blocker"):
+            with self.subTest(field=field):
+                self.assertNotIn(
+                    "<", render_harness_roster.PUBLISHED_TEXT_FIELDS[field]
+                )
+                self.assertNotIn(
+                    "&", render_harness_roster.PUBLISHED_TEXT_FIELDS[field]
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

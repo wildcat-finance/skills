@@ -154,23 +154,83 @@ PDF_LABEL_STEM = "Manual only - probed "
 # of a page that still shows one, and containment alone cannot tell them apart.
 UNSUPPORTED_CLAUSE = " Unsupported: "
 
-# What a harness name may not carry. `name` is the one published field the
-# schema leaves an unpatterned string, and every token below is structure in a
-# surface this module writes, so a name carrying one forges that structure
-# rather than appearing inside it. The comparison is case-folded because the
-# page uppercases the label and draws names verbatim, so a name only has to
-# match in some case to forge one; for the two markers that is stricter than
-# `split_surface`, which finds them case-sensitively, and deliberately so.
-NAME_FORBIDDEN = (
-    BEGIN_MARKER,
-    END_MARKER,
-    ROSTER_SEPARATOR,
-    UNSUPPORTED_CLAUSE,
-    PDF_LABEL_STEM,
-    "|",
-    "\n",
-    "\r",
+def _normalise(text):
+    """One space between words, so a wrapped line reads as the sentence it is."""
+    return " ".join(text.split())
+
+
+def _comparison_forms(token):
+    """One structural token as it is written, and as a comparison sees it.
+
+    Every comparison in this module runs over `_normalise`d text, and
+    `_normalise` collapses a run of whitespace to one space. So a token whose
+    written form carries doubled spaces never reaches a comparison in that
+    form: `ROSTER_SEPARATOR` is written `'  /  '` and reaches the page's text
+    as `' / '`, which is exactly the form `_bounded` rebuilds to bound a match.
+    Refusing only the written form left the collapsed one admitted, and the two
+    are indistinguishable once the page has been read. Both forms are refused,
+    derived from the token rather than listed beside it.
+
+    Leading and trailing spaces are kept rather than stripped: the collapsed
+    form has to be the string a comparison meets, and ` / ` inside a name is
+    what forges a separator, while a bare `/` is an ordinary character a name
+    may hold. A token that collapses to nothing, like a line break, has one
+    form only.
+    """
+    collapsed = _normalise(token)
+    if not collapsed:
+        return (token,)
+    spaced = (
+        f"{' ' if token[:1].isspace() else ''}"
+        f"{collapsed}"
+        f"{' ' if token[-1:].isspace() else ''}"
+    )
+    return (token,) if spaced == token else (token, spaced)
+
+
+def _forbidden(*tokens):
+    return tuple(dict.fromkeys(
+        form for token in tokens for form in _comparison_forms(token)
+    ))
+
+
+# What a published free-text field may not carry, by the surface it is drawn
+# into. Every token is structure in a surface this module writes, so a field
+# carrying one forges that structure rather than appearing inside it. The
+# comparison is case-folded because the page uppercases the label and draws
+# names verbatim, so a value only has to match in some case to forge one; for
+# the two markers that is stricter than `split_surface`, which finds them
+# case-sensitively, and deliberately so.
+SURFACE_STRUCTURE = _forbidden(BEGIN_MARKER, END_MARKER, "|", "\n", "\r")
+
+# The harness page's own structure, and the two characters `reportlab`'s
+# paragraph parser reads as markup rather than as text. `<` opens a tag, so
+# `Cline <notatag` fails the build outright and `Cline <font color="#ff0000">X
+# </font>` draws as `Cline X`; `&` opens an entity, so `AT&T route` draws as
+# `AT &T; route` and `Cline &amp; Co` draws as `Cline & Co`. In each case the
+# drawn text is not the string the manifest renders, so the page can never
+# match it. `>` is not here: measured through a real built page, `a > b` draws
+# as `a > b` and `--check` exits 0, so refusing it would cost a name for
+# nothing.
+PAGE_STRUCTURE = _forbidden(
+    ROSTER_SEPARATOR, UNSUPPORTED_CLAUSE, PDF_LABEL_STEM, "<", "&"
 )
+
+NAME_FORBIDDEN = SURFACE_STRUCTURE + PAGE_STRUCTURE
+
+# The manifest strings these surfaces publish verbatim, against the tokens each
+# one can forge. `name` is drawn into all three surfaces; `client_version`
+# reaches the guide table through `_version` and `blocker` reaches the guide's
+# bullet list, and neither reaches the harness page, so neither carries the
+# page's tokens. `launcher_contract` is a `nonEmptyString` too and is guarded by
+# nothing here because it is published nowhere; `tests/test_harness_manifest.py`
+# derives that coverage by driving a sentinel through every string-typed field
+# and asserting that the fields whose sentinel reaches a surface are these.
+PUBLISHED_TEXT_FIELDS = {
+    "name": NAME_FORBIDDEN,
+    "client_version": SURFACE_STRUCTURE,
+    "blocker": SURFACE_STRUCTURE,
+}
 
 
 class RenderError(Exception):
@@ -310,6 +370,40 @@ def refuse_unrecorded_shape(document):
     `--write` and `--check` refused, including one from the committed manifest,
     leaving a hand edit as the only repair for a block whose own provenance
     comment says nothing between the markers is edited by hand.
+
+    Three more were measured after *that* guard existed, each one the same
+    property one field or one form over.
+
+    The guard reached one of the three unpatterned strings these surfaces
+    publish. `blocker` is drawn into the guide's bullet list and `client_version`
+    into its table, and neither was checked: a `blocker` of `Absent. <!--
+    harness-roster:end -->` closed the region exactly as the name had, and a
+    `client_version` of `1.0 | forged | yes | no |` gave that table row eight
+    cells against a five-column header. Both documents validate against
+    `schemas/harness-classification-v1.json` with zero errors.
+
+    The forbidden tokens were the forms a manifest *writes*, and every
+    comparison here runs over `_normalise`d text. `ROSTER_SEPARATOR` is written
+    `'  /  '` and reaches the page as `' / '`, so a name carrying the collapsed
+    form was admitted and then indistinguishable from the separator. Driven
+    against the committed page: a manifest merging `Gemini CLI` and `Windsurf`
+    into one harness named `Gemini CLI / Windsurf` renders a roster line that
+    normalises byte-identically to the five-name line the page draws, so
+    `--check` exited 0 printing `three surfaces match 5 recorded harnesses`
+    against a page built from a manifest recording six. `_bounded` never fires,
+    the merged line being the whole line. An ordinary rename of the same entry
+    against the same page exits 1, so the check works and this collision is
+    specific. `_comparison_forms` derives both forms from the token.
+
+    The page draws names through `reportlab`'s paragraph parser, which reads
+    `<` as a tag and `&` as an entity. Measured through real built pages: a
+    name `Cline <font color="#ff0000">EXTRA</font>` draws as `Cline EXTRA`, so
+    `--write` exits 0 and the `--check` after it exits 1, on every run, with no
+    render able to repair it; `AT&T route` draws as `AT &T; route`; and `Cline
+    <notatag` fails the build after both Markdown surfaces are already
+    rewritten, reporting only `the guide builder exited 1:  para`, because the
+    last line of the builder's traceback is a source echo rather than the
+    error. `>` was measured and left admitted, `a > b` drawing as `a > b`.
     """
     probe = _probe()
     block = document.get("recorded")
@@ -346,35 +440,73 @@ def refuse_unrecorded_shape(document):
                     f"manifest refused: harness {shown!r} {field} {value!r} "
                     f"is not {names}"
                 )
-        refuse_forged_name(entry["name"])
+        for field in PUBLISHED_TEXT_FIELDS:
+            refuse_forged_field(field, entry[field], shown)
 
 
 def refuse_forged_name(name):
-    """Refuse a harness name that carries a surface's own structure.
+    """`refuse_forged_field` for the field with the widest token set."""
+    refuse_forged_field("name", name, name)
+
+
+def refuse_forged_field(field, value, shown):
+    """Refuse a published free-text value that carries a surface's structure.
 
     Every other published field is constrained by something: the classes by an
     enum and `refuse_unpublished_class`, the `recorded` block by three patterns,
-    the booleans by their type. `name` is a `nonEmptyString` with no pattern,
-    and it is drawn into all three surfaces verbatim, so it is the one place a
-    manifest can supply structure rather than content. What it forged is
-    recorded in `refuse_unrecorded_shape`: the page's roster-card label, which
-    is the one PDF expectation `pdf_drift` bounds by containment alone, and the
-    Markdown region markers, which it can close from the inside.
+    the booleans by their type. Three fields are left unpatterned strings and
+    are drawn into a surface verbatim, so each is a place a manifest can supply
+    structure rather than content. What `name` forged is recorded in
+    `refuse_unrecorded_shape`: the page's roster-card label, which is the one
+    PDF expectation `pdf_drift` bounds by containment alone, and the Markdown
+    region markers, which it can close from the inside.
 
-    An empty name is refused here rather than in the type map, because the
-    schema's `nonEmptyString` is a length as well as a type and the roster line
-    would otherwise render two separators with nothing between them.
+    Guarding `name` alone left the other two open with the identical
+    consequence, and both were driven on staged copies of this tree. With
+    `harnesses[0].blocker` of `Absent. <!-- harness-roster:end -->`, `--write`
+    exited 0 printing `rendered 6 harnesses into three surfaces`, the guide came
+    back carrying 1 begin and 2 end markers, and every later `--check` and
+    `--write` refused, including one from the committed manifest, so the
+    renderer could not repair what it had written. With a schema-valid
+    `client_version` of `1.0 | forged | yes | no |` on a `manual route` entry
+    whose `version_read` is true, `_version` put it in the guide table's Version
+    cell and that row came back with eight cells against the header's five.
+
+    An empty string is refused here rather than in the type map, because the
+    schema gives all three fields `minLength: 1`, which is a length rather than
+    a type: an empty `name` would render two roster separators with nothing
+    between them, and an empty `blocker` renders `nothing blocked it.`, which
+    the schema reserves for `null`. `None` is admitted, both fields declaring
+    it.
+
+    The refusal names the harness, the field and the tokens carried, and never
+    the value. This guard runs inside `load_manifest`, which is before
+    `refuse_leak` sweeps anything, and a `blocker` is exactly where captured
+    client output lands. A first draft of this guard echoed `value!r`, and a
+    blocker carrying a token and a newline printed the token to stderr through
+    a refusal, where the same blocker without the newline reaches the sweep and
+    is refused as `the rendered guide.md region carries a token shape`. `name`
+    is echoed because the name is the subject of its own refusal and no client
+    output reaches it.
     """
-    if not name:
-        raise RenderError("manifest refused: a harness carries an empty name")
-    folded = name.upper()
-    carried = tuple(token for token in NAME_FORBIDDEN if token.upper() in folded)
-    if carried:
+    if value is None:
+        return
+    if not value:
         raise RenderError(
-            f"manifest refused: harness {name!r} carries "
-            f"{', '.join(repr(token) for token in carried)}, "
-            "which these surfaces use as structure"
+            f"manifest refused: harness {shown!r} carries an empty {field}"
         )
+    folded = value.upper()
+    carried = tuple(
+        token for token in PUBLISHED_TEXT_FIELDS[field] if token.upper() in folded
+    )
+    if not carried:
+        return
+    where = "" if field == "name" else f" {field}"
+    raise RenderError(
+        f"manifest refused: harness {shown!r}{where} carries "
+        f"{', '.join(repr(token) for token in carried)}, "
+        "which these surfaces use as structure"
+    )
 
 
 def refuse_unpublished_class(document):
@@ -684,11 +816,6 @@ def _bounded(shown, line):
             return True
         index = shown.find(line, index + 1)
     return False
-
-
-def _normalise(text):
-    """One space between words, so a wrapped line reads as the sentence it is."""
-    return " ".join(text.split())
 
 
 def _unescape(raw):
