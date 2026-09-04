@@ -25,6 +25,28 @@ if [ "${FIAT_SKIP_PRECOMMIT:-0}" = "1" ]; then
     exit 0
 fi
 
+# Git carries the caller's one-shot configuration into this hook in two
+# variables, and either one makes the git calls below start a process nobody
+# here named. Measured rather than assumed: `core.fsmonitor` supplied through
+# GIT_CONFIG_PARAMETERS, and again through GIT_CONFIG_COUNT with
+# GIT_CONFIG_KEY_0 and GIT_CONFIG_VALUE_0, ran its command during the hook's
+# own `git write-tree` on git 2.50.1. Dropping GIT_CONFIG_COUNT is what
+# disables the indexed pairs; they are inert without it.
+#
+# GIT_CONFIG_GLOBAL, GIT_CONFIG_SYSTEM and GIT_CONFIG_NOSYSTEM are left alone
+# on purpose. They name which of the caller's own configuration files git
+# reads rather than smuggling a value in-band, and a hook that ignored them
+# would read files the caller had deliberately stepped away from.
+#
+# The index git exports is left alone too, and must be. Git runs this hook for
+# one particular commit and names that commit's index in GIT_INDEX_FILE --
+# `git commit -a` builds a temporary one -- so a hook that reached for
+# `$GIT_DIR/index` instead would check a tree that is not the tree being
+# committed. What the regression in tests/test_commit_gate.py holds is the
+# other half: pointed at another repository's index, the gate reads it and
+# leaves its staged state alone.
+unset GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
+
 fix='run .githooks/greenlight on the staged tree, or commit with FIAT_SKIP_PRECOMMIT=1'
 
 if ! git_dir="$(git rev-parse --git-dir 2>/dev/null)"; then

@@ -748,5 +748,263 @@ class StagedTreeTests(unittest.TestCase):
             self.assertIn("git write-tree failed", named[0])
 
 
+# --- the hook path under a polluted environment ---------------------------
+
+HOOK_NAME = HOOK.name
+GREENLIGHT_NAME = GREENLIGHT.name
+
+# An fsmonitor is a command git starts on its own account while reading an
+# index. Supplied through either inherited form it is a process the gate never
+# named, run against a repository the gate never chose, which is the whole of
+# what "reads no configuration an inherited override could redirect" forbids.
+FSMONITOR = """#!/bin/sh
+printf 'ran\\n' > "{marker}"
+printf '/\\0'
+"""
+
+
+def staged_state(root: Path) -> bytes:
+    """Everything the index says is staged, as bytes.
+
+    Mode, object id, stage and path for every entry, plus the cached diff the
+    original incident showed up in as 1487 deletions. Not the index file
+    itself: `git write-tree` persists a cache tree into whatever index it is
+    given, so the file's bytes move while nothing staged does, and asserting on
+    them would fail on a repository whose staged state is untouched.
+    """
+    entries = git(root, "ls-files", "--stage").stdout
+    cached = git(root, "diff", "--cached", "--name-status", "--").stdout
+    head = git(root, "rev-parse", "HEAD").stdout
+    return "\0".join((entries, cached, head)).encode("utf-8")
+
+
+def polluted_at(outer: Path, extra: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment git exports into a hook, aimed at another repository."""
+    environment = clean_environment({
+        "GIT_INDEX_FILE": str(outer / ".git" / "index"),
+        "GIT_PREFIX": "",
+    })
+    if extra:
+        environment.update(extra)
+    return environment
+
+
+def config_override(command: Path) -> dict[str, str]:
+    """One `core.fsmonitor` override, in both forms git accepts in-band."""
+    return {
+        "GIT_CONFIG_PARAMETERS": f"'core.fsmonitor={command}'",
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "core.fsmonitor",
+        "GIT_CONFIG_VALUE_0": str(command),
+    }
+
+
+def fsmonitor_script(directory: Path) -> tuple[Path, Path]:
+    """A command that records having run, and the file it writes."""
+    marker = directory / "fsmonitor-ran"
+    script = directory / "fsmonitor.sh"
+    script.write_text(FSMONITOR.format(marker=marker), encoding="utf-8")
+    script.chmod(0o755)
+    return script, marker
+
+
+def run_gate(name: str, root: Path, env: dict[str, str]):
+    """Run one of a fixture's own copies of the gate, never the tracked one.
+
+    The tracked `.githooks/greenlight` would run this repository's full suite
+    from inside a test, which is the five-minute hang round 2 recorded.
+    """
+    return subprocess.run(
+        [str(root / ".githooks" / name)],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+
+class HookIndexMutationTests(unittest.TestCase):
+    """The regression for the class that produced the phantom deletions.
+
+    Git exports `GIT_INDEX_FILE` and `GIT_PREFIX` into every hook and every
+    command it runs, and `GIT_CONFIG_PARAMETERS` and `GIT_CONFIG_COUNT` carry
+    the caller's one-shot configuration the same way. The incident the issue
+    cites is what happens when a process inherits the first pair and stages
+    against it: 1487 deletions in a repository nobody was working in, recorded
+    at `tests/test_boundary_currency.py:57-73`.
+
+    The guard for that helper lives in the file whose helper caused it, and
+    acceptance condition 5 refuses a guard that lives only there. These cases
+    hold the gate itself, in the file that ships it. `GitEnvironmentIsolation`
+    is untouched and stays where it is.
+    """
+
+    def test_the_hook_leaves_an_outer_repositorys_staged_state_alone(self):
+        """The hook reads the index it is handed and writes nothing to it."""
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+
+            attempted = run_gate(HOOK_NAME, here, polluted_at(outer))
+
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of a repository it was "
+                "merely pointed at",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "the gate wrote a green into a repository it was pointed at",
+            )
+            # The refusal is the gate's, so the run reached the gate's own
+            # logic rather than dying before it could touch anything.
+            self.assertEqual(len(refusals(attempted)), 1, f"{attempted.stderr!r}")
+
+    def test_greenlight_leaves_an_outer_repositorys_staged_state_alone(self):
+        """The recording half, under the same pollution.
+
+        greenlight writes, so it is the half that could stage into the outer
+        repository or record a green there for a tree its suite never saw.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            mine = git(here, "write-tree").stdout.strip()
+
+            recorded = run_gate(GREENLIGHT_NAME, here, polluted_at(outer))
+
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed in its own repository: {recorded.stderr}",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "greenlight changed the staged state of a repository it was "
+                "merely pointed at",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "greenlight recorded a green in a repository whose suite it "
+                "never ran",
+            )
+            self.assertEqual(
+                record_path(here).read_text(encoding="utf-8").strip(), mine,
+                "greenlight recorded something other than its own tree",
+            )
+
+    def test_the_hook_reads_no_configuration_an_override_could_redirect(self):
+        """An inherited `core.fsmonitor` must not become a process the gate starts.
+
+        This fails without the control it guards: with the two variables left
+        in place, the command runs during the hook's own `git write-tree`.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+            script, marker = fsmonitor_script(here.parent)
+
+            run_gate(HOOK_NAME, here, polluted_at(outer, config_override(script)))
+
+            self.assertFalse(
+                marker.exists(),
+                "an inherited configuration override made the gate start a "
+                "process nothing in the gate names",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed an outer repository's staged state under an "
+                "inherited configuration override",
+            )
+
+    def test_greenlight_reads_no_configuration_an_override_could_redirect(self):
+        """The same override, against the half that runs a suite and records."""
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+            script, marker = fsmonitor_script(here.parent)
+
+            recorded = run_gate(
+                GREENLIGHT_NAME, here, polluted_at(outer, config_override(script))
+            )
+
+            self.assertFalse(
+                marker.exists(),
+                "an inherited configuration override made greenlight start a "
+                "process nothing in greenlight names",
+            )
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed under a config override: {recorded.stderr}",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "greenlight changed an outer repository's staged state under "
+                "an inherited configuration override",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "greenlight recorded a green in the repository the override "
+                "named",
+            )
+
+    def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
+        """`git rev-parse --git-dir`, not `--git-common-dir`.
+
+        A green that lands in the shared git directory would authorise a commit
+        in every linked worktree at once, and this clone runs about 39. The
+        record here is correct for the staged tree and sits in the shared
+        directory; only where the gate looks can refuse the commit.
+        """
+        with gate_repository() as root:
+            linked = root.parent / "resolving"
+            git(root, "worktree", "add", "-q", "-b", "resolving", str(linked))
+            (linked / "b.txt").write_text("two\n", encoding="utf-8")
+            git(linked, "add", "-A")
+            staged = git(linked, "write-tree").stdout.strip()
+
+            common = Path(git(linked, "rev-parse", "--git-common-dir").stdout.strip())
+            if not common.is_absolute():
+                common = linked / common
+            own = record_path(linked)
+            self.assertNotEqual(
+                own.parent.resolve(), common.resolve(),
+                "the fixture did not give the linked worktree a git dir of its own",
+            )
+
+            (common / RECORD_NAME).write_text(f"{staged}\n", encoding="utf-8")
+            self.assertFalse(own.exists(), "the worktree already held a record")
+
+            refused = commit(linked, "a green from the shared git dir")
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "a green in the shared git dir authorised a linked worktree's "
+                "commit, so every worktree of this clone shares one record",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "no green record", named[0],
+                f"the gate read a record outside its own git dir: {named[0]}",
+            )
+            self.assertIn(
+                str(own), named[0],
+                "the refusal named a record path other than the one "
+                f"`git rev-parse --git-dir` resolves to: {named[0]}",
+            )
+            self.assertEqual(
+                (common / RECORD_NAME).read_text(encoding="utf-8").strip(), staged,
+                "the shared record moved, so the refusal proves nothing about "
+                "where the gate looked",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

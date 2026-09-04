@@ -33,9 +33,20 @@ set -eu
 # the environment cannot move: where this script is. The hook does the opposite
 # and correctly so -- it is invoked by git, and the index git exports is exactly
 # the one it is meant to check.
+#
+# The last two are the configuration half of the same problem. Git carries the
+# caller's one-shot configuration in GIT_CONFIG_PARAMETERS, and in
+# GIT_CONFIG_COUNT with the indexed GIT_CONFIG_KEY_<n>/GIT_CONFIG_VALUE_<n>
+# pairs it drives; the pairs are inert once the count is gone. Either form
+# supplying `core.fsmonitor` makes the git calls below start a command nobody
+# here named, measured on git 2.50.1. Which of the caller's own configuration
+# *files* git reads, through GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM, is left
+# alone: those name files the caller owns rather than smuggling a value
+# in-band.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
-    GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX
+    GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX \
+    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
 
 here="$(dirname "$0")"
 cd "$here/.."
