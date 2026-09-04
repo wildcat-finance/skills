@@ -476,7 +476,7 @@ class ProofBackedCleanupTests(ProofBackedTestCase):
 
 
 class ProofBackedRealFixtureTests(ProofBackedTestCase):
-    def test_aave_v4_nested_real_chain_fixture_verifies(self):
+    def _prepare_aave_v4_plan(self, *, all_subjects):
         shutil.rmtree(self.input / "fixture")
         shutil.copytree(AAVE_V4, self.input / "fixture")
         lazarus_manifest = load_bytes(
@@ -513,21 +513,28 @@ class ProofBackedRealFixtureTests(ProofBackedTestCase):
                 "redistribution": "permitted",
             })
         capture = plan["captures"][0]
-        capture["chain"] = "eip155:1"
+        chain = f"eip155:{int(lazarus_manifest['chain_id'], 16)}"
+        capture["chain"] = chain
         capture["source"]["reference"] = lazarus_manifest["fixture_digest"]
         capture["scope"]["interval"]["block_number"] = str(
             int(lazarus_manifest["block"]["number"], 16)
         )
         capture["scope"]["interval"]["block_hash"] = lazarus_manifest["block"]["hash"].lower()
+        targets = lazarus_plan["proof_targets"]
+        if not all_subjects:
+            targets = targets[:1]
         capture["scope"]["subjects"] = [
-            f"eip155:{int(lazarus_manifest['chain_id'], 16)}:"
-            f"{lazarus_plan['proof_targets'][0]['address'].lower()}"
+            f"{chain}:{target['address'].lower()}" for target in targets
         ]
         capture["coverage"]["record_count"] = len(lazarus_manifest["components"])
         capture["coverage"]["collections"][0]["record_count"] = len(
             lazarus_manifest["components"]
         )
         self.write_plan(plan)
+        return plan
+
+    def test_aave_v4_nested_real_chain_fixture_verifies(self):
+        self._prepare_aave_v4_plan(all_subjects=False)
         release_id = self.build()
         self.assertEqual(verify(self.release), release_id)
         self.assert_plan_refused(
@@ -538,6 +545,12 @@ class ProofBackedRealFixtureTests(ProofBackedTestCase):
             "is outside the fixture proof targets",
             reconstruction=True,
         )
+
+    def test_aave_v4_both_proof_targets_verify(self):
+        plan = self._prepare_aave_v4_plan(all_subjects=True)
+        self.assertEqual(len(plan["captures"][0]["scope"]["subjects"]), 2)
+        release_id = self.build()
+        self.assertEqual(verify(self.release), release_id)
 
     def test_checked_in_example_rebuilds_byte_identically_and_verifies(self):
         rebuilt = self.root / "rebuilt"
