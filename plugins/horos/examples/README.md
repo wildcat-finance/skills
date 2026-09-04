@@ -4,7 +4,11 @@
 class across both evidence grades. Hard entries (they bind agents): a
 signature-named font, a lockfile, a marker-generated file, a
 sample-corroborated `dist/`, a package-manager-corroborated
-`node_modules/`, a `.gitattributes`-vendored `lib/`, and a sourcemap.
+`node_modules/`, a `.gitattributes`-vendored `lib/`, a sourcemap, and the
+three digest-named objects under `store/`: the flat
+`store/blobs/sha256/3e02...` and the sharded `store/objects/sha256/7d/7d2a...`
+and `store/objects/sha256/e1/e182...`, each bound by the digest of its own
+bytes.
 Candidates (advisory, in `candidates.json`): a null-byte binary, an
 uncorroborated `build/` walked file-by-file, a single-line blob, a minified
 bundle, an SVG text asset, and a migration SQL file. Two hand-written
@@ -41,6 +45,23 @@ evidenced by the tree`. Restore it with `git checkout` afterwards. The same
 failure fires in the other direction when a new sink appears that the
 committed boundary lacks, which is the control against a boundary edited to
 hide something.
+
+## The mutation that tampers with a store object
+
+Append one byte to a sharded object and its name no longer matches its
+bytes:
+
+```bash
+printf x >> plugins/horos/examples/fixture/store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82
+python3 plugins/horos/skills/horos/scripts/horos.py check plugins/horos/examples/fixture
+```
+
+exits 1 and names the object: `drift:
+store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82:
+in the boundary but no longer evidenced by the tree`. The object falls out of
+the boundary rather than staying in it with a stale entry, because its only
+evidence was the digest. Restore it with
+`git checkout -- plugins/horos/examples/fixture/store` afterwards.
 
 ## The census
 
