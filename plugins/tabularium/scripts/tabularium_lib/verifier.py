@@ -3,33 +3,11 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import ADAPTER_VERSION, EVENT_SCHEMA_VERSION
-from .adapters.goldfinch import MAPPINGS, map_snapshot
 from .core import TabulariumError, jsonl_bytes, loads_json, sha256_bytes
 from .paths import resolve_artifact_path
-from .release import (
-    UNSUPPORTED_KEYS,
-    validate_capture,
-    validate_manifest,
-)
 from .release_v2 import (
     validate_capture as validate_capture_v2,
     validate_manifest as validate_manifest_v2,
-)
-
-
-EVENT_KEYS = frozenset(
-    {
-        "schema_version", "id", "event_family", "action", "venue", "chain",
-        "transaction", "parties", "instrument", "asset", "amount",
-        "provenance", "native_record",
-    }
-)
-PROVENANCE_KEYS = frozenset(
-    {
-        "source_kind", "source_contract", "source_entity", "source_id",
-        "source_selector", "mapping_rule", "adapter", "adapter_version",
-    }
 )
 
 
@@ -56,37 +34,6 @@ def _parse_jsonl(data):
     if any(not line for line in lines):
         raise TabulariumError("canonical JSONL contains an empty row")
     return [loads_json(line, "canonical row %d" % (index + 1)) for index, line in enumerate(lines)]
-
-
-def _validate_event_versions(row, index):
-    where = "canonical row %d" % index
-    if not isinstance(row, dict) or set(row) != EVENT_KEYS:
-        raise TabulariumError("%s does not match canonical event schema v1" % where)
-    if type(row["schema_version"]) is not int or row["schema_version"] != EVENT_SCHEMA_VERSION:
-        raise TabulariumError("%s uses an unsupported event schema version" % where)
-    provenance = row.get("provenance")
-    if not isinstance(provenance, dict) or set(provenance) != PROVENANCE_KEYS:
-        raise TabulariumError("%s provenance does not match canonical event schema v1" % where)
-    for key in (
-        "adapter", "adapter_version", "source_entity", "source_id",
-        "source_selector", "mapping_rule",
-    ):
-        if not isinstance(provenance[key], str):
-            raise TabulariumError("%s provenance field %s is not a string" % (where, key))
-    if provenance["adapter"] != "goldfinch" or provenance["adapter_version"] != ADAPTER_VERSION:
-        raise TabulariumError("%s uses an unsupported adapter version" % where)
-    collection = provenance["source_entity"]
-    if collection not in MAPPINGS:
-        raise TabulariumError("%s names an unsupported source entity" % where)
-    mapping = MAPPINGS[collection]
-    if provenance["mapping_rule"] != mapping.rule:
-        raise TabulariumError("%s uses an unsupported mapping-rule version" % where)
-    if row["event_family"] != mapping.family or row["action"] != mapping.action:
-        raise TabulariumError("%s does not match its mapping rule" % where)
-    expected_selector = "%s[id=%s]" % (collection, provenance["source_id"])
-    if provenance["source_selector"] != expected_selector:
-        raise TabulariumError("%s source selector does not match its source identifier" % where)
-    return provenance["source_selector"]
 
 
 def _refuse_artifact_aliases(manifest_path, artifacts):
@@ -122,62 +69,6 @@ def _release_artifacts(manifest_path, manifest):
         canonical_path, manifest["canonical"], "canonical ledger"
     )
     return source_bytes, capture_bytes, canonical_bytes
-
-
-def _verify_v1(manifest_path, raw_manifest):
-    manifest = validate_manifest(raw_manifest)
-    source_bytes, capture_bytes, canonical_bytes = _release_artifacts(
-        manifest_path, manifest
-    )
-
-    source = loads_json(source_bytes, "source")
-    capture = loads_json(capture_bytes, "capture manifest")
-    indexed_block = validate_capture(capture, capture_bytes, source, source_bytes)
-    if indexed_block != manifest["source"]["indexed_block"]:
-        raise TabulariumError("coverage indexed block does not match capture manifest")
-
-    mapped = map_snapshot(source)
-    included = manifest["coverage"]["included_entities"]
-    expected_included = {
-        "borrows": mapped.mapped_counts["borrowing"],
-        "repays": mapped.mapped_counts["repayment"],
-    }
-    if included != expected_included:
-        raise TabulariumError("included entity counts do not match source")
-    unsupported = manifest["coverage"]["unsupported_entities"]
-    expected_unsupported = {
-        key: mapped.unmapped_counts[key] for key in UNSUPPORTED_KEYS
-    }
-    if unsupported != expected_unsupported:
-        raise TabulariumError("unsupported entity counts do not match source")
-
-    rows = _parse_jsonl(canonical_bytes)
-    if len(rows) != manifest["canonical"]["rows"]:
-        raise TabulariumError("canonical row count does not match coverage manifest")
-    selectors = [
-        _validate_event_versions(row, index)
-        for index, row in enumerate(rows, start=1)
-    ]
-    if len(selectors) != len(set(selectors)):
-        raise TabulariumError("canonical ledger has duplicate source selectors")
-    expected_selectors = [
-        event["provenance"]["source_selector"] for event in mapped.events
-    ]
-    if set(selectors) != set(expected_selectors):
-        raise TabulariumError("canonical source selectors do not trace one-to-one to source")
-    if selectors != expected_selectors:
-        raise TabulariumError("canonical rows are not in deterministic order")
-
-    expected_bytes = jsonl_bytes(mapped.events)
-    if canonical_bytes != expected_bytes:
-        raise TabulariumError("canonical bytes do not match an offline source rebuild")
-    if manifest["canonical"]["sha256"] != sha256_bytes(expected_bytes):
-        raise TabulariumError("canonical digest does not match the offline rebuild")
-    return VerificationReport(
-        release=manifest["release"],
-        rows=len(rows),
-        sha256=sha256_bytes(canonical_bytes),
-    )
 
 
 def _verify_v2(manifest_path, raw_manifest):
@@ -262,8 +153,6 @@ def verify(manifest_path):
     if not isinstance(raw_manifest, dict):
         raise TabulariumError("coverage manifest is not an object")
     version = raw_manifest.get("schema_version")
-    if version == 1:
-        return _verify_v1(manifest_path, raw_manifest)
     if version == 2:
         return _verify_v2(manifest_path, raw_manifest)
     raise TabulariumError("unsupported coverage manifest schema version")

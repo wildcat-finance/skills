@@ -37,9 +37,9 @@
         "block_number": {
           "type": "integer",
           "minimum": 0,
-          "description": "An integer. A hex quantity string orders as text, so \"0xc7da16\" would sort below \"0x2\".",
+          "description": "An integer. A hex quantity string orders as text, so \"0x18ac22c\" would sort below \"0x2\".",
           "examples": [
-            13097494
+            25870892
           ]
         },
         "block_hash": {

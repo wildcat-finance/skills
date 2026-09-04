@@ -5,7 +5,7 @@ Assuming, unless corrected:
 1. Python 3.9 or later, standard library only, `unittest` discovery, matching
    every first-party plugin except Lazarus.
 2. The prototype's reference release answers against a small frozen
-   demonstration corpus shipped inside the plugin, plus preserved Goldfinch
+   demonstration corpus shipped inside the plugin, plus preserved Aave v4
    mainnet reads copied byte for byte from the Lazarus example fixture. A
    release grounded in live Wildcat documentation and captured Wildcat market
    reads is the held frontier, not this run.
@@ -32,9 +32,9 @@ answers.
 It is for developer relations, support and agent engineering teams who run a
 protocol agent and need its answers testable after the fact. A working
 prototype means: `python3 plugins/berean/scripts/berean.py verify-release
-plugins/berean/examples/goldfinch-demo-v0` exits 0 against the shipped
+plugins/berean/examples/aave-v4-demo-v0` exits 0 against the shipped
 reference release, exits 1 when any pinned byte or gate is disturbed, and
-`python3 plugins/berean/examples/goldfinch-demo-v0/demo.py` walks the whole
+`python3 plugins/berean/examples/aave-v4-demo-v0/demo.py` walks the whole
 path: corpus check, citation check, block-bound read check, eval run,
 promotion record check. Both root suites and the berean suite pass, and every
 shipped document lints clean.
@@ -195,7 +195,7 @@ The audit loop should look hardest at:
 - `plugins/ariadne/docs/design.md`, `plugins/ariadne/docs/conformance.md`,
   `plugins/ariadne/scripts/ariadne_lib/`.
 - `plugins/lazarus/docs/preservation-release.md`,
-  `plugins/lazarus/examples/goldfinch-v0-release/`,
+  `plugins/lazarus/examples/aave-v4-spoke-v0-release/`,
   `plugins/lazarus/scripts/lazarus_lib/{records,canonical,binding}.py`.
 - `plugins/lemma/INVARIANTS.md`, `plugins/lemma/schema.py`,
   `plugins/lemma/chunkers/markdown.py`.
@@ -272,7 +272,7 @@ class the way Ariadne's conformance corpus does.
 
 - Deferring the Ariadne binding, and what a future statement covers:
   `plugins/berean/docs/design.md`.
-- Copying Goldfinch read records instead of referencing the Lazarus fixture
+- Copying Aave v4 read records instead of referencing the Lazarus fixture
   path, with the drift test that holds the copy: `plugins/berean/docs/design.md`.
 - Release immutability, supersession and rollback-as-record:
   `plugins/berean/docs/release-policy.md`.

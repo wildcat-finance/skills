@@ -1,7 +1,7 @@
 # Sapheneia runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Sapheneia.** Sapheneia shapes the agent's own interaction with an AuDHD reader and one bounded audit record, GitHub issue, or issue comment. Use Imprimatur to inspect prose for banned machine-writing patterns, and use Vulgate or another voice mask to change register. Sapheneia governs information shape; it does not diagnose the reader, choose a house voice, or make GitHub enforce a repository rule. **Current frontier:** Cross-model behaviour has not yet been held against a published AuDHD task corpus.
+> **Marketplace context: Sapheneia.** Sapheneia shapes the agent's own interaction with an AuDHD reader and every record it writes down, including one bounded audit record, GitHub issue, issue comment, pull request, repository document, or commit message. Use Imprimatur to inspect prose for banned machine-writing patterns, and use Vulgate or another voice mask to change register. Sapheneia governs information shape; it does not diagnose the reader, choose a house voice, or make GitHub enforce a repository rule. **Current frontier:** Cross-model behaviour has not yet been held against a published AuDHD task corpus.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -27,17 +27,20 @@ Topic changes and context resets do not end the contract. Only the stop phrases
 named in the canonical skill do. System, safety, harness and target-repository
 instructions still take precedence.
 
-The separate `sapheneia-durable-record-shape` operation governs one
-agent-authored audit record, one GitHub issue title and body, or one GitHub issue
-comment. It does not activate session-wide Sapheneia. It preserves the owning
-format and protected evidence while removing only claim-neutral prose.
+The separate `sapheneia-durable-record-shape` operation governs prose the agent
+writes down: an audit record, a GitHub issue title and body, a GitHub issue
+comment, a pull request, a repository document, a commit message. Run it on
+each such record before writing or publishing it, whether or not session
+shaping is active. It does not activate session-wide Sapheneia. It preserves
+the owning format and protected evidence while removing only claim-neutral
+prose, and it leaves generated, digest-bound and fixed-template bytes alone.
 
 The canonical `SKILL.md` is the authoritative behaviour contract.
 
 ## Invocation and paths
 
 - `$sapheneia`, `/sapheneia:sapheneia`, `use Sapheneia`, and explicit requests for ADHD-, autism- or AuDHD-shaped agent interaction select session shaping.
-- A request to apply Sapheneia to an audit record, GitHub issue, or GitHub issue comment selects only the bounded durable-record operation unless the user also requests session shaping.
+- A request to apply Sapheneia to an audit record, GitHub issue, GitHub issue comment, pull request, repository document, or commit message selects only the bounded durable-record operation unless the user also requests session shaping.
 - Resolve relative paths from `skills/sapheneia/`.
 - This skill needs no shell, network or write access. Other active skills retain their own tool and side-effect rules.
 - Preserve another skill's facts, gates, qualifications and output requirements. Sapheneia changes how the agent presents and tracks them.

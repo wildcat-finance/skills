@@ -34,7 +34,7 @@ class BuildTests(unittest.TestCase):
             set(release.IDENTITY_FIELDS) | {"release_digest"}, set(release.FIELDS)
         )
         with tempfile.TemporaryDirectory() as holder:
-            directory, document = build_temp_release(holder)
+            _directory, document = build_temp_release(holder)
             for field in release.IDENTITY_FIELDS:
                 mutated = json.loads(json.dumps(document))
                 if field == "retention":
@@ -176,7 +176,6 @@ class AllowlistWalkTests(unittest.TestCase):
     def test_a_nested_unallowlisted_address_fails_the_gate(self):
         import shutil as _shutil
 
-        from berean_lib import jsonio as jsonio_lib
         from berean_lib import reads as reads_lib
 
         with tempfile.TemporaryDirectory() as holder:

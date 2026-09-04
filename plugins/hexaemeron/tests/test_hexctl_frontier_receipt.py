@@ -21,7 +21,6 @@ on the refusal itself, the rest on the missing shared constant.
 
 import json
 import os
-import re
 import shutil
 import subprocess
 
@@ -297,7 +296,7 @@ class FrontierReceiptCase(HexctlCase):
         The constant is pinned by value, the reader is pinned to consume the
         constant, and the dead literal is pinned absent.
         """
-        module = hexctl_module()
+        _module = hexctl_module()
         self.assertEqual(self.sync_base_head_key(), "base_head")
         with open(HEXCTL, encoding="utf-8") as handle:
             source = handle.read()

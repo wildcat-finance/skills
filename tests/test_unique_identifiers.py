@@ -79,7 +79,7 @@ def coverage_document():
 def bound_promise_ids(document):
     """Every promise id the coverage file binds, from rows and capability keys."""
     bound = {row["promise_id"] for row in document.get("rows", [])}
-    for key, value in document.items():
+    for _key, value in document.items():
         if isinstance(value, dict) and "promise_id" in value:
             bound.add(value["promise_id"])
     return bound
@@ -121,7 +121,7 @@ class PromiseIdentifiers(unittest.TestCase):
     def test_no_two_coverage_entries_share_an_id(self):
         document = coverage_document()
         ids = [row["promise_id"] for row in document["rows"]]
-        for key, value in document.items():
+        for _key, value in document.items():
             if isinstance(value, dict) and "promise_id" in value:
                 ids.append(value["promise_id"])
         duplicates = sorted(k for k, n in collections.Counter(ids).items() if n > 1)

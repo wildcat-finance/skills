@@ -498,7 +498,7 @@ class SchemaTests(unittest.TestCase):
             (
                 "unsupported type",
                 lambda witness: witness["receipts"][1].__setitem__(
-                    "receipt_type", "0x3"
+                    "receipt_type", "0x5"
                 ),
                 FormatError,
                 "receipt_type",

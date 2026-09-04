@@ -88,7 +88,7 @@ manifest rather than computing them.
 
 **Entry.** Step 3's exit state.
 
-**Exit.** `capture-state-fixture` over `plugins/lazarus/examples/goldfinch-v0` writes a statement
+**Exit.** `capture-state-fixture` over `plugins/lazarus/examples/aave-v4-spoke-v0` writes a statement
 `verify` passes with no unchecked gate. A fixture whose manifest and components disagree is
 refused. Both suites green.
 
@@ -100,7 +100,7 @@ refused. Both suites green.
 - `plugins/ariadne/tests/test_capture_state_fixture.py` (new)
 - `plugins/ariadne/docs/capturing-a-state-fixture.md` (new)
 
-**Tests.** The Goldfinch fixture captured and verified. A missing manifest, a missing header, a
+**Tests.** The Aave v4 fixture captured and verified. A missing manifest, a missing header, a
 component the manifest declares and the directory lacks, a digest that disagrees, a path leaving
 the directory, and `--out` written atomically. Expect roughly 20 new tests.
 

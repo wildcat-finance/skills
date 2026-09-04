@@ -236,7 +236,7 @@
     "promise_id": "promise-machine-dead-code-baseline",
     "runtime": {
       "path": "scripts/dead_code.py",
-      "sha256": "838a52981abf9345490f8aeed7059ce27ba0c41c569b6cc76068913d1c126482"
+      "sha256": "4cc6e057df3f0e105b074343e38ae44da9bfee8dd0e6f99a0ba6a77e966e290d"
     },
     "schema_source": {
       "path": "schemas/dead-code-report-v1.schema.json",
@@ -280,7 +280,7 @@
         "test_workflow_and_operator_guide_carry_the_exact_five_command_demo",
         "test_workflow_summary_carries_the_publication_commit_as_plain_text"
       ],
-      "sha256": "6da6f1724e94c573f02fdbb2ea37282a0e4998af2128e159a71d9d17cbca0fc8"
+      "sha256": "5f80a036a558e91c9b86165b23e6760c741f890da937817d2587a71700fcbddd"
     },
     "transition": "record and verify one report-only static candidate baseline over its exact clean source commit, and separately validate exact suppressions against the same clean current commit, with no finding count treated as deletion or merge authority"
   },
@@ -299,6 +299,31 @@
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
       "path": "plugins/alexandria/tests/test_demo.py",
       "selector": "test_documented_build_and_verify_commands_run_exactly"
+    },
+    "alexandria-proof-backed-m": {
+      "claim": "A proof-backed capture is refused when a manifest-named fixture component is missing.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_m_refuses_missing_fixture_component"
+    },
+    "alexandria-proof-backed-o": {
+      "claim": "A proof-backed capture is refused when its subject exceeds the fixture proof targets.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_o_refuses_proof_overclaim"
+    },
+    "alexandria-proof-backed-p": {
+      "claim": "A complete embedded Lazarus fixture earns proof-backed state through offline verification.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_p_accepts_verified_fixture"
+    },
+    "alexandria-proof-backed-r": {
+      "claim": "A refused proof-backed plan can be repaired, ingested and verified in a new output.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_r_accepts_repaired_plan"
+    },
+    "alexandria-proof-backed-s": {
+      "claim": "Proof-backed verification reaches no network and changes no release byte.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_s_is_offline_and_read_only"
     },
     "alexandria-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
@@ -1382,12 +1407,12 @@
     },
     "lazarus-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
-      "path": "plugins/lazarus/tests/test_goldfinch.py",
+      "path": "plugins/lazarus/tests/test_aave_v4.py",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance"
     },
     "lazarus-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
-      "path": "plugins/lazarus/tests/test_goldfinch.py",
+      "path": "plugins/lazarus/tests/test_aave_v4.py",
       "selector": "test_demo_command_runs_the_complete_application_check"
     },
     "lazarus-s": {
@@ -1718,7 +1743,7 @@
     "tabularium-o": {
       "claim": "The nearest tempting overclaim remains explicitly unavailable.",
       "path": "plugins/tabularium/tests/test_verify.py",
-      "selector": "test_indexed_block_must_match_source_metadata"
+      "selector": "test_capture_window_must_match_the_snapshot_window"
     },
     "tabularium-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
@@ -2037,6 +2062,22 @@
       },
       "group": "executable",
       "promise_id": "alexandria-derived-view",
+      "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "alexandria-proof-backed-m",
+        "O": "alexandria-proof-backed-o",
+        "P": "alexandria-proof-backed-p",
+        "R": "alexandria-proof-backed-r",
+        "S": "alexandria-proof-backed-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "alexandria-proof-backed-state",
       "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
@@ -4477,9 +4518,9 @@
         "scope": "venue, chain, capture boundary and mapped selectors",
         "subject": "release directory, source digest and adapter version",
         "transition": "atomic build and verification status joined to the canonical Authorises field",
-        "unknowns": "unsupported entities, known gaps and unsigned publisher identity"
+        "unknowns": "unsupported activity types, known gaps and unsigned publisher identity"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+      "sha256": "3de7e74bc14eb70a1d3012e4bf4e82af2ffa2a35590f87f4468d8590bd9827ff",
       "source": "plugins/tabularium/scripts/tabularium.py"
     },
     "tabularium-release-verification": {
@@ -4491,9 +4532,9 @@
         "scope": "venue, capture boundary, paths and one-to-one source selectors",
         "subject": "release directory, source digest and adapter version",
         "transition": "zero-exit verification joined to the canonical Authorises field",
-        "unknowns": "publisher identity, chain proof and unmapped source entities"
+        "unknowns": "publisher identity, chain proof and unmapped source activity types"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+      "sha256": "3de7e74bc14eb70a1d3012e4bf4e82af2ffa2a35590f87f4468d8590bd9827ff",
       "source": "plugins/tabularium/scripts/tabularium.py"
     },
     "dokimasia-drafted-dispositions": {

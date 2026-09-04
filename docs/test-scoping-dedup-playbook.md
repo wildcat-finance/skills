@@ -26,7 +26,7 @@ executed in both the root loop and the plugin call.
 
 - **Cross-component reach** -- e.g. `alexandria/tests/test_index.py` running the
   Probitas CLI end-to-end, `tabularium/tests/test_compound_witness.py`
-  rebuilding Alexandria's release, `lazarus/tests/test_goldfinch.py:44`
+  rebuilding Alexandria's release, `lazarus/tests/test_aave_v4.py:44`
   reading a Tabularium fixture. That is a different fix (own-the-artifact /
   anchor-to-digest), covered in §6b.
 - **hexaemeron checker whole-tree walks** (`ephoros`, `phylax`, `hypomnema`) --
@@ -259,7 +259,7 @@ rebuild:
 
 - `alexandria/tests/test_index.py:426-471` (runs Probitas end-to-end) → Probitas suite.
 - `tabularium/tests/test_compound_witness.py:113-144` (rebuilds Alexandria) → Alexandria suite.
-- `lazarus/tests/test_goldfinch.py:44-54` (reads a Tabularium fixture) → assert against a digest.
+- `lazarus/tests/test_aave_v4.py:44-54` (reads a Tabularium fixture) → assert against a digest.
 - `berean`/`ariadne` → lazarus reads are already `skipTest`-guarded; re-anchor to a digest.
 
 ---

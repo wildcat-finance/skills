@@ -92,9 +92,9 @@ class BuilderCliTests(unittest.TestCase):
             result = run(*build_args(source, capture, output, manifest))
             self.assertEqual(result.returncode, 0, result.stderr)
             rows = [json.loads(line) for line in output.read_text().splitlines()]
-            self.assertEqual([row["event_family"] for row in rows], ["repayment", "borrowing"])
+            self.assertEqual([row["event_family"] for row in rows], ["borrowing", "repayment"])
             self.assertIn("built 2 event(s)", result.stderr)
-            self.assertIn("creditLines=1", result.stderr)
+            self.assertIn("borrowing=1, repayment=1", result.stderr)
             self.assertIn("coverage manifest sha256", result.stderr)
             self.assertTrue(output.read_bytes().endswith(b"\n"))
             self.assertTrue(manifest.read_bytes().endswith(b"\n"))
@@ -118,7 +118,7 @@ class BuilderCliTests(unittest.TestCase):
             output = Path(directory) / "events.jsonl"
             capture = Path(directory) / "capture.json"
             manifest = Path(directory) / "coverage.json"
-            source.write_text('{"borrows": []}')
+            source.write_text('{"_meta": {}, "useractivities": []}')
             capture.write_bytes(CAPTURE_FIXTURE.read_bytes())
             result = run(*build_args(source, capture, output, manifest))
             self.assertEqual(result.returncode, 2)
@@ -130,7 +130,7 @@ class BuilderCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             source, capture, output, manifest = release_paths(directory)
             claim = json.loads(capture.read_text())
-            claim["bytes"] += 1
+            claim["source"]["bytes"] += 1
             capture.write_text(json.dumps(claim))
             result = run(*build_args(source, capture, output, manifest))
             self.assertEqual(result.returncode, 2)
@@ -138,15 +138,16 @@ class BuilderCliTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertFalse(manifest.exists())
 
-    def test_capture_indexed_block_is_checked_before_any_output(self):
+    def test_capture_window_is_checked_before_any_output(self):
         with tempfile.TemporaryDirectory() as directory:
             source, capture, output, manifest = release_paths(directory)
             claim = json.loads(capture.read_text())
-            claim["captured"]["indexed_block"] = 101
+            claim["scope"]["to_block"] = 111
+            claim["request"]["query"]["where"] = "block_gte:100,block_lte:111"
             capture.write_text(json.dumps(claim))
             result = run(*build_args(source, capture, output, manifest))
             self.assertEqual(result.returncode, 2)
-            self.assertIn("indexed block", result.stderr)
+            self.assertIn("window does not match", result.stderr)
             self.assertFalse(output.exists())
             self.assertFalse(manifest.exists())
 
@@ -189,15 +190,17 @@ class BuilderCliTests(unittest.TestCase):
             source, capture, _, manifest = release_paths(directory)
             output = Path(directory) / "events.jsonl"
             before = source.read_bytes()
-            original_map = builder_module.map_snapshot
+            from tabularium_lib.adapters import aave_v4
 
-            def swap_after_check(snapshot):
-                mapped = original_map(snapshot)
+            original_map = aave_v4.map_source
+
+            def swap_after_check(snapshot, capture_manifest):
+                mapped = original_map(snapshot, capture_manifest)
                 output.symlink_to(source)
                 return mapped
 
             with mock.patch.object(
-                builder_module, "map_snapshot", side_effect=swap_after_check
+                aave_v4, "map_source", side_effect=swap_after_check
             ):
                 report = builder_module.build(
                     source, capture, output, manifest, "fixture-v1"

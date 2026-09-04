@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import copy
 import importlib.util
-import json
 from pathlib import Path
 import unittest
 

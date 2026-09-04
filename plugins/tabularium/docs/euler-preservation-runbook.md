@@ -10,15 +10,15 @@ offline verifier and marketplace claim form one review boundary.
 ## Step 1: Ship source-bound Euler v1 and Euler V2 releases
 
 **Goal.** Add deterministic Euler release paths without changing an earlier
-Goldfinch release byte, and keep Euler V2 protocol generation separate from
+Aave v4 release byte, and keep Euler V2 protocol generation separate from
 the Euler V3 source API.
 
 **Entry.** Clean `main` at `27e930f`, with issue #57 as the issue-first record,
-92 passing Tabularium tests and the four Goldfinch digests fixed by tests.
+92 passing Tabularium tests and the four Aave v4 digests fixed by tests.
 
 **Exit.** `euler-v1-v0` and `euler-v2-v0` build in fresh directories, verify
 without network access or writes, reject source and derived-artifact tampering,
-and match their committed bytes on two rebuilds. The Goldfinch digest gate and
+and match their committed bytes on two rebuilds. The Aave v4 digest gate and
 full repository test matrix remain green. Marketplace prose names the shipped
 boundary and rotates the next Fiat job to Compound III Phase 0.
 

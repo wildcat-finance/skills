@@ -9,7 +9,6 @@ import unittest
 from tests.support import SCRIPTS, SCHEMAS, FIXTURES  # noqa: F401
 
 from berean_lib import BereanError, canonical, digests, evals, release
-from tests import release_fixture
 
 PASS_RELEASE = FIXTURES / "conformance" / "pass-release"
 

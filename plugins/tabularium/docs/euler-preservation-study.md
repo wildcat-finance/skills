@@ -10,12 +10,12 @@ adapters landed in Probitas. PR #65 closed the issue after shipping the
 Probitas portion, but changed no Tabularium file.
 
 Tabularium's original builder, release manifest and verifier understood only
-Goldfinch and canonical schema v1. The existing Probitas adapters supplied
+Aave v4 and canonical schema v1. The existing Probitas adapters supplied
 useful source-shape and semantic checks, but their dossier records omit native
 detail that a preservation release needs. Their checked-in Euler fixtures are
 synthetic and cannot stand in for captured production evidence.
 
-The selected design leaves every Goldfinch release byte and v1 validator
+The selected design leaves every Aave v4 release byte and v1 validator
 unchanged. Adapter dispatch adds canonical event and coverage schema v2, then
 two self-contained release directories bind real, narrow source responses.
 The Euler v1 release preserves canonical-proxy logs for one borrower and block.

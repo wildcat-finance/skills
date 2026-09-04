@@ -19,11 +19,11 @@
   "interface": {
     "displayName": "Tabularium",
     "shortDescription": "Venue-qualified credit-event releases rebuilt from preserved source records.",
-    "longDescription": "Tabularium turns preserved Goldfinch, Euler v1, and Euler v2 records into deterministic, venue-qualified credit events without discarding the native source or mapping provenance. It also rebuilds one non-canonical Compound v3 Phase 0 execution witness from a verified Alexandria release. Offline verification reconstructs the expected bytes instead of trusting row claims. The canonical Compound Phase 1 adapter and Ethereum USDC interval specimen have not shipped.",
+    "longDescription": "Tabularium turns preserved Aave v4, Euler v1, and Euler v2 records into deterministic, venue-qualified credit events without discarding the native source or mapping provenance. It also rebuilds one non-canonical Compound v3 Phase 0 execution witness from a verified Alexandria release. Offline verification reconstructs the expected bytes instead of trusting row claims. The canonical Compound Phase 1 adapter and Ethereum USDC interval specimen have not shipped.",
     "developerName": "Wildcat Labs",
     "category": "Research",
     "capabilities": [],
-    "defaultPrompt": "Use $tabularium to build or verify a source-bound Goldfinch, Euler v1 or Euler V2 credit-event release, or rebuild a Compound v3 Phase 0 witness offline."
+    "defaultPrompt": "Use $tabularium to build or verify a source-bound Aave v4, Euler v1 or Euler V2 credit-event release, or rebuild a Compound v3 Phase 0 witness offline."
   },
   "license": "Apache-2.0"
 }

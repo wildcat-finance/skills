@@ -7,7 +7,10 @@
 Step 2 defines three raw-release contracts:
 
 - `capture-plan-v1.schema.json` declares local source files, source references,
-  capture scope, finality and evidence boundaries;
+  capture scope, finality and evidence boundaries. `proof-backed-state` stays
+  a declared `evidence_class` value; its guarantee is earned only after
+  `verify` reruns Lazarus and confirms the claim stays within the proved block
+  and targets;
 - `coverage-v1.schema.json` declares counted source collections, explicit gaps
   and complete, partial, failed or unsupported status; and
 - `archive-manifest-v1.schema.json` binds copied objects and captures to one

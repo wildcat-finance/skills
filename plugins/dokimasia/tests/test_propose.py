@@ -130,7 +130,7 @@ class Regeneration(ProposeCase):
     def test_a_confirmed_entry_survives_byte_for_byte(self):
         _, edited = self._edited()
         before = json.dumps(edited["dispositions"][0], sort_keys=True)
-        again, counts = self.draft(edited)
+        again, _counts = self.draft(edited)
         after = next(
             e for e in again["dispositions"]
             if e["item"] == edited["dispositions"][0]["item"]
@@ -148,8 +148,8 @@ class Regeneration(ProposeCase):
         self.assertEqual(json.dumps(after, sort_keys=True), before)
 
     def test_untouched_drafts_are_replaced_and_counted(self):
-        record, edited = self._edited()
-        again, counts = self.draft(edited)
+        _record, edited = self._edited()
+        _again, counts = self.draft(edited)
         self.assertEqual(counts["preserved"], 2)
         self.assertEqual(counts["replaced"], counts["scoped"] - 2)
         self.assertEqual(counts["added"], 0)

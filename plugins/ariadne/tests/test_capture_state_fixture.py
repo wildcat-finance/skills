@@ -21,14 +21,14 @@ import ariadne_lib.predicates  # noqa: F401,E402
 from ariadne_lib.capture import state_fixture as capture  # noqa: E402
 from ariadne_lib.predicates import state_fixture as predicate  # noqa: E402
 
-GOLDFINCH = os.path.join(
+LAZARUS_FIXTURE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))))),
-    "plugins", "lazarus", "examples", "goldfinch-v0",
+    "plugins", "lazarus", "examples", "aave-v4-spoke-v0",
 )
 RECEIPT_FIXTURE = support.LAZARUS_RECEIPT_FIXTURE
 
-COMMAND = ["python3", "scripts/lazarus.py", "verify", "examples/goldfinch-v0"]
+COMMAND = ["python3", "scripts/lazarus.py", "verify", "examples/aave-v4-spoke-v0"]
 REASON = "first capture of this block; nothing earlier to compare against"
 
 
@@ -39,7 +39,7 @@ def read_json(path):
 
 def taken(root, **overrides):
     arguments = {
-        "name": "goldfinch-v0",
+        "name": "aave-v4-spoke-v0",
         "capture_tool": "lazarus",
         "capture_command": COMMAND,
         "first_capture_reason": REASON,
@@ -54,9 +54,9 @@ def report_for(statement):
     )
 
 
-class SkipUnlessGoldfinch(unittest.TestCase):
+class SkipUnlessLazarusFixture(unittest.TestCase):
     def setUp(self):
-        if not os.path.isdir(GOLDFINCH):
+        if not os.path.isdir(LAZARUS_FIXTURE):
             self.skipTest("Lazarus is not beside this plugin in this checkout")
 
 
@@ -140,8 +140,8 @@ class ReceiptFixtureTests(SkipUnlessReceiptFixture):
         with self.assertRaisesRegex(capture.CaptureError, "cross-version"):
             taken(
                 RECEIPT_FIXTURE,
-                previous=GOLDFINCH,
-                previous_name="goldfinch-v0",
+                previous=LAZARUS_FIXTURE,
+                previous_name="aave-v4-spoke-v0",
                 first_capture_reason=None,
             )
 
@@ -389,18 +389,18 @@ class ReceiptFixtureTests(SkipUnlessReceiptFixture):
                 capture.tree.files(RECEIPT_FIXTURE, "fixture")
 
 
-class TheShippedFixtureTests(SkipUnlessGoldfinch):
+class TheShippedFixtureTests(SkipUnlessLazarusFixture):
     def test_it_captures_and_verifies_clean(self):
-        report = report_for(taken(GOLDFINCH))
+        report = report_for(taken(LAZARUS_FIXTURE))
         self.assertTrue(
             report.ok, "\n".join(g.line() for g in report.gates if not g.passed)
         )
         self.assertFalse(report.unchecked)
 
     def test_the_pin_is_the_one_the_manifest_carries(self):
-        manifest = read_json(os.path.join(GOLDFINCH, "manifest.json"))
-        header = read_json(os.path.join(GOLDFINCH, "header.json"))
-        chain = taken(GOLDFINCH)["predicate"]["chain"]
+        manifest = read_json(os.path.join(LAZARUS_FIXTURE, "manifest.json"))
+        header = read_json(os.path.join(LAZARUS_FIXTURE, "header.json"))
+        chain = taken(LAZARUS_FIXTURE)["predicate"]["chain"]
         self.assertEqual(chain["chain_id"], int(manifest["chain_id"], 16))
         self.assertEqual(chain["block_number"], int(manifest["block"]["number"], 16))
         self.assertEqual(chain["block_hash"], manifest["block"]["hash"].lower())
@@ -409,20 +409,20 @@ class TheShippedFixtureTests(SkipUnlessGoldfinch):
     def test_the_counts_are_read_rather_than_computed(self):
         """The rule this capture exists for. Recomputing one would mean deciding
         for Lazarus which of its records were checked against the state root."""
-        manifest = read_json(os.path.join(GOLDFINCH, "manifest.json"))
-        body = taken(GOLDFINCH)["predicate"]
+        manifest = read_json(os.path.join(LAZARUS_FIXTURE, "manifest.json"))
+        body = taken(LAZARUS_FIXTURE)["predicate"]
         self.assertEqual(body["evidence"], manifest["evidence_counts"])
 
     def test_every_component_the_manifest_declares_is_described(self):
-        manifest = read_json(os.path.join(GOLDFINCH, "manifest.json"))
-        body = taken(GOLDFINCH)["predicate"]
+        manifest = read_json(os.path.join(LAZARUS_FIXTURE, "manifest.json"))
+        body = taken(LAZARUS_FIXTURE)["predicate"]
         self.assertEqual(
             sorted(entry["path"] for entry in body["fixture_subjects"]),
             sorted(entry["path"] for entry in manifest["components"]),
         )
 
     def test_every_component_digest_is_a_subject(self):
-        statement = taken(GOLDFINCH)
+        statement = taken(LAZARUS_FIXTURE)
         covered = {
             json.dumps(entry["digest"], sort_keys=True) for entry in statement["subject"]
         }
@@ -431,45 +431,45 @@ class TheShippedFixtureTests(SkipUnlessGoldfinch):
                 self.assertIn(json.dumps(entry["digest"], sort_keys=True), covered)
 
     def test_replay_is_written_closed_and_is_not_a_parameter(self):
-        body = taken(GOLDFINCH)["predicate"]
+        body = taken(LAZARUS_FIXTURE)["predicate"]
         self.assertIs(body["replay"]["reaches_network"], False)
         self.assertIs(body["replay"]["canonical_chain_claim"], False)
 
     def test_the_version_comes_from_the_manifest(self):
-        manifest = read_json(os.path.join(GOLDFINCH, "manifest.json"))
-        body = taken(GOLDFINCH)["predicate"]
+        manifest = read_json(os.path.join(LAZARUS_FIXTURE, "manifest.json"))
+        body = taken(LAZARUS_FIXTURE)["predicate"]
         self.assertEqual(body["capture"]["tool_version"], manifest["tool_version"])
 
     def test_a_stated_version_that_disagrees_is_refused(self):
         with self.assertRaises(capture.CaptureError) as caught:
-            taken(GOLDFINCH, capture_version="9.9.9")
+            taken(LAZARUS_FIXTURE, capture_version="9.9.9")
         self.assertIn("the manifest is what the tool wrote", str(caught.exception))
 
     def test_a_stated_version_that_agrees_is_accepted(self):
-        manifest = read_json(os.path.join(GOLDFINCH, "manifest.json"))
+        manifest = read_json(os.path.join(LAZARUS_FIXTURE, "manifest.json"))
         self.assertTrue(
-            report_for(taken(GOLDFINCH, capture_version=manifest["tool_version"])).ok
+            report_for(taken(LAZARUS_FIXTURE, capture_version=manifest["tool_version"])).ok
         )
 
     def test_capture_is_deterministic(self):
-        self.assertEqual(taken(GOLDFINCH), taken(GOLDFINCH))
+        self.assertEqual(taken(LAZARUS_FIXTURE), taken(LAZARUS_FIXTURE))
 
     def test_it_records_that_it_did_not_recheck_the_proofs(self):
-        body = taken(GOLDFINCH)["predicate"]
+        body = taken(LAZARUS_FIXTURE)["predicate"]
         skipped = [c for c in body["claims"] if c["disposition"] == "skipped"]
         reasons = " ".join(c["reason"] for c in skipped)
         self.assertIn("does not re-verify", reasons)
         self.assertIn("canonical", reasons)
 
 
-class CopiedFixtureTests(SkipUnlessGoldfinch):
+class CopiedFixtureTests(SkipUnlessLazarusFixture):
     """A copy of the shipped fixture, damaged one way at a time."""
 
     def setUp(self):
         super(CopiedFixtureTests, self).setUp()
         self.root = tempfile.mkdtemp(prefix="ariadne-fixture-")
-        self.fixture = os.path.join(self.root, "goldfinch-v0")
-        shutil.copytree(GOLDFINCH, self.fixture)
+        self.fixture = os.path.join(self.root, "aave-v4-spoke-v0")
+        shutil.copytree(LAZARUS_FIXTURE, self.fixture)
         self.addCleanup(shutil.rmtree, self.root, True)
 
     def manifest(self):
@@ -545,7 +545,7 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
                 self.assertIn(field, self.refused())
             self.rewrite(self.manifest())
             shutil.rmtree(self.fixture)
-            shutil.copytree(GOLDFINCH, self.fixture)
+            shutil.copytree(LAZARUS_FIXTURE, self.fixture)
 
     def test_a_later_schema_version_is_refused(self):
         manifest = self.manifest()
@@ -812,7 +812,7 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
                 self.assertIn(name, self.refused())
             self.rewrite(self.manifest())
             shutil.rmtree(self.fixture)
-            shutil.copytree(GOLDFINCH, self.fixture)
+            shutil.copytree(LAZARUS_FIXTURE, self.fixture)
 
     def test_an_unknown_evidence_class_is_refused(self):
         manifest = self.manifest()
@@ -859,7 +859,7 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
 
     def test_a_decimal_block_number_is_refused(self):
         manifest = self.manifest()
-        manifest["block"]["number"] = 13097494
+        manifest["block"]["number"] = 25870892
         self.rewrite(manifest)
         self.assertIn("hex quantity", self.refused())
 
@@ -879,17 +879,17 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         self.assertEqual(body["chain"]["block_hash"], manifest["block"]["hash"].lower())
 
     def test_a_comparison_against_a_previous_capture(self):
-        other = os.path.join(self.root, "goldfinch-v1")
-        shutil.copytree(GOLDFINCH, other)
+        other = os.path.join(self.root, "aave-v4-v1")
+        shutil.copytree(LAZARUS_FIXTURE, other)
         statement = taken(
-            self.fixture, previous=other, previous_name="goldfinch-v0",
-            name="goldfinch-v1", first_capture_reason=None,
+            self.fixture, previous=other, previous_name="aave-v4-spoke-v0",
+            name="aave-v4-v1", first_capture_reason=None,
         )
         report = report_for(statement)
         self.assertTrue(report.ok, [g.line() for g in report.gates if not g.passed])
         deltas = statement["predicate"]["deltas"]
-        self.assertEqual(deltas["baseline"]["name"], "goldfinch-v0")
-        self.assertEqual(deltas["current"]["name"], "goldfinch-v1")
+        self.assertEqual(deltas["baseline"]["name"], "aave-v4-spoke-v0")
+        self.assertEqual(deltas["current"]["name"], "aave-v4-v1")
 
     def test_a_comparison_against_itself_is_refused(self):
         with self.assertRaises(capture.CaptureError) as caught:
@@ -897,12 +897,12 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         self.assertIn("records nothing", str(caught.exception))
 
 
-class ArgumentTests(SkipUnlessGoldfinch):
+class ArgumentTests(SkipUnlessLazarusFixture):
     def test_the_tool_name_has_no_default(self):
         for value in (None, "", "   "):
             with self.subTest(tool=value):
                 with self.assertRaises(capture.CaptureError) as caught:
-                    taken(GOLDFINCH, capture_tool=value)
+                    taken(LAZARUS_FIXTURE, capture_tool=value)
                 self.assertIn("does not name the tool", str(caught.exception))
 
     def test_the_command_is_required_as_an_argv(self):
@@ -916,31 +916,31 @@ class ArgumentTests(SkipUnlessGoldfinch):
         ):
             with self.subTest(command=value):
                 with self.assertRaises(capture.CaptureError):
-                    taken(GOLDFINCH, capture_command=value)
+                    taken(LAZARUS_FIXTURE, capture_command=value)
 
     def test_a_name_is_required(self):
         for value in (None, "", "   "):
             with self.subTest(name=value):
                 with self.assertRaises(capture.CaptureError):
-                    taken(GOLDFINCH, name=value)
+                    taken(LAZARUS_FIXTURE, name=value)
 
     def test_a_first_capture_needs_its_reason(self):
         for value in (None, "", "   "):
             with self.subTest(reason=value):
                 with self.assertRaises(capture.CaptureError) as caught:
-                    taken(GOLDFINCH, first_capture_reason=value)
+                    taken(LAZARUS_FIXTURE, first_capture_reason=value)
                 self.assertIn("--first-capture-reason", str(caught.exception))
 
     def test_a_previous_needs_its_name(self):
         for value in (None, "", "   "):
             with self.subTest(previous_name=value):
                 with self.assertRaises(capture.CaptureError) as caught:
-                    taken(GOLDFINCH, previous=GOLDFINCH, previous_name=value)
+                    taken(LAZARUS_FIXTURE, previous=LAZARUS_FIXTURE, previous_name=value)
                 self.assertIn("--previous-name", str(caught.exception))
 
     def test_v1_retains_its_historical_nonblank_identifier_contract(self):
         statement = taken(
-            GOLDFINCH,
+            LAZARUS_FIXTURE,
             name="\u200b",
             capture_tool="\u200b",
             capture_command=["\u200b"],
@@ -949,12 +949,12 @@ class ArgumentTests(SkipUnlessGoldfinch):
 
     def test_a_fixture_that_is_not_a_directory_is_refused(self):
         with self.assertRaises(capture.CaptureError):
-            taken(os.path.join(GOLDFINCH, "manifest.json"))
+            taken(os.path.join(LAZARUS_FIXTURE, "manifest.json"))
 
     def test_the_parameters_digest_covers_the_parameters(self):
-        one = taken(GOLDFINCH, parameters={"a": 1})
-        two = taken(GOLDFINCH, parameters={"a": 2})
-        same = taken(GOLDFINCH, parameters={"a": 1})
+        one = taken(LAZARUS_FIXTURE, parameters={"a": 1})
+        two = taken(LAZARUS_FIXTURE, parameters={"a": 2})
+        same = taken(LAZARUS_FIXTURE, parameters={"a": 1})
         self.assertNotEqual(
             one["predicate"]["capture"]["parameters_digest"],
             two["predicate"]["capture"]["parameters_digest"],
@@ -965,8 +965,8 @@ class ArgumentTests(SkipUnlessGoldfinch):
         )
 
     def test_the_parameters_digest_does_not_depend_on_key_order(self):
-        one = taken(GOLDFINCH, parameters={"a": 1, "b": 2})
-        two = taken(GOLDFINCH, parameters={"b": 2, "a": 1})
+        one = taken(LAZARUS_FIXTURE, parameters={"a": 1, "b": 2})
+        two = taken(LAZARUS_FIXTURE, parameters={"b": 2, "a": 1})
         self.assertEqual(
             one["predicate"]["capture"]["parameters_digest"],
             two["predicate"]["capture"]["parameters_digest"],
