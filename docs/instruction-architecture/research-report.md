@@ -126,11 +126,11 @@ scorer key, model output or holdout source content. it made no production-path
 change. the development evidence is committed by inventory SHA-256
 `131cb09fd5af7b52a75bc4ee77a4025190b0f2bf928deaf62c73fd951d1630d8`;
 the selection record's self-digest is
-`a2ba7dc1cd2c4eb4c5c1fb2709053cc75a28d1976fa623660f8a0e07ea72cccd`.
+`db8f2ecdd28b6df13c7a7daae7b227b63768452ad9f1b9c6bf7295fb59261939`.
 the behavioural commitment-file SHA-256 is
-`c27c8b2fb7adbd4acb59abe958154aa96b08be79417b67b3c63143632c645e74`;
+`c7d30a0a641d65703f62c071a13af6fb8da85e439deb8775bac4c827f002e78b`;
 the native commitment-file SHA-256 is
-`e11a5cfe4917df785f0e558e35ca8da75c84c8a28786ddc1c9f970e2c308daa3`.
+`5c68729d5f32d1bbc732841daa214b4d6312fe9a07b768d09ed628136fcfb928`.
 
 tracked fixtures own reproducible selection, preregistration, accounting,
 runtime manifests and answer-free packet commitments. ignored
