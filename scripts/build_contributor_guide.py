@@ -414,7 +414,12 @@ def draw_harness_page(c: canvas.Canvas) -> None:
     # `para` refuses text that overflows its box, so a roster that outgrows the
     # card fails the build rather than shipping a page with a name cut off it.
     render = roster()
-    manifest = render.load_manifest()
+    try:
+        manifest = render.load_manifest()
+    except render.RenderError as error:
+        # One line naming what the page could not be drawn from. A traceback
+        # here would say the same thing and carry an absolute path out with it.
+        raise SystemExit(f"build_contributor_guide: {error}") from error
     card(c, 44, 63, 754, 58, fill=BUNKER, stroke=BUNKER)
     label(c, render.pdf_label(manifest), 62, 98, GOLD)
     para(

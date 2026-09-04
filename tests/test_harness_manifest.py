@@ -1580,6 +1580,34 @@ class RenderTests(unittest.TestCase):
                     )
             self.assertEqual(exit_code, 1)
 
+    def test_a_credential_in_the_manifest_never_reaches_a_surface(self):
+        # The probe sweeps what a client printed. This is the same sweep one
+        # boundary later: a token typed into the manifest afterwards would
+        # otherwise be published in three surfaces at once. Feeding it hostile
+        # input is what makes the control established rather than asserted.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
+            document["harnesses"][0]["blocker"] = f"bearer: {LEAKED_SECRET}"
+            staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
+            before = {key: path.read_bytes() for key, path in staged.items()}
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.write(**staged)
+            self.assertIn("token", str(refused.exception))
+            # Nothing was written at all, which is the probe's rule as well.
+            for key, path in staged.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(path.read_bytes(), before[key])
+
+    def test_an_operator_path_the_renderer_rejects_exits_one(self):
+        with open(os.devnull, "w", encoding="utf-8") as sink:
+            with contextlib.redirect_stderr(sink):
+                for option in ("--manifest", "--readme", "--guide", "--pdf"):
+                    with self.subTest(option=option):
+                        self.assertEqual(
+                            render_harness_roster.main(["--check", option, ""]), 1
+                        )
+
     def test_every_harness_the_manifest_names_reaches_every_surface(self):
         document = landed()
         readme = render_harness_roster.readme_block(document)

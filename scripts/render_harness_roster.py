@@ -120,6 +120,21 @@ def load_manifest(path=None):
         raise RenderError(f"manifest refused: {error}") from error
 
 
+def refuse_leak(where, text):
+    """Refuse rendered text carrying a credential shape, rather than print it.
+
+    The probe sweeps what a client printed before it reaches the manifest. This
+    is the same sweep one boundary later, because a manifest is a file on disk
+    and this module turns it into public prose: a token typed or pasted into
+    `docs/harness-classification.json` after the probe wrote it would otherwise
+    be published in the README, the guide and a PDF at once. It fails the write
+    closed rather than redacting, which is the probe's rule as well.
+    """
+    found = _probe().credential_findings(text)
+    if found:
+        raise RenderError(f"the rendered {where} carries a {', '.join(found)} shape")
+
+
 def harnesses(document):
     """Every entry in the manifest's own order."""
     return tuple(document["harnesses"])
@@ -391,11 +406,13 @@ def write(
     already there, so a no-op render leaves their modification times alone.
     """
     document = load_manifest(manifest)
+    refuse_leak("harness page", " ".join(pdf_expectations(document)))
     written = []
     for path, body in (
         (README_PATH if readme is None else Path(readme), readme_block(document)),
         (GUIDE_PATH if guide is None else Path(guide), guide_block(document)),
     ):
+        refuse_leak(f"{path.name} region", body)
         text = _read_surface(path)
         rendered = rendered_surface(text, body, path)
         if rendered != text:
@@ -433,6 +450,18 @@ def check(*, manifest=None, readme=None, guide=None, pdf=None):
     return document, drift
 
 
+def _checked_path(raw, option):
+    """One operator-supplied path, checked before it is opened or run."""
+    if raw is None:
+        return None
+    if not raw or "\x00" in raw:
+        raise RenderError(f"{option} requires a non-empty path")
+    candidate = Path(raw).expanduser()
+    if str(candidate).startswith("-"):
+        raise RenderError(f"{option} looks like an option rather than a path")
+    return candidate
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Render the harness roster's three surfaces.")
     parser.add_argument(
@@ -455,13 +484,12 @@ def build_parser():
 def main(argv=None):
     arguments = build_parser().parse_args(argv)
     try:
+        surfaces = {
+            option: _checked_path(getattr(arguments, option), f"--{option}")
+            for option in ("manifest", "readme", "guide", "pdf")
+        }
         if arguments.check:
-            document, drift = check(
-                manifest=arguments.manifest,
-                readme=arguments.readme,
-                guide=arguments.guide,
-                pdf=arguments.pdf,
-            )
+            document, drift = check(**surfaces)
             for line in drift:
                 print(f"render_harness_roster: {line}", file=sys.stderr)
             if drift:
@@ -473,11 +501,7 @@ def main(argv=None):
             print(f"three surfaces match {len(harnesses(document))} recorded harnesses")
             return 0
         document, changed = write(
-            manifest=arguments.manifest,
-            readme=arguments.readme,
-            guide=arguments.guide,
-            pdf=arguments.pdf,
-            python=arguments.python,
+            python=_checked_path(arguments.python, "--python"), **surfaces
         )
     except RenderError as error:
         print(f"render_harness_roster: {error}", file=sys.stderr)
