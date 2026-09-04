@@ -29,6 +29,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "research/instruction-architecture/benchmark.py"
+HEXCTL = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
 FIXTURES = ROOT / "tests/fixtures/instruction-architecture"
 MANIFEST = FIXTURES / "corpus-manifest.json"
 PROFILES = FIXTURES / "invocation-profiles.json"
@@ -55,6 +56,13 @@ DEVELOPMENT_RESULTS = {
     for arm in ("raw", "wai1", "noema", "simple", "section-graph")
 }
 EXPERIMENT_SCHEMA = ROOT / "research/instruction-architecture/schemas/experiment-v1.schema.json"
+CONFORMANCE_CONTRACT = ROOT / ".fiat/conformance-overlay-contract.json"
+CONFORMANCE_CONTRACT_SCHEMA = (
+    ROOT / "research/instruction-architecture/schemas/conformance-contract-v1.schema.json"
+)
+CONFORMANCE_OVERLAY_SCHEMA = (
+    ROOT / "research/instruction-architecture/schemas/conformance-overlay-v1.schema.json"
+)
 DEVELOPMENT_SELECTION = FIXTURES / "development-selection.json"
 PREREGISTRATION = FIXTURES / "preregistration.json"
 MODEL_RUNTIME_MANIFEST = FIXTURES / "model-runtime-manifest.json"
@@ -179,6 +187,15 @@ def load_module():
 
 
 AI = load_module()
+
+
+def load_hexctl_module():
+    spec = importlib.util.spec_from_file_location("fiat_hexctl", HEXCTL)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"could not load {HEXCTL}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def load(path: Path) -> dict:
@@ -10627,6 +10644,283 @@ class BudgetLedgerTests(unittest.TestCase):
         observed = AI.budget_attempt_outcome(ledger, AI.Decimal("7.50"), "lost")
         self.assertEqual(observed["reserved_gross"], "0.00")
         self.assertEqual(observed["uncertain_gross"], "9.50")
+
+
+class ConformanceOverlayTests(unittest.TestCase):
+    def setUp(self):
+        required_paths = (
+            CONFORMANCE_CONTRACT,
+            CONFORMANCE_CONTRACT_SCHEMA,
+            CONFORMANCE_OVERLAY_SCHEMA,
+        )
+        required_symbols = (
+            "CONFORMANCE_OVERLAY",
+            "STEP4_GATED_COMMANDS",
+            "_requires_step4_conformance",
+            "_validate_conformance_contract",
+            "build_conformance_overlay",
+        )
+        missing = [str(path) for path in required_paths if not path.is_file()]
+        missing.extend(name for name in required_symbols if not hasattr(AI, name))
+        if not missing:
+            return
+        causal = {
+            "test_contract_closes_exact_three_by_three_commands_and_immutable_base",
+            "test_every_step4_effect_boundary_checks_controller_before_parsing",
+        }
+        if self._testMethodName in causal:
+            self.fail("parent lacks the tracked conformance overlay gate")
+        self.skipTest("requires the tracked conformance overlay gate")
+
+    def contract(self):
+        return load(CONFORMANCE_CONTRACT)
+
+    @contextmanager
+    def exact_private_inputs(self, *, omit_evidence=None, stale_command=None):
+        with tempfile.TemporaryDirectory(prefix="step3-conformance-") as temporary:
+            root = Path(temporary)
+            (root / ".hexaemeron/design-reports").mkdir(parents=True)
+            (root / ".fiat").mkdir()
+            contract = copy.deepcopy(self.contract())
+            base = {
+                "results": [
+                    {
+                        "candidate": row["candidate"],
+                        "criterion": row["criterion"],
+                        "state": "pending",
+                        **row["base_pending"],
+                    }
+                    for row in contract["rows"]
+                    if row["base_pending"] is not None
+                ],
+                "schema": "protasis-design-evidence/v1",
+            }
+            base_raw = (json.dumps(base, indent=2, sort_keys=True) + "\n").encode()
+            contract["base"]["sha256"] = hashlib.sha256(base_raw).hexdigest()
+            contract_raw = canonical(contract)
+            (root / ".fiat/conformance-overlay-contract.json").write_bytes(contract_raw)
+            (root / ".hexaemeron/design-evidence.json").write_bytes(base_raw)
+            for row in contract["rows"]:
+                identity = (row["candidate"], row["criterion"])
+                command = row["command"]
+                if stale_command == identity:
+                    command = command.replace("--max-gross-usd 4500", "--max-gross-usd 100")
+                report = {
+                    "candidate": row["candidate"],
+                    "command": command,
+                    "criterion": row["criterion"],
+                    "exit": 0,
+                    "schema": "protasis-design-report/v1",
+                    "unit": "boolean",
+                    "value": True,
+                }
+                evidence = AI._digested_record({
+                    "candidate": row["candidate"],
+                    "criterion": row["criterion"],
+                    "facts": row["required_facts"],
+                    "invocation": command,
+                    "schema": f"{AI.SCHEMA_PREFIX}-preflight-evidence/v1",
+                })
+                (root / row["report_path"]).write_bytes(canonical(report))
+                if omit_evidence != identity:
+                    (root / row["evidence_path"]).write_bytes(canonical(evidence))
+            with (
+                mock.patch.object(AI, "ROOT", root),
+                mock.patch.object(
+                    AI, "_tracked_conformance_contract", return_value=(contract, contract_raw)
+                ),
+            ):
+                yield root, contract
+
+    def test_contract_closes_exact_three_by_three_commands_and_immutable_base(self):
+        contract = self.contract()
+        AI._validate_conformance_contract(contract)
+        self.assertEqual(len(contract["rows"]), 9)
+        self.assertEqual(
+            "117dd4d94d8f7b464f069332e0845d3ee9fd789950020a553b6b2096cafa6f48",
+            contract["base"]["sha256"],
+        )
+        self.assertEqual(
+            {(row["candidate"], row["criterion"]) for row in contract["rows"]},
+            set(itertools.product(contract["candidates"], contract["criteria"])),
+        )
+        paid = [row for row in contract["rows"] if row["criterion"] == "paid-evaluation-preflight"]
+        self.assertTrue(all("--max-gross-usd 4500" in row["command"] for row in paid))
+        self.assertTrue(all(
+            "--max-gross-usd 100" in row["base_pending"]["resolver"]
+            for row in paid
+        ))
+
+    def test_overlay_builds_nine_bound_pairs_without_touching_the_immutable_base(self):
+        with self.exact_private_inputs() as (root, contract):
+            before = (root / contract["base"]["path"]).read_bytes()
+            output = root / AI.CONFORMANCE_OVERLAY
+            result = AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            record = load(output)
+            self.assertEqual(len(record["rows"]), 9)
+            self.assertEqual(result.count(b'"sessions_launched":0'), 1)
+            self.assertEqual((root / contract["base"]["path"]).read_bytes(), before)
+            self.assertEqual(hashlib.sha256(before).hexdigest(), contract["base"]["sha256"])
+
+    def test_private_overlay_changes_only_six_bound_resolvers(self):
+        controller = load_hexctl_module()
+        with self.exact_private_inputs() as (root, contract):
+            base = root / contract["base"]["path"]
+            before = base.read_bytes()
+            output = root / AI.CONFORMANCE_OVERLAY
+            AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            checked = controller._validate_conformance_bundle(
+                str(root),
+                contract_raw=(root / AI.CONFORMANCE_CONTRACT).read_bytes(),
+                overlay_raw=output.read_bytes(),
+            )
+            original = json.loads(before)
+            patched = json.loads(checked["patched_base"])
+            self.assertEqual(len(checked["design_reports"]), 6)
+            for old, new in zip(original["results"], patched["results"]):
+                self.assertEqual(
+                    {key: value for key, value in old.items() if key != "resolver"},
+                    {key: value for key, value in new.items() if key != "resolver"},
+                )
+                if old["criterion"] == "paid-evaluation-preflight":
+                    self.assertIn("--max-gross-usd 100", old["resolver"])
+                else:
+                    self.assertEqual(old["resolver"], new["resolver"])
+                self.assertEqual(
+                    next(
+                        row["command"] for row in contract["rows"]
+                        if (row["candidate"], row["criterion"])
+                        == (old["candidate"], old["criterion"])
+                    ),
+                    new["resolver"],
+                )
+            self.assertEqual(base.read_bytes(), before)
+
+    def test_missing_native_evidence_refuses_before_overlay_publication(self):
+        identity = ("neutral-evidence-workbench", "native-gate-preflight")
+        with self.exact_private_inputs(omit_evidence=identity) as (root, _):
+            output = root / AI.CONFORMANCE_OVERLAY
+            with self.assertRaisesRegex(AI.Refusal, "unavailable or unsafe"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertFalse(output.exists())
+
+    def test_stale_resolver_report_cannot_be_relabelled_by_the_overlay(self):
+        identity = ("neutral-evidence-workbench", "paid-evaluation-preflight")
+        with self.exact_private_inputs(stale_command=identity) as (root, _):
+            output = root / AI.CONFORMANCE_OVERLAY
+            with self.assertRaisesRegex(AI.Refusal, "exact frozen pass"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertFalse(output.exists())
+
+    def test_partial_or_stale_overlay_is_never_replaced(self):
+        with self.exact_private_inputs() as (root, _):
+            output = root / AI.CONFORMANCE_OVERLAY
+            output.write_bytes(b'{"partial":')
+            with self.assertRaisesRegex(AI.Refusal, "stale bytes"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertEqual(output.read_bytes(), b'{"partial":')
+
+    def test_changed_immutable_base_refuses_before_overlay_publication(self):
+        with self.exact_private_inputs() as (root, contract):
+            base = root / contract["base"]["path"]
+            base.write_bytes(base.read_bytes() + b" ")
+            output = root / AI.CONFORMANCE_OVERLAY
+            with self.assertRaisesRegex(AI.Refusal, "base digest changed"):
+                AI.build_conformance_overlay(types.SimpleNamespace(output=output))
+            self.assertFalse(output.exists())
+
+    def test_every_step4_effect_boundary_checks_controller_before_parsing(self):
+        commands = sorted(AI.STEP4_GATED_COMMANDS)
+        for command in commands:
+            with self.subTest(command=command):
+                with (
+                    mock.patch.object(
+                        AI,
+                        "_verify_step4_conformance",
+                        side_effect=AI.Refusal("missing"),
+                    ) as verify,
+                    mock.patch.object(AI, "parser") as parser_mock,
+                ):
+                    self.assertEqual(AI.main([command]), 2)
+                verify.assert_called_once_with()
+                parser_mock.assert_not_called()
+        self.assertTrue(AI._requires_step4_conformance(["replay", "--cohort", "holdout"]))
+        self.assertTrue(AI._requires_step4_conformance(["replay", "--cohort=holdout"]))
+        self.assertTrue(AI._requires_step4_conformance(["replay", "--coh", "holdout"]))
+        self.assertTrue(AI._requires_step4_conformance([
+            "replay", "--cohort", "development", "--cohort", "holdout",
+        ]))
+        self.assertFalse(AI._requires_step4_conformance(["replay", "--cohort", "development"]))
+
+    def test_step4_checker_requires_the_exact_bounded_controller_result(self):
+        valid = {
+            "schema": "fiat-conformance-overlay-receipt/v1",
+            "transition": "step:4",
+            "overlay_sha256": "a" * 64,
+            "rows": 9,
+            "ledger_entries": 61,
+        }
+        with mock.patch.object(
+            AI,
+            "_bounded_process",
+            return_value=(0, canonical(valid), b""),
+        ):
+            AI._verify_step4_conformance()
+
+        hostile = []
+        extra = dict(valid)
+        extra["unverified"] = True
+        hostile.append(extra)
+        for field, value in (
+            ("rows", True),
+            ("ledger_entries", True),
+            ("ledger_entries", 0),
+            ("ledger_entries", "61"),
+        ):
+            changed = dict(valid)
+            changed[field] = value
+            hostile.append(changed)
+        for record in hostile:
+            with (
+                self.subTest(record=record),
+                mock.patch.object(
+                    AI,
+                    "_bounded_process",
+                    return_value=(0, canonical(record), b""),
+                ),
+                self.assertRaisesRegex(AI.Refusal, "wrong receipt"),
+            ):
+                AI._verify_step4_conformance()
+
+    def test_conformance_schemas_close_every_object(self):
+        expected_path = {
+            "maxLength": 1024,
+            "minLength": 1,
+            "pattern": (
+                r"^(?!/)(?!.*//)(?!.*(?:^|/)\.\.?(?:/|$))(?!.*\\)"
+                r"(?!.*\/$)[\u0020-\u007e]+(?![\s\S])"
+            ),
+            "type": "string",
+        }
+        for path in (CONFORMANCE_CONTRACT_SCHEMA, CONFORMANCE_OVERLAY_SCHEMA):
+            schema = load(path)
+            self.assertEqual(schema["$defs"]["path"], expected_path)
+
+            def walk(value):
+                if isinstance(value, dict):
+                    if value.get("type") == "object":
+                        self.assertFalse(value.get("additionalProperties", True))
+                        self.assertEqual(
+                            set(value.get("required", [])),
+                            set(value.get("properties", {})),
+                        )
+                    for child in value.values():
+                        walk(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        walk(child)
+
+            walk(schema)
 
 
 class ModelPreflightTests(ExperimentFixtureMixin, unittest.TestCase):

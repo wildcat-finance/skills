@@ -283,6 +283,7 @@
   },
   "owners": [
     {"path": ".dead-code", "scope": "dead-code"},
+    {"path": ".fiat/conformance-overlay-contract.json", "scope": "root"},
     {"path": ".agents", "scope": "marketplace"},
     {"path": ".claude", "scope": "marketplace"},
     {"path": ".claude-plugin", "scope": "marketplace"},

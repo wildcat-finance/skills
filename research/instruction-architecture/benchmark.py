@@ -201,7 +201,7 @@ MAX_SECTION_COUNT = 32_768
 MAX_HOSTILE_SPECIMENS = 128
 MAX_MODEL_OUTPUT_BYTES = 256 * 1024
 EXPECTED_DEVELOPMENT_INVENTORY_SHA256 = (
-    "6f4055728f3438e501b85a4713e8e569ace1f3dbe3e22dad76d9c14fba9f6dbe"
+    "28eae688b7315ded2b480ff4739fc900960dcfab7611526bca996ba19daaa741"
 )
 EXPECTED_CONTROL_SHA256 = {
     "noema": "2c52f72927eeb630c1abbc6a2a994221235c6f1aa81d33ff9965002cddbc2a4b",
@@ -295,6 +295,22 @@ MAX_HTTP_BYTES = 4 * 1024 * 1024
 HTTP_TIMEOUT_SECONDS = 20
 MAX_COMMAND_OUTPUT_BYTES = 2 * 1024 * 1024
 DESIGN_REPORT_ROOT = PurePosixPath(".hexaemeron/design-reports")
+CONFORMANCE_CONTRACT = PurePosixPath(".fiat/conformance-overlay-contract.json")
+CONFORMANCE_OVERLAY = PurePosixPath(".hexaemeron/conformance-overlay.json")
+CONFORMANCE_CONTRACT_SCHEMA = "fiat-conformance-overlay-contract/v1"
+CONFORMANCE_OVERLAY_SCHEMA = "fiat-conformance-overlay/v1"
+STEP4_CONFORMANCE_TRANSITION = "step:4"
+STEP4_GATED_COMMANDS = frozenset({
+    "open-holdout",
+    "build-holdout",
+    "run-model-matrix",
+    "aggregate-behavioural-holdout",
+    "admit-native-arms",
+    "open-native-gate",
+    "run-native-gate",
+    "aggregate-native-gate",
+    "replay-native-gate",
+})
 BEHAVIORAL_TRIALS = 2
 BEHAVIORAL_CASES = 16
 BEHAVIORAL_LOGICAL_CALLS = (
@@ -14052,6 +14068,234 @@ def _publish_preflight_report(
     )
 
 
+def _tracked_conformance_contract() -> tuple[dict[str, Any], bytes]:
+    """Read the fixed contract from both the worktree and exact current HEAD."""
+    path = ROOT / Path(*CONFORMANCE_CONTRACT.parts)
+    raw = _read_regular(path, MAX_JSON_BYTES)
+    head_raw = _git(["rev-parse", "--verify", "HEAD^{commit}"], 128)
+    try:
+        head = head_raw.decode("ascii").strip()
+    except UnicodeDecodeError as exc:
+        raise Refusal("conformance contract HEAD identity is malformed") from exc
+    if re.fullmatch(r"[0-9a-f]{40}", head) is None:
+        raise Refusal("conformance contract HEAD identity is malformed")
+    oid = _git_blob_identity_at(head, CONFORMANCE_CONTRACT.as_posix())
+    committed = _git(["cat-file", "blob", oid], MAX_JSON_BYTES)
+    if committed != raw:
+        raise Refusal("conformance contract worktree bytes differ from current HEAD")
+    contract = _decode_record(raw)
+    _validate_conformance_contract(contract)
+    return contract, raw
+
+
+def _validate_conformance_contract(contract: dict[str, Any]) -> None:
+    _require_fields(
+        contract,
+        {"schema", "transition", "base", "overlay", "candidates", "criteria", "rows"},
+        {"schema", "transition", "base", "overlay", "candidates", "criteria", "rows"},
+        "conformance contract",
+    )
+    if (
+        contract["schema"] != CONFORMANCE_CONTRACT_SCHEMA
+        or contract["transition"] != STEP4_CONFORMANCE_TRANSITION
+    ):
+        raise Refusal("conformance contract identity is unsupported")
+    base = contract["base"]
+    overlay = contract["overlay"]
+    _require_fields(base, {"path", "sha256"}, {"path", "sha256"}, "conformance base")
+    _require_fields(
+        overlay, {"path", "schema"}, {"path", "schema"}, "conformance overlay target"
+    )
+    if (
+        base["path"] != ".hexaemeron/design-evidence.json"
+        or re.fullmatch(r"[0-9a-f]{64}", base["sha256"]) is None
+        or overlay != {
+            "path": CONFORMANCE_OVERLAY.as_posix(),
+            "schema": CONFORMANCE_OVERLAY_SCHEMA,
+        }
+    ):
+        raise Refusal("conformance base or overlay target is malformed")
+    candidates = contract["candidates"]
+    criteria = contract["criteria"]
+    if candidates != sorted(EVALUATOR_CANDIDATES) or criteria != sorted(
+        ("paid-evaluation-preflight", "seven-model-preflight", "native-gate-preflight")
+    ):
+        raise Refusal("conformance contract changes the frozen 3x3 identities")
+    expected_identities = sorted(
+        (candidate, criterion) for candidate in candidates for criterion in criteria
+    )
+    rows = contract["rows"]
+    if not isinstance(rows, list) or len(rows) != 9:
+        raise Refusal("conformance contract does not contain nine rows")
+    observed_identities = []
+    for index, row in enumerate(rows):
+        _require_fields(
+            row,
+            {
+                "candidate", "criterion", "command", "report_path",
+                "evidence_path", "base_pending", "required_facts",
+            },
+            {
+                "candidate", "criterion", "command", "report_path",
+                "evidence_path", "base_pending", "required_facts",
+            },
+            f"conformance contract row {index}",
+        )
+        observed_identities.append((row["candidate"], row["criterion"]))
+        report = _safe_relative(row["report_path"])
+        evidence = _safe_relative(row["evidence_path"])
+        if (
+            not report.as_posix().startswith(".hexaemeron/design-reports/")
+            or evidence.as_posix() != report.as_posix()[:-5] + "-evidence.json"
+            or not isinstance(row["command"], str)
+            or not row["command"].isprintable()
+            or not row["command"]
+            or len(row["command"].encode("utf-8")) > 4_096
+        ):
+            raise Refusal("conformance contract report pair is malformed")
+        facts = row["required_facts"]
+        if not isinstance(facts, dict) or facts.get("paid_or_answer_calls") != 0:
+            raise Refusal("conformance contract does not bind zero answer calls")
+        if row["criterion"] == "native-gate-preflight":
+            if facts != {
+                "isolated_authentication_proved": True,
+                "metadata_get_count": 0,
+                "metadata_get_endpoints": [],
+                "no_native_session": True,
+                "paid_or_answer_calls": 0,
+                "runtime_count": 2,
+            }:
+                raise Refusal(
+                    "conformance contract does not bind exact native no-call facts"
+                )
+        elif facts != {"paid_or_answer_calls": 0}:
+            raise Refusal("conformance contract changes the closed no-call facts")
+        pending = row["base_pending"]
+        if pending is not None:
+            _require_fields(
+                pending,
+                {"blocks", "resolver", "report"},
+                {"blocks", "resolver", "report"},
+                f"conformance contract row {index} base pending",
+            )
+            if pending["blocks"] != STEP4_CONFORMANCE_TRANSITION:
+                raise Refusal("conformance contract base pending stop is wrong")
+            pending_report = _safe_relative(pending["report"])
+            if report.as_posix() != f".hexaemeron/{pending_report.as_posix()}":
+                raise Refusal("conformance contract changes an immutable report path")
+    if observed_identities != expected_identities:
+        raise Refusal("conformance contract rows are not the closed 3x3 product")
+
+
+def _conformance_base_pending(contract: dict[str, Any]) -> None:
+    raw = _read_regular(ROOT / contract["base"]["path"], MAX_JSON_BYTES)
+    base = _decode_external_json(raw, "immutable conformance base")
+    if _sha256(raw) != contract["base"]["sha256"]:
+        raise Refusal("immutable conformance base digest changed")
+    results = base.get("results")
+    if not isinstance(results, list) or len(results) > 128:
+        raise Refusal("immutable conformance base results are malformed")
+    due = {}
+    for row in results:
+        if not (
+            isinstance(row, dict)
+            and row.get("state") == "pending"
+            and row.get("blocks") == STEP4_CONFORMANCE_TRANSITION
+        ):
+            continue
+        identity = (row.get("candidate"), row.get("criterion"))
+        if identity in due:
+            raise Refusal("immutable conformance base repeats a due identity")
+        due[identity] = row
+    declared = {
+        (row["candidate"], row["criterion"]): row
+        for row in contract["rows"]
+        if row["base_pending"] is not None
+    }
+    if len(due) != len(declared) or set(due) != set(declared):
+        raise Refusal("conformance contract does not close every immutable due row")
+    for identity, contract_row in declared.items():
+        row = due[identity]
+        if contract_row["base_pending"] != {
+            "blocks": row.get("blocks"),
+            "report": row.get("report"),
+            "resolver": row.get("resolver"),
+        }:
+            raise Refusal("conformance contract base resolver binding changed")
+
+
+def _conformance_overlay_row(row: dict[str, Any]) -> dict[str, Any]:
+    report, report_raw = _load_record(ROOT / row["report_path"])
+    evidence, evidence_raw = _load_record(ROOT / row["evidence_path"])
+    expected_report = {
+        "candidate": row["candidate"],
+        "command": row["command"],
+        "criterion": row["criterion"],
+        "exit": 0,
+        "schema": "protasis-design-report/v1",
+        "unit": "boolean",
+        "value": True,
+    }
+    if report != expected_report:
+        raise Refusal("conformance report is not the exact frozen pass")
+    if (
+        evidence.get("schema") != f"{SCHEMA_PREFIX}-preflight-evidence/v1"
+        or evidence.get("candidate") != row["candidate"]
+        or evidence.get("criterion") != row["criterion"]
+        or evidence.get("invocation") != row["command"]
+    ):
+        raise Refusal("conformance evidence identity changed")
+    _validate_digested_record(evidence, "conformance preflight evidence")
+    facts = evidence.get("facts")
+    if not isinstance(facts, dict) or any(
+        facts.get(name) != value for name, value in row["required_facts"].items()
+    ):
+        raise Refusal("conformance evidence does not prove its required facts")
+    return {
+        "candidate": row["candidate"],
+        "criterion": row["criterion"],
+        "command": row["command"],
+        "report_path": row["report_path"],
+        "report_sha256": _sha256(report_raw),
+        "evidence_path": row["evidence_path"],
+        "evidence_sha256": _sha256(evidence_raw),
+        "pass": {"exit": 0, "unit": "boolean", "value": True},
+        "facts": row["required_facts"],
+    }
+
+
+def build_conformance_overlay(args: argparse.Namespace) -> bytes:
+    contract, contract_raw = _tracked_conformance_contract()
+    _conformance_base_pending(contract)
+    record = {
+        "schema": CONFORMANCE_OVERLAY_SCHEMA,
+        "contract_sha256": _sha256(contract_raw),
+        "transition": contract["transition"],
+        "base": contract["base"],
+        "rows": [_conformance_overlay_row(row) for row in contract["rows"]],
+    }
+    record["sha256"] = _sha256(_canonical_json(record))
+    raw = _canonical_json(record)
+    output = _confined_output(
+        args.output,
+        "conformance overlay",
+        exact=(CONFORMANCE_OVERLAY,),
+        roots=(),
+    )
+    existing = _existing_output_bytes(output, MAX_JSON_BYTES)
+    if existing is None:
+        _atomic_write(output, raw, replace_existing=False)
+    elif existing != raw:
+        raise Refusal("existing conformance overlay contains stale bytes")
+    if _existing_output_bytes(output, MAX_JSON_BYTES) != raw:
+        raise Refusal("conformance overlay failed final verification")
+    return _result(
+        "build-conformance-overlay",
+        raw,
+        {"answer_bytes": 0, "rows": len(record["rows"]), "sessions_launched": 0},
+    )
+
+
 def _catalog_rows(record: dict[str, Any], label: str) -> list[dict[str, Any]]:
     rows = record.get("data")
     if not isinstance(rows, list) or len(rows) > 100_000:
@@ -15721,6 +15965,14 @@ def parser() -> argparse.ArgumentParser:
     native_preflight.add_argument("--report", type=_path, required=True)
     native_preflight.set_defaults(handler=preflight_native_gate)
 
+    conformance = subparsers.add_parser("build-conformance-overlay")
+    conformance.add_argument(
+        "--output",
+        type=_path,
+        default=ROOT / Path(*CONFORMANCE_OVERLAY.parts),
+    )
+    conformance.set_defaults(handler=build_conformance_overlay)
+
     emit = subparsers.add_parser("emit-packet")
     emit.add_argument("--preregistration", type=_path, required=True)
     emit.add_argument("--seal", type=_path, required=True)
@@ -15736,9 +15988,73 @@ def parser() -> argparse.ArgumentParser:
     return result
 
 
-def main(argv: list[str] | None = None) -> int:
+def _requires_step4_conformance(argv: list[str]) -> bool:
+    if not argv or any(value in {"-h", "--help"} for value in argv):
+        return False
+    command = argv[0]
+    if command in STEP4_GATED_COMMANDS:
+        return True
+    if command != "replay":
+        return False
+    # argparse accepts repeated options, ``--cohort=value`` and unambiguous
+    # long-option abbreviations.  Keep Step 3's exact development replay open,
+    # but fail closed if any spelling can select the Step 4 holdout cohort.
+    return any(
+        value == "holdout" or value.endswith("=holdout")
+        for value in argv[1:]
+    )
+
+
+def _verify_step4_conformance() -> None:
+    controller = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    environment = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "PATH": os.environ.get("PATH", ""),
+    }
+    code, output, _ = _bounded_process(
+        [
+            sys.executable,
+            str(controller),
+            "--dir",
+            str(ROOT),
+            "verify-conformance",
+            "--transition",
+            STEP4_CONFORMANCE_TRANSITION,
+        ],
+        environment=environment,
+        cwd=ROOT,
+        timeout=30,
+        limit=64 * 1024,
+    )
+    if code != 0:
+        raise Refusal("Step 4 conformance receipt is missing, stale, or invalid")
     try:
-        args = parser().parse_args(argv)
+        receipt = json.loads(output.decode("utf-8"), object_pairs_hook=_closed_object)
+    except (UnicodeDecodeError, json.JSONDecodeError, Refusal) as exc:
+        raise Refusal("Step 4 conformance checker returned malformed evidence") from exc
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != {
+            "schema", "transition", "overlay_sha256", "rows", "ledger_entries"
+        }
+        or receipt.get("schema") != "fiat-conformance-overlay-receipt/v1"
+        or receipt.get("transition") != STEP4_CONFORMANCE_TRANSITION
+        or type(receipt.get("rows")) is not int
+        or receipt["rows"] != 9
+        or type(receipt.get("ledger_entries")) is not int
+        or receipt["ledger_entries"] < 1
+        or re.fullmatch(r"[0-9a-f]{64}", receipt.get("overlay_sha256", "")) is None
+    ):
+        raise Refusal("Step 4 conformance checker returned the wrong receipt")
+
+
+def main(argv: list[str] | None = None) -> int:
+    effective_argv = list(sys.argv[1:] if argv is None else argv)
+    try:
+        if _requires_step4_conformance(effective_argv):
+            _verify_step4_conformance()
+        args = parser().parse_args(effective_argv)
         sys.stdout.buffer.write(args.handler(args))
         return 0
     except Refusal as exc:

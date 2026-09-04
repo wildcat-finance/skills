@@ -110,18 +110,27 @@ exact sanitized command; publish-once companion records retain facts and their
 content digests. resolved native identities retain executable basename,
 version and binary digest, never a host-absolute path or credential material.
 
+Step 4 is not admitted by those files merely existing. The immutable Step 2
+design record remains byte-identical. The tracked 3-candidate by 3-criterion
+contract at `.fiat/conformance-overlay-contract.json` binds that base, the nine
+current commands and all report/evidence paths. `build-conformance-overlay`
+closes their hashes and pass facts into one publish-once ignored overlay;
+Step 3's controller push receipts and replays it before opening Step 4. Every
+holdout, provider and native-gate entrypoint then revalidates the receipt before
+argument parsing or any credential, network or answer-session access.
+
 ## boundary and records
 
 the holdout remains `opened: false`; Step 3 read no task, expected answer,
 scorer key, model output or holdout source content. it made no production-path
 change. the development evidence is committed by inventory SHA-256
-`6f4055728f3438e501b85a4713e8e569ace1f3dbe3e22dad76d9c14fba9f6dbe`;
+`28eae688b7315ded2b480ff4739fc900960dcfab7611526bca996ba19daaa741`;
 the selection record's self-digest is
-`658b9e05e7388a8f296e866577dc0cf67392ad31da947161d85a410bd7bf866c`.
+`b34a5519ba8953d781d3bff1c2e72c609d1b39f94a1d04799c6c1b7268c32ac3`.
 the behavioural commitment-file SHA-256 is
-`794f75066984aac792eec9ffdbba8c4e8ef50bdb67a8910b8c87b81d2726c9a2`;
+`87dcc5ff08049107bf6c6b3f5dc377f047f19cc38eef20c118c698c3e7efb32f`;
 the native commitment-file SHA-256 is
-`c3a54eaffd0f404b1f8ffd53ba1b9e7e73ad756962d4cf578dfad4d9632a2f6a`.
+`3b230fcaabf12b6bcb0c22393d77676aca0bfd848f8a111065b655f7b911a500`.
 
 tracked fixtures own reproducible selection, preregistration, accounting,
 runtime manifests and answer-free packet commitments. ignored

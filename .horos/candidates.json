@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 46097211,
+    "bytes_blob": 46160148,
     "bytes_generated": 98
   },
   "entries": [
@@ -14,14 +14,14 @@
       "path": "audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 135398,
+      "bytes": 166733,
       "category": "blob",
-      "evidence": "no newline in a 2048-byte window at offset 67699 of 135398 bytes",
+      "evidence": "no newline in a 2048-byte window at offset 83366 of 166733 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1046-framework-74-select-an-implementation-ready.md"
     },
     {
-      "bytes": 136464,
+      "bytes": 167973,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -729,9 +729,9 @@
       "path": "tests/fixtures/instruction-architecture/evidence/development/wai1.json"
     },
     {
-      "bytes": 23054,
+      "bytes": 23147,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 23054 bytes",
+      "evidence": "no newline in the first 4096 bytes of 23147 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/evidence/frozen/native/packet.json"
     },

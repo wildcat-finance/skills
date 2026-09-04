@@ -413,6 +413,7 @@ if candidate and candidate[0] in (
     "diff",
     "merge-base",
     "ls-tree",
+    "cat-file",
     "ls-remote",
 ):
     args = candidate
@@ -457,13 +458,18 @@ elif args and args[0] == "merge-base":
 elif args and args[0] == "ls-tree":
     if mode == "baseline-unavailable":
         raise SystemExit(128)
-    baseline_hex = os.environ.get("FAKE_GIT_BASELINE_HEX")
-    if baseline_hex is not None:
-        baseline = bytes.fromhex(baseline_hex)
+    path_text = args[-1]
+    payload_hex = (
+        os.environ.get("FAKE_GIT_CONFORMANCE_HEX")
+        if path_text == ".fiat/conformance-overlay-contract.json"
+        else os.environ.get("FAKE_GIT_BASELINE_HEX")
+    )
+    if payload_hex is not None:
+        baseline = bytes.fromhex(payload_hex)
         object_id = hashlib.sha1(
             b"blob " + str(len(baseline)).encode() + b"\\0" + baseline
         ).hexdigest()
-        path = args[-1].encode()
+        path = path_text.encode()
         if mode == "baseline-ambiguous":
             sys.stdout.buffer.write(b"ambiguous\\0")
         elif mode == "baseline-unsafe":
@@ -475,7 +481,19 @@ elif args and args[0] == "ls-tree":
                 f"100644 blob {{object_id}}\\t".encode() + path + b"\\0"
             )
 elif args and args[:2] == ["cat-file", "-s"]:
-    baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
+    wanted = args[-1]
+    payloads = [
+        bytes.fromhex(value)
+        for value in (
+            os.environ.get("FAKE_GIT_BASELINE_HEX"),
+            os.environ.get("FAKE_GIT_CONFORMANCE_HEX"),
+        )
+        if value is not None
+    ]
+    baseline = next((
+        value for value in payloads
+        if hashlib.sha1(b"blob " + str(len(value)).encode() + b"\\0" + value).hexdigest() == wanted
+    ), b"")
     if mode == "baseline-oversized":
         print(2 * 1024 * 1024 + 1)
     elif mode == "baseline-malformed-size":
@@ -485,7 +503,19 @@ elif args and args[:2] == ["cat-file", "-s"]:
     else:
         print(len(baseline))
 elif args and args[:2] == ["cat-file", "blob"]:
-    baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
+    wanted = args[-1]
+    payloads = [
+        bytes.fromhex(value)
+        for value in (
+            os.environ.get("FAKE_GIT_BASELINE_HEX"),
+            os.environ.get("FAKE_GIT_CONFORMANCE_HEX"),
+        )
+        if value is not None
+    ]
+    baseline = next((
+        value for value in payloads
+        if hashlib.sha1(b"blob " + str(len(value)).encode() + b"\\0" + value).hexdigest() == wanted
+    ), b"")
     sys.stdout.buffer.write(baseline)
 elif (
     args

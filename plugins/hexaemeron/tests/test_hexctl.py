@@ -146,6 +146,111 @@ class TestDesignEvidenceLifecycle(HexctlCase):
         self.run_ctl("done", "study", "--artifact", study)
         return study
 
+    def conformance_contract(self):
+        candidates = ["alpha", "beta", "gamma"]
+        criteria = [
+            "native-gate-preflight",
+            "paid-evaluation-preflight",
+            "seven-model-preflight",
+        ]
+        rows = []
+        for candidate in candidates:
+            for criterion in criteria:
+                report = f".hexaemeron/design-reports/{candidate}-{criterion}.json"
+                facts = {"paid_or_answer_calls": 0}
+                if criterion == "native-gate-preflight":
+                    facts.update({
+                        "isolated_authentication_proved": True,
+                        "metadata_get_count": 0,
+                        "metadata_get_endpoints": [],
+                        "no_native_session": True,
+                        "runtime_count": 2,
+                    })
+                rows.append({
+                    "base_pending": None,
+                    "candidate": candidate,
+                    "command": f"fixture preflight {candidate} {criterion}",
+                    "criterion": criterion,
+                    "evidence_path": report[:-5] + "-evidence.json",
+                    "report_path": report,
+                    "required_facts": facts,
+                })
+        design = self.state()["receipts"]["study"]["design_evidence"]
+        return {
+            "base": {
+                "path": ".hexaemeron/design-evidence.json",
+                "sha256": design["sha256"],
+            },
+            "candidates": candidates,
+            "criteria": criteria,
+            "overlay": {
+                "path": ".hexaemeron/conformance-overlay.json",
+                "schema": "fiat-conformance-overlay/v1",
+            },
+            "rows": rows,
+            "schema": "fiat-conformance-overlay-contract/v1",
+            "transition": "step:4",
+        }
+
+    def write_conformance_inputs(self, contract):
+        module = hexctl_module()
+
+        def encoded(value):
+            return (module.canonical(value) + "\n").encode()
+
+        overlay_rows = []
+        for row in contract["rows"]:
+            report = {
+                "candidate": row["candidate"],
+                "command": row["command"],
+                "criterion": row["criterion"],
+                "exit": 0,
+                "schema": "protasis-design-report/v1",
+                "unit": "boolean",
+                "value": True,
+            }
+            evidence_unsigned = {
+                "candidate": row["candidate"],
+                "criterion": row["criterion"],
+                "facts": row["required_facts"],
+                "invocation": row["command"],
+                "schema": "wildcat-instruction-architecture-preflight-evidence/v1",
+            }
+            evidence = dict(evidence_unsigned)
+            evidence["sha256"] = hashlib.sha256(encoded(evidence_unsigned)).hexdigest()
+            report_raw = encoded(report)
+            evidence_raw = encoded(evidence)
+            report_path = os.path.join(self.target, *row["report_path"].split("/"))
+            evidence_path = os.path.join(self.target, *row["evidence_path"].split("/"))
+            os.makedirs(os.path.dirname(report_path), exist_ok=True)
+            Path(report_path).write_bytes(report_raw)
+            Path(evidence_path).write_bytes(evidence_raw)
+            overlay_rows.append({
+                "candidate": row["candidate"],
+                "criterion": row["criterion"],
+                "command": row["command"],
+                "report_path": row["report_path"],
+                "report_sha256": hashlib.sha256(report_raw).hexdigest(),
+                "evidence_path": row["evidence_path"],
+                "evidence_sha256": hashlib.sha256(evidence_raw).hexdigest(),
+                "pass": {"exit": 0, "unit": "boolean", "value": True},
+                "facts": row["required_facts"],
+            })
+        contract_raw = encoded(contract)
+        overlay_unsigned = {
+            "schema": "fiat-conformance-overlay/v1",
+            "contract_sha256": hashlib.sha256(contract_raw).hexdigest(),
+            "transition": contract["transition"],
+            "base": contract["base"],
+            "rows": overlay_rows,
+        }
+        overlay = dict(overlay_unsigned)
+        overlay["sha256"] = hashlib.sha256(encoded(overlay_unsigned)).hexdigest()
+        relative = contract["overlay"]["path"]
+        output = os.path.join(self.target, *relative.split("/"))
+        Path(output).write_bytes(encoded(overlay))
+        return relative, contract_raw
+
     def test_study_lock_requires_the_fixed_checked_record_without_mutation(self):
         self.init()
         os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
@@ -302,6 +407,199 @@ class TestDesignEvidenceLifecycle(HexctlCase):
             [(item["candidate"], item["criterion"]) for item in transition["reports"]],
             [("bounded", "restart-safe")],
         )
+
+    def test_tracked_conformance_contract_blocks_step4_without_an_overlay(self):
+        self.to_steps(("One", "Two", "Three", "Four"))
+        contract = (
+            json.dumps(self.conformance_contract(), sort_keys=True, separators=(",", ":"))
+            + "\n"
+        ).encode()
+        self.env["FAKE_GIT_CONFORMANCE_HEX"] = contract.hex()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.finish_step(1)
+        self.finish_step(2)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(3), "--commit", "abc3"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/3",
+            "--head-commit", self.fake_sha("head3"),
+            "--pr-base", self.step_base(3),
+            expect=2,
+        )
+        self.assertIn("requires --conformance-overlay", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_conformance_receipt_replays_every_pair_and_blocks_tampering(self):
+        self.to_steps(("One", "Two", "Three", "Four"))
+        contract = self.conformance_contract()
+        overlay, contract_raw = self.write_conformance_inputs(contract)
+        self.env["FAKE_GIT_CONFORMANCE_HEX"] = contract_raw.hex()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.finish_step(1)
+        self.finish_step(2)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(3), "--commit", "abc3"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/3",
+            "--head-commit", self.fake_sha("head3"),
+            "--pr-base", self.step_base(3),
+            "--conformance-overlay", overlay,
+        )
+        receipt = self.state()["steps"][2]["receipts"]["push"]["conformance_overlay"]
+        self.assertEqual(len(receipt["rows"]), 9)
+        verified = json.loads(
+            self.run_ctl("verify-conformance", "--transition", "step:4").stdout
+        )
+        self.assertEqual(verified["rows"], 9)
+
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(4), "--commit", "abc4"
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        before = self.controller_bytes()
+        del self.env["FAKE_GIT_CONFORMANCE_HEX"]
+        refused = self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/4",
+            "--head-commit", self.fake_sha("head4"),
+            "--pr-base", self.step_base(4),
+            expect=1,
+        )
+        self.assertIn("removes the receipted conformance contract", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+        self.env["FAKE_GIT_CONFORMANCE_HEX"] = contract_raw.hex()
+
+        evidence = os.path.join(self.target, *receipt["rows"][0]["evidence_path"].split("/"))
+        with open(evidence, "ab") as handle:
+            handle.write(b" ")
+        refused = self.run_ctl(
+            "verify-conformance", "--transition", "step:4", expect=2
+        )
+        self.assertIn("report pair digest changed", refused.stderr)
+
+    def test_verify_conformance_emits_only_the_state_snapshot_verify_replayed(self):
+        module = hexctl_module()
+        if "verified_conformance" not in module.verify_run.__annotations__:
+            self.skipTest("requires verified conformance snapshot output")
+        self.init()
+        self.study()
+        contract = self.conformance_contract()
+        rows = [
+            {
+                "candidate": row["candidate"],
+                "criterion": row["criterion"],
+                "report_path": row["report_path"],
+                "report_sha256": "1" * 64,
+                "evidence_path": row["evidence_path"],
+                "evidence_sha256": "2" * 64,
+            }
+            for row in contract["rows"]
+        ]
+        receipt = {
+            "schema": module.CONFORMANCE_RECEIPT_SCHEMA,
+            "transition": "step:4",
+            "contract": {
+                "path": module.CONFORMANCE_CONTRACT_FILE,
+                "commit": "a" * 40,
+                "object": "b" * 40,
+                "sha256": "c" * 64,
+            },
+            "overlay": {
+                "path": module.CONFORMANCE_OVERLAY_FILE.replace(os.sep, "/"),
+                "sha256": "d" * 64,
+            },
+            "base": contract["base"],
+            "rows": rows,
+        }
+
+        def verified(_base_dir, *, verified_conformance, **_kwargs):
+            verified_conformance["step:4"] = receipt
+            return 17
+
+        with (
+            mock.patch.object(module, "verify_run", side_effect=verified),
+            mock.patch.object(
+                module,
+                "load_state",
+                side_effect=AssertionError("unverified second state snapshot"),
+            ) as load,
+            mock.patch("builtins.print") as output,
+        ):
+            module.cmd_verify_conformance(
+                argparse.Namespace(dir=self.target, transition="step:4")
+            )
+        load.assert_not_called()
+        emitted = json.loads(output.call_args.args[0])
+        self.assertEqual(emitted["overlay_sha256"], "d" * 64)
+        self.assertEqual(emitted["ledger_entries"], 17)
+
+    def test_conformance_reader_rejects_links_fifos_and_unstable_selection(self):
+        module = hexctl_module()
+        if not hasattr(module, "read_conformance_source"):
+            self.skipTest("requires the conformance evidence reader")
+        regular = os.path.join(self.target, "regular.json")
+        Path(regular).write_bytes(b"{}\n")
+        linked = os.path.join(self.target, "linked.json")
+        os.symlink("regular.json", linked)
+        with self.assertRaises(SystemExit):
+            module.read_conformance_source(self.target, "linked.json", "fixture")
+
+        fifo = os.path.join(self.target, "fifo.json")
+        os.mkfifo(fifo)
+        with self.assertRaises(SystemExit):
+            module.read_conformance_source(self.target, "fifo.json", "fixture")
+
+        unsafe = os.path.join(self.target, "unsafe.json")
+        Path(unsafe).write_bytes(b"{}\n")
+        os.chmod(unsafe, 0o666)
+        with self.assertRaises(SystemExit):
+            module.read_conformance_source(self.target, "unsafe.json", "fixture")
+
+        for hostile in ("line\nbreak.json", "caf\N{LATIN SMALL LETTER E WITH ACUTE}.json", "x" * 1025):
+            with self.subTest(path=repr(hostile)), self.assertRaises(SystemExit):
+                module.read_conformance_source(self.target, hostile, "fixture")
+
+        nested = b"[" * (module.CHECKPOINT_JSON_DEPTH_MAX + 1)
+        nested += b"]" * (module.CHECKPOINT_JSON_DEPTH_MAX + 1)
+        with self.assertRaises(SystemExit):
+            module._decode_conformance_json(nested, "fixture")
+        with (
+            mock.patch.object(module.json, "loads", side_effect=RecursionError),
+            self.assertRaises(SystemExit),
+        ):
+            module._decode_conformance_json(b"{}\n", "fixture")
+
+        with (
+            mock.patch.object(
+                module,
+                "_read_conformance_source_once",
+                side_effect=[(b"{}\n", (1, 2, 3)), (b"{}\n", (1, 9, 3))],
+            ),
+            self.assertRaises(SystemExit),
+        ):
+            module.read_conformance_source(self.target, "regular.json", "fixture")
 
     def test_verify_replays_report_receipts_and_detects_tampering(self):
         self.to_steps(("Core",))
