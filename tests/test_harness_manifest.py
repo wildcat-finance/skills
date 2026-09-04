@@ -41,6 +41,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1800,6 +1801,124 @@ class RenderTests(unittest.TestCase):
             for name in names:
                 with self.subTest(surface=label, harness=name):
                     self.assertNotIn(name, outside)
+
+    def test_a_class_these_surfaces_do_not_publish_is_refused(self):
+        # S3-R3-01. `names_in_class` is asked for `manual route` and for
+        # `unsupported` and for nothing else, so a harness holding either
+        # earned class reaches the guide table, which walks every entry, and
+        # reaches neither the README's bullets nor the harness page at all.
+        # The precondition is asserted below rather than assumed: the row is
+        # genuinely absent from two of the three surfaces, which is why the
+        # renderer refuses the document instead of publishing a short roster.
+        for earned in EARNED_CLASSIFICATIONS:
+            with self.subTest(classification=earned):
+                document = landed()
+                document["harnesses"][-2]["classification"] = earned
+                document["harnesses"][-2]["client_present"] = True
+                document["harnesses"][-2]["client_version"] = "3.1.4"
+                document["harnesses"][-2]["version_read"] = True
+                document["harnesses"][-2]["auth_configured"] = True
+                document["harnesses"][-2]["blocker"] = None
+                name = document["harnesses"][-2]["name"]
+                # The hole itself. The guide shows the row; the other two do not.
+                self.assertIn(name, render_harness_roster.guide_block(document))
+                self.assertNotIn(name, render_harness_roster.readme_block(document))
+                self.assertNotIn(
+                    name, " ".join(render_harness_roster.pdf_expectations(document))
+                )
+                # And four hand-written claims would go on standing over it.
+                self.assertIn(
+                    "No local harness holds a checked one-click Atlas launcher",
+                    render_harness_roster.readme_block(document),
+                )
+                self.assertTrue(
+                    render_harness_roster.pdf_label(document).startswith("Manual only")
+                )
+                self.assertIn(
+                    "No checked Atlas launcher here",
+                    render_harness_roster.pdf_detail(document),
+                )
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    staged["manifest"].write_text(
+                        json.dumps(document, indent=2), encoding="utf-8"
+                    )
+                    with self.assertRaises(render_harness_roster.RenderError) as refused:
+                        render_harness_roster.load_manifest(staged["manifest"])
+                    self.assertIn(name, str(refused.exception))
+                    self.assertIn(earned, str(refused.exception))
+                    # Both commands answer the same way rather than one of them
+                    # publishing what the other refuses.
+                    with open(os.devnull, "w", encoding="utf-8") as sink:
+                        with contextlib.redirect_stderr(sink):
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--check", "--manifest", str(staged["manifest"])]
+                                ),
+                                1,
+                            )
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--manifest", str(staged["manifest"])]
+                                ),
+                                1,
+                            )
+
+    def test_the_two_published_classes_still_render(self):
+        # The other half of the guard, so a refusal that swallowed everything
+        # would fail here rather than read as a pass above.
+        document = landed()
+        self.assertEqual(
+            render_harness_roster.PUBLISHED_CLASSIFICATIONS,
+            (render_harness_roster.MANUAL_ROUTE, render_harness_roster.UNSUPPORTED),
+        )
+        for published in render_harness_roster.PUBLISHED_CLASSIFICATIONS:
+            with self.subTest(classification=published):
+                every = json.loads(json.dumps(document))
+                for record in every["harnesses"]:
+                    record["classification"] = published
+                self.assertIsNone(
+                    render_harness_roster.refuse_unpublished_class(every)
+                )
+        # The precondition that makes the guard above worth having: the schema's
+        # vocabulary is wider than what these surfaces publish. If a later change
+        # teaches them to publish all four, this goes red and the refusal should
+        # go with it.
+        self.assertNotEqual(
+            set(CLASSIFICATIONS),
+            set(render_harness_roster.PUBLISHED_CLASSIFICATIONS),
+        )
+
+    def test_the_pdf_builder_is_given_the_manifest_the_renderer_was_told_to_use(self):
+        # S3-R3-02. `build_pdf` used to pass only `--output`, so the builder
+        # called `load_manifest()` with no argument and read the repository's
+        # own document: `--write --manifest X` rendered the two Markdown
+        # surfaces from X and the page from `docs/harness-classification.json`,
+        # exited 0, and left drift the next `--check --manifest X` reported.
+        # `true` stands in for the builder, so the argv is read without paying
+        # for a PDF and without patching the process-wide `subprocess.run`.
+        stand_in = shutil.which("true")
+        if stand_in is None:
+            self.skipTest("no `true` on PATH to stand in for the builder")
+        with_manifest = render_harness_roster.build_pdf(
+            python=stand_in, builder="builder", target="out.pdf", manifest="other.json"
+        )
+        without = render_harness_roster.build_pdf(
+            python=stand_in, builder="builder", target="out.pdf"
+        )
+        self.assertEqual(with_manifest[-2:], ["--manifest", "other.json"])
+        self.assertNotIn("--manifest", without)
+        # The argv stays a fixed list of strings with no shell, as the probe's
+        # own `probe-subprocess` rule requires of every command this tree spawns.
+        for argv in (with_manifest, without):
+            with self.subTest(argv=argv):
+                self.assertIsInstance(argv, list)
+                self.assertTrue(all(isinstance(item, str) for item in argv))
+        # And the builder accepts the option the renderer now sends it.
+        builder = (ROOT / "scripts/build_contributor_guide.py").read_text(encoding="utf-8")
+        self.assertIn('parser.add_argument("--manifest"', builder)
+        self.assertIn("draw_harness_page(pdf, manifest_path)", builder)
+        self.assertIn("render.load_manifest(manifest_path)", builder)
 
 
 if __name__ == "__main__":

@@ -72,6 +72,13 @@ END_MARKER = "<!-- harness-roster:end -->"
 MANUAL_ROUTE = "manual route"
 UNSUPPORTED = "unsupported"
 
+# The only two classes these three surfaces publish. The schema's vocabulary
+# has four, and `probe_harnesses.classify` returns `Atlas launcher` or `tested
+# local route` as soon as a client answers, so a valid manifest may carry one
+# and nothing below renders it. `refuse_unpublished_class` is why that is a
+# refusal rather than a silently short roster.
+PUBLISHED_CLASSIFICATIONS = (MANUAL_ROUTE, UNSUPPORTED)
+
 # What joins the manual-route names on the harness page. `pdf_drift` needs it
 # as well, to tell a whole roster line from the head of a longer one.
 ROSTER_SEPARATOR = "  /  "
@@ -130,12 +137,63 @@ def _probe():
 
 
 def load_manifest(path=None):
-    """The manifest as a document, or a `RenderError` naming why not."""
+    """The manifest as a document these surfaces can publish, or a `RenderError`.
+
+    Every path into this module goes through here, the builder's harness page
+    included, so it is the one place a manifest no surface can represent is
+    stopped once rather than three times.
+    """
     probe = _probe()
     try:
-        return probe.read_manifest(MANIFEST_PATH if path is None else path)
+        document = probe.read_manifest(MANIFEST_PATH if path is None else path)
     except probe.ProbeError as error:
         raise RenderError(f"manifest refused: {error}") from error
+    refuse_unpublished_class(document)
+    return document
+
+
+def refuse_unpublished_class(document):
+    """Refuse a manifest carrying a class these three surfaces do not publish.
+
+    `names_in_class` is asked for `manual route` and for `unsupported` and for
+    nothing else. A harness holding either earned class therefore reaches the
+    guide table, which walks every entry, and reaches neither the README's
+    bullets nor the harness page at all. Driven before this guard existed, with
+    the landed `Cline` row moved to `Atlas launcher` and its observation fields
+    made consistent: `--write` exited 0 and wrote all three surfaces, the row
+    was absent from the README's bullets and absent from the page's text
+    entirely, and `--check` exited 0 reporting `three surfaces match 6 recorded
+    harnesses` against a README naming five and a page naming four.
+
+    Four hand-written claims are why this refuses rather than publishing a
+    roster with a row missing. `readme_block` opens "No local harness holds a
+    checked one-click Atlas launcher", `pdf_label` opens "Manual only",
+    `PDF_DETAIL` closes "No checked Atlas launcher here", and the guide's own
+    prose above the markers says a row with a route has a manual one. None is
+    derived from the manifest, an earned class falsifies all four at once, and
+    the guide table one column over would be displaying the class that
+    falsifies them. Refusing turns those four into preconditions this module
+    checks rather than assertions it hopes for.
+
+    The cost is deliberate, and it is the trade `recorded` already makes for a
+    date the calendar refuses: on the day a client answers, the roster does not
+    render until somebody writes the wording for a state this design has never
+    had. That is a person's decision rather than a rendering one, and a refusal
+    naming the harness and the class is the hand-over.
+    """
+    unpublished = tuple(
+        (entry["name"], entry["classification"])
+        for entry in harnesses(document)
+        if entry["classification"] not in PUBLISHED_CLASSIFICATIONS
+    )
+    if not unpublished:
+        return
+    named = ", ".join(f"{name} is {shown!r}" for name, shown in unpublished)
+    raise RenderError(
+        "manifest refused: these surfaces publish "
+        f"{' and '.join(repr(one) for one in PUBLISHED_CLASSIFICATIONS)} only, "
+        f"and {named}"
+    )
 
 
 def refuse_leak(where, text):
@@ -504,14 +562,26 @@ def rendered_surface(text, body, path):
     return f"{head}\n{body}\n{tail}"
 
 
-def build_pdf(builder=None, target=None, python=None):
-    """Rebuild the guide PDF by running its builder as a fixed argv."""
+def build_pdf(builder=None, target=None, python=None, manifest=None):
+    """Rebuild the guide PDF by running its builder as a fixed argv.
+
+    The manifest travels with the argv. Without it the builder called
+    `load_manifest()` with no argument and read `MANIFEST_PATH`, so a
+    `--manifest` the operator supplied reached the README and the guide and not
+    the page: measured, `--write --manifest other.json` exited 0 and printed
+    `rendered 6 harnesses into three surfaces` while the page kept a name
+    `other.json` had dropped, and the next `--check --manifest other.json`
+    exited 1 on drift the write had just made. The argv stays a fixed list with
+    no shell, and the path is the one `_checked_path` already admitted.
+    """
     argv = [
         sys.executable if python is None else str(python),
         str(BUILDER_PATH if builder is None else builder),
         "--output",
         str(PDF_PATH if target is None else target),
     ]
+    if manifest is not None:
+        argv.extend(["--manifest", str(manifest)])
     try:
         completed = subprocess.run(
             argv,
@@ -539,11 +609,14 @@ def write(
     builder=None,
     python=None,
 ):
-    """Regenerate all three surfaces, and report every path written.
+    """Regenerate all three surfaces from one manifest, and report every write.
 
-    The PDF is always rebuilt and so is always written. The two Markdown
-    surfaces are written only where the rendered text differs from what is
-    already there, so a no-op render leaves their modification times alone.
+    All three come from the same document, `manifest` included: `build_pdf`
+    passes it to the builder rather than letting the builder read the
+    repository's own. The PDF is always rebuilt and so is always written. The
+    two Markdown surfaces are written only where the rendered text differs from
+    what is already there, so a no-op render leaves their modification times
+    alone.
 
     Every credential sweep runs before any surface is written. Sweeping each
     body as its turn came round meant the refusal was only as early as the
@@ -570,7 +643,7 @@ def write(
         if rendered != text:
             path.write_text(rendered, encoding="utf-8")
             written.append(path)
-    build_pdf(builder=builder, target=pdf, python=python)
+    build_pdf(builder=builder, target=pdf, python=python, manifest=manifest)
     written.append(PDF_PATH if pdf is None else Path(pdf))
     return document, written
 
