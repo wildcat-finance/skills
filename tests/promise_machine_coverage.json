@@ -4,20 +4,32 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "62b88c034915def8676556380674d63fe41ea048055ee50dc9c9f6e188cde289"
+      "sha256": "50db4948ab96bce60a73a97d061e1401dd60c0103e428068ce9dc2068c888249"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "c7f0bea52aee68f3c561fd95f8648a74695cf25182b89d9f177ef4d5e3d71775"
+      "sha256": "c652f948ae98ec27dc4fd90f1cb96064ccede7f961e03ad5419a0afc2bc75b45"
+    },
+    "prover": {
+      "path": "scripts/prove_agent_instruction_reconciliation.py",
+      "sha256": "6eda1b38aae1a7860c8ca5fdec836d847867c424cfc4fc2fc3c3d2bbabca6967"
+    },
+    "prover_tests": {
+      "path": "tests/test_agent_instruction_corpus.py",
+      "sha256": "7bf206a385ab4f9e6a634eb538ac0acdab023573da8756246c11006791330176"
     },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "398cd69ac8beadb112b135380be2597bec42a7274d3819b1b9b465ad49e39f65"
+        "sha256": "72c39d73417e72abd7569392ad04eb0a2451238f48c632dbdeb9c63c3bb10756"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
         "sha256": "7cfd343c6d8fd498ea1084f8ed93e0dcf5fe1262afc1ee00fb8f4ac43b348c93"
+      },
+      {
+        "path": "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
+        "sha256": "6bfb5ad4293f3c1151ce0e24a0217768f019425f3b88f4c9eed0b79a4cd5bf0d"
       }
     ],
     "fixtures": [
@@ -89,11 +101,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
-        "sha256": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703"
+        "sha256": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "2af54575ac07eade7a81a2a39322e90d52cbce9e95ecc836395f2daee06c73b8"
+        "sha256": "3c44a2415f4cc2592a45a22cf1fdb6759ba24b2b90cc4c810f42d4aa31c65a27"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -101,7 +113,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "74ab855ceb19e7d033a981341db03ecf1d4d7bc4711831bf9c306ed17ef1b816"
+        "sha256": "e6be0e27bbb5ec28e164c6d8acbc4ec214d550b18c5bf83eeaa4640024acf1f5"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
@@ -110,12 +122,13 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "483c9b119e8081f6937c607ac8ae89eb28d6cc717654a2d2e97456a05d504769",
+      "sha256": "5dcd25863c25a5a203e61577319351cb50108f4109c141cb9f24060c5ea90164",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
+        "test_specialised_coverage_binds_the_reconciliation_prover",
         "test_specialised_coverage_binds_focused_tests",
         "test_specialised_coverage_binds_all_fixture_artifacts",
         "test_specialised_coverage_binds_all_evidence_records",
@@ -124,7 +137,11 @@
         "test_plugin_promise_machine_copies_are_current",
         "test_portable_promise_machine_package_is_current",
         "test_stale_measurement_report_refuses",
-        "test_stale_parity_report_refuses"
+        "test_stale_parity_report_refuses",
+        "test_undefined_measurement_projection_refuses",
+        "test_undefined_parity_projection_refuses",
+        "test_an_edited_token_count_refuses_on_its_own",
+        "test_a_consistent_token_count_edit_is_not_detected"
       ]
     },
     "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"

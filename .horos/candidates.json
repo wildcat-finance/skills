@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17078733,
+    "bytes_blob": 17480256,
     "bytes_generated": 98
   },
   "entries": [
@@ -19,6 +19,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
+    },
+    {
+      "bytes": 199627,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 197579",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.md"
+    },
+    {
+      "bytes": 200708,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -582,9 +596,9 @@
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
     },
     {
-      "bytes": 23378,
+      "bytes": 24566,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 23378 bytes",
+      "evidence": "no newline in the first 4096 bytes of 24566 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }
