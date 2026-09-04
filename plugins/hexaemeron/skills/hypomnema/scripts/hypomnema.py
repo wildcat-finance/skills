@@ -13,6 +13,8 @@ though the reason exists and was checked. This settles the part a parser can.
   H007  an alert runbook missing one of its three required answers
   H008  an explicit study design bridge that does not bind one selected design
         to one established standing-record home
+  H009  a stable decision identity is malformed, misplaced, or duplicated
+  H010  a stable decision reference names no draft or final record
 
 Exit 0 clean, 1 findings, 2 bad invocation.
 
@@ -22,8 +24,8 @@ TypeScript. A marker counts only at the start of a line's stripped text
 or preceded by whitespace, so a marker inside a string literal or a
 URL's double slash earns no scan; that boundary is deliberate and a
 reference the rule cannot see stays unchecked. References found in
-comment text are resolved against the same index the markdown pass
-builds from record file names. In source files the pragma is the bare
+comment text are resolved against the numeric and stable-slug indexes the
+markdown pass builds from record file names. In source files the pragma is the bare
 `hypomnema: allow <why>` after a comment marker, on the finding's line
 or the one above it.
 
@@ -89,6 +91,12 @@ SKIP_SCHEME = ("http", "https", "mailto", "tel", "ftp")
 # The record template the SKILL states, held mechanically since the first
 # four records stated their status in three shapes within a day.
 RECORD_NAME = re.compile(r"^ADR-\d+.*\.md$", re.IGNORECASE)
+FINAL_NAME = re.compile(
+    r"^ADR-(?P<number>[0-9]{3})-(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
+STABLE_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+MAX_SLUG_BYTES = 96
+STABLE_PREFIX = "adr/"
+STABLE_TRAILING = ".,;:!?)]}"
 SECTION = re.compile(r"^##\s+(?P<name>\S.*?)\s*$")
 SECTIONS = ("Status", "Context", "Decision", "Alternatives", "Consequences")
 RUNBOOK_SECTIONS = ("What fired", "First check", "Who to wake")
@@ -881,7 +889,55 @@ def _comment_segments(lines: list[str], marker: str):
             rest = ""
 
 
-def _source_findings(path: Path, adr_numbers: set[str] | None) -> list[Finding]:
+def _stable_references(
+        path: Path,
+        number: int,
+        line: str,
+        adr_slugs: set[str] | None) -> list[Finding]:
+    """Read stable references, including identifiers quoted in code spans."""
+    findings: list[Finding] = []
+    cursor = 0
+    while True:
+        start = line.find(STABLE_PREFIX, cursor)
+        if start < 0:
+            break
+        cursor = start + len(STABLE_PREFIX)
+        if start and (line[start - 1].isalnum() or line[start - 1] in "_-/"):
+            continue
+        # This exact token documents the grammar; it is not a live identity.
+        if line.startswith("<slug>", cursor):
+            cursor += len("<slug>")
+            continue
+        end = cursor
+        while (
+                end < len(line)
+                and not line[end].isspace()
+                and line[end] not in "`\"'"):
+            end += 1
+        token = line[cursor:end].rstrip(STABLE_TRAILING)
+        cursor = max(end, cursor + 1)
+        try:
+            encoded = token.encode("ascii")
+        except UnicodeEncodeError:
+            encoded = b""
+        if (
+                not token
+                or len(encoded) > MAX_SLUG_BYTES
+                or STABLE_SLUG.fullmatch(token) is None):
+            findings.append(Finding(
+                path, number, "H008",
+                "stable decision reference has an invalid slug"))
+        elif adr_slugs is not None and token not in adr_slugs:
+            findings.append(Finding(
+                path, number, "H009",
+                f"stable decision reference `adr/{token}` has no record"))
+    return findings
+
+
+def _source_findings(
+        path: Path,
+        adr_numbers: set[str] | None,
+        adr_slugs: set[str] | None) -> list[Finding]:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as err:
@@ -897,6 +953,7 @@ def _source_findings(path: Path, adr_numbers: set[str] | None) -> list[Finding]:
                 findings.append(Finding(
                     path, number, "H006",
                     f"comment cites `{reference}`, which does not exist"))
+        findings.extend(_stable_references(path, number, comment, adr_slugs))
 
     def allowed(line: int) -> bool:
         for number in (line, line - 1):
@@ -907,9 +964,58 @@ def _source_findings(path: Path, adr_numbers: set[str] | None) -> list[Finding]:
     return [f for f in findings if not allowed(f.line)]
 
 
-def check(path: Path, adr_numbers: set[str] | None = None) -> list[Finding]:
+def _stable_record_findings(path: Path, lines: list[str]) -> list[Finding]:
+    """Hold prospective draft/final placement and first headings together."""
+    positions = [index for index, part in enumerate(path.parts)
+                 if part == "decisions"]
+    if not positions:
+        return []
+    tail = path.parts[positions[-1] + 1:]
+    findings: list[Finding] = []
+    first = lines[0] if lines else ""
+    if len(tail) == 2 and tail[0] == "drafts" and path.suffix == ".md":
+        slug = path.stem
+        if (
+                len(slug.encode("utf-8")) > MAX_SLUG_BYTES
+                or STABLE_SLUG.fullmatch(slug) is None):
+            findings.append(Finding(
+                path, 1, "H008",
+                "draft path has an invalid stable decision slug"))
+        if not first.startswith("# Decision: ") or first == "# Decision: ":
+            findings.append(Finding(
+                path, 1, "H008",
+                "draft first heading is not `# Decision: <title>`"))
+    elif len(tail) == 1 and path.suffix == ".md":
+        match = FINAL_NAME.fullmatch(path.name)
+        if path.name.startswith("ADR-"):
+            if match is not None:
+                slug = match.group("slug")
+                if len(slug.encode("ascii")) > MAX_SLUG_BYTES:
+                    findings.append(Finding(
+                        path, 1, "H008",
+                        "final path has an oversized stable decision slug"))
+                expected = f"# ADR-{match.group('number')}: "
+                if not first.startswith(expected) or first == expected:
+                    findings.append(Finding(
+                        path, 1, "H008",
+                        "final path and first heading disagree"))
+        elif first.startswith("# Decision:"):
+            findings.append(Finding(
+                path, 1, "H008",
+                "unnumbered decision is outside `decisions/drafts`"))
+    elif tail and tail[0] == "drafts" and path.suffix == ".md":
+        findings.append(Finding(
+            path, 1, "H008",
+            "draft is not directly below `decisions/drafts`"))
+    return findings
+
+
+def check(
+        path: Path,
+        adr_numbers: set[str] | None = None,
+        adr_slugs: set[str] | None = None) -> list[Finding]:
     if path.suffix in COMMENT_MARKERS:
-        return _source_findings(path, adr_numbers)
+        return _source_findings(path, adr_numbers, adr_slugs)
     if path.suffix in YAML_SUFFIXES:
         try:
             with path.open("rb") as source:
@@ -929,6 +1035,7 @@ def check(path: Path, adr_numbers: set[str] | None = None) -> list[Finding]:
 
     lines = text.splitlines()
     findings: list[Finding] = []
+    findings.extend(_stable_record_findings(path, lines))
     if RECORD_NAME.match(path.name) and "decisions" in path.parts:
         findings.extend(_record_findings(path, lines))
     if "runbooks" in path.parts[:-1]:
@@ -978,6 +1085,8 @@ def check(path: Path, adr_numbers: set[str] | None = None) -> list[Finding]:
                 findings.append(Finding(path, number, "H003",
                                         f"alert names runbook `{target}`, which is not there"))
 
+        findings.extend(_stable_references(path, number, line, adr_slugs))
+
     return [f for f in findings
             if f.code == "H007" or not suppressed(lines, f.line)]
 
@@ -989,6 +1098,49 @@ def adr_index(paths: list[Path]) -> set[str]:
         if match:
             found.add(f"ADR-{match.group(1)}")
     return found
+
+
+def stable_index(paths: list[Path]) -> tuple[set[str], list[Finding]]:
+    """Index one prospective draft or final path per stable slug."""
+    indexed: dict[str, list[Path]] = {}
+    findings: list[Finding] = []
+    seen_paths: set[Path] = set()
+    for path in paths:
+        if path in seen_paths or path.suffix != ".md":
+            continue
+        seen_paths.add(path)
+        positions = [index for index, part in enumerate(path.parts)
+                     if part == "decisions"]
+        if not positions:
+            continue
+        tail = path.parts[positions[-1] + 1:]
+        slug: str | None = None
+        if len(tail) == 2 and tail[0] == "drafts":
+            candidate = path.stem
+            if (
+                    len(candidate.encode("utf-8")) > MAX_SLUG_BYTES
+                    or STABLE_SLUG.fullmatch(candidate) is None):
+                continue
+            slug = candidate
+        elif len(tail) == 1 and path.name.startswith("ADR-"):
+            match = FINAL_NAME.fullmatch(path.name)
+            if match is None:
+                # Pre-existing numbered records remain legacy numeric
+                # identities when their suffix predates the stable grammar.
+                continue
+            candidate = match.group("slug")
+            if len(candidate.encode("ascii")) > MAX_SLUG_BYTES:
+                continue
+            slug = candidate
+        if slug is not None:
+            indexed.setdefault(slug, []).append(path)
+    for slug, records in indexed.items():
+        if len(records) > 1:
+            for path in records:
+                findings.append(Finding(
+                    path, 1, "H008",
+                    f"stable decision identity `adr/{slug}` is duplicated"))
+    return set(indexed), findings
 
 
 def walk(paths: list[str], include_vendored: bool = False) -> list[Path]:
@@ -1053,9 +1205,10 @@ def main(argv: list[str] | None = None) -> int:
     else:
         files = walk(args.paths or ["."], include_vendored=args.include_vendored)
         index = adr_index(files)
-        findings = []
+        slug_index, identity_findings = stable_index(files)
+        findings = list(identity_findings)
         for path in files:
-            findings.extend(check(path, index))
+            findings.extend(check(path, index, slug_index))
 
     if args.format == "json":
         print(json.dumps([f.as_dict() for f in findings], indent=2))

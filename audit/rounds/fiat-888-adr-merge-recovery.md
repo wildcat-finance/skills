@@ -45,3 +45,37 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: Horos check reported informational candidate drift for the pre-existing fiat-909 audit records, while the boundary matched the tree; candidate entries are report-only and outside this step's boundary owner. The fixed tree was re-reviewed with the root suite (1116 tests) and all three lints at exit 0, with no new finding.
+
+## Step 2, round 1 -- 2026-09-02T09:59:33Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: git-object-input=reviewed; candidate-bytes=reviewed; stale-base=reviewed; workflow-input=reviewed; partial-state=reviewed; provenance=reviewed; hostile-config=reviewed; publication-state=reviewed
+
+Not checked: none
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py | Repository-local info/grafts could rewrite the ancestry answer used to accept a product commit, so an unrelated object could appear descended from the protected base. | fixed in 7ba217a0 |
+| S2-R1-02 | medium | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py | Assignment application rejected clean/process filters in local config but did not inspect the enabled worktree config scope, leaving a configured filter able to execute while worktree bytes were read. | fixed in 7ba217a0 |
+| S2-R1-03 | high | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py | An interruption or backup-cleanup I/O failure during multi-draft installation could leave sources moved or targets partially installed, so the operation was not fail-closed and verified-atomic. | fixed in 7ba217a0 |
+
+Leads not pursued: none
+
+## Step 2, round 2 -- 2026-09-02T10:31:26Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: git-object-input=reviewed; candidate-bytes=reviewed; stale-base=reviewed; workflow-input=reviewed; partial-state=reviewed; provenance=reviewed; hostile-config=reviewed; publication-state=reviewed
+
+Not checked: none
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: two run_checks attempts returned one WAI-E-ADAPTER.TIMEOUT in the host adapter's fake-chat test under concurrent repository checks; the direct root suite passed 1116/1116 and the full Hexaemeron runner passed 2240/2240 after warm-up, so the transient adapter result was not a product finding.

@@ -673,7 +673,11 @@ class PromiseStructureTests(unittest.TestCase):
                 "fiat-version-resolution",
                 "fiat-final-integration",
             },
-            "hypomnema": {"hypomnema-pointer-gate", "hypomnema-record-placement"},
+            "hypomnema": {
+                "hypomnema-pointer-gate",
+                "hypomnema-decision-assignment",
+                "hypomnema-record-placement",
+            },
             "imprimatur": {"imprimatur-prose-gate"},
             "kronos": {
                 "kronos-frontier-ranking",
@@ -1247,7 +1251,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "transition",
             "exception",
         }
-        self.assertEqual(len(coverage["runtime"]), 45)
+        self.assertEqual(len(coverage["runtime"]), 46)
         for promise_id, binding in coverage["runtime"].items():
             with self.subTest(promise_id=promise_id):
                 self.assertEqual(set(binding), {"source", "sha256", "bindings"})
@@ -1388,7 +1392,7 @@ class PromiseCoverageTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
         self.assertEqual(report["counts"]["coverage_rows"], len(coverage_rows()))
-        self.assertEqual(report["counts"]["coverage_selected"], 17)
+        self.assertEqual(report["counts"]["coverage_selected"], 18)
 
     def test_prompt_and_vendored_evaluations_never_claim_proof(self):
         coverage = json.loads(
@@ -1399,7 +1403,7 @@ class PromiseCoverageTests(unittest.TestCase):
         selected = [
             row for row in coverage["rows"] if row["group"] in {"prompt", "vendored"}
         ]
-        self.assertEqual(len(selected), 17)
+        self.assertEqual(len(selected), 18)
         self.assertTrue(all("pending" not in row for row in selected))
         self.assertTrue(
             all(row["evaluation"]["status"] in {"recorded", "unknown"} for row in selected)
