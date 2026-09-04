@@ -1,0 +1,111 @@
+{
+  "schema": "harness-classification/v1",
+  "recorded": {
+    "host": "darwin-arm64",
+    "date": "2026-09-04",
+    "base_ref": "c0524f0cd1288cc35316ae9acec6c7d2a6bd4272"
+  },
+  "harnesses": [
+    {
+      "name": "GitHub Copilot",
+      "classification": "manual route",
+      "client_present": false,
+      "client_version": null,
+      "version_read": false,
+      "auth_configured": false,
+      "launcher_contract": "ghapp://session/new with repo, pr, branch, prompt and mode, where mode takes plan, interactive or autopilot",
+      "blocker": "Absent: copilot did not resolve on PATH, so the command was not run. No declared authentication signal was observed on this host. No Copilot seat is held on the active account and the organisation's Copilot CLI policy is unconfigured. Seat entitlement is a network fact this probe does not read, and clearing the blocker needs either an organisation policy change or a new personal plan.",
+      "testable_here": false,
+      "probe": {
+        "command": [
+          "copilot",
+          "--version"
+        ],
+        "result": "absent: copilot did not resolve on PATH, so the command was not run"
+      }
+    },
+    {
+      "name": "Cursor",
+      "classification": "manual route",
+      "client_present": false,
+      "client_version": null,
+      "version_read": false,
+      "auth_configured": false,
+      "launcher_contract": "none published; the agent CLI takes -p for a prompt and --mode=ask or --plan for read-only work",
+      "blocker": "Absent: cursor-agent did not resolve on PATH, so the command was not run. No declared authentication signal was observed on this host. The client is absent and its authentication is an interactive account sign-in this environment has no Cursor account for.",
+      "testable_here": false,
+      "probe": {
+        "command": [
+          "cursor-agent",
+          "--version"
+        ],
+        "result": "absent: cursor-agent did not resolve on PATH, so the command was not run"
+      }
+    },
+    {
+      "name": "Gemini CLI",
+      "classification": "manual route",
+      "client_present": false,
+      "client_version": null,
+      "version_read": false,
+      "auth_configured": false,
+      "launcher_contract": "none published; the prompt is supplied with --prompt or -p and the read-only mode is --approval-mode plan",
+      "blocker": "Absent: gemini did not resolve on PATH, so the command was not run. No declared authentication signal was observed on this host. The client is absent and no authentication method is configured on this host.",
+      "testable_here": false,
+      "probe": {
+        "command": [
+          "gemini",
+          "--version"
+        ],
+        "result": "absent: gemini did not resolve on PATH, so the command was not run"
+      }
+    },
+    {
+      "name": "Windsurf",
+      "classification": "manual route",
+      "client_present": false,
+      "client_version": null,
+      "version_read": false,
+      "auth_configured": false,
+      "launcher_contract": "none published; Cascade documents Code mode and Chat mode, and Restricted Mode makes Cascade unavailable entirely",
+      "blocker": "Absent: windsurf did not resolve on PATH, so the command was not run. No declared authentication signal was observed on this host. The client is absent, and the product the issue names is now published as Cascade inside Devin Desktop. Which product a Windsurf row should describe is a naming question a maintainer has to settle before any run.",
+      "testable_here": false,
+      "probe": {
+        "command": [
+          "windsurf",
+          "--version"
+        ],
+        "result": "absent: windsurf did not resolve on PATH, so the command was not run"
+      }
+    },
+    {
+      "name": "Cline",
+      "classification": "manual route",
+      "client_present": false,
+      "client_version": null,
+      "version_read": false,
+      "auth_configured": false,
+      "launcher_contract": "none published; -p or --plan gives plan-first work, --auto-approve takes a boolean, and the positional-prompt form still defaults to act mode with auto-approval on",
+      "blocker": "Absent: cline did not resolve on PATH, so the command was not run. No declared authentication signal was observed on this host. The client is absent and unauthenticated. Its positional-prompt form still defaults to act mode with auto-approval on, so the recorded hazard is unchanged.",
+      "testable_here": false,
+      "probe": {
+        "command": [
+          "cline",
+          "--version"
+        ],
+        "result": "absent: cline did not resolve on PATH, so the command was not run"
+      }
+    },
+    {
+      "name": "Roo Code",
+      "classification": "unsupported",
+      "client_present": false,
+      "client_version": null,
+      "version_read": false,
+      "auth_configured": false,
+      "launcher_contract": "none; the product is sunset and RooCodeInc/Roo-Code is archived",
+      "blocker": "No client binary is declared for this harness, so no client run was attempted. No declared authentication signal was observed on this host. The product is sunset and its repository archived. No active successor was named, so there is nothing to test.",
+      "testable_here": false
+    }
+  ]
+}

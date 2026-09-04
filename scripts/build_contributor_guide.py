@@ -7,11 +7,19 @@ Run from any directory:
 
 The public Markdown source is docs/how-to-help-shoggoth.md. This builder owns
 the matching five-page visual treatment and writes docs/pdf/how-to-help-shoggoth.pdf.
+
+The harness page's roster is not written here. Its card label, its route line
+and its detail all come from scripts/render_harness_roster.py, which derives
+them from docs/harness-classification.json. No harness name appears anywhere in
+this file, which is what stops the PDF and the two Markdown surfaces disagreeing
+about a roster nobody re-probed.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import sys
 from pathlib import Path
 
 from reportlab import rl_config
@@ -30,6 +38,26 @@ rl_config.useA85 = False
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "docs/pdf/how-to-help-shoggoth.pdf"
 COVER_IMAGE = ROOT / "docs/assets/shoggoth-contributor-cover.png"
+RENDERER = ROOT / "scripts/render_harness_roster.py"
+
+
+def roster():
+    """scripts/render_harness_roster.py, loaded once by path.
+
+    Loaded rather than imported because scripts/ is not a package, and the
+    builder runs from any working directory. The renderer imports no PDF
+    library, so this costs the build nothing it did not already pay.
+    """
+    existing = sys.modules.get("render_harness_roster")
+    if existing is not None:
+        return existing
+    spec = importlib.util.spec_from_file_location("render_harness_roster", RENDERER)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"build_contributor_guide: {RENDERER} could not be loaded")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 ATLAS = "https://shoggoth-wave-atlas.functi0nzer0.chatgpt.site/"
 CHATGPT = f"{ATLAS}go/chatgpt"
@@ -382,11 +410,16 @@ def draw_harness_page(c: canvas.Canvas) -> None:
     para(c, "Wildcat plugin marketplace package.<br/>Open the repo, install, paste the Atlas prompt.", 573, 160, 201, 46, size=9.5)
     c.linkURL(INSTALL_CLAUDE, (420, 142, 798, 224), relative=0, thickness=0)
 
+    # Every string in this card is derived from docs/harness-classification.json.
+    # `para` refuses text that overflows its box, so a roster that outgrows the
+    # card fails the build rather than shipping a page with a name cut off it.
+    render = roster()
+    manifest = render.load_manifest()
     card(c, 44, 63, 754, 58, fill=BUNKER, stroke=BUNKER)
-    label(c, "Manual only", 62, 98, GOLD)
+    label(c, render.pdf_label(manifest), 62, 98, GOLD)
     para(
         c,
-        "GitHub Copilot  /  Cursor  /  Gemini CLI  /  Windsurf",
+        render.pdf_roster_line(manifest),
         158,
         90,
         440,
@@ -396,7 +429,7 @@ def draw_harness_page(c: canvas.Canvas) -> None:
         font="Helvetica-Bold",
         align=TA_CENTER,
     )
-    para(c, "Read AGENTS.md, then paste job.prompt. No checked Atlas launcher here.", 596, 80, 182, 30, size=8.2, leading=10, color=HexColor("#DADCE4"), align=TA_CENTER)
+    para(c, render.pdf_detail(manifest), 596, 66, 182, 52, size=8.2, leading=10, color=HexColor("#DADCE4"), align=TA_CENTER)
     c.linkURL(GUIDE, (44, 63, 798, 121), relative=0, thickness=0)
     c.showPage()
 
