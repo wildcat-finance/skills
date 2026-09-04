@@ -783,6 +783,245 @@ class Reconciliation:
         return outcome
 
 
+class LiveReconciliation:
+    """The six mechanical passes, applied to the live tree rather than a copy.
+
+    `Reconciliation` proves the reconciliation is possible offline and never
+    writes the repository. This performs it. The two are deliberately separate
+    classes: a prover that could write the tree it proves things about would be
+    one flag away from proving a claim it had arranged.
+
+    Construction expects exactly the state the demo path leaves behind: the
+    subject's bound source off its recorded digest, every other bound path on
+    its own. A tree off somewhere else is refused rather than reconciled around,
+    because the passes below would then rebind drift nobody asked about.
+
+    Only the after-span placement is reconcilable here. Re-deriving a recorded
+    offset needs the pre-edit bytes to locate, and a tree already carrying the
+    edit no longer has them. That is not a gap this tool can close by trying
+    harder: the offsets are located by their own recorded bytes, and those bytes
+    are what the edit displaced. A moved reviewed span refuses and says so.
+    """
+
+    def __init__(self, root: Path, checker=None) -> None:
+        self.root = Path(root).resolve()
+        self.checker = checker if checker is not None else load_checker(self.root)
+
+        self.manifest = self._record(MANIFEST)
+        self.fixture = self._subject_fixture()
+        self.source_path = self.fixture["source"]["path"]
+        self.old_digest = self.fixture["source"]["sha256"]
+        self.source = self._bytes(self.source_path)
+        self.new_digest = digest(self.source)
+
+        limit = len(self.source)
+        self.start = recorded_offset(
+            self.fixture["source"]["start"], "the reviewed span's start", limit
+        )
+        self.end = recorded_offset(
+            self.fixture["source"]["end"], "the reviewed span's end", limit
+        )
+        if self.end <= self.start:
+            raise ProverError(
+                f"{self.source_path} has a reviewed span that ends at or before it starts"
+            )
+
+        # Every bound path except the subject's own source, which is the one
+        # the edit is expected to have moved.
+        for relative, expected in bound_digests(self.manifest):
+            if relative == self.source_path:
+                continue
+            if digest(self._bytes(relative)) != expected:
+                raise ProverError(
+                    f"{relative} is off its manifest digest; this tool reconciles one "
+                    "edited source and refuses a tree that has drifted elsewhere"
+                )
+
+    def _bytes(self, relative: str) -> bytes:
+        return self.checker.read_confined(self.root, relative)
+
+    def _record(self, relative: str, *, allow_integers: bool = False) -> dict[str, Any]:
+        return self.checker.load_canonical_record(
+            self._bytes(relative), allow_integers=allow_integers
+        )
+
+    def _write(self, relative: str, data: bytes) -> None:
+        self.checker.write_confined_atomic(self.root, relative, data)
+
+    def _subject_fixture(self) -> dict[str, Any]:
+        for entry in self.manifest["fixtures"]:
+            if entry["id"] == SUBJECT:
+                return entry
+        raise ProverError(f"the manifest binds no fixture {SUBJECT}")
+
+    def unchanged(self) -> bool:
+        return self.new_digest == self.old_digest
+
+    def check_span_held(self) -> None:
+        """Refuse unless the reviewed bytes are still at their recorded offsets.
+
+        Two faults land here and this does not try to tell them apart, because
+        it cannot do so soundly. The manifest records the reviewed span's digest
+        and not its bytes, so a tree already carrying the edit gives no way to
+        search for where those bytes went; distinguishing "moved" from "changed"
+        would be a guess presented as a diagnosis. Both causes and both remedies
+        are named instead, and the reader has the edit in front of them.
+        """
+        span = self.source[self.start : self.end]
+        if digest(span) == self.fixture["source"]["span_sha256"]:
+            return
+        raise ProverError(
+            f"{self.source_path} is off its recorded reviewed-span digest at the recorded "
+            f"offsets {self.start}-{self.end}, so this edit either changed the reviewed "
+            "bytes or moved them. Neither is reconcilable here. Changed reviewed bytes are "
+            "what the recorded token counts are counts of, and only agent_instruction.py "
+            "measure can reissue those counts, on the machine the tokenizer profile pins. "
+            "Moved reviewed bytes need their offsets re-derived from the pre-edit source, "
+            "which this tree no longer holds; see wildcat-finance/skills#1192"
+        )
+
+    def apply(self) -> dict[str, Any]:
+        """The six passes, in order, over the live tree."""
+        self.check_span_held()
+
+        manifest = json.loads(json.dumps(self.manifest))
+        fixture = None
+        for entry in manifest["fixtures"]:
+            if entry["id"] == SUBJECT:
+                fixture = entry
+        written: list[str] = []
+        applied: list[str] = []
+
+        fixture["source"]["sha256"] = self.new_digest
+        applied.append("manifest-source")
+
+        for pass_name, artifact in (("model", "model"), ("source-spans", "source_spans")):
+            relative = fixture["artifacts"][artifact]["path"]
+            raw = self._bytes(relative)
+            occurrences = raw.count(self.old_digest.encode("ascii"))
+            if occurrences != 1:
+                raise ProverError(
+                    f"{relative} carries the source digest {occurrences} times, expected 1"
+                )
+            raw = raw.replace(self.old_digest.encode("ascii"), self.new_digest.encode("ascii"))
+            self._write(relative, raw)
+            written.append(relative)
+            applied.append(pass_name)
+
+        compact_relative = fixture["artifacts"]["compact"]["path"]
+        self._run_checker(
+            ["format", "--root", ".", "--input", fixture["artifacts"]["model"]["path"],
+             "--output", compact_relative],
+        )
+        written.append(compact_relative)
+        applied.append("compact")
+
+        for artifact in ("model", "compact", "source_spans"):
+            relative = fixture["artifacts"][artifact]["path"]
+            fixture["artifacts"][artifact]["sha256"] = digest(self._bytes(relative))
+        applied.append("manifest-artifacts")
+
+        manifest_bytes = self.checker.canonical_record_bytes(manifest)
+        self._write(MANIFEST, manifest_bytes)
+        written.append(MANIFEST)
+
+        rebound = self._rebind_coverage(manifest_bytes)
+        written.append(COVERAGE)
+        applied.append(UNOBSERVED_PASS)
+
+        return {
+            "applied": applied,
+            "coverage_rebound": rebound,
+            "source": self.source_path,
+            "source_sha256": {"from": self.old_digest, "to": self.new_digest},
+            "written": sorted(set(written)),
+        }
+
+    def _rebind_coverage(self, manifest_bytes: bytes) -> list[str]:
+        """The pass a fixture copy cannot observe, because `check` never reads it.
+
+        `agent_instruction.py check` is green without this and
+        `tests/test_agent_instruction.py` is not, which is the whole reason the
+        demo path ends in the test suite rather than in the checker.
+        """
+        raw = self._bytes(COVERAGE)
+        register = json.loads(raw)
+        row = register["agent_instruction"]
+        rebound: list[str] = []
+        replacements: list[tuple[str, str]] = []
+
+        if row["manifest"]["path"] != MANIFEST:
+            raise ProverError(f"the coverage register binds a manifest at {row['manifest']['path']}")
+        if row["manifest"]["sha256"] != digest(manifest_bytes):
+            replacements.append((row["manifest"]["sha256"], digest(manifest_bytes)))
+            rebound.append(MANIFEST)
+
+        for entry in row["fixtures"]:
+            current = digest(self._bytes(entry["path"]))
+            if entry["sha256"] != current:
+                replacements.append((entry["sha256"], current))
+                rebound.append(entry["path"])
+
+        # Substituted in the register's own bytes rather than re-serialised from
+        # the parsed object. Re-serialising would impose this file's key order
+        # and indentation on a register that is hand-maintained in its own, and
+        # a reconciliation that reformats 300 lines to change two is one nobody
+        # can review.
+        for old_digest, new_digest in replacements:
+            occurrences = raw.count(old_digest.encode("ascii"))
+            if occurrences != 1:
+                raise ProverError(
+                    f"{COVERAGE} carries {old_digest} {occurrences} times, expected 1"
+                )
+            raw = raw.replace(old_digest.encode("ascii"), new_digest.encode("ascii"))
+        if replacements:
+            self._write(COVERAGE, raw)
+        return sorted(rebound)
+
+    def _run_checker(self, arguments: list[str]) -> None:
+        completed = subprocess.run(  # noqa: S603 - argument list, no shell, fixed env
+            [sys.executable, CHECKER, *arguments],
+            cwd=str(self.root),
+            env={
+                "PATH": "/usr/bin:/bin",
+                "LC_ALL": "C.UTF-8",
+                "PYTHONIOENCODING": "utf-8",
+                "PYTHONDONTWRITEBYTECODE": "1",
+            },
+            capture_output=True,
+            timeout=CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise ProverError(
+                f"{CHECKER} {arguments[0]} exited {completed.returncode}: "
+                f"{completed.stderr.decode('utf-8', 'replace')[:400]}"
+            )
+
+
+def run_reconcile(root: Path) -> int:
+    """The demo path's second command: reconcile the live tree, say what moved."""
+    try:
+        live = LiveReconciliation(root)
+        if live.unchanged():
+            sys.stdout.write(
+                json.dumps(
+                    {"applied": [], "outcome": "nothing-to-reconcile", "written": []},
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+            return 0
+        result = live.apply()
+    except ProverError as error:
+        print(f"prove_agent_instruction_reconciliation: {error}", file=sys.stderr)
+        return 2
+    result["outcome"] = "reconciled"
+    sys.stdout.write(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    return 0
+
+
 # --- the three subcommands ---------------------------------------------
 
 
@@ -940,6 +1179,10 @@ def prove_selftest(reconciliation: Reconciliation) -> tuple[int, dict[str, Any],
     return len(checks), checks, True
 
 
+# The one subcommand that writes the repository. Named here so the parser, the
+# dispatch and the tests all reach for the same string.
+RECONCILE = "reconcile"
+
 SUBCOMMANDS = {
     "offline": ("offline-reconciliation-green", "boolean", prove_offline),
     "span-shift": ("span-shift-regression", "count", prove_span_shift),
@@ -962,6 +1205,10 @@ def build_parser() -> argparse.ArgumentParser:
         subparser.add_argument("--candidate", default="digest-neutral-corpus", choices=choices)
         subparser.add_argument("--report")
         subparser.add_argument("--detail", action="store_true")
+    # Not a proof and not design-report shaped: it writes the tree and reports
+    # what it moved, so it takes neither --candidate nor --report.
+    reconcile_parser = subparsers.add_parser(RECONCILE)
+    reconcile_parser.add_argument("--root", default=".")
     return parser
 
 
@@ -972,8 +1219,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 0
 
-    criterion, unit, prove = SUBCOMMANDS[arguments.command]
     root = Path(arguments.root).resolve()
+    if arguments.command == RECONCILE:
+        return run_reconcile(root)
+
+    criterion, unit, prove = SUBCOMMANDS[arguments.command]
     command = " ".join(
         [
             "python3",
