@@ -30,6 +30,9 @@ CLASSIFICATIONS = (
     "unsupported",
 )
 
+# The two classes a harness only reaches by a recorded client run.
+EARNED_CLASSIFICATIONS = ("Atlas launcher", "tested local route")
+
 OBSERVATION_FIELDS = (
     "client_present",
     "client_version",
@@ -79,6 +82,28 @@ def entry(name, **overrides):
     return record
 
 
+def shaped(classification):
+    """Entry overrides that keep a record coherent with the class it carries.
+
+    An earned class is only ever written against a recorded client run, so the
+    two earned names get one here. The schema does not enforce that pairing --
+    the probe's classifier does -- and this helper exists so that no case in
+    this file asserts an unearned earned class is a valid record.
+    """
+    if classification not in EARNED_CLASSIFICATIONS:
+        return {"classification": classification}
+    return {
+        "classification": classification,
+        "client_present": True,
+        "client_version": "2026.8.1",
+        "auth_configured": True,
+        "launcher_contract": "deep link exercised on this host",
+        "blocker": None,
+        "testable_here": True,
+        "probe": {"command": ["cursor", "--version"], "result": "2026.8.1"},
+    }
+
+
 def manifest(*entries):
     return {
         "schema": SCHEMA_ID,
@@ -120,9 +145,14 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(tuple(declared), CLASSIFICATIONS)
 
     def test_each_classification_name_is_admitted(self):
+        declared = self.schema["$defs"]["classification"]["enum"]
         for name in CLASSIFICATIONS:
             with self.subTest(classification=name):
-                self.assert_valid(manifest(entry("Cursor", classification=name)))
+                # Document level, so this case still checks something on a host
+                # without jsonschema: the enum carries the name, which is what
+                # makes any validator reading this schema admit it.
+                self.assertIn(name, declared)
+                self.assert_valid(manifest(entry("Cursor", **shaped(name))))
 
     def test_an_unknown_classification_name_is_refused(self):
         declared = self.schema["$defs"]["classification"]
@@ -149,11 +179,22 @@ class SchemaTests(unittest.TestCase):
     def test_a_harness_entry_missing_any_observation_field_is_refused(self):
         for field in OBSERVATION_FIELDS:
             with self.subTest(field=field):
+                # Document level: being listed in `required` is the mechanism
+                # that turns the omission below into a refusal.
+                self.assertIn(field, self.harness["required"])
                 record = entry("Cline")
                 del record[field]
                 self.assert_refused(manifest(record))
 
     def test_a_null_client_version_is_admitted_when_the_client_is_absent(self):
+        # Document level: the union type admits null, and the conditional that
+        # withdraws it is keyed on client_present being true, so it does not
+        # fire for an absent client.
+        self.assertIn("null", self.harness["properties"]["client_version"]["type"])
+        self.assertEqual(
+            self.harness["allOf"][0]["if"]["properties"]["client_present"]["const"],
+            True,
+        )
         self.assert_valid(
             manifest(entry("Gemini CLI", client_present=False, client_version=None))
         )
