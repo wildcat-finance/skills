@@ -95,6 +95,7 @@
         "classification",
         "client_present",
         "client_version",
+        "version_read",
         "auth_configured",
         "launcher_contract",
         "blocker"
@@ -164,6 +165,56 @@
             "properties": {
               "client_version": {
                 "$ref": "#/$defs/nonEmptyString"
+              }
+            }
+          }
+        },
+        {
+          "$comment": "version_read is the field a reader is told to trust instead of recognising the sentinel, so the two may not disagree. A read version is a string that is not the sentinel.",
+          "if": {
+            "required": [
+              "version_read"
+            ],
+            "properties": {
+              "version_read": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "client_version": {
+                "type": "string",
+                "not": {
+                  "const": "unread"
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "An unread version is either the sentinel, where a client was present and did not answer, or null, where no client was present to answer.",
+          "if": {
+            "required": [
+              "version_read"
+            ],
+            "properties": {
+              "version_read": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "client_version": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "const": "unread"
+                  }
+                ]
               }
             }
           }

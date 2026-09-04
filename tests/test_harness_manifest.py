@@ -25,12 +25,16 @@ feeds the probe a client output fixture carrying a token and sweeps both the
 manifest and the log for it. ``KilledProbeTests`` kills a real child process
 between the temporary write and the rename, and is the resolver for the
 ``killed-probe-recovery`` gate; it writes that gate's report on the way out.
-``GateReportTests`` holds that report to the run that earned it, so a partial
-selection of the class cannot report a failure nothing observed.
+``GateReportTests`` holds that report to the run that earned it in both
+directions: a partial selection of the class cannot report a failure nothing
+observed, and a case that failed cannot report success. The second direction is
+the dangerous one, because ``subTest`` swallows a failure and lets the rest of
+the case run, including the statement where it flags itself passed.
 """
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import itertools
 import json
@@ -71,6 +75,20 @@ OBSERVATION_FIELDS = (
     "blocker",
 )
 
+# `version_read` is derived rather than read off the host, and it is what the
+# schema tells a reader to consult instead of recognising the `unread`
+# sentinel. That instruction only means something if every entry carries the
+# field, because one that sits in `properties` alone constrains its value where
+# a producer supplies one and compels nothing where it does not.
+DERIVED_FIELDS = ("version_read",)
+
+REQUIRED_ENTRY_FIELDS = OBSERVATION_FIELDS + DERIVED_FIELDS
+
+# ADR-076 names these two optional in as many words, so the schema may not
+# quietly start requiring them. A tightening here is a decision the record
+# owns, not an audit fix.
+OPTIONAL_ENTRY_FIELDS = ("testable_here", "probe")
+
 # The six harnesses issue #856 asks about. Named here so a missing-field case
 # removes a field from a realistic record rather than from a stub.
 HARNESSES = (
@@ -104,9 +122,11 @@ def entry(name, **overrides):
         "classification": "manual route",
         "client_present": False,
         "client_version": None,
+        "version_read": False,
         "auth_configured": False,
         "launcher_contract": "documented deep link, not exercised here",
         "blocker": "absent from this host and unauthenticated",
+        "testable_here": False,
     }
     record.update(overrides)
     return record
@@ -126,6 +146,7 @@ def shaped(classification):
         "classification": classification,
         "client_present": True,
         "client_version": "2026.8.1",
+        "version_read": True,
         "auth_configured": True,
         "launcher_contract": "deep link exercised on this host",
         "blocker": None,
@@ -196,9 +217,9 @@ class SchemaTests(unittest.TestCase):
                     manifest(entry("Cursor", classification=unknown))
                 )
 
-    def test_every_harness_entry_requires_the_five_observation_fields(self):
+    def test_every_harness_entry_requires_every_observed_and_derived_field(self):
         required = self.harness["required"]
-        for field in OBSERVATION_FIELDS:
+        for field in REQUIRED_ENTRY_FIELDS:
             with self.subTest(field=field):
                 self.assertIn(field, required)
         self.assertFalse(self.harness["additionalProperties"])
@@ -206,15 +227,73 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(len(document["harnesses"]), len(HARNESSES))
         self.assert_valid(document)
 
-    def test_a_harness_entry_missing_any_observation_field_is_refused(self):
-        for field in OBSERVATION_FIELDS:
+    def test_a_harness_entry_missing_any_required_field_is_refused(self):
+        for field in REQUIRED_ENTRY_FIELDS:
             with self.subTest(field=field):
                 # Document level: being listed in `required` is the mechanism
-                # that turns the omission below into a refusal.
+                # that turns the omission below into a refusal. A field that
+                # sits in `properties` alone constrains its value where a
+                # producer supplies one and compels nothing where it does not,
+                # which is what makes an optional `version_read` no better than
+                # the sentinel it was added to replace.
                 self.assertIn(field, self.harness["required"])
                 record = entry("Cline")
                 del record[field]
                 self.assert_refused(manifest(record))
+
+    def test_the_fields_adr_076_calls_optional_stay_optional(self):
+        # ADR-076 enumerates the entry and calls `testable_here` and `probe`
+        # optional in as many words. Requiring either would put the schema at
+        # odds with the record that pins it, so the omission has to keep
+        # validating even though the generator always writes `testable_here`.
+        for field in OPTIONAL_ENTRY_FIELDS:
+            with self.subTest(field=field):
+                self.assertIn(field, self.harness["properties"])
+                self.assertNotIn(field, self.harness["required"])
+        record = entry("Cline")
+        for field in OPTIONAL_ENTRY_FIELDS:
+            record.pop(field, None)
+        self.assert_valid(manifest(record))
+
+    def test_version_read_and_client_version_may_not_disagree(self):
+        # The `client_version` description tells a reader to consult
+        # `version_read` rather than recognise the sentinel. That instruction
+        # is only worth following if the document cannot say both things at
+        # once, so the pairing is a schema rule and not a generator habit.
+        for label, overrides in (
+            (
+                "a read version that is the sentinel",
+                {"client_present": True, "client_version": "unread", "version_read": True},
+            ),
+            (
+                "a read version that is absent",
+                {"client_present": False, "client_version": None, "version_read": True},
+            ),
+            (
+                "an unread version carrying a real version",
+                {"client_present": True, "client_version": "2026.8.1", "version_read": False},
+            ),
+        ):
+            with self.subTest(contradiction=label):
+                self.assert_refused(manifest(entry("Cursor", **overrides)))
+        # Both coherent pairings stand.
+        self.assert_valid(
+            manifest(
+                entry("Cursor", client_present=True, client_version="unread", version_read=False)
+            )
+        )
+        self.assert_valid(
+            manifest(
+                entry(
+                    "Cursor",
+                    client_present=True,
+                    client_version="2026.8.1",
+                    version_read=True,
+                    auth_configured=True,
+                    testable_here=True,
+                )
+            )
+        )
 
     def test_a_null_client_version_is_admitted_when_the_client_is_absent(self):
         # Document level: the union type admits null, and the conditional that
@@ -242,6 +321,11 @@ class SchemaTests(unittest.TestCase):
                     "Cursor",
                     client_present=True,
                     client_version="2026.8.1",
+                    # A record carrying a version says a version was read. The
+                    # default here is False, for the absent client the helper
+                    # describes, and leaving it False beside a real version
+                    # would be the contradiction the pairing rule refuses.
+                    version_read=True,
                     classification="manual route",
                 )
             )
@@ -678,6 +762,33 @@ class SubprocessTests(unittest.TestCase):
         self.assertEqual(record.status, "answered")
         self.assertEqual(record.version, "2026.8.1")
 
+    def test_a_version_cut_in_half_by_the_output_bound_is_never_recorded(self):
+        # The bound on how much client output is read can land inside the token
+        # itself, and half of a version is not the version the client
+        # reported. `1.234` recorded for a client that said `1.23456789` is the
+        # same defect as a token scraped out of a failure: a `client_version`
+        # nobody reported, under a schema description that calls it exact.
+        cap = probe_harnesses.MAX_CLIENT_OUTPUT_CHARS
+        version = "1.23456789"
+        cut = "x" * (cap - 6) + " " + version
+        self.assertGreater(len(cut), cap)
+        self.assertIsNone(probe_harnesses.recognise_version(cut))
+
+        # A whole token inside the bound is still read, wherever it sits, and a
+        # client whose version is followed by more output is unaffected.
+        self.assertEqual(probe_harnesses.recognise_version(f"cursor-agent {version}"), version)
+        self.assertEqual(
+            probe_harnesses.recognise_version(f"cursor-agent {version}\n" + "x" * cap), version
+        )
+        # A cut that landed on a newline left every line it kept intact, so the
+        # guard must not withhold a version that was never truncated.
+        self.assertEqual(
+            probe_harnesses.recognise_version(f"cursor-agent {version}\n" + "x" * cap + "\ntail"),
+            version,
+        )
+        # And the fixture the rest of this class uses stays exact.
+        self.assertEqual(probe_harnesses.recognise_version("cursor-agent 2026.8.1\n"), "2026.8.1")
+
     def test_the_default_runner_really_bounds_the_timeout(self):
         harness = probe_harnesses.Harness(
             name="fixture",
@@ -869,9 +980,41 @@ class KilledProbeTests(unittest.TestCase):
     )
     attempted: set[str] = set()
     passed: set[str] = set()
+    failed: set[str] = set()
 
     def setUp(self):
         self.attempted.add(self._testMethodName)
+
+    @contextlib.contextmanager
+    def checked_subtest(self, **parameters):
+        """A ``subTest`` whose failure is remembered as well as reported.
+
+        ``subTest`` swallows the failure so the loop can carry on, which means
+        the statement after the loop runs either way -- and that statement is
+        where a case flags itself passed. An unremembered subtest failure
+        therefore lets a red run write ``value: true``, which is the inversion
+        of the partial-run defect the ``attempted`` gate closes, and the worse
+        direction of the two: it admits a broken atomic write at ``step:3``
+        rather than blocking a sound one.
+        """
+        with self.subTest(**parameters):
+            try:
+                yield
+            except unittest.SkipTest:
+                raise
+            except Exception:
+                self.failed.add(self._testMethodName)
+                raise
+
+    def _passed(self):
+        """Flag this case, unless something inside it failed.
+
+        A case that raises never reaches its call to this. A case whose failure
+        was confined to a ``checked_subtest`` does reach it, and this is what
+        stops it speaking for the gate anyway.
+        """
+        if self._testMethodName not in self.failed:
+            self.passed.add(self._testMethodName)
 
     @classmethod
     def tearDownClass(cls):
@@ -886,7 +1029,11 @@ class KilledProbeTests(unittest.TestCase):
         # Only a run that attempted every case may speak for the gate.
         if cls.attempted != set(cls.CASES):
             return
-        resolved = cls.passed == set(cls.CASES)
+        # Two conditions, because each catches the other's blind spot. Every
+        # case has to have flagged itself, and nothing may have failed along
+        # the way -- a case whose failure was confined to a subtest would
+        # otherwise still be holding its flag.
+        resolved = cls.passed == set(cls.CASES) and not cls.failed
         report = {
             "candidate": "probe-manifest",
             "command": "python3 -m unittest tests.test_harness_manifest.KilledProbeTests",
@@ -928,25 +1075,25 @@ class KilledProbeTests(unittest.TestCase):
             probe_harnesses.write_manifest(target, manifest())
             before = target.read_bytes()
             for mode in ("rename", "flush"):
-                with self.subTest(mode=mode):
+                with self.checked_subtest(mode=mode):
                     self.kill_during_write(root, target, mode)
                     self.assertEqual(target.read_bytes(), before)
                     self.assertEqual(
                         probe_harnesses.read_manifest(target)["harnesses"][0]["name"],
                         "GitHub Copilot",
                     )
-        self.passed.add(self._testMethodName)
+        self._passed()
 
     def test_a_killed_probe_leaves_nothing_where_there_was_no_manifest(self):
         for mode in ("rename", "flush"):
-            with self.subTest(mode=mode):
+            with self.checked_subtest(mode=mode):
                 with tempfile.TemporaryDirectory() as directory:
                     root = Path(directory)
                     target = root / "harness-classification.json"
                     self.kill_during_write(root, target, mode)
                     self.assertFalse(target.exists())
                     self.assertEqual(list(root.glob("*.json")), [])
-        self.passed.add(self._testMethodName)
+        self._passed()
 
     def test_a_killed_probe_leaves_no_partial_file_the_reader_would_accept(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -962,7 +1109,7 @@ class KilledProbeTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), good)
             self.assertEqual(list(root.glob("*.json")), [target])
             for leftover in root.glob(f"{probe_harnesses.TEMPORARY_PREFIX}*"):
-                with self.subTest(leftover=leftover.name):
+                with self.checked_subtest(leftover=leftover.name):
                     self.assertTrue(leftover.name.startswith("."))
                     self.assertTrue(leftover.name.endswith(probe_harnesses.TEMPORARY_SUFFIX))
                     self.assertNotEqual(leftover, target)
@@ -978,7 +1125,7 @@ class KilledProbeTests(unittest.TestCase):
             other.write_text(json.dumps({"schema": "something-else/v1"}), encoding="utf-8")
             with self.assertRaises(probe_harnesses.ProbeError):
                 probe_harnesses.read_manifest(other)
-        self.passed.add(self._testMethodName)
+        self._passed()
 
     def test_the_temporary_file_is_written_beside_the_target_and_renamed(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -1004,30 +1151,34 @@ class KilledProbeTests(unittest.TestCase):
             self.assertTrue(temporary.name.endswith(probe_harnesses.TEMPORARY_SUFFIX))
             self.assertFalse(temporary.exists())
             self.assertEqual(list(root.glob("*.json")), [target])
-        self.passed.add(self._testMethodName)
+        self._passed()
 
 
 class GateReportTests(unittest.TestCase):
-    """The gate report may only speak for a run that attempted every case.
+    """The gate report may only speak for a run that attempted and passed every case.
 
     ``KilledProbeTests`` writes the ``killed-probe-recovery`` report on its way
     out, and Fiat's design checker reads that file at the ``step:3``
     transition. A run that selects one case by name passes it, so a report
     saying ``value: false`` and ``exit: 1`` would describe a failure nothing
-    observed and block the step on it.
+    observed and block the step on it. The inverse costs more: a case whose
+    failure was confined to a ``subTest`` still runs the statement that flags
+    it passed, so a red run would report ``value: true`` and let a broken
+    atomic write through the gate.
 
     These cases drive ``KilledProbeTests.tearDownClass`` directly rather than
     through a real kill, so they cost nothing and cannot disturb the real
     class's own bookkeeping.
     """
 
-    def write_report(self, attempted, passed, root):
+    def write_report(self, attempted, passed, root, failed=()):
         target = root / "gate.json"
         with mock.patch.multiple(
             KilledProbeTests,
             REPORT_PATH=target,
             attempted=set(attempted),
             passed=set(passed),
+            failed=set(failed),
         ):
             KilledProbeTests.tearDownClass()
         return target
@@ -1060,6 +1211,52 @@ class GateReportTests(unittest.TestCase):
             report = json.loads(target.read_text(encoding="utf-8"))
             self.assertIs(report["value"], False)
             self.assertEqual(report["exit"], 1)
+
+    def test_a_case_that_failed_cannot_leave_the_report_resolved(self):
+        # The inverse of the partial-selection rule, and the worse direction:
+        # a partial run that reports failure blocks a sound step, while a
+        # failed run that reports success admits a broken atomic write.
+        with tempfile.TemporaryDirectory() as directory:
+            target = self.write_report(
+                KilledProbeTests.CASES,
+                KilledProbeTests.CASES,
+                Path(directory),
+                failed=KilledProbeTests.CASES[:1],
+            )
+            report = json.loads(target.read_text(encoding="utf-8"))
+            self.assertIs(report["value"], False)
+            self.assertEqual(report["exit"], 1)
+
+    def test_a_failing_subtest_stops_a_case_reporting_itself_passed(self):
+        """``subTest`` swallows the failure, so the flag has to know about it.
+
+        Without this, every statement after a ``subTest`` loop runs on a failed
+        case, including the one that flags it passed -- and four of this file's
+        gate cases end in exactly that statement.
+        """
+
+        class Sample(unittest.TestCase):
+            passed: set[str] = set()
+            failed: set[str] = set()
+            checked_subtest = KilledProbeTests.checked_subtest
+            _passed = KilledProbeTests._passed
+
+            def test_one_mode_of_two_fails(self):
+                for mode in ("rename", "flush"):
+                    with self.checked_subtest(mode=mode):
+                        self.assertEqual(mode, "flush")
+                self._passed()
+
+        with open(os.devnull, "w", encoding="utf-8") as sink:
+            result = unittest.TextTestRunner(stream=sink, verbosity=0).run(
+                unittest.TestLoader().loadTestsFromTestCase(Sample)
+            )
+
+        # The run is red, the failure was remembered, and the case did not
+        # flag itself even though execution reached the flag.
+        self.assertFalse(result.wasSuccessful())
+        self.assertEqual(Sample.failed, {"test_one_mode_of_two_fails"})
+        self.assertEqual(Sample.passed, set())
 
     def test_every_case_the_report_speaks_for_is_a_real_test_method(self):
         # The gate's case list is the report's denominator, so a renamed or

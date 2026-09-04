@@ -388,19 +388,34 @@ def _run(argv: tuple[str, ...], timeout: float) -> subprocess.CompletedProcess[s
 
 
 def recognise_version(*streams: str | None) -> str | None:
-    """The first version-shaped token in bounded client output, or None.
+    """The first whole version-shaped token in bounded client output, or None.
 
     This is an allowlist rather than a filter: the token comes back and the
     surrounding output is dropped, so nothing a client printed can reach the
     manifest by having been near a version.
+
+    The character bound can land inside a token, and half of a version is not
+    the version the client reported. A match that runs to the truncation point
+    is discarded rather than recorded, so a client that buries its version past
+    the bound lands in `unread` -- where a client that printed no version at all
+    already lands -- instead of having a fragment recorded as its exact version.
     """
     for stream in streams:
         if not stream:
             continue
-        for line in stream[:MAX_CLIENT_OUTPUT_CHARS].splitlines()[:MAX_CLIENT_OUTPUT_LINES]:
+        bounded = stream[:MAX_CLIENT_OUTPUT_CHARS]
+        # The tail is a fragment only where the cut landed mid-line. A cut that
+        # landed on a newline left every line it kept intact.
+        partial_tail = len(stream) > len(bounded) and not bounded.endswith(("\n", "\r"))
+        kept = bounded.splitlines()
+        tail = len(kept) - 1
+        for index, line in enumerate(kept[:MAX_CLIENT_OUTPUT_LINES]):
             match = VERSION_TOKEN.search(line)
-            if match is not None:
-                return match.group(0)
+            if match is None:
+                continue
+            if partial_tail and index == tail and match.end() == len(line):
+                continue
+            return match.group(0)
     return None
 
 
