@@ -1048,3 +1048,225 @@ class AgentInstructionCorpusTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LiveReconcileTests(unittest.TestCase):
+    """`reconcile`, the one subcommand that writes the tree it is pointed at.
+
+    The three proofs above establish that an out-of-span edit *can* be
+    reconciled without a model. None of them reconciles anything a contributor
+    keeps: every one works inside a throwaway copy and throws it away. This
+    class covers the command that performs the reconciliation, which is the
+    second command of the study's demo path and the thing skills#1098's first
+    acceptance check needs in order to be met rather than demonstrated.
+
+    Every case here still runs against a copy. The command writes the root it
+    is given, so the copy is what it is given.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.prover = load("prove_agent_instruction_reconciliation", PROVER)
+        cls.checker = load("agent_instruction", CHECKER)
+        cls.work = cls.prover.Reconciliation(ROOT, checker=cls.checker)
+
+    def live_copy(self, scratch: Path, edited: bytes) -> Path:
+        """A copy carrying the edit, plus the register `copy_tree` leaves out.
+
+        `Reconciliation.copy_tree` copies what `check` reads, and `check` never
+        reads the coverage register. `reconcile` does, because rebinding it is
+        the sixth pass, so it has to be there for the command to be exercised
+        at all.
+        """
+        tree = self.work.copy_tree(scratch)
+        register = self.prover.COVERAGE
+        (tree / register).parent.mkdir(parents=True, exist_ok=True)
+        (tree / register).write_bytes((ROOT / register).read_bytes())
+        self.checker.write_confined_atomic(tree, self.work.source_path, edited)
+        return tree
+
+    def test_reconcile_brings_an_appended_out_of_span_edit_back_to_accepted(self):
+        """The demo path's second and third commands, in one case.
+
+        An appended edit moves the whole-file digest and no recorded offset.
+        The six passes are applied to the tree itself, and `check` then accepts
+        it. Without the command the same tree refuses at
+        `WAI-E-DIGEST.SOURCE`, which is what
+        `test_reconcile_is_what_makes_the_difference` holds separately.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.live_copy(
+                Path(scratch),
+                self.work.edited_source(self.prover.AFTER_SPAN_PLACEMENT),
+            )
+            # Before, so the case cannot pass because the edit was harmless.
+            exit_code, records = self.work.check(tree)
+            self.assertEqual(2, exit_code)
+            self.assertEqual(
+                {
+                    "code": "WAI-E-DIGEST.SOURCE",
+                    "node_path": f"$.fixtures.{self.prover.SUBJECT}.source.sha256",
+                },
+                {
+                    "code": self.work.refusals(records)[0].get("code"),
+                    "node_path": self.work.refusals(records)[0].get("node_path"),
+                },
+            )
+
+            live = self.prover.LiveReconciliation(tree, checker=self.checker)
+            result = live.apply()
+
+            self.assertEqual(
+                [
+                    "manifest-source",
+                    "model",
+                    "source-spans",
+                    "compact",
+                    "manifest-artifacts",
+                    self.prover.UNOBSERVED_PASS,
+                ],
+                result["applied"],
+            )
+            exit_code, _ = self.work.check(tree)
+            self.assertEqual(0, exit_code)
+
+    def test_reconcile_refuses_an_edit_inside_the_reviewed_span(self):
+        """Reviewed bytes are what the recorded counts are counts of.
+
+        No mechanical pass makes a token count true again once the bytes it
+        counted have changed, so the command refuses and names `measure` rather
+        than rebinding the digests around the edit and reporting success.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.live_copy(Path(scratch), self.work.in_span_source())
+            live = self.prover.LiveReconciliation(tree, checker=self.checker)
+            with self.assertRaises(self.prover.ProverError) as raised:
+                live.apply()
+            message = str(raised.exception)
+            self.assertIn("reviewed-span digest", message)
+            self.assertIn("measure", message)
+            self.assertIn("1192", message)
+
+            # And it refused before writing: the tree is exactly as unreconciled
+            # as it was, which is the difference between a refusal and a
+            # half-applied reconciliation.
+            manifest = self.checker.load_canonical_record(
+                self.checker.read_confined(tree, self.prover.MANIFEST)
+            )
+            entry = next(
+                item for item in manifest["fixtures"]
+                if item["id"] == self.prover.SUBJECT
+            )
+            self.assertEqual(self.work.old_digest, entry["source"]["sha256"])
+
+    def test_reconcile_rebinds_the_coverage_register(self):
+        """The sixth pass, which `agent_instruction.py check` cannot see.
+
+        `check` is green without it and `tests/test_agent_instruction.py` is
+        not, which is why the demo path ends in the suite rather than in the
+        checker. Asserted against the register's own bytes rather than against
+        the command's report, so a report that claimed the pass without doing
+        it fails here.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.live_copy(
+                Path(scratch),
+                self.work.edited_source(self.prover.AFTER_SPAN_PLACEMENT),
+            )
+            before = json.loads((tree / self.prover.COVERAGE).read_text())["agent_instruction"]
+            live = self.prover.LiveReconciliation(tree, checker=self.checker)
+            result = live.apply()
+            after = json.loads((tree / self.prover.COVERAGE).read_text())["agent_instruction"]
+
+            self.assertIn(self.prover.MANIFEST, result["coverage_rebound"])
+            self.assertNotEqual(before["manifest"]["sha256"], after["manifest"]["sha256"])
+            self.assertEqual(
+                self.prover.digest(self.checker.read_confined(tree, self.prover.MANIFEST)),
+                after["manifest"]["sha256"],
+            )
+            for entry in after["fixtures"]:
+                self.assertEqual(
+                    self.prover.digest(self.checker.read_confined(tree, entry["path"])),
+                    entry["sha256"],
+                    entry["path"],
+                )
+
+    def test_reconcile_opens_no_socket_and_runs_no_model(self):
+        """Asserted, not observed.
+
+        Two guards, because one covers what this process does and the other
+        covers what it starts. Any `AF_INET` or `AF_INET6` socket constructed
+        during the reconciliation fails the case, and every subprocess the
+        command spawns is recorded and checked: the only checker verb it may
+        reach for is `format`, so `measure` and `parity` cannot be smuggled in
+        behind a passing reconciliation.
+        """
+        import socket as socket_module
+
+        spawned: list[list[str]] = []
+        opened: list[int] = []
+        real_socket_init = socket_module.socket.__init__
+        real_run = self.prover.subprocess.run
+
+        def guarded_init(instance, family=socket_module.AF_INET, *args, **kwargs):
+            if family in (socket_module.AF_INET, socket_module.AF_INET6):
+                opened.append(int(family))
+            return real_socket_init(instance, family, *args, **kwargs)
+
+        def recording_run(arguments, *args, **kwargs):
+            spawned.append([str(item) for item in arguments])
+            return real_run(arguments, *args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.live_copy(
+                Path(scratch),
+                self.work.edited_source(self.prover.AFTER_SPAN_PLACEMENT),
+            )
+            socket_module.socket.__init__ = guarded_init
+            self.prover.subprocess.run = recording_run
+            try:
+                self.prover.LiveReconciliation(tree, checker=self.checker).apply()
+            finally:
+                socket_module.socket.__init__ = real_socket_init
+                self.prover.subprocess.run = real_run
+
+        self.assertEqual([], opened, "the reconciliation opened an internet socket")
+        self.assertTrue(spawned, "the reconciliation spawned nothing, so nothing was checked")
+        for arguments in spawned:
+            self.assertNotIn("measure", arguments)
+            self.assertNotIn("parity", arguments)
+            self.assertIn("format", arguments)
+
+    def test_an_interrupted_reconciliation_refuses_and_names_its_recovery(self):
+        """The six passes are not one transaction, and the refusal says so.
+
+        Each write is atomic on its own, so no artefact is left half-written.
+        The sequence is not, so a run killed between two passes leaves an
+        artefact rewritten and the manifest still recording the old digest.
+        Re-running stops on that artefact, which is indistinguishable from drift
+        the tool refuses on purpose. Recorded as a round finding rather than
+        removed: what the refusal has to do is name both causes and the one
+        command that recovers, which is what this pins.
+        """
+        with tempfile.TemporaryDirectory() as scratch:
+            tree = self.live_copy(
+                Path(scratch),
+                self.work.edited_source(self.prover.AFTER_SPAN_PLACEMENT),
+            )
+            # A kill after the model pass and before the manifest pass.
+            live = self.prover.LiveReconciliation(tree, checker=self.checker)
+            relative = live.fixture["artifacts"]["model"]["path"]
+            raw = self.checker.read_confined(tree, relative)
+            self.checker.write_confined_atomic(
+                tree,
+                relative,
+                raw.replace(live.old_digest.encode("ascii"), live.new_digest.encode("ascii")),
+            )
+
+            with self.assertRaises(self.prover.ProverError) as raised:
+                self.prover.LiveReconciliation(tree, checker=self.checker)
+            message = str(raised.exception)
+            self.assertIn("interrupted", message)
+            self.assertIn("git checkout --", message)
+            self.assertIn(self.prover.FIXTURE_ROOT, message)
+            self.assertIn(self.prover.COVERAGE, message)
