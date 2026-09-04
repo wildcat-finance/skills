@@ -1,7 +1,7 @@
 {
   "name": "sapheneia",
-  "version": "0.1.2",
-  "description": "AuDHD-shaped replies, audit records, issues and comments.",
+  "version": "0.2.0",
+  "description": "AuDHD-shaped replies and every record the agent writes.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -18,12 +18,12 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Sapheneia",
-    "shortDescription": "AuDHD-shaped replies, audit records, issues and comments.",
-    "longDescription": "Sapheneia shapes an agent's commentary and final replies for AuDHD readers, keeping actions, boundaries, working state, evidence, unknowns, and next steps visible until the reader turns it off. A separate bounded operation reshapes one agent-authored audit record, GitHub issue, or issue comment while preserving protected evidence and host structure. It does not diagnose the reader or change another skill's facts. The ten rules have not yet been held against a published cross-model task corpus.",
+    "shortDescription": "AuDHD-shaped replies and every record the agent writes.",
+    "longDescription": "Sapheneia shapes an agent's commentary and final replies for AuDHD readers, keeping actions, boundaries, working state, evidence, unknowns, and next steps visible until the reader turns it off. A separate bounded operation shapes every record the agent writes down, including an audit record, a GitHub issue title and body, a GitHub issue comment, a pull request, a repository document and a commit message, cutting it to the shortest form that keeps its protected evidence and host structure intact. It does not diagnose the reader or change another skill's facts. The ten rules have not yet been held against a published cross-model task corpus.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],
-    "defaultPrompt": "Use $sapheneia to shape your replies for an AuDHD engineer throughout this task."
+    "defaultPrompt": "Use $sapheneia to shape your replies for an AuDHD engineer throughout this task, and to shape every record you write down before you write it."
   },
   "license": "Apache-2.0"
 }

@@ -65,7 +65,7 @@ file comparisons must pass before the pull request opens.
 - Remove first-party shadow README files whose only source is a sibling
   `SKILL.md`; keep plugin landing pages and substantive standalone READMEs.
 - Do not rewrite vendored Pashov prose, historical audit findings, legal
-  attribution or `plugins/lazarus/examples/goldfinch-v0/README.md`.
+  attribution or `plugins/lazarus/examples/aave-v4-spoke-v0/README.md`.
 - Change an authoritative template or renderer before regenerating prose.
 - Do not claim a plugin implementation exists merely because its next job is
   named.
@@ -107,7 +107,7 @@ shadows stay absent instead of asserting byte equality.
 - Hermes: a complete reproducible live Wildcat evidence bundle.
 - Hexaemeron: retire shadow skill README copies and remove stale issue prose.
 - Lemma: total callable-surface ABI comparison for outputs and mutability.
-- Lazarus: an Ariadne state-fixture predicate in an end-to-end Goldfinch
+- Lazarus: an Ariadne state-fixture predicate in an end-to-end Aave v4
   preservation release.
 - Pandects: the missing pooled-claims versus open-withdrawals law.
 - Probitas: fail-closed Morpho Midnight fixed-maturity coverage.

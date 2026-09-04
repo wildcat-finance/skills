@@ -176,7 +176,7 @@ def _raw_prefix(source, quote_index):
 
 def _scan_raw(source, start):
     """From the opening quote of R"delim( past )delim"; None if unclosed."""
-    n = len(source)
+    _n = len(source)
     open_paren = source.find("(", start + 1)
     if open_paren == -1 or open_paren - start - 1 > 16:
         return None

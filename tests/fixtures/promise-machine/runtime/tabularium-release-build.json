@@ -2,49 +2,77 @@
   "schema": "promise-machine-runtime-specimens/v1",
   "specimens": {
     "negative": {
-      "adapter_output": {
+      "native_document": {
         "tabularium_release_build": {
-          "binding": {
-            "promise_id": "tabularium-release-build",
-            "scope": "structural binding for tabularium-release-build",
-            "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
-          },
-          "classes": [
-            "checked"
-          ],
-          "exception": {
-            "status": "none"
-          },
-          "references": [
-            {
-              "evidence_class": "checked",
-              "path": "plugins/tabularium/tests/test_release.py",
-              "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
-            }
-          ],
-          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-          "transition": {
+          "authorised_transition": {
             "action": "structurally bind tabularium-release-build without running its domain operation",
             "operation_ran": false,
             "status": "structurally-bound"
           },
-          "unresolved": [
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/tabularium/tests/test_release.py",
+                "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/tabularium/tests/test_release.py",
+                "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/tabularium/tests/test_release.py",
+                "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
             {
               "code": "domain-operation-not-run",
               "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
             }
-          ]
+          ],
+          "promise": "tabularium-release-build",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for tabularium-release-build",
+            "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
+          }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked"
+          "checked",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
             "path": "plugins/tabularium/tests/test_release.py",
-            "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
           }
         ],
         "exception": {
@@ -66,52 +94,80 @@
           }
         ]
       },
-      "schema": "promise-machine-python-result-adapter/v1"
+      "schema": "promise-machine-native-json-binding/v1"
     },
     "positive": {
-      "adapter_output": {
+      "native_document": {
         "tabularium_release_build": {
-          "binding": {
-            "promise_id": "tabularium-release-build",
-            "scope": "structural binding for tabularium-release-build",
-            "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
-          },
-          "classes": [
-            "checked"
-          ],
-          "exception": {
-            "status": "none"
-          },
-          "references": [
-            {
-              "evidence_class": "checked",
-              "path": "plugins/tabularium/tests/test_release.py",
-              "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
-            }
-          ],
-          "source_digest": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754",
-          "transition": {
+          "authorised_transition": {
             "action": "structurally bind tabularium-release-build without running its domain operation",
             "operation_ran": false,
             "status": "structurally-bound"
           },
-          "unresolved": [
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/tabularium/tests/test_release.py",
+                "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/tabularium/tests/test_release.py",
+                "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/tabularium/tests/test_release.py",
+                "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
             {
               "code": "domain-operation-not-run",
               "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
             }
-          ]
+          ],
+          "promise": "tabularium-release-build",
+          "source": {
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+          },
+          "target": {
+            "scope": "structural binding for tabularium-release-build",
+            "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
+          }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked"
+          "checked",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
             "path": "plugins/tabularium/tests/test_release.py",
-            "sha256": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754"
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab"
           }
         ],
         "exception": {
@@ -119,7 +175,7 @@
         },
         "promise_id": "tabularium-release-build",
         "scope": "structural binding for tabularium-release-build",
-        "source_digest": "94241924399e09d13f698309a3a76a604bc7e498ea690e115b7838125f0bd754",
+        "source_digest": "78d2dcd4d2db3a127e21ddb21b376f1ed9856e3510f7c10b3ea7c001174a56ab",
         "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites",
         "transition": {
           "action": "structurally bind tabularium-release-build without running its domain operation",
@@ -133,7 +189,7 @@
           }
         ]
       },
-      "schema": "promise-machine-python-result-adapter/v1"
+      "schema": "promise-machine-native-json-binding/v1"
     }
   }
 }

@@ -264,14 +264,14 @@ class CaptureTests(unittest.TestCase):
             "plugins",
             "berean",
             "examples",
-            "goldfinch-demo-v0",
+            "aave-v4-demo-v0",
             "release",
         )
         if not os.path.isdir(demo):
             self.skipTest("the Berean demo is not beside Ariadne")
         statement = capture.capture(
             demo,
-            name="goldfinch-demo-v0",
+            name="aave-v4-demo-v0",
             producer_tool="berean",
             producer_version="1.0.0",
             producer_command=["python3", "scripts/berean.py", "release"],
@@ -281,7 +281,7 @@ class CaptureTests(unittest.TestCase):
         self.assertTrue(self.report_for(statement).ok)
         self.assertEqual(
             statement["predicate"]["release"]["release_digest"],
-            "7b104766e0df92de73d2b2cf98379e417151c0f824ada105c37eafdd367a7e8c",
+            "bf607a6f1ede680b13c6491cd4ffd92ba1f598f1ee7fc8615de23a90eefbdf84",
         )
         self.assertEqual(len(statement["subject"]), 12)
 

@@ -11,13 +11,31 @@
           },
           "evidence": {
             "classes": [
-              "checked"
+              "checked",
+              "proved",
+              "recomputed",
+              "recorded"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/tests/test_goldfinch.py",
-                "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "proved",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
               }
             ]
           },
@@ -36,19 +54,37 @@
           },
           "target": {
             "scope": "structural binding for lazarus-fixture-capture",
-            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked"
+          "checked",
+          "proved",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "proved",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           }
         ],
         "exception": {
@@ -57,7 +93,7 @@
         "promise_id": "lazarus-fixture-capture",
         "scope": "structural binding for lazarus-fixture-capture",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-fixture-capture without running its domain operation",
           "operation_ran": false,
@@ -82,13 +118,31 @@
           },
           "evidence": {
             "classes": [
-              "checked"
+              "checked",
+              "proved",
+              "recomputed",
+              "recorded"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/tests/test_goldfinch.py",
-                "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "proved",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
               }
             ]
           },
@@ -103,23 +157,41 @@
           ],
           "promise": "lazarus-fixture-capture",
           "source": {
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           },
           "target": {
             "scope": "structural binding for lazarus-fixture-capture",
-            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked"
+          "checked",
+          "proved",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "proved",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           }
         ],
         "exception": {
@@ -127,8 +199,8 @@
         },
         "promise_id": "lazarus-fixture-capture",
         "scope": "structural binding for lazarus-fixture-capture",
-        "source_digest": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578",
-        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "source_digest": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-fixture-capture without running its domain operation",
           "operation_ran": false,

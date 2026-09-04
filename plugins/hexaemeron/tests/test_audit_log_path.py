@@ -10,7 +10,6 @@ import json
 import os
 import shutil
 import tempfile
-import unittest
 
 import sys
 
@@ -274,12 +273,6 @@ class AuditLogPathTests(HexctlCase):
         )
         self.assertIn("config path is immutable", proc.stderr)
         self.assertEqual(self.log_path(), "audit/rounds/" + self.derived_name())
-
-    def test_only_the_log_path_leaf_may_move_the_record(self):
-        self.init()
-        moved = "plugins/hexaemeron/audit/rounds/" + self.derived_name()
-        self.run_ctl("config", "set", "audit.log_path", json.dumps(moved))
-        self.assertEqual(self.log_path(), moved)
 
     def test_a_branch_stored_as_the_wrong_type_answers_rather_than_raising(self):
         """Round 1 finding. The flattening runs a regex over the stored value."""

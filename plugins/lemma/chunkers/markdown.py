@@ -31,7 +31,6 @@ same way a quoted byte range is.
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import hashlib
 import html
 import importlib.util

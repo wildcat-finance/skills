@@ -13,18 +13,30 @@
             "id": "promise-owner:lazarus-preservation-release",
             "reference": {
               "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-              "sha256": "321eea6879a01e870679a1cff17e5d48fe81bda3670460b74abcd56ef87a9949"
+              "sha256": "ded61260a41c15703b8af2b9094e0a8244ae4b9190516b4a0c5922af65dbe990"
             }
           },
           "evidence": {
             "classes": [
-              "checked"
+              "checked",
+              "recomputed",
+              "recorded"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/tests/test_goldfinch.py",
-                "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
               }
             ]
           },
@@ -33,8 +45,8 @@
           },
           "independent_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           },
           "open_unknowns": [
             {
@@ -48,7 +60,7 @@
           },
           "target": {
             "scope": "structural binding for lazarus-preservation-release",
-            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
@@ -57,17 +69,29 @@
           "id": "promise-owner:lazarus-preservation-release",
           "reference": {
             "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-            "sha256": "321eea6879a01e870679a1cff17e5d48fe81bda3670460b74abcd56ef87a9949"
+            "sha256": "ded61260a41c15703b8af2b9094e0a8244ae4b9190516b4a0c5922af65dbe990"
           }
         },
         "evidence_classes": [
-          "checked"
+          "checked",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           }
         ],
         "exception": {
@@ -75,13 +99,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/lazarus/tests/test_goldfinch.py",
-          "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+          "path": "plugins/lazarus/tests/test_aave_v4.py",
+          "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
         },
         "promise_id": "lazarus-preservation-release",
         "scope": "structural binding for lazarus-preservation-release",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-preservation-release without running its domain operation",
           "operation_ran": false,
@@ -108,18 +132,30 @@
             "id": "promise-owner:lazarus-preservation-release",
             "reference": {
               "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-              "sha256": "321eea6879a01e870679a1cff17e5d48fe81bda3670460b74abcd56ef87a9949"
+              "sha256": "ded61260a41c15703b8af2b9094e0a8244ae4b9190516b4a0c5922af65dbe990"
             }
           },
           "evidence": {
             "classes": [
-              "checked"
+              "checked",
+              "recomputed",
+              "recorded"
             ],
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/lazarus/tests/test_goldfinch.py",
-                "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
               }
             ]
           },
@@ -128,8 +164,8 @@
           },
           "independent_evidence": {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           },
           "open_unknowns": [
             {
@@ -139,11 +175,11 @@
           ],
           "promise": "lazarus-preservation-release",
           "source": {
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           },
           "target": {
             "scope": "structural binding for lazarus-preservation-release",
-            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           }
         }
       },
@@ -152,17 +188,29 @@
           "id": "promise-owner:lazarus-preservation-release",
           "reference": {
             "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-            "sha256": "321eea6879a01e870679a1cff17e5d48fe81bda3670460b74abcd56ef87a9949"
+            "sha256": "ded61260a41c15703b8af2b9094e0a8244ae4b9190516b4a0c5922af65dbe990"
           }
         },
         "evidence_classes": [
-          "checked"
+          "checked",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           }
         ],
         "exception": {
@@ -170,13 +218,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/lazarus/tests/test_goldfinch.py",
-          "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+          "path": "plugins/lazarus/tests/test_aave_v4.py",
+          "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
         },
         "promise_id": "lazarus-preservation-release",
         "scope": "structural binding for lazarus-preservation-release",
-        "source_digest": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578",
-        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "source_digest": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-preservation-release without running its domain operation",
           "operation_ran": false,

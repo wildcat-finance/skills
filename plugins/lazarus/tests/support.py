@@ -11,8 +11,8 @@ REPO_ROOT = PLUGIN_ROOT.parents[1]
 SCRIPTS = PLUGIN_ROOT / "scripts"
 SKILL = PLUGIN_ROOT / "skills" / "lazarus" / "SKILL.md"
 FIXTURES = PLUGIN_ROOT / "tests" / "fixtures"
-RECEIPT_CAPTURE_FIXTURE = FIXTURES / "receipt-capture-v1"
-RECEIPT_PROOF_FIXTURE = FIXTURES / "receipt-proof-v1"
+RECEIPT_CAPTURE_FIXTURE = FIXTURES / "aave-v4-receipt-capture-v1"
+RECEIPT_PROOF_FIXTURE = FIXTURES / "aave-v4-receipt-proof-v1"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
@@ -48,7 +48,7 @@ def digest(byte="33"):
 def sample_release():
     """A well-formed release document, for the schema tests to damage.
 
-    The counts are the ones the shipped Goldfinch fixture verifies to, so a
+    The counts are the ones the shipped Aave v4 fixture verifies to, so a
     reader comparing this against the example is not comparing invented numbers
     against real ones.
     """
@@ -402,7 +402,7 @@ def anchored_fixture_material(source_ids=("archive-a", "archive-b")):
 
 
 def receipt_capture_material():
-    """The fixed provider material used to recapture receipt-proof-v1."""
+    """The fixed provider material used to recapture aave-v4-receipt-proof-v1."""
 
     from lazarus_lib.canonical import load
     from lazarus_lib.records import (

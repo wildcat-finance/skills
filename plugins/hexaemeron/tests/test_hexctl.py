@@ -353,7 +353,8 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             out,
             "surveyor",
-            ("topic", "target_dir", "base_ref", "output_path", "design_output_path"),
+            ("topic", "target_dir", "base_ref", "output_path",
+             "design_output_path", "plugin_root"),
         )
         self.assertEqual(out["brief"]["topic"], "packet work")
         self.assertEqual(out["brief"]["target_dir"], os.path.realpath(self.target))
@@ -397,7 +398,8 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             mason,
             "mason",
-            ("runbook_step", "branch", "branch_from", "design_evidence"),
+            ("runbook_step", "branch", "branch_from", "design_evidence",
+             "plugin_root"),
         )
         self.assertEqual(
             set(mason["brief"]["design_evidence"]),
@@ -429,8 +431,9 @@ class TestDelegationPackets(HexctlCase):
             warden,
             "warden",
             ("step_branch", "stacked_branch", "security_suite", "plugin_root",
-             "audit_log_path", "round", "audit_filter", "risk_register",
-             "runbook_step", "design_evidence"),
+             "audit_log_path", "step", "round", "warden_continuity",
+             "audit_filter", "risk_register", "runbook_step",
+             "design_evidence"),
         )
         risk = warden["brief"]["risk_register"]
         self.assertEqual(set(risk), {"markdown", "path", "sha256"})
@@ -3064,7 +3067,8 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.assertEqual(mason_first, mason_second)
         self.assertEqual(
             set(mason_first["brief"]),
-            {"runbook_step", "branch", "branch_from", "design_evidence"},
+            {"runbook_step", "branch", "branch_from", "design_evidence",
+             "plugin_root"},
         )
         expected_markdown = "## Step 1: Core\n\n**Goal.** Ship Core.\n"
         expected_source = {
@@ -3096,8 +3100,9 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             set(warden_first["brief"]),
             {
                 "step_branch", "stacked_branch", "security_suite", "plugin_root",
-                "audit_log_path", "round", "audit_filter", "risk_register",
-                "runbook_step", "design_evidence",
+                "audit_log_path", "step", "round", "warden_continuity",
+                "audit_filter", "risk_register", "runbook_step",
+                "design_evidence",
             },
         )
         self.assertEqual(
@@ -5582,3 +5587,133 @@ class RewrittenStackRefusal(unittest.TestCase):
         state["steps"][2]["receipts"] = {}
         message = self._refusal(state, 2, {})
         self.assertIsNone(message)
+
+
+class WardenContinuityTests(HexctlCase):
+    """The audit-round brief says which Warden a round belongs to."""
+
+    PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    WARDEN_DOC = os.path.join(PLUGIN, "agents", "warden.md")
+    LOOP_DOC = os.path.join(
+        PLUGIN, "skills", "fiat", "references", "audit-loop.md"
+    )
+
+    WAIVED = '"waived: prose-only repo"'
+
+    def to_ready_audit(self, titles=("Scaffold", "Core")):
+        self.to_steps(titles=titles)
+        self.run_ctl("record", "security_suite", self.WAIVED)
+
+    def audit_brief(self):
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "audit-round")
+        return directive["brief"]
+
+    def another_round(self):
+        self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
+
+    def close_step(self, number):
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit", "--fixes-ref", "deadbeef")
+        self.run_ctl(
+            "done", "prose", "--files", "3",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl(
+            "done", "push",
+            "--pr-url",
+            f"https://github.com/wildcat-finance/example/pull/{number}",
+            "--head-commit", self.fake_sha(f"head{number}"),
+            "--pr-base", self.step_base(number),
+        )
+
+    def test_a_steps_first_round_starts_a_new_warden(self):
+        self.to_ready_audit()
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        brief = self.audit_brief()
+        self.assertEqual(brief["warden_continuity"], "new")
+        self.assertEqual(brief["step"], 1)
+        self.assertEqual(brief["round"], 1)
+
+    def test_later_rounds_of_one_step_continue_the_same_warden(self):
+        self.to_ready_audit()
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        self.another_round()
+        second = self.audit_brief()
+        self.assertEqual(second["round"], 2)
+        self.assertEqual(second["warden_continuity"], "same-agent")
+        self.another_round()
+        third = self.audit_brief()
+        self.assertEqual(third["round"], 3)
+        self.assertEqual(third["warden_continuity"], "same-agent")
+        self.assertEqual(third["step"], 1)
+
+    def test_a_new_step_starts_its_own_warden(self):
+        self.to_ready_audit()
+        self.finish_step(1)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(2),
+            "--commit", "abc2",
+        )
+        brief = self.audit_brief()
+        self.assertEqual(brief["step"], 2)
+        self.assertEqual(brief["round"], 1)
+        self.assertEqual(brief["warden_continuity"], "new")
+
+    def test_four_steps_of_three_rounds_start_exactly_four_wardens(self):
+        titles = ("Scaffold", "Core", "Wire", "Polish")
+        self.to_ready_audit(titles=titles)
+        observed = []
+        for number in range(1, len(titles) + 1):
+            self.run_ctl(
+                "done", "implement", "--branch", self.step_branch(number),
+                "--commit", f"abc{number}",
+            )
+            observed.append(self.audit_brief())
+            self.another_round()
+            observed.append(self.audit_brief())
+            self.another_round()
+            observed.append(self.audit_brief())
+            self.close_step(number)
+        self.assertEqual(len(observed), 3 * len(titles))
+        fresh = [item for item in observed if item["warden_continuity"] == "new"]
+        self.assertEqual(len(fresh), len(titles))
+        self.assertEqual(
+            [item["step"] for item in fresh], list(range(1, len(titles) + 1))
+        )
+        self.assertEqual([item["round"] for item in fresh], [1] * len(titles))
+        for item in observed:
+            if item["round"] > 1:
+                self.assertEqual(item["warden_continuity"], "same-agent")
+
+    def test_the_field_never_claims_a_document_was_read(self):
+        self.to_ready_audit()
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc1",
+        )
+        self.another_round()
+        brief = self.audit_brief()
+        self.assertEqual(brief["warden_continuity"], "same-agent")
+        self.assertNotIn("read", json.dumps(brief).lower())
+
+    @staticmethod
+    def flowed(path):
+        """The document as one line, so a wrapped sentence still matches."""
+        with open(path, encoding="utf-8") as handle:
+            return " ".join(handle.read().split())
+
+    def test_both_documents_keep_the_unreadable_host_fallback(self):
+        warden = self.flowed(self.WARDEN_DOC)
+        loop = self.flowed(self.LOOP_DOC)
+        self.assertIn("warden_continuity", warden)
+        self.assertIn("does not mean the suite documents are", warden)
+        self.assertIn("cannot keep an agent", loop)
+        self.assertIn("reads the suite documents in full", loop)
+        self.assertIn("still pays for the full read", loop)

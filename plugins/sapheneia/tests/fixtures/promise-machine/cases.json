@@ -20,10 +20,10 @@
     "sapheneia-durable-record-shape": {
       "request": "Shape one named durable record while preserving its evidence inventory and host structure.",
       "P": {"disposition": "accept", "scenario": "One agent-authored audit record is shortened only by removing claim-neutral connective prose while every finding, severity, file:line location, unknown and required audit field survives.", "boundary": "Acceptance covers this candidate audit record and does not activate session-wide response shaping."},
-      "M": {"disposition": "refuse", "scenario": "A GitHub issue comment has no protected evidence inventory, so content parity cannot be checked after compression.", "boundary": "Missing inventory evidence blocks publication of the shaped candidate."},
-      "S": {"disposition": "refuse", "scenario": "The inventory belongs to a different issue body than the candidate being shaped.", "boundary": "Evidence for one durable record does not authorise another subject."},
-      "O": {"disposition": "refuse", "scenario": "A completed shaping checklist is presented as proof that GitHub enforced the rule or that the record is factually true.", "boundary": "The bounded prose operation supplies neither server enforcement nor factual verification."},
-      "R": {"disposition": "recover", "scenario": "Restore the missing exact identifier and queue opening, rebuild the inventory, then repeat the checklist on the repaired candidate.", "boundary": "Recovery changes only the candidate and never rewrites an existing durable record."}
+      "M": {"disposition": "refuse", "scenario": "A pull request body has no protected evidence inventory, so content parity cannot be checked after compression.", "boundary": "Missing inventory evidence blocks publication of the shaped candidate."},
+      "S": {"disposition": "refuse", "scenario": "The inventory belongs to a different record than the candidate being shaped, or the candidate's bytes are fixed by a generator, digest or fixed template.", "boundary": "Evidence for one written record does not authorise another subject, and bytes another owner fixes are not a subject this pass may shorten."},
+      "O": {"disposition": "refuse", "scenario": "A completed shaping checklist is presented as proof that GitHub enforced the rule, that the record is factually true, or that no shorter candidate exists.", "boundary": "The bounded prose operation supplies no server enforcement, no factual verification and no minimality proof."},
+      "R": {"disposition": "recover", "scenario": "Restore the missing exact identifier and required opening, rebuild the inventory, then repeat the checklist on the repaired candidate.", "boundary": "Recovery changes only the candidate and never rewrites an existing durable record."}
     }
   }
 }

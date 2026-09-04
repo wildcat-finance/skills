@@ -17,7 +17,7 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/alexandria/tests/test_demo.py",
-                "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
+                "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
               }
             ]
           },
@@ -48,7 +48,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/alexandria/tests/test_demo.py",
-            "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
+            "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
           }
         ],
         "exception": {
@@ -88,7 +88,7 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/alexandria/tests/test_demo.py",
-                "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
+                "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
               }
             ]
           },
@@ -103,7 +103,7 @@
           ],
           "promise": "alexandria-derived-view",
           "source": {
-            "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
+            "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
           },
           "target": {
             "scope": "structural binding for alexandria-derived-view",
@@ -119,7 +119,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/alexandria/tests/test_demo.py",
-            "sha256": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567"
+            "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
           }
         ],
         "exception": {
@@ -127,7 +127,7 @@
         },
         "promise_id": "alexandria-derived-view",
         "scope": "structural binding for alexandria-derived-view",
-        "source_digest": "ee44f0baf344fb3a6bdf84e387d88f0e4df1ff42bfeeb63cce123ebe2a97b567",
+        "source_digest": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d",
         "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly",
         "transition": {
           "action": "structurally bind alexandria-derived-view without running its domain operation",

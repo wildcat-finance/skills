@@ -60,6 +60,7 @@ jobs:
           - root
           - sapheneia
           - schemas
+          - suite-redundancy
           - synkrisis
           - tabularium
     runs-on: ubuntu-latest

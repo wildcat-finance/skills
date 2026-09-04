@@ -64,7 +64,7 @@ python3 plugins/probitas/scripts/probitas.py collect \
   --alexandria-index alexandria.sqlite --out evidence.json
 ```
 
-Goldfinch and Clearpool event families become the existing Probitas `Record`
+Aave v4 and Clearpool event families become the existing Probitas `Record`
 claims. Position state remains the neutral `position_observation` claim. Each
 record retains venue, evidence class, row ID, derived and raw release IDs,
 component digest, capture and mapping rule. An observation without a

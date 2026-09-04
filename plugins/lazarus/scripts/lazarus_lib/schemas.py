@@ -47,7 +47,7 @@ SCHEMAS: dict[tuple[str, int], tuple[str, str]] = {
     ),
     ("receipt-witness", 1): (
         "receipt-witness-v1.json",
-        "27e64f17eb87ee2546c5df14e51f31c9bd7dafb2edd4851f34a5a993dada28a1",
+        "2aaf3f61c0b8bb84c32340b7adfd425098d8e47df4ac8a62ffdc25bf6788fede",
     ),
     ("manifest", 1): (
         "manifest-v1.json",

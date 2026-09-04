@@ -2927,6 +2927,7 @@ class VersionRelationTests(HexctlCase):
                 },
                 "branch": branch,
                 "branch_from": "fiat/test-topic",
+                "plugin_root": hexctl_module().plugin_root(),
                 "design_evidence": {
                     "schema": state["receipts"]["study"]["design_evidence"]["schema"],
                     "path": os.path.realpath(

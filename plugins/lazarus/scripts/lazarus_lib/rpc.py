@@ -16,6 +16,13 @@ from .canonical import dumps, loads
 from .errors import FormatError, LazarusError, ResourceLimitError
 from .limits import CaptureLimits
 from .scrub import sanitised_rpc_error
+from .version import __version__
+
+# Public archive endpoints that serve deep state proofs cap how many calls
+# one JSON-RPC batch may carry, and answer an over-long batch with a
+# transport error rather than a per-call one. Capture therefore splits a
+# plan into provider-sized chunks instead of posting it as a single batch.
+DEFAULT_MAX_BATCH_SIZE = 3
 
 
 class RpcTransportError(LazarusError):
@@ -52,10 +59,20 @@ class JsonRpcClient:
         *,
         headers: Mapping[str, str] | None = None,
         opener: Any = None,
+        max_batch_size: int = DEFAULT_MAX_BATCH_SIZE,
     ) -> None:
+        if max_batch_size < 1:
+            raise ValueError("max_batch_size must be positive")
         self._url = _http_rpc_url(url)
         self._limits = limits
-        self._headers = {"Content-Type": "application/json"}
+        self._max_batch_size = max_batch_size
+        # Several public archive endpoints reject urllib's default agent
+        # outright, so a capture cannot reach them without naming itself.
+        # The agent is a transport detail and never a fixture component.
+        self._headers = {
+            "Content-Type": "application/json",
+            "User-Agent": f"lazarus/{__version__}",
+        }
         self._headers.update(headers or {})
         self._opener = opener or build_opener(ProxyHandler({}), _RejectRedirects())
         self._next_id = 1
@@ -72,6 +89,18 @@ class JsonRpcClient:
     ) -> list[RpcOutcome]:
         if not calls:
             return []
+        size = self._max_batch_size
+        if len(calls) <= size:
+            return self._request_chunk(calls)
+        outcomes: list[RpcOutcome] = []
+        for start in range(0, len(calls), size):
+            outcomes.extend(self._request_chunk(calls[start : start + size]))
+        return outcomes
+
+    def _request_chunk(
+        self,
+        calls: list[tuple[str, list[Any] | dict[str, Any]]],
+    ) -> list[RpcOutcome]:
         requests = []
         identifiers = []
         for method, params in calls:

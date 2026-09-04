@@ -158,7 +158,7 @@ exact bytes, ties live values to a chain and block, records evaluation, and
 governs promotion and rollback of a grounded protocol-agent release.
 
 **Missing.** The reference release uses a demonstration corpus and preserved
-Goldfinch readings. No live Wildcat reference release or Ariadne binding has
+Aave v4 readings. No live Wildcat reference release or Ariadne binding has
 been established.
 
 **With enough contribution.** Berean could support continuously evaluated

@@ -4,16 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
-import io
 import json
-import os
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 

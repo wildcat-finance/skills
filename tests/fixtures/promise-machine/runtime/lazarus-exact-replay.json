@@ -2,49 +2,77 @@
   "schema": "promise-machine-runtime-specimens/v1",
   "specimens": {
     "negative": {
-      "adapter_output": {
+      "native_document": {
         "lazarus_exact_replay": {
-          "binding": {
-            "promise_id": "lazarus-exact-replay",
-            "scope": "structural binding for lazarus-exact-replay",
-            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
-          },
-          "classes": [
-            "checked"
-          ],
-          "exception": {
-            "status": "none"
-          },
-          "references": [
-            {
-              "evidence_class": "checked",
-              "path": "plugins/lazarus/tests/test_goldfinch.py",
-              "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
-            }
-          ],
-          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-          "transition": {
+          "authorised_transition": {
             "action": "structurally bind lazarus-exact-replay without running its domain operation",
             "operation_ran": false,
             "status": "structurally-bound"
           },
-          "unresolved": [
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
             {
               "code": "domain-operation-not-run",
               "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
             }
-          ]
+          ],
+          "promise": "lazarus-exact-replay",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-exact-replay",
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+          }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked"
+          "checked",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           }
         ],
         "exception": {
@@ -53,7 +81,7 @@
         "promise_id": "lazarus-exact-replay",
         "scope": "structural binding for lazarus-exact-replay",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-exact-replay without running its domain operation",
           "operation_ran": false,
@@ -66,52 +94,80 @@
           }
         ]
       },
-      "schema": "promise-machine-python-result-adapter/v1"
+      "schema": "promise-machine-native-json-binding/v1"
     },
     "positive": {
-      "adapter_output": {
+      "native_document": {
         "lazarus_exact_replay": {
-          "binding": {
-            "promise_id": "lazarus-exact-replay",
-            "scope": "structural binding for lazarus-exact-replay",
-            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
-          },
-          "classes": [
-            "checked"
-          ],
-          "exception": {
-            "status": "none"
-          },
-          "references": [
-            {
-              "evidence_class": "checked",
-              "path": "plugins/lazarus/tests/test_goldfinch.py",
-              "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
-            }
-          ],
-          "source_digest": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578",
-          "transition": {
+          "authorised_transition": {
             "action": "structurally bind lazarus-exact-replay without running its domain operation",
             "operation_ran": false,
             "status": "structurally-bound"
           },
-          "unresolved": [
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
             {
               "code": "domain-operation-not-run",
               "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
             }
-          ]
+          ],
+          "promise": "lazarus-exact-replay",
+          "source": {
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-exact-replay",
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+          }
         }
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked"
+          "checked",
+          "recomputed",
+          "recorded"
         ],
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/tests/test_goldfinch.py",
-            "sha256": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578"
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
           }
         ],
         "exception": {
@@ -119,8 +175,8 @@
         },
         "promise_id": "lazarus-exact-replay",
         "scope": "structural binding for lazarus-exact-replay",
-        "source_digest": "eaed47a77ab260a2eb50b68d7bbc9b5203f702052e898afe7417940d66f9d578",
-        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "source_digest": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-exact-replay without running its domain operation",
           "operation_ran": false,
@@ -133,7 +189,7 @@
           }
         ]
       },
-      "schema": "promise-machine-python-result-adapter/v1"
+      "schema": "promise-machine-native-json-binding/v1"
     }
   }
 }

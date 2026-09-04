@@ -37,7 +37,7 @@ MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 
 UNGOVERNED = {"fizz", "fizz-convert", "fizz-sync", "x-ray", "solidity-auditor"}
 DELIVERY_PACKAGE_VERSIONS = {
-    "alexandria": "0.4.0",
+    "alexandria": "0.5.0",
     "anamnesis": "0.3.0",
     "ariadne": "1.3.0",
     "berean": "0.1.2",
@@ -52,7 +52,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "lemma": "0.1.2",
     "pandects": "0.1.1",
     "probitas": "0.2.0",
-    "sapheneia": "0.1.2",
+    "sapheneia": "0.2.0",
     "synkrisis": "0.5.1",
     "tabularium": "0.3.1",
 }
@@ -98,7 +98,7 @@ class PluginVersionPropagationTests(unittest.TestCase):
                 )
 
     def test_the_three_manifests_agree(self):
-        for name, directory in plugin_dirs():
+        for name, _directory in plugin_dirs():
             with self.subTest(plugin=name):
                 assert_version_agreement(self, name)
 
