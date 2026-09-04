@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16716501,
+    "bytes_blob": 16718056,
     "bytes_generated": 98
   },
   "entries": [
@@ -259,7 +259,7 @@
       "path": "audit/rounds/fiat-881-macos-path-repair-clean-run.synopsis.md"
     },
     {
-      "bytes": 21799,
+      "bytes": 23354,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
