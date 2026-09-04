@@ -59,9 +59,9 @@ no later command reparses the issue or renames a branch.
   Co-authored-by: Shoggoth <shoggoth@wildcat.finance>
   Wildcat-Origin: shoggoth
   ```
-- Before accepting an implement commit, an audit-fix commit, the final prose
-  commit, or the pushed head, the controller resolves the exact base-to-head
-  range and checks every commit in it with `git verify-commit`. It also requires exactly one
+- Before accepting an implement commit, an audit-fix commit, or the final
+  pushed head, the controller resolves the exact base-to-head range and checks
+  every commit in it with `git verify-commit`. It also requires exactly one
   copy of each trailer above. It rejects a known runtime host as author,
   committer or co-author. A missing intermediate commit, malformed range, timeout, tool
   error, or oversized output blocks the receipt.
@@ -95,10 +95,8 @@ the loop did not make.
 
 ## The stacked pull request
 
-The prose receipt already binds the clean, signed final branch head. Do not
-amend it or add another commit in this phase. Push that exact head, then open
-its pull request using the title and body prepared in the prose phase,
-targeting the `pr_base` the directive names:
+Push the step branch, then open its pull request using the title and body
+prepared in the prose phase, targeting the `pr_base` the directive names:
 
 ```text
 gh pr create --base <pr_base> --head <branch> ...
@@ -231,9 +229,7 @@ hexctl done push --pr-url <url> --head-commit <full-sha> --pr-base <ref>
 Give `--head-commit` the full forty-character SHA, from `git rev-parse HEAD`
 rather than `git rev-parse --short HEAD`. The command accepts any ref git
 resolves, so an abbreviated one is validated and stored, and the receipt then
-reads differently from every other commit identity the run records. For a run
-with a closed final-round path declaration, that SHA must be exactly the head
-already stored by `done prose`; ancestry is insufficient. The same
+reads differently from every other commit identity the run records. The same
 holds for `--commit` on `done implement`, `--fixes-commit` on `audit-round`,
 and `--merge-commit` on `done merge-step`: a receipt names a commit, and the
 full SHA is how one is named.

@@ -109,20 +109,6 @@ another pass.
    round records that same path, because the loop already required the record to
    go there. Either way the receipt cannot name a file the round never opened.
 
-   A zero-finding round is the final review boundary, so it must also freeze
-   Scribe's exact post-review write authority. Repeat `--prose-writable <path>`
-   for each reviewed path Hypomnema or the prose masks may change, or pass
-   `--no-prose-writes`. The controller binds every name to its exact regular
-   blob mode and object at the last locally reviewed commit, or to an explicit
-   `absent` state for a new ADR or EVOLUTION record. It rejects the audit log
-   and synopsis themselves, duplicate or unsafe names, deletions, type or mode
-   changes, and any committed final-path delta outside that closed set. A round
-   with findings may supply the same declaration when the user intends to close
-   it immediately with `--no-further-leads`; otherwise it may omit one and the
-   next round replaces it. An exceptional non-clean closure is refused unless
-   its final finding round supplied the binding, so it cannot silently regain
-   ancestry-only push semantics.
-
    `--audit-filter sapheneia:sapheneia` is required on every round, whether it
    found anything or produced a fix. The controller checks and records this
    exact checked operator declaration before mutating state or the ledger. It is

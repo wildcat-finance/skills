@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.48.1"
+  version: "5.47.1"
 ---
 
 <p align="center">
@@ -351,11 +351,11 @@ Act on the single directive it prints, then receipt it. The directory:
 | `study` | Research the topic; write the study and checked design record | [protasis](../protasis/SKILL.md) | `done study --artifact <path> --skills <csv>` |
 | `runbook` | Derive discrete steps from the study | [protasis](../protasis/SKILL.md) | `done runbook --artifact <path> --steps-file <path>` |
 | `implement` | Build the selected design for this source-bound step | [protasis](../protasis/SKILL.md) | `done implement --branch <name> --commit <sha> [--tests <summary>]` |
-| `audit-round` | One security round: run the suite, shape and log its record, fix on the stacked branch | [audit-loop.md](references/audit-loop.md) | `audit-round --findings <n> --audit-filter sapheneia:sapheneia [--log <path>] [--fixes-commit <sha> --elenchus-verdict <value>]`; a zero round, or a finding round intended for immediate `--no-further-leads` closure, also supplies repeatable `--prose-writable <path>` or `--no-prose-writes`, and a non-Solidity round supplies the three lint exits |
+| `audit-round` | One security round: run the suite, shape and log its record, fix on the stacked branch | [audit-loop.md](references/audit-loop.md) | `audit-round --findings <n> --audit-filter sapheneia:sapheneia [--log <path>] [--fixes-commit <sha> --elenchus-verdict <value>]`, plus `--phylax-exit`, `--ephoros-exit` and `--hypomnema-exit` on a non-Solidity round |
 | `close-audit` | Last round was clean; close the phase | [audit-loop.md](references/audit-loop.md) | `done audit [--fixes-ref <ref>]` |
 | `resolve-security-suite` | Suite receipt missing; resolve or waive | preflight step 4 | `record security_suite ...` |
-| `prose` | Rewrite every declared prose artefact, draft the PR text, and sign the exact final commit | [prose-pass.md](references/prose-pass.md) | `done prose --files <n> --skills <csv>` |
-| `push` | Push only the prose-receipted head, open its stacked PR against `pr_base`, and leave it open | [push-discipline.md](references/push-discipline.md) | `done push --pr-url <url> --head-commit <sha> --pr-base <ref>` |
+| `prose` | Rewrite every prose artefact and draft the PR text | [prose-pass.md](references/prose-pass.md) | `done prose --files <n> --skills <csv>` |
+| `push` | Stage and commit final changes, push the step branch, open its stacked PR against `pr_base`, and leave it open | [push-discipline.md](references/push-discipline.md) | `done push --pr-url <url> --head-commit <sha> --pr-base <ref>` |
 | `merge-step` | Merge the named step's PR into the run branch, bottom of the stack first | [push-discipline.md](references/push-discipline.md) | `done merge-step --step <n> --merge-commit <sha>` |
 | `sync-run` | When the base advanced and the integration PR conflicts, preserve the completed product evidence and receipt a signed two-parent merge plus bounded integration revalidation; explicitly acknowledge every whole-side or superseded-intersection path the controller names; supersede a failed composition receipt only with the exact active SHA, a reason and fresh evidence | [push-discipline.md](references/push-discipline.md) | `done sync-run --commit <sha> --base-commit <sha> --revalidation .hexaemeron/integration-revalidation.json [--acknowledge-sync-path <path> ...] [--supersede-sync <sha> --reason <text>]` |
 | `resolve-versions` | For a relation-bearing runbook, check every declared generation against one stable exact base and candidate head without editing the product | [push-discipline.md](references/push-discipline.md) | `done resolve-versions` |
@@ -574,29 +574,21 @@ Imprimatur, Vulgate, Imprimatur publication order. A link, an issue number, or
 prose saying that no work remains does not replace `Closes
 owner/repository#number`. Fill the exact integration URL and status, then rerun
 that whole order immediately before posting. The receipt refuses a skills list
-missing either configured id. Stage and commit every intended final repository
-change before the receipt, with a valid local signature and the two exact
-provenance trailers. The final clean audit round's closed path declaration is
-the write authority: the committed delta may contain only those exact paths and
-the Warden-owned audit log and synopsis, and an absent declaration entry may be
-created only as an ordinary non-executable blob. `done prose` refuses a dirty
-worktree and receipts the exact signed head; it does not bless later edits.
-Resolve commit authority before that receipt. Without it, stop before the
-commit and hand off the exact branch or patch.
+missing either configured id.
 
-**Push.** Publish only the exact head already signed and receipted by the prose
-phase; do not amend it or add another commit. Authorship follows the contributing
-actor. A human contributor keeps their own Git author and valid signer and
-publishes through their own GitHub account; never ask for or use the Shoggoth
-private signing key or account for that contribution. Work contributed by
-Shoggoth keeps Shoggoth as Git author. Publication is a separate role: when
+**Push.** Stage and commit every intended final change with a valid local
+signature and the two exact provenance trailers. Authorship follows the
+contributing actor. A human contributor keeps their own Git author and valid
+signer and publishes through their own GitHub account; never ask for or use the
+Shoggoth private signing key or account for that contribution. Work contributed
+by Shoggoth keeps Shoggoth as Git author. Publication is a separate role: when
 the user or a repository maintainer explicitly authorises a human publisher,
 that person may use their own committer identity, signing key and repository
 account while Shoggoth remains the author. Fiat records author and committer
 separately; that record does not prove the authority behind the instruction or
 which account pushed the ref. A runtime host is neither author nor publisher.
-Without explicit publication authority and a repository-valid route, stop
-before the push or pull request and hand off the exact receipted head.
+Without explicit authority and a repository-valid publication route, stop
+before the commit or pull request and hand off the exact branch or patch.
 Claude, Codex, another runtime host, or its generated-by footer is not
 authorship for either case. Then push the step branch,
 and open its pull request against the `pr_base` the directive names, using the
