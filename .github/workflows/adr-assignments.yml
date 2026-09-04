@@ -133,19 +133,29 @@ jobs:
           test "$fetched_head" = "$HEAD_SHA" || refuse head-moved
           test "$(safe_git --git-dir="$candidate_repository" rev-parse --is-shallow-repository)" = false || refuse history-incomplete
 
-          object_count="$(
-            safe_git --git-dir="$candidate_repository" rev-list --objects --all |
-              wc -l | tr -d '[:space:]'
-          )" || refuse history-incomplete
+          # Bound the candidate's own contribution, not the protected base's
+          # history: main already carries tens of thousands of objects, so a
+          # whole-repository ceiling would refuse every pull request as the
+          # repository grows.
+          delta_objects="$RUNNER_TEMP/adr-assignments-delta-objects"
+          if ! safe_git --git-dir="$candidate_repository" rev-list --objects \
+            "$BASE_SHA..$HEAD_SHA" | cut -d ' ' -f 1 >"$delta_objects"; then
+            refuse history-incomplete
+          fi
+          object_count="$(wc -l <"$delta_objects" | tr -d '[:space:]')"
           case "$object_count" in
             ""|*[!0-9]*) refuse history-incomplete ;;
           esac
           test "$object_count" -le 50000 || refuse object-limit
-          pack_kib="$(du -sk "$candidate_repository/objects" | awk '{print $1}')"
-          case "$pack_kib" in
-            ""|*[!0-9]*) refuse object-limit ;;
+          object_bytes="$(
+            safe_git --git-dir="$candidate_repository" cat-file \
+              --batch-check='%(objectsize:disk)' <"$delta_objects" |
+              awk '/^[0-9]+$/ {sum += $1; next} {exit 2} END {print sum + 0}'
+          )" || refuse history-incomplete
+          case "$object_bytes" in
+            ""|*[!0-9]*) refuse history-incomplete ;;
           esac
-          test "$pack_kib" -le 262144 || refuse object-limit
+          test "$object_bytes" -le 268435456 || refuse object-limit
           commit_count="$(
             safe_git --git-dir="$candidate_repository" rev-list --count \
               "$BASE_SHA..$HEAD_SHA"

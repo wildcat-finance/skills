@@ -32,9 +32,18 @@ mutable-base comparisons from a disposable allocator copy and confirms that
 the stale report then replays, so the comparison is the causal guard.
 
 The workflow execution fixture serves the candidate through a disposable bare
-remote. A candidate executable, tracked attributes, repository filter, and
-hook remain inert while the base-owned policy accepts the exact assignment
-tree. Separate cases refuse a moved head and malformed assignment trailers.
+remote. A candidate executable, tracked attributes, and a remote repository
+filter remain inert while the base-owned policy accepts the exact assignment
+tree. A second fixture gives the runner account a global `core.hooksPath`
+whose `reference-transaction` and `post-index-change` hooks touch a sentinel;
+the policy accepts without the sentinel appearing, and a disposable copy of
+the step with its `HOME`, `GIT_CONFIG_GLOBAL`, and `core.hooksPath` isolation
+removed does fire the hook, so the isolation is the causal guard. The object
+ceilings bound the objects reachable from the head but not from the base, so
+a base history larger than the ceiling does not refuse the candidate; a
+lowered-ceiling copy of the step shows the acceptance and the refusal on
+either side of that count. Separate cases refuse a moved head and malformed
+assignment trailers.
 
 ## Enforcement qualification
 

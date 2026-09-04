@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -148,7 +150,7 @@ class AssignmentRepository:
             write(self.source / ".gitattributes", "* filter=hostile\n")
             write(
                 self.source / "candidate-trigger.sh",
-                f"#!/bin/sh\ntouch {hostile_sentinel}\n",
+                f"#!/bin/sh\ntouch {shlex.quote(str(hostile_sentinel))}\n",
             )
             os.chmod(self.source / "candidate-trigger.sh", 0o755)
         git(self.source, "add", ".")
@@ -274,7 +276,15 @@ def evaluate_workflow(
     base: str,
     head: str,
     preexisting: str | None = None,
+    home: Path | None = None,
+    mutate: Callable[[str], str] | None = None,
 ) -> tuple[subprocess.CompletedProcess[bytes], str, str]:
+    """Run the evaluate step's literal shell against a disposable remote.
+
+    ``home`` stands in for the runner's own account; ``mutate`` rewrites the
+    extracted block so a guard can be removed from a disposable copy and
+    shown to be causal.
+    """
     text = WORKFLOW.read_text(encoding="utf-8")
     blocks = workflow_run_blocks(text)
     block = next(body for body in blocks if "candidate_repository=" in body)
@@ -282,6 +292,11 @@ def evaluate_workflow(
         "https://github.com/wildcat-finance/skills.git",
         remote.as_uri(),
     ).replace("protocol.file.allow=never", "protocol.file.allow=always")
+    if mutate is not None:
+        mutated = mutate(block)
+        if mutated == block:
+            raise AssertionError("mutation fixture changed nothing")
+        block = mutated
     with scratch_directory(prefix="adr-assignment-run-") as directory:
         temporary = Path(directory)
         output = temporary / "output"
@@ -299,6 +314,7 @@ def evaluate_workflow(
             GITHUB_OUTPUT=str(output),
             GITHUB_STEP_SUMMARY=str(summary),
             PATH=os.environ["PATH"],
+            **({} if home is None else {"HOME": str(home)}),
         )
         result = run(
             "bash",
@@ -313,6 +329,38 @@ def evaluate_workflow(
             output.read_text(encoding="utf-8"),
             summary.read_text(encoding="utf-8"),
         )
+
+
+def object_count(repository: Path, *revisions: str) -> int:
+    listed = git(repository, "rev-list", "--objects", *revisions)
+    return len(listed.splitlines()) if listed else 0
+
+
+def hostile_home(root: Path, sentinel: Path) -> Path:
+    """A runner account whose global Git configuration routes every hook."""
+    home = root / "hostile-home"
+    hooks = root / "hostile-hooks"
+    hooks.mkdir()
+    for name in ("reference-transaction", "post-index-change"):
+        hook = hooks / name
+        hook.write_text(
+            f"#!/bin/sh\ntouch {shlex.quote(str(sentinel))}\n", encoding="utf-8"
+        )
+        os.chmod(hook, 0o755)
+    home.mkdir()
+    (home / ".gitconfig").write_text(
+        f"[core]\n\thooksPath = {hooks}\n", encoding="utf-8"
+    )
+    return home
+
+
+def strip_runner_isolation(block: str) -> str:
+    """Remove the three guards that keep the runner's own Git state inert."""
+    return (
+        block.replace('HOME="$safe_home" \\\n', 'HOME="$HOME" \\\n')
+        .replace("GIT_CONFIG_GLOBAL=/dev/null \\\n", "")
+        .replace("-c core.hooksPath=/dev/null \\\n", "")
+    )
 
 
 def external_gate_qualified(
@@ -454,7 +502,7 @@ class WorkflowContractTests(unittest.TestCase):
     def test_history_objects_reports_and_output_are_bounded(self):
         for ceiling in (
             'test "$object_count" -le 50000',
-            'test "$pack_kib" -le 262144',
+            'test "$object_bytes" -le 268435456',
             'test "$commit_count" -le 2048',
             'test "$delta_bytes" -le 262144',
             'test "$message_bytes" -le 65536',
@@ -462,6 +510,13 @@ class WorkflowContractTests(unittest.TestCase):
             self.assertIn(ceiling, self.evaluate)
         self.assertIn("timeout-minutes: 10", self.text)
         self.assertNotIn("cat $", self.evaluate)
+
+    def test_object_ceilings_bound_the_candidate_delta_not_the_base_history(self):
+        self.assertIn(
+            'rev-list --objects \\\n  "$BASE_SHA..$HEAD_SHA" | cut', self.evaluate
+        )
+        self.assertNotIn("rev-list --objects --all", self.evaluate)
+        self.assertNotIn("du -sk", self.evaluate)
 
     def test_report_is_planned_replayed_and_bound_to_head_tree_and_trailers(self):
         self.assertIn("decision_assignments.py", self.evaluate)
@@ -501,7 +556,7 @@ class WorkflowExecutionTests(unittest.TestCase):
             remote,
             "config",
             "filter.hostile.clean",
-            f"sh -c 'touch {sentinel}; cat'",
+            shlex.join(["sh", "-c", f"touch {shlex.quote(str(sentinel))}; cat"]),
         )
         result, output, summary = evaluate_workflow(
             remote, base=self.repo.base, head=candidate
@@ -510,6 +565,55 @@ class WorkflowExecutionTests(unittest.TestCase):
         self.assertFalse(sentinel.exists())
         self.assertIn("mapping_count=1", output)
         self.assertIn("adr/safe-choice=ADR-061", summary)
+
+    def test_runner_global_hooks_stay_inert_and_the_isolation_is_causal(self):
+        sentinel = self.repo.root / "hook-executed"
+        home = hostile_home(self.repo.root, sentinel)
+        self.repo.product("safe-choice")
+        self.repo.plan("safe-choice")
+        candidate = self.repo.assignment("safe-choice")
+        remote = self.repo.remote(candidate)
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate, home=home
+        )
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+        self.assertIn("mapping_count=1", output)
+        self.assertFalse(sentinel.exists())
+
+        evaluate_workflow(
+            remote,
+            base=self.repo.base,
+            head=candidate,
+            home=home,
+            mutate=strip_runner_isolation,
+        )
+        self.assertTrue(sentinel.exists())
+
+    def test_object_ceiling_admits_a_candidate_whose_base_history_exceeds_it(self):
+        self.repo.product("alpha-choice")
+        self.repo.plan("alpha-choice")
+        candidate = self.repo.assignment("alpha-choice")
+        remote = self.repo.remote(candidate)
+        delta = object_count(remote, f"{self.repo.base}..{candidate}")
+        whole = object_count(remote, "--all")
+        self.assertGreater(delta, 1)
+        self.assertGreater(whole, delta)
+
+        def lower(ceiling: int) -> Callable[[str], str]:
+            return lambda block: block.replace(
+                'test "$object_count" -le 50000', f'test "$object_count" -le {ceiling}'
+            )
+
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate, mutate=lower(delta)
+        )
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+        self.assertIn("mapping_count=1", output)
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate, mutate=lower(delta - 1)
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("reason=object-limit", output)
 
     def test_active_two_parent_assignment_sync_is_accepted(self):
         self.repo.product("sync-choice")
