@@ -6,8 +6,8 @@ Proposed, 2026-09-04. Unnumbered on purpose, and nothing assigns the number
 yet. The arithmetic against this base gives ADR-074, and run #856 is open on the
 same base with a runbook that claims the same number. `tests/test_decision_records.py`
 compares against `origin/main`, so it sees a collision only once the other
-number has landed, and the second run to merge would renumber its record and
-every reference to it after review. Issue #888 proposes that records take their
+number has landed. The second run to merge would renumber its record and every
+reference to it after review. Issue #888 proposes that records take their
 number at merge, and records why: ADR-050 collided at authoring time, and the
 ADR-024 duplicate turned `main` red until #582 renumbered the Wave Delta chain.
 Whoever merges this record gives it a number by hand, or leaves it unnumbered
@@ -98,7 +98,7 @@ can grep for it rather than learn it from somebody.
 ## Consequences
 
 **The green record is a convenience rather than proof that the suite ran.**
-Anyone who can write the git directory can write it, it carries no provenance,
+Anyone who can write the git directory can write it. It carries no provenance,
 and nothing should build a claim on its existence. It is the shape of audit
 finding S1-R1-01 on the check runner: a record that supplies its own expected
 value verifies against itself. Read it as a note to the committer, not as
@@ -112,7 +112,7 @@ name the bypass token. The activation half is visible locally, in the suite run
 that must precede any commit under the discipline.
 
 A contributor who never runs the suite gets no green record, so their first
-commit is refused if the gate is on and passes silently if it is off. This
+commit is refused if the gate is on, and passes silently if it is off. This
 decision does not close that hole. It makes the hole announce itself the first
 time the suite runs.
 
