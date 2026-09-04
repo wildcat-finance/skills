@@ -1,0 +1,27 @@
+#!/bin/sh
+# Run the suite and, on exit zero alone, record the staged tree as green.
+#
+#     git add -A && .githooks/greenlight && git commit
+#
+# The recorded identity is the tree `git write-tree` produces from the index as
+# it stands now, so stage before running this. Nothing here stages anything: a
+# command that quietly changed the index would be recording a tree the suite
+# never saw.
+#
+# The record lives under `git rev-parse --git-dir`, which is per-worktree, so a
+# green recorded in one worktree cannot authorise a commit in another.
+#
+# It is a convenience rather than proof that the suite ran. The file carries no
+# provenance and anyone who can write the git directory can write it. See
+# docs/decisions/draft-activate-the-commit-gate-from-a-tracked-hooks-directory.md
+
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+python3 -m unittest discover -s tests
+
+tree="$(git write-tree)"
+record="$(git rev-parse --git-dir)/LAST_GREEN"
+printf '%s\n' "$tree" > "$record"
+printf 'greenlight: recorded tree %s in %s\n' "$tree" "$record"
