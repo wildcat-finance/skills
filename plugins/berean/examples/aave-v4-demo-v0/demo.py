@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Walk the goldfinch-demo-v0 release end to end, offline.
+"""Walk the aave-v4-demo-v0 release end to end, offline.
 
 Five stages, each printing its named result: verify the release's gates,
 grade its evaluation corpus, replay the promotion chain, then prove the

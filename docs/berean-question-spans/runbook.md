@@ -67,7 +67,7 @@ revision, digest, status and next job byte-identical to `berean-v0.1.0`; the
 `plugins/berean/.codex-plugin/plugin.json` and `.claude-plugin/marketplace.json`
 with both test pins moved; the study and this runbook are committed under
 `docs/berean-question-spans/`; nothing under
-`plugins/berean/examples/goldfinch-demo-v0/` changes; and every command in
+`plugins/berean/examples/aave-v4-demo-v0/` changes; and every command in
 this demo path exits zero from the repository root (remove
 `tmp/berean-question-spans-step-1.json` first if an earlier run left it):
 
@@ -76,8 +76,8 @@ this demo path exits zero from the repository root (remove
 uv run --python 3.12.13 python -m unittest discover -s plugins/berean/tests -t plugins/berean
 uv run --python 3.12.13 python plugins/berean/scripts/berean.py verify-release plugins/berean/tests/fixtures/conformance/pass-release
 uv run --python 3.12.13 python plugins/berean/scripts/berean.py run-evals plugins/berean/tests/fixtures/conformance/pass-release
-uv run --python 3.12.13 python plugins/berean/scripts/berean.py verify-release plugins/berean/examples/goldfinch-demo-v0/release
-uv run --python 3.12.13 python plugins/berean/examples/goldfinch-demo-v0/demo.py
+uv run --python 3.12.13 python plugins/berean/scripts/berean.py verify-release plugins/berean/examples/aave-v4-demo-v0/release
+uv run --python 3.12.13 python plugins/berean/examples/aave-v4-demo-v0/demo.py
 uv run --python 3.12.13 python plugins/berean/tests/emit_report.py tmp/berean-question-spans-step-1.json
 uv run --python 3.12.13 python -m unittest discover -s tests
 uv run --python 3.12.13 python -m unittest tests.test_evolution_contract

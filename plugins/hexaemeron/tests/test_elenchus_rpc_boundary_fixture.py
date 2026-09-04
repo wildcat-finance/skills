@@ -121,13 +121,13 @@ def skip_reason(missing, executable=sys.executable):
 
 
 def recorded_outcome(method, params):
-    """The outcome of the Goldfinch record whose method and params match exactly."""
+    """The outcome of the Aave v4 record whose method and params match exactly."""
     with RPC_RECORDS.open(encoding="utf-8") as handle:
         for line in handle:
             record = json.loads(line)
             if record["method"] == method and record["params"] == params:
                 return record["outcome"]
-    raise AssertionError("no Goldfinch record for " + method + " " + repr(params))
+    raise AssertionError("no Aave v4 record for " + method + " " + repr(params))
 
 
 class ProcedureTextTests(unittest.TestCase):
@@ -240,7 +240,7 @@ class LazarusDependencyGuardTests(unittest.TestCase):
 
 
 class ReplayGuardExampleTests(unittest.TestCase):
-    """Drive the shipped Goldfinch fixture through `lazarus replay` on loopback."""
+    """Drive the shipped Aave v4 fixture through `lazarus replay` on loopback."""
 
     process = None
     port = None
