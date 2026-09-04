@@ -6235,22 +6235,19 @@ def audit_delta_start(
 ) -> int:
     """Choose the durable boundary before the one unreceipted raw suffix."""
     latest_offset = None
-    for prior_step in state.get("steps") or []:
-        if as_dict(prior_step).get("n") > step["n"]:
-            break
-        rounds = as_dict(as_dict(prior_step).get("audit")).get("rounds") or []
-        for round_entry in rounds:
-            entry = as_dict(round_entry)
-            if "log_end_offset" not in entry:
-                continue
-            if entry.get("log") != log_path:
-                die("stored audit log path does not match the configured log")
-            offset = entry["log_end_offset"]
-            if isinstance(offset, bool) or not isinstance(offset, int):
-                die("stored audit log end offset must be a non-boolean integer")
-            if offset < 0 or offset > SOURCE_BYTES_MAX or offset >= len(data):
-                die("stored audit log end offset is outside the current log")
-            latest_offset = offset
+    rounds = as_dict(as_dict(step).get("audit")).get("rounds") or []
+    for round_entry in rounds:
+        entry = as_dict(round_entry)
+        if "log_end_offset" not in entry:
+            continue
+        if entry.get("log") != log_path:
+            die("stored audit log path does not match the configured log")
+        offset = entry["log_end_offset"]
+        if isinstance(offset, bool) or not isinstance(offset, int):
+            die("stored audit log end offset must be a non-boolean integer")
+        if offset < 0 or offset > SOURCE_BYTES_MAX or offset >= len(data):
+            die("stored audit log end offset is outside the current log")
+        latest_offset = offset
     if latest_offset is not None:
         return latest_offset
 

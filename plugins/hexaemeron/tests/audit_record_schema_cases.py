@@ -869,6 +869,135 @@ def build_audit_record_schema_tests(context):
             self.write_record(append=True)
             self.run_ctl("audit-round", "--findings", "0")
 
+        def test_first_round_uses_implementation_baseline_after_prior_follow_ons(self):
+            controller = hexctl_module()
+            log_path = "audit/rounds/run.md"
+            closed = b"prior step through its closing receipt\n"
+            follow_ons = b"independent rounds after close\n"
+            baseline = closed + follow_ons
+            current = {
+                "n": 2,
+                "audit": {"rounds": []},
+                "receipts": {
+                    "implement": {
+                        "commit": "2" * 40,
+                        "verified_commits": ["2" * 40],
+                    }
+                },
+            }
+            state = {
+                "steps": [
+                    {
+                        "n": 1,
+                        "audit": {
+                            "rounds": [
+                                {"log": log_path, "log_end_offset": len(closed)}
+                            ]
+                        },
+                    },
+                    current,
+                ]
+            }
+            data = baseline + b"\n## Step 2, round 1 -- 2026-09-04T00:00:00Z\n"
+
+            with mock.patch.object(
+                controller, "audit_baseline_blob", return_value=baseline
+            ) as baseline_reader:
+                start = controller.audit_delta_start(
+                    self.target, state, current, log_path, data
+                )
+
+            baseline_reader.assert_called_once_with(self.target, current, log_path)
+            self.assertEqual(start, len(baseline))
+
+        def test_first_round_refuses_drift_before_implementation_baseline(self):
+            controller = hexctl_module()
+            log_path = "audit/rounds/run.md"
+            closed = b"prior step through its closing receipt\n"
+            baseline = closed + b"committed independent follow-ons\n"
+            current = {
+                "n": 2,
+                "audit": {"rounds": []},
+                "receipts": {"implement": {"commit": "2" * 40}},
+            }
+            state = {
+                "steps": [
+                    {
+                        "n": 1,
+                        "audit": {
+                            "rounds": [
+                                {"log": log_path, "log_end_offset": len(closed)}
+                            ]
+                        },
+                    },
+                    current,
+                ]
+            }
+            data = closed + b"changed independent follow-ons\nnew round\n"
+            stderr = StringIO()
+
+            with (
+                mock.patch.object(
+                    controller, "audit_baseline_blob", return_value=baseline
+                ) as baseline_reader,
+                redirect_stderr(stderr),
+                self.assertRaises(SystemExit) as raised,
+            ):
+                controller.audit_delta_start(
+                    self.target, state, current, log_path, data
+                )
+
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn("changed before its Git baseline boundary", stderr.getvalue())
+            baseline_reader.assert_called_once_with(self.target, current, log_path)
+
+        def test_later_round_uses_only_latest_same_step_offset(self):
+            controller = hexctl_module()
+            log_path = "audit/rounds/run.md"
+            current_offset = 256
+
+            class PriorStep(dict):
+                def get(self, key, default=None):
+                    if key == "audit":
+                        raise AssertionError("a prior step's offset was inspected")
+                    return super().get(key, default)
+
+            current = {
+                "n": 2,
+                "audit": {
+                    "rounds": [
+                        {"log": log_path, "log_end_offset": current_offset}
+                    ]
+                },
+            }
+            state = {
+                "steps": [
+                    PriorStep(
+                        n=1,
+                        audit={
+                            "rounds": [
+                                {
+                                    "log": "audit/rounds/previous-run.md",
+                                    "log_end_offset": 64,
+                                }
+                            ]
+                        },
+                    ),
+                    current,
+                ]
+            }
+
+            with mock.patch.object(
+                controller,
+                "audit_baseline_blob",
+                side_effect=AssertionError("later rounds must not reread the baseline"),
+            ):
+                start = controller.audit_delta_start(
+                    self.target, state, current, log_path, b"x" * 512
+                )
+
+            self.assertEqual(start, current_offset)
+
         def test_legacy_missing_leaves_use_the_verified_git_blob(self):
             self.write_record(findings=1, verdict="guarded")
             self.run_ctl(

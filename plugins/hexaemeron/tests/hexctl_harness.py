@@ -168,6 +168,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         pending_refs = dict(self.fake_refs)
         pending_prs = json.loads(json.dumps(self.fake_prs))
         pending_parents = json.loads(json.dumps(self.fake_parents))
+        pending_audit_baseline = None
         state_path = os.path.join(self.target, ".hexaemeron", "state.json")
         state = None
         if os.path.exists(state_path):
@@ -204,6 +205,10 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             branch = args[args.index("--branch") + 1]
             head = args[args.index("--commit") + 1]
             pending_refs[branch] = self.fake_sha(head)
+            if state is not None:
+                relative = state["config"]["audit"]["log_path"]
+                log = Path(self.target, *relative.split("/"))
+                pending_audit_baseline = log.read_bytes() if log.exists() else b""
         if args[:2] == ("done", "push") and expect == 0 and state is not None:
             step = state["steps"][state["current_step"] - 1]
             branch = step["receipts"]["implement"]["branch"]
@@ -248,6 +253,13 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
         env["FAKE_GIT_PARENTS"] = json.dumps(pending_parents)
         env["FAKE_GH_PRS"] = json.dumps(pending_prs)
+        audit_baseline = getattr(self, "fake_audit_baseline", None)
+        if (
+            args[:1] == ("audit-round",)
+            and audit_baseline is not None
+            and "FAKE_GIT_BASELINE_HEX" not in env
+        ):
+            env["FAKE_GIT_BASELINE_HEX"] = audit_baseline.hex()
         proc = subprocess.run(
             [sys.executable, HEXCTL, *args],
             cwd=self.target,
@@ -264,6 +276,8 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             self.fake_refs = pending_refs
             self.fake_prs = pending_prs
             self.fake_parents = pending_parents
+            if pending_audit_baseline is not None:
+                self.fake_audit_baseline = pending_audit_baseline
         return proc
 
     def append_valid_audit_record(self, args, state):
