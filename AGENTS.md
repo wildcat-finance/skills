@@ -74,8 +74,10 @@ belongs to the application's own repository, and where Anamnesis keeps custody
 of findings and their remedies, Dokimasia records only which behaviour has no
 reviewed oracle. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
-durable audit, issue, and comment prose. It does not change another skill's
-facts or gates. Brevitas controls the volume and structure of engineering prose
+durable audit, issue, and comment prose. The same operation governs every other
+record its agents write down, from a pull request to a repository document or a
+commit message, and cuts each to the shortest form its evidence allows. It does
+not change another skill's facts or gates. Brevitas controls the volume and structure of engineering prose
 after vocabulary and register passes. If a request crosses one of those
 boundaries, hand it to the named sibling rather than broadening the selected
 skill.
@@ -147,12 +149,15 @@ Atlas draws from open issues alone, so one whose delivery has merged keeps
 being allocated until it is closed, and a contributor working from a fork
 cannot close it.
 
-## Issue and comment publication
+## Written-record publication
 
-Before an agent publishes a GitHub issue title and body or a GitHub issue
-comment for this repository, use this sequence on the complete candidate:
+Before an agent writes prose into this repository or publishes it to a host,
+use this sequence on the complete candidate. It governs every record an agent
+writes down: an audit record, an issue title and body, an issue or pull request
+comment, a pull request title and body, a repository document, and a commit
+message.
 
-1. freeze the required title prefix, body opening and protected evidence inventory;
+1. freeze the required title prefix, body opening and protected evidence inventory, or the equivalent required structure where the record is not an issue;
 2. apply `sapheneia-durable-record-shape`;
 3. run Imprimatur and clear every reported defect without dropping protected content;
 4. apply Vulgate to the surface only and compare its content with the source;
@@ -167,6 +172,9 @@ The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
 selectors, numbers, dates, links, quotations, severities, verdicts, status, the
 `Fiat-Required` line, the `carryover` block, and required host structure.
+Bytes another owner fixes are outside the sequence: a generated copy, a
+receipt, a digest-bound document and a fixed-template report ship as their
+owner produced them, and a record already written stays as it is.
 Do not publish after a failed check, changed prefix or body opening, missing
 protected item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from
