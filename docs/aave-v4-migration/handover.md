@@ -4,10 +4,10 @@ Branch `claude/remove-goldfinch-demo-6d9730`. Written 2026-09-02, mid-migration,
 for whoever continues it.
 
 The task began as "delete the Goldfinch demo" and became a data-provenance
-migration across seven plugins. Four are done and green: lazarus, tabularium,
-alexandria and probitas. Berean, ariadne and the repository-level records
-remain. Read section 7 before touching anything; those traps each cost an
-hour to find.
+migration across seven plugins. **All seven are done and green**, and the
+repository-level records are swept. Read section 7 before touching anything;
+those traps each cost an hour to find, and section 6 records what was
+deliberately left as it was.
 
 Section 8's open decision is **resolved**: Tabularium was recaptured from
 pure archive RPC in `d2f3e6fa`, and that dissolved the wall Alexandria had hit
@@ -211,70 +211,40 @@ without changing its substance or held status. That forced a by-hand
 recomputation of the frontier digest to `ee6493f9ae94b05af56c2af0469fc524e7e6a5f02f90ca149acb635c23c24856`.
 Reverting the job text restores `b6b06c2b…` exactly.
 
-## 6. Work remaining, in dependency order
+## 6. What was left Goldfinch-named, and why
 
-### 6.1 Decide section 8 first
+Sixty-eight files still mention Goldfinch. Every one is deliberate.
 
-If Tabularium is recaptured from RPC, 6.2 changes completely. Do not start
-alexandria before this is settled.
+**The byte-protected audit set (14 files).** `tests/test_audit_prefix_integrity`
+pins a protected prefix digest, byte length and line count for six audit logs,
+but the guard is not the reason. An audit record states what an auditor found
+against which artefacts. Renaming its subject would assert that an audit which
+examined Goldfinch artefacts examined artefacts that did not exist when it
+ran. The repository byte-protects audit logs and nothing else in this prose
+set, which is what settled the distinction. `audit/rounds/` and the synopsis
+files follow the same rule.
 
-### 6.2 Alexandria: currently broken, 19 files
+**Ariadne's conformance vectors (38 files).** Self-contained synthetic pass and
+fail pairs. Their value is the exact single-leaf difference between a clean
+parent and its breach, and a bulk rename broke 30 of those relationships for
+no gain. They reference no deleted path, and every path they do name still
+resolves, so their Goldfinch mentions are subject names rather than stale
+references.
 
-Pins the deleted `tabularium/examples/goldfinch-v0/source.json` by digest
-`644b7068…`, in both `tests/fixtures/credit-view-sources.json` and
-`examples/credit-history-v0/demo-plan.json`.
+**`SOURCES.md` (1 file).** A manifest of the external capture inventory, which
+holds real `goldfinch/prime` and `goldfinch/senior-pool` releases. Those rows
+describe captures that exist.
 
-`scripts/alexandria_lib/mappings/goldfinch.py` (215 lines) consumes the raw
-subgraph snapshot and emits both credit events and **credit-line
-observations**. Aave v4 has no credit-line equivalent, so model the
-replacement on `mappings/clearpool.py` (250 lines, events only) rather than
-on the Goldfinch mapping. Register it in `mappings/__init__.py:REGISTRY`.
+**Probitas's venue registry (9 files).** Goldfinch is a protocol that existed
+and wound down after defaults. `registry.py` and the venue references record
+that history. Only the Alexandria bridge moved to `aave-v4`; deleting the
+registry entry would make the repository assert a protocol never existed.
 
-Its blocker is section 3.3 item 1. With RPC data it is a straightforward
-port; with subgraph data it needs a declared 183-event exclusion.
+**Two preserved corpora (2 files).** An Anamnesis specimen that preserves
+audit-round text, and Imprimatur's labelled-prose evaluation samples. Both are
+frozen inputs to something else.
 
-### 6.3 Berean: 20 files, suite currently green
-
-`examples/goldfinch-demo-v0/release/reads.jsonl` (78,175 bytes) is a
-byte-for-byte copy of the deleted Lazarus `goldfinch-v0` `rpc.jsonl`. A test
-holds the copy identical to its source "whenever both are in the tree". The
-source is now absent, so **that test passes vacuously**. This is a silent
-coverage loss, not a green light. Re-copy from
-`lazarus/examples/aave-v4-spoke-v0/rpc.jsonl` and repin.
-
-`rebuild.py` regenerates everything under `release/` except `reads.jsonl`
-deterministically, and a test compares its output to committed bytes, so the
-corpus, answers, evals and promotion chain will all need rebuilding together.
-
-### 6.4 Ariadne: 60 files, 1 failure
-
-38 of the 60 are conformance fixtures under `tests/fixtures/`, authorised for
-bulk rename. The live failure is its demo reading
-`lazarus/examples/goldfinch-v0-release/fixture/rpc.jsonl`; repoint to the
-`aave-v4-spoke-v0-release` equivalent. Also `examples/tampered/`.
-
-### 6.5 Probitas: 9 files, 1 error
-
-The error is **downstream of alexandria** (`test_union` → alexandria's
-`paths.py` opening the deleted directory) and needs no probitas change.
-
-**Do not delete probitas's `goldfinch` venue registry entry.** Goldfinch is a
-real protocol that really wound down; `registry.py:154` and
-`docs/example-dossier.md` record factual protocol history, not demonstration
-data. Deleting it would make the repository claim a protocol never existed.
-This is the one place where "remove all Goldfinch references" is the wrong
-instruction.
-
-### 6.6 Records and generated inventories
-
-- `audit/rounds/` (12 files), `audit/AUDIT.md`, `audit/AUDIT_SYNOPSIS.md`:
-  **exempt from the prose rewrite.** Byte-protected; see trap 1.
-- `docs/`: 14 further directories
-- **Generated, regenerate rather than edit:** `SOURCES.md` (via secretsauce's
-  `gen_sources.py`), `.dead-code/baseline.json`, `.horos/candidates.json`,
-  `tests/promise_machine_coverage.json`
-- `README.md`, `FUTUREPROOFING.md`
-- `plugins/hexaemeron` (4), `plugins/horos` (1), `plugins/anamnesis` (1)
+**This document.** It describes the removal, so it names what was removed.
 
 ## 7. Traps
 
