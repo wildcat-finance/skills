@@ -25,6 +25,8 @@ feeds the probe a client output fixture carrying a token and sweeps both the
 manifest and the log for it. ``KilledProbeTests`` kills a real child process
 between the temporary write and the rename, and is the resolver for the
 ``killed-probe-recovery`` gate; it writes that gate's report on the way out.
+``GateReportTests`` holds that report to the run that earned it, so a partial
+selection of the class cannot report a failure nothing observed.
 """
 
 from __future__ import annotations
@@ -441,6 +443,62 @@ class ClassifierTests(unittest.TestCase):
                 self.assertNotIn(record["classification"], probe_harnesses.EARNED_CLASSIFICATIONS)
                 self.assertTrue(record["blocker"])
 
+    def test_version_read_carries_the_unread_encoding_as_a_field(self):
+        # The schema requires a non-null client_version wherever the client is
+        # present, so a present client that never answered carries the sentinel
+        # rather than null. A sentinel is prose, and a reader that has to
+        # recognise the literal "unread" to tell a version from the absence of
+        # one is a reader the schema has not told the truth to. This is the
+        # boolean that keeps the fact machine-readable.
+        cases = (
+            (ABSENT, False, None, False),
+            (UNREAD, True, probe_harnesses.UNREAD_VERSION, False),
+            (ANSWERED, True, "2026.8.1", True),
+        )
+        for probe, present, version, expected in cases:
+            with self.subTest(probe=probe.status):
+                record = probe_harnesses.entry_document(
+                    observation(probe=probe, client_present=present, client_version=version)
+                )
+                self.assertEqual(record["client_version"], version)
+                self.assertIn("version_read", record)
+                self.assertEqual(record.get("version_read"), expected)
+        # The field says exactly what the sentinel says, and never disagrees
+        # with it, so neither can drift away from the other unnoticed.
+        for flags, probe in itertools.product(FLAG_MATRIX, (None, ABSENT, UNREAD, ANSWERED)):
+            observed = observation(probe=probe, **flags)
+            record = probe_harnesses.entry_document(observed)
+            with self.subTest(probe=None if probe is None else probe.status, **flags):
+                self.assertEqual(
+                    record.get("version_read"),
+                    record["client_version"] not in (None, probe_harnesses.UNREAD_VERSION),
+                )
+
+    def test_a_probe_written_document_validates_against_the_schema(self):
+        # entry_document is the only writer of a harnesses entry and the schema
+        # closes additionalProperties, so a field added on one side and not the
+        # other is a manifest the published contract refuses. This case is the
+        # join: it validates what the probe actually writes.
+        recorder = probe_harnesses.Recorder("00000000")
+        observations = probe_harnesses.probe_roster(
+            recorder=recorder,
+            runner=RecordingRunner(),
+            path_lookup=present_everywhere,
+            environ={},
+            home=Path(tempfile.gettempdir()),
+        )
+        document = probe_harnesses.manifest_document(
+            observations, host="darwin-arm64", date="2026-09-04", base_ref=BASE_REF
+        )
+        declared = set(load_schema()["$defs"]["harness"]["properties"])
+        for record in document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertEqual(set(record) - declared, set())
+        checker = validator()
+        if checker is None:
+            self.skipTest("jsonschema is a Lazarus dependency and is not installed")
+        self.assertEqual([e.message for e in checker.iter_errors(document)], [])
+
     def test_every_class_the_classifier_returns_is_one_of_the_schema_names(self):
         declared = tuple(load_schema()["$defs"]["classification"]["enum"])
         self.assertEqual(declared, probe_harnesses.CLASSIFICATIONS)
@@ -565,6 +623,60 @@ class SubprocessTests(unittest.TestCase):
         self.assertEqual(entry_record["classification"], "manual route")
         self.assertIn("did not answer within 10s", entry_record["blocker"])
         self.assertIn("did not answer within 10s", entry_record["probe"]["result"])
+
+    def test_a_client_that_fails_never_answers_however_its_error_reads(self):
+        # VERSION_TOKEN matches any dotted number, and a failing client prints
+        # plenty of them. Each of these is one real client failure whose error
+        # text carries something version-shaped: a loopback address, a library
+        # version in a stack trace, an expiry date, a docs URL. None of them is
+        # the client reporting its version, so none may reach `answered`, and
+        # none may earn a class on a host where the client is installed and an
+        # API key happens to be set.
+        failures = (
+            ("Error: connect ECONNREFUSED 127.0.0.1:8080\n", 1),
+            ("node:internal/errors 4.18.2 unhandled rejection\n", 1),
+            ("fatal: credentials expired at 2026.09.04\n", 1),
+            ("unknown flag --version; see cursor.com/cli/0.1.2\n", 2),
+        )
+        harness = probe_harnesses.ROSTER[1]
+        for stderr, code in failures:
+            with self.subTest(code=code, stderr=stderr.strip()[:40]):
+                runner = RecordingRunner(stdout="", stderr=stderr, returncode=code)
+                record = probe_harnesses.probe_client(
+                    harness, runner=runner, path_lookup=present_everywhere
+                )
+                self.assertEqual(record.status, "unread")
+                self.assertIsNone(record.version)
+                self.assertIn(f"exited {code}", record.result)
+                self.assertIn("unread rather than absent", record.result)
+                # Nothing the client printed rode along into the record.
+                self.assertNotIn("127.0.0.1", record.result)
+                self.assertNotIn("2026.09.04", record.result)
+                # And the class the whole design turns on stays unearned even
+                # with the client present and authentication configured.
+                observed = probe_harnesses.observe(
+                    harness,
+                    runner=runner,
+                    path_lookup=present_everywhere,
+                    environ={"CURSOR_API_KEY": "set"},
+                )
+                self.assertTrue(observed.client_present)
+                self.assertEqual(observed.client_version, probe_harnesses.UNREAD_VERSION)
+                self.assertTrue(observed.auth_configured)
+                self.assertNotIn(
+                    probe_harnesses.classify(observed),
+                    probe_harnesses.EARNED_CLASSIFICATIONS,
+                )
+
+    def test_a_zero_exit_client_still_answers_with_its_version(self):
+        # The other half of the rule above: reading the exit status first must
+        # not stop a client that succeeded from being recorded as answering.
+        runner = RecordingRunner(stdout="cursor-agent 2026.8.1\n", returncode=0)
+        record = probe_harnesses.probe_client(
+            probe_harnesses.ROSTER[1], runner=runner, path_lookup=present_everywhere
+        )
+        self.assertEqual(record.status, "answered")
+        self.assertEqual(record.version, "2026.8.1")
 
     def test_the_default_runner_really_bounds_the_timeout(self):
         harness = probe_harnesses.Harness(
@@ -755,13 +867,24 @@ class KilledProbeTests(unittest.TestCase):
         "test_a_killed_probe_leaves_no_partial_file_the_reader_would_accept",
         "test_the_temporary_file_is_written_beside_the_target_and_renamed",
     )
+    attempted: set[str] = set()
     passed: set[str] = set()
+
+    def setUp(self):
+        self.attempted.add(self._testMethodName)
 
     @classmethod
     def tearDownClass(cls):
         """Write the gate's report, or leave it alone in a tree without one."""
         directory = cls.REPORT_PATH.parent
         if not directory.is_dir():
+            return
+        # A partial selection is not a failed gate. Running one case by name,
+        # or filtering with -k, would otherwise write `value: false` and
+        # `exit: 1` for a run in which nothing failed and nothing exited 1 --
+        # and Fiat's design checker reads this file at the step:3 transition.
+        # Only a run that attempted every case may speak for the gate.
+        if cls.attempted != set(cls.CASES):
             return
         resolved = cls.passed == set(cls.CASES)
         report = {
@@ -882,6 +1005,72 @@ class KilledProbeTests(unittest.TestCase):
             self.assertFalse(temporary.exists())
             self.assertEqual(list(root.glob("*.json")), [target])
         self.passed.add(self._testMethodName)
+
+
+class GateReportTests(unittest.TestCase):
+    """The gate report may only speak for a run that attempted every case.
+
+    ``KilledProbeTests`` writes the ``killed-probe-recovery`` report on its way
+    out, and Fiat's design checker reads that file at the ``step:3``
+    transition. A run that selects one case by name passes it, so a report
+    saying ``value: false`` and ``exit: 1`` would describe a failure nothing
+    observed and block the step on it.
+
+    These cases drive ``KilledProbeTests.tearDownClass`` directly rather than
+    through a real kill, so they cost nothing and cannot disturb the real
+    class's own bookkeeping.
+    """
+
+    def write_report(self, attempted, passed, root):
+        target = root / "gate.json"
+        with mock.patch.multiple(
+            KilledProbeTests,
+            REPORT_PATH=target,
+            attempted=set(attempted),
+            passed=set(passed),
+        ):
+            KilledProbeTests.tearDownClass()
+        return target
+
+    def test_a_partial_selection_writes_no_report_at_all(self):
+        for selected in ((), KilledProbeTests.CASES[:1], KilledProbeTests.CASES[:3]):
+            with self.subTest(attempted=len(selected)):
+                with tempfile.TemporaryDirectory() as directory:
+                    # Every selected case passed. The only thing missing is the
+                    # rest of the class, and that is not a failed gate.
+                    target = self.write_report(selected, selected, Path(directory))
+                    self.assertFalse(target.exists())
+
+    def test_a_complete_run_writes_the_resolved_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = self.write_report(
+                KilledProbeTests.CASES, KilledProbeTests.CASES, Path(directory)
+            )
+            report = json.loads(target.read_text(encoding="utf-8"))
+            self.assertEqual(report["criterion"], "killed-probe-recovery")
+            self.assertEqual(report["candidate"], "probe-manifest")
+            self.assertIs(report["value"], True)
+            self.assertEqual(report["exit"], 0)
+
+    def test_a_complete_run_with_a_failure_writes_the_unresolved_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = self.write_report(
+                KilledProbeTests.CASES, KilledProbeTests.CASES[:-1], Path(directory)
+            )
+            report = json.loads(target.read_text(encoding="utf-8"))
+            self.assertIs(report["value"], False)
+            self.assertEqual(report["exit"], 1)
+
+    def test_every_case_the_report_speaks_for_is_a_real_test_method(self):
+        # The gate's case list is the report's denominator, so a renamed or
+        # deleted case must not leave it claiming coverage it no longer has.
+        for name in KilledProbeTests.CASES:
+            with self.subTest(case=name):
+                self.assertTrue(callable(getattr(KilledProbeTests, name, None)))
+        declared = {
+            name for name in vars(KilledProbeTests) if name.startswith("test_")
+        }
+        self.assertEqual(declared, set(KilledProbeTests.CASES))
 
 
 if __name__ == "__main__":

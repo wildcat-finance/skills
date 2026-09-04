@@ -14,7 +14,11 @@ Four properties are load-bearing, and each has a case in
 route` are earned classes. `classify` returns one only when the harness carries
 a probe whose status is `answered` and whose client was found present. Every
 other input shape reaches `manual route` or `unsupported`, whatever the rest of
-the record claims.
+the record claims. `answered` is itself earned: `probe_client` reads the exit
+status before the output and records a non-zero exit as `unread`, because
+`VERSION_TOKEN` matches dotted numbers that are not versions -- a loopback
+address in a connection error, a date in an expiry message -- and a token
+scraped out of a failure is not an answer.
 
 **The command is fixed, and never read from a manifest.** Each harness declares
 its own argv in `ROSTER`, as a tuple of plain strings. Nothing in this module
@@ -45,13 +49,17 @@ run, so two probes of the same host can be told apart. Nothing else is emitted:
 no raw client output, no credential, no absolute path and no account identifier
 reaches either surface.
 
-One encoding is worth stating, because the schema has no field for it. A client
-that resolves on `PATH` but does not answer inside the timeout is present, and
-its version is unread. Recording it absent would collapse two different facts,
-which is exactly what `client_present` and `auth_configured` exist to prevent,
-so `client_present` stays true and `client_version` carries `UNREAD_VERSION`.
-The full reason is in `probe.result` and in `blocker`, and no reader can mistake
-the sentinel for a version somebody read.
+One encoding is worth stating. A client that resolves on `PATH` but does not
+answer -- it timed out, it exited non-zero, it printed no version -- is present,
+and its version is unread. Recording it absent would collapse two different
+facts, which is exactly what `client_present` and `auth_configured` exist to
+prevent, so `client_present` stays true and `client_version` carries
+`UNREAD_VERSION`. That sentinel cannot collide with a real version, because
+`recognise_version` only ever returns a digit-led `VERSION_TOKEN` match, but a
+sentinel is still prose where a reader wants a field: `version_read` carries
+the same fact as a boolean the schema declares, so nothing downstream has to
+string-match `"unread"` to know whether a version was read. The full reason is
+in `probe.result` and in `blocker`.
 """
 
 from __future__ import annotations
@@ -125,8 +133,7 @@ RESULT_NO_VERSION = (
     "so its version is unread rather than absent"
 )
 RESULT_EXIT = (
-    "unread: {binary} exited {code} with no version-shaped token, "
-    "so its version is unread rather than absent"
+    "unread: {binary} exited {code}, so its version is unread rather than absent"
 )
 RESULT_TIMEOUT = (
     "unread: {binary} did not answer within {seconds}s, "
@@ -424,10 +431,17 @@ def probe_client(
         reason = RESULT_UNRUNNABLE.format(binary=binary, reason=type(error).__name__)
         return ProbeRecord(argv, reason, STATUS_UNREAD, None)
 
-    version = recognise_version(completed.stdout, completed.stderr)
-    if version is None and completed.returncode != 0:
+    # The exit status is read before the output, and it is decisive. A client
+    # that exited non-zero did not answer, whatever its output happens to
+    # contain, and `VERSION_TOKEN` matches plenty of things that are not
+    # versions: a loopback address in a connection error, a date in an expiry
+    # message, a version fragment inside a documentation URL. Scraping one of
+    # those out of a failure and calling it an answer is how a client that
+    # never worked earns `tested local route`.
+    if completed.returncode != 0:
         reason = RESULT_EXIT.format(binary=binary, code=completed.returncode)
         return ProbeRecord(argv, reason, STATUS_UNREAD, None)
+    version = recognise_version(completed.stdout, completed.stderr)
     if version is None:
         return ProbeRecord(argv, RESULT_NO_VERSION.format(binary=binary), STATUS_UNREAD, None)
     return ProbeRecord(argv, RESULT_ANSWERED.format(version=version), STATUS_ANSWERED, version)
@@ -545,6 +559,13 @@ def entry_document(observation: Observation) -> dict[str, object]:
         "classification": classification,
         "client_present": observation.client_present,
         "client_version": observation.client_version,
+        # The structured half of the unread encoding. A reader must not have to
+        # compare `client_version` against a magic string the schema does not
+        # enumerate to learn whether anybody read a version, so the fact gets
+        # its own boolean: true exactly when `client_version` holds a version a
+        # client reported.
+        "version_read": observation.client_version is not None
+        and observation.client_version != UNREAD_VERSION,
         "auth_configured": observation.auth_configured,
         "launcher_contract": observation.launcher_contract,
         "blocker": blocker_for(observation, classification),
