@@ -165,11 +165,15 @@ answered here by name:
   `scripts/run_checks.py` already run the horos suite through
   `tests/check-map-v1.json` (`horos-suite`), which is the gate this run uses.
 - Widening the boundary currency guard to compare counts as well as entries
-  (open lead from the Hermes rule-corpus round, restated in issue 842). Stays
-  open, and issue 842 records the reason it is not obviously right:
-  `counts.files_walked` moves with the worktree while every entry stays
-  identical, so a counts comparison could fail on a field that is not
-  evidence. Refused here.
+  (open lead from the Hermes rule-corpus round, restated in issue 842).
+  Already the case: `diff_boundary_documents` in `horos.py` compares the
+  `counts` block alongside the entries, and
+  `test_new_ordinary_records_without_a_refresh_are_count_drift` pins
+  `.horos/boundary.json#counts` as drift when tracked files are added without
+  a refresh. Issue 842's reservation still stands: `counts.files_walked`
+  moves with the worktree while every entry stays identical, so the counts
+  comparison can fail on a field that is not evidence. Nothing here changes
+  the guard either way.
 - A sibling README under `plugins/horos/docs/<job>/` explaining that the
   copies are verbatim (rounds 1 to 3 of step 1, "the controller's call").
   Refused here: three runs have now used the convention without one, and
@@ -226,9 +230,11 @@ Open issues touching Horos, each read on 2026-09-04:
   run works in a worktree under `tmp/fiat/`. Its two observations hold here:
   `.horos/boundary.json` has no `audit/` entry while synopsis files exist, and
   `counts.files_walked` follows the worktree. Neither is caused by this rule
-  and neither is fixed here. The currency guard compares entries, not counts,
-  so this run's regenerations are held to entries. Refused by name; carried
-  as the reason the counts-comparison lead stays open.
+  and neither is fixed here. The currency guard compares counts as well as
+  entries (`diff_boundary_documents` in `horos.py`), so this run's
+  regenerations are held to both, and step 1 met `.horos/boundary.json#counts`
+  drift when it committed two files, which is why regeneration lands in the
+  same commit as any change that moves the boundary. Refused by name.
 - 896 "the boundary mixes file and directory entries without saying so"
   (open). The selected design adds no directory entry; the content-addressed
   entries stay per file, so an exact-path consumer finds every one of them.
