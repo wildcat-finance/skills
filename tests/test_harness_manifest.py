@@ -2061,6 +2061,191 @@ class RenderTests(unittest.TestCase):
                                 1,
                             )
 
+    def test_the_harness_field_types_are_the_schema_s_own(self):
+        # S3-R5-02. `REQUIRED_HARNESS_FIELDS` bound presence to the schema and
+        # left type unbound, so this binds the other half the same way. A
+        # schema that retypes a field goes red here rather than reaching a
+        # surface as a `TypeError`.
+        schema = load_schema()
+        harness = schema["$defs"]["harness"]["properties"]
+        json_to_python = {"string": str, "boolean": bool, "null": type(None)}
+
+        def declared(node):
+            while "$ref" in node:
+                node = schema["$defs"][node["$ref"].rsplit("/", 1)[-1]]
+            if "enum" in node and "type" not in node:
+                # Every member of the classification enum is a string.
+                self.assertTrue(all(isinstance(one, str) for one in node["enum"]))
+                return {str}
+            kind = node["type"]
+            names = [kind] if isinstance(kind, str) else kind
+            return {json_to_python[one] for one in names}
+
+        self.assertEqual(
+            sorted(render_harness_roster.HARNESS_FIELD_TYPES),
+            sorted(render_harness_roster.REQUIRED_HARNESS_FIELDS),
+        )
+        for field, allowed in render_harness_roster.HARNESS_FIELD_TYPES.items():
+            with self.subTest(field=field):
+                self.assertEqual(set(allowed), declared(harness[field]))
+
+    def test_a_harness_field_of_the_wrong_type_is_refused_rather_than_raised(self):
+        # S3-R5-02. Presence was checked without type, and two fields raise
+        # where they are used rather than where they are read: a non-string
+        # `name` reaches `str.join` in `readme_block` and `pdf_roster_line`.
+        # Measured before this guard: one integer name printed a fourteen-line
+        # traceback naming the worktree's absolute path four times, against the
+        # one-line refusal the same manifest gets when the field is absent.
+        wrong = {
+            "name": 7,
+            "classification": 7,
+            "client_present": "false",
+            "client_version": 7,
+            "version_read": "yes",
+            "auth_configured": 1,
+            "launcher_contract": 7,
+            "blocker": 7,
+        }
+        self.assertEqual(
+            sorted(wrong), sorted(render_harness_roster.REQUIRED_HARNESS_FIELDS)
+        )
+        for field, value in wrong.items():
+            with self.subTest(field=field):
+                document = landed()
+                document["harnesses"][0][field] = value
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "harness-classification.json"
+                    target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+                    with self.assertRaises(render_harness_roster.RenderError) as refused:
+                        render_harness_roster.load_manifest(target)
+                    self.assertIn(field, str(refused.exception))
+                    with open(os.devnull, "w", encoding="utf-8") as sink:
+                        with contextlib.redirect_stderr(sink):
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--check", "--manifest", str(target)]
+                                ),
+                                1,
+                            )
+        # `1` is not a boolean and `True` is not a string, which is the
+        # direction that matters: `isinstance(True, int)` is true in Python, so
+        # a boolean field declared `int` would have admitted `1`.
+        self.assertFalse(isinstance(1, bool))
+        self.assertTrue(isinstance(True, int))
+        # The reachability, asserted rather than assumed: without the guard the
+        # join is what raises, and it is a `TypeError`, which `main` does not
+        # catch any more than it caught the `KeyError` S3-R4-03 closed.
+        forged = landed()
+        forged["harnesses"][0]["name"] = 7
+        with self.assertRaises(TypeError):
+            ", ".join(
+                render_harness_roster.names_in_class(
+                    forged, forged["harnesses"][0]["classification"]
+                )
+            )
+
+    def test_a_recorded_field_with_a_trailing_newline_is_refused(self):
+        # S3-R5-04. The three `recorded` patterns all end in `$`, which in
+        # Python matches at the end of the string *or* just before a trailing
+        # newline, and they were applied with `re.match`. Host and base_ref
+        # reached every surface that way; only the date escaped, because
+        # `recorded` parses it a second time.
+        for field, pattern in (
+            ("host", probe_harnesses.HOST_PATTERN),
+            ("date", probe_harnesses.DATE_PATTERN),
+            ("base_ref", probe_harnesses.BASE_REF_PATTERN),
+        ):
+            with self.subTest(field=field):
+                value = landed()["recorded"][field] + "\n"
+                # The hole itself: the pattern admits it one way and not the
+                # other, which is the whole of this finding.
+                self.assertIsNotNone(pattern.match(value))
+                self.assertIsNone(pattern.fullmatch(value))
+                self.assertRaisesRefusal({field: value}, "is not")
+        # The date's second gate stands on its own and is what saved it before
+        # this guard; host and base_ref never had one.
+        with self.assertRaises(ValueError):
+            datetime.date.fromisoformat("2026-09-04\n")
+        self.assertEqual(
+            datetime.date.fromisoformat("2026-09-04"), datetime.date(2026, 9, 4)
+        )
+
+    def test_a_name_carrying_the_label_stem_cannot_forge_the_page_label(self):
+        # S3-R5-01, the fifth instance of the containment shape. `pdf_label`
+        # carries no bounding guard because S3-R4-01 argued one is unnecessary
+        # while the host holds no comma. That argument assumes the page draws
+        # `MANUAL ONLY - PROBED` exactly once, justified by no manifest-supplied
+        # string being drawn uppercased -- but a name only has to arrive
+        # already uppercase. `pdf_roster_line` draws names verbatim.
+        forged = render_harness_roster.PDF_LABEL_STEM.upper() + "H1, 2026-09-04"
+        drawn, stale = landed(), landed()
+        drawn["recorded"].update(host="h2", date="2026-09-04")
+        stale["recorded"].update(host="h1", date="2026-09-04")
+        for document in (drawn, stale):
+            for entry in document["harnesses"]:
+                if entry["classification"] == render_harness_roster.MANUAL_ROUTE:
+                    entry["name"] = forged
+                    break
+        shown = render_harness_roster._normalise(
+            " ".join(render_harness_roster.pdf_expectations(drawn))
+        )
+        # The hole: the stale manifest's label is present in a page built from
+        # another host, because a harness name spells it out. Driven against
+        # two real built pages in the round that found it, where `--check`
+        # exited 0 printing `three surfaces match 2 recorded harnesses`.
+        self.assertEqual(
+            render_harness_roster._normalise(
+                render_harness_roster.pdf_label(stale).upper()
+            ),
+            forged,
+        )
+        self.assertIn(forged, shown)
+        self.assertEqual(render_harness_roster.pdf_drift(stale, shown), [])
+        # It is unreachable because the name that opens it is refused, which is
+        # why no fourth bounding guard sits beside `_bounded` and `_terminal`.
+        for document in (drawn, stale):
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.refuse_unrecorded_shape(document)
+            self.assertIn("structure", str(refused.exception))
+        # The two facts the argument rests on, pinned rather than restated:
+        # `label` is the only thing that uppercases, and the roster line does
+        # not go through it.
+        builder = (ROOT / "scripts/build_contributor_guide.py").read_text(encoding="utf-8")
+        self.assertIn("c.drawString(x, y, text.upper())", builder)
+        self.assertIn("label(c, render.pdf_label(manifest)", builder)
+        self.assertIn("render.pdf_roster_line(manifest),", builder)
+
+    def test_a_name_carrying_a_region_marker_cannot_close_the_region(self):
+        # S3-R5-03. The same unconstrained `name`, against the two Markdown
+        # surfaces: a name carrying END_MARKER closes the region it is being
+        # written into. Measured before this guard: `--write` exited 0
+        # reporting three surfaces written, the README came back with one begin
+        # and two end markers and the guide with one and three, and every later
+        # `--write` and `--check` refused -- including one from the committed
+        # manifest, so the renderer could not repair what it had written.
+        for token in (
+            render_harness_roster.BEGIN_MARKER,
+            render_harness_roster.END_MARKER,
+            render_harness_roster.ROSTER_SEPARATOR,
+            "|",
+            "\n",
+        ):
+            with self.subTest(token=token):
+                document = landed()
+                document["harnesses"][0]["name"] = f"Cursor {token} tail"
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # An empty name is refused too: the schema's `nonEmptyString` is a
+        # length as well as a type, and the roster line would otherwise render
+        # two separators with nothing between them.
+        with self.assertRaises(render_harness_roster.RenderError):
+            render_harness_roster.refuse_forged_name("")
+        # And the landed roster still passes, so the guard refuses names rather
+        # than all of them.
+        for entry in landed()["harnesses"]:
+            self.assertIsNone(render_harness_roster.refuse_forged_name(entry["name"]))
+
 
 if __name__ == "__main__":
     unittest.main()

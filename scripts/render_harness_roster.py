@@ -97,6 +97,24 @@ REQUIRED_HARNESS_FIELDS = (
     "blocker",
 )
 
+# The JSON type the schema declares for each of those fields. Presence was
+# checked without it, so a field of the wrong type walked past the guard and
+# raised where it was used instead. `bool` is listed rather than `int` on
+# purpose: `isinstance(True, int)` is true in Python, so a boolean field
+# declared `int` would admit `1`, and `isinstance(1, bool)` is false, which is
+# the direction this needs. `tests/test_harness_manifest.py` binds this map to
+# the schema document, as it binds the required-field tuples.
+HARNESS_FIELD_TYPES = {
+    "name": (str,),
+    "classification": (str,),
+    "client_present": (bool,),
+    "client_version": (str, type(None)),
+    "version_read": (bool,),
+    "auth_configured": (bool,),
+    "launcher_contract": (str,),
+    "blocker": (str, type(None)),
+}
+
 # What joins the manual-route names on the harness page. `pdf_drift` needs it
 # as well, to tell a whole roster line from the head of a longer one.
 ROSTER_SEPARATOR = "  /  "
@@ -125,11 +143,34 @@ PDF_ESCAPES = {
 
 PDF_DETAIL = "Read AGENTS.md, then paste job.prompt. No checked Atlas launcher here."
 
+# What opens the harness page's roster card label. `pdf_label` builds from it
+# and `refuse_unrecorded_shape` refuses a harness name that carries it, so the
+# page cannot be made to draw a second string that reads like a label.
+PDF_LABEL_STEM = "Manual only - probed "
+
 # What introduces the unsupported names in the harness page's detail. `pdf_drift`
 # needs it for the same reason it needs `ROSTER_SEPARATOR`: the clause is
 # optional, so a manifest that renders none leaves `PDF_DETAIL` a strict prefix
 # of a page that still shows one, and containment alone cannot tell them apart.
 UNSUPPORTED_CLAUSE = " Unsupported: "
+
+# What a harness name may not carry. `name` is the one published field the
+# schema leaves an unpatterned string, and every token below is structure in a
+# surface this module writes, so a name carrying one forges that structure
+# rather than appearing inside it. The comparison is case-folded because the
+# page uppercases the label and draws names verbatim, so a name only has to
+# match in some case to forge one; for the two markers that is stricter than
+# `split_surface`, which finds them case-sensitively, and deliberately so.
+NAME_FORBIDDEN = (
+    BEGIN_MARKER,
+    END_MARKER,
+    ROSTER_SEPARATOR,
+    UNSUPPORTED_CLAUSE,
+    PDF_LABEL_STEM,
+    "|",
+    "\n",
+    "\r",
+)
 
 
 class RenderError(Exception):
@@ -223,6 +264,52 @@ def refuse_unrecorded_shape(document):
     `draw_harness_page` as well, which catches `RenderError` precisely so that
     it can report one line rather than a traceback that would "carry an
     absolute path out with it".
+
+    Three more were measured after that guard existed, each one a property
+    beside the property it checked.
+
+    The three `recorded` patterns were applied with `re.match`, and every one of
+    them ends in `$`, which in Python matches at the end of the string *or just
+    before a trailing newline*. So `recorded.host` of `darwin-arm64\\n` and
+    `recorded.base_ref` of forty hex digits and a newline were admitted and
+    reached the README sentence, both provenance comments, the guide footer and
+    the PDF label. The date escaped only because `recorded` parses it a second
+    time and `datetime.date.fromisoformat` refuses the trailing newline; host
+    and base_ref have no second gate. `re.fullmatch` is what the error messages
+    already claimed, so they are matched that way now.
+
+    Presence was checked without type. Every one of the eight fields could be
+    present and be the wrong JSON type, and two of them raise where they are
+    used rather than where they are read: a `name` that is a number or a list
+    reaches `', '.join(...)` in `readme_block` and `ROSTER_SEPARATOR.join(...)`
+    in `pdf_roster_line`, and `str.join` raises `TypeError`, which is no more
+    caught than the `KeyError` was. Measured on this tree: one integer name
+    printed a fourteen-line traceback naming the worktree's absolute path four
+    times through `--check`, and a twenty-three line one naming it five times
+    through the builder, against the one-line `manifest refused: harness 0
+    carries no name` the same manifest gets when the field is absent instead.
+    `HARNESS_FIELD_TYPES` closes that, and it closes the softer case beside it,
+    where a `client_present` of `"false"` was truthy and rendered `yes`.
+
+    An unpatterned `name` forged the one PDF expectation that has no bounding
+    guard. The reason `pdf_label` needs none is an argument, and the argument
+    assumes `MANUAL ONLY - PROBED` appears once in the page's text; that was
+    justified by observing that no manifest-supplied string is drawn
+    uppercased. It only has to be drawn *already* uppercase. `pdf_roster_line`
+    draws names verbatim, so a harness named `MANUAL ONLY - PROBED H1,
+    2026-09-04` puts a second label-shaped string on the page. Driven against
+    two real built pages: with that name in the roster, a page built from host
+    `h2` and a manifest recording host `h1` produced page text reading `MANUAL
+    ONLY - PROBED H2, 2026-09-04 MANUAL ONLY - PROBED H1, 2026-09-04 ...`, and
+    `--check` exited 0 printing `three surfaces match 2 recorded harnesses`
+    against a page labelled with another host. `NAME_FORBIDDEN` refuses the
+    name rather than adding a fourth bounding guard, which keeps the argument
+    sound and closes the same shape in the two Markdown surfaces: a name
+    carrying `END_MARKER` closed the region it was being written into, so
+    `--write` exited 0 reporting three surfaces written, and every later
+    `--write` and `--check` refused, including one from the committed manifest,
+    leaving a hand edit as the only repair for a block whose own provenance
+    comment says nothing between the markers is edited by hand.
     """
     probe = _probe()
     block = document.get("recorded")
@@ -237,7 +324,7 @@ def refuse_unrecorded_shape(document):
         ("base_ref", probe.BASE_REF_PATTERN, "40 hex characters"),
     ):
         value = block[field]
-        if not isinstance(value, str) or not pattern.match(value):
+        if not isinstance(value, str) or not pattern.fullmatch(value):
             raise RenderError(
                 f"manifest refused: recorded {field} {value!r} is not {shape}"
             )
@@ -250,6 +337,44 @@ def refuse_unrecorded_shape(document):
             raise RenderError(
                 f"manifest refused: harness {shown!r} carries no {', '.join(missing)}"
             )
+        shown = entry["name"] if isinstance(entry["name"], str) else position
+        for field, allowed in HARNESS_FIELD_TYPES.items():
+            value = entry[field]
+            if not isinstance(value, allowed):
+                names = " or ".join(one.__name__ for one in allowed)
+                raise RenderError(
+                    f"manifest refused: harness {shown!r} {field} {value!r} "
+                    f"is not {names}"
+                )
+        refuse_forged_name(entry["name"])
+
+
+def refuse_forged_name(name):
+    """Refuse a harness name that carries a surface's own structure.
+
+    Every other published field is constrained by something: the classes by an
+    enum and `refuse_unpublished_class`, the `recorded` block by three patterns,
+    the booleans by their type. `name` is a `nonEmptyString` with no pattern,
+    and it is drawn into all three surfaces verbatim, so it is the one place a
+    manifest can supply structure rather than content. What it forged is
+    recorded in `refuse_unrecorded_shape`: the page's roster-card label, which
+    is the one PDF expectation `pdf_drift` bounds by containment alone, and the
+    Markdown region markers, which it can close from the inside.
+
+    An empty name is refused here rather than in the type map, because the
+    schema's `nonEmptyString` is a length as well as a type and the roster line
+    would otherwise render two separators with nothing between them.
+    """
+    if not name:
+        raise RenderError("manifest refused: a harness carries an empty name")
+    folded = name.upper()
+    carried = tuple(token for token in NAME_FORBIDDEN if token.upper() in folded)
+    if carried:
+        raise RenderError(
+            f"manifest refused: harness {name!r} carries "
+            f"{', '.join(repr(token) for token in carried)}, "
+            "which these surfaces use as structure"
+        )
 
 
 def refuse_unpublished_class(document):
@@ -451,7 +576,7 @@ def guide_block(document):
 def pdf_label(document):
     """The harness page's roster card label, before the page uppercases it."""
     host, date, _ = recorded(document)
-    return f"Manual only - probed {host}, {date}"
+    return f"{PDF_LABEL_STEM}{host}, {date}"
 
 
 def pdf_roster_line(document):
