@@ -52,7 +52,13 @@ if [ ! -f "$record" ] || [ ! -r "$record" ] || ! recorded="$(cat "$record" 2>/de
 fi
 
 if [ "$recorded" != "$staged" ]; then
-    printf 'pre-commit: refused, the green record names tree %s, not the staged tree %s; %s\n' "$recorded" "$staged" "$fix" >&2
+    # The record is a file anyone who can write the git directory can write, so
+    # its bytes are not fit to print raw. Control characters would let a record
+    # erase the line with a carriage return and draw a friendlier one, and an
+    # embedded newline would split this refusal across two lines when the
+    # contract is one. Stripped and bounded, on the refusal path only.
+    shown="$(printf '%s' "$recorded" | tr -d '[:cntrl:]' | cut -c1-64)"
+    printf 'pre-commit: refused, the green record names tree %s, not the staged tree %s; %s\n' "$shown" "$staged" "$fix" >&2
     exit 1
 fi
 

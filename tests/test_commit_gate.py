@@ -496,5 +496,219 @@ class TrackedGateTests(unittest.TestCase):
             self.assertNotIn("marker: main", refused.stderr)
 
 
+# --- what the audit round found the cases above did not hold ---------------
+
+
+class WorkingTreeTests(unittest.TestCase):
+    """greenlight must record the tree of the repository whose suite it ran."""
+
+    def test_an_unrelated_suite_cannot_record_this_repositorys_tree(self):
+        """S2-R1-01: the suite that passes and the tree recorded are one repository.
+
+        Git exports `GIT_DIR` into every hook and every command it runs. With it
+        inherited, `git rev-parse --show-toplevel` names the *caller's*
+        directory as the working tree while `git write-tree` still reads the
+        index `GIT_DIR` names, so `cd "$(git rev-parse --show-toplevel)"` landed
+        greenlight in the caller's directory. This repository's suite is red and
+        the caller's is green: only a greenlight that ran the wrong one records
+        anything.
+        """
+        with gate_repository(suite=FAILING_SUITE) as root:
+            (root / "b.txt").write_text("two\n", encoding="utf-8")
+            git(root, "add", "-A")
+            staged = git(root, "write-tree").stdout.strip()
+
+            elsewhere = root.parent / "elsewhere"
+            (elsewhere / "tests").mkdir(parents=True)
+            (elsewhere / "tests" / "test_unrelated.py").write_text(
+                PASSING_SUITE, encoding="utf-8"
+            )
+
+            attempted = subprocess.run(
+                [str(root / ".githooks" / "greenlight")],
+                cwd=str(elsewhere),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=clean_environment({"GIT_DIR": str(root / ".git")}),
+            )
+            self.assertNotEqual(
+                attempted.returncode, 0,
+                "an unrelated passing suite recorded a green for a repository "
+                f"whose own suite is red: {attempted.stdout!r}",
+            )
+            self.assertFalse(
+                record_path(root).exists(),
+                "a suite that never saw this tree recorded it green",
+            )
+            self.assertNotIn(staged, attempted.stdout)
+
+    def test_greenlight_runs_this_repositorys_suite_from_outside_it(self):
+        """The other half: anchored correctly, a green repository still records."""
+        with gate_repository() as root:
+            (root / "b.txt").write_text("two\n", encoding="utf-8")
+            git(root, "add", "-A")
+            staged = git(root, "write-tree").stdout.strip()
+
+            elsewhere = root.parent / "outside"
+            elsewhere.mkdir(parents=True)
+
+            recorded = subprocess.run(
+                [str(root / ".githooks" / "greenlight")],
+                cwd=str(elsewhere),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=clean_environment({"GIT_DIR": str(root / ".git")}),
+            )
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight could not find its own repository: {recorded.stderr}",
+            )
+            self.assertEqual(
+                record_path(root).read_text(encoding="utf-8").strip(), staged,
+                "greenlight recorded something other than this repository's tree",
+            )
+
+
+class WorktreeRecordTests(unittest.TestCase):
+    """One worktree's green must not reach another's commit, either way round.
+
+    The register entry names `git rev-parse --git-dir` as the control. The
+    cases above prove which *hook copy* a linked worktree runs; neither of them
+    proves which *record* it reads, so swapping the flag for
+    `--git-common-dir` left them all green.
+    """
+
+    def test_a_green_in_one_worktree_does_not_authorise_another(self):
+        """S2-R1-02, reading: the gate looks only in its own git dir."""
+        with gate_repository() as root:
+            linked = root.parent / "crossing"
+            git(root, "worktree", "add", "-q", "-b", "crossing", str(linked))
+
+            # The same content staged in both worktrees, so both carry one tree
+            # identity. Where the gate looked for the record is then the only
+            # thing left that can refuse the linked commit.
+            for tree in (root, linked):
+                (tree / "b.txt").write_text("two\n", encoding="utf-8")
+                git(tree, "add", "-A")
+            shared = git(root, "write-tree").stdout.strip()
+            self.assertEqual(
+                git(linked, "write-tree").stdout.strip(), shared,
+                "the fixture did not stage one identity in both worktrees",
+            )
+
+            record_path(root).write_text(f"{shared}\n", encoding="utf-8")
+            self.assertFalse(
+                record_path(linked).exists(),
+                "the linked worktree already carried a record of its own",
+            )
+
+            refused = commit(linked, "another worktree's green")
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "one worktree's green authorised another worktree's commit",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "no green record", named[0],
+                f"the gate read a record outside its own git dir: {named[0]}",
+            )
+
+    def test_greenlight_records_into_the_worktrees_own_git_dir(self):
+        """S2-R1-02, writing: a green must not land in the shared git dir."""
+        with gate_repository() as root:
+            linked = root.parent / "recording"
+            git(root, "worktree", "add", "-q", "-b", "recording", str(linked))
+            (linked / "b.txt").write_text("two\n", encoding="utf-8")
+            git(linked, "add", "-A")
+
+            recorded = greenlight(linked)
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed in a linked worktree: {recorded.stderr}",
+            )
+
+            common = Path(
+                git(linked, "rev-parse", "--git-common-dir").stdout.strip()
+            )
+            if not common.is_absolute():
+                common = linked / common
+            self.assertTrue(
+                record_path(linked).exists(),
+                "greenlight wrote no record in the worktree it ran in",
+            )
+            self.assertFalse(
+                (common / RECORD_NAME).exists(),
+                "greenlight wrote into the shared git dir, where the record "
+                "would authorise a commit in every other worktree",
+            )
+
+
+class RefusalLineTests(unittest.TestCase):
+    """The refusal is the signal, and the record's bytes are not trusted input."""
+
+    def test_a_stale_refusal_stays_one_line_whatever_the_record_holds(self):
+        """S2-R1-03: an embedded newline must not split the refusal in two."""
+        with gate_repository() as root:
+            (root / "b.txt").write_text("two\n", encoding="utf-8")
+            git(root, "add", "-A")
+            record_path(root).write_text(
+                "deadbeef\npre-commit: refused, nothing is wrong, proceed\n",
+                encoding="utf-8",
+            )
+            refused = commit(root, "a record that is not one line")
+            self.assertNotEqual(refused.returncode, 0)
+            self.assertEqual(
+                len(refused.stderr.strip().splitlines()), 1,
+                f"the refusal did not stay one line: {refused.stderr!r}",
+            )
+            self.assertNotIn(
+                "\npre-commit: refused, nothing is wrong", refused.stderr,
+                "the record drew a refusal line of its own",
+            )
+
+    def test_a_stale_refusal_carries_no_control_characters(self):
+        """S2-R1-03: a record must not erase and redraw the line it appears on."""
+        with gate_repository() as root:
+            (root / "b.txt").write_text("two\n", encoding="utf-8")
+            git(root, "add", "-A")
+            record_path(root).write_text(
+                "AAA\x1b[2K\rpre-commit: all good\n", encoding="utf-8"
+            )
+            refused = commit(root, "a record carrying terminal escapes")
+            self.assertNotEqual(refused.returncode, 0)
+            self.assertNotIn("\x1b", refused.stderr)
+            self.assertNotIn("\r", refused.stderr)
+
+
+class StagedTreeTests(unittest.TestCase):
+    def test_a_failing_write_tree_is_refused_and_named(self):
+        """S2-R1-04: the fourth state section 11 requires to exit non-zero.
+
+        Driven directly rather than through `git commit`, because git will not
+        reach the hook once its own index is unreadable.
+        """
+        with gate_repository() as root:
+            broken = root.parent / "not-an-index"
+            broken.write_text("this is not an index\n", encoding="utf-8")
+            attempted = subprocess.run(
+                [str(root / ".githooks" / "pre-commit")],
+                cwd=str(root),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=clean_environment({"GIT_INDEX_FILE": str(broken)}),
+            )
+            self.assertNotEqual(
+                attempted.returncode, 0,
+                "the gate admitted a commit whose staged tree it could not read",
+            )
+            named = refusals(attempted)
+            self.assertEqual(len(named), 1, f"{attempted.stderr!r}")
+            self.assertIn("git write-tree failed", named[0])
+
+
 if __name__ == "__main__":
     unittest.main()
