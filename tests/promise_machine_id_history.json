@@ -1,1289 +1,1471 @@
 {
   "contract": "promise-machine/v1",
-  "schema": "promise-machine-id-history/v1",
-  "entry_ref": "7e97b5195d5b0e43146b4200f26cd41b89003413",
-  "entry_count": 80,
-  "entry_inventory_sha256": "761cbc2a79227d21cc93301ce4a5685a7586ce58f8cfcc4db8a3c3f04871c5f4",
   "entries": [
     {
-      "promise_id": "alexandria-address-query",
-      "entry": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "5f3aa26926abf42ec8d4691c0264853fe4a5a98823a804e8fcb991e2cbc94d71"
-      },
-      "current": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "5f3aa26926abf42ec8d4691c0264853fe4a5a98823a804e8fcb991e2cbc94d71"
-      },
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "alexandria-compound-method-proof",
-      "entry": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "e57877cb692d69781c6b0a013f400d3d824fe69539f88ff20f6c9e319631f455"
       },
       "current": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "e57877cb692d69781c6b0a013f400d3d824fe69539f88ff20f6c9e319631f455"
+        "semantic_sha256": "5f3aa26926abf42ec8d4691c0264853fe4a5a98823a804e8fcb991e2cbc94d71",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "5f3aa26926abf42ec8d4691c0264853fe4a5a98823a804e8fcb991e2cbc94d71",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
       },
+      "promise_id": "alexandria-address-query"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "alexandria-derived-view",
-      "entry": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "717fd08372b9389f442905e7f066228a065a3fa6ac812105658d8ff3996f052e"
       },
       "current": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "717fd08372b9389f442905e7f066228a065a3fa6ac812105658d8ff3996f052e"
+        "semantic_sha256": "e57877cb692d69781c6b0a013f400d3d824fe69539f88ff20f6c9e319631f455",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "e57877cb692d69781c6b0a013f400d3d824fe69539f88ff20f6c9e319631f455",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+      },
+      "promise_id": "alexandria-compound-method-proof"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "alexandria-raw-release",
-      "entry": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "96d5d5f07b66c374b66d824f014643f7bac0aa85029de2e6c0dd86df997b4ba5"
       },
       "current": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "96d5d5f07b66c374b66d824f014643f7bac0aa85029de2e6c0dd86df997b4ba5"
+        "semantic_sha256": "717fd08372b9389f442905e7f066228a065a3fa6ac812105658d8ff3996f052e",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "717fd08372b9389f442905e7f066228a065a3fa6ac812105658d8ff3996f052e",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
       },
+      "promise_id": "alexandria-derived-view"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "alexandria-release-statement",
-      "entry": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "24bf64ee06e27fbafda7cd825ed1302be99a902ad3f63c5c5f687ccc78f6113c"
       },
       "current": {
-        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md",
-        "semantic_sha256": "24bf64ee06e27fbafda7cd825ed1302be99a902ad3f63c5c5f687ccc78f6113c"
+        "semantic_sha256": "96d5d5f07b66c374b66d824f014643f7bac0aa85029de2e6c0dd86df997b4ba5",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "96d5d5f07b66c374b66d824f014643f7bac0aa85029de2e6c0dd86df997b4ba5",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+      },
+      "promise_id": "alexandria-raw-release"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "24bf64ee06e27fbafda7cd825ed1302be99a902ad3f63c5c5f687ccc78f6113c",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "24bf64ee06e27fbafda7cd825ed1302be99a902ad3f63c5c5f687ccc78f6113c",
+        "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+      },
+      "promise_id": "alexandria-release-statement"
     },
     {
-      "promise_id": "ariadne-capture-statement",
-      "entry": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "8405e55f6f20c9d281ea381c6ef410e5cd0421d6ea16e4a9f141f5377bb8bb3c"
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "8405e55f6f20c9d281ea381c6ef410e5cd0421d6ea16e4a9f141f5377bb8bb3c"
+        "semantic_sha256": "c06955878f88c1eaae14ecdb7021e34976050d97edf1ba9f60771fcc03444845",
+        "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "anamnesis-consumer-projection"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "eed35212fbd91e11e7eeaf8f8d0f399a96c8095e2276a446e98951a453d4729c",
+        "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "anamnesis-corpus-curation"
     },
     {
-      "promise_id": "ariadne-inspect-statement",
-      "entry": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "78520e6336d4674701ff678579b43bcfcc53e61b6d86c4c90cfdb9f7254b9fcf"
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "78520e6336d4674701ff678579b43bcfcc53e61b6d86c4c90cfdb9f7254b9fcf"
+        "semantic_sha256": "8379f6768c76977d5704557bfb84f598996aabbf12c0faaaa6659783bf1b821b",
+        "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "anamnesis-corpus-release"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "52db5d3fe852531fdffca2ee63b45a07684af17d2b72a95a6321e2ff36bcad6e",
+        "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "anamnesis-deterministic-rebuild"
     },
     {
-      "promise_id": "ariadne-replay-command",
-      "entry": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "eff693c6b0103820e89135f6e4f1317874d278ede95d9a0ca2927b64a927e82e"
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "eff693c6b0103820e89135f6e4f1317874d278ede95d9a0ca2927b64a927e82e"
+        "semantic_sha256": "1a7f23383ba608192079ea07c899270fa5e29d63870b644c44000f4f0ae8bd8a",
+        "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "anamnesis-source-admission"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "ariadne-verify-statement",
-      "entry": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "7d931e990f8e12670843855068d0ff0a5f5eae2ceb1ba2968a4cf2e597ffec0a"
       },
       "current": {
-        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md",
-        "semantic_sha256": "7d931e990f8e12670843855068d0ff0a5f5eae2ceb1ba2968a4cf2e597ffec0a"
+        "semantic_sha256": "8405e55f6f20c9d281ea381c6ef410e5cd0421d6ea16e4a9f141f5377bb8bb3c",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "8405e55f6f20c9d281ea381c6ef410e5cd0421d6ea16e4a9f141f5377bb8bb3c",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
+      },
+      "promise_id": "ariadne-capture-statement"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "berean-answer-evidence",
-      "entry": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "c5cdde583a820630cab55a5f1a9438b9bee4414559ca18f6f9cf7ec0379aa1cc"
       },
       "current": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "c5cdde583a820630cab55a5f1a9438b9bee4414559ca18f6f9cf7ec0379aa1cc"
+        "semantic_sha256": "78520e6336d4674701ff678579b43bcfcc53e61b6d86c4c90cfdb9f7254b9fcf",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "78520e6336d4674701ff678579b43bcfcc53e61b6d86c4c90cfdb9f7254b9fcf",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
       },
+      "promise_id": "ariadne-inspect-statement"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "berean-corpus-binding",
-      "entry": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "6807af131ae8404ec4769cb5b22f303886296735bc2345789f589d49c0643287"
       },
       "current": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "6807af131ae8404ec4769cb5b22f303886296735bc2345789f589d49c0643287"
+        "semantic_sha256": "eff693c6b0103820e89135f6e4f1317874d278ede95d9a0ca2927b64a927e82e",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "eff693c6b0103820e89135f6e4f1317874d278ede95d9a0ca2927b64a927e82e",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
       },
+      "promise_id": "ariadne-replay-command"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "berean-evaluation-report",
-      "entry": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "16d0c9787a86a196878617c99ea3e35595d6e7b6f4a8c92f5282737ccb796869"
       },
       "current": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "16d0c9787a86a196878617c99ea3e35595d6e7b6f4a8c92f5282737ccb796869"
+        "semantic_sha256": "7d931e990f8e12670843855068d0ff0a5f5eae2ceb1ba2968a4cf2e597ffec0a",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "7d931e990f8e12670843855068d0ff0a5f5eae2ceb1ba2968a4cf2e597ffec0a",
+        "skill_path": "plugins/ariadne/skills/ariadne/SKILL.md"
+      },
+      "promise_id": "ariadne-verify-statement"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "berean-release-promotion",
-      "entry": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "45cc3322c47bf3d9723db79734cfc8fa1d4ce8c37c77ea154970206b9f122585"
       },
       "current": {
-        "skill_path": "plugins/berean/skills/berean/SKILL.md",
-        "semantic_sha256": "45cc3322c47bf3d9723db79734cfc8fa1d4ce8c37c77ea154970206b9f122585"
+        "semantic_sha256": "c5cdde583a820630cab55a5f1a9438b9bee4414559ca18f6f9cf7ec0379aa1cc",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "c5cdde583a820630cab55a5f1a9438b9bee4414559ca18f6f9cf7ec0379aa1cc",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
       },
+      "promise_id": "berean-answer-evidence"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "brevitas-evidence-preservation",
-      "entry": {
-        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md",
-        "semantic_sha256": "41aad2b39bfd22e43fbe4e98cdfc5c921055a0666181ce8fceaebc4a2da7f294"
       },
       "current": {
-        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md",
-        "semantic_sha256": "41aad2b39bfd22e43fbe4e98cdfc5c921055a0666181ce8fceaebc4a2da7f294"
+        "semantic_sha256": "6807af131ae8404ec4769cb5b22f303886296735bc2345789f589d49c0643287",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "6807af131ae8404ec4769cb5b22f303886296735bc2345789f589d49c0643287",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
+      },
+      "promise_id": "berean-corpus-binding"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "brevitas-structure-check",
-      "entry": {
-        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md",
-        "semantic_sha256": "9649a4db53a07aa8483da261c52b9eb5072764e7f0c867b5dfb812714c657997"
       },
       "current": {
-        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md",
-        "semantic_sha256": "9649a4db53a07aa8483da261c52b9eb5072764e7f0c867b5dfb812714c657997"
+        "semantic_sha256": "16d0c9787a86a196878617c99ea3e35595d6e7b6f4a8c92f5282737ccb796869",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "16d0c9787a86a196878617c99ea3e35595d6e7b6f4a8c92f5282737ccb796869",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
       },
+      "promise_id": "berean-evaluation-report"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "45cc3322c47bf3d9723db79734cfc8fa1d4ce8c37c77ea154970206b9f122585",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "45cc3322c47bf3d9723db79734cfc8fa1d4ce8c37c77ea154970206b9f122585",
+        "skill_path": "plugins/berean/skills/berean/SKILL.md"
+      },
+      "promise_id": "berean-release-promotion"
     },
     {
-      "promise_id": "elenchus-fixed-and-guarded",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
-        "semantic_sha256": "5deb89f7b6b24bdad915d932da3fa5e15dc644fb11aaa47b8905bc8dfd653969"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
-        "semantic_sha256": "5deb89f7b6b24bdad915d932da3fa5e15dc644fb11aaa47b8905bc8dfd653969"
+        "semantic_sha256": "d9e8840dcd9e34438ce2a5181035114ebcea4d1e092a448e9956fe6f36d8379c",
+        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "41aad2b39bfd22e43fbe4e98cdfc5c921055a0666181ce8fceaebc4a2da7f294",
+        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
+      },
+      "promise_id": "brevitas-evidence-preservation"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "ephoros-mechanical-gate",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-        "semantic_sha256": "65cea7a2f56f39f6466fa2817505b6dc16cee088cf268e16bd327c385d904193"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-        "semantic_sha256": "65cea7a2f56f39f6466fa2817505b6dc16cee088cf268e16bd327c385d904193"
+        "semantic_sha256": "9649a4db53a07aa8483da261c52b9eb5072764e7f0c867b5dfb812714c657997",
+        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "9649a4db53a07aa8483da261c52b9eb5072764e7f0c867b5dfb812714c657997",
+        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
       },
+      "promise_id": "brevitas-structure-check"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "4552daadf6c37d7bcdaaf60d65ee67412a386001723a0842c3a66189e0430cee",
+        "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "dokimasia-disposition-closure"
     },
     {
-      "promise_id": "ephoros-observability-review",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-        "semantic_sha256": "4468f212443efce507cdb8f56c4ea083c5c219467ee75693ba29cc9542d17110"
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-        "semantic_sha256": "4468f212443efce507cdb8f56c4ea083c5c219467ee75693ba29cc9542d17110"
+        "semantic_sha256": "86902fc421fe3748224ea19fd568f13889f7a65eb29467304859e3f5ad9349e2",
+        "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "dokimasia-drafted-dispositions"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "473b727cde85d202a0b0ae2e5a7572efb1ededa23e563c33e62248287c0f8c12",
+        "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "dokimasia-pinned-scrutiny"
     },
     {
-      "promise_id": "fiat-controller-checkpoint",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "29f8e9736214ea504f73c6f7b8d02369330ea1634415fdc1e7dca3d33f7542a2"
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "29f8e9736214ea504f73c6f7b8d02369330ea1634415fdc1e7dca3d33f7542a2"
+        "semantic_sha256": "07010ebab05a85368aebb4f7312c08ad7ed76b96106d98e3e866084198a646bf",
+        "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "dokimasia-scaffold-identity"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "917d710c1954ed9fca32c5f9a274f009a55beca3baac341af227f17932c73ed5",
+        "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "dokimasia-source-inventory"
     },
     {
-      "promise_id": "fiat-final-integration",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "5189410b5a08f4c5979fd51fadfb270dd7b7cb81272c4c2331233a56b93cb186"
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "5189410b5a08f4c5979fd51fadfb270dd7b7cb81272c4c2331233a56b93cb186"
+        "semantic_sha256": "7837f9055e92f9a0e5be960dbbfc67ed8420dcd22d8504e51116f75f1f25f703",
+        "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "dokimasia-workbook-lineage"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "fiat-local-retirement",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "5db451e3fce696597cd3dd86fd4d5f4992669c1b54612bfc9a66303bfcee33c3"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "5db451e3fce696597cd3dd86fd4d5f4992669c1b54612bfc9a66303bfcee33c3"
+        "semantic_sha256": "5deb89f7b6b24bdad915d932da3fa5e15dc644fb11aaa47b8905bc8dfd653969",
+        "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "5deb89f7b6b24bdad915d932da3fa5e15dc644fb11aaa47b8905bc8dfd653969",
+        "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md"
+      },
+      "promise_id": "elenchus-fixed-and-guarded"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "fiat-receipted-delivery",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "3974a65334e3366e569605af50c775c95f91c2c430565ba5fd7f38c6aa9d2909"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "3974a65334e3366e569605af50c775c95f91c2c430565ba5fd7f38c6aa9d2909"
+        "semantic_sha256": "65cea7a2f56f39f6466fa2817505b6dc16cee088cf268e16bd327c385d904193",
+        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "65cea7a2f56f39f6466fa2817505b6dc16cee088cf268e16bd327c385d904193",
+        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md"
       },
+      "promise_id": "ephoros-mechanical-gate"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "4468f212443efce507cdb8f56c4ea083c5c219467ee75693ba29cc9542d17110",
+        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "4468f212443efce507cdb8f56c4ea083c5c219467ee75693ba29cc9542d17110",
+        "skill_path": "plugins/hexaemeron/skills/ephoros/SKILL.md"
+      },
+      "promise_id": "ephoros-observability-review"
     },
     {
-      "promise_id": "fiat-run-observation-binding",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "4461fc6fd9ac9e28a39efbc302e16c912609db8349382bab7b3c7c982325a67a"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "4461fc6fd9ac9e28a39efbc302e16c912609db8349382bab7b3c7c982325a67a"
+        "semantic_sha256": "ac1925ffc0e7f11c74309d27de9a5924923ce5bd1fa4ae8684f8bb7a46d2f445",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "29f8e9736214ea504f73c6f7b8d02369330ea1634415fdc1e7dca3d33f7542a2",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
+      "promise_id": "fiat-controller-checkpoint"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "bd0ad43a6ff58fd2f7db55ef3d2f48e104fdaab53ce60825021151316e01b758",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "fiat-design-evidence"
     },
     {
-      "promise_id": "fiat-runbook-amendment",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "2cc365d98ac3c917816dcb5101c68c921b3335e9c9d22377848f21e0cc89837b"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "2cc365d98ac3c917816dcb5101c68c921b3335e9c9d22377848f21e0cc89837b"
+        "semantic_sha256": "c078bc6d895e225b2e3760827c2101463d7a889dbc0253e817f74db4fb1d1358",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "5189410b5a08f4c5979fd51fadfb270dd7b7cb81272c4c2331233a56b93cb186",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "promise_id": "fiat-final-integration"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "b412d2035d4b9a8881dc9f6b87e45d55430d74a05e5af81a3f58a3b6c33ab7ce",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "5db451e3fce696597cd3dd86fd4d5f4992669c1b54612bfc9a66303bfcee33c3",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "promise_id": "fiat-local-retirement"
     },
     {
-      "promise_id": "fiat-study-amendment",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "bf1672160be3709c2a4761a83a4d138e8ec40878282b90cb400a3fb2f25f75dd"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "bf1672160be3709c2a4761a83a4d138e8ec40878282b90cb400a3fb2f25f75dd"
+        "semantic_sha256": "f46c45a7334dcb4c9edbff26decbb306f0bfbe6a01ff196a0ae0b798cec6d120",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "3974a65334e3366e569605af50c775c95f91c2c430565ba5fd7f38c6aa9d2909",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "promise_id": "fiat-receipted-delivery"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "fiat-version-resolution",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "0173f94bf221e6286b8156402b113bd23d5dfe096d9a89c11e15c31c09f2def5"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "semantic_sha256": "0173f94bf221e6286b8156402b113bd23d5dfe096d9a89c11e15c31c09f2def5"
+        "semantic_sha256": "4461fc6fd9ac9e28a39efbc302e16c912609db8349382bab7b3c7c982325a67a",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "4461fc6fd9ac9e28a39efbc302e16c912609db8349382bab7b3c7c982325a67a",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
+      "promise_id": "fiat-run-observation-binding"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hermes-baseline-promotion",
-      "entry": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "f494796af722d9cd7f07eb9496d47e59e084f27f36293c8dacce90a473906a35"
       },
       "current": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "f494796af722d9cd7f07eb9496d47e59e084f27f36293c8dacce90a473906a35"
+        "semantic_sha256": "2cc365d98ac3c917816dcb5101c68c921b3335e9c9d22377848f21e0cc89837b",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "2cc365d98ac3c917816dcb5101c68c921b3335e9c9d22377848f21e0cc89837b",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
+      "promise_id": "fiat-runbook-amendment"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "779f82cef678c19cf7bc37b7fbe9b0aec89652bfbf223735b592cba92e695fb2",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "bf1672160be3709c2a4761a83a4d138e8ec40878282b90cb400a3fb2f25f75dd",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "promise_id": "fiat-study-amendment"
     },
     {
-      "promise_id": "hermes-candidate-acceptance",
-      "entry": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "e8fbb580f240343a55cbe4bd435541ca6c6aa11a1894d586f693ac0800caf217"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "e8fbb580f240343a55cbe4bd435541ca6c6aa11a1894d586f693ac0800caf217"
+        "semantic_sha256": "15385a36136466bb3914b856ecae3f8fe39392e48d514cbfd693b93655e6d34b",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "0173f94bf221e6286b8156402b113bd23d5dfe096d9a89c11e15c31c09f2def5",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
+      "promise_id": "fiat-version-resolution"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hermes-corpus-selection",
-      "entry": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "fa15bef4a735ea03ff2836af355ac9f319f4958297a5655a330ee751c81c3899"
       },
       "current": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "fa15bef4a735ea03ff2836af355ac9f319f4958297a5655a330ee751c81c3899"
+        "semantic_sha256": "f494796af722d9cd7f07eb9496d47e59e084f27f36293c8dacce90a473906a35",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "f494796af722d9cd7f07eb9496d47e59e084f27f36293c8dacce90a473906a35",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
+      },
+      "promise_id": "hermes-baseline-promotion"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hermes-sealed-baseline",
-      "entry": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "d69c99d3cc852cbe8e5611dff589266d3a274de84266a581208271abc436616e"
       },
       "current": {
-        "skill_path": "plugins/hermes/skills/hermes/SKILL.md",
-        "semantic_sha256": "d69c99d3cc852cbe8e5611dff589266d3a274de84266a581208271abc436616e"
+        "semantic_sha256": "e8fbb580f240343a55cbe4bd435541ca6c6aa11a1894d586f693ac0800caf217",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "e8fbb580f240343a55cbe4bd435541ca6c6aa11a1894d586f693ac0800caf217",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
       },
+      "promise_id": "hermes-candidate-acceptance"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hexaemeron-fizz-convert-properties",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md",
-        "semantic_sha256": "39870eb26eb345e2549759f4d0a7add3dcdabfd9b8c7d8e443e12a5773547cd3"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md",
-        "semantic_sha256": "39870eb26eb345e2549759f4d0a7add3dcdabfd9b8c7d8e443e12a5773547cd3"
+        "semantic_sha256": "fa15bef4a735ea03ff2836af355ac9f319f4958297a5655a330ee751c81c3899",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "fa15bef4a735ea03ff2836af355ac9f319f4958297a5655a330ee751c81c3899",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
       },
+      "promise_id": "hermes-corpus-selection"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hexaemeron-fizz-harness-campaign",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fizz/SKILL.md",
-        "semantic_sha256": "5548129ab1d8c6720c8c22b43b81a02d4a5e820543195eeb738363aae2faf49d"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fizz/SKILL.md",
-        "semantic_sha256": "5548129ab1d8c6720c8c22b43b81a02d4a5e820543195eeb738363aae2faf49d"
+        "semantic_sha256": "d69c99d3cc852cbe8e5611dff589266d3a274de84266a581208271abc436616e",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "d69c99d3cc852cbe8e5611dff589266d3a274de84266a581208271abc436616e",
+        "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
+      },
+      "promise_id": "hermes-sealed-baseline"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hexaemeron-fizz-sync-drift",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
-        "semantic_sha256": "7a79c04cb3abb89576032018e95982341d73d3aac4aadfaac6852369a7f39c13"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md",
-        "semantic_sha256": "7a79c04cb3abb89576032018e95982341d73d3aac4aadfaac6852369a7f39c13"
+        "semantic_sha256": "39870eb26eb345e2549759f4d0a7add3dcdabfd9b8c7d8e443e12a5773547cd3",
+        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "39870eb26eb345e2549759f4d0a7add3dcdabfd9b8c7d8e443e12a5773547cd3",
+        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md"
       },
+      "promise_id": "hexaemeron-fizz-convert-properties"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hexaemeron-solidity-audit-report",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-        "semantic_sha256": "786346c37ec1c78d716400106d85c0ace6c8f6a4ca51b296660637f3a108688d"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md",
-        "semantic_sha256": "786346c37ec1c78d716400106d85c0ace6c8f6a4ca51b296660637f3a108688d"
+        "semantic_sha256": "5548129ab1d8c6720c8c22b43b81a02d4a5e820543195eeb738363aae2faf49d",
+        "skill_path": "plugins/hexaemeron/skills/fizz/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "5548129ab1d8c6720c8c22b43b81a02d4a5e820543195eeb738363aae2faf49d",
+        "skill_path": "plugins/hexaemeron/skills/fizz/SKILL.md"
+      },
+      "promise_id": "hexaemeron-fizz-harness-campaign"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hexaemeron-x-ray-preaudit",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md",
-        "semantic_sha256": "d57c17cea3ef0710f7cf38a8b0bf6da228325aac786d2c3c0ce82bce9c3411aa"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md",
-        "semantic_sha256": "d57c17cea3ef0710f7cf38a8b0bf6da228325aac786d2c3c0ce82bce9c3411aa"
+        "semantic_sha256": "7a79c04cb3abb89576032018e95982341d73d3aac4aadfaac6852369a7f39c13",
+        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "7a79c04cb3abb89576032018e95982341d73d3aac4aadfaac6852369a7f39c13",
+        "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md"
       },
+      "promise_id": "hexaemeron-fizz-sync-drift"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "homologia-scaffold-identity",
-      "entry": {
-        "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
-        "semantic_sha256": "5b292a1447b2c14fb8577817f5aa465ca61fa045c244205c5bc3a47f38a9f2d0"
       },
       "current": {
-        "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
-        "semantic_sha256": "5b292a1447b2c14fb8577817f5aa465ca61fa045c244205c5bc3a47f38a9f2d0"
+        "semantic_sha256": "786346c37ec1c78d716400106d85c0ace6c8f6a4ca51b296660637f3a108688d",
+        "skill_path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "786346c37ec1c78d716400106d85c0ace6c8f6a4ca51b296660637f3a108688d",
+        "skill_path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md"
       },
+      "promise_id": "hexaemeron-solidity-audit-report"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "horos-boundary-check",
-      "entry": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "0c5d6351459aab8dcc187cb7cd18a3083a78363bb83105c38eb4a8c88bcd2ef8"
       },
       "current": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "0c5d6351459aab8dcc187cb7cd18a3083a78363bb83105c38eb4a8c88bcd2ef8"
+        "semantic_sha256": "d57c17cea3ef0710f7cf38a8b0bf6da228325aac786d2c3c0ce82bce9c3411aa",
+        "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "d57c17cea3ef0710f7cf38a8b0bf6da228325aac786d2c3c0ce82bce9c3411aa",
+        "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
+      },
+      "promise_id": "hexaemeron-x-ray-preaudit"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "58484636af4ace426db87cb11a0b9b756fcdbe6d3af346cf839b501120460b6d",
+        "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "homologia-expected-answer-provenance"
     },
     {
-      "promise_id": "horos-boundary-scan",
-      "entry": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "81e5114ad6c87c12a9daf97afefd8a5db6e0cb526bb753f48b52f35b9376c33f"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "81e5114ad6c87c12a9daf97afefd8a5db6e0cb526bb753f48b52f35b9376c33f"
+        "semantic_sha256": "763231c24ee79423108803d8c224eb3d42d6ea9852e8cd468a77439c8730ffb2",
+        "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "5b292a1447b2c14fb8577817f5aa465ca61fa045c244205c5bc3a47f38a9f2d0",
+        "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
+      },
+      "promise_id": "homologia-scaffold-identity"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "horos-census",
-      "entry": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "a0cbc3177e275bbc02bb88607d8ad54549a91bf6a96f9fecbcb2db9f960fb63f"
       },
       "current": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "a0cbc3177e275bbc02bb88607d8ad54549a91bf6a96f9fecbcb2db9f960fb63f"
+        "semantic_sha256": "0c5d6351459aab8dcc187cb7cd18a3083a78363bb83105c38eb4a8c88bcd2ef8",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "0c5d6351459aab8dcc187cb7cd18a3083a78363bb83105c38eb4a8c88bcd2ef8",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
       },
+      "promise_id": "horos-boundary-check"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "horos-skeleton-map",
-      "entry": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "dc752e3e321cc399f087014cfa1e15cf5146833e8a01992236ef25d501fd5ef1"
       },
       "current": {
-        "skill_path": "plugins/horos/skills/horos/SKILL.md",
-        "semantic_sha256": "dc752e3e321cc399f087014cfa1e15cf5146833e8a01992236ef25d501fd5ef1"
+        "semantic_sha256": "81e5114ad6c87c12a9daf97afefd8a5db6e0cb526bb753f48b52f35b9376c33f",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "81e5114ad6c87c12a9daf97afefd8a5db6e0cb526bb753f48b52f35b9376c33f",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
+      },
+      "promise_id": "horos-boundary-scan"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "hypomnema-pointer-gate",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-        "semantic_sha256": "c91e610498d9c1c6dcabf48f203d3242721fc38973d8033753eeddf3a45c65e8"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-        "semantic_sha256": "c91e610498d9c1c6dcabf48f203d3242721fc38973d8033753eeddf3a45c65e8"
+        "semantic_sha256": "a0cbc3177e275bbc02bb88607d8ad54549a91bf6a96f9fecbcb2db9f960fb63f",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "a0cbc3177e275bbc02bb88607d8ad54549a91bf6a96f9fecbcb2db9f960fb63f",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
       },
+      "promise_id": "horos-census"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "dc752e3e321cc399f087014cfa1e15cf5146833e8a01992236ef25d501fd5ef1",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "dc752e3e321cc399f087014cfa1e15cf5146833e8a01992236ef25d501fd5ef1",
+        "skill_path": "plugins/horos/skills/horos/SKILL.md"
+      },
+      "promise_id": "horos-skeleton-map"
     },
     {
-      "promise_id": "hypomnema-record-placement",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-        "semantic_sha256": "036c6f40ee2aa30b29358953ff946409ff91c9ec7a863974ba920f7c6519061c"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-        "semantic_sha256": "036c6f40ee2aa30b29358953ff946409ff91c9ec7a863974ba920f7c6519061c"
+        "semantic_sha256": "6e5d9f224b7ed1017b28a217e92bf680078eb7e26a989f1c2915d390cb33b3ce",
+        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "c91e610498d9c1c6dcabf48f203d3242721fc38973d8033753eeddf3a45c65e8",
+        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
       },
+      "promise_id": "hypomnema-pointer-gate"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "imprimatur-prose-gate",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
-        "semantic_sha256": "6ec72d1441ffb2f01f39a1debfd4af1e3d8c056a4af071e880f36102ad802458"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
-        "semantic_sha256": "6ec72d1441ffb2f01f39a1debfd4af1e3d8c056a4af071e880f36102ad802458"
+        "semantic_sha256": "036c6f40ee2aa30b29358953ff946409ff91c9ec7a863974ba920f7c6519061c",
+        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "036c6f40ee2aa30b29358953ff946409ff91c9ec7a863974ba920f7c6519061c",
+        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+      },
+      "promise_id": "hypomnema-record-placement"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "janus-bounded-conformance",
-      "entry": {
-        "skill_path": "plugins/janus/skills/janus/SKILL.md",
-        "semantic_sha256": "5a971b3de344da42ff303c8f93ef1118b90e7c0c2c4a7aaa4323dae5a9789a83"
       },
       "current": {
-        "skill_path": "plugins/janus/skills/janus/SKILL.md",
-        "semantic_sha256": "5a971b3de344da42ff303c8f93ef1118b90e7c0c2c4a7aaa4323dae5a9789a83"
+        "semantic_sha256": "6ec72d1441ffb2f01f39a1debfd4af1e3d8c056a4af071e880f36102ad802458",
+        "skill_path": "plugins/hexaemeron/skills/imprimatur/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "6ec72d1441ffb2f01f39a1debfd4af1e3d8c056a4af071e880f36102ad802458",
+        "skill_path": "plugins/hexaemeron/skills/imprimatur/SKILL.md"
       },
+      "promise_id": "imprimatur-prose-gate"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "janus-manifest-validation",
-      "entry": {
-        "skill_path": "plugins/janus/skills/janus/SKILL.md",
-        "semantic_sha256": "b334537c6c96a71b7e6045309a19f083e69ac921467c065d6d754369d477bc15"
       },
       "current": {
-        "skill_path": "plugins/janus/skills/janus/SKILL.md",
-        "semantic_sha256": "b334537c6c96a71b7e6045309a19f083e69ac921467c065d6d754369d477bc15"
+        "semantic_sha256": "5a971b3de344da42ff303c8f93ef1118b90e7c0c2c4a7aaa4323dae5a9789a83",
+        "skill_path": "plugins/janus/skills/janus/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "5a971b3de344da42ff303c8f93ef1118b90e7c0c2c4a7aaa4323dae5a9789a83",
+        "skill_path": "plugins/janus/skills/janus/SKILL.md"
       },
+      "promise_id": "janus-bounded-conformance"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "janus-report-rendering",
-      "entry": {
-        "skill_path": "plugins/janus/skills/janus/SKILL.md",
-        "semantic_sha256": "790923133b21a15baedbf32b3179ae0a4e97055e0b7199d656fc5fbe06977f9c"
       },
       "current": {
-        "skill_path": "plugins/janus/skills/janus/SKILL.md",
-        "semantic_sha256": "790923133b21a15baedbf32b3179ae0a4e97055e0b7199d656fc5fbe06977f9c"
+        "semantic_sha256": "b334537c6c96a71b7e6045309a19f083e69ac921467c065d6d754369d477bc15",
+        "skill_path": "plugins/janus/skills/janus/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "b334537c6c96a71b7e6045309a19f083e69ac921467c065d6d754369d477bc15",
+        "skill_path": "plugins/janus/skills/janus/SKILL.md"
       },
+      "promise_id": "janus-manifest-validation"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "kronos-fiat-dispatch",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-        "semantic_sha256": "3d1a65c88464e52bf7e47e29994deb81d75c93e8e4f74a434d1aeece035d7f26"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-        "semantic_sha256": "3d1a65c88464e52bf7e47e29994deb81d75c93e8e4f74a434d1aeece035d7f26"
+        "semantic_sha256": "790923133b21a15baedbf32b3179ae0a4e97055e0b7199d656fc5fbe06977f9c",
+        "skill_path": "plugins/janus/skills/janus/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "790923133b21a15baedbf32b3179ae0a4e97055e0b7199d656fc5fbe06977f9c",
+        "skill_path": "plugins/janus/skills/janus/SKILL.md"
       },
+      "promise_id": "janus-report-rendering"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "kronos-frontier-ranking",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-        "semantic_sha256": "e869719991453d2ab33f5627e3fc938863dd3ea98c0ba7adb25d621a2a0d2469"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-        "semantic_sha256": "e869719991453d2ab33f5627e3fc938863dd3ea98c0ba7adb25d621a2a0d2469"
+        "semantic_sha256": "3d1a65c88464e52bf7e47e29994deb81d75c93e8e4f74a434d1aeece035d7f26",
+        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "3d1a65c88464e52bf7e47e29994deb81d75c93e8e4f74a434d1aeece035d7f26",
+        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
       },
+      "promise_id": "kronos-fiat-dispatch"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "kronos-parked-lane",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-        "semantic_sha256": "0868ad8e54f230ffd893c7334df54100bb41cf723699a6bc4600962e35a132a4"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-        "semantic_sha256": "0868ad8e54f230ffd893c7334df54100bb41cf723699a6bc4600962e35a132a4"
+        "semantic_sha256": "e869719991453d2ab33f5627e3fc938863dd3ea98c0ba7adb25d621a2a0d2469",
+        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "e869719991453d2ab33f5627e3fc938863dd3ea98c0ba7adb25d621a2a0d2469",
+        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+      },
+      "promise_id": "kronos-frontier-ranking"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lazarus-exact-replay",
-      "entry": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "292541930ff665e5d1fc7ded090718c6661f9e89ee182d05639881e11b9c61e5"
       },
       "current": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "292541930ff665e5d1fc7ded090718c6661f9e89ee182d05639881e11b9c61e5"
+        "semantic_sha256": "0868ad8e54f230ffd893c7334df54100bb41cf723699a6bc4600962e35a132a4",
+        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "0868ad8e54f230ffd893c7334df54100bb41cf723699a6bc4600962e35a132a4",
+        "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
       },
+      "promise_id": "kronos-parked-lane"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lazarus-fixture-capture",
-      "entry": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "47a87c51ae3a6f960e5df601c2480fbb8121be21829cd3385309c8db96d32092"
       },
       "current": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "47a87c51ae3a6f960e5df601c2480fbb8121be21829cd3385309c8db96d32092"
+        "semantic_sha256": "292541930ff665e5d1fc7ded090718c6661f9e89ee182d05639881e11b9c61e5",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "292541930ff665e5d1fc7ded090718c6661f9e89ee182d05639881e11b9c61e5",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
       },
+      "promise_id": "lazarus-exact-replay"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lazarus-fixture-verification",
-      "entry": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "f365d85ca51eb9486acacc4ef241939689f8fb46da28bc422cb49ef67009dfe0"
       },
       "current": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "f365d85ca51eb9486acacc4ef241939689f8fb46da28bc422cb49ef67009dfe0"
+        "semantic_sha256": "47a87c51ae3a6f960e5df601c2480fbb8121be21829cd3385309c8db96d32092",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "47a87c51ae3a6f960e5df601c2480fbb8121be21829cd3385309c8db96d32092",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
       },
+      "promise_id": "lazarus-fixture-capture"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lazarus-preservation-release",
-      "entry": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "137a659eb5a09445cd86755cec86d5577f88f2da85bcbe93616201848fa00ba9"
       },
       "current": {
-        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md",
-        "semantic_sha256": "137a659eb5a09445cd86755cec86d5577f88f2da85bcbe93616201848fa00ba9"
+        "semantic_sha256": "f365d85ca51eb9486acacc4ef241939689f8fb46da28bc422cb49ef67009dfe0",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "f365d85ca51eb9486acacc4ef241939689f8fb46da28bc422cb49ef67009dfe0",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
+      },
+      "promise_id": "lazarus-fixture-verification"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lemma-chunk-validation",
-      "entry": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "4e0857d26b144527853a4f4b2f8e0fb6586a78338c54e4594a5493351942b0de"
       },
       "current": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "4e0857d26b144527853a4f4b2f8e0fb6586a78338c54e4594a5493351942b0de"
+        "semantic_sha256": "137a659eb5a09445cd86755cec86d5577f88f2da85bcbe93616201848fa00ba9",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "137a659eb5a09445cd86755cec86d5577f88f2da85bcbe93616201848fa00ba9",
+        "skill_path": "plugins/lazarus/skills/lazarus/SKILL.md"
       },
+      "promise_id": "lazarus-preservation-release"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lemma-corpus-provenance",
-      "entry": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "53c236bb8dab813ef376ca337566e52dc070dfc010ec07845f3e28139348471d"
       },
       "current": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "53c236bb8dab813ef376ca337566e52dc070dfc010ec07845f3e28139348471d"
+        "semantic_sha256": "4e0857d26b144527853a4f4b2f8e0fb6586a78338c54e4594a5493351942b0de",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "4e0857d26b144527853a4f4b2f8e0fb6586a78338c54e4594a5493351942b0de",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
       },
+      "promise_id": "lemma-chunk-validation"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lemma-markdown-chunks",
-      "entry": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "0f9d423f6f239f0c631199398e660ad753123e93cb7e4cf9b836bc064024c466"
       },
       "current": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "0f9d423f6f239f0c631199398e660ad753123e93cb7e4cf9b836bc064024c466"
+        "semantic_sha256": "53c236bb8dab813ef376ca337566e52dc070dfc010ec07845f3e28139348471d",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "53c236bb8dab813ef376ca337566e52dc070dfc010ec07845f3e28139348471d",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
       },
+      "promise_id": "lemma-corpus-provenance"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "lemma-solidity-chunks",
-      "entry": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "7af255ad912e4af10cc66abe8db5fb2e3fd33b8b8de5b2cb0881a95de1fc2ed4"
       },
       "current": {
-        "skill_path": "plugins/lemma/skills/lemma/SKILL.md",
-        "semantic_sha256": "7af255ad912e4af10cc66abe8db5fb2e3fd33b8b8de5b2cb0881a95de1fc2ed4"
+        "semantic_sha256": "0f9d423f6f239f0c631199398e660ad753123e93cb7e4cf9b836bc064024c466",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "0f9d423f6f239f0c631199398e660ad753123e93cb7e4cf9b836bc064024c466",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "promise_id": "lemma-markdown-chunks"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "metron-budget-verdict",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md",
-        "semantic_sha256": "f1cb6a98de2fdcf0692634caf0a771f5e7d9c66ca64ecd571659b36a964bbb1a"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md",
-        "semantic_sha256": "f1cb6a98de2fdcf0692634caf0a771f5e7d9c66ca64ecd571659b36a964bbb1a"
+        "semantic_sha256": "7af255ad912e4af10cc66abe8db5fb2e3fd33b8b8de5b2cb0881a95de1fc2ed4",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "7af255ad912e4af10cc66abe8db5fb2e3fd33b8b8de5b2cb0881a95de1fc2ed4",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
       },
+      "promise_id": "lemma-solidity-chunks"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "metron-change-decision",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md",
-        "semantic_sha256": "dd5154b9711425a369984cfc54bf09d25f4797ed5032375d97061ff9f76c0f60"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md",
-        "semantic_sha256": "dd5154b9711425a369984cfc54bf09d25f4797ed5032375d97061ff9f76c0f60"
+        "semantic_sha256": "f1cb6a98de2fdcf0692634caf0a771f5e7d9c66ca64ecd571659b36a964bbb1a",
+        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "f1cb6a98de2fdcf0692634caf0a771f5e7d9c66ca64ecd571659b36a964bbb1a",
+        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md"
       },
+      "promise_id": "metron-budget-verdict"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "pandects-broken-specimen",
-      "entry": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "605d7a86c91d5a5237238487c9cfb67474d12d810ea92588cf19e3cd3f41cedf"
       },
       "current": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "605d7a86c91d5a5237238487c9cfb67474d12d810ea92588cf19e3cd3f41cedf"
+        "semantic_sha256": "dd5154b9711425a369984cfc54bf09d25f4797ed5032375d97061ff9f76c0f60",
+        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "dd5154b9711425a369984cfc54bf09d25f4797ed5032375d97061ff9f76c0f60",
+        "skill_path": "plugins/hexaemeron/skills/metron/SKILL.md"
       },
+      "promise_id": "metron-change-decision"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "pandects-catalogue-render",
-      "entry": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "5dc0d12ed207c0b4d00fb52f6f9da98da72ea3163ea6c487984bc57e7d999b05"
       },
       "current": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "5dc0d12ed207c0b4d00fb52f6f9da98da72ea3163ea6c487984bc57e7d999b05"
+        "semantic_sha256": "605d7a86c91d5a5237238487c9cfb67474d12d810ea92588cf19e3cd3f41cedf",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "605d7a86c91d5a5237238487c9cfb67474d12d810ea92588cf19e3cd3f41cedf",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
+      },
+      "promise_id": "pandects-broken-specimen"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "pandects-law-contract",
-      "entry": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "7a3bd2cbe85f3e39c63f9daaac8e21104ec1fbd1b482d57c93ad9a2fbda786a9"
       },
       "current": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "7a3bd2cbe85f3e39c63f9daaac8e21104ec1fbd1b482d57c93ad9a2fbda786a9"
+        "semantic_sha256": "5dc0d12ed207c0b4d00fb52f6f9da98da72ea3163ea6c487984bc57e7d999b05",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "5dc0d12ed207c0b4d00fb52f6f9da98da72ea3163ea6c487984bc57e7d999b05",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
       },
+      "promise_id": "pandects-catalogue-render"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "pandects-search-record",
-      "entry": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "0f435c5cca1eea533068afcc3a18be892f4b85dd9cf149189faeed6307688113"
       },
       "current": {
-        "skill_path": "plugins/pandects/skills/pandects/SKILL.md",
-        "semantic_sha256": "0f435c5cca1eea533068afcc3a18be892f4b85dd9cf149189faeed6307688113"
+        "semantic_sha256": "7a3bd2cbe85f3e39c63f9daaac8e21104ec1fbd1b482d57c93ad9a2fbda786a9",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "7a3bd2cbe85f3e39c63f9daaac8e21104ec1fbd1b482d57c93ad9a2fbda786a9",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
       },
+      "promise_id": "pandects-law-contract"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "phylax-boundary-review",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-        "semantic_sha256": "17ad3a25770fbc2ac5dc2c19376446e15bef9436277652993531ebea4dd820ae"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-        "semantic_sha256": "17ad3a25770fbc2ac5dc2c19376446e15bef9436277652993531ebea4dd820ae"
+        "semantic_sha256": "7dcb91482bcebee4769a4cc3871b09d79bafa0805eaacc614ed618fec7041f1f",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "0f435c5cca1eea533068afcc3a18be892f4b85dd9cf149189faeed6307688113",
+        "skill_path": "plugins/pandects/skills/pandects/SKILL.md"
       },
+      "promise_id": "pandects-search-record"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "phylax-mechanical-gate",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-        "semantic_sha256": "e0e1fc9815e90bb89d88cd58effb249d08f2a7fcd469f8eed566b4caf1ff8547"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-        "semantic_sha256": "e0e1fc9815e90bb89d88cd58effb249d08f2a7fcd469f8eed566b4caf1ff8547"
+        "semantic_sha256": "17ad3a25770fbc2ac5dc2c19376446e15bef9436277652993531ebea4dd820ae",
+        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "17ad3a25770fbc2ac5dc2c19376446e15bef9436277652993531ebea4dd820ae",
+        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
       },
+      "promise_id": "phylax-boundary-review"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "probitas-dossier-rendering",
-      "entry": {
-        "skill_path": "plugins/probitas/skills/probitas/SKILL.md",
-        "semantic_sha256": "179870f6d0b7a60417425512af55e752214a9c19a8b9a7374819d09b6a81a3c4"
       },
       "current": {
-        "skill_path": "plugins/probitas/skills/probitas/SKILL.md",
-        "semantic_sha256": "179870f6d0b7a60417425512af55e752214a9c19a8b9a7374819d09b6a81a3c4"
+        "semantic_sha256": "e0e1fc9815e90bb89d88cd58effb249d08f2a7fcd469f8eed566b4caf1ff8547",
+        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "e0e1fc9815e90bb89d88cd58effb249d08f2a7fcd469f8eed566b4caf1ff8547",
+        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
+      },
+      "promise_id": "phylax-mechanical-gate"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "probitas-dossier-verification",
-      "entry": {
-        "skill_path": "plugins/probitas/skills/probitas/SKILL.md",
-        "semantic_sha256": "e216c81f9e328c1039e202ff615b05c7e09aa26c1d47fe81095a137ae544f2ca"
       },
       "current": {
-        "skill_path": "plugins/probitas/skills/probitas/SKILL.md",
-        "semantic_sha256": "e216c81f9e328c1039e202ff615b05c7e09aa26c1d47fe81095a137ae544f2ca"
+        "semantic_sha256": "179870f6d0b7a60417425512af55e752214a9c19a8b9a7374819d09b6a81a3c4",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "179870f6d0b7a60417425512af55e752214a9c19a8b9a7374819d09b6a81a3c4",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
       },
+      "promise_id": "probitas-dossier-rendering"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "probitas-evidence-collection",
-      "entry": {
-        "skill_path": "plugins/probitas/skills/probitas/SKILL.md",
-        "semantic_sha256": "88344b019bf1ce30f9738933353f335bb27602e93c7eb9f0558eb62ae47b7f40"
       },
       "current": {
-        "skill_path": "plugins/probitas/skills/probitas/SKILL.md",
-        "semantic_sha256": "88344b019bf1ce30f9738933353f335bb27602e93c7eb9f0558eb62ae47b7f40"
+        "semantic_sha256": "e216c81f9e328c1039e202ff615b05c7e09aa26c1d47fe81095a137ae544f2ca",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "e216c81f9e328c1039e202ff615b05c7e09aa26c1d47fe81095a137ae544f2ca",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
       },
+      "promise_id": "probitas-dossier-verification"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "protasis-runbook-readiness",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-        "semantic_sha256": "0c03beb871896a094ff78981a8c647dc6536894b257f7c93600f0ca87fd58fd4"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-        "semantic_sha256": "0c03beb871896a094ff78981a8c647dc6536894b257f7c93600f0ca87fd58fd4"
+        "semantic_sha256": "88344b019bf1ce30f9738933353f335bb27602e93c7eb9f0558eb62ae47b7f40",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "88344b019bf1ce30f9738933353f335bb27602e93c7eb9f0558eb62ae47b7f40",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
       },
+      "promise_id": "probitas-evidence-collection"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "introduced",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "protasis-study-readiness",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-        "semantic_sha256": "3d757afe6a4c227e3691f128e55d5fcd50489659c87c822e42d298096a40599c"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-        "semantic_sha256": "3d757afe6a4c227e3691f128e55d5fcd50489659c87c822e42d298096a40599c"
+        "semantic_sha256": "362cde39fc552a4ae6ff2b3063f6c9be61464bc41bc9c9b35bbfa53663d7ff5c",
+        "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
       },
+      "entry": null,
+      "promise_id": "probitas-statement-emission"
+    },
+    {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "febc32f7f25e7a740a5464ef2e69b763921c667dc36460368c1fa41197e2ee9b",
+        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "0c03beb871896a094ff78981a8c647dc6536894b257f7c93600f0ca87fd58fd4",
+        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
+      },
+      "promise_id": "protasis-runbook-readiness"
     },
     {
-      "promise_id": "sapheneia-deactivation",
-      "entry": {
-        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-        "semantic_sha256": "3666eb44fbac4e003d012c50d70e4f613fc9bb2323b80daea9d8379d08f3c458"
+      "continuity": {
+        "action": "amended",
+        "predecessors": [],
+        "successors": []
       },
       "current": {
-        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-        "semantic_sha256": "3666eb44fbac4e003d012c50d70e4f613fc9bb2323b80daea9d8379d08f3c458"
+        "semantic_sha256": "d55bf9b86b999cd0540539c08c25c9af3068184dd94440b12f3fb7dd64be00ac",
+        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "3d757afe6a4c227e3691f128e55d5fcd50489659c87c822e42d298096a40599c",
+        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
       },
+      "promise_id": "protasis-study-readiness"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "sapheneia-durable-record-shape",
-      "entry": {
-        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-        "semantic_sha256": "8452e387b0462f3dd8cf76f746283df95780d9c812732ca501de515930006683"
       },
       "current": {
-        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-        "semantic_sha256": "8452e387b0462f3dd8cf76f746283df95780d9c812732ca501de515930006683"
+        "semantic_sha256": "3666eb44fbac4e003d012c50d70e4f613fc9bb2323b80daea9d8379d08f3c458",
+        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "3666eb44fbac4e003d012c50d70e4f613fc9bb2323b80daea9d8379d08f3c458",
+        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+      },
+      "promise_id": "sapheneia-deactivation"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "sapheneia-session-shape",
-      "entry": {
-        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-        "semantic_sha256": "f6b010274ace8813fd5e1c67b3d8448db8fcc495999ac8e94a19ebbe4a2191b3"
       },
       "current": {
-        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-        "semantic_sha256": "f6b010274ace8813fd5e1c67b3d8448db8fcc495999ac8e94a19ebbe4a2191b3"
+        "semantic_sha256": "8452e387b0462f3dd8cf76f746283df95780d9c812732ca501de515930006683",
+        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "8452e387b0462f3dd8cf76f746283df95780d9c812732ca501de515930006683",
+        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
       },
+      "promise_id": "sapheneia-durable-record-shape"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "synkrisis-bounded-diagnosis",
-      "entry": {
-        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-        "semantic_sha256": "d0e0b4f49f61dbb88d56967fe6b9a3025e02fae6ff3750300403159719b50de1"
       },
       "current": {
-        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-        "semantic_sha256": "d0e0b4f49f61dbb88d56967fe6b9a3025e02fae6ff3750300403159719b50de1"
+        "semantic_sha256": "f6b010274ace8813fd5e1c67b3d8448db8fcc495999ac8e94a19ebbe4a2191b3",
+        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "f6b010274ace8813fd5e1c67b3d8448db8fcc495999ac8e94a19ebbe4a2191b3",
+        "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
       },
+      "promise_id": "sapheneia-session-shape"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "synkrisis-cohort-construction",
-      "entry": {
-        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-        "semantic_sha256": "8b580d39cf44e23cc7d643fd3923187ab0815cbaa148e3950dc6641fe29ebbac"
       },
       "current": {
-        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-        "semantic_sha256": "8b580d39cf44e23cc7d643fd3923187ab0815cbaa148e3950dc6641fe29ebbac"
+        "semantic_sha256": "d0e0b4f49f61dbb88d56967fe6b9a3025e02fae6ff3750300403159719b50de1",
+        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "d0e0b4f49f61dbb88d56967fe6b9a3025e02fae6ff3750300403159719b50de1",
+        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
       },
+      "promise_id": "synkrisis-bounded-diagnosis"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "synkrisis-report-verification",
-      "entry": {
-        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-        "semantic_sha256": "a5b4f90bf0aca1b782bb42b6052eeff965ba80dc790aad1cd14ec56bec04372e"
       },
       "current": {
-        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-        "semantic_sha256": "a5b4f90bf0aca1b782bb42b6052eeff965ba80dc790aad1cd14ec56bec04372e"
+        "semantic_sha256": "8b580d39cf44e23cc7d643fd3923187ab0815cbaa148e3950dc6641fe29ebbac",
+        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "8b580d39cf44e23cc7d643fd3923187ab0815cbaa148e3950dc6641fe29ebbac",
+        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
+      },
+      "promise_id": "synkrisis-cohort-construction"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "tabularium-compound-witness",
-      "entry": {
-        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md",
-        "semantic_sha256": "f44f02e5f952b10eed1c6bec4bcbaad8603acef56568a2f0281b55e9d3000f3e"
       },
       "current": {
-        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md",
-        "semantic_sha256": "f44f02e5f952b10eed1c6bec4bcbaad8603acef56568a2f0281b55e9d3000f3e"
+        "semantic_sha256": "a5b4f90bf0aca1b782bb42b6052eeff965ba80dc790aad1cd14ec56bec04372e",
+        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "a5b4f90bf0aca1b782bb42b6052eeff965ba80dc790aad1cd14ec56bec04372e",
+        "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
       },
+      "promise_id": "synkrisis-report-verification"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "tabularium-release-build",
-      "entry": {
-        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md",
-        "semantic_sha256": "6711381368da014836bd4979741b89498fa6c85a49b51ebfd3636acc5a9a5790"
       },
       "current": {
-        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md",
-        "semantic_sha256": "6711381368da014836bd4979741b89498fa6c85a49b51ebfd3636acc5a9a5790"
+        "semantic_sha256": "f44f02e5f952b10eed1c6bec4bcbaad8603acef56568a2f0281b55e9d3000f3e",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "f44f02e5f952b10eed1c6bec4bcbaad8603acef56568a2f0281b55e9d3000f3e",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
       },
+      "promise_id": "tabularium-compound-witness"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "tabularium-release-verification",
-      "entry": {
-        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md",
-        "semantic_sha256": "53e7b55ec21007a201e8d214b7908b34b2650f76eb338e9451083aadb75655a0"
       },
       "current": {
-        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md",
-        "semantic_sha256": "53e7b55ec21007a201e8d214b7908b34b2650f76eb338e9451083aadb75655a0"
+        "semantic_sha256": "6711381368da014836bd4979741b89498fa6c85a49b51ebfd3636acc5a9a5790",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "6711381368da014836bd4979741b89498fa6c85a49b51ebfd3636acc5a9a5790",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
       },
+      "promise_id": "tabularium-release-build"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
-    },
-    {
-      "promise_id": "vulgate-register-rewrite",
-      "entry": {
-        "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md",
-        "semantic_sha256": "2af2721bab8f29b65c77140dcd8e4c636cee0d1e243258fd2178f1c28b9095e6"
       },
       "current": {
-        "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md",
-        "semantic_sha256": "2af2721bab8f29b65c77140dcd8e4c636cee0d1e243258fd2178f1c28b9095e6"
+        "semantic_sha256": "53e7b55ec21007a201e8d214b7908b34b2650f76eb338e9451083aadb75655a0",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
       },
+      "entry": {
+        "semantic_sha256": "53e7b55ec21007a201e8d214b7908b34b2650f76eb338e9451083aadb75655a0",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
+      },
+      "promise_id": "tabularium-release-verification"
+    },
+    {
       "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
-      }
+      },
+      "current": {
+        "semantic_sha256": "2af2721bab8f29b65c77140dcd8e4c636cee0d1e243258fd2178f1c28b9095e6",
+        "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
+      },
+      "entry": {
+        "semantic_sha256": "2af2721bab8f29b65c77140dcd8e4c636cee0d1e243258fd2178f1c28b9095e6",
+        "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
+      },
+      "promise_id": "vulgate-register-rewrite"
     }
-  ]
+  ],
+  "entry_count": 80,
+  "entry_inventory_sha256": "761cbc2a79227d21cc93301ce4a5685a7586ce58f8cfcc4db8a3c3f04871c5f4",
+  "entry_ref": "7e97b5195d5b0e43146b4200f26cd41b89003413",
+  "schema": "promise-machine-id-history/v1"
 }

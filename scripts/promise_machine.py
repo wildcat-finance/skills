@@ -100,7 +100,7 @@ VERIFICATION_LOCAL_RELATIONS = {
 VERIFICATION_PUBLISHER_STATUS = "publisher-authentication-unknown"
 HISTORY_PATH = Path("tests/promise_machine_id_history.json")
 HISTORY_SCHEMA = "promise-machine-id-history/v1"
-HISTORY_ACTIONS = {"unchanged", "introduced", "retired", "renamed", "split"}
+HISTORY_ACTIONS = {"unchanged", "amended", "introduced", "retired", "renamed", "split"}
 COVERAGE_PATH = Path("tests/promise_machine_coverage.json")
 COVERAGE_SCHEMA = "promise-machine-coverage/v1"
 EVALUATION_TEMPLATE_PATH = Path(
@@ -4808,6 +4808,7 @@ def check_history(root: Path, inventory: Inventory):
         action = continuity["action"]
         shape_is_valid = {
             "unchanged": entry is not None and current is not None and not predecessors and not successors,
+            "amended": entry is not None and current is not None and not predecessors and not successors,
             "introduced": entry is None and current is not None and len(predecessors) <= 1 and not successors,
             "retired": entry is not None and current is None and not predecessors and not successors,
             "renamed": entry is not None and current is None and not predecessors and len(successors) == 1,
@@ -4820,7 +4821,7 @@ def check_history(root: Path, inventory: Inventory):
                     "structural",
                     shown,
                     f"continuity action {action!r} contradicts its entry and current snapshots or links",
-                    "record unchanged, introduced, retired, renamed or split with its required shape",
+                    "record unchanged, amended, introduced, retired, renamed or split with its required shape",
                     promise_id=promise_id,
                 )
             )
@@ -4866,6 +4867,17 @@ def check_history(root: Path, inventory: Inventory):
                     shown,
                     "one unchanged promise id carries different entry and current semantics or paths",
                     "keep the original semantics or retire, rename or split the id explicitly",
+                    promise_id=promise_id,
+                )
+            )
+        if action == "amended" and row["entry"] == row["current"]:
+            findings.append(
+                Finding(
+                    "PM104",
+                    "identity",
+                    shown,
+                    "one amended promise id carries identical entry and current semantics and paths",
+                    "record unchanged when the declaration did not move",
                     promise_id=promise_id,
                 )
             )
