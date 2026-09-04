@@ -71,6 +71,13 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:6a71f7a30e2f38d220d4f9093dccbcdbea3a9f1802dfaa5617ec38829c79521a",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/aave_v4.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:7e2ed2a0a69a6820f64cfa357cbe5b68c795560c3b76968e2d510269c1fdb860",
       "path": "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py",
       "suppressed": false,
@@ -80,13 +87,6 @@
       "analyser_id": "python",
       "id": "sha256:32c4d8de634cfffa9af7503cfadf06af370c1c481b1fb1cacd6e24279fdf029b",
       "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
-      "suppressed": false,
-      "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:76b6aa0c790b5976d7951705eda4466585b3af05bd267b0414b97b79d550eef0",
-      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/goldfinch.py",
       "suppressed": false,
       "symbol": "<module>"
     },
@@ -1009,15 +1009,15 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:961c8ea57c2a9d03297b647bead3b2c7941f27848294d238a0eceb77d2f425c3",
-      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
+      "id": "sha256:9f0928ca77f591f17c5d6290d0b9ffd2c5e5ba4bd20f51c900318b6a9c0c2711",
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/demo.py",
       "suppressed": false,
       "symbol": "release_digest@52"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:e2127ed4c5093792d7ffb7275d0ae7e0cff036c13fdcc09ff225178eea1c3c5c",
-      "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
+      "id": "sha256:6d720d17b9a216053cadbd3130abad918eb2e73d163e867ae66d1999ce1913d4",
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1/demo.py",
       "suppressed": false,
       "symbol": "release_digest@52"
     },
@@ -1352,6 +1352,20 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:fca6ad22338656c115b3d3e5fafbb8d7f2cfe43d88cd2e896c0b8e817a0793e0",
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:abb7af5752166d7c3f669fc046e539e5eb791d4a76562f88ccc377a76627cf7f",
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py",
+      "suppressed": false,
+      "symbol": "_event.hub@141"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:5dfe0f4f4c7dc71e4da1faeb03cbcb1f8dfa7fca330f8b2a18636a43b7181608",
       "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_common.py",
       "suppressed": false,
@@ -1368,13 +1382,6 @@
       "analyser_id": "python",
       "id": "sha256:b066dddabb622d2779f4b967e17539652c2f19032f83ce513534008973bb855a",
       "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py",
-      "suppressed": false,
-      "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:a611a277d60ac138fe1addf25ed538f843e091c2fe22ddc6b7d6a27968af3b6e",
-      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/goldfinch.py",
       "suppressed": false,
       "symbol": "<module>"
     },
@@ -1415,13 +1422,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:97c62f969e18c5a1bd666dd117f2f121e177dc76cd8a2eb9f87891ced224947c",
-      "path": "plugins/tabularium/scripts/tabularium_lib/release.py",
-      "suppressed": false,
-      "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:25a83f131a341f15361b5aa4bfb6be295b37b33445020f6794fadeebed826b53",
       "path": "plugins/tabularium/scripts/tabularium_lib/release_v2.py",
       "suppressed": false,
@@ -1447,27 +1447,6 @@
       "path": "plugins/tabularium/tests/test_core.py",
       "suppressed": false,
       "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:eb0e4cb2aaa7052b2ab9913d2faab2c271c7bb9f59d0575f648821326bc68fe2",
-      "path": "plugins/tabularium/tests/test_goldfinch.py",
-      "suppressed": false,
-      "symbol": "<module>"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:79a4aecada240809894fc2e27f4fd35c89fdf70b3b6179faf2b69ef6e1f733b9",
-      "path": "plugins/tabularium/tests/test_goldfinch.py",
-      "suppressed": false,
-      "symbol": "Path@6"
-    },
-    {
-      "analyser_id": "python",
-      "id": "sha256:8605d9b950caf25bbaa18b8c730652896cbcf7713bec46f8a769feab650f0db6",
-      "path": "plugins/tabularium/tests/test_goldfinch.py",
-      "suppressed": false,
-      "symbol": "test_duplicate_source_identifiers_fail_across_collections.repay@100"
     },
     {
       "analyser_id": "python",
@@ -1557,10 +1536,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "73355fef57c03096f310e606493839bcbb426773",
-    "git_tree": "7a4e2c3f41e743163a690d29134d8be30a22bf65"
+    "commit": "475d9191a6ede55d9ab423e0d88791357c144b35",
+    "git_tree": "dc1211e8dae2631b6bc3c33bf0840985dd6ff84a"
   },
   "universe": {
-    "id": "sha256:5f783d447521efb9340c8ce6b423ce58c0724bbd13fa7477dfb53a751bca7c5d"
+    "id": "sha256:daecb7df3ab7730d963233795ad481ffda07e33d1cd3b0c305f73f61cc1e774e"
   }
 }
