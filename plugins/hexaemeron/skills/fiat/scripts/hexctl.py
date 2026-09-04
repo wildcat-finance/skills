@@ -264,6 +264,12 @@ INTEGRATION_PATHS_MAX = 4096
 # prose pass could actually act on. It is separate from INTEGRATION_PATHS_MAX
 # because the two surfaces answer to different work and may diverge.
 PROSE_PATHS_MAX = 4096
+PROSE_WRITABLE_PATHS_MAX = PROSE_PATHS_MAX - 2
+PROSE_WRITABLE_SCHEMA = "fiat-prose-writable/v1"
+PROSE_RECEIPT_SCHEMA = "fiat-prose-receipt/v1"
+PROSE_BASELINE_RE = re.compile(
+    r"^blob:(?P<mode>100644|100755):(?P<object>[0-9a-f]{40}(?:[0-9a-f]{24})?)$"
+)
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
 INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
@@ -1681,6 +1687,123 @@ def validate_conformance_receipt_shape(value, path: str) -> dict:
     return value
 
 
+def _prose_state_fault(path: str, reason: str) -> None:
+    die(f"state prose binding key '{path}' {reason}", 1)
+
+
+def _prose_relative_paths(value, path: str, *, limit: int) -> list[str]:
+    if not isinstance(value, list) or len(value) > limit:
+        _prose_state_fault(path, f"must be an array of at most {limit} paths")
+    if any(not isinstance(item, str) for item in value):
+        _prose_state_fault(path, "must contain only path strings")
+    if value != sorted(set(value)):
+        _prose_state_fault(path, "is not sorted and unique")
+    for index, item in enumerate(value):
+        try:
+            encoded = item.encode("utf-8")
+        except (AttributeError, UnicodeEncodeError):
+            encoded = b""
+        if (
+            not isinstance(item, str)
+            or not encoded
+            or len(encoded) > 4096
+            or os.path.isabs(item)
+            or item in (".", "..")
+            or "\\" in item
+            or any(part in ("", ".", "..") for part in item.split("/"))
+            or any(byte < 0x20 or byte == 0x7F for byte in encoded)
+        ):
+            _prose_state_fault(f"{path}[{index}]", "is malformed")
+    return value
+
+
+def _prose_sha(value, path: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        _prose_state_fault(path, "is malformed")
+    return value
+
+
+def validate_prose_writable_shape(value, path: str) -> dict:
+    """Validate the Warden's closed post-review write declaration."""
+    keys = {"schema", "source_commit", "paths", "sha256"}
+    if not isinstance(value, dict) or set(value) != keys:
+        _prose_state_fault(path, "has an unsupported field set")
+    if value.get("schema") != PROSE_WRITABLE_SCHEMA:
+        _prose_state_fault(f"{path}.schema", "is not supported")
+    source_commit = value.get("source_commit")
+    if not isinstance(source_commit, str) or COMMIT_RE.fullmatch(source_commit) is None:
+        _prose_state_fault(f"{path}.source_commit", "is malformed")
+    rows = value.get("paths")
+    if not isinstance(rows, list) or len(rows) > PROSE_WRITABLE_PATHS_MAX:
+        _prose_state_fault(
+            f"{path}.paths",
+            f"must be an array of at most {PROSE_WRITABLE_PATHS_MAX} bindings",
+        )
+    names = []
+    for index, row in enumerate(rows):
+        row_path = f"{path}.paths[{index}]"
+        if not isinstance(row, dict) or set(row) != {"path", "baseline"}:
+            _prose_state_fault(row_path, "has an unsupported field set")
+        names.append(row.get("path"))
+        baseline = row.get("baseline")
+        if baseline != "absent" and (
+            not isinstance(baseline, str)
+            or PROSE_BASELINE_RE.fullmatch(baseline) is None
+        ):
+            _prose_state_fault(f"{row_path}.baseline", "is malformed")
+    _prose_relative_paths(names, f"{path}.paths", limit=PROSE_WRITABLE_PATHS_MAX)
+    digest = _prose_sha(value.get("sha256"), f"{path}.sha256")
+    body = {name: value[name] for name in ("schema", "source_commit", "paths")}
+    if hashlib.sha256(canonical(body).encode()).hexdigest() != digest:
+        _prose_state_fault(f"{path}.sha256", "does not match its declaration")
+    return value
+
+
+def validate_prose_receipt_shape(value, path: str) -> dict:
+    """Validate one exact reviewed-source to committed prose-head receipt."""
+    keys = {
+        "schema",
+        "files",
+        "skills",
+        "source_commit",
+        "head_commit",
+        "declaration_sha256",
+        "verified_commits",
+    }
+    if not isinstance(value, dict) or set(value) != keys:
+        _prose_state_fault(path, "has an unsupported field set")
+    if value.get("schema") != PROSE_RECEIPT_SCHEMA:
+        _prose_state_fault(f"{path}.schema", "is not supported")
+    files = value.get("files")
+    if isinstance(files, bool) or not isinstance(files, int) or files < 0:
+        _prose_state_fault(f"{path}.files", "is malformed")
+    skills = value.get("skills")
+    if (
+        not isinstance(skills, list)
+        or any(not isinstance(skill, str) or not skill for skill in skills)
+        or skills != sorted(set(skills))
+    ):
+        _prose_state_fault(f"{path}.skills", "is malformed")
+    for name in ("source_commit", "head_commit"):
+        commit_sha = value.get(name)
+        if not isinstance(commit_sha, str) or COMMIT_RE.fullmatch(commit_sha) is None:
+            _prose_state_fault(f"{path}.{name}", "is malformed")
+    _prose_sha(value.get("declaration_sha256"), f"{path}.declaration_sha256")
+    verified = value.get("verified_commits")
+    if (
+        not isinstance(verified, list)
+        or len(verified) > GIT_PATHS_MAX
+        or any(
+            not isinstance(commit_sha, str)
+            or COMMIT_RE.fullmatch(commit_sha) is None
+            for commit_sha in verified
+        )
+        or len(verified) != len(set(verified))
+    ):
+        _prose_state_fault(f"{path}.verified_commits", "is malformed")
+    return value
+
+
 def validate_state_shape(state) -> dict:
     """Validate the version-1 container spine in one deterministic order.
 
@@ -1751,6 +1874,22 @@ def validate_state_shape(state) -> dict:
                 round_entry,
                 f"{prefix}.audit.rounds[{round_index}]",
                 dict,
+            )
+            if "prose_writable" in round_entry:
+                validate_prose_writable_shape(
+                    round_entry["prose_writable"],
+                    f"{prefix}.audit.rounds[{round_index}].prose_writable",
+                )
+        audit_receipt = step_receipts.get("audit")
+        if isinstance(audit_receipt, dict) and "prose_writable" in audit_receipt:
+            validate_prose_writable_shape(
+                audit_receipt["prose_writable"],
+                f"{prefix}.receipts.audit.prose_writable",
+            )
+        prose_receipt = step_receipts.get("prose")
+        if isinstance(prose_receipt, dict) and prose_receipt.get("schema") is not None:
+            validate_prose_receipt_shape(
+                prose_receipt, f"{prefix}.receipts.prose"
             )
     return root
 
@@ -6594,7 +6733,19 @@ def _require_reviewed_step_push_head(
     reviewed = resolved_commit(
         base_dir, reviewed_ref, f"step {step['n']} locally reviewed commit"
     )
-    if not commit_is_ancestor(
+    prose_receipt = as_dict(as_dict(step.get("receipts")).get("prose"))
+    if prose_receipt.get("schema") == PROSE_RECEIPT_SCHEMA:
+        declaration = _final_prose_writable(step, required=True)
+        if declaration["source_commit"] != reviewed:
+            die(
+                f"step {step['n']} prose declaration does not start at its "
+                "last locally reviewed commit",
+                1,
+            )
+        _verify_prose_receipt(
+            base_dir, step, prose_receipt, required_head=head_commit
+        )
+    elif not commit_is_ancestor(
         base_dir, reviewed, head_commit, f"step {step['n']} push"
     ):
         die(
@@ -7267,6 +7418,7 @@ def validated_audit_record(
         "log": log_path,
         "record_timestamp": timestamp,
         "entry_sha256": hashlib.sha256(entry_bytes).hexdigest(),
+        "log_sha256": hashlib.sha256(data).hexdigest(),
         "log_end_offset": len(data),
         "synopsis_sha256": synopsis_sha256,
     }
@@ -7296,6 +7448,13 @@ def cmd_audit_round(args) -> None:
         )
     if args.findings is None or args.findings < 0:
         die("--findings must be a non-negative integer")
+    declares_paths = args.prose_writable is not None
+    declares_none = bool(args.no_prose_writes)
+    if args.findings == 0 and declares_paths == declares_none:
+        die(
+            "a zero-finding final round requires exactly one of repeatable "
+            "--prose-writable or --no-prose-writes"
+        )
     if args.fixes_commit and args.elenchus_verdict is None:
         die(
             "--elenchus-verdict is required with --fixes-commit; accepted values: "
@@ -7348,6 +7507,19 @@ def cmd_audit_round(args) -> None:
         verified_commits = verify_local_range(
             args.dir, base, args.fixes_commit, f"step {step['n']} audit fixes"
         )
+    prose_writable = None
+    if args.findings == 0 or declares_paths or declares_none:
+        source_commit = (
+            verified_commits[-1] if verified_commits else last_local_commit(step)
+        )
+        if not isinstance(source_commit, str) or not source_commit:
+            die(f"step {step['n']} has no locally reviewed prose source commit")
+        prose_writable = _build_prose_writable_declaration(
+            args.dir,
+            source_commit,
+            list(args.prose_writable or []),
+            record,
+        )
     entry = {
         "round": len(rounds) + 1,
         "findings": args.findings,
@@ -7360,6 +7532,8 @@ def cmd_audit_round(args) -> None:
         "ts": now(),
         **record,
     }
+    if prose_writable is not None:
+        entry["prose_writable"] = prose_writable
     rounds.append(entry)
     commit(args.dir, state, "audit-round", {"step": step["n"], **entry})
     tail = ""
@@ -7437,6 +7611,13 @@ def done_audit(args, state: dict) -> None:
         "log": closing_log,
         "verified_fixes": verified_fixes,
     }
+    if last.get("prose_writable") is not None:
+        step["receipts"]["audit"]["prose_writable"] = last["prose_writable"]
+    elif not clean:
+        die(
+            "--no-further-leads requires the final finding round to declare "
+            "repeatable --prose-writable paths or --no-prose-writes"
+        )
     step["phase"] = "prose"
     commit(
         args.dir,
@@ -7459,13 +7640,65 @@ def done_prose(args, state: dict) -> None:
     missing = sorted(required - applied)
     if missing:
         die(f"prose pass is missing required skill(s): {', '.join(missing)}")
-    step["receipts"]["prose"] = {"files": args.files, "skills": sorted(applied)}
+    skills = sorted(applied)
+    declaration = _final_prose_writable(step, required=False)
+    if declaration is None:
+        prose_receipt = {"files": args.files, "skills": skills}
+    else:
+        branch = (
+            step_branch_name(state, step)
+            if run_branch_of(state)
+            else as_dict(as_dict(step.get("receipts")).get("implement")).get(
+                "branch"
+            )
+        )
+        if not isinstance(branch, str) or not branch:
+            die("prose pass has no recorded implementation branch")
+        repository = _native_relation_repository_identity(args.dir)
+        head_commit = _native_relation_commit(
+            args.dir, branch, f"step {step['n']} prose branch"
+        )
+        if _native_relation_git(
+            args.dir,
+            [
+                "status",
+                "--porcelain=v1",
+                "-z",
+                "--untracked-files=all",
+                "--ignore-submodules=none",
+            ],
+            "prose worktree status cannot be read",
+        ):
+            die("prose pass must stage and commit every intended final change")
+        prose_receipt = _build_prose_receipt(
+            args.dir, step, head_commit, args.files, skills
+        )
+        if (
+            _native_relation_commit(
+                args.dir, branch, f"step {step['n']} prose branch"
+            )
+            != head_commit
+            or _native_relation_repository_identity(args.dir) != repository
+            or _native_relation_git(
+                args.dir,
+                [
+                    "status",
+                    "--porcelain=v1",
+                    "-z",
+                    "--untracked-files=all",
+                    "--ignore-submodules=none",
+                ],
+                "prose worktree status cannot be read",
+            )
+        ):
+            die("prose branch or worktree changed while it was receipted")
+    step["receipts"]["prose"] = prose_receipt
     step["phase"] = "push"
     commit(
         args.dir,
         state,
         "done:prose",
-        {"step": step["n"], "files": args.files, "skills": sorted(applied)},
+        {"step": step["n"], **prose_receipt},
     )
     print(f"step {step['n']} prose pass receipted; phase -> push")
 
@@ -7950,6 +8183,328 @@ def _sync_tree_entries(
             seen.add(path)
             identities[path] = f"{mode} {kind} {object_id}"
     return identities
+
+
+def _audit_synopsis_repo_path(log_path: str) -> str:
+    """Return the renderer-owned sibling for one supported audit source."""
+    directory, separator, name = log_path.rpartition("/")
+    if name == "AUDIT.md" and directory.endswith("audit"):
+        return f"{directory}/AUDIT_SYNOPSIS.md"
+    if (
+        separator
+        and directory == "audit/rounds"
+        and name.endswith(".md")
+        and not name.endswith(".synopsis.md")
+    ):
+        return f"{directory}/{name[:-3]}.synopsis.md"
+    die("final audit round names an unsupported synopsis source path")
+
+
+def _prose_audit_paths(round_entry: dict) -> tuple[str, str]:
+    log_path = round_entry.get("log")
+    if not isinstance(log_path, str):
+        die("final audit round has no canonical log path")
+    synopsis_path = _audit_synopsis_repo_path(log_path)
+    paths = _manifest_paths(
+        sorted([log_path, synopsis_path]),
+        "final audit evidence paths",
+    )
+    if len(paths) != 2:
+        die("final audit evidence paths overlap")
+    return log_path, synopsis_path
+
+
+def _prose_baseline(identity: str | None) -> str:
+    if identity is None:
+        return "absent"
+    match = re.fullmatch(
+        r"(?P<mode>100644|100755) blob "
+        r"(?P<object>[0-9a-f]{40}(?:[0-9a-f]{24})?)",
+        identity,
+    )
+    if match is None:
+        die("a declared prose-writable path is not a regular Git blob")
+    return f"blob:{match.group('mode')}:{match.group('object')}"
+
+
+def _prose_baseline_identity(baseline: str) -> str | None:
+    if baseline == "absent":
+        return None
+    match = PROSE_BASELINE_RE.fullmatch(baseline)
+    if match is None:
+        die("prose-writable baseline is malformed", 1)
+    return f"{match.group('mode')} blob {match.group('object')}"
+
+
+def _build_prose_writable_declaration(
+    base_dir: str,
+    source_commit: str,
+    supplied_paths: list[str],
+    round_entry: dict,
+) -> dict:
+    """Freeze Warden's closed path set and each audited baseline state."""
+    if len(supplied_paths) != len(set(supplied_paths)):
+        die("--prose-writable names a duplicate path")
+    paths = _manifest_paths(
+        sorted(supplied_paths),
+        "prose-writable declaration",
+    )
+    if len(paths) > PROSE_WRITABLE_PATHS_MAX:
+        die(
+            "prose-writable declaration exceeds the "
+            f"{PROSE_WRITABLE_PATHS_MAX}-path ceiling"
+        )
+    audit_paths = set(_prose_audit_paths(round_entry))
+    overlap = sorted(audit_paths.intersection(paths))
+    if overlap:
+        die(
+            "prose-writable declaration cannot grant Scribe authority over "
+            "Warden's audit record or synopsis"
+        )
+    source_commit = _native_relation_commit(
+        base_dir, source_commit, "prose-writable source commit"
+    )
+    identities = _sync_tree_entries(
+        base_dir, source_commit, paths, "prose-writable baseline"
+    )
+    body = {
+        "schema": PROSE_WRITABLE_SCHEMA,
+        "source_commit": source_commit,
+        "paths": [
+            {"path": path, "baseline": _prose_baseline(identities[path])}
+            for path in paths
+        ],
+    }
+    declaration = {
+        **body,
+        "sha256": hashlib.sha256(canonical(body).encode()).hexdigest(),
+    }
+    validate_prose_writable_shape(declaration, "built.prose_writable")
+    return declaration
+
+
+def _verify_prose_writable_declaration(
+    base_dir: str, declaration: dict, label: str
+) -> dict:
+    declaration = validate_prose_writable_shape(declaration, label)
+    source_commit = _native_relation_commit(
+        base_dir, declaration["source_commit"], f"{label} source commit"
+    )
+    if source_commit != declaration["source_commit"]:
+        die(f"{label} source commit resolves to a different identity", 1)
+    expected = {
+        row["path"]: _prose_baseline_identity(row["baseline"])
+        for row in declaration["paths"]
+    }
+    observed = _sync_tree_entries(
+        base_dir, source_commit, sorted(expected), f"{label} baseline"
+    )
+    if observed != expected:
+        die(f"{label} baseline no longer matches its audited source commit", 1)
+    return declaration
+
+
+def _final_prose_writable(step: dict, *, required: bool) -> dict | None:
+    rounds = as_dict(step.get("audit")).get("rounds") or []
+    last = as_dict(rounds[-1]) if rounds else {}
+    audit_receipt = as_dict(as_dict(step.get("receipts")).get("audit"))
+    declaration = last.get("prose_writable") or audit_receipt.get(
+        "prose_writable"
+    )
+    if declaration is None:
+        if required:
+            die("audit closure has no prose-writable declaration")
+        return None
+    declaration = validate_prose_writable_shape(
+        declaration, f"step {step.get('n')} final audit prose_writable"
+    )
+    if (
+        last.get("prose_writable") is not None
+        and audit_receipt
+        and audit_receipt.get("prose_writable") != declaration
+    ):
+        die("audit closure does not copy its final prose-writable declaration", 1)
+    return declaration
+
+
+def _require_prose_final_entry(
+    path: str, baseline: str, final_identity: str | None
+) -> None:
+    baseline_identity = _prose_baseline_identity(baseline)
+    if final_identity is None:
+        if baseline_identity is not None:
+            die(f"prose pass deletes declared path '{path}'")
+        return
+    final_match = re.fullmatch(
+        r"(?P<mode>100644|100755) blob "
+        r"(?P<object>[0-9a-f]{40}(?:[0-9a-f]{24})?)",
+        final_identity,
+    )
+    if final_match is None:
+        die(f"prose pass changes declared path '{path}' away from a regular blob")
+    if baseline_identity is None:
+        if final_match.group("mode") != "100644":
+            die(f"prose pass creates declared path '{path}' with a non-prose mode")
+        return
+    baseline_mode = baseline_identity.split(" ", 1)[0]
+    if final_match.group("mode") != baseline_mode:
+        die(f"prose pass changes the mode of declared path '{path}'")
+
+
+def _require_prose_audit_identity(
+    base_dir: str, head_commit: str, round_entry: dict
+) -> None:
+    log_path, synopsis_path = _prose_audit_paths(round_entry)
+    audit_entries = _sync_tree_entries(
+        base_dir,
+        head_commit,
+        [log_path, synopsis_path],
+        "final audit evidence",
+    )
+    if any(
+        identity is None or not identity.startswith("100644 blob ")
+        for identity in audit_entries.values()
+    ):
+        die("prose head changes final audit evidence away from non-executable blobs")
+    expected_log_sha = round_entry.get("log_sha256")
+    expected_log_bytes = round_entry.get("log_end_offset")
+    expected_synopsis_sha = round_entry.get("synopsis_sha256")
+    if (
+        not isinstance(expected_log_sha, str)
+        or re.fullmatch(r"[0-9a-f]{64}", expected_log_sha) is None
+        or isinstance(expected_log_bytes, bool)
+        or not isinstance(expected_log_bytes, int)
+        or expected_log_bytes < 0
+        or expected_log_bytes > SOURCE_BYTES_MAX
+        or not isinstance(expected_synopsis_sha, str)
+        or re.fullmatch(r"[0-9a-f]{64}", expected_synopsis_sha) is None
+    ):
+        die("final audit round lacks exact whole-file evidence")
+    _log_object, log_bytes = read_commit_blob(
+        base_dir, head_commit, log_path, "final audit log"
+    )
+    _synopsis_object, synopsis_bytes = read_commit_blob(
+        base_dir, head_commit, synopsis_path, "final audit synopsis"
+    )
+    if (
+        len(log_bytes) != expected_log_bytes
+        or hashlib.sha256(log_bytes).hexdigest() != expected_log_sha
+    ):
+        die("prose head does not carry the exact receipted final audit log")
+    if hashlib.sha256(synopsis_bytes).hexdigest() != expected_synopsis_sha:
+        die("prose head does not carry the exact receipted final audit synopsis")
+
+
+def _prose_tree_evidence(
+    base_dir: str, declaration: dict, head_commit: str, round_entry: dict
+) -> None:
+    """Prove the final committed tree changes only Warden-declared prose."""
+    declaration = _verify_prose_writable_declaration(
+        base_dir, declaration, "prose-writable declaration"
+    )
+    source_commit = declaration["source_commit"]
+    head_commit = _native_relation_commit(base_dir, head_commit, "prose head")
+    _native_relation_git(
+        base_dir,
+        ["merge-base", "--is-ancestor", source_commit, head_commit],
+        "prose head is not descended from its audited source commit",
+    )
+    changed = _native_diff_paths(
+        base_dir,
+        source_commit,
+        head_commit,
+        "prose tree delta",
+        "prose tree delta cannot be read",
+    )
+    declared = {row["path"] for row in declaration["paths"]}
+    allowed = declared.union(_prose_audit_paths(round_entry))
+    outside = sorted(set(changed) - allowed)
+    if outside:
+        die(
+            "prose head changes a path outside the Warden's closed writable "
+            f"set: {outside[0]}"
+        )
+    final_entries = _sync_tree_entries(
+        base_dir, head_commit, sorted(declared), "prose head writable paths"
+    )
+    for row in declaration["paths"]:
+        _require_prose_final_entry(
+            row["path"], row["baseline"], final_entries[row["path"]]
+        )
+    _require_prose_audit_identity(base_dir, head_commit, round_entry)
+
+
+def _build_prose_receipt(
+    base_dir: str,
+    step: dict,
+    head_commit: str,
+    files: int,
+    skills: list[str],
+) -> dict:
+    declaration = _final_prose_writable(step, required=True)
+    rounds = as_dict(step.get("audit")).get("rounds") or []
+    round_entry = as_dict(rounds[-1])
+    head_commit = _native_relation_commit(base_dir, head_commit, "prose head")
+    _prose_tree_evidence(base_dir, declaration, head_commit, round_entry)
+    verified = verify_local_range(
+        base_dir,
+        declaration["source_commit"],
+        head_commit,
+        f"step {step.get('n')} final prose",
+        native_relation=True,
+        allow_empty=True,
+    )
+    receipt = {
+        "schema": PROSE_RECEIPT_SCHEMA,
+        "files": files,
+        "skills": skills,
+        "source_commit": declaration["source_commit"],
+        "head_commit": head_commit,
+        "declaration_sha256": declaration["sha256"],
+        "verified_commits": verified,
+    }
+    validate_prose_receipt_shape(receipt, "built.prose")
+    return receipt
+
+
+def _verify_prose_receipt(
+    base_dir: str,
+    step: dict,
+    receipt: dict,
+    *,
+    required_head: str | None = None,
+) -> str:
+    receipt = validate_prose_receipt_shape(
+        receipt, f"step {step.get('n')} prose receipt"
+    )
+    declaration = _final_prose_writable(step, required=True)
+    if (
+        receipt["source_commit"] != declaration["source_commit"]
+        or receipt["declaration_sha256"] != declaration["sha256"]
+    ):
+        die("prose receipt does not bind its final audit declaration", 1)
+    head_commit = _native_relation_commit(
+        base_dir, receipt["head_commit"], "receipted prose head"
+    )
+    if head_commit != receipt["head_commit"]:
+        die("receipted prose head resolves to a different identity", 1)
+    if required_head is not None and head_commit != required_head:
+        die("step push head is not the exact receipted prose head")
+    rounds = as_dict(step.get("audit")).get("rounds") or []
+    _prose_tree_evidence(
+        base_dir, declaration, head_commit, as_dict(rounds[-1])
+    )
+    verified = verify_local_range(
+        base_dir,
+        declaration["source_commit"],
+        head_commit,
+        f"step {step.get('n')} final prose",
+        native_relation=True,
+        allow_empty=True,
+    )
+    if verified != receipt["verified_commits"]:
+        die("prose signature range does not match its receipt", 1)
+    return head_commit
 
 
 def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
@@ -9075,6 +9630,8 @@ def done_merge_step(args, state: dict) -> None:
     remote_head = remote_branch_tip(args.dir, pending["branch"])
     if pr_record["head_sha"] != remote_head:
         die("recorded pull request head does not match its remote branch tip")
+    _require_reviewed_step_push_head(args.dir, step, remote_head)
+    _require_conformance_contract_at_head(args.dir, state, remote_head)
     recorded_local = push_receipt.get("verified_commits")
     recorded_github = push_receipt.get("github_verified")
     recorded_current = (
@@ -11689,15 +12246,25 @@ def commit_parents(base_dir: str, commit_sha: str, label: str) -> list[str]:
     return parents
 
 
-def exact_commit_range(base_dir: str, base_ref: str, head_ref: str, label: str) -> list[str]:
-    base = resolved_commit(base_dir, base_ref, f"{label} base")
-    head = resolved_commit(base_dir, head_ref, f"{label} head")
-    bounded_git(
+def exact_commit_range(
+    base_dir: str,
+    base_ref: str,
+    head_ref: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+    allow_empty: bool = False,
+) -> list[str]:
+    resolve = _native_relation_commit if native_relation else resolved_commit
+    base = resolve(base_dir, base_ref, f"{label} base")
+    head = resolve(base_dir, head_ref, f"{label} head")
+    read = _native_relation_git if native_relation else bounded_git
+    read(
         base_dir,
         ["merge-base", "--is-ancestor", base, head],
         f"{label} head is not descended from its declared base",
     )
-    data = bounded_git(
+    data = read(
         base_dir,
         ["rev-list", "--reverse", f"--max-count={GIT_PATHS_MAX + 1}", f"{base}..{head}"],
         f"{label} commit range cannot be enumerated",
@@ -11707,7 +12274,11 @@ def exact_commit_range(base_dir: str, base_ref: str, head_ref: str, label: str) 
         die(f"{label} commit range exceeds {GIT_PATHS_MAX} commits")
     if any(not COMMIT_RE.fullmatch(commit) for commit in commits):
         die(f"{label} commit range returned a malformed SHA")
-    if not commits or commits[-1] != head:
+    if not commits:
+        if allow_empty and base == head:
+            return []
+        die(f"{label} commit range does not end at the declared head")
+    if commits[-1] != head:
         die(f"{label} commit range does not end at the declared head")
     if base in commits:
         die(f"{label} commit range includes its base")
@@ -11856,11 +12427,28 @@ def verify_local_commit(
     return commit_sha
 
 
-def verify_local_range(base_dir: str, base_ref: str, head_ref: str, label: str) -> list[str]:
+def verify_local_range(
+    base_dir: str,
+    base_ref: str,
+    head_ref: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+    allow_empty: bool = False,
+) -> list[str]:
     """Verify every locally created commit in one exact base-to-head range."""
-    commits = exact_commit_range(base_dir, base_ref, head_ref, label)
+    commits = exact_commit_range(
+        base_dir,
+        base_ref,
+        head_ref,
+        label,
+        native_relation=native_relation,
+        allow_empty=allow_empty,
+    )
     for commit_sha in commits:
-        verify_local_commit(base_dir, commit_sha, label)
+        verify_local_commit(
+            base_dir, commit_sha, label, native_relation=native_relation
+        )
     return commits
 
 
@@ -12517,9 +13105,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         return packet
 
     pr_base = plan["pr_base"]
+    review_files = scribe_files(root, pr_base, plan["branch"])
     packet["agent"] = "scribe"
     packet["brief"] = {
-        "files": scribe_files(root, pr_base, plan["branch"]),
+        "files": review_files,
         "pr_base": pr_base,
         "pr_draft_path": scoped_path(
             root,
@@ -12528,6 +13117,21 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         ),
         "plugin_root": root_plugin,
     }
+    declaration = _final_prose_writable(step, required=False)
+    if declaration is not None:
+        _verify_prose_writable_declaration(
+            root,
+            declaration,
+            f"step {step['n']} prose-writable declaration",
+        )
+        packet["brief"].update({
+            "files": [row["path"] for row in declaration["paths"]],
+            "review_files": review_files,
+            "source_commit": declaration["source_commit"],
+            "writable_files": [row["path"] for row in declaration["paths"]],
+            "writable_baselines": declaration["paths"],
+            "writable_sha256": declaration["sha256"],
+        })
     if version_relations is not None:
         packet["brief"]["version_relations"] = version_relations_packet(
             version_relations
@@ -14652,6 +15256,17 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
             "audit_filter": audit_filter_obligation(),
             "elenchus_verdict": elenchus_verdict_obligation(),
             "log_path": configured_audit_log(state),
+            "prose_writable": {
+                "required_with": (
+                    "--findings 0 or a later immediate "
+                    "--no-further-leads closure"
+                ),
+                "optional_with": "--findings > 0",
+                "choices": [
+                    "--prose-writable <path> (repeatable)",
+                    "--no-prose-writes",
+                ],
+            },
         }
         if lints_owed:
             owed["lints"] = [f"--{lint}-exit" for lint in LINTS]
@@ -15021,6 +15636,23 @@ def verify_run(
         conformance_receipts.append(receipt)
     if conformance_events != conformance_receipts:
         die("controller ledger events do not match conformance receipts", 1)
+    for step in state.get("steps", []):
+        declaration = _final_prose_writable(step, required=False)
+        if declaration is not None:
+            _verify_prose_writable_declaration(
+                base_dir,
+                declaration,
+                f"step {step.get('n')} prose-writable declaration",
+            )
+        prose = as_dict(as_dict(step.get("receipts")).get("prose"))
+        if prose.get("schema") == PROSE_RECEIPT_SCHEMA:
+            _verify_prose_receipt(base_dir, step, prose)
+        elif declaration is not None and prose:
+            die(
+                f"step {step.get('n')} has an unbound prose receipt after a "
+                "closed writable declaration",
+                1,
+            )
     verify_design_evidence(
         base_dir,
         state,
@@ -15317,6 +15949,23 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--log")
     sp.add_argument("--audit-filter", dest="audit_filter")
     sp.add_argument("--fixes-commit", dest="fixes_commit")
+    prose_writable = sp.add_mutually_exclusive_group()
+    prose_writable.add_argument(
+        "--prose-writable",
+        dest="prose_writable",
+        action="append",
+        metavar="PATH",
+        help=(
+            "exact tracked prose path Scribe may change after this clean round; "
+            "repeat for each path"
+        ),
+    )
+    prose_writable.add_argument(
+        "--no-prose-writes",
+        dest="no_prose_writes",
+        action="store_true",
+        help="declare that Scribe may change no tracked path after this clean round",
+    )
     sp.add_argument(
         "--elenchus-verdict",
         dest="elenchus_verdict",

@@ -43,6 +43,19 @@ bundled in this plugin, so no external install is involved.
    verbatim, and the spelling convention stays consistent.
 4. **Re-lint.** The mask can reintroduce a marker; run the lint once more
    and settle any new hits.
+5. **Commit the candidate.** The final clean audit round declares the exact
+   repository paths this phase may write and their audited starting state.
+   Stage only those paths and make the final locally signed commit with both
+   provenance trailers. The already committed Warden-owned audit log and
+   synopsis remain byte-identical in the final tree. A path declared `absent`
+   may be created as a regular
+   non-executable blob; do not delete an existing path or change its mode.
+   Leave the worktree and index clean. `done prose` reads and receipts this
+   exact commit, so any later amendment requires another audit round. If the
+   declared set is empty and that source commit already contains the exact
+   receipted audit log and synopsis, receipt the source commit itself; do not
+   manufacture an empty seal commit. Every non-empty source-to-head range still
+   requires locally signed commits with both provenance trailers.
 
 ## Task-issue closing comment
 
@@ -72,8 +85,10 @@ Both title and body go through the same lint-voice-relint order as the files.
 
 ## Receipt
 
-Count the files rewritten (PR text counts as one) and pass the skills that
-actually ran -- the receipt rejects a list missing either configured skill:
+After the final commit, count the files rewritten (PR text counts as one) and
+pass the skills that actually ran -- the receipt rejects a dirty worktree, a
+commit outside the declared path set, or a list missing either configured
+skill:
 
 ```text
 hexctl done prose --files <n> --skills hexaemeron:imprimatur,hexaemeron:vulgate

@@ -157,7 +157,9 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                 process.wait(timeout=5)
         self.tmp.cleanup()
 
-    def run_ctl(self, *args, expect=0, audit_filter=True):
+    def run_ctl(
+        self, *args, expect=0, audit_filter=True, prose_inventory=True
+    ):
         if (
             args
             and args[0] == "audit-round"
@@ -165,9 +167,25 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             and "--audit-filter" not in args
         ):
             args = (*args, *AUDIT_FILTER)
+        if (
+            args[:1] == ("audit-round",)
+            and prose_inventory
+            and "--no-prose-writes" in Path(HEXCTL).read_text(encoding="utf-8")
+            and "--findings" in args
+            and args[args.index("--findings") + 1] == "0"
+            and "--prose-writable" not in args
+            and "--no-prose-writes" not in args
+        ):
+            args = (*args, "--no-prose-writes")
         pending_refs = dict(self.fake_refs)
         pending_prs = json.loads(json.dumps(self.fake_prs))
         pending_parents = json.loads(json.dumps(self.fake_parents))
+        pending_tree = json.loads(
+            self.env.get("FAKE_GIT_TREE_BY_COMMIT", "{}")
+        )
+        pending_diffs = json.loads(
+            self.env.get("FAKE_GIT_DIFF_PATHS", "{}")
+        )
         pending_audit_baseline = None
         state_path = os.path.join(self.target, ".hexaemeron", "state.json")
         state = None
@@ -209,6 +227,50 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                 relative = state["config"]["audit"]["log_path"]
                 log = Path(self.target, *relative.split("/"))
                 pending_audit_baseline = log.read_bytes() if log.exists() else b""
+        if args[:2] == ("done", "prose") and state is not None:
+            step = state["steps"][state["current_step"] - 1]
+            branch = step["receipts"]["implement"]["branch"]
+            override = getattr(self, "next_prose_head", None)
+            if override is not None:
+                del self.next_prose_head
+                prose_head = self.fake_sha(override)
+            else:
+                prose_head = self.fake_sha(f"head{step['n']}")
+            pending_refs[branch] = prose_head
+            final_round = step["audit"]["rounds"][-1]
+            log_path = final_round["log"]
+            synopsis_path = (
+                os.path.join(os.path.dirname(log_path), "AUDIT_SYNOPSIS.md")
+                if os.path.basename(log_path) == "AUDIT.md"
+                else os.path.splitext(log_path)[0] + ".synopsis.md"
+            )
+            pending_tree.setdefault(prose_head, {}).update({
+                log_path: Path(self.target, *log_path.split("/")).read_bytes().hex(),
+                synopsis_path: Path(
+                    self.target, *synopsis_path.split("/")
+                ).read_bytes().hex(),
+            })
+            declaration = final_round.get("prose_writable", {})
+            declared_paths = [
+                row["path"] for row in declaration.get("paths", [])
+            ]
+            for relative in declared_paths:
+                candidate = Path(self.target, *relative.split("/"))
+                pending_tree[prose_head][relative] = (
+                    candidate.read_bytes().hex()
+                    if candidate.is_file() and not candidate.is_symlink()
+                    else None
+                )
+            source_commit = declaration.get("source_commit")
+            if source_commit:
+                extra = list(getattr(self, "next_prose_changed_paths", []))
+                if hasattr(self, "next_prose_changed_paths"):
+                    del self.next_prose_changed_paths
+                pending_diffs[f"{source_commit}..{prose_head}"] = (
+                    [] if source_commit == prose_head else sorted(set(
+                        [log_path, synopsis_path, *declared_paths, *extra]
+                    ))
+                )
         if args[:2] == ("done", "push") and expect == 0 and state is not None:
             step = state["steps"][state["current_step"] - 1]
             branch = step["receipts"]["implement"]["branch"]
@@ -253,6 +315,8 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
         env["FAKE_GIT_PARENTS"] = json.dumps(pending_parents)
         env["FAKE_GH_PRS"] = json.dumps(pending_prs)
+        env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps(pending_tree)
+        env["FAKE_GIT_DIFF_PATHS"] = json.dumps(pending_diffs)
         audit_baseline = getattr(self, "fake_audit_baseline", None)
         if (
             args[:1] == ("audit-round",)
@@ -276,6 +340,8 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             self.fake_refs = pending_refs
             self.fake_prs = pending_prs
             self.fake_parents = pending_parents
+            self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps(pending_tree)
+            self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(pending_diffs)
             if pending_audit_baseline is not None:
                 self.fake_audit_baseline = pending_audit_baseline
         return proc
@@ -407,15 +473,27 @@ args = raw_args
 candidate = raw_args[1:] if raw_args[:1] == ["--no-replace-objects"] else raw_args
 while len(candidate) >= 2 and candidate[0] == "-c":
     candidate = candidate[2:]
-if candidate and candidate[0] in (
+candidate_ref = (
+    candidate[-1].removesuffix("^{{commit}}")
+    if candidate[:3] == ["rev-parse", "--verify", "--end-of-options"]
+    else None
+)
+candidate_refs = json.loads(os.environ.get("FAKE_GIT_REFS", "{{}}"))
+candidate_is_fake_rev_parse = candidate_ref is not None and (
+    re.fullmatch(r"[0-9a-f]{{40}}", candidate_ref)
+    or candidate_ref in candidate_refs
+    or candidate_ref in candidate_refs.values()
+)
+if candidate_is_fake_rev_parse or (candidate and candidate[0] in (
     "verify-commit",
     "show",
     "diff",
     "merge-base",
+    "rev-list",
     "ls-tree",
     "cat-file",
     "ls-remote",
-):
+)):
     args = candidate
 mode = os.environ.get("FAKE_GIT_MODE", "valid")
 if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
@@ -458,19 +536,47 @@ elif args and args[0] == "merge-base":
 elif args and args[0] == "ls-tree":
     if mode == "baseline-unavailable":
         raise SystemExit(128)
-    path_text = args[-1]
-    if path_text == ".fiat/conformance-overlay-contract.json":
+    separator = args.index("--") if "--" in args else len(args) - 1
+    commit = args[separator - 1]
+    requested = [
+        item.removeprefix(":(literal)") for item in args[separator + 1:]
+    ]
+    tree_by_commit = json.loads(
+        os.environ.get("FAKE_GIT_TREE_BY_COMMIT", "{{}}")
+    )
+    mapped = tree_by_commit.get(commit, {{}})
+    mapped_request = any(path in mapped for path in requested)
+    if mapped_request:
+        for path_text in requested:
+            payload_hex = mapped.get(path_text)
+            if payload_hex is None:
+                continue
+            baseline = bytes.fromhex(payload_hex)
+            object_id = hashlib.sha1(
+                b"blob " + str(len(baseline)).encode() + b"\\0" + baseline
+            ).hexdigest()
+            entry_mode = (
+                "100755" if mode == "prose-final-executable" else
+                "120000" if mode == "prose-final-symlink" else
+                "100644"
+            )
+            sys.stdout.buffer.write(
+                f"{{entry_mode}} blob {{object_id}}\\t{{path_text}}\\0".encode()
+            )
+    elif len(requested) == 1 and requested[0] == ".fiat/conformance-overlay-contract.json":
+        path_text = requested[0]
         by_commit = json.loads(
             os.environ.get("FAKE_GIT_CONFORMANCE_BY_COMMIT", "{{}}")
         )
         payload_hex = (
-            by_commit[args[-3]]
-            if args[-3] in by_commit
+            by_commit[commit]
+            if commit in by_commit
             else os.environ.get("FAKE_GIT_CONFORMANCE_HEX")
         )
     else:
+        path_text = requested[-1]
         payload_hex = os.environ.get("FAKE_GIT_BASELINE_HEX")
-    if payload_hex is not None:
+    if not mapped_request and payload_hex is not None:
         baseline = bytes.fromhex(payload_hex)
         object_id = hashlib.sha1(
             b"blob " + str(len(baseline)).encode() + b"\\0" + baseline
@@ -496,6 +602,13 @@ elif args and args[:2] == ["cat-file", "-s"]:
             *json.loads(
                 os.environ.get("FAKE_GIT_CONFORMANCE_BY_COMMIT", "{{}}")
             ).values(),
+            *[
+                value
+                for tree in json.loads(
+                    os.environ.get("FAKE_GIT_TREE_BY_COMMIT", "{{}}")
+                ).values()
+                for value in tree.values()
+            ],
         ]
         if value is not None
     ]
@@ -521,6 +634,13 @@ elif args and args[:2] == ["cat-file", "blob"]:
             *json.loads(
                 os.environ.get("FAKE_GIT_CONFORMANCE_BY_COMMIT", "{{}}")
             ).values(),
+            *[
+                value
+                for tree in json.loads(
+                    os.environ.get("FAKE_GIT_TREE_BY_COMMIT", "{{}}")
+                ).values()
+                for value in tree.values()
+            ],
         ]
         if value is not None
     ]
@@ -534,7 +654,6 @@ elif (
     and args[0] == "diff"
     and "--name-only" in args
     and any(".." in value for value in args)
-    and "FAKE_GIT_DIFF_PATHS" in os.environ
 ):
     pair = next(value for value in args if ".." in value)
     paths = json.loads(os.environ.get("FAKE_GIT_DIFF_PATHS", "{{}}")).get(pair, [])
@@ -548,7 +667,7 @@ elif args and args[0] == "rev-list":
     elif mode == "intermediate":
         print(hashlib.sha1(b"middle").hexdigest())
         print(head)
-    else:
+    elif base != head:
         print(base if mode == "range-confusion" else head)
 elif args and args[0] == "verify-commit":
     if os.environ.get("FAKE_GIT_LOG"):
@@ -909,6 +1028,26 @@ print(json.dumps(payload))
             state,
             "fixture:legacy-config",
             {"path": path, "value": value},
+        )
+
+    def make_prose_receipt_legacy(self, step_no=1):
+        """Convert one fixture step to the pre-binding prose receipt shape."""
+        state = self.state()
+        step = state["steps"][step_no - 1]
+        receipt = step["receipts"]["prose"]
+        legacy = {
+            "files": receipt["files"],
+            "skills": receipt["skills"],
+        }
+        step["receipts"]["prose"] = legacy
+        step["receipts"].get("audit", {}).pop("prose_writable", None)
+        if step["audit"]["rounds"]:
+            step["audit"]["rounds"][-1].pop("prose_writable", None)
+        hexctl_module().commit(
+            self.target,
+            state,
+            "fixture:legacy-prose",
+            {"step": step_no, **legacy},
         )
 
     def run_branch(self):

@@ -837,14 +837,14 @@ def build_audit_record_schema_tests(context):
             prefix[finding: finding + len(b"finding 1")] = b"<script>x"
             path.write_bytes(prefix)
             self.write_record(append=True)
-            self.env["FAKE_GIT_MODE"] = "missing-commit"
+            self.env["FAKE_GIT_MODE"] = "baseline-unavailable"
             self.run_ctl("audit-round", "--findings", "0")
 
         def test_clean_log_only_predecessor_also_supplies_the_next_offset(self):
             self.write_record()
             self.run_ctl("audit-round", "--findings", "0")
             self.write_record(append=True)
-            self.env["FAKE_GIT_MODE"] = "missing-commit"
+            self.env["FAKE_GIT_MODE"] = "baseline-unavailable"
             self.run_ctl("audit-round", "--findings", "0")
 
         def test_first_strict_round_accepts_a_git_absent_log(self):

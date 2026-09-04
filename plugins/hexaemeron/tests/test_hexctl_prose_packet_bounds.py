@@ -18,6 +18,7 @@ today.
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import subprocess
 import tempfile
@@ -27,9 +28,9 @@ from io import StringIO
 from pathlib import Path
 
 try:
-    from .hexctl_harness import HexctlCase, LINTS_CLEAN
+    from .hexctl_harness import HexctlCase, LINTS_CLEAN, SUITE
 except ImportError:
-    from hexctl_harness import HexctlCase, LINTS_CLEAN
+    from hexctl_harness import HexctlCase, LINTS_CLEAN, SUITE
 
 
 HERE = Path(__file__).resolve().parent
@@ -261,13 +262,263 @@ class BoundIndependenceTests(unittest.TestCase):
         )
 
 
+class ClosedProseAuthorityTests(HexctlCase):
+    """The final review grants a closed, replayable tracked-path authority."""
+
+    def controller_bytes(self):
+        return tuple(
+            Path(self.target, ".hexaemeron", name).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+    def to_prose(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0")
+        self.run_ctl("done", "audit")
+
+    def test_clean_round_requires_a_closed_prose_writable_declaration(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "audit-round", "--findings", "0", expect=2,
+            prose_inventory=False,
+        )
+        self.assertIn("requires exactly one", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_push_refuses_a_descendant_of_the_receipted_prose_head(self):
+        self.to_prose()
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        state = self.state()
+        branch = self.step_branch(1, state)
+        descendant = self.fake_sha("unreviewed-after-prose")
+        url = "https://github.com/wildcat-finance/example/pull/1"
+        self.fake_refs[branch] = descendant
+        self.fake_prs[url] = self.fake_pr(
+            url, branch, self.step_base(1, state), descendant
+        )
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "push", "--pr-url", url,
+            "--head-commit", descendant,
+            "--pr-base", self.step_base(1, state), expect=2,
+        )
+        self.assertIn("not the exact receipted prose head", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_no_prose_writes_needs_no_empty_seal_commit(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0", "--no-prose-writes")
+        source = self.state()["steps"][0]["audit"]["rounds"][-1][
+            "prose_writable"
+        ]["source_commit"]
+        self.run_ctl("done", "audit")
+        self.next_prose_head = source
+        self.run_ctl(
+            "done", "prose", "--files", "0", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        receipt = self.state()["steps"][0]["receipts"]["prose"]
+        self.assertEqual(receipt["head_commit"], source)
+        self.assertEqual(receipt["verified_commits"], [])
+        self.run_ctl("verify")
+
+    def test_verify_replays_the_closed_prose_delta(self):
+        self.to_prose()
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        receipt = self.state()["steps"][0]["receipts"]["prose"]
+        pair = f"{receipt['source_commit']}..{receipt['head_commit']}"
+        diffs = json.loads(self.env["FAKE_GIT_DIFF_PATHS"])
+        diffs[pair] = sorted([*diffs[pair], "plugins/demo/runtime.py"])
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
+        refused = self.run_ctl("verify", expect=2)
+        self.assertIn("outside the Warden's closed writable set", refused.stderr)
+
+    def test_absent_adr_may_be_declared_before_hypomnema_creates_it(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "docs/decisions/ADR-999-fixture.md"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {relative: None},
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0",
+            "--prose-writable", relative,
+        )
+        declaration = self.state()["steps"][0]["audit"]["rounds"][-1][
+            "prose_writable"
+        ]
+        self.assertEqual(
+            declaration["paths"], [{"path": relative, "baseline": "absent"}]
+        )
+        self.run_ctl("done", "audit")
+        destination = Path(self.target, *relative.split("/"))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text("# Decision\n", encoding="utf-8")
+        self.git("add", "--", relative)
+        self.git("commit", "-q", "-m", "fixture prose")
+        packet = self.next_json()
+        self.assertEqual(packet["brief"]["files"], [relative])
+        self.assertEqual(packet["brief"]["writable_files"], [relative])
+        self.assertEqual(
+            packet["brief"]["writable_baselines"], declaration["paths"]
+        )
+        self.assertIn("review_files", packet["brief"])
+        self.run_ctl(
+            "done", "prose", "--files", "2", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl("verify")
+
+    def test_prose_refuses_unlisted_operative_text_and_markdown(self):
+        self.to_prose()
+        for relative in (
+            "tests/fixtures/evaluation/prompt-template.txt",
+            "AGENTS.md",
+        ):
+            with self.subTest(relative=relative):
+                self.next_prose_changed_paths = [relative]
+                before = self.controller_bytes()
+                refused = self.run_ctl(
+                    "done", "prose", "--files", "1", "--skills",
+                    "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+                )
+                self.assertIn(
+                    "outside the Warden's closed writable set", refused.stderr
+                )
+                self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_refuses_deletion_of_a_declared_existing_blob(self):
+        relative = "docs/guide.md"
+        source_bytes = b"# Guide\n"
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {relative: source_bytes.hex()},
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0",
+            "--prose-writable", relative,
+        )
+        self.run_ctl("done", "audit")
+        self.next_prose_changed_paths = [relative]
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+        )
+        self.assertIn("deletes declared path", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_refuses_executable_or_nonregular_new_paths(self):
+        relative = "docs/decisions/ADR-999-fixture.md"
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {relative: None},
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0", "--prose-writable", relative,
+        )
+        self.run_ctl("done", "audit")
+        destination = Path(self.target, *relative.split("/"))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text("# Decision\n", encoding="utf-8")
+        self.git("add", "--", relative)
+        self.git("commit", "-q", "-m", "fixture prose")
+        before = self.controller_bytes()
+        for mode, message in (
+            ("prose-final-executable", "non-prose mode"),
+            ("prose-final-symlink", "away from a regular blob"),
+        ):
+            with self.subTest(mode=mode):
+                self.env["FAKE_GIT_MODE"] = mode
+                refused = self.run_ctl(
+                    "done", "prose", "--files", "1", "--skills",
+                    "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+                )
+                self.assertIn(message, refused.stderr)
+                self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_refuses_a_mode_change_on_warden_audit_evidence(self):
+        self.to_prose()
+        self.env["FAKE_GIT_MODE"] = "prose-final-executable"
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "prose", "--files", "0", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+        )
+        self.assertIn("away from non-executable blobs", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_requires_final_changes_committed_before_receipt(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "docs/decisions/ADR-999-fixture.md"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {relative: None},
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0", "--prose-writable", relative,
+        )
+        self.run_ctl("done", "audit")
+        destination = Path(self.target, *relative.split("/"))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text("# Decision\n", encoding="utf-8")
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+        )
+        self.assertIn("stage and commit every intended final change", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+        self.git("add", "--", relative)
+        self.git("commit", "-q", "-m", "fixture prose candidate")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        head = self.state()["steps"][0]["receipts"]["prose"]["head_commit"]
+        state = self.state()
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", head,
+            "--pr-base", self.step_base(1, state),
+        )
+
+
 class ProseDirectiveTests(HexctlCase):
     """The acceptance check, driven through `next` on real branches."""
 
     def reach_prose_with_a_removed_tree(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", '"waived: fixture"')
-        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {"docs/record.md": None},
+        })
+        self.run_ctl(
+            "audit-round",
+            "--findings",
+            "0",
+            *LINTS_CLEAN,
+            "--prose-writable",
+            "docs/record.md",
+        )
         self.run_ctl("done", "audit")
 
         state = self.state()

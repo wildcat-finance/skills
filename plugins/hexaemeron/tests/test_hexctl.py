@@ -535,7 +535,7 @@ class TestDesignEvidenceLifecycle(HexctlCase):
             "--pr-base", self.step_base(3, state), expect=2,
         )
         self.assertIn(
-            "does not contain its last locally reviewed commit", refused.stderr
+            "not descended from its audited source commit", refused.stderr
         )
         self.assertEqual(self.controller_bytes(), before)
 
@@ -804,7 +804,13 @@ class TestDelegationPackets(HexctlCase):
         self.run_ctl("done", "audit")
         scribe = self.next_json()
         self.assert_packet(
-            scribe, "scribe", ("files", "pr_base", "pr_draft_path", "plugin_root")
+            scribe,
+            "scribe",
+            (
+                "files", "review_files", "pr_base", "pr_draft_path",
+                "plugin_root", "source_commit", "writable_files",
+                "writable_baselines", "writable_sha256",
+            ),
         )
         # The harness commits the audit records on the run branch, so they
         # reach this step's diff as deletions.  A removed path carries no prose
@@ -817,7 +823,8 @@ class TestDelegationPackets(HexctlCase):
         self.assertEqual((push["do"], push["agent"], push["brief"]),
                          ("push", None, {}))
         self.run_ctl("done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-                     "--head-commit", "abc", "--pr-base", self.step_base(1))
+                     "--head-commit", self.fake_sha("head1"),
+                     "--pr-base", self.step_base(1))
         merge = self.next_json()
         self.assertEqual((merge["do"], merge["agent"], merge["brief"]),
                          ("merge-step", None, {}))
@@ -1020,15 +1027,17 @@ class TestDelegationPackets(HexctlCase):
             self.write(name, name)
         self.git("add", "zeta.md", "alpha.md")
         self.git("commit", "-m", "step")
+        diffs = json.loads(self.env.get("FAKE_GIT_DIFF_PATHS", "{}"))
+        diffs[f"{self.step_base(1)}..{branch}"] = ["alpha.md", "zeta.md"]
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
         # The two audit records sit on the run branch rather than this one, so
         # they arrive as deletions and the packet drops them.  The ceiling that
         # remains is PROSE_PATHS_MAX, exercised over a mocked path list in
         # test_hexctl_prose_packet_bounds rather than by writing four thousand
         # files through this fixture.
-        self.assertEqual(
-            self.next_json()["brief"]["files"],
-            ["alpha.md", "zeta.md"],
-        )
+        packet = self.next_json()["brief"]
+        self.assertEqual(packet["files"], [])
+        self.assertEqual(packet["review_files"], ["alpha.md", "zeta.md"])
 
     def test_git_output_and_returned_path_caps_refuse(self):
         module = hexctl_module()
@@ -1728,6 +1737,7 @@ class TestMergedAttribution(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -1913,6 +1923,7 @@ class TestMergedState(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -2000,6 +2011,7 @@ class TestMergedState(HexctlCase):
 
     def test_an_unanswerable_ancestry_call_refuses_rather_than_reporting_no(self):
         self.to_integrate()
+        self.make_prose_receipt_legacy()
         proc = self.integrate(expect=2, git_mode="ancestry-error")
         self.assertIn("ancestry", proc.stderr)
         self.assertIn("could not be determined", proc.stderr)
@@ -2104,6 +2116,7 @@ class TestMergedState(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -2114,6 +2127,7 @@ class TestMergedState(HexctlCase):
             "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
         )
         self.env.pop("FAKE_GH_MODE", None)
+        self.make_prose_receipt_legacy()
         branch = self.step_branch(1)
         self.fake_refs[branch] = "c" * 40
         self.fake_prs[self.URL]["head"]["sha"] = "c" * 40
@@ -2139,7 +2153,13 @@ class TestMergedState(HexctlCase):
 
 
 class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
-    def to_push(self, base=None):
+    def controller_bytes(self):
+        return tuple(
+            Path(self.target, ".hexaemeron", name).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+    def to_push(self, base=None, prose_head="d" * 40):
         self.to_steps(("Ship",), base=base)
         self.run_ctl(
             "done", "implement", "--branch", self.step_branch(1),
@@ -2148,6 +2168,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
+        self.next_prose_head = prose_head
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -2208,6 +2229,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
 
     def test_merge_repairs_signed_post_push_head(self):
         self.to_merge_step()
+        self.make_prose_receipt_legacy()
         repaired_head = "7" * 40
         self.set_post_push_head(repaired_head)
         self.run_ctl(
@@ -2218,6 +2240,18 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertTrue(repair["repaired"])
         self.assertEqual(repair["head"], repaired_head)
 
+    def test_merge_refuses_a_post_prose_branch_head(self):
+        self.to_merge_step()
+        self.set_post_push_head("7" * 40)
+        self.prime_step_merge()
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "merge-step", "--step", "1",
+            "--merge-commit", "e" * 40, expect=2,
+        )
+        self.assertIn("not the exact receipted prose head", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
     def test_merge_time_repair_refuses_invalid_local_signature(self):
         self.to_merge_step()
         self.edit_push_receipt(lambda receipt: receipt.pop("github_verified", None))
@@ -2227,11 +2261,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             "done", "merge-step", "--step", "1",
             "--merge-commit", "e" * 40, expect=2,
         )
-        self.assertIn("valid local signature", proc.stderr)
+        self.assertIn("valid native local signature", proc.stderr)
 
     def test_merge_time_repair_refuses_invalid_github_verification(self):
         self.to_merge_step()
-        self.set_post_push_head("7" * 40)
+        self.edit_push_receipt(lambda receipt: receipt.pop("github_verified", None))
         self.prime_step_merge()
         self.env["FAKE_GH_MODE"] = "verified-false"
         proc = self.run_ctl(
@@ -2272,22 +2306,22 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
 
     def test_push_refuses_cross_repository_pr_and_mismatched_head(self):
         self.to_push()
-        branch = self.step_branch(1)
-        self.fake_refs[branch] = self.fake_sha("def456")
         proc = self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/elsewhere/example/pull/1",
-            "--head-commit", "def456", "--pr-base", self.step_base(1),
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
             expect=2,
         )
         self.assertIn("repository", proc.stderr)
 
     def test_push_head_must_equal_pushed_branch_tip(self):
         self.to_push()
+        branch = self.step_branch(1)
+        self.fake_refs[branch] = self.fake_sha("def456")
         proc = self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "def456", "--pr-base", self.step_base(1),
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
             expect=2,
         )
         self.assertIn("branch tip", proc.stderr)
@@ -2317,7 +2351,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertFalse(os.path.exists(log_path))
 
     def test_merge_step_refuses_pr_topology_mismatch(self):
-        self.to_push()
+        self.to_push(prose_head="def456")
         self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
@@ -2331,7 +2365,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertIn("pull request", proc.stderr)
 
     def test_integrate_refuses_pr_topology_mismatch(self):
-        self.to_push()
+        self.to_push(prose_head="def456")
         self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
@@ -2419,7 +2453,8 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
         self.env["FAKE_GIT_MERGE_BASE"] = base_before
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+        diffs = json.loads(self.env.get("FAKE_GIT_DIFF_PATHS", "{}"))
+        diffs.update(
             {
                 f"{base_before}..{final_merge}": [
                     "product.py",
@@ -2435,6 +2470,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 ],
             }
         )
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
         return state, sync_sha, base_sha
 
     def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
@@ -2528,7 +2564,8 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.fake_refs[state["run_branch"]] = sync_sha
         self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+        diffs = json.loads(self.env.get("FAKE_GIT_DIFF_PATHS", "{}"))
+        diffs.update(
             {
                 f"{base_before}..{final_merge}": [
                     "product.py",
@@ -2546,6 +2583,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 ],
             }
         )
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(diffs)
         return self.write_integration_revalidation(
             affected_paths=["controller.py", "shared.json", "upstream.py"]
         )
@@ -2910,7 +2948,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             "--base-commit", base_sha, "--revalidation", revalidation,
             expect=2,
         )
-        self.assertIn("valid local signature", proc.stderr)
+        self.assertIn("valid native local signature", proc.stderr)
 
     def test_sync_run_refuses_stale_remote_base(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
@@ -2980,6 +3018,7 @@ class TestDelegationPacketLifecycle(HexctlCase):
         self.stable_next("close-audit", None)
         self.run_ctl("done", "audit")
         self.stable_next("prose", "scribe")
+        self.next_prose_head = "d" * 40
         self.run_ctl(
             "done", "prose", "--files", "1", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
@@ -3198,12 +3237,29 @@ class TestAuditLoop(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl(
             "audit-round", "--findings", "1", "--fixes-commit", "b1",
-            "--elenchus-verdict", "guarded",
+            "--elenchus-verdict", "guarded", "--no-prose-writes",
         )
         proc = self.run_ctl("done", "audit", "--no-further-leads", expect=2)
         self.assertIn("--reason", proc.stderr)
         self.run_ctl("done", "audit", "--no-further-leads",
                      "--reason", "remaining lead is a gas nit, out of scope")
+        declaration = self.state()["steps"][0]["receipts"]["audit"][
+            "prose_writable"
+        ]
+        self.assertEqual(declaration["paths"], [])
+
+    def test_no_further_leads_requires_a_final_prose_binding(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl(
+            "audit-round", "--findings", "1", "--fixes-commit", "b1",
+            "--elenchus-verdict", "guarded",
+        )
+        refused = self.run_ctl(
+            "done", "audit", "--no-further-leads",
+            "--reason", "bounded accepted residual", expect=2,
+        )
+        self.assertIn("final finding round to declare", refused.stderr)
 
     def test_max_rounds_forces_verdict(self):
         self.to_audit()
@@ -3482,7 +3538,7 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("--pr-base", proc.stderr)
         self.run_ctl(
             "done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "abc123", "--pr-base", self.step_base(1),
+            "--head-commit", self.fake_sha("head1"), "--pr-base", self.step_base(1),
         )
 
     def test_step_pull_request_may_not_target_the_repository_base(self):
@@ -3718,7 +3774,7 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("--merge-commit", proc.stderr)
         self.run_ctl(
             "done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "abc123", "--merge-commit", "d" * 40,
+            "--head-commit", self.fake_sha("head1"), "--merge-commit", "d" * 40,
         )
         out = self.next_json()
         self.assertEqual((out["do"], out["step"]), ("implement", 2))
@@ -3738,7 +3794,7 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("integrate phase", proc.stderr)
         self.run_ctl(
             "done", "push", "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
-            "--head-commit", "abc123", "--pr-base", self.step_base(1),
+            "--head-commit", self.fake_sha("head1"), "--pr-base", self.step_base(1),
         )
         self.finish_step(2)
         self.merge_stack()
