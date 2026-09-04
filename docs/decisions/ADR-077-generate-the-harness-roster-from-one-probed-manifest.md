@@ -155,27 +155,40 @@ with. If a later reader decides the PR #479 clause should be honoured after all,
 the change is to those two assertions and to this record, in that order, and not
 a silent edit to either.
 
-## Numbering, and one stale pointer this leaves behind
+## Numbering, and the stale pointers this leaves behind
 
-This record was written as ADR-074, which was free when the run checked. Pull
-request 1181 merged `ADR-074-shape-every-written-record-through-sapheneia.md`
-into `main` fifty-five minutes later, at 2026-09-04T01:40:30Z against this
-record's own commit at 00:45:16Z. `tests/test_decision_records.py`
-compares numbers against the default branch, so the collision turned the step's
-own exit gate red. ADR-075 was already claimed by open pull request 1185, so
-this record took 076. Issue 888 is rebuilding ADR numbering to assign at merge
-instead of at authoring, which is the general answer to the race; renumbering
-here is the local one.
+This record was written as ADR-074, which was free when the run checked, and it
+collided twice. Pull request 1181 merged
+`ADR-074-shape-every-written-record-through-sapheneia.md` into `main`
+fifty-five minutes later, at 2026-09-04T01:40:30Z against this record's own
+commit at 00:45:16Z. `tests/test_decision_records.py` compares numbers against
+the default branch, so the collision turned the step's own exit gate red.
+ADR-075 was already claimed by open pull request 1185, so the record took 076.
+That number collided too. `main` acquired a different
+`ADR-076-digest-neutral-measured-corpus.md` in `530efcec` at
+2026-09-04T11:07:49+01:00, which is not an ancestor of this branch, and the same
+gate went red at two failures. The record then took 077, which was free on this
+branch and on `origin/main`, whose numbered records run 074, 075 and 076. Ten occurrences moved with it: this file's heading, one full path in the
+schema description, three in the probe and five in the test module. Nothing
+reserves 077 either, so it is rechecked before this step is pushed. Issue 888 is
+rebuilding ADR numbering to assign at merge rather than at authoring, which is
+the general answer to the race; renumbering twice by hand is the local one.
 
-One pointer did not survive the renumber. Between the two events the run's study
-gained a `hypomnema-design-bridge/v1` block naming
+The renumbers left pointers behind that no amendment can reach. Between the
+first two events the run's study gained a `hypomnema-design-bridge/v1` block
+naming
 `docs/decisions/ADR-074-generate-the-harness-roster-from-one-probed-manifest.md`.
 Study amendments are append-only, and Hypomnema refuses a study that declares
 more than one design bridge home, so the block cannot be repointed and cannot be
 removed. The study at `docs/atlas-harness-handoff/study.md` therefore names a
 file that does not exist, and `hypomnema --study` reports H008 against it. The
 repository suite exercises study mode only against its own fixtures and never
-against this study, so nothing here goes red on it.
+against this study, so nothing here goes red on it. Step 1's baseline `Exit` and
+`Files` fields in the runbook name the ADR-076 path, and step 1 is complete, so
+the controller refuses the amendment that would rewrite them. The audit log for
+this run and its synopsis name the record as ADR-076 twenty-five times each;
+those are append-only history, they were correct when written, and a step may
+not edit anything under `audit/`.
 
-The decision the bridge was meant to reach is this file. Anyone following that
-block should read it here.
+The decision every one of them was meant to reach is this file. Anyone following
+one should read it here.
