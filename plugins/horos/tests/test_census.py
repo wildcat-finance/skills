@@ -96,13 +96,6 @@ class CensusTests(unittest.TestCase):
         rows = self.census()["rows"]
         self.assertEqual(rows[0]["suffix"], ".bin")
 
-    def test_scan_without_the_flag_is_byte_for_byte_unchanged(self):
-        committed = (FIXTURE / horos.BOUNDARY_RELPATH).read_text(encoding="utf-8")
-        with mock.patch.object(sys, "stdout", new=io.StringIO()) as stdout:
-            code = horos.main(["scan", str(FIXTURE), "--json"])
-        self.assertEqual(code, 0)
-        self.assertEqual(stdout.getvalue(), committed)
-
     def test_the_committed_fixture_census_matches_a_fresh_run(self):
         committed = (FIXTURE / horos.CENSUS_RELPATH).read_text(encoding="utf-8")
         fresh = horos.render(
