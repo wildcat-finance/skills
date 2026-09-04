@@ -88,7 +88,13 @@ CONTRACT = "promise-machine/v1"
 # measures 23,160,342 bytes, 88.3% of the 25 MiB the CLI allows. That one is the
 # CLI's own default and cannot be raised here, so it, and not the file count,
 # is what a nineteenth plugin has to answer for.
-MAX_FILES = 1_200
+# Binding every level-2 and level-3 promise to a runtime specimen adds the
+# specimens, their fixtures and the plugin test modules the bindings name as
+# the source they recompute. The payload measures 1,205 files, so the cap
+# moves once more under the reasoning above rather than by dropping the
+# surface the portable checker verifies against. The byte cap is untouched and
+# still binds.
+MAX_FILES = 1_300
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
@@ -102,6 +108,12 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
 PORTABLE_TEST_FILES = {
+    "plugins/alexandria/tests/test_release.py",
+    "plugins/ariadne/tests/test_examples.py",
+    "plugins/ariadne/tests/test_gates.py",
+    "plugins/berean/tests/test_corpus.py",
+    "plugins/berean/tests/test_examples.py",
+    "plugins/berean/tests/test_promote.py",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
@@ -114,6 +126,15 @@ PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
+    "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+    "plugins/hexaemeron/tests/test_hexctl.py",
+    "plugins/hexaemeron/tests/test_run_observation_binding.py",
+    "plugins/lazarus/tests/test_capture.py",
+    "plugins/lazarus/tests/test_verifier.py",
+    "plugins/lemma/tests/test_markdown.py",
+    "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+    "plugins/synkrisis/tests/test_cohort.py",
+    "plugins/synkrisis/tests/test_verify.py",
 }
 
 
@@ -234,8 +255,22 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-                if plugin.name != "hexaemeron":
-                    self.assertFalse((plugin / "tests").exists())
+                # Runtime bindings name a plugin's own test module as the
+                # source they recompute, so the payload carries exactly those
+                # and nothing else.  Banning the directory outright would drop
+                # the surface the portable checker verifies against; leaving it
+                # unchecked would let an unreviewed test file ride along.
+                present = {
+                    path.relative_to(RUNTIME).as_posix()
+                    for path in (plugin / "tests").rglob("*")
+                    if path.is_file() or path.is_symlink()
+                }
+                declared = {
+                    name
+                    for name in PORTABLE_TEST_FILES
+                    if name.startswith(f"plugins/{plugin.name}/tests/")
+                }
+                self.assertEqual(present, declared)
         portable_tests = RUNTIME / "plugins/hexaemeron/tests"
         self.assertEqual(
             {
@@ -243,7 +278,11 @@ class SkillsShPackageTests(unittest.TestCase):
                 for path in portable_tests.rglob("*")
                 if path.is_file() or path.is_symlink()
             },
-            PORTABLE_TEST_FILES,
+            {
+                name
+                for name in PORTABLE_TEST_FILES
+                if name.startswith("plugins/hexaemeron/tests/")
+            },
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())

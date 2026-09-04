@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "dokimasia_workbook_lineage": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-workbook-lineage without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_workbook.py",
+                "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_workbook.py",
+                "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-workbook-lineage",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-workbook-lineage",
+            "subject": "runtime source plugins/dokimasia/tests/test_workbook.py#test_every_source_row_is_rebuilt_from_the_cases_alone"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_workbook.py",
+            "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_workbook.py",
+            "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-workbook-lineage",
+        "scope": "structural binding for dokimasia-workbook-lineage",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/dokimasia/tests/test_workbook.py#test_every_source_row_is_rebuilt_from_the_cases_alone",
+        "transition": {
+          "action": "structurally bind dokimasia-workbook-lineage without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "dokimasia_workbook_lineage": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-workbook-lineage without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_workbook.py",
+                "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_workbook.py",
+                "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-workbook-lineage",
+          "source": {
+            "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-workbook-lineage",
+            "subject": "runtime source plugins/dokimasia/tests/test_workbook.py#test_every_source_row_is_rebuilt_from_the_cases_alone"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_workbook.py",
+            "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_workbook.py",
+            "sha256": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-workbook-lineage",
+        "scope": "structural binding for dokimasia-workbook-lineage",
+        "source_digest": "67b3f1c20f016a8a52847fd02fbd81d1f5a607a3e447d48335f2fbceadae0ac9",
+        "subject": "runtime source plugins/dokimasia/tests/test_workbook.py#test_every_source_row_is_rebuilt_from_the_cases_alone",
+        "transition": {
+          "action": "structurally bind dokimasia-workbook-lineage without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

@@ -1,0 +1,823 @@
+{
+  "relations": [
+    {
+      "negative": [
+        {
+          "field": "producer identity",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "producer",
+                "promise_id"
+              ],
+              "value": "lemma-chunk-validation"
+            }
+          ]
+        },
+        {
+          "field": "consumer transition",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "transition"
+              ],
+              "value": "treat source-linked chunks as answer truth"
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-lemma-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "chunk-locations": "validated-jsonl-locations",
+            "conflicts": [
+              "source-disagreement-retained"
+            ],
+            "evidence-classes": [
+              "recorded",
+              "checked"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/lemma/tests/test_markdown.py",
+                "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b"
+              },
+              {
+                "path": "plugins/berean/tests/test_corpus.py",
+                "sha256": "9b00b934fc42ecf7ea8de5d6227fc7796ba0ae9f1a82a4fa76df483c3eb9f23b"
+              }
+            ],
+            "recovery": [
+              "return to the cited source bytes"
+            ],
+            "refusals": [
+              "answer-truth"
+            ],
+            "scope": "source-linked-chunks",
+            "source-links": "path-line-and-byte-ranges",
+            "subject": "markdown-corpus",
+            "time-domain": "captured-source-revision",
+            "unknowns": [
+              "answer-truth-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "berean-corpus-binding",
+          "transition": "admit source-linked chunks as retrieval input"
+        },
+        "producer": {
+          "bindings": {
+            "chunk-locations": "validated-jsonl-locations",
+            "conflicts": [
+              "source-disagreement-retained"
+            ],
+            "evidence-classes": [
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/lemma/tests/test_markdown.py",
+                "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b"
+              }
+            ],
+            "recovery": [
+              "return to the cited source bytes"
+            ],
+            "refusals": [
+              "answer-truth"
+            ],
+            "scope": "source-linked-chunks",
+            "source-links": "path-line-and-byte-ranges",
+            "subject": "markdown-corpus",
+            "time-domain": "captured-source-revision",
+            "unknowns": [
+              "answer-truth-not-established"
+            ]
+          },
+          "promise_id": "lemma-corpus-provenance"
+        },
+        "relation_id": "lemma-retrieval-to-berean-corpus",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "lemma-retrieval-to-berean-corpus"
+    },
+    {
+      "negative": [
+        {
+          "field": "evidence references",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "evidence-references"
+              ],
+              "value": [
+                {
+                  "path": "plugins/berean/tests/test_examples.py",
+                  "sha256": "ec314e9f6e9e399f2bb1327ee28bf51bc1364870ab5bdeba401ce425059dc6c1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "field": "proof-relation",
+          "mutations": [
+            {
+              "operation": "remove",
+              "path": [
+                "consumer",
+                "bindings",
+                "proof-relation"
+              ]
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-lazarus-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "block": "chain-1-block-19000000",
+            "conflicts": [
+              "rpc-counterevidence-retained"
+            ],
+            "evidence-classes": [
+              "recorded",
+              "checked"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/lazarus/tests/test_capture.py",
+                "sha256": "f23c2c4169bf84666e7bfb703f8dc9bad326fe44ba5d7fe939c422567012e80a"
+              },
+              {
+                "path": "plugins/berean/tests/test_examples.py",
+                "sha256": "ec314e9f6e9e399f2bb1327ee28bf51bc1364870ab5bdeba401ce425059dc6c1"
+              }
+            ],
+            "proof-relation": "not-established",
+            "recovery": [
+              "run the named proof checker for the exact fixture"
+            ],
+            "refusals": [
+              "proved-without-proof-relation",
+              "answer-truth"
+            ],
+            "rpc-methods": "declared-method-set",
+            "scope": "declared-rpc-fixture",
+            "subject": "historical-ethereum-read",
+            "time-domain": "pinned-chain-and-block",
+            "unknowns": [
+              "proof-relation-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "berean-answer-evidence",
+          "transition": "admit recorded RPC evidence to the pinned answer evidence set"
+        },
+        "producer": {
+          "bindings": {
+            "block": "chain-1-block-19000000",
+            "conflicts": [
+              "rpc-counterevidence-retained"
+            ],
+            "evidence-classes": [
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/lazarus/tests/test_capture.py",
+                "sha256": "f23c2c4169bf84666e7bfb703f8dc9bad326fe44ba5d7fe939c422567012e80a"
+              }
+            ],
+            "proof-relation": "not-established",
+            "recovery": [
+              "run the named proof checker for the exact fixture"
+            ],
+            "refusals": [
+              "proved-without-proof-relation",
+              "answer-truth"
+            ],
+            "rpc-methods": "declared-method-set",
+            "scope": "declared-rpc-fixture",
+            "subject": "historical-ethereum-read",
+            "time-domain": "pinned-chain-and-block",
+            "unknowns": [
+              "proof-relation-not-established"
+            ]
+          },
+          "promise_id": "lazarus-fixture-capture"
+        },
+        "relation_id": "lazarus-rpc-to-berean-answer",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "lazarus-rpc-to-berean-answer"
+    },
+    {
+      "negative": [
+        {
+          "field": "unknowns",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "unknowns"
+              ],
+              "value": []
+            }
+          ]
+        },
+        {
+          "field": "refused overclaim",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "refusals"
+              ],
+              "value": []
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-berean-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "answer-digest": "sha256:berean-answer-set",
+            "conflicts": [
+              "failed-answer-counterevidence-retained"
+            ],
+            "corpus-digest": "sha256:berean-corpus",
+            "evaluation-digest": "sha256:berean-evaluation",
+            "evidence-classes": [
+              "checked",
+              "recorded",
+              "recomputed"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/berean/tests/test_promote.py",
+                "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
+              },
+              {
+                "path": "plugins/ariadne/tests/test_gates.py",
+                "sha256": "ccbd8e93c84c6a9492e7f2754977946f977c9e1641965086e3d54d8a7b612c0a"
+              }
+            ],
+            "recovery": [
+              "inspect the pinned corpus, answers, and evaluation record"
+            ],
+            "refusals": [
+              "answer-truth",
+              "model-quality"
+            ],
+            "scope": "pinned-corpus-and-answer-set",
+            "subject": "grounded-agent-release",
+            "time-domain": "recorded-evaluation-run",
+            "unknowns": [
+              "model-quality-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "ariadne-capture-statement",
+          "transition": "bind the promoted Berean release digest to its declared evidence"
+        },
+        "producer": {
+          "bindings": {
+            "answer-digest": "sha256:berean-answer-set",
+            "conflicts": [
+              "failed-answer-counterevidence-retained"
+            ],
+            "corpus-digest": "sha256:berean-corpus",
+            "evaluation-digest": "sha256:berean-evaluation",
+            "evidence-classes": [
+              "checked",
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/berean/tests/test_promote.py",
+                "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f"
+              }
+            ],
+            "recovery": [
+              "inspect the pinned corpus, answers, and evaluation record"
+            ],
+            "refusals": [
+              "answer-truth",
+              "model-quality"
+            ],
+            "scope": "pinned-corpus-and-answer-set",
+            "subject": "grounded-agent-release",
+            "time-domain": "recorded-evaluation-run",
+            "unknowns": [
+              "model-quality-not-established"
+            ]
+          },
+          "promise_id": "berean-release-promotion"
+        },
+        "relation_id": "berean-promotion-to-ariadne-capture",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "berean-promotion-to-ariadne-capture"
+    },
+    {
+      "negative": [
+        {
+          "field": "conflicts",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "conflicts"
+              ],
+              "value": []
+            }
+          ]
+        },
+        {
+          "field": "scope",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "scope"
+              ],
+              "value": "all-host-adapters"
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-janus-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "adapter": "wildcat-host-adapter-v1",
+            "bounded-search": "declared-effect-and-revert-space",
+            "conflicts": [
+              "unknown-effects-retained"
+            ],
+            "evidence-classes": [
+              "checked",
+              "measured",
+              "recorded",
+              "recomputed"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+                "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
+              },
+              {
+                "path": "plugins/ariadne/tests/test_gates.py",
+                "sha256": "ccbd8e93c84c6a9492e7f2754977946f977c9e1641965086e3d54d8a7b612c0a"
+              }
+            ],
+            "manifest": "janus-effects-manifest-v1",
+            "recorder": "janus-transition-recorder-v1",
+            "recovery": [
+              "rerun against the named host adapter and bounded manifest"
+            ],
+            "refusals": [
+              "hook-safety",
+              "complete-liveness",
+              "cross-host-conformance"
+            ],
+            "scope": "named-host-adapter",
+            "subject": "wildcat-hook-specimen",
+            "time-domain": "bounded-conformance-run",
+            "unknowns": [
+              "cross-host-safety-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "ariadne-capture-statement",
+          "transition": "bind the bounded Janus result to its host-specific evidence"
+        },
+        "producer": {
+          "bindings": {
+            "adapter": "wildcat-host-adapter-v1",
+            "bounded-search": "declared-effect-and-revert-space",
+            "conflicts": [
+              "unknown-effects-retained"
+            ],
+            "evidence-classes": [
+              "checked",
+              "measured",
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+                "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
+              }
+            ],
+            "manifest": "janus-effects-manifest-v1",
+            "recorder": "janus-transition-recorder-v1",
+            "recovery": [
+              "rerun against the named host adapter and bounded manifest"
+            ],
+            "refusals": [
+              "hook-safety",
+              "complete-liveness",
+              "cross-host-conformance"
+            ],
+            "scope": "named-host-adapter",
+            "subject": "wildcat-hook-specimen",
+            "time-domain": "bounded-conformance-run",
+            "unknowns": [
+              "cross-host-safety-not-established"
+            ]
+          },
+          "promise_id": "janus-bounded-conformance"
+        },
+        "relation_id": "janus-bounded-to-ariadne-capture",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "janus-bounded-to-ariadne-capture"
+    },
+    {
+      "negative": [
+        {
+          "field": "subject",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "subject"
+              ],
+              "value": "different-artefact"
+            }
+          ]
+        },
+        {
+          "field": "consequence",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "consequence"
+              ],
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-ariadne-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "artefact-digest": "sha256:released-artefact",
+            "conflicts": [
+              "statement-counterevidence-retained"
+            ],
+            "evidence-classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/ariadne/tests/test_examples.py",
+                "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+              },
+              {
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "db81d4815c4b26009a50aa4589f08224927c759e67a20f2404a83cbcd58e6d2a"
+              }
+            ],
+            "predicate-type": "https://wildcat.finance/predicate/example/v1",
+            "recovery": [
+              "run an external signature verifier bound to the statement"
+            ],
+            "refusals": [
+              "author-identity-without-signature-verifier"
+            ],
+            "scope": "declared-statement-and-predicate",
+            "signature-verifier-state": "not-established",
+            "subject": "released-artefact",
+            "time-domain": "statement-verification-run",
+            "unknowns": [
+              "author-identity-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "fiat-receipted-delivery",
+          "transition": "consume the verified statement as an artefact-evidence binding"
+        },
+        "producer": {
+          "bindings": {
+            "artefact-digest": "sha256:released-artefact",
+            "conflicts": [
+              "statement-counterevidence-retained"
+            ],
+            "evidence-classes": [
+              "checked",
+              "recomputed"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/ariadne/tests/test_examples.py",
+                "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+              }
+            ],
+            "predicate-type": "https://wildcat.finance/predicate/example/v1",
+            "recovery": [
+              "run an external signature verifier bound to the statement"
+            ],
+            "refusals": [
+              "author-identity-without-signature-verifier"
+            ],
+            "scope": "declared-statement-and-predicate",
+            "signature-verifier-state": "not-established",
+            "subject": "released-artefact",
+            "time-domain": "statement-verification-run",
+            "unknowns": [
+              "author-identity-not-established"
+            ]
+          },
+          "promise_id": "ariadne-verify-statement"
+        },
+        "relation_id": "ariadne-verification-to-fiat-delivery",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "ariadne-verification-to-fiat-delivery"
+    },
+    {
+      "negative": [
+        {
+          "field": "consumer transition",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "transition"
+              ],
+              "value": "treat the captured observation as event truth and delivery evidence"
+            }
+          ]
+        },
+        {
+          "field": "recovery",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "recovery"
+              ],
+              "value": []
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-fiat-observation-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "capture-boundary": "regular-file-stable-read",
+            "conflicts": [
+              "capture-gaps-retained"
+            ],
+            "evidence-classes": [
+              "checked",
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+                "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
+              },
+              {
+                "path": "plugins/synkrisis/tests/test_cohort.py",
+                "sha256": "488313693633eb80f60abb4a749a64151f959b6fd7091d069cb93ba5cc30c634"
+              }
+            ],
+            "observation-validator": "promise-machine-run-observation-v1",
+            "receipt": "fiat-receipt-prefix-binding",
+            "recovery": [
+              "return to the validator, capture, and bound receipt"
+            ],
+            "refusals": [
+              "event-truth",
+              "delivery-evidence"
+            ],
+            "scope": "checked-observation-prefix",
+            "subject": "fiat-run-observation",
+            "time-domain": "receipt-bound-run-prefix",
+            "unknowns": [
+              "event-truth-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "synkrisis-cohort-construction",
+          "transition": "admit the checked observation prefix to the named comparison cohort"
+        },
+        "producer": {
+          "bindings": {
+            "capture-boundary": "regular-file-stable-read",
+            "conflicts": [
+              "capture-gaps-retained"
+            ],
+            "evidence-classes": [
+              "checked",
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+                "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
+              }
+            ],
+            "observation-validator": "promise-machine-run-observation-v1",
+            "receipt": "fiat-receipt-prefix-binding",
+            "recovery": [
+              "return to the validator, capture, and bound receipt"
+            ],
+            "refusals": [
+              "event-truth",
+              "delivery-evidence"
+            ],
+            "scope": "checked-observation-prefix",
+            "subject": "fiat-run-observation",
+            "time-domain": "receipt-bound-run-prefix",
+            "unknowns": [
+              "event-truth-not-established"
+            ]
+          },
+          "promise_id": "fiat-run-observation-binding"
+        },
+        "relation_id": "fiat-observation-to-synkrisis-cohort",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "fiat-observation-to-synkrisis-cohort"
+    },
+    {
+      "negative": [
+        {
+          "field": "counterevidence",
+          "mutations": [
+            {
+              "operation": "remove",
+              "path": [
+                "consumer",
+                "bindings",
+                "counterevidence"
+              ]
+            }
+          ]
+        },
+        {
+          "field": "model-graded domain overclaim",
+          "mutations": [
+            {
+              "operation": "replace",
+              "path": [
+                "producer",
+                "bindings",
+                "evidence-classes"
+              ],
+              "value": [
+                "inferred"
+              ]
+            },
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "bindings",
+                "evidence-classes"
+              ],
+              "value": [
+                "inferred",
+                "recorded"
+              ]
+            },
+            {
+              "operation": "replace",
+              "path": [
+                "consumer",
+                "transition"
+              ],
+              "value": "authorise external action from a model-graded comparison"
+            }
+          ]
+        }
+      ],
+      "obligation_id": "law-composition-synkrisis-boundary",
+      "positive": {
+        "consumer": {
+          "bindings": {
+            "cohort-digest": "sha256:synkrisis-cohort",
+            "conflicts": [
+              "counterevidence-retained"
+            ],
+            "counterevidence": "retained",
+            "evidence-classes": [
+              "recomputed",
+              "recorded"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/synkrisis/tests/test_verify.py",
+                "sha256": "24721420dc4a8b864f947313951a9c035faae6cd8b8f4ac3632f1bc0260d3e05"
+              },
+              {
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "db81d4815c4b26009a50aa4589f08224927c759e67a20f2404a83cbcd58e6d2a"
+              }
+            ],
+            "findings-digest": "sha256:synkrisis-findings",
+            "recovery": [
+              "inspect the cohort, findings, report, counterevidence, and unknown runs"
+            ],
+            "refusals": [
+              "cause",
+              "model-quality",
+              "authority-to-act"
+            ],
+            "report-digest": "sha256:synkrisis-report",
+            "scope": "validated-cohort-and-bounded-findings",
+            "subject": "comparison-report",
+            "time-domain": "recorded-comparison-run",
+            "unknown-runs": "retained",
+            "unknowns": [
+              "causal-explanation-not-established"
+            ]
+          },
+          "consequence": 3,
+          "promise_id": "fiat-final-integration",
+          "transition": "consume the recomputable comparison as bounded integration evidence"
+        },
+        "producer": {
+          "bindings": {
+            "cohort-digest": "sha256:synkrisis-cohort",
+            "conflicts": [
+              "counterevidence-retained"
+            ],
+            "counterevidence": "retained",
+            "evidence-classes": [
+              "recomputed"
+            ],
+            "evidence-references": [
+              {
+                "path": "plugins/synkrisis/tests/test_verify.py",
+                "sha256": "24721420dc4a8b864f947313951a9c035faae6cd8b8f4ac3632f1bc0260d3e05"
+              }
+            ],
+            "findings-digest": "sha256:synkrisis-findings",
+            "recovery": [
+              "inspect the cohort, findings, report, counterevidence, and unknown runs"
+            ],
+            "refusals": [
+              "cause",
+              "model-quality",
+              "authority-to-act"
+            ],
+            "report-digest": "sha256:synkrisis-report",
+            "scope": "validated-cohort-and-bounded-findings",
+            "subject": "comparison-report",
+            "time-domain": "recorded-comparison-run",
+            "unknown-runs": "retained",
+            "unknowns": [
+              "causal-explanation-not-established"
+            ]
+          },
+          "promise_id": "synkrisis-report-verification"
+        },
+        "relation_id": "synkrisis-verification-to-fiat-integration",
+        "schema": "promise-machine-composition/v1",
+        "transformation": "preserve-producer-boundary"
+      },
+      "relation_id": "synkrisis-verification-to-fiat-integration"
+    }
+  ],
+  "schema": "promise-machine-composition-cases/v1"
+}

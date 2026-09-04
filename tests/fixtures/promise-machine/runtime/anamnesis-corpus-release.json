@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "anamnesis_corpus_release": {
+          "authorised_transition": {
+            "action": "structurally bind anamnesis-corpus-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/anamnesis/tests/test_s2_curation.py",
+                "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/anamnesis/tests/test_s2_curation.py",
+                "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/anamnesis/tests/test_s2_curation.py",
+                "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "anamnesis-corpus-release",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for anamnesis-corpus-release",
+            "subject": "runtime source plugins/anamnesis/tests/test_s2_curation.py#test_a_release_verifies_from_its_own_bytes"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/anamnesis/tests/test_s2_curation.py",
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/anamnesis/tests/test_s2_curation.py",
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/anamnesis/tests/test_s2_curation.py",
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "anamnesis-corpus-release",
+        "scope": "structural binding for anamnesis-corpus-release",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/anamnesis/tests/test_s2_curation.py#test_a_release_verifies_from_its_own_bytes",
+        "transition": {
+          "action": "structurally bind anamnesis-corpus-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "anamnesis_corpus_release": {
+          "authorised_transition": {
+            "action": "structurally bind anamnesis-corpus-release without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/anamnesis/tests/test_s2_curation.py",
+                "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/anamnesis/tests/test_s2_curation.py",
+                "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/anamnesis/tests/test_s2_curation.py",
+                "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "anamnesis-corpus-release",
+          "source": {
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          },
+          "target": {
+            "scope": "structural binding for anamnesis-corpus-release",
+            "subject": "runtime source plugins/anamnesis/tests/test_s2_curation.py#test_a_release_verifies_from_its_own_bytes"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/anamnesis/tests/test_s2_curation.py",
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/anamnesis/tests/test_s2_curation.py",
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/anamnesis/tests/test_s2_curation.py",
+            "sha256": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "anamnesis-corpus-release",
+        "scope": "structural binding for anamnesis-corpus-release",
+        "source_digest": "24559b27980041f17c9bd7df7b3d4db988f51ea179689fa44552d15cca3d3f35",
+        "subject": "runtime source plugins/anamnesis/tests/test_s2_curation.py#test_a_release_verifies_from_its_own_bytes",
+        "transition": {
+          "action": "structurally bind anamnesis-corpus-release without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

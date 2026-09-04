@@ -1,0 +1,187 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "ariadne_verify_statement": {
+          "authorised_by": {
+            "id": "promise-owner:ariadne-verify-statement",
+            "reference": {
+              "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
+              "sha256": "7957fe4fd6ce22c4f95c369b63121e6e992e75fc0b701c71cd9cb7a922a46fc0"
+            }
+          },
+          "binding": {
+            "promise_id": "ariadne-verify-statement",
+            "scope": "structural binding for ariadne-verify-statement",
+            "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/ariadne/tests/test_examples.py",
+              "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind ariadne-verify-statement without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:ariadne-verify-statement",
+          "reference": {
+            "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
+            "sha256": "7957fe4fd6ce22c4f95c369b63121e6e992e75fc0b701c71cd9cb7a922a46fc0"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/ariadne/tests/test_examples.py",
+          "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+        },
+        "promise_id": "ariadne-verify-statement",
+        "scope": "structural binding for ariadne-verify-statement",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked",
+        "transition": {
+          "action": "structurally bind ariadne-verify-statement without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "ariadne_verify_statement": {
+          "authorised_by": {
+            "id": "promise-owner:ariadne-verify-statement",
+            "reference": {
+              "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
+              "sha256": "7957fe4fd6ce22c4f95c369b63121e6e992e75fc0b701c71cd9cb7a922a46fc0"
+            }
+          },
+          "binding": {
+            "promise_id": "ariadne-verify-statement",
+            "scope": "structural binding for ariadne-verify-statement",
+            "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/ariadne/tests/test_examples.py",
+              "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+            }
+          ],
+          "source_digest": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e",
+          "transition": {
+            "action": "structurally bind ariadne-verify-statement without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:ariadne-verify-statement",
+          "reference": {
+            "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
+            "sha256": "7957fe4fd6ce22c4f95c369b63121e6e992e75fc0b701c71cd9cb7a922a46fc0"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/ariadne/tests/test_examples.py",
+          "sha256": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e"
+        },
+        "promise_id": "ariadne-verify-statement",
+        "scope": "structural binding for ariadne-verify-statement",
+        "source_digest": "0f0ce08a49918d89229d43ee5f88b4413d435fff723b8bf669316ee70c06e75e",
+        "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked",
+        "transition": {
+          "action": "structurally bind ariadne-verify-statement without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

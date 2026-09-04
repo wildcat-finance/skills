@@ -1,0 +1,32 @@
+{
+  "schema": "promise-machine-transition/v1",
+  "promise_id": "fixture-promise",
+  "obligation_id": "law-consequence-separation",
+  "gate": "fixture.gate",
+  "consequence": 0,
+  "subject": "fixture-subject",
+  "scope": "fixture-scope",
+  "transition": "complete the level zero fixture transition",
+  "evaluated_at": "2026-08-30T00:00:00Z",
+  "declaration": {
+    "path": "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
+    "sha256": "02f770a52e0fa1db466475c6a17b51851f80becdc8149876d00092a01e7b5c1d"
+  },
+  "evidence": [
+    {
+      "role": "content",
+      "class": "recorded",
+      "status": "recorded",
+      "reference": {
+        "path": "tests/fixtures/promise-machine/consequences/evidence/content.json",
+        "sha256": "c7b64c0ad06bc81a907fc7272472c089b35cdf578b345e567ffc05e38c89582e"
+      },
+      "subject": "fixture-subject",
+      "scope": "fixture-scope",
+      "independent": false
+    }
+  ],
+  "unknowns": [],
+  "authority": null,
+  "exception": "none"
+}

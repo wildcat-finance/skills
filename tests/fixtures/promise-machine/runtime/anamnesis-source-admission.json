@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "anamnesis_source_admission": {
+          "authorised_transition": {
+            "action": "structurally bind anamnesis-source-admission without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/anamnesis/tests/test_s1_admission.py",
+                "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/anamnesis/tests/test_s1_admission.py",
+                "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/anamnesis/tests/test_s1_admission.py",
+                "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "anamnesis-source-admission",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for anamnesis-source-admission",
+            "subject": "runtime source plugins/anamnesis/tests/test_s1_admission.py#test_the_pilot_admits_every_declared_source_and_record"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/anamnesis/tests/test_s1_admission.py",
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/anamnesis/tests/test_s1_admission.py",
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/anamnesis/tests/test_s1_admission.py",
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "anamnesis-source-admission",
+        "scope": "structural binding for anamnesis-source-admission",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/anamnesis/tests/test_s1_admission.py#test_the_pilot_admits_every_declared_source_and_record",
+        "transition": {
+          "action": "structurally bind anamnesis-source-admission without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "anamnesis_source_admission": {
+          "authorised_transition": {
+            "action": "structurally bind anamnesis-source-admission without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/anamnesis/tests/test_s1_admission.py",
+                "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/anamnesis/tests/test_s1_admission.py",
+                "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/anamnesis/tests/test_s1_admission.py",
+                "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "anamnesis-source-admission",
+          "source": {
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          },
+          "target": {
+            "scope": "structural binding for anamnesis-source-admission",
+            "subject": "runtime source plugins/anamnesis/tests/test_s1_admission.py#test_the_pilot_admits_every_declared_source_and_record"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/anamnesis/tests/test_s1_admission.py",
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/anamnesis/tests/test_s1_admission.py",
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/anamnesis/tests/test_s1_admission.py",
+            "sha256": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "anamnesis-source-admission",
+        "scope": "structural binding for anamnesis-source-admission",
+        "source_digest": "787c655fda78f48647ba668b1c9223de965588f6ca9d719e459ef4fc37613f9e",
+        "subject": "runtime source plugins/anamnesis/tests/test_s1_admission.py#test_the_pilot_admits_every_declared_source_and_record",
+        "transition": {
+          "action": "structurally bind anamnesis-source-admission without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

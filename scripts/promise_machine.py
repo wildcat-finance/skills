@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import ast
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import re
+import stat
 import tempfile
 
 
@@ -39,6 +42,9 @@ REQUIRED_HEADINGS = (
     "## Exceptions",
     "## Conformance",
     "## First-party licence promise",
+    "## Run observation promise",
+    "## Contributor ranking promise",
+    "## Router selection promise",
     "## Installation copies",
 )
 REQUIRED_FIELDS = (
@@ -69,11 +75,722 @@ SUPPORTED_EVIDENCE_CLASSES = {
 PROMISE_ID = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
 OVERLAY_PATH = Path("plugins/hexaemeron/PROMISES.md")
 OVERLAY_HEADING = "# Hexaemeron Promise Machine overlays"
-OVERLAY_FIELDS = ("Path", "SHA-256", *REQUIRED_FIELDS)
+OVERLAY_PROVENANCE_FIELDS = (
+    "Path",
+    "Repository",
+    "Commit",
+    "Upstream path",
+    "Upstream SHA-256",
+    "Local SHA-256",
+    "Verification status",
+)
+OVERLAY_FIELDS = (*OVERLAY_PROVENANCE_FIELDS, *REQUIRED_FIELDS)
+GITHUB_REPOSITORY_URI = re.compile(
+    r"https://github\.com/"
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,38})/"
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,99})\.git"
+)
+FULL_GIT_COMMIT = re.compile(r"[0-9a-f]{40}")
+SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+VERIFICATION_STATUS_PREFIX = "upstream-bytes-verified"
+VERIFICATION_LOCAL_RELATIONS = {
+    "local-bytes-identical",
+    "local-bytes-modified",
+}
+VERIFICATION_PUBLISHER_STATUS = "publisher-authentication-unknown"
+HISTORY_PATH = Path("tests/promise_machine_id_history.json")
+HISTORY_SCHEMA = "promise-machine-id-history/v1"
+HISTORY_ACTIONS = {"unchanged", "amended", "introduced", "retired", "renamed", "split"}
 COVERAGE_PATH = Path("tests/promise_machine_coverage.json")
 COVERAGE_SCHEMA = "promise-machine-coverage/v1"
+EVALUATION_TEMPLATE_PATH = Path(
+    "tests/fixtures/promise-machine/evaluation/prompt-template.txt"
+)
+EVALUATION_ANSWERS_PATH = Path(
+    "docs/promise-machine/obligation-gates/evaluation-answers.json"
+)
+EVALUATION_GATE = "labelled-case-classification"
+EVALUATION_DOMAIN_BOUNDARY = "required-separately"
+EVALUATION_RUN_DOMAIN = "not-supplied"
+EVALUATION_CASE_SCHEMA = "promise-machine-evaluation-cases/v1"
+EVALUATION_ANSWERS_SCHEMA = "promise-machine-evaluation-answers/v1"
+EVALUATION_RUN_SCHEMA = "promise-machine-evaluation-run/v1"
+EVALUATION_EXPECTED_CASES = 11
+EVALUATION_CASE_CODES = ("P", "M", "S", "O", "R")
+EVALUATION_PROMPT_CASE_ORDER = ("O", "P", "R", "M", "S")
+EVALUATION_SCENARIO_IDS = tuple(
+    f"E{number:02d}" for number in range(1, len(EVALUATION_CASE_CODES) + 1)
+)
+EVALUATION_TEMPLATE_FIELDS = (
+    "{promise_id}",
+    "{skill_path}",
+    "{contract}",
+    "{request}",
+    "{scenarios}",
+)
+EVALUATION_DISPOSITIONS = frozenset({"accept", "refuse", "recover"})
+EVALUATION_MODEL_ID = re.compile(
+    r"[a-z][a-z0-9._-]*/[^@\s]+@sha256:[0-9a-f]{64}", re.IGNORECASE
+)
+MAX_EVALUATION_ANSWERS_BYTES = 1024 * 1024
+MAX_EVALUATION_ANSWER_BYTES = 16 * 1024
+MAX_EVALUATION_RUN_BYTES = 512 * 1024
+OBLIGATION_PATH = Path("tests/promise_machine_obligations.json")
+OBLIGATION_SCHEMA = "promise-machine-obligations/v1"
+OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-obligation-specimen/v1"
+OBLIGATION_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/obligations")
+PROMISE_MACHINE_FIXTURE_ROOT = Path("tests/fixtures/promise-machine")
+SEMANTIC_FIXTURE_DIRECTORIES = {
+    "composition",
+    "consequences",
+    "exceptions",
+    "findings",
+    "imports",
+    "runtime",
+}
+TRANSITION_SCHEMA = "promise-machine-transition/v1"
+TRANSITION_DECLARATION_SCHEMA = "promise-machine-transition-declaration/v1"
+TRANSITION_AUTHORITY_SCHEMA = "promise-machine-transition-authority/v1"
+EXCEPTION_SCHEMA = "promise-machine-exception/v1"
+EXCEPTION_SPECIMEN_SCHEMA = "promise-machine-exception-specimen/v1"
+FINDING_SPECIMEN_SCHEMA = "promise-machine-finding-specimen/v1"
+IMPORT_SPECIMEN_SCHEMA = "promise-machine-import-specimen/v1"
+RUNTIME_SPECIMEN_SCHEMA = "promise-machine-runtime-specimens/v1"
+RUNTIME_OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-runtime-obligation-specimen/v1"
+RUNTIME_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/runtime")
+COMPOSITION_CASES_SCHEMA = "promise-machine-composition-cases/v1"
+COMPOSITION_RECORD_SCHEMA = "promise-machine-composition/v1"
+COMPOSITION_FIXTURE = Path("tests/fixtures/promise-machine/composition/cases.json")
+COMPOSITION_COMMON_FIELDS = (
+    "subject",
+    "scope",
+    "time-domain",
+    "evidence-references",
+    "evidence-classes",
+    "unknowns",
+    "conflicts",
+    "refusals",
+    "recovery",
+)
+COMPOSITION_RELATIONS = {
+    "lemma-retrieval-to-berean-corpus": {
+        "obligation_id": "law-composition-lemma-boundary",
+        "producer": "lemma-corpus-provenance",
+        "consumer": "berean-corpus-binding",
+        "transition": "admit source-linked chunks as retrieval input",
+        "consequence": 3,
+        "producer_sources": ("plugins/lemma/tests/test_markdown.py",),
+        "consumer_sources": ("plugins/berean/tests/test_corpus.py",),
+        "producer_classes": ("recorded",),
+        "consumer_classes": ("recorded", "checked"),
+        "bindings": {
+            "subject": "markdown-corpus",
+            "scope": "source-linked-chunks",
+            "time-domain": "captured-source-revision",
+            "unknowns": ("answer-truth-not-established",),
+            "conflicts": ("source-disagreement-retained",),
+            "refusals": ("answer-truth",),
+            "recovery": ("return to the cited source bytes",),
+            "source-links": "path-line-and-byte-ranges",
+            "chunk-locations": "validated-jsonl-locations",
+        },
+    },
+    "lazarus-rpc-to-berean-answer": {
+        "obligation_id": "law-composition-lazarus-boundary",
+        "producer": "lazarus-fixture-capture",
+        "consumer": "berean-answer-evidence",
+        "transition": "admit recorded RPC evidence to the pinned answer evidence set",
+        "consequence": 3,
+        "producer_sources": ("plugins/lazarus/tests/test_capture.py",),
+        "consumer_sources": ("plugins/berean/tests/test_examples.py",),
+        "producer_classes": ("recorded",),
+        "consumer_classes": ("recorded", "checked"),
+        "bindings": {
+            "subject": "historical-ethereum-read",
+            "scope": "declared-rpc-fixture",
+            "time-domain": "pinned-chain-and-block",
+            "unknowns": ("proof-relation-not-established",),
+            "conflicts": ("rpc-counterevidence-retained",),
+            "refusals": ("proved-without-proof-relation", "answer-truth"),
+            "recovery": ("run the named proof checker for the exact fixture",),
+            "block": "chain-1-block-19000000",
+            "rpc-methods": "declared-method-set",
+            "proof-relation": "not-established",
+        },
+    },
+    "berean-promotion-to-ariadne-capture": {
+        "obligation_id": "law-composition-berean-boundary",
+        "producer": "berean-release-promotion",
+        "consumer": "ariadne-capture-statement",
+        "transition": "bind the promoted Berean release digest to its declared evidence",
+        "consequence": 3,
+        "producer_sources": ("plugins/berean/tests/test_promote.py",),
+        "consumer_sources": ("plugins/ariadne/tests/test_gates.py",),
+        "producer_classes": ("checked", "recorded"),
+        "consumer_classes": ("checked", "recorded", "recomputed"),
+        "bindings": {
+            "subject": "grounded-agent-release",
+            "scope": "pinned-corpus-and-answer-set",
+            "time-domain": "recorded-evaluation-run",
+            "unknowns": ("model-quality-not-established",),
+            "conflicts": ("failed-answer-counterevidence-retained",),
+            "refusals": ("answer-truth", "model-quality"),
+            "recovery": ("inspect the pinned corpus, answers, and evaluation record",),
+            "answer-digest": "sha256:berean-answer-set",
+            "corpus-digest": "sha256:berean-corpus",
+            "evaluation-digest": "sha256:berean-evaluation",
+        },
+    },
+    "janus-bounded-to-ariadne-capture": {
+        "obligation_id": "law-composition-janus-boundary",
+        "producer": "janus-bounded-conformance",
+        "consumer": "ariadne-capture-statement",
+        "transition": "bind the bounded Janus result to its host-specific evidence",
+        "consequence": 3,
+        "producer_sources": ("plugins/janus/harness/test/WildcatConformance.t.sol",),
+        "consumer_sources": ("plugins/ariadne/tests/test_gates.py",),
+        "producer_classes": ("checked", "measured", "recorded"),
+        "consumer_classes": ("checked", "measured", "recorded", "recomputed"),
+        "bindings": {
+            "subject": "wildcat-hook-specimen",
+            "scope": "named-host-adapter",
+            "time-domain": "bounded-conformance-run",
+            "unknowns": ("cross-host-safety-not-established",),
+            "conflicts": ("unknown-effects-retained",),
+            "refusals": (
+                "hook-safety",
+                "complete-liveness",
+                "cross-host-conformance",
+            ),
+            "recovery": ("rerun against the named host adapter and bounded manifest",),
+            "adapter": "wildcat-host-adapter-v1",
+            "manifest": "janus-effects-manifest-v1",
+            "recorder": "janus-transition-recorder-v1",
+            "bounded-search": "declared-effect-and-revert-space",
+        },
+    },
+    "ariadne-verification-to-fiat-delivery": {
+        "obligation_id": "law-composition-ariadne-boundary",
+        "producer": "ariadne-verify-statement",
+        "consumer": "fiat-receipted-delivery",
+        "transition": "consume the verified statement as an artefact-evidence binding",
+        "consequence": 3,
+        "producer_sources": ("plugins/ariadne/tests/test_examples.py",),
+        "consumer_sources": ("plugins/hexaemeron/tests/test_hexctl.py",),
+        "producer_classes": ("checked", "recomputed"),
+        "consumer_classes": ("checked", "recomputed", "recorded"),
+        "bindings": {
+            "subject": "released-artefact",
+            "scope": "declared-statement-and-predicate",
+            "time-domain": "statement-verification-run",
+            "unknowns": ("author-identity-not-established",),
+            "conflicts": ("statement-counterevidence-retained",),
+            "refusals": ("author-identity-without-signature-verifier",),
+            "recovery": ("run an external signature verifier bound to the statement",),
+            "artefact-digest": "sha256:released-artefact",
+            "predicate-type": "https://wildcat.finance/predicate/example/v1",
+            "signature-verifier-state": "not-established",
+        },
+    },
+    "fiat-observation-to-synkrisis-cohort": {
+        "obligation_id": "law-composition-fiat-observation-boundary",
+        "producer": "fiat-run-observation-binding",
+        "consumer": "synkrisis-cohort-construction",
+        "transition": "admit the checked observation prefix to the named comparison cohort",
+        "consequence": 3,
+        "producer_sources": (
+            "plugins/hexaemeron/tests/test_run_observation_binding.py",
+        ),
+        "consumer_sources": ("plugins/synkrisis/tests/test_cohort.py",),
+        "producer_classes": ("checked", "recorded"),
+        "consumer_classes": ("checked", "recorded"),
+        "bindings": {
+            "subject": "fiat-run-observation",
+            "scope": "checked-observation-prefix",
+            "time-domain": "receipt-bound-run-prefix",
+            "unknowns": ("event-truth-not-established",),
+            "conflicts": ("capture-gaps-retained",),
+            "refusals": ("event-truth", "delivery-evidence"),
+            "recovery": ("return to the validator, capture, and bound receipt",),
+            "observation-validator": "promise-machine-run-observation-v1",
+            "capture-boundary": "regular-file-stable-read",
+            "receipt": "fiat-receipt-prefix-binding",
+        },
+    },
+    "synkrisis-verification-to-fiat-integration": {
+        "obligation_id": "law-composition-synkrisis-boundary",
+        "producer": "synkrisis-report-verification",
+        "consumer": "fiat-final-integration",
+        "transition": "consume the recomputable comparison as bounded integration evidence",
+        "consequence": 3,
+        "producer_sources": ("plugins/synkrisis/tests/test_verify.py",),
+        "consumer_sources": ("plugins/hexaemeron/tests/test_hexctl.py",),
+        "producer_classes": ("recomputed",),
+        "consumer_classes": ("recomputed", "recorded"),
+        "bindings": {
+            "subject": "comparison-report",
+            "scope": "validated-cohort-and-bounded-findings",
+            "time-domain": "recorded-comparison-run",
+            "unknowns": ("causal-explanation-not-established",),
+            "conflicts": ("counterevidence-retained",),
+            "refusals": ("cause", "model-quality", "authority-to-act"),
+            "recovery": (
+                "inspect the cohort, findings, report, counterevidence, and unknown runs",
+            ),
+            "cohort-digest": "sha256:synkrisis-cohort",
+            "findings-digest": "sha256:synkrisis-findings",
+            "report-digest": "sha256:synkrisis-report",
+            "counterevidence": "retained",
+            "unknown-runs": "retained",
+        },
+    },
+}
+CONSEQUENCE_FIXTURES = tuple(
+    Path(f"tests/fixtures/promise-machine/consequences/level-{level}.json")
+    for level in range(4)
+)
+EXCEPTION_FIXTURE = Path("tests/fixtures/promise-machine/exceptions/valid.json")
+CORE_CHECKER_PATH = Path("scripts/promise_machine.py")
+SEMANTIC_PROMISE_ID = "promise-machine-contract"
+OBLIGATION_MARKER = re.compile(
+    r"<!-- promise-machine-obligation: id=([a-z][a-z0-9]*(?:-[a-z0-9]+)*) -->"
+)
+OBLIGATION_MARKER_PREFIX = "<!-- promise-machine-obligation:"
+OBLIGATION_CLAUSE_PREFIX = "> Obligation:"
+OPEN_SUPPORTS_DIR_FD = os.open in os.supports_dir_fd
+HTML_BLOCK_TYPE_1_OPEN = re.compile(
+    r"^ {0,3}<(script|pre|style|textarea)(?=[ \t>]|$)", re.IGNORECASE
+)
+HTML_BLOCK_TYPE_1_CLOSE = re.compile(
+    r"</(?:script|pre|style|textarea)>", re.IGNORECASE
+)
+HTML_COMMENT_OPEN = re.compile(r"^ {0,3}<!--")
+HTML_COMMENT_CLOSE = re.compile(r"-->")
+HTML_PROCESSING_OPEN = re.compile(r"^ {0,3}<\?")
+HTML_PROCESSING_CLOSE = re.compile(r"\?>")
+HTML_DECLARATION_OPEN = re.compile(r"^ {0,3}<![A-Z]")
+HTML_DECLARATION_CLOSE = re.compile(r">")
+HTML_CDATA_OPEN = re.compile(r"^ {0,3}<!\[CDATA\[")
+HTML_CDATA_CLOSE = re.compile(r"\]\]>")
+HTML_BLOCK_TYPE_6_OPEN = re.compile(
+    r"^ {0,3}</?([A-Za-z][A-Za-z0-9-]*)(?=[ \t>]|/>|$)"
+)
+HTML_BLOCK_TYPE_6_TAGS = {
+    "address", "article", "aside", "base", "basefont", "blockquote",
+    "body", "caption", "center", "col", "colgroup", "dd", "details",
+    "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption",
+    "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3",
+    "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "iframe",
+    "legend", "li", "link", "main", "menu", "menuitem", "nav",
+    "noframes", "ol", "optgroup", "option", "p", "param", "search",
+    "section", "summary", "table", "tbody", "td", "tfoot", "th",
+    "thead", "title", "tr", "track", "ul",
+}
+HTML_BLOCK_TYPE_1_TAGS = {"script", "pre", "style", "textarea"}
+HTML_ATTRIBUTE = (
+    r"[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*"
+    r"(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^']*'|\"[^\"]*\"))?"
+)
+HTML_BLOCK_TYPE_7_LINE = re.compile(
+    r"^ {0,3}(?:<([A-Za-z][A-Za-z0-9-]*)(?:"
+    + HTML_ATTRIBUTE
+    + r")*[ \t]*/?>|</([A-Za-z][A-Za-z0-9-]*)[ \t]*>)[ \t]*$"
+)
+MARKDOWN_THEMATIC_BREAK = re.compile(
+    r"^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$"
+)
+MARKDOWN_SETEXT_UNDERLINE = re.compile(r"^ {0,3}(=+|-+)[ \t]*$")
+MARKDOWN_ATX_HEADING = re.compile(
+    r"^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$"
+)
+MARKDOWN_ATX_CLOSING_HASHES = re.compile(r"[ \t]+#+[ \t]*$")
+MARKDOWN_LINK_REFERENCE = re.compile(
+    r"^ {0,3}\[(?:\\.|[^\[\]])+\]:"
+)
+MARKDOWN_BLOCK_START = re.compile(
+    r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|[-+*](?:[ \t]|$))"
+)
+MARKDOWN_ORDERED_LIST = re.compile(r"^ {0,3}(\d{1,9})[.)](?:[ \t]|$)")
+MARKDOWN_LIST_ITEM = re.compile(
+    r"^(?P<indent> {0,3})(?:(?P<bullet>[-+*])|"
+    r"(?P<number>\d{1,9})(?P<delimiter>[.)]))"
+    r"(?P<whitespace>[ \t]*)(?P<body>.*)$"
+)
+OBLIGATION_ROW_KEYS = {
+    "id",
+    "clause_sha256",
+    "gate",
+    "specimen",
+    "finding",
+    "consequence",
+    "blocked_transition",
+    "recovery",
+}
+OBLIGATION_GATES = {
+    "law-composition-ariadne-boundary": (
+        "composition.ariadne-verification-to-fiat-delivery",
+        "PM097",
+        "e93b1f2112733c6406194f01674449d4e5649dd361ccf92fa7b55fa7629b4b2c",
+    ),
+    "law-composition-berean-boundary": (
+        "composition.berean-promotion-to-ariadne-capture",
+        "PM097",
+        "014a5c68553e7f7654693dc08c0149b9c5d2ec8f1baf34e2a8af6c30cf693567",
+    ),
+    "law-composition-fiat-observation-boundary": (
+        "composition.fiat-observation-to-synkrisis-cohort",
+        "PM097",
+        "48b93c6d57958d7c04f0ea69938a6d880fa91f8adbe28a0c29c107f089ea64a1",
+    ),
+    "law-composition-janus-boundary": (
+        "composition.janus-bounded-to-ariadne-capture",
+        "PM097",
+        "4b25765f9a8d7c4fd116d9e58ba7975a501cc509fb152dbbf0b1ad7b86d7472e",
+    ),
+    "law-composition-lazarus-boundary": (
+        "composition.lazarus-rpc-to-berean-answer",
+        "PM097",
+        "85a7135e01ead8eee132472bcc426ca08868801609ad6e9a53a7863d47a2f181",
+    ),
+    "law-composition-lemma-boundary": (
+        "composition.lemma-retrieval-to-berean-corpus",
+        "PM097",
+        "cfa8e9445e421a0ebcb176f8f8f9c8703fed5c1aa9b28974000759d81858ae1d",
+    ),
+    "law-composition-synkrisis-boundary": (
+        "composition.synkrisis-verification-to-fiat-integration",
+        "PM097",
+        "e3e202d89778883c0dcf83ba6932eaad94b438e6649d1811bfd4d298bb8bc910",
+    ),
+    "law-consequence-separation": (
+        "transition.consequence",
+        "PM090",
+        "4ca54c2c47e119492b505fd0b1e2746f1b2da5eb297054147f29424a86637716",
+    ),
+    "law-contract-identity": (
+        "law.contract-identity",
+        "PM007",
+        "1e4cfcd2d01bc9bbfc4e5b6e93f58867114a3191b488ffba3a627aa1247d4be1",
+    ),
+    "law-declaration-fields": (
+        "law.declaration-fields",
+        "PM008",
+        "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
+    ),
+    "law-core-checker-side-effects": (
+        "checker.side-effects",
+        "PM094",
+        "f60a0bf02e71859a024c223fa267f68d4d521900a0eb50c3933f8483e7ff20b9",
+    ),
+    "law-exception-resolution": (
+        "exception.resolution",
+        "PM093",
+        "d2867efaa4e5ac58beecd645d4c3b4e0673171911cb938c619aa8228eaad6b78",
+    ),
+    "law-generated-copy-identity": (
+        "law.generated-copy-marker",
+        "PM005",
+        "b9da0367e1cda2d739a42d611a2e0c111121cf71aea0e6597ce21a439399461b",
+    ),
+    "law-governing-principle": (
+        "law.governing-principle",
+        "PM009",
+        "f8cd9cdd6129e69f588f81143bc5f4f597246fb3b3e6ae5b9a7ced9c1911d07b",
+    ),
+    "law-refusal-shape": (
+        "refusal.structured",
+        "PM092",
+        "e3383a98a024c4eecc2902f9cb0edae50cd3ff12f5c248ee47fd7cb1f86d17a1",
+    ),
+    "law-runtime-result-binding": (
+        "runtime.binding",
+        "PM095",
+        "5ab3a7b96df72ab8e457533b60d82f2b8986a9c9701697889ed7f4267c0e3e00",
+    ),
+    "law-required-sections": (
+        "law.required-sections",
+        "PM006",
+        "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
+    ),
+    "law-unknowns-non-authorising": (
+        "transition.unknowns",
+        "PM091",
+        "0086ce72fafa819da188612d5c8399caa5097d16f38e2a4dc12ed2bbe69f1f1f",
+    ),
+}
+SEMANTIC_OBLIGATIONS = {
+    "law-consequence-separation": {
+        "code": "PM090",
+        "consequence": 3,
+        "blocked_transition": "authorise a transition without its consequence-specific evidence path",
+        "recovery": "supply the exact evidence required by the declared consequence and rerun the transition check",
+    },
+    "law-unknowns-non-authorising": {
+        "code": "PM091",
+        "consequence": 3,
+        "blocked_transition": "authorise a positive transition from unknown, not-run, missing, stale or unresolved evidence",
+        "recovery": "record resolved positive evidence for the same subject and scope, preserve remaining unknowns, and rerun the transition check",
+    },
+    "law-refusal-shape": {
+        "code": "PM092",
+        "consequence": 2,
+        "blocked_transition": "emit or consume an incomplete refusal record",
+        "recovery": "restore the complete refusal fields and render text and JSON again from the same finding",
+    },
+    "law-exception-resolution": {
+        "code": "PM093",
+        "consequence": 3,
+        "blocked_transition": "authorise a transition through an unresolved, mismatched, expired or revoked exception",
+        "recovery": "restore a digest-bound authority and reason record, matching promise, gate, subject and scope, valid expiry and explicit revocation state",
+    },
+    "law-core-checker-side-effects": {
+        "code": "PM094",
+        "consequence": 3,
+        "blocked_transition": "run a core checker capable of network, credential, shell, subprocess, dynamic-code or evidence-command access",
+        "recovery": "remove the forbidden import or call and rerun the offline core-checker guard",
+    },
+    "law-runtime-result-binding": {
+        "code": "PM095",
+        "consequence": 3,
+        "blocked_transition": "accept a level-two or level-three result without its source-bound native fields",
+        "recovery": "restore the bounded reader, native fields, source digest, and level-three authority evidence, then rerun the runtime check",
+    },
+}
+CHECKER_REFUSAL_CONTEXT = {
+    "promise_id": SEMANTIC_PROMISE_ID,
+    "consequence": 2,
+    "blocked_transition": (
+        "accept or publish a repository state that fails Promise Machine conformance"
+    ),
+}
+POSITIVE_EVIDENCE_STATES = {
+    "attested",
+    "checked",
+    "inferred",
+    "measured",
+    "proved",
+    "recomputed",
+    "recorded",
+}
+NON_AUTHORISING_EVIDENCE_STATES = {"missing", "not-run", "stale", "unknown"}
+JSON_LINE_TERMINATORS = frozenset("\r\n\u2028\u2029")
+CONSEQUENCE_ROLES = {
+    0: {"content"},
+    1: {"content", "provenance", "structure"},
+    2: {"content", "negative", "provenance", "recovery", "structure", "tests"},
+    3: {
+        "content",
+        "independent",
+        "negative",
+        "provenance",
+        "recovery",
+        "structure",
+        "tests",
+    },
+}
+CORE_ALLOWED_IMPORT_ROOTS = {
+    "__future__",
+    "argparse",
+    "ast",
+    "dataclasses",
+    "datetime",
+    "hashlib",
+    "json",
+    "os",
+    "pathlib",
+    "re",
+    "stat",
+    "tempfile",
+}
+FORBIDDEN_IMPORT_ROOTS = {
+    "asyncio",
+    "concurrent",
+    "ctypes",
+    "ftplib",
+    "getpass",
+    "http",
+    "importlib",
+    "keyring",
+    "marshal",
+    "multiprocessing",
+    "netrc",
+    "pickle",
+    "posix",
+    "pty",
+    "requests",
+    "runpy",
+    "socket",
+    "smtplib",
+    "ssl",
+    "subprocess",
+    "telnetlib",
+    "urllib",
+    "webbrowser",
+}
+FORBIDDEN_CALLS = {
+    "__import__",
+    "builtins.__import__",
+    "builtins.compile",
+    "builtins.__dict__",
+    "builtins.eval",
+    "builtins.exec",
+    "builtins.open",
+    "compile",
+    "eval",
+    "exec",
+    "open",
+    "__builtins__.__dict__",
+    "__builtins__.__import__",
+    "__builtins__.compile",
+    "__builtins__.eval",
+    "__builtins__.exec",
+    "__builtins__.open",
+    "importlib.import_module",
+    "os._exit",
+    "os.__dict__",
+    "os.abort",
+    "os.chdir",
+    "os.chroot",
+    "os.fchdir",
+    "os.fork",
+    "os.forkpty",
+    "os.chown",
+    "os.fchmod",
+    "os.fchown",
+    "os.ftruncate",
+    "os.getenv",
+    "os.getenvb",
+    "os.lchmod",
+    "os.lchown",
+    "os.link",
+    "os.kill",
+    "os.killpg",
+    "os.makedirs",
+    "os.mkdir",
+    "os.mkfifo",
+    "os.mknod",
+    "os.nice",
+    "os.path.expanduser",
+    "os.path.expandvars",
+    "os.popen",
+    "os.posix_spawn",
+    "os.posix_spawnp",
+    "os.pwrite",
+    "os.pwritev",
+    "os.putenv",
+    "os.remove",
+    "os.removedirs",
+    "os.rename",
+    "os.renames",
+    "os.rmdir",
+    "os.setegid",
+    "os.seteuid",
+    "os.setgid",
+    "os.setgroups",
+    "os.setpgid",
+    "os.setpgrp",
+    "os.setpriority",
+    "os.setregid",
+    "os.setresgid",
+    "os.setresuid",
+    "os.setreuid",
+    "os.setsid",
+    "os.setuid",
+    "os.startfile",
+    "os.symlink",
+    "os.system",
+    "os.truncate",
+    "os.umask",
+    "os.unsetenv",
+    "os.utime",
+    "os.write",
+    "os.writev",
+    "runpy.run_module",
+    "runpy.run_path",
+    "pathlib.Path.cwd",
+    "pathlib.Path.home",
+    "tempfile.NamedTemporaryFile",
+    "tempfile.SpooledTemporaryFile",
+    "tempfile.TemporaryDirectory",
+    "tempfile.TemporaryFile",
+    "tempfile.mkdtemp",
+    "tempfile.mktemp",
+}
+FORBIDDEN_FILE_METHODS = {
+    "chmod",
+    "hardlink_to",
+    "lchmod",
+    "link_to",
+    "mkdir",
+    "rename",
+    "rmdir",
+    "symlink_to",
+    "touch",
+    "unlink",
+    "write_bytes",
+    "write_text",
+}
+SAFE_OS_DYNAMIC_LOOKUPS = {"O_CLOEXEC", "O_NONBLOCK"}
+FORBIDDEN_OS_IMPORTS = {
+    "_exit",
+    "abort",
+    "chdir",
+    "chroot",
+    "environ",
+    "environb",
+    "execl",
+    "execle",
+    "execlp",
+    "execlpe",
+    "execv",
+    "execve",
+    "execvp",
+    "execvpe",
+    "fchdir",
+    "fork",
+    "forkpty",
+    "getenv",
+    "getenvb",
+    "kill",
+    "killpg",
+    "nice",
+    "popen",
+    "posix_spawn",
+    "posix_spawnp",
+    "putenv",
+    "setegid",
+    "seteuid",
+    "setgid",
+    "setgroups",
+    "setpgid",
+    "setpgrp",
+    "setpriority",
+    "setregid",
+    "setresgid",
+    "setresuid",
+    "setreuid",
+    "setsid",
+    "setuid",
+    "spawnl",
+    "spawnle",
+    "spawnlp",
+    "spawnlpe",
+    "spawnv",
+    "spawnve",
+    "spawnvp",
+    "spawnvpe",
+    "startfile",
+    "system",
+    "umask",
+    "unsetenv",
+}
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
+EVALUATION_GATE_KEYS = EVALUATION_KEYS | {
+    "gate",
+    "run",
+    "domain_evidence",
+}
 RUNTIME_BINDING_KEYS = {
     "promise_id",
     "subject",
@@ -83,6 +800,68 @@ RUNTIME_BINDING_KEYS = {
     "unknowns",
     "transition",
     "exception",
+    "source_digest",
+}
+RUNTIME_LEVEL_THREE_KEYS = {"authority", "inspectable_evidence"}
+RUNTIME_CATALOGUE_KEYS = {
+    "source",
+    "selector",
+    "sha256",
+    "reader",
+    "bindings",
+    "positive",
+    "negative",
+}
+RUNTIME_READER_SCHEMAS = {
+    "native-json-v1": "promise-machine-native-json-binding/v1",
+    "python-result-adapter-v1": "promise-machine-python-result-adapter/v1",
+    "markdown-result-adapter-v1": "promise-machine-markdown-result-adapter/v1",
+}
+RUNTIME_READER_CONTAINERS = {
+    "native-json-v1": "native_document",
+    "python-result-adapter-v1": "adapter_output",
+    "markdown-result-adapter-v1": "frontmatter",
+}
+RUNTIME_READER_BINDINGS = {
+    "native-json-v1": {
+        "promise_id": "native_document.promise",
+        "subject": "native_document.target.subject",
+        "scope": "native_document.target.scope",
+        "evidence_references": "native_document.evidence.references",
+        "evidence_classes": "native_document.evidence.classes",
+        "unknowns": "native_document.open_unknowns",
+        "transition": "native_document.authorised_transition",
+        "exception": "native_document.exception_state",
+        "source_digest": "native_document.source.sha256",
+        "authority": "native_document.authority",
+        "inspectable_evidence": "native_document.independent_evidence",
+    },
+    "python-result-adapter-v1": {
+        "promise_id": "adapter_output.binding.promise_id",
+        "subject": "adapter_output.binding.subject",
+        "scope": "adapter_output.binding.scope",
+        "evidence_references": "adapter_output.references",
+        "evidence_classes": "adapter_output.classes",
+        "unknowns": "adapter_output.unresolved",
+        "transition": "adapter_output.transition",
+        "exception": "adapter_output.exception",
+        "source_digest": "adapter_output.source_digest",
+        "authority": "adapter_output.authorised_by",
+        "inspectable_evidence": "adapter_output.inspectable",
+    },
+    "markdown-result-adapter-v1": {
+        "promise_id": "frontmatter.promise",
+        "subject": "frontmatter.subject",
+        "scope": "frontmatter.scope",
+        "evidence_references": "frontmatter.evidence.references",
+        "evidence_classes": "frontmatter.evidence.classes",
+        "unknowns": "frontmatter.unknowns",
+        "transition": "frontmatter.transition",
+        "exception": "frontmatter.exception",
+        "source_digest": "frontmatter.source_digest",
+        "authority": "frontmatter.authority",
+        "inspectable_evidence": "frontmatter.inspectable_evidence",
+    },
 }
 PROMPT_SKILLS = {
     "brevitas",
@@ -157,6 +936,10 @@ class Finding:
     message: str
     remedy: str
     promise_id: str | None = None
+    obligation_id: str | None = None
+    consequence: int | None = None
+    blocked_transition: str | None = None
+    recovery: str | None = None
 
 
 @dataclass(frozen=True)
@@ -185,11 +968,25 @@ class PromiseRecord:
     consequence: int
 
 
+@dataclass(frozen=True)
+class MaskedMarkdownLine:
+    indentation: int
+
+
 def relative(path: Path, root: Path) -> str:
     try:
         return path.relative_to(root).as_posix()
     except ValueError:
         return str(path)
+
+
+def closed_non_empty_scalar(value):
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and value == value.strip()
+        and not JSON_LINE_TERMINATORS.intersection(value)
+    )
 
 
 def confined(path: Path, root: Path) -> bool:
@@ -213,6 +1010,76 @@ def bounded_sha256(path: Path, limit: int):
     except OSError as exc:
         return None, f"source could not be read: {exc}"
     return digest.hexdigest(), None
+
+
+def bounded_read_bytes(path: Path, root: Path, limit: int):
+    """Read a bounded regular file through a no-follow descriptor walk."""
+    try:
+        relative_path = path.relative_to(root)
+    except ValueError as exc:
+        raise OSError("input path is outside the repository root") from exc
+    parts = relative_path.parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise OSError("input path is not a safe repository-relative path")
+    if (
+        not hasattr(os, "O_DIRECTORY")
+        or not hasattr(os, "O_NOFOLLOW")
+        or not OPEN_SUPPORTS_DIR_FD
+    ):
+        raise OSError("platform lacks no-follow descriptor reads")
+
+    directory_flags = (
+        os.O_RDONLY
+        | os.O_DIRECTORY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = (
+        os.O_RDONLY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
+    current = os.open(root, directory_flags)
+    descriptor = None
+    try:
+        if not stat.S_ISDIR(os.fstat(current).st_mode):
+            raise OSError("repository root is not a directory")
+        for part in parts[:-1]:
+            following = os.open(part, directory_flags, dir_fd=current)
+            if not stat.S_ISDIR(os.fstat(following).st_mode):
+                os.close(following)
+                raise OSError(f"input path component is not a directory: {part}")
+            os.close(current)
+            current = following
+
+        descriptor = os.open(parts[-1], file_flags, dir_fd=current)
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise OSError("input path is not a regular file")
+        body = bytearray()
+        while len(body) <= limit:
+            chunk = os.read(descriptor, min(64 * 1024, limit + 1 - len(body)))
+            if not chunk:
+                break
+            body.extend(chunk)
+        finished = os.fstat(descriptor)
+        identity = lambda item: (
+            item.st_dev,
+            item.st_ino,
+            item.st_mode,
+            item.st_nlink,
+            item.st_size,
+            item.st_mtime_ns,
+            item.st_ctime_ns,
+        )
+        if identity(opened) != identity(finished):
+            raise OSError("input changed while it was read")
+        return bytes(body)
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(current)
 
 
 def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str):
@@ -241,7 +1108,7 @@ def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str
         )
         return None, findings
     try:
-        payload = path.read_bytes()
+        payload = bounded_read_bytes(path, root, MAX_MARKDOWN_BYTES)
     except OSError as exc:
         findings.append(
             Finding(
@@ -312,7 +1179,7 @@ def read_json(
             )
         ]
     try:
-        payload = path.read_bytes()
+        payload = bounded_read_bytes(path, root, max_bytes)
     except OSError as exc:
         return None, [
             Finding(
@@ -341,8 +1208,26 @@ def read_json(
             document[key] = value
         return document
 
+    def require_unicode_scalars(value):
+        pending = [value]
+        while pending:
+            item = pending.pop()
+            if isinstance(item, str):
+                try:
+                    item.encode("utf-8")
+                except UnicodeEncodeError as exc:
+                    raise ValueError(
+                        "JSON strings must contain only Unicode scalar values"
+                    ) from exc
+            elif isinstance(item, dict):
+                pending.extend(item)
+                pending.extend(item.values())
+            elif isinstance(item, list):
+                pending.extend(item)
+
     try:
         document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
+        require_unicode_scalars(document)
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         return None, [
             Finding(
@@ -377,6 +1262,332 @@ def frontmatter_lines(text: str):
     return lines[1:end]
 
 
+def markdown_unfenced_lines(text: str):
+    """Return lines outside fenced code and CommonMark raw HTML blocks."""
+    physical_lines = re.split(r"\r\n?|\n", text)
+    frontmatter_end = None
+    if physical_lines and physical_lines[0] == "---":
+        try:
+            frontmatter_end = physical_lines.index("---", 1)
+        except ValueError:
+            pass
+    visible: list[str | None] = []
+    fence: tuple[str, int] | None = None
+    html_end: re.Pattern | None = None
+    html_until_blank = False
+    paragraph_open = False
+    for index, line in enumerate(physical_lines):
+        if frontmatter_end is not None and index <= frontmatter_end:
+            visible.append(None)
+            continue
+        if fence is not None:
+            character, width = fence
+            closing = re.fullmatch(
+                rf" {{0,3}}{re.escape(character)}{{{width},}}[ \t]*", line
+            )
+            visible.append(None)
+            if closing is not None:
+                fence = None
+            continue
+
+        if html_end is not None:
+            visible.append(None)
+            if html_end.search(line) is not None:
+                html_end = None
+            continue
+
+        if html_until_blank:
+            if line.strip():
+                visible.append(None)
+                continue
+            html_until_blank = False
+            paragraph_open = False
+            visible.append(line)
+            continue
+
+        if not line.strip():
+            visible.append(line)
+            paragraph_open = False
+            continue
+
+        stripped = line.lstrip(" ")
+        indentation = len(line) - len(stripped)
+        opening = re.match(r"(`{3,}|~{3,})(.*)$", stripped)
+        if indentation <= 3 and opening is not None:
+            run, info = opening.groups()
+            if run[0] == "~" or "`" not in info:
+                fence = (run[0], len(run))
+                visible.append(MaskedMarkdownLine(indentation))
+                paragraph_open = False
+                continue
+
+        # These standalone HTML comments are the law's authored metadata. An
+        # enclosing raw HTML block still masks them through the states above.
+        if line == MARKER:
+            visible.append(line)
+            paragraph_open = False
+            continue
+        if (
+            OBLIGATION_MARKER_PREFIX in line
+            and HTML_COMMENT_OPEN.match(line) is not None
+        ):
+            visible.append(line)
+            comment_open = HTML_COMMENT_OPEN.match(line)
+            if (
+                comment_open is not None
+                and HTML_COMMENT_CLOSE.search(line, comment_open.end()) is None
+            ):
+                html_end = HTML_COMMENT_CLOSE
+            paragraph_open = False
+            continue
+
+        html_type_1 = HTML_BLOCK_TYPE_1_OPEN.match(line)
+        if html_type_1 is not None:
+            visible.append(MaskedMarkdownLine(indentation))
+            if HTML_BLOCK_TYPE_1_CLOSE.search(line, html_type_1.end()) is None:
+                html_end = HTML_BLOCK_TYPE_1_CLOSE
+            paragraph_open = False
+            continue
+        html_openings = (
+            (HTML_CDATA_OPEN, HTML_CDATA_CLOSE),
+            (HTML_COMMENT_OPEN, HTML_COMMENT_CLOSE),
+            (HTML_PROCESSING_OPEN, HTML_PROCESSING_CLOSE),
+            (HTML_DECLARATION_OPEN, HTML_DECLARATION_CLOSE),
+        )
+        opened_html = False
+        for opening, closing in html_openings:
+            matched = opening.match(line)
+            if matched is None:
+                continue
+            visible.append(MaskedMarkdownLine(indentation))
+            if closing.search(line, matched.end()) is None:
+                html_end = closing
+            paragraph_open = False
+            opened_html = True
+            break
+        if opened_html:
+            continue
+
+        html_type_6 = HTML_BLOCK_TYPE_6_OPEN.match(line)
+        if (
+            html_type_6 is not None
+            and html_type_6.group(1).lower() in HTML_BLOCK_TYPE_6_TAGS
+        ):
+            visible.append(MaskedMarkdownLine(indentation))
+            html_until_blank = True
+            paragraph_open = False
+            continue
+        html_type_7 = HTML_BLOCK_TYPE_7_LINE.match(line)
+        if html_type_7 is not None and not paragraph_open:
+            opening_tag = (html_type_7.group(1) or "").lower()
+            if opening_tag not in HTML_BLOCK_TYPE_1_TAGS:
+                visible.append(MaskedMarkdownLine(indentation))
+                html_until_blank = True
+                paragraph_open = False
+                continue
+
+        # Keep malformed marker-shaped prose visible to the closed grammar,
+        # but only after a containing raw HTML block had the chance to mask it.
+        if OBLIGATION_MARKER_PREFIX in line:
+            visible.append(line)
+            paragraph_open = False
+            continue
+
+        visible.append(line)
+        block_start = MARKDOWN_BLOCK_START.match(line)
+        ordered_list = MARKDOWN_ORDERED_LIST.match(line)
+        ordered_list_start = ordered_list is not None and (
+            not paragraph_open or int(ordered_list.group(1)) == 1
+        )
+        thematic_break = MARKDOWN_THEMATIC_BREAK.fullmatch(line)
+        setext_underline = (
+            paragraph_open and MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
+        )
+        if block_start or ordered_list_start or thematic_break or setext_underline:
+            paragraph_open = False
+        elif not paragraph_open:
+            indented_code = line.startswith("    ") or line.startswith("\t")
+            link_reference = MARKDOWN_LINK_REFERENCE.match(line)
+            paragraph_open = not (indented_code or link_reference)
+        else:
+            paragraph_open = True
+    return visible
+
+
+def markdown_section(lines: list[str | MaskedMarkdownLine | None], heading: str):
+    """Return one section from already fence- and raw-HTML-masked lines."""
+    expected = markdown_atx_heading(heading)
+    if expected is None:
+        return []
+    headings = markdown_heading_events(lines)
+    matches = [item for item in headings if item[2:] == expected]
+    if len(matches) != 1:
+        return []
+    selected = matches[0]
+    start = selected[1] + 1
+    end = len(lines)
+    for candidate in headings:
+        if candidate[0] >= start and candidate[2] <= expected[0]:
+            end = candidate[0]
+            break
+    return [line for line in lines[start:end] if isinstance(line, str)]
+
+
+def markdown_atx_heading(line: str):
+    """Return a CommonMark ATX heading's level and literal source title."""
+    matched = MARKDOWN_ATX_HEADING.fullmatch(line)
+    if matched is None:
+        return None
+    title = matched.group(2) or ""
+    title = MARKDOWN_ATX_CLOSING_HASHES.sub("", title).strip(" \t")
+    return len(matched.group(1)), title
+
+
+def markdown_list_item(line: str):
+    """Return one CommonMark list marker and its content indentation."""
+    matched = MARKDOWN_LIST_ITEM.fullmatch(line)
+    if matched is None:
+        return None
+    whitespace = matched.group("whitespace")
+    body = matched.group("body")
+    if not whitespace and body:
+        return None
+
+    marker = matched.group("bullet") or (
+        matched.group("number") + matched.group("delimiter")
+    )
+    marker_end = len(matched.group("indent")) + len(marker)
+    column = marker_end
+    for character in whitespace:
+        if character == "\t":
+            column += 4 - (column % 4)
+        else:
+            column += 1
+    padding = column - marker_end
+    content_indent = column if 1 <= padding <= 4 else marker_end + 1
+    number = matched.group("number")
+    return (
+        len(matched.group("indent")),
+        content_indent,
+        int(number) if number is not None else None,
+        bool(body),
+    )
+
+
+def markdown_heading_events(lines: list[str | MaskedMarkdownLine | None]):
+    """Return top-level CommonMark ATX and setext heading source spans."""
+    headings: list[tuple[int, int, int, str]] = []
+    paragraph: list[tuple[int, str]] = []
+    container_open = False
+    container_blank = False
+    list_floor: int | None = None
+    for index, line in enumerate(lines):
+        if isinstance(line, MaskedMarkdownLine):
+            paragraph = []
+            if list_floor is not None and line.indentation >= list_floor:
+                container_open = True
+                container_blank = False
+            else:
+                container_open = False
+                container_blank = False
+                list_floor = None
+            continue
+        if line is None:
+            paragraph = []
+            if list_floor is None:
+                container_open = False
+                container_blank = False
+            continue
+        if not line.strip():
+            paragraph = []
+            if container_open:
+                container_blank = True
+            continue
+
+        indentation = len(line) - len(line.lstrip(" "))
+        if list_floor is not None and indentation >= list_floor:
+            paragraph = []
+            container_open = True
+            container_blank = False
+            continue
+
+        atx = markdown_atx_heading(line)
+        if atx is not None:
+            headings.append((index, index, *atx))
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+
+        setext = MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
+        if setext is not None and paragraph:
+            level = 1 if setext.group(1).startswith("=") else 2
+            title = " ".join(item.strip() for _, item in paragraph)
+            headings.append((paragraph[0][0], index, level, title))
+            paragraph = []
+            continue
+
+        if MARKDOWN_THEMATIC_BREAK.fullmatch(line):
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+
+        list_item = markdown_list_item(line)
+        list_item_start = list_item is not None and (
+            list_floor is not None
+            or not paragraph
+            or (
+                list_item[3]
+                and (list_item[2] is None or list_item[2] == 1)
+            )
+        )
+        if list_item_start:
+            marker_indent, content_indent, _number, _has_body = list_item
+            if list_floor is None or marker_indent < list_floor:
+                list_floor = content_indent
+            paragraph = []
+            container_open = True
+            container_blank = False
+            continue
+
+        block_start = MARKDOWN_BLOCK_START.match(line)
+        ordered_list = MARKDOWN_ORDERED_LIST.match(line)
+        ordered_list_start = ordered_list is not None and (
+            not paragraph or int(ordered_list.group(1)) == 1
+        )
+        if block_start is not None or ordered_list_start:
+            paragraph = []
+            container_open = True
+            container_blank = False
+            list_floor = None
+            continue
+        if MARKDOWN_LINK_REFERENCE.match(line):
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+        if line.startswith("    ") or line.startswith("\t"):
+            if container_open or not paragraph:
+                continue
+        if line == MARKER or OBLIGATION_MARKER.fullmatch(line) is not None:
+            paragraph = []
+            container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+        if container_open:
+            if not container_blank:
+                continue
+            container_open = False
+            list_floor = None
+        paragraph.append((index, line))
+    return headings
+
+
 def check_law(root: Path):
     law_path = root / LAW_NAME
     loaded, findings = read_markdown(
@@ -385,65 +1596,1829 @@ def check_law(root: Path):
     if loaded is None:
         return None, findings
     payload, text = loaded
-    lines = text.splitlines()
+    findings.extend(validate_law_document(payload, text, LAW_NAME))
+    return payload, findings
+
+
+def validate_law_document(payload: bytes, text: str, shown: str):
+    """Apply the production law gates to one already bounded Markdown payload."""
+    findings: list[Finding] = []
+    lines = markdown_unfenced_lines(text)
+    headings = markdown_heading_events(lines)
+
+    def heading_count(heading: str):
+        expected = markdown_atx_heading(heading)
+        return sum(item[2:] == expected for item in headings)
+
     if MARKER not in lines[:5]:
         findings.append(
             Finding(
                 "PM005",
                 "identity",
-                LAW_NAME,
+                shown,
                 "generated-copy marker is absent from the law header",
                 "restore the promise-machine/v1 canonical/copies marker",
             )
         )
     for heading in REQUIRED_HEADINGS:
-        if lines.count(heading) != 1:
+        if heading_count(heading) != 1:
             findings.append(
                 Finding(
                     "PM006",
                     "structural",
-                    LAW_NAME,
+                    shown,
                     f"required heading must occur once: {heading}",
                     "restore the one normative section with that exact heading",
                 )
             )
     versions = set(re.findall(r"promise-machine/v[0-9]+", text))
-    if versions != {CONTRACT_ID}:
+    identity_heading_present = heading_count("## Contract identity") == 1
+    identity_section = markdown_section(lines, "## Contract identity")
+    identity_declaration = f"The shared contract identity is `{CONTRACT_ID}`."
+    identity_declaration_missing = (
+        identity_heading_present
+        and not any(
+            line.startswith(identity_declaration) for line in identity_section
+        )
+    )
+    if versions != {CONTRACT_ID} or identity_declaration_missing:
+        message = (
+            f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}"
+            if versions != {CONTRACT_ID}
+            else "the contract identity declaration is absent or changed"
+        )
         findings.append(
             Finding(
                 "PM007",
                 "version",
-                LAW_NAME,
-                f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}",
+                shown,
+                message,
                 "use the shared contract identity and remove competing identities",
             )
         )
+    declarations_heading_present = heading_count("## Promise declarations") == 1
+    declarations_section = markdown_section(lines, "## Promise declarations")
     for field in REQUIRED_FIELDS:
-        if f"`{field}`" not in text:
+        if declarations_heading_present and f"- `{field}`" not in declarations_section:
             findings.append(
                 Finding(
                     "PM008",
                     "structural",
-                    LAW_NAME,
+                    shown,
                     f"promise declaration field is absent: {field}",
                     "restore the field in the per-promise schema",
                 )
             )
     principle = (
-        "No skill may claim more than its evidence establishes, or authorise a more\n"
+        "> No skill may claim more than its evidence establishes, or authorise a more\n"
         "> consequential transition than that evidence warrants."
     )
-    if principle not in text:
+    principle_heading_present = heading_count("## Governing principle") == 1
+    principle_section = "\n".join(
+        markdown_section(lines, "## Governing principle")
+    )
+    if principle_heading_present and principle not in principle_section:
         findings.append(
             Finding(
                 "PM009",
                 "structural",
-                LAW_NAME,
+                shown,
                 "the governing principle is absent or changed",
                 "restore the settled suite-wide principle exactly",
             )
         )
-    return payload, findings
+    return findings
+
+
+def discover_obligations(text: str):
+    """Discover the closed explicit obligation grammar from the authored law."""
+    findings: list[Finding] = []
+    lines = markdown_unfenced_lines(text)
+    markers: dict[str, int] = {}
+    marker_lines: dict[int, str] = {}
+    clause_markers: set[int] = set()
+    clause_digests: dict[str, str] = {}
+
+    for index, line in enumerate(lines):
+        if not isinstance(line, str):
+            continue
+        if OBLIGATION_MARKER_PREFIX not in line:
+            continue
+        matched = OBLIGATION_MARKER.fullmatch(line)
+        if matched is None:
+            findings.append(
+                Finding(
+                    "PM080",
+                    "structural",
+                    LAW_NAME,
+                    f"malformed obligation marker at line {index + 1}",
+                    "use the exact promise-machine-obligation id marker grammar",
+                )
+            )
+            continue
+        obligation_id = matched.group(1)
+        if obligation_id in markers:
+            findings.append(
+                Finding(
+                    "PM081",
+                    "identity",
+                    LAW_NAME,
+                    f"obligation id is marked more than once: {obligation_id}",
+                    "retain one marker on the one clause that owns this stable id",
+                    obligation_id=obligation_id,
+                )
+            )
+            continue
+        markers[obligation_id] = index
+        marker_lines[index] = obligation_id
+
+    for index, line in enumerate(lines):
+        if not isinstance(line, str):
+            continue
+        if not line.startswith(OBLIGATION_CLAUSE_PREFIX):
+            continue
+        previous = index - 1
+        while (
+            previous >= 0
+            and isinstance(lines[previous], str)
+            and not lines[previous].strip()
+        ):
+            previous -= 1
+        obligation_id = marker_lines.get(previous)
+        if obligation_id is None:
+            findings.append(
+                Finding(
+                    "PM080",
+                    "structural",
+                    LAW_NAME,
+                    f"explicit obligation clause at line {index + 1} has no marker",
+                    "put one valid stable obligation marker immediately before the clause",
+                )
+            )
+            continue
+        clause_markers.add(previous)
+        end = index + 1
+        while (
+            end < len(lines)
+            and isinstance(lines[end], str)
+            and lines[end].startswith(">")
+        ):
+            end += 1
+        clause = "\n".join(
+            line for line in lines[index:end] if line is not None
+        ).encode("utf-8")
+        clause_digests[obligation_id] = hashlib.sha256(clause).hexdigest()
+
+    for index, obligation_id in marker_lines.items():
+        if index in clause_markers:
+            continue
+        findings.append(
+            Finding(
+                "PM080",
+                "structural",
+                LAW_NAME,
+                f"obligation marker has no following explicit clause: {obligation_id}",
+                "place the marker immediately before one > Obligation: clause",
+                obligation_id=obligation_id,
+            )
+        )
+    return set(markers), clause_digests, findings
+
+
+def obligation_finding(code: str, path: str, message: str, remedy: str, row=None):
+    row = row if isinstance(row, dict) else {}
+    return Finding(
+        code,
+        "obligation",
+        path,
+        message,
+        remedy,
+        obligation_id=row.get("id"),
+        consequence=row.get("consequence"),
+        blocked_transition=row.get("blocked_transition"),
+        recovery=row.get("recovery"),
+    )
+
+
+def semantic_finding(
+    obligation_id: str,
+    path: str,
+    message: str,
+    *,
+    record: dict | None = None,
+    promise_id: str | None = None,
+    consequence: int | None = None,
+    blocked_transition: str | None = None,
+):
+    context = SEMANTIC_OBLIGATIONS[obligation_id]
+    record = record if isinstance(record, dict) else {}
+    candidate_promise = promise_id or record.get("promise_id")
+    if not isinstance(candidate_promise, str) or not PROMISE_ID.fullmatch(
+        candidate_promise
+    ):
+        candidate_promise = SEMANTIC_PROMISE_ID
+    candidate_consequence = consequence
+    if candidate_consequence is None:
+        candidate_consequence = record.get("consequence")
+    if type(candidate_consequence) is not int or candidate_consequence not in range(4):
+        candidate_consequence = context["consequence"]
+    candidate_transition = blocked_transition or record.get("transition")
+    if not closed_non_empty_scalar(candidate_transition):
+        candidate_transition = context["blocked_transition"]
+    return Finding(
+        context["code"],
+        "obligation",
+        path,
+        message,
+        context["recovery"],
+        promise_id=candidate_promise,
+        obligation_id=obligation_id,
+        consequence=candidate_consequence,
+        blocked_transition=candidate_transition,
+        recovery=context["recovery"],
+    )
+
+
+def parse_json_object_bytes(payload: bytes, noun: str):
+    def reject_duplicate_keys(pairs):
+        document = {}
+        for key, value in pairs:
+            if key in document:
+                raise ValueError(f"duplicate object key: {key!r}")
+            document[key] = value
+        return document
+
+    def require_unicode_scalars(value):
+        pending = [value]
+        while pending:
+            item = pending.pop()
+            if isinstance(item, str):
+                item.encode("utf-8")
+            elif isinstance(item, dict):
+                pending.extend(item)
+                pending.extend(item.values())
+            elif isinstance(item, list):
+                pending.extend(item)
+
+    try:
+        document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
+        require_unicode_scalars(document)
+    except (UnicodeDecodeError, UnicodeEncodeError, json.JSONDecodeError, ValueError) as exc:
+        return None, f"{noun} is not valid UTF-8 JSON: {exc}"
+    if not isinstance(document, dict):
+        return None, f"{noun} root is not an object"
+    return document, None
+
+
+def read_bound_reference(root: Path, reference, noun: str):
+    if not isinstance(reference, dict) or set(reference) != {"path", "sha256"}:
+        return None, f"{noun} reference is not the closed path and sha256 object"
+    raw_path = reference.get("path")
+    digest = reference.get("sha256")
+    if (
+        not closed_non_empty_scalar(raw_path)
+        or "\\" in raw_path
+        or any(ord(character) < 32 for character in raw_path)
+        or not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+    ):
+        return None, f"{noun} reference has an invalid path or digest"
+    relative_path = Path(raw_path)
+    if (
+        relative_path.is_absolute()
+        or not relative_path.parts
+        or any(part in {"", ".", ".."} for part in relative_path.parts)
+        or relative_path.as_posix() != raw_path
+    ):
+        return None, f"{noun} reference path is not repository-relative"
+    try:
+        payload = bounded_read_bytes(root / relative_path, root, MAX_JSON_BYTES)
+    except (OSError, ValueError) as exc:
+        return None, f"{noun} reference could not be resolved: {exc}"
+    if len(payload) > MAX_JSON_BYTES:
+        return None, f"{noun} reference exceeds the {MAX_JSON_BYTES}-byte limit"
+    if hashlib.sha256(payload).hexdigest() != digest:
+        return None, f"{noun} reference digest is stale or mismatched"
+    return payload, None
+
+
+def read_bound_json_reference(root: Path, reference, noun: str):
+    payload, error = read_bound_reference(root, reference, noun)
+    if error is not None:
+        return None, error
+    return parse_json_object_bytes(payload, noun)
+
+
+def parse_utc_timestamp(raw):
+    if not isinstance(raw, str) or re.fullmatch(
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z", raw
+    ) is None:
+        return None
+    try:
+        parsed = datetime.strptime(raw, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
+    except ValueError:
+        return None
+    return parsed if parsed.strftime("%Y-%m-%dT%H:%M:%SZ") == raw else None
+
+
+def validate_declaration_reference(root: Path, reference, record: dict):
+    declaration, error = read_bound_json_reference(
+        root, reference, "transition declaration"
+    )
+    if error is not None:
+        return error
+    keys = {
+        "schema",
+        "promise_id",
+        "gate",
+        "consequence",
+        "subject",
+        "scope",
+        "transition",
+    }
+    if (
+        set(declaration) != keys
+        or declaration.get("schema") != TRANSITION_DECLARATION_SCHEMA
+        or type(declaration.get("consequence")) is not int
+        or declaration["consequence"] not in range(4)
+    ):
+        return "transition declaration has an unsupported or open shape"
+    for key in ("promise_id", "gate", "consequence", "subject", "scope", "transition"):
+        if declaration.get(key) != record.get(key):
+            return f"transition declaration does not match the requested {key}"
+    return None
+
+
+def validate_authority_reference(root: Path, reference, expected: dict):
+    authority, error = read_bound_json_reference(root, reference, "authority")
+    if error is not None:
+        return None, error
+    keys = {"schema", "id", "promise_id", "gate", "subject", "scope"}
+    if set(authority) != keys or authority.get("schema") != TRANSITION_AUTHORITY_SCHEMA:
+        return None, "authority record has an unsupported or open shape"
+    if not closed_non_empty_scalar(authority.get("id")):
+        return None, "authority record has no identity"
+    for key in ("promise_id", "gate", "subject", "scope"):
+        if authority.get(key) != expected.get(key):
+            return None, f"authority record does not match the requested {key}"
+    return authority, None
+
+
+def validate_exception_record(
+    root: Path,
+    document,
+    shown: str,
+    *,
+    expected: dict,
+    evaluated_at: str,
+):
+    evaluated = parse_utc_timestamp(evaluated_at)
+    keys = {
+        "schema",
+        "id",
+        "authority",
+        "promise_id",
+        "gate",
+        "subject",
+        "scope",
+        "record",
+        "expiry",
+        "revoked",
+        "recovery",
+    }
+    if evaluated is None:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception evaluation time is not a real UTC timestamp",
+                record=expected,
+            )
+        ]
+    if not isinstance(document, dict) or set(document) != keys:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception record does not have the exact required fields",
+                record=expected,
+            )
+        ]
+    scalars = ("id", "promise_id", "gate", "subject", "scope", "recovery")
+    if (
+        document.get("schema") != EXCEPTION_SCHEMA
+        or any(not closed_non_empty_scalar(document.get(key)) for key in scalars)
+    ):
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception schema or scalar identity is invalid",
+                record=expected,
+            )
+        ]
+    for key in ("promise_id", "gate", "subject", "scope"):
+        if document[key] != expected.get(key):
+            return [
+                semantic_finding(
+                    "law-exception-resolution",
+                    shown,
+                    f"exception does not match the requested {key}",
+                    record=expected,
+                )
+            ]
+    authority = document.get("authority")
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != {"id", "reference"}
+        or not closed_non_empty_scalar(authority.get("id"))
+    ):
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception authority is not an identified resolvable reference",
+                record=expected,
+            )
+        ]
+    authority_document, error = validate_authority_reference(
+        root, authority.get("reference"), expected
+    )
+    if error is not None:
+        return [semantic_finding("law-exception-resolution", shown, error, record=expected)]
+    if authority.get("id") != authority_document.get("id"):
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception authority identity does not match its record",
+                record=expected,
+            )
+        ]
+    reason, error = read_bound_reference(root, document.get("record"), "exception reason")
+    if error is not None:
+        return [semantic_finding("law-exception-resolution", shown, error, record=expected)]
+    if not reason.strip():
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception reason record is empty",
+                record=expected,
+            )
+        ]
+    expiry = document.get("expiry")
+    if not isinstance(expiry, dict) or len(expiry) != 1:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception expiry is not the closed at or not_applicable form",
+                record=expected,
+            )
+        ]
+    if "at" in expiry:
+        expires = parse_utc_timestamp(expiry["at"])
+        if expires is None or expires <= evaluated:
+            return [
+                semantic_finding(
+                    "law-exception-resolution",
+                    shown,
+                    "exception expiry is invalid or has elapsed",
+                    record=expected,
+                )
+            ]
+    elif "not_applicable" in expiry:
+        reason = expiry["not_applicable"]
+        if not closed_non_empty_scalar(reason):
+            return [
+                semantic_finding(
+                    "law-exception-resolution",
+                    shown,
+                    "exception does not explain why expiry cannot apply",
+                    record=expected,
+                )
+            ]
+    else:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception expiry field is unknown",
+                record=expected,
+            )
+        ]
+    if type(document.get("revoked")) is not bool or document["revoked"]:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception revocation state is absent, invalid or revoked",
+                record=expected,
+            )
+        ]
+    return []
+
+
+def evaluate_transition_record(
+    root: Path,
+    document,
+    shown: str,
+    *,
+    expected_obligation: str | None = None,
+):
+    keys = {
+        "schema",
+        "promise_id",
+        "obligation_id",
+        "gate",
+        "consequence",
+        "subject",
+        "scope",
+        "transition",
+        "evaluated_at",
+        "declaration",
+        "evidence",
+        "unknowns",
+        "authority",
+        "exception",
+    }
+    fallback = expected_obligation or "law-consequence-separation"
+    if not isinstance(document, dict) or set(document) != keys:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                "transition record does not have the exact required fields",
+            )
+        ]
+    obligation_id = document.get("obligation_id")
+    scalars = (
+        "promise_id",
+        "obligation_id",
+        "gate",
+        "subject",
+        "scope",
+        "transition",
+        "evaluated_at",
+    )
+    if (
+        document.get("schema") != TRANSITION_SCHEMA
+        or any(not closed_non_empty_scalar(document.get(key)) for key in scalars)
+        or PROMISE_ID.fullmatch(document["promise_id"]) is None
+        or obligation_id not in SEMANTIC_OBLIGATIONS
+        or (expected_obligation is not None and obligation_id != expected_obligation)
+        or parse_utc_timestamp(document["evaluated_at"]) is None
+        or type(document.get("consequence")) is not int
+        or document["consequence"] not in range(4)
+    ):
+        return [
+            semantic_finding(
+                fallback,
+                shown,
+                "transition schema, identity, timestamp or consequence is invalid",
+                record=document,
+            )
+        ]
+    declaration_error = validate_declaration_reference(
+        root, document.get("declaration"), document
+    )
+    if declaration_error is not None:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                declaration_error,
+                record=document,
+            )
+        ]
+    unknowns = document.get("unknowns")
+    if (
+        not isinstance(unknowns, list)
+        or len(unknowns) > 64
+        or any(not closed_non_empty_scalar(item) for item in unknowns)
+    ):
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                "transition unknowns are not a bounded list of visible strings",
+                record=document,
+            )
+        ]
+    if unknowns:
+        return [
+            semantic_finding(
+                "law-unknowns-non-authorising",
+                shown,
+                "positive transition retains unresolved unknowns",
+                record=document,
+            )
+        ]
+    evidence = document.get("evidence")
+    if not isinstance(evidence, list) or not evidence or len(evidence) > 16:
+        return [
+            semantic_finding(
+                "law-unknowns-non-authorising",
+                shown,
+                "positive transition has missing or unbounded evidence",
+                record=document,
+            )
+        ]
+    evidence_keys = {
+        "role",
+        "class",
+        "status",
+        "reference",
+        "subject",
+        "scope",
+        "independent",
+    }
+    roles: set[str] = set()
+    evidence_digests: dict[str, str] = {}
+    for entry in evidence:
+        if not isinstance(entry, dict) or set(entry) != evidence_keys:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "evidence entry does not have the exact required fields",
+                    record=document,
+                )
+            ]
+        role = entry.get("role")
+        evidence_class = entry.get("class")
+        status = entry.get("status")
+        if (
+            not isinstance(role, str)
+            or not role
+            or role in roles
+            or not isinstance(evidence_class, str)
+            or evidence_class not in SUPPORTED_EVIDENCE_CLASSES
+            or not isinstance(status, str)
+            or status not in POSITIVE_EVIDENCE_STATES | NON_AUTHORISING_EVIDENCE_STATES
+            or entry.get("subject") != document["subject"]
+            or entry.get("scope") != document["scope"]
+            or type(entry.get("independent")) is not bool
+            or entry["independent"] != (role == "independent")
+        ):
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "evidence identity, role, subject, scope or independence is invalid",
+                    record=document,
+                )
+            ]
+        if status in NON_AUTHORISING_EVIDENCE_STATES or evidence_class == "unknown":
+            return [
+                semantic_finding(
+                    "law-unknowns-non-authorising",
+                    shown,
+                    f"evidence role {role} is {status}",
+                    record=document,
+                )
+            ]
+        if evidence_class != status:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "evidence status does not preserve its declared class",
+                    record=document,
+                )
+            ]
+        _payload, error = read_bound_reference(root, entry.get("reference"), "evidence")
+        if error is not None:
+            return [
+                semantic_finding(
+                    "law-unknowns-non-authorising",
+                    shown,
+                    error,
+                    record=document,
+                )
+            ]
+        roles.add(role)
+        evidence_digests[role] = entry["reference"]["sha256"]
+    required_roles = CONSEQUENCE_ROLES[document["consequence"]]
+    if roles != required_roles:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                f"consequence {document['consequence']} evidence roles are not exact",
+                record=document,
+            )
+        ]
+    if document["consequence"] == 3:
+        if document.get("authority") is None or "independent" not in roles:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "level three lacks recorded authority or independently inspectable evidence",
+                    record=document,
+                )
+            ]
+        _authority, authority_error = validate_authority_reference(
+            root, document["authority"], document
+        )
+        if authority_error is not None:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    authority_error,
+                    record=document,
+                )
+            ]
+        independent_digest = evidence_digests["independent"]
+        if independent_digest == document["authority"]["sha256"] or any(
+            digest == independent_digest
+            for role, digest in evidence_digests.items()
+            if role != "independent"
+        ):
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "level three independent evidence reuses authority or ordinary evidence bytes",
+                    record=document,
+                )
+            ]
+    elif document.get("authority") is not None:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                "levels zero through two must use their own non-authority path",
+                record=document,
+            )
+        ]
+    exception = document.get("exception")
+    if exception != "none":
+        exception_document, error = read_bound_json_reference(
+            root, exception, "exception"
+        )
+        if error is not None:
+            return [semantic_finding("law-exception-resolution", shown, error, record=document)]
+        exception_findings = validate_exception_record(
+            root,
+            exception_document,
+            shown,
+            expected=document,
+            evaluated_at=document["evaluated_at"],
+        )
+        if exception_findings:
+            return exception_findings
+    return []
+
+
+def validate_refusal_payload(payload, shown: str):
+    keys = {
+        "code",
+        "fault",
+        "path",
+        "message",
+        "remedy",
+        "promise_id",
+        "obligation_id",
+        "consequence",
+        "blocked_transition",
+        "recovery",
+    }
+    strings = (
+        "code",
+        "fault",
+        "path",
+        "message",
+        "remedy",
+        "promise_id",
+        "blocked_transition",
+        "recovery",
+    )
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != keys
+        or any(not closed_non_empty_scalar(payload.get(key)) for key in strings)
+        or re.fullmatch(r"PM[0-9]{3}", payload["code"]) is None
+        or PROMISE_ID.fullmatch(payload["promise_id"]) is None
+        or (
+            payload.get("obligation_id") is not None
+            and (
+                not isinstance(payload["obligation_id"], str)
+                or PROMISE_ID.fullmatch(payload["obligation_id"]) is None
+            )
+        )
+        or type(payload.get("consequence")) is not int
+        or payload["consequence"] not in range(4)
+    ):
+        return [
+            semantic_finding(
+                "law-refusal-shape",
+                shown,
+                "refusal payload omits or mistypes an actionable field",
+            )
+        ]
+    return []
+
+
+def qualified_call_name(node):
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+    return ".".join(reversed(parts))
+
+
+def check_core_source_text(source: str, shown: str):
+    try:
+        tree = ast.parse(source, filename=shown)
+    except (SyntaxError, ValueError) as exc:
+        return [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                shown,
+                f"core checker source cannot be parsed: {exc.msg if isinstance(exc, SyntaxError) else exc}",
+            )
+        ]
+    violations: list[str] = []
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".", 1)[0]
+                aliases[alias.asname or root] = alias.name
+                if root not in CORE_ALLOWED_IMPORT_ROOTS:
+                    violations.append(f"unsupported core-checker import {alias.name}")
+                if root in FORBIDDEN_IMPORT_ROOTS:
+                    violations.append(f"forbidden import {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            root = (node.module or "").split(".", 1)[0]
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = (
+                    f"{node.module}.{alias.name}" if node.module else alias.name
+                )
+            if root not in CORE_ALLOWED_IMPORT_ROOTS:
+                violations.append(
+                    f"unsupported core-checker import {node.module or '<relative>'}"
+                )
+            if root in FORBIDDEN_IMPORT_ROOTS:
+                violations.append(f"forbidden import {node.module}")
+            if root == "os":
+                for alias in node.names:
+                    if alias.name == "*" or alias.name in FORBIDDEN_OS_IMPORTS:
+                        violations.append(f"forbidden import os.{alias.name}")
+
+    def resolve_alias(name: str):
+        head, separator, tail = name.partition(".")
+        return aliases.get(head, head) + (separator + tail if separator else "")
+
+    def external_path_literal(node):
+        if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
+            return False
+        normalized = node.value.replace("\\", "/")
+        parts = normalized.split("/")
+        return (
+            normalized.startswith(("/", "~"))
+            or re.match(r"^[A-Za-z]:/", normalized) is not None
+            or ".." in parts
+        )
+
+    path_names: set[str] = set()
+
+    def path_annotation(annotation):
+        return annotation is not None and resolve_alias(
+            qualified_call_name(annotation)
+        ) == "pathlib.Path"
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            arguments = (
+                list(node.args.posonlyargs)
+                + list(node.args.args)
+                + list(node.args.kwonlyargs)
+            )
+            if node.args.vararg is not None:
+                arguments.append(node.args.vararg)
+            if node.args.kwarg is not None:
+                arguments.append(node.args.kwarg)
+            path_names.update(
+                argument.arg
+                for argument in arguments
+                if path_annotation(argument.annotation)
+            )
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and path_annotation(node.annotation)
+        ):
+            path_names.add(node.target.id)
+
+    def path_expression(node):
+        if isinstance(node, ast.Name):
+            return node.id in path_names
+        if isinstance(node, ast.Call):
+            if resolve_alias(qualified_call_name(node.func)) == "pathlib.Path":
+                return True
+            if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                "absolute",
+                "joinpath",
+                "resolve",
+                "with_name",
+                "with_stem",
+                "with_suffix",
+            }:
+                return path_expression(node.func.value)
+        if isinstance(node, ast.Attribute) and node.attr == "parent":
+            return path_expression(node.value)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            return path_expression(node.left)
+        return False
+
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and path_expression(node.value):
+                names = [
+                    target.id
+                    for target in node.targets
+                    if isinstance(target, ast.Name)
+                ]
+            elif (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.value is not None
+                and path_expression(node.value)
+            ):
+                names = [node.target.id]
+            else:
+                names = []
+            for name in names:
+                if name not in path_names:
+                    path_names.add(name)
+                    changed = True
+
+    def forbidden_operation(name: str):
+        return (
+            name in FORBIDDEN_CALLS
+            or (
+                name.rsplit(".", 1)[-1] in FORBIDDEN_FILE_METHODS
+                and not name.startswith("os.")
+            )
+            or name.startswith("asyncio.create_subprocess")
+            or name.startswith("multiprocessing.")
+            or name.startswith("os.exec")
+            or name.startswith("os.spawn")
+            or name.startswith("subprocess.")
+            or name.startswith("socket.")
+            or name.startswith("urllib.")
+            or name.startswith("http.client.")
+        )
+
+    def sensitive_dynamic_receiver(node):
+        receiver = resolve_alias(qualified_call_name(node))
+        return receiver, (
+            receiver
+            in {"builtins", "__builtins__", "os", "pathlib.Path", "tempfile"}
+            or receiver.startswith("os.")
+            or path_expression(node)
+        )
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = resolve_alias(qualified_call_name(node.func))
+            if forbidden_operation(name):
+                violations.append(f"forbidden call {name}")
+            if (
+                name == "pathlib.Path"
+                and node.args
+                and external_path_literal(node.args[0])
+            ):
+                violations.append("forbidden external path literal")
+            if (
+                name
+                in {
+                    "os.access",
+                    "os.listdir",
+                    "os.lstat",
+                    "os.open",
+                    "os.readlink",
+                    "os.scandir",
+                    "os.stat",
+                    "os.walk",
+                }
+                and node.args
+                and external_path_literal(node.args[0])
+            ):
+                violations.append(f"forbidden external filesystem read {name}")
+            if isinstance(node.func, ast.Attribute) and path_expression(
+                node.func.value
+            ):
+                if node.func.attr == "expanduser":
+                    violations.append("forbidden home-directory path expansion")
+                elif node.func.attr == "replace":
+                    violations.append("forbidden path mutation replace")
+                elif node.func.attr == "open":
+                    mode_node = node.args[0] if node.args else None
+                    for keyword in node.keywords:
+                        if keyword.arg == "mode":
+                            mode_node = keyword.value
+                    mode = (
+                        mode_node.value
+                        if isinstance(mode_node, ast.Constant)
+                        and isinstance(mode_node.value, str)
+                        else None
+                    )
+                    if mode is None or any(marker in mode for marker in "wax+"):
+                        violations.append("forbidden write-capable path open")
+            if name in {"getattr", "vars"} and node.args:
+                receiver, sensitive_receiver = sensitive_dynamic_receiver(
+                    node.args[0]
+                )
+                attribute = (
+                    node.args[1].value
+                    if name == "getattr"
+                    and len(node.args) >= 2
+                    and isinstance(node.args[1], ast.Constant)
+                    and isinstance(node.args[1].value, str)
+                    else None
+                )
+                safe_os_lookup = (
+                    name == "getattr"
+                    and receiver == "os"
+                    and attribute in SAFE_OS_DYNAMIC_LOOKUPS
+                )
+                if sensitive_receiver and not safe_os_lookup:
+                    violations.append(
+                        "forbidden dynamic access through "
+                        f"{receiver or '<path expression>'}.{attribute or '<computed>'}"
+                    )
+        elif isinstance(node, ast.Attribute):
+            name = resolve_alias(qualified_call_name(node))
+            receiver, sensitive_receiver = sensitive_dynamic_receiver(node.value)
+            if name in {"os.environ", "os.environb"} or name.startswith(
+                ("os.environ.", "os.environb.")
+            ):
+                environment_name = ".".join(name.split(".", 2)[:2])
+                violations.append(
+                    f"forbidden credential or environment read {environment_name}"
+                )
+            elif name.startswith("__builtins__."):
+                violations.append(f"forbidden builtins namespace access {name}")
+            elif node.attr == "__dict__" and sensitive_receiver:
+                violations.append(
+                    f"forbidden dynamic namespace access {receiver}.__dict__"
+                )
+            elif forbidden_operation(name):
+                violations.append(f"forbidden process or dynamic-code reference {name}")
+        elif isinstance(node, ast.Name) and node.id == "__builtins__":
+            violations.append("forbidden builtins namespace access __builtins__")
+    if violations:
+        return [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                shown,
+                sorted(set(violations))[0],
+            )
+        ]
+    return []
+
+
+def check_core_imports(root: Path):
+    try:
+        payload = bounded_read_bytes(root / CORE_CHECKER_PATH, root, MAX_RUNTIME_SOURCE_BYTES)
+    except OSError as exc:
+        return 0, [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                CORE_CHECKER_PATH.as_posix(),
+                f"core checker could not be read safely: {exc}",
+            )
+        ]
+    if len(payload) > MAX_RUNTIME_SOURCE_BYTES:
+        return 0, [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                CORE_CHECKER_PATH.as_posix(),
+                f"core checker exceeds the {MAX_RUNTIME_SOURCE_BYTES}-byte limit",
+            )
+        ]
+    try:
+        source = payload.decode("utf-8")
+    except UnicodeDecodeError:
+        return 0, [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                CORE_CHECKER_PATH.as_posix(),
+                "core checker is not UTF-8",
+            )
+        ]
+    return 1, check_core_source_text(source, CORE_CHECKER_PATH.as_posix())
+
+
+def load_semantic_fixture(root: Path, relative_path: Path, obligation_id: str):
+    document, findings = read_json(
+        root / relative_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code=SEMANTIC_OBLIGATIONS[obligation_id]["code"],
+        unsafe_code=SEMANTIC_OBLIGATIONS[obligation_id]["code"],
+        malformed_code=SEMANTIC_OBLIGATIONS[obligation_id]["code"],
+        noun="Promise Machine semantic fixture",
+    )
+    if document is not None:
+        return document, []
+    return None, [
+        semantic_finding(obligation_id, item.path, item.message) for item in findings
+    ]
+
+
+def check_consequence_fixtures(root: Path):
+    findings: list[Finding] = []
+    for level, relative_path in enumerate(CONSEQUENCE_FIXTURES):
+        document, read_findings = load_semantic_fixture(
+            root, relative_path, "law-consequence-separation"
+        )
+        findings.extend(read_findings)
+        if document is None:
+            continue
+        if document.get("consequence") != level:
+            findings.append(
+                semantic_finding(
+                    "law-consequence-separation",
+                    relative_path.as_posix(),
+                    "positive consequence fixture is bound to the wrong level",
+                    record=document,
+                )
+            )
+            continue
+        findings.extend(
+            evaluate_transition_record(
+                root,
+                document,
+                relative_path.as_posix(),
+                expected_obligation="law-consequence-separation",
+            )
+        )
+    return len(CONSEQUENCE_FIXTURES), findings
+
+
+def check_exception_fixture(root: Path):
+    document, findings = load_semantic_fixture(
+        root, EXCEPTION_FIXTURE, "law-exception-resolution"
+    )
+    if document is None:
+        return 0, findings
+    expected = {
+        "promise_id": "fixture-promise",
+        "gate": "fixture.gate",
+        "subject": "fixture-subject",
+        "scope": "fixture-scope",
+        "consequence": 3,
+        "transition": "publish the fixture result",
+    }
+    return 1, validate_exception_record(
+        root,
+        document,
+        EXCEPTION_FIXTURE.as_posix(),
+        expected=expected,
+        evaluated_at="2026-08-30T00:00:00Z",
+    )
+
+
+def declared_exception_error(root: Path, raw: str, promise_id: str):
+    reference, error = parse_json_object_bytes(
+        raw.encode("utf-8"), "declared exception reference"
+    )
+    if error is not None:
+        return "exception is not a closed JSON path and digest reference"
+    exception, error = read_bound_json_reference(
+        root, reference, "declared exception"
+    )
+    if error is not None:
+        return error
+    keys = {
+        "schema",
+        "id",
+        "authority",
+        "promise_id",
+        "gate",
+        "subject",
+        "scope",
+        "record",
+        "expiry",
+        "revoked",
+        "recovery",
+    }
+    scalars = ("id", "promise_id", "gate", "subject", "scope", "recovery")
+    if (
+        set(exception) != keys
+        or exception.get("schema") != EXCEPTION_SCHEMA
+        or any(not closed_non_empty_scalar(exception.get(key)) for key in scalars)
+        or exception.get("promise_id") != promise_id
+    ):
+        return "exception record has an unsupported shape or promise identity"
+    authority = exception.get("authority")
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != {"id", "reference"}
+        or not closed_non_empty_scalar(authority.get("id"))
+    ):
+        return "exception authority is not an identified resolvable reference"
+    authority_document, error = validate_authority_reference(
+        root, authority.get("reference"), exception
+    )
+    if error is not None:
+        return error
+    if authority.get("id") != authority_document.get("id"):
+        return "exception authority identity does not match its record"
+    reason, error = read_bound_reference(root, exception.get("record"), "exception reason")
+    if error is not None:
+        return error
+    if not reason.strip():
+        return "exception reason record is empty"
+    expiry = exception.get("expiry")
+    if not isinstance(expiry, dict) or len(expiry) != 1:
+        return "exception expiry is not the closed at or not_applicable form"
+    if "at" in expiry:
+        if parse_utc_timestamp(expiry["at"]) is None:
+            return "exception expiry is not a real UTC timestamp"
+    elif "not_applicable" in expiry:
+        reason = expiry["not_applicable"]
+        if not closed_non_empty_scalar(reason):
+            return "exception does not explain why expiry cannot apply"
+    else:
+        return "exception expiry field is unknown"
+    if type(exception.get("revoked")) is not bool or exception["revoked"]:
+        return "exception revocation state is absent, invalid or revoked"
+    return None
+
+
+def repository_relative_fixture(raw: str):
+    if not isinstance(raw, str) or not raw or raw != raw.strip():
+        return None
+    candidate = Path(raw)
+    if candidate.is_absolute() or ".." in candidate.parts or candidate.as_posix() != raw:
+        return None
+    try:
+        relative_fixture = candidate.relative_to(PROMISE_MACHINE_FIXTURE_ROOT)
+    except ValueError:
+        return None
+    if not relative_fixture.parts or relative_fixture.parts[0] not in (
+        {"obligations"} | SEMANTIC_FIXTURE_DIRECTORIES
+    ):
+        return None
+    if candidate.suffix != ".json":
+        return None
+    return candidate
+
+
+def validate_semantic_specimen(root: Path, relative_specimen: Path, document, row):
+    schema = document.get("schema") if isinstance(document, dict) else None
+    if schema == TRANSITION_SCHEMA:
+        return evaluate_transition_record(
+            root,
+            document,
+            relative_specimen.as_posix(),
+            expected_obligation=row["id"],
+        )
+    if schema == EXCEPTION_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "evaluated_at", "expected", "exception"}:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "exception specimen does not have the exact required fields",
+                    "restore schema, evaluated_at, expected, and exception",
+                    row,
+                )
+            ]
+        expected = document.get("expected")
+        expected_keys = {
+            "promise_id",
+            "gate",
+            "subject",
+            "scope",
+            "consequence",
+            "transition",
+        }
+        if not isinstance(expected, dict) or set(expected) != expected_keys:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "exception specimen expected context is not closed",
+                    "restore the exact promise, gate, subject, scope, consequence, and transition context",
+                    row,
+                )
+            ]
+        if (
+            not isinstance(expected.get("promise_id"), str)
+            or PROMISE_ID.fullmatch(expected["promise_id"]) is None
+            or any(
+                not closed_non_empty_scalar(expected.get(key))
+                for key in ("gate", "subject", "scope", "transition")
+            )
+            or type(expected.get("consequence")) is not int
+            or expected["consequence"] not in range(4)
+        ):
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "exception specimen expected context is invalid",
+                    "restore bounded promise, gate, subject, scope, consequence, and transition values",
+                    row,
+                )
+            ]
+        return validate_exception_record(
+            root,
+            document.get("exception"),
+            relative_specimen.as_posix(),
+            expected=expected,
+            evaluated_at=document.get("evaluated_at"),
+        )
+    if schema == FINDING_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "finding"}:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "finding specimen does not have the exact required fields",
+                    "restore the schema and finding fields",
+                    row,
+                )
+            ]
+        return validate_refusal_payload(
+            document.get("finding"), relative_specimen.as_posix()
+        )
+    if schema == IMPORT_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "source"} or not isinstance(
+            document.get("source"), str
+        ):
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "import specimen does not have the exact source field",
+                    "restore the schema and UTF-8 Python source fields",
+                    row,
+                )
+            ]
+        return check_core_source_text(document["source"], relative_specimen.as_posix())
+    if schema == RUNTIME_OBLIGATION_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "record", "binding", "result"}:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "runtime specimen does not have the exact record, binding, and result fields",
+                    "restore the closed runtime obligation specimen",
+                    row,
+                )
+            ]
+        record_document = document.get("record")
+        if (
+            not isinstance(record_document, dict)
+            or set(record_document)
+            != {"promise_id", "skill_path", "evidence_classes", "consequence"}
+            or not isinstance(record_document.get("promise_id"), str)
+            or PROMISE_ID.fullmatch(record_document["promise_id"]) is None
+            or not closed_non_empty_scalar(record_document.get("skill_path"))
+            or not isinstance(record_document.get("evidence_classes"), list)
+            or not record_document["evidence_classes"]
+            or any(
+                item not in SUPPORTED_EVIDENCE_CLASSES
+                for item in record_document["evidence_classes"]
+            )
+            or type(record_document.get("consequence")) is not int
+            or record_document["consequence"] not in {2, 3}
+        ):
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "runtime specimen promise record is invalid",
+                    "restore its stable promise, skill path, evidence classes, and consequence",
+                    row,
+                )
+            ]
+        binding = document.get("binding")
+        if not isinstance(binding, dict) or set(binding) != {
+            "source",
+            "sha256",
+            "reader",
+            "bindings",
+        }:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "runtime specimen binding is not the closed production-reader shape",
+                    "restore source, digest, reader, and native field map",
+                    row,
+                )
+            ]
+        record = PromiseRecord(
+            record_document["promise_id"],
+            record_document["skill_path"],
+            "executable",
+            frozenset(record_document["evidence_classes"]),
+            record_document["consequence"],
+        )
+        return validate_runtime_result(
+            root,
+            record,
+            binding,
+            document.get("result"),
+            relative_specimen.as_posix(),
+        )
+    return None
+
+
+def verify_negative_specimen(relative_specimen: Path, produced, row):
+    expected = row["finding"]
+    if len(produced) != 1 or produced[0].code != expected:
+        observed = [item.code for item in produced]
+        return [
+            obligation_finding(
+                "PM089",
+                relative_specimen.as_posix(),
+                f"negative specimen produced {observed!r}; expected only {expected}",
+                "restore the selected production gate or narrow the specimen to its one expected finding",
+                row,
+            )
+        ]
+    return []
+
+
+def validate_obligation_specimen(
+    root: Path,
+    law_text: str,
+    row: dict,
+    composition_inventory: Inventory | None = None,
+):
+    specimen_raw = row["specimen"]
+    relative_specimen = repository_relative_fixture(specimen_raw)
+    if relative_specimen is None:
+        return [
+            obligation_finding(
+                "PM087",
+                str(specimen_raw),
+                "negative specimen path is not a confined JSON path under an allowed fixture directory",
+                "use one repository-relative JSON fixture below tests/fixtures/promise-machine",
+                row,
+            )
+        ]
+    specimen_path = root / relative_specimen
+    document, findings = read_json(
+        specimen_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM087",
+        unsafe_code="PM087",
+        malformed_code="PM088",
+        noun="Promise Machine obligation specimen",
+    )
+    if document is None:
+        return [
+            obligation_finding(
+                item.code,
+                item.path,
+                item.message,
+                item.remedy,
+                row,
+            )
+            for item in findings
+        ]
+    if document.get("schema") == COMPOSITION_CASES_SCHEMA:
+        return validate_composition_obligation_specimen(
+            root,
+            relative_specimen,
+            document,
+            row,
+            inventory=composition_inventory,
+        )
+    semantic = validate_semantic_specimen(root, relative_specimen, document, row)
+    if semantic is not None:
+        return verify_negative_specimen(relative_specimen, semantic, row)
+    if set(document) != {"schema", "obligation_id", "mutation"}:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen fields are not exactly schema, obligation_id, and mutation",
+                "restore the closed promise-machine-obligation-specimen/v1 shape",
+                row,
+            )
+        ]
+    if document["schema"] != OBLIGATION_SPECIMEN_SCHEMA:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                f"unsupported specimen schema: {document['schema']!r}",
+                f"declare {OBLIGATION_SPECIMEN_SCHEMA}",
+                row,
+            )
+        ]
+    if document["obligation_id"] != row["id"]:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen obligation id does not match its registry row",
+                "bind the specimen to the row's exact stable obligation id",
+                row,
+            )
+        ]
+    mutation = document["mutation"]
+    if not isinstance(mutation, dict) or set(mutation) != {"operation", "old", "new"}:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen mutation is not the closed operation, old, and new object",
+                "restore one bounded replace_once mutation",
+                row,
+            )
+        ]
+    old = mutation.get("old")
+    new = mutation.get("new")
+    if (
+        mutation.get("operation") != "replace_once"
+        or not isinstance(old, str)
+        or not old
+        or not isinstance(new, str)
+        or old == new
+        or law_text.count(old) != 1
+    ):
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "replace_once mutation is invalid or its source text is not unique",
+                "name one exact unique law fragment and a different replacement",
+                row,
+            )
+        ]
+    mutated_text = law_text.replace(old, new, 1)
+    mutated_payload = mutated_text.encode("utf-8")
+    if len(mutated_payload) > MAX_MARKDOWN_BYTES:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                f"mutated law exceeds the {MAX_MARKDOWN_BYTES}-byte limit",
+                "keep the hostile specimen inside the bounded law surface",
+                row,
+            )
+        ]
+    produced = validate_law_document(
+        mutated_payload, mutated_text, relative_specimen.as_posix()
+    )
+    return verify_negative_specimen(relative_specimen, produced, row)
+
+
+def check_obligations(root: Path, law: bytes | None):
+    findings: list[Finding] = []
+    if law is None:
+        return 0, findings
+    law_text = law.decode("utf-8")
+    marker_ids, clause_digests, marker_findings = discover_obligations(law_text)
+    findings.extend(marker_findings)
+    registry_path = root / OBLIGATION_PATH
+    document, registry_findings = read_json(
+        registry_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM082",
+        unsafe_code="PM082",
+        malformed_code="PM082",
+        noun="Promise Machine obligation registry",
+    )
+    findings.extend(registry_findings)
+    if document is None:
+        return len(marker_ids), findings
+    if set(document) != {"contract", "schema", "obligations"}:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry fields are not exactly contract, schema, and obligations",
+                "restore the closed promise-machine-obligations/v1 document",
+            )
+        )
+        return len(marker_ids), findings
+    if document["contract"] != CONTRACT_ID or document["schema"] != OBLIGATION_SCHEMA:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry contract or schema identity is unsupported",
+                f"declare contract {CONTRACT_ID} and schema {OBLIGATION_SCHEMA}",
+            )
+        )
+    rows = document["obligations"]
+    if not isinstance(rows, list) or not rows:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry obligations must be a non-empty list",
+                "register every discovered explicit obligation exactly once",
+            )
+        )
+        return len(marker_ids), findings
+
+    valid_rows: dict[str, dict] = {}
+    for index, row in enumerate(rows):
+        path = f"{OBLIGATION_PATH.as_posix()}#obligations[{index}]"
+        if not isinstance(row, dict) or set(row) != OBLIGATION_ROW_KEYS:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry row does not have the exact required fields",
+                    "restore id, clause_sha256, gate, specimen, finding, consequence, blocked_transition, and recovery",
+                    row,
+                )
+            )
+            continue
+        obligation_id = row["id"]
+        strings = (
+            "id",
+            "clause_sha256",
+            "gate",
+            "specimen",
+            "finding",
+            "blocked_transition",
+            "recovery",
+        )
+        if any(
+            not isinstance(row[key], str)
+            or not row[key]
+            or row[key] != row[key].strip()
+            for key in strings
+        ) or PROMISE_ID.fullmatch(obligation_id) is None:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry row has an invalid or empty scalar field",
+                    "use a stable kebab-case id and non-empty exact string fields",
+                    row,
+                )
+            )
+            continue
+        if re.fullmatch(r"[0-9a-f]{64}", row["clause_sha256"]) is None:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry clause digest is not a lowercase SHA-256 value",
+                    "record the SHA-256 of the exact marked obligation clause",
+                    row,
+                )
+            )
+            continue
+        consequence = row["consequence"]
+        if type(consequence) is not int or consequence not in range(4):
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry consequence is not an integer from 0 through 3",
+                    "record the root-law consequence level for the blocked transition",
+                    row,
+                )
+            )
+            continue
+        if obligation_id in valid_rows:
+            findings.append(
+                obligation_finding(
+                    "PM085",
+                    path,
+                    f"registry contains a duplicate obligation row: {obligation_id}",
+                    "retain exactly one row for the stable obligation id",
+                    row,
+                )
+            )
+            continue
+        valid_rows[obligation_id] = row
+
+    row_ids = set(valid_rows)
+    for obligation_id in sorted(marker_ids - row_ids):
+        findings.append(
+            obligation_finding(
+                "PM085",
+                OBLIGATION_PATH.as_posix(),
+                f"discovered obligation has no registry row: {obligation_id}",
+                "add its gate and hostile specimen in the same change",
+                {"id": obligation_id},
+            )
+        )
+    for obligation_id in sorted(row_ids - marker_ids):
+        findings.append(
+            obligation_finding(
+                "PM085",
+                OBLIGATION_PATH.as_posix(),
+                f"registry-only obligation has no authored law marker: {obligation_id}",
+                "restore the matching explicit law clause or retire the row with its owning change",
+                valid_rows[obligation_id],
+            )
+        )
+
+    selector_ids: dict[str, str] = {}
+    for obligation_id, (selector, _code, _clause) in sorted(OBLIGATION_GATES.items()):
+        prior = selector_ids.get(selector)
+        if prior is not None:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    "scripts/promise_machine.py",
+                    f"production gate selector is bound to both {prior} and {obligation_id}: {selector}",
+                    "bind every production gate selector to one stable obligation id",
+                    {"id": obligation_id},
+                )
+            )
+        else:
+            selector_ids[selector] = obligation_id
+    for obligation_id in sorted(set(OBLIGATION_GATES) - marker_ids):
+        findings.append(
+            obligation_finding(
+                "PM086",
+                "scripts/promise_machine.py",
+                f"production gate has no authored law marker: {obligation_id}",
+                "restore the matching explicit law clause or remove the stale selector",
+                {"id": obligation_id},
+            )
+        )
+
+    composition_inventory = None
+    if any(
+        obligation_id.startswith("law-composition-")
+        for obligation_id in row_ids & marker_ids
+    ) and any((root / "plugins").glob("*/skills/**/SKILL.md")):
+        composition_inventory, inventory_findings = discover_inventory(root)
+        findings.extend(inventory_findings)
+
+    for obligation_id in sorted(row_ids & marker_ids):
+        row = valid_rows[obligation_id]
+        expected_gate = OBLIGATION_GATES.get(obligation_id)
+        if expected_gate is None:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation id has no production gate selector: {obligation_id}",
+                    "register the stable obligation id and its production gate together",
+                    row,
+                )
+            )
+            continue
+        expected_selector, expected_code, expected_clause = expected_gate
+        if (
+            row["gate"] != expected_selector
+            or row["finding"] != expected_code
+            or row["clause_sha256"] != expected_clause
+        ):
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation {obligation_id} does not match its registered clause, selector, and finding code",
+                    "restore the stable id's exact clause digest, production selector, and finding code",
+                    row,
+                )
+            )
+            continue
+        if clause_digests.get(obligation_id) != expected_clause:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation {obligation_id} clause digest does not match its authored marker",
+                    "restore the marker to its owned clause or update the row with the reviewed clause change",
+                    row,
+                )
+            )
+            continue
+        findings.extend(
+            validate_obligation_specimen(
+                root,
+                law_text,
+                row,
+                composition_inventory=composition_inventory,
+            )
+        )
+    return len(marker_ids), findings
 
 
 def discover_plugins(root: Path):
@@ -918,25 +3893,15 @@ def parse_contract(skill: SkillRecord, root: Path, *, required: bool = False):
             )
         exceptions = fields.get("Exceptions", [])
         if len(exceptions) == 1 and exceptions[0].lower() != "none":
-            required = ("authority", "scope", "record", "expiry")
-            absent = [
-                item
-                for item in required
-                if re.search(
-                    rf"(?:^|;)\s*{item}\s*(?::|=)\s*[^;\s].*?(?=;|$)",
-                    exceptions[0],
-                    re.IGNORECASE,
-                )
-                is None
-            ]
-            if absent:
+            error = declared_exception_error(root, exceptions[0], promise_id)
+            if error is not None:
                 findings.append(
                     Finding(
                         "PM038",
                         "structural",
                         skill.path,
-                        f"exception omits required attribution: {absent!r}",
-                        "name authority, scope, record and expiry, or declare none",
+                        error,
+                        "use none or one digest-bound JSON exception reference that resolves the complete record",
                         promise_id=promise_id or None,
                     )
                 )
@@ -1047,7 +4012,10 @@ def check_overlays(root: Path, inventory: Inventory):
     if loaded is None:
         return 0, findings
     _, text = loaded
-    lines = text.splitlines()
+    lines = [
+        line if isinstance(line, str) else ""
+        for line in markdown_unfenced_lines(text)
+    ]
     if lines.count(OVERLAY_HEADING) != 1:
         findings.append(
             Finding(
@@ -1096,7 +4064,7 @@ def check_overlays(root: Path, inventory: Inventory):
     seen_paths: dict[str, list[str]] = {}
     seen_ids: set[str] = set()
     for offset, block_start in enumerate(blocks):
-        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else len(lines)
+        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
         promise_id = lines[block_start][4:].strip()
         if not PROMISE_ID.fullmatch(promise_id):
             findings.append(
@@ -1137,7 +4105,7 @@ def check_overlays(root: Path, inventory: Inventory):
                     "structural",
                     expected_overlay,
                     f"overlay declaration contains unknown fields: {unknown!r}",
-                    "use only Path, SHA-256 and the nine promise fields",
+                    "use only the seven provenance fields and nine promise fields",
                     promise_id=promise_id or None,
                 )
             )
@@ -1200,17 +4168,17 @@ def check_overlays(root: Path, inventory: Inventory):
                         promise_id=promise_id or None,
                     )
                 )
-            digests = fields.get("SHA-256", [])
-            if len(digests) == 1:
-                digest = digests[0].strip("`")
-                if re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            local_digests = fields.get("Local SHA-256", [])
+            if len(local_digests) == 1:
+                local_digest = local_digests[0].strip("`")
+                if SHA256_HEX.fullmatch(local_digest) is None:
                     findings.append(
                         Finding(
                             "PM056",
                             "structural",
                             expected_overlay,
-                            "overlay SHA-256 is not 64 lowercase hexadecimal characters",
-                            "record the full lowercase SHA-256 of the vendored instruction bytes",
+                            "overlay Local SHA-256 is not 64 lowercase hexadecimal characters",
+                            "record the full lowercase SHA-256 of the local vendored instruction bytes",
                             promise_id=promise_id or None,
                         )
                     )
@@ -1224,17 +4192,127 @@ def check_overlays(root: Path, inventory: Inventory):
                         if target_loaded is not None
                         else ""
                     )
-                    if actual != digest:
+                    if actual != local_digest:
                         findings.append(
                             Finding(
                                 "PM057",
                                 "drift",
                                 declared,
-                                f"vendored instruction digest is {actual}; overlay records {digest}",
-                                "review the upstream change and update the first-party overlay deliberately",
+                                f"vendored instruction digest is {actual}; overlay records {local_digest}",
+                                "review the local change and update the first-party provenance deliberately",
                                 promise_id=promise_id or None,
                             )
                         )
+
+        repositories = fields.get("Repository", [])
+        if len(repositories) == 1:
+            repository = repositories[0].strip("`")
+            if GITHUB_REPOSITORY_URI.fullmatch(repository) is None:
+                findings.append(
+                    Finding(
+                        "PM060",
+                        "identity",
+                        expected_overlay,
+                        f"overlay repository is not an allowlisted HTTPS GitHub clone URI: {repository!r}",
+                        "record the exact https://github.com/owner/repository.git upstream URI",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        commits = fields.get("Commit", [])
+        if len(commits) == 1:
+            commit = commits[0].strip("`")
+            if FULL_GIT_COMMIT.fullmatch(commit) is None:
+                findings.append(
+                    Finding(
+                        "PM061",
+                        "identity",
+                        expected_overlay,
+                        f"overlay commit is not an immutable full lowercase commit: {commit!r}",
+                        "resolve the upstream tag or branch to its full 40-character commit",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        upstream_paths = fields.get("Upstream path", [])
+        if len(upstream_paths) == 1:
+            upstream_path = upstream_paths[0].strip("`")
+            parts = upstream_path.split("/")
+            if (
+                not upstream_path
+                or upstream_path.startswith("/")
+                or "\\" in upstream_path
+                or any(part in {"", ".", ".."} for part in parts)
+                or any(
+                    re.fullmatch(r"[A-Za-z0-9._-]+", part) is None
+                    for part in parts
+                )
+                or not upstream_path.endswith("SKILL.md")
+            ):
+                findings.append(
+                    Finding(
+                        "PM062",
+                        "identity",
+                        expected_overlay,
+                        f"overlay upstream path is not a safe repository-relative skill path: {upstream_path!r}",
+                        "record one confined repository-relative upstream SKILL.md path",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        upstream_digests = fields.get("Upstream SHA-256", [])
+        upstream_digest = ""
+        if len(upstream_digests) == 1:
+            upstream_digest = upstream_digests[0].strip("`")
+            if SHA256_HEX.fullmatch(upstream_digest) is None:
+                findings.append(
+                    Finding(
+                        "PM056",
+                        "structural",
+                        expected_overlay,
+                        "overlay Upstream SHA-256 is not 64 lowercase hexadecimal characters",
+                        "record the full lowercase SHA-256 of the immutable upstream bytes",
+                        promise_id=promise_id or None,
+                    )
+                )
+
+        local_digests = fields.get("Local SHA-256", [])
+        local_digest = (
+            local_digests[0].strip("`") if len(local_digests) == 1 else ""
+        )
+        statuses = fields.get("Verification status", [])
+        if len(statuses) == 1:
+            status = tuple(item.strip() for item in statuses[0].split(","))
+            status_is_valid = (
+                len(status) == 3
+                and status[0] == VERIFICATION_STATUS_PREFIX
+                and status[1] in VERIFICATION_LOCAL_RELATIONS
+                and status[2] == VERIFICATION_PUBLISHER_STATUS
+            )
+            relation_is_valid = (
+                SHA256_HEX.fullmatch(upstream_digest) is not None
+                and SHA256_HEX.fullmatch(local_digest) is not None
+                and (
+                    (status[1] == "local-bytes-identical" and upstream_digest == local_digest)
+                    or (
+                        status[1] == "local-bytes-modified"
+                        and upstream_digest != local_digest
+                    )
+                )
+                if status_is_valid
+                else False
+            )
+            if not status_is_valid or not relation_is_valid:
+                findings.append(
+                    Finding(
+                        "PM063",
+                        "identity",
+                        expected_overlay,
+                        "overlay verification status is unsupported or contradicts its two byte digests",
+                        "record verified upstream bytes, the exact local byte relation and publisher-authentication-unknown",
+                        promise_id=promise_id or None,
+                    )
+                )
 
         evidence_values = fields.get("Evidence classes", [])
         if len(evidence_values) == 1:
@@ -1269,25 +4347,15 @@ def check_overlays(root: Path, inventory: Inventory):
             )
         exceptions = fields.get("Exceptions", [])
         if len(exceptions) == 1 and exceptions[0].lower() != "none":
-            required = ("authority", "scope", "record", "expiry")
-            absent = [
-                item
-                for item in required
-                if re.search(
-                    rf"(?:^|;)\s*{item}\s*(?::|=)\s*[^;\s].*?(?=;|$)",
-                    exceptions[0],
-                    re.IGNORECASE,
-                )
-                is None
-            ]
-            if absent:
+            error = declared_exception_error(root, exceptions[0], promise_id)
+            if error is not None:
                 findings.append(
                     Finding(
                         "PM038",
                         "structural",
                         expected_overlay,
-                        f"exception omits required attribution: {absent!r}",
-                        "name authority, scope, record and expiry, or declare none",
+                        error,
+                        "use none or one digest-bound JSON exception reference that resolves the complete record",
                         promise_id=promise_id or None,
                     )
                 )
@@ -1347,7 +4415,10 @@ def promise_records(root: Path, inventory: Inventory):
         root / OVERLAY_PATH, root, missing_code="PM060", unsafe_code="PM060"
     )
     if loaded is not None:
-        lines = loaded[1].splitlines()
+        lines = [
+            line if isinstance(line, str) else ""
+            for line in markdown_unfenced_lines(loaded[1])
+        ]
         heading_index = lines.index(OVERLAY_HEADING) if OVERLAY_HEADING in lines else 0
         section_end = next(
             (
@@ -1363,7 +4434,7 @@ def promise_records(root: Path, inventory: Inventory):
             if lines[index].startswith("### ")
         ]
         for offset, block_start in enumerate(blocks):
-            block_end = blocks[offset + 1] if offset + 1 < len(blocks) else len(lines)
+            block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
             promise_id = lines[block_start][4:].strip()
             declared = ""
             evidence_classes: frozenset[str] = frozenset()
@@ -1390,6 +4461,538 @@ def promise_records(root: Path, inventory: Inventory):
     return tuple(sorted(records, key=lambda item: item.promise_id))
 
 
+def declaration_field_blocks(text: str, heading: str):
+    lines = [
+        line if isinstance(line, str) else ""
+        for line in markdown_unfenced_lines(text)
+    ]
+    headings = [index for index, line in enumerate(lines) if line == heading]
+    if len(headings) != 1:
+        return []
+    heading_index = headings[0]
+    if heading.startswith("# "):
+        section_end = next(
+            (
+                index
+                for index in range(heading_index + 1, len(lines))
+                if lines[index].startswith("# ") or lines[index].startswith("## ")
+            ),
+            len(lines),
+        )
+    else:
+        section_end = next(
+            (
+                index
+                for index in range(heading_index + 1, len(lines))
+                if lines[index].startswith("## ")
+            ),
+            len(lines),
+        )
+    blocks = [
+        index
+        for index in range(heading_index + 1, section_end)
+        if lines[index].startswith("### ")
+    ]
+    declarations = []
+    for offset, block_start in enumerate(blocks):
+        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
+        fields: dict[str, list[str]] = {}
+        for line in lines[block_start + 1 : block_end]:
+            match = re.fullmatch(r"- \*\*([^*]+):\*\*\s*(.*)", line)
+            if match is None:
+                match = re.fullmatch(r"- ([^:]+):\s*(.*)", line)
+            if match is not None:
+                fields.setdefault(match.group(1).strip(), []).append(
+                    match.group(2).strip()
+                )
+        declarations.append((lines[block_start][4:].strip(), fields))
+    return declarations
+
+
+def semantic_promise_digest(fields: dict[str, list[str]]):
+    if any(
+        len(fields.get(field, [])) != 1 or not fields[field][0]
+        for field in REQUIRED_FIELDS
+    ):
+        return None
+    document = {field: fields[field][0] for field in REQUIRED_FIELDS}
+    encoded = json.dumps(
+        document, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def current_promise_snapshots(root: Path, inventory: Inventory):
+    snapshots: list[dict[str, str]] = []
+    findings: list[Finding] = []
+    for skill in inventory.skills:
+        if skill.governance != "first-party":
+            continue
+        loaded, read_findings = read_markdown(
+            root / skill.path,
+            root,
+            missing_code="PM100",
+            unsafe_code="PM100",
+        )
+        findings.extend(read_findings)
+        if loaded is None:
+            continue
+        for promise_id, fields in declaration_field_blocks(
+            loaded[1], "## Promise Machine contract"
+        ):
+            semantic_digest = semantic_promise_digest(fields)
+            if PROMISE_ID.fullmatch(promise_id) is None or semantic_digest is None:
+                findings.append(
+                    Finding(
+                        "PM100",
+                        "structural",
+                        skill.path,
+                        "current promise cannot be reduced to one stable id and nine semantic fields",
+                        "repair the declaration before recording its continuity",
+                        promise_id=promise_id or None,
+                    )
+                )
+                continue
+            snapshots.append(
+                {
+                    "promise_id": promise_id,
+                    "skill_path": skill.path,
+                    "semantic_sha256": semantic_digest,
+                }
+            )
+
+    vendored = any(skill.governance == "vendored" for skill in inventory.skills)
+    overlay_present = OVERLAY_PATH.as_posix() in inventory.overlays
+    if vendored or overlay_present:
+        loaded, read_findings = read_markdown(
+            root / OVERLAY_PATH,
+            root,
+            missing_code="PM100",
+            unsafe_code="PM100",
+        )
+        findings.extend(read_findings)
+        if loaded is not None:
+            for promise_id, fields in declaration_field_blocks(
+                loaded[1], OVERLAY_HEADING
+            ):
+                semantic_digest = semantic_promise_digest(fields)
+                paths = fields.get("Path", [])
+                if (
+                    PROMISE_ID.fullmatch(promise_id) is None
+                    or semantic_digest is None
+                    or len(paths) != 1
+                    or not paths[0]
+                ):
+                    findings.append(
+                        Finding(
+                            "PM100",
+                            "structural",
+                            OVERLAY_PATH.as_posix(),
+                            "current overlay promise cannot be reduced to one stable id, path and nine semantic fields",
+                            "repair the overlay declaration before recording its continuity",
+                            promise_id=promise_id or None,
+                        )
+                    )
+                    continue
+                snapshots.append(
+                    {
+                        "promise_id": promise_id,
+                        "skill_path": paths[0].strip("`"),
+                        "semantic_sha256": semantic_digest,
+                    }
+                )
+    return snapshots, findings
+
+
+def history_inventory_digest(rows):
+    encoded = json.dumps(
+        sorted(rows, key=lambda row: row["promise_id"]),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def check_history(root: Path, inventory: Inventory):
+    shown = HISTORY_PATH.as_posix()
+    document, findings = read_json(
+        root / HISTORY_PATH,
+        root,
+        max_bytes=MAX_COVERAGE_BYTES,
+        missing_code="PM100",
+        unsafe_code="PM100",
+        malformed_code="PM100",
+        noun="promise-id history",
+    )
+    if document is None:
+        return 0, 0, findings
+
+    required_root = {
+        "contract",
+        "schema",
+        "entry_ref",
+        "entry_count",
+        "entry_inventory_sha256",
+        "entries",
+    }
+    if set(document) != required_root:
+        findings.append(
+            Finding(
+                "PM100",
+                "structural",
+                shown,
+                f"promise-id history root fields are {sorted(document)!r}; expected {sorted(required_root)!r}",
+                "restore the closed promise-id history schema",
+            )
+        )
+    if document.get("contract") != CONTRACT_ID or document.get("schema") != HISTORY_SCHEMA:
+        findings.append(
+            Finding(
+                "PM100",
+                "identity",
+                shown,
+                "promise-id history contract or schema identity is unsupported",
+                f"record {CONTRACT_ID} with schema {HISTORY_SCHEMA}",
+            )
+        )
+    entry_ref = document.get("entry_ref")
+    if not isinstance(entry_ref, str) or FULL_GIT_COMMIT.fullmatch(entry_ref) is None:
+        findings.append(
+            Finding(
+                "PM101",
+                "identity",
+                shown,
+                f"history entry ref is not an immutable full lowercase commit: {entry_ref!r}",
+                "record the exact 40-character Fiat entry commit",
+            )
+        )
+    entries = document.get("entries")
+    if not isinstance(entries, list):
+        findings.append(
+            Finding(
+                "PM100",
+                "structural",
+                shown,
+                "promise-id history entries is not an array",
+                "restore the ordered history entry array",
+            )
+        )
+        return 0, 0, findings
+
+    rows: dict[str, dict] = {}
+    entry_inventory = []
+
+    def parse_snapshot(value, promise_id, label):
+        if value is None:
+            return None, True
+        if not isinstance(value, dict) or set(value) != {
+            "skill_path",
+            "semantic_sha256",
+        }:
+            findings.append(
+                Finding(
+                    "PM100",
+                    "structural",
+                    shown,
+                    f"{label} snapshot has unsupported fields",
+                    "record exactly skill_path and semantic_sha256",
+                    promise_id=promise_id,
+                )
+            )
+            return None, False
+        skill_path = value.get("skill_path")
+        digest = value.get("semantic_sha256")
+        path_parts = skill_path.split("/") if isinstance(skill_path, str) else []
+        if (
+            not isinstance(skill_path, str)
+            or not skill_path
+            or skill_path.startswith("/")
+            or "\\" in skill_path
+            or any(part in {"", ".", ".."} for part in path_parts)
+            or not skill_path.endswith("SKILL.md")
+            or not isinstance(digest, str)
+            or SHA256_HEX.fullmatch(digest) is None
+        ):
+            findings.append(
+                Finding(
+                    "PM100",
+                    "identity",
+                    shown,
+                    f"{label} snapshot path or semantic digest is malformed",
+                    "record one safe canonical skill path and full lowercase semantic digest",
+                    promise_id=promise_id,
+                )
+            )
+            return None, False
+        return {"skill_path": skill_path, "semantic_sha256": digest}, True
+
+    for index, row in enumerate(entries):
+        if not isinstance(row, dict) or set(row) != {
+            "promise_id",
+            "entry",
+            "current",
+            "continuity",
+        }:
+            findings.append(
+                Finding(
+                    "PM100",
+                    "structural",
+                    shown,
+                    f"history row {index} does not match the closed row schema",
+                    "record one id, entry snapshot, current snapshot and continuity object",
+                )
+            )
+            continue
+        promise_id = row.get("promise_id")
+        if not isinstance(promise_id, str) or PROMISE_ID.fullmatch(promise_id) is None:
+            findings.append(
+                Finding(
+                    "PM100",
+                    "identity",
+                    shown,
+                    f"history row {index} has an unstable promise id: {promise_id!r}",
+                    "use one lowercase hyphenated promise id",
+                )
+            )
+            continue
+        if promise_id in rows:
+            findings.append(
+                Finding(
+                    "PM102",
+                    "identity",
+                    shown,
+                    "promise id occurs more than once in history",
+                    "retain exactly one append-only row for the promise id",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        entry, entry_valid = parse_snapshot(row.get("entry"), promise_id, "entry")
+        current, current_valid = parse_snapshot(
+            row.get("current"), promise_id, "current"
+        )
+        continuity = row.get("continuity")
+        continuity_valid = (
+            isinstance(continuity, dict)
+            and set(continuity) == {"action", "predecessors", "successors"}
+            and isinstance(continuity.get("action"), str)
+            and continuity.get("action") in HISTORY_ACTIONS
+            and isinstance(continuity.get("predecessors"), list)
+            and isinstance(continuity.get("successors"), list)
+        )
+        predecessors = continuity.get("predecessors", []) if isinstance(continuity, dict) else []
+        successors = continuity.get("successors", []) if isinstance(continuity, dict) else []
+        if continuity_valid:
+            links = predecessors + successors
+            continuity_valid = (
+                all(
+                    isinstance(item, str) and PROMISE_ID.fullmatch(item) is not None
+                    for item in links
+                )
+                and len(set(predecessors)) == len(predecessors)
+                and len(set(successors)) == len(successors)
+                and promise_id not in links
+            )
+        if not continuity_valid:
+            findings.append(
+                Finding(
+                    "PM105",
+                    "structural",
+                    shown,
+                    "continuity action or its predecessor and successor ids are malformed",
+                    "record one supported action with unique stable related ids",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        action = continuity["action"]
+        shape_is_valid = {
+            "unchanged": entry is not None and current is not None and not predecessors and not successors,
+            "amended": entry is not None and current is not None and not predecessors and not successors,
+            "introduced": entry is None and current is not None and len(predecessors) <= 1 and not successors,
+            "retired": entry is not None and current is None and not predecessors and not successors,
+            "renamed": entry is not None and current is None and not predecessors and len(successors) == 1,
+            "split": entry is not None and current is None and not predecessors and len(successors) >= 2,
+        }[action]
+        if not entry_valid or not current_valid or not shape_is_valid:
+            findings.append(
+                Finding(
+                    "PM105",
+                    "structural",
+                    shown,
+                    f"continuity action {action!r} contradicts its entry and current snapshots or links",
+                    "record unchanged, amended, introduced, retired, renamed or split with its required shape",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        rows[promise_id] = {
+            "entry": entry,
+            "current": current,
+            "action": action,
+            "predecessors": predecessors,
+            "successors": successors,
+        }
+        if entry is not None:
+            entry_inventory.append({"promise_id": promise_id, **entry})
+
+    entry_count = document.get("entry_count")
+    entry_digest = document.get("entry_inventory_sha256")
+    actual_entry_digest = history_inventory_digest(entry_inventory)
+    if (
+        type(entry_count) is not int
+        or entry_count < 0
+        or entry_count != len(entry_inventory)
+        or not isinstance(entry_digest, str)
+        or SHA256_HEX.fullmatch(entry_digest) is None
+        or entry_digest != actual_entry_digest
+    ):
+        findings.append(
+            Finding(
+                "PM100",
+                "drift",
+                shown,
+                f"entry inventory anchor does not match {len(entry_inventory)} retained entry rows and digest {actual_entry_digest}",
+                "restore every seeded entry row without rewriting its count or digest",
+            )
+        )
+
+    for promise_id, row in sorted(rows.items()):
+        action = row["action"]
+        if action == "unchanged" and row["entry"] != row["current"]:
+            findings.append(
+                Finding(
+                    "PM104",
+                    "identity",
+                    shown,
+                    "one unchanged promise id carries different entry and current semantics or paths",
+                    "keep the original semantics or retire, rename or split the id explicitly",
+                    promise_id=promise_id,
+                )
+            )
+        if action == "amended" and row["entry"] == row["current"]:
+            findings.append(
+                Finding(
+                    "PM104",
+                    "identity",
+                    shown,
+                    "one amended promise id carries identical entry and current semantics and paths",
+                    "record unchanged when the declaration did not move",
+                    promise_id=promise_id,
+                )
+            )
+        for successor in row["successors"]:
+            target = rows.get(successor)
+            if (
+                target is None
+                or target["action"] != "introduced"
+                or target["current"] is None
+                or promise_id not in target["predecessors"]
+            ):
+                findings.append(
+                    Finding(
+                        "PM106",
+                        "identity",
+                        shown,
+                        f"{action} successor {successor!r} does not link back as an active introduced id",
+                        "record both sides of the rename or split continuity edge",
+                        promise_id=promise_id,
+                    )
+                )
+            elif action == "renamed" and row["entry"]["semantic_sha256"] != target["current"]["semantic_sha256"]:
+                findings.append(
+                    Finding(
+                        "PM106",
+                        "identity",
+                        shown,
+                        "renamed promise changes its semantic digest",
+                        "use split for changed claims or preserve the renamed promise semantics",
+                        promise_id=promise_id,
+                    )
+                )
+        for predecessor in row["predecessors"]:
+            source = rows.get(predecessor)
+            if (
+                source is None
+                or source["action"] not in {"renamed", "split"}
+                or promise_id not in source["successors"]
+            ):
+                findings.append(
+                    Finding(
+                        "PM106",
+                        "identity",
+                        shown,
+                        f"introduced id predecessor {predecessor!r} does not link forward through rename or split",
+                        "record both sides of the continuity edge",
+                        promise_id=promise_id,
+                    )
+                )
+
+    declarations, declaration_findings = current_promise_snapshots(root, inventory)
+    findings.extend(declaration_findings)
+    declared: dict[str, dict[str, str]] = {}
+    for declaration in declarations:
+        promise_id = declaration["promise_id"]
+        if promise_id in declared:
+            findings.append(
+                Finding(
+                    "PM103",
+                    "identity",
+                    declaration["skill_path"],
+                    "current promise id is declared more than once",
+                    "retain one current declaration for each active history id",
+                    promise_id=promise_id,
+                )
+            )
+        else:
+            declared[promise_id] = declaration
+    active = {
+        promise_id: row["current"]
+        for promise_id, row in rows.items()
+        if row["current"] is not None
+    }
+    for promise_id in sorted(set(declared) - set(active)):
+        findings.append(
+            Finding(
+                "PM103",
+                "identity",
+                declared[promise_id]["skill_path"],
+                "current promise declaration has no active history row",
+                "add an introduced row or complete the explicit rename or split",
+                promise_id=promise_id,
+            )
+        )
+    for promise_id in sorted(set(active) - set(declared)):
+        findings.append(
+            Finding(
+                "PM103",
+                "identity",
+                shown,
+                "active history id has no current promise declaration",
+                "restore the declaration or record retirement, rename or split",
+                promise_id=promise_id,
+            )
+        )
+    for promise_id in sorted(set(active) & set(declared)):
+        expected = active[promise_id]
+        actual = {
+            "skill_path": declared[promise_id]["skill_path"],
+            "semantic_sha256": declared[promise_id]["semantic_sha256"],
+        }
+        if actual != expected:
+            findings.append(
+                Finding(
+                    "PM104",
+                    "drift",
+                    declared[promise_id]["skill_path"],
+                    "active promise path or semantic digest differs from its history record",
+                    "restore the recorded declaration or use an explicit continuity action",
+                    promise_id=promise_id,
+                )
+            )
+    return len(rows), len(active), findings
+
+
 def parse_groups(raw: str):
     groups = {item.strip() for item in raw.split(",") if item.strip()}
     unknown = sorted(groups - {"executable", "prompt", "vendored"})
@@ -1398,20 +5001,2239 @@ def parse_groups(raw: str):
     return groups
 
 
+def python_selector_resolves(text: str, selector: str):
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return False
+
+    containers = [tree]
+    while containers:
+        container = containers.pop()
+        for node in container.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if node.name == selector:
+                    return True
+            elif isinstance(node, ast.ClassDef):
+                containers.append(node)
+    return False
+
+
+def mask_solidity_non_code(text: str):
+    masked = list(text)
+    index = 0
+    state = "code"
+    quote = ""
+    while index < len(text):
+        if state == "code":
+            if text.startswith("//", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "line-comment"
+                continue
+            if text.startswith("/*", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "block-comment"
+                continue
+            if text[index] in {'"', "'"}:
+                quote = text[index]
+                masked[index] = " "
+                index += 1
+                state = "string"
+                continue
+        elif state == "line-comment":
+            if text[index] == "\n":
+                state = "code"
+            else:
+                masked[index] = " "
+        elif state == "block-comment":
+            if text.startswith("*/", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "code"
+                continue
+            if text[index] != "\n":
+                masked[index] = " "
+        else:
+            if text[index] == "\\" and index + 1 < len(text):
+                masked[index] = " "
+                if text[index + 1] != "\n":
+                    masked[index + 1] = " "
+                index += 2
+                continue
+            if text[index] == quote:
+                state = "code"
+            if text[index] != "\n":
+                masked[index] = " "
+        index += 1
+    return "".join(masked)
+
+
 def selector_resolves(path: Path, text: str, selector: str):
     if path.suffix == ".py":
-        pattern = rf"^\s*def\s+{re.escape(selector)}\s*\("
-    elif path.suffix == ".sol":
-        pattern = rf"^\s*function\s+{re.escape(selector)}\s*\("
-    else:
+        return python_selector_resolves(text, selector)
+    if path.suffix == ".sol":
+        pattern = rf"^[ \t]*function[ \t]+{re.escape(selector)}[ \t]*\("
+        return re.search(
+            pattern, mask_solidity_non_code(text), re.MULTILINE
+        ) is not None
+    return False
+
+
+def runtime_expected_fields(record: PromiseRecord):
+    fields = set(RUNTIME_BINDING_KEYS)
+    if record.consequence == 3:
+        fields.update(RUNTIME_LEVEL_THREE_KEYS)
+    return fields
+
+
+def runtime_finding(
+    record: PromiseRecord,
+    binding,
+    path: str,
+    field: str,
+    message: str,
+    *,
+    code: str = "PM095",
+):
+    source = binding.get("source") if isinstance(binding, dict) else None
+    classes = sorted(record.evidence_classes)
+    return Finding(
+        code,
+        "runtime-binding",
+        path,
+        (
+            f"runtime row {record.promise_id!r} source {source!r} field {field!r} "
+            f"with declared evidence classes {classes!r}: {message}"
+        ),
+        f"restore the source-bound {field} value and rerun the runtime binding check",
+        promise_id=record.promise_id,
+        obligation_id="law-runtime-result-binding",
+        consequence=record.consequence,
+        blocked_transition=(
+            f"accept the structurally bound runtime result for {record.promise_id}"
+        ),
+        recovery=(
+            f"restore {field} for {record.promise_id} from its bounded native reader "
+            "and rerun the runtime binding check"
+        ),
+    )
+
+
+def runtime_path_digest(root: Path, raw: str, limit: int):
+    if not isinstance(raw, str) or not raw or raw != raw.strip():
+        return None, "path is absent or padded"
+    candidate = Path(raw)
+    if candidate.is_absolute() or ".." in candidate.parts or candidate.as_posix() != raw:
+        return None, "path is not a canonical repository-relative path"
+    target = root / candidate
+    if target.is_symlink() or not confined(target, root) or not target.is_file():
+        return None, "path is escaping, a symlink, absent, or not a regular file"
+    try:
+        payload = bounded_read_bytes(target, root, limit)
+    except OSError as exc:
+        return None, f"path could not be read without following links: {exc}"
+    if len(payload) > limit:
+        return None, f"path exceeds the {limit}-byte limit"
+    return hashlib.sha256(payload).hexdigest(), None
+
+
+def runtime_reference_error(root: Path, reference, allowed_classes=None):
+    keys = {"path", "sha256"}
+    if allowed_classes is not None:
+        keys.add("evidence_class")
+    if not isinstance(reference, dict) or set(reference) != keys:
+        return f"reference fields are not exactly {sorted(keys)!r}"
+    digest = reference.get("sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        return "reference digest is not a lowercase SHA-256 value"
+    actual, error = runtime_path_digest(
+        root, reference.get("path"), MAX_RUNTIME_SOURCE_BYTES
+    )
+    if error is not None:
+        return error
+    if actual != digest:
+        return f"reference digest is {actual}; record declares {digest}"
+    if allowed_classes is not None:
+        evidence_class = reference.get("evidence_class")
+        if evidence_class not in allowed_classes:
+            return (
+                f"reference evidence class {evidence_class!r} is not one of "
+                f"{sorted(allowed_classes)!r}"
+            )
+    return None
+
+
+def runtime_authority_path(root: Path, record: PromiseRecord):
+    skill = root / record.skill_path
+    evolution = skill.parent / "EVOLUTION.md"
+    if evolution.is_file() and not evolution.is_symlink() and confined(evolution, root):
+        return relative(evolution, root)
+    parts = Path(record.skill_path).parts
+    if len(parts) < 3 or parts[0] != "plugins":
+        return record.skill_path
+    plugin_root = root / "plugins" / parts[1]
+    current = skill.parent
+    while confined(current, plugin_root) and current != plugin_root:
+        notice = current / "NOTICE.md"
+        if notice.is_file() and not notice.is_symlink() and confined(notice, root):
+            return relative(notice, root)
+        current = current.parent
+    return record.skill_path
+
+
+def dotted_runtime_value(document, dotted: str):
+    value = document
+    for part in dotted.split("."):
+        if not isinstance(value, dict) or part not in value:
+            return None, False
+        value = value[part]
+    return value, True
+
+
+def set_dotted_runtime_value(document, dotted: str, value):
+    target = document
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        if not isinstance(target, dict) or part not in target:
+            return False
+        target = target[part]
+    if not isinstance(target, dict) or parts[-1] not in target:
         return False
-    return re.search(pattern, text, re.MULTILINE) is not None
+    target[parts[-1]] = value
+    return True
+
+
+def runtime_negative_mutation_error(binding, positive, negative):
+    mappings = binding.get("bindings") if isinstance(binding, dict) else None
+    descriptor = binding.get("negative") if isinstance(binding, dict) else None
+    field = descriptor.get("field") if isinstance(descriptor, dict) else None
+    if (
+        not isinstance(mappings, dict)
+        or not closed_non_empty_scalar(field)
+        or field not in mappings
+    ):
+        return "negative specimen does not name one declared runtime field"
+
+    values = []
+    for label, specimen in (("positive", positive), ("negative", negative)):
+        header = specimen.get("promise_machine") if isinstance(specimen, dict) else None
+        native, present = dotted_runtime_value(specimen, mappings[field])
+        if not isinstance(header, dict) or field not in header or not present:
+            return f"{label} specimen does not resolve declared field {field!r} twice"
+        if native != header[field]:
+            return f"{label} specimen does not mirror declared field {field!r}"
+        values.append(header[field])
+    if values[0] == values[1]:
+        return f"negative specimen does not mutate declared field {field!r}"
+
+    normalized = []
+    for specimen in (positive, negative):
+        item = json.loads(json.dumps(specimen))
+        if not set_dotted_runtime_value(item, mappings[field], None):
+            return f"specimen does not resolve declared field {field!r}"
+        item["promise_machine"][field] = None
+        normalized.append(item)
+    if normalized[0] != normalized[1]:
+        return f"negative specimen changes data outside declared field {field!r}"
+    return None
+
+
+def runtime_binding_map_error(reader: str, mappings, expected_fields: set[str]):
+    if not isinstance(mappings, dict) or set(mappings) != expected_fields:
+        return "native field map does not contain the consequence's exact fields"
+    container = RUNTIME_READER_CONTAINERS[reader]
+    values = list(mappings.values())
+    if any(
+        not isinstance(value, str)
+        or re.fullmatch(r"[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)+", value)
+        is None
+        or not value.startswith(f"{container}.")
+        for value in values
+    ):
+        return f"native paths must be closed dotted names below {container!r}"
+    if len(set(values)) != len(values):
+        return "two canonical fields resolve through the same native path"
+    for left in values:
+        for right in values:
+            if left != right and right.startswith(f"{left}."):
+                return "one native field path contains another field path"
+    return None
+
+
+def runtime_positive_evidence(document, promise_id: str):
+    rows = document.get("rows") if isinstance(document, dict) else None
+    evidence = document.get("evidence") if isinstance(document, dict) else None
+    if not isinstance(rows, list) or not isinstance(evidence, dict):
+        return None, "coverage rows or evidence catalogue is unavailable"
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, dict) and row.get("promise_id") == promise_id
+    ]
+    if len(matches) != 1:
+        return None, "promise does not have one exact coverage row"
+    cases = matches[0].get("cases")
+    positive_id = cases.get("P") if isinstance(cases, dict) else None
+    descriptor = evidence.get(positive_id) if isinstance(positive_id, str) else None
+    if (
+        not isinstance(descriptor, dict)
+        or not closed_non_empty_scalar(descriptor.get("path"))
+        or not closed_non_empty_scalar(descriptor.get("selector"))
+    ):
+        return None, "promise does not resolve one covered positive evidence surface"
+    return descriptor, None
+
+
+def runtime_positive_source_error(root: Path, binding, positive_evidence):
+    if not isinstance(positive_evidence, dict):
+        return "covered positive evidence is unavailable"
+    expected_source = positive_evidence.get("path")
+    expected_selector = positive_evidence.get("selector")
+    if binding.get("source") != expected_source or binding.get("selector") != expected_selector:
+        return (
+            "runtime source and selector do not match the promise's covered positive "
+            f"evidence surface {expected_source!r}#{expected_selector!r}"
+        )
+    actual, error = runtime_path_digest(root, expected_source, MAX_RUNTIME_SOURCE_BYTES)
+    if error is not None:
+        return f"covered positive evidence source {error}"
+    try:
+        payload = bounded_read_bytes(
+            root / expected_source, root, MAX_RUNTIME_SOURCE_BYTES
+        )
+        text = payload.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return f"covered positive evidence source is not bounded UTF-8: {exc}"
+    if not selector_resolves(Path(expected_source), text, expected_selector):
+        return (
+            f"covered positive selector {expected_selector!r} does not resolve in "
+            f"{expected_source!r}"
+        )
+    if actual != binding.get("sha256"):
+        return "covered positive evidence source and runtime digest disagree"
+    return None
+
+
+def validate_runtime_catalogue_entry(
+    root: Path,
+    record: PromiseRecord,
+    binding,
+    binding_path: str,
+    positive_evidence=None,
+):
+    findings: list[Finding] = []
+    if not isinstance(binding, dict) or set(binding) != RUNTIME_CATALOGUE_KEYS:
+        return [
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                "runtime binding must contain source, selector, sha256, reader, bindings, positive and negative",
+                "name one bounded native reader and its source-bound positive and negative specimens",
+                promise_id=record.promise_id,
+            )
+        ]
+
+    source = binding["source"]
+    digest = binding["sha256"]
+    actual, source_error = runtime_path_digest(root, source, MAX_RUNTIME_SOURCE_BYTES)
+    if source_error is not None:
+        findings.append(
+            Finding(
+                "PM070",
+                "identity",
+                binding_path,
+                f"runtime binding source {source_error}: {source!r}",
+                "name a bounded regular result surface inside the repository",
+                promise_id=record.promise_id,
+            )
+        )
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                "runtime binding source digest is absent or malformed",
+                "record the full lowercase SHA-256 of the reviewed source bytes",
+                promise_id=record.promise_id,
+            )
+        )
+    elif actual is not None and actual != digest:
+        findings.append(
+            Finding(
+                "PM071",
+                "drift",
+                binding_path,
+                f"runtime binding source digest is {actual}; inventory records {digest}",
+                "review the changed result surface and update its reader and digest together",
+                promise_id=record.promise_id,
+            )
+        )
+
+    positive_source_error = runtime_positive_source_error(
+        root, binding, positive_evidence
+    )
+    if positive_source_error is not None:
+        findings.append(
+            Finding(
+                "PM070",
+                "identity",
+                binding_path,
+                positive_source_error,
+                "bind the runtime row to its exact covered P evidence path and selector",
+                promise_id=record.promise_id,
+            )
+        )
+
+    reader = binding["reader"]
+    expected_fields = runtime_expected_fields(record)
+    if reader not in RUNTIME_READER_BINDINGS:
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                f"runtime reader is unsupported: {reader!r}",
+                "use the native JSON, Python-result, or Markdown-result reader",
+                promise_id=record.promise_id,
+            )
+        )
+    else:
+        mapping_error = runtime_binding_map_error(
+            reader, binding["bindings"], expected_fields
+        )
+        if mapping_error is not None:
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    f"runtime field map is invalid: {mapping_error}",
+                    "restore distinct row-native paths under the selected reader container",
+                    promise_id=record.promise_id,
+                )
+            )
+
+    descriptor_shapes = {
+        "positive": {"path", "selector", "sha256"},
+        "negative": {"path", "selector", "sha256", "finding", "field"},
+    }
+    for kind, keys in descriptor_shapes.items():
+        descriptor = binding[kind]
+        if not isinstance(descriptor, dict) or set(descriptor) != keys:
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    f"runtime {kind} specimen descriptor is not the closed source-bound shape",
+                    f"restore the exact {sorted(keys)!r} fields",
+                    promise_id=record.promise_id,
+                )
+            )
+            continue
+        if kind == "negative" and descriptor["finding"] != "PM095":
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    "runtime negative specimen does not name stable finding PM095",
+                    "bind the hostile specimen to PM095",
+                    promise_id=record.promise_id,
+                )
+            )
+        if kind == "negative" and (
+            not closed_non_empty_scalar(descriptor["field"])
+            or descriptor["field"] not in expected_fields
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    "runtime negative specimen does not name one declared field",
+                    "name the one runtime field isolated by the negative specimen",
+                    promise_id=record.promise_id,
+                )
+            )
+        raw = descriptor["path"]
+        candidate = Path(raw) if isinstance(raw, str) else Path(".")
+        try:
+            candidate.relative_to(RUNTIME_FIXTURE_ROOT)
+            inside_runtime = True
+        except ValueError:
+            inside_runtime = False
+        if (
+            not isinstance(raw, str)
+            or candidate.is_absolute()
+            or ".." in candidate.parts
+            or candidate.as_posix() != raw
+            or not inside_runtime
+            or candidate.suffix != ".json"
+            or not closed_non_empty_scalar(descriptor.get("selector"))
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "identity",
+                    binding_path,
+                    f"runtime {kind} specimen path or selector is unsafe",
+                    "name a confined JSON selector under the runtime fixture directory",
+                    promise_id=record.promise_id,
+                )
+            )
+            continue
+        specimen_digest = descriptor.get("sha256")
+        actual_specimen, specimen_error = runtime_path_digest(
+            root, raw, MAX_JSON_BYTES
+        )
+        if specimen_error is not None:
+            findings.append(
+                Finding(
+                    "PM070",
+                    "identity",
+                    binding_path,
+                    f"runtime {kind} specimen {specimen_error}",
+                    "restore the bounded regular runtime specimen",
+                    promise_id=record.promise_id,
+                )
+            )
+        elif (
+            not isinstance(specimen_digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", specimen_digest) is None
+        ):
+            findings.append(
+                Finding(
+                    "PM070",
+                    "structural",
+                    binding_path,
+                    f"runtime {kind} specimen digest is malformed",
+                    "record its lowercase SHA-256 digest",
+                    promise_id=record.promise_id,
+                )
+            )
+        elif actual_specimen != specimen_digest:
+            findings.append(
+                Finding(
+                    "PM071",
+                    "drift",
+                    binding_path,
+                    f"runtime {kind} specimen digest is {actual_specimen}; inventory records {specimen_digest}",
+                    "review and refresh the specimen and its digest together",
+                    promise_id=record.promise_id,
+                )
+            )
+    if (
+        isinstance(binding.get("positive"), dict)
+        and isinstance(binding.get("negative"), dict)
+        and binding["positive"].get("selector") == binding["negative"].get("selector")
+    ):
+        findings.append(
+            Finding(
+                "PM070",
+                "structural",
+                binding_path,
+                "runtime positive and negative selectors are identical",
+                "name distinct source-bound positive and negative specimens",
+                promise_id=record.promise_id,
+            )
+        )
+    return findings
+
+
+def read_runtime_specimen(
+    root: Path, descriptor, record: PromiseRecord, kind: str
+):
+    binding = {"source": record.skill_path}
+    path = descriptor.get("path") if isinstance(descriptor, dict) else "<runtime>"
+    keys = {"path", "selector", "sha256"}
+    if kind == "negative":
+        keys.update({"finding", "field"})
+    if not isinstance(descriptor, dict) or set(descriptor) != keys:
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                str(path),
+                "specimen",
+                f"{kind} descriptor is not the exact {sorted(keys)!r} shape",
+            )
+        ]
+    raw = descriptor["path"]
+    candidate = Path(raw) if isinstance(raw, str) else Path(".")
+    try:
+        candidate.relative_to(RUNTIME_FIXTURE_ROOT)
+        inside_runtime = True
+    except ValueError:
+        inside_runtime = False
+    if (
+        not isinstance(raw, str)
+        or candidate.is_absolute()
+        or ".." in candidate.parts
+        or candidate.as_posix() != raw
+        or not inside_runtime
+        or candidate.suffix != ".json"
+    ):
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                str(raw),
+                "specimen",
+                "specimen path is not a confined JSON path below the runtime fixture root",
+            )
+        ]
+    actual, error = runtime_path_digest(root, raw, MAX_JSON_BYTES)
+    if error is not None:
+        return None, [
+            runtime_finding(record, binding, raw, "specimen", error)
+        ]
+    digest = descriptor.get("sha256")
+    if (
+        not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or digest != actual
+    ):
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                raw,
+                "specimen",
+                f"specimen digest is {actual}; descriptor records {digest!r}",
+            )
+        ]
+    document, read_findings = read_json(
+        root / candidate,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM095",
+        unsafe_code="PM095",
+        malformed_code="PM095",
+        noun="runtime binding specimen",
+    )
+    if document is None:
+        item = read_findings[0]
+        return None, [
+            runtime_finding(record, binding, raw, "specimen", item.message)
+        ]
+    if set(document) != {"schema", "specimens"} or document.get("schema") != RUNTIME_SPECIMEN_SCHEMA:
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                raw,
+                "specimen",
+                "specimen file does not have the supported schema and specimens fields",
+            )
+        ]
+    specimens = document.get("specimens")
+    selector = descriptor.get("selector")
+    if (
+        not isinstance(specimens, dict)
+        or not closed_non_empty_scalar(selector)
+        or selector not in specimens
+        or not isinstance(specimens[selector], dict)
+    ):
+        return None, [
+            runtime_finding(
+                record,
+                binding,
+                raw,
+                "specimen",
+                f"selector {selector!r} does not resolve to one result object",
+            )
+        ]
+    return specimens[selector], []
+
+
+def validate_runtime_result(
+    root: Path,
+    record: PromiseRecord,
+    binding,
+    result,
+    shown: str,
+):
+    def refuse(field, message):
+        return [runtime_finding(record, binding, shown, field, message)]
+
+    if not isinstance(binding, dict):
+        return refuse("catalogue", "binding catalogue entry is not an object")
+    reader = binding.get("reader")
+    if reader not in RUNTIME_READER_BINDINGS:
+        return refuse("reader", f"reader is unsupported: {reader!r}")
+    expected_fields = runtime_expected_fields(record)
+    mappings = binding.get("bindings")
+    if not isinstance(mappings, dict):
+        return refuse("bindings", "native field map is not an object")
+    missing_mappings = expected_fields - set(mappings)
+    if missing_mappings:
+        field = "authority" if "authority" in missing_mappings else sorted(missing_mappings)[0]
+        return refuse(field, f"required native field map is absent: {sorted(missing_mappings)!r}")
+    if set(mappings) != expected_fields:
+        return refuse(
+            "bindings",
+            f"native field map has unknown fields: {sorted(set(mappings) - expected_fields)!r}",
+        )
+    mapping_error = runtime_binding_map_error(reader, mappings, expected_fields)
+    if mapping_error is not None:
+        return refuse("bindings", mapping_error)
+
+    container = RUNTIME_READER_CONTAINERS[reader]
+    if (
+        not isinstance(result, dict)
+        or set(result) != {"schema", container, "promise_machine"}
+        or result.get("schema") != RUNTIME_READER_SCHEMAS[reader]
+        or not isinstance(result.get(container), dict)
+    ):
+        return refuse("result", "native result does not have the selected reader's closed shape")
+    header = result.get("promise_machine")
+    if not isinstance(header, dict):
+        return refuse("promise_machine", "compact binding header is not an object")
+    missing_header = expected_fields - set(header)
+    if missing_header:
+        field = "authority" if "authority" in missing_header else sorted(missing_header)[0]
+        return refuse(field, f"required binding header field is absent: {sorted(missing_header)!r}")
+    if set(header) != expected_fields:
+        return refuse(
+            "promise_machine",
+            f"binding header has unknown fields: {sorted(set(header) - expected_fields)!r}",
+        )
+
+    native = {}
+    for field in sorted(expected_fields):
+        value, present = dotted_runtime_value(result, mappings[field])
+        if not present:
+            return refuse(field, f"reader path {mappings[field]!r} does not resolve")
+        native[field] = value
+        if value != header[field]:
+            return refuse(field, "native value and compact binding header disagree")
+
+    source = binding.get("source")
+    source_digest = binding.get("sha256")
+    actual_source, source_error = runtime_path_digest(
+        root, source, MAX_RUNTIME_SOURCE_BYTES
+    )
+    if source_error is not None:
+        return refuse("source_digest", source_error)
+    if (
+        not isinstance(source_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", source_digest) is None
+        or actual_source != source_digest
+        or native["source_digest"] != source_digest
+    ):
+        return refuse(
+            "source_digest",
+            f"result, catalogue, and bounded source digest do not agree ({native['source_digest']!r}, {source_digest!r}, {actual_source!r})",
+        )
+
+    expected_subject = f"runtime source {source}#{binding.get('selector')}"
+    expected_scope = f"structural binding for {record.promise_id}"
+    if native["promise_id"] != record.promise_id:
+        return refuse("promise_id", "result promise identity does not match its runtime row")
+    if native["subject"] != expected_subject:
+        return refuse("subject", f"subject does not match {expected_subject!r}")
+    if native["scope"] != expected_scope:
+        return refuse("scope", f"scope does not match {expected_scope!r}")
+
+    evidence_classes = native["evidence_classes"]
+    if (
+        not isinstance(evidence_classes, list)
+        or not evidence_classes
+        or any(not closed_non_empty_scalar(item) for item in evidence_classes)
+        or len(set(evidence_classes)) != len(evidence_classes)
+        or not set(evidence_classes).issubset(record.evidence_classes)
+        or not set(evidence_classes).issubset(POSITIVE_EVIDENCE_STATES)
+    ):
+        return refuse(
+            "evidence_classes",
+            "satisfying evidence classes are empty, repeated, unsupported, unknown, or undeclared",
+        )
+    references = native["evidence_references"]
+    if not isinstance(references, list) or not references:
+        return refuse("evidence_references", "no digest-bound evidence reference is present")
+    for reference in references:
+        error = runtime_reference_error(root, reference, set(evidence_classes))
+        if error is not None:
+            return refuse("evidence_references", error)
+    reference_keys = [
+        (reference["path"], reference["sha256"], reference["evidence_class"])
+        for reference in references
+    ]
+    if len(set(reference_keys)) != len(reference_keys):
+        return refuse("evidence_references", "digest-bound references are repeated")
+    referenced_classes = {reference["evidence_class"] for reference in references}
+    missing_classes = sorted(set(evidence_classes) - referenced_classes)
+    if missing_classes:
+        return refuse(
+            "evidence_references",
+            "no digest-bound reference represents satisfying evidence "
+            f"class(es) {missing_classes!r}",
+        )
+    if not any(
+        reference["path"] == source and reference["sha256"] == source_digest
+        for reference in references
+    ):
+        return refuse("evidence_references", "no evidence reference binds the declared source bytes")
+
+    unknowns = native["unknowns"]
+    if (
+        not isinstance(unknowns, list)
+        or not unknowns
+        or any(
+            not isinstance(item, dict)
+            or set(item) != {"code", "detail"}
+            or not closed_non_empty_scalar(item.get("code"))
+            or not closed_non_empty_scalar(item.get("detail"))
+            for item in unknowns
+        )
+    ):
+        return refuse(
+            "unknowns",
+            "the explicit domain-operation-not-run unknown is absent or malformed",
+        )
+    unknown_codes = [item["code"] for item in unknowns]
+    if len(set(unknown_codes)) != len(unknown_codes):
+        return refuse("unknowns", "unknown codes are repeated")
+    if "domain-operation-not-run" not in set(unknown_codes):
+        return refuse(
+            "unknowns",
+            "the explicit domain-operation-not-run unknown is absent or malformed",
+        )
+    transition = native["transition"]
+    expected_action = (
+        f"structurally bind {record.promise_id} without running its domain operation"
+    )
+    if (
+        not isinstance(transition, dict)
+        or set(transition) != {"status", "action", "operation_ran"}
+        or transition.get("status") != "structurally-bound"
+        or transition.get("action") != expected_action
+        or transition.get("operation_ran") is not False
+    ):
+        return refuse(
+            "transition",
+            "transition must stay structurally-bound and state that the domain operation did not run",
+        )
+    if native["exception"] != {"status": "none"}:
+        return refuse("exception", "exception state is not the closed none record")
+
+    if record.consequence == 3:
+        authority = native["authority"]
+        if (
+            not isinstance(authority, dict)
+            or set(authority) != {"id", "reference"}
+            or authority.get("id") != f"promise-owner:{record.promise_id}"
+        ):
+            return refuse("authority", "level-three authority identity or reference is absent")
+        authority_error = runtime_reference_error(root, authority.get("reference"))
+        if authority_error is not None:
+            return refuse("authority", authority_error)
+        if authority["reference"]["path"] != runtime_authority_path(root, record):
+            return refuse("authority", "authority does not resolve the promise's owning contract")
+        inspectable = native["inspectable_evidence"]
+        inspectable_error = runtime_reference_error(
+            root, inspectable, set(evidence_classes)
+        )
+        if inspectable_error is not None:
+            return refuse("inspectable_evidence", inspectable_error)
+        if inspectable["path"] != source or inspectable["sha256"] != source_digest:
+            return refuse(
+                "inspectable_evidence",
+                "level-three inspectable evidence does not resolve the bound source",
+            )
+        if (
+            inspectable["path"] == authority["reference"]["path"]
+            or inspectable["sha256"] == authority["reference"]["sha256"]
+        ):
+            return refuse(
+                "inspectable_evidence",
+                "level-three authority and inspectable evidence are not independent paths and bytes",
+            )
+    return []
+
+
+def composition_finding(spec, path: str, field: str, message: str):
+    relation_id = spec["relation_id"]
+    producer = spec["producer"]
+    consumer = spec["consumer"]
+    recovery = spec["bindings"]["recovery"][0]
+    return Finding(
+        "PM097",
+        "composition",
+        path,
+        (
+            f"relation {relation_id} producer {producer} consumer {consumer} "
+            f"lost field {field}: {message}"
+        ),
+        f"restore {field} at the {producer} to {consumer} boundary and rerun the composition check",
+        promise_id=producer,
+        obligation_id=spec["obligation_id"],
+        consequence=spec["consequence"],
+        blocked_transition=spec["transition"],
+        recovery=recovery,
+    )
+
+
+def composition_spec(relation_id: str, raw_spec: dict):
+    spec = dict(raw_spec)
+    spec["relation_id"] = relation_id
+    return spec
+
+
+def composition_descriptor(relation_id: str, raw_spec: dict):
+    spec = composition_spec(relation_id, raw_spec)
+    domain_fields = [
+        field for field in spec["bindings"] if field not in COMPOSITION_COMMON_FIELDS
+    ]
+    return {
+        "obligation_id": spec["obligation_id"],
+        "relation_id": relation_id,
+        "producer": spec["producer"],
+        "consumer": spec["consumer"],
+        "preserves": list(COMPOSITION_COMMON_FIELDS) + domain_fields,
+        "transition": spec["transition"],
+        "refuses": list(spec["bindings"]["refusals"]),
+    }
+
+
+def composition_generic_finding(path: str, field: str, message: str):
+    return Finding(
+        "PM097",
+        "composition",
+        path,
+        f"composition catalogue lost field {field}: {message}",
+        "restore the seven registered root-law relations and rerun the composition check",
+        promise_id=SEMANTIC_PROMISE_ID,
+        consequence=3,
+        blocked_transition="consume a producer result at a root-law composition boundary",
+        recovery="restore the named relation and its bounded fixture, then rerun the composition check",
+    )
+
+
+def validate_composition_registrations(root: Path, inventory: Inventory):
+    records: dict[str, list[PromiseRecord]] = {}
+    for record in promise_records(root, inventory):
+        records.setdefault(record.promise_id, []).append(record)
+    findings: list[Finding] = []
+    for relation_id, raw_spec in COMPOSITION_RELATIONS.items():
+        spec = composition_spec(relation_id, raw_spec)
+        path = f"{COVERAGE_PATH.as_posix()}#composition.{relation_id}"
+        producer_records = records.get(spec["producer"], [])
+        consumer_records = records.get(spec["consumer"], [])
+        if len(producer_records) != 1:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "producer identity",
+                    (
+                        f"producer promise resolves {len(producer_records)} times in "
+                        "the canonical inventory"
+                    ),
+                )
+            )
+            continue
+        if len(consumer_records) != 1:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer identity",
+                    (
+                        f"consumer promise resolves {len(consumer_records)} times in "
+                        "the canonical inventory"
+                    ),
+                )
+            )
+            continue
+
+        producer_classes = tuple(spec.get("producer_classes", ()))
+        consumer_classes = tuple(spec.get("consumer_classes", ()))
+        if (
+            not producer_classes
+            or len(set(producer_classes)) != len(producer_classes)
+            or any(item not in SUPPORTED_EVIDENCE_CLASSES for item in producer_classes)
+        ):
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "producer evidence classes",
+                    "registered producer classes are empty, repeated, or unsupported",
+                )
+            )
+            continue
+        if (
+            not consumer_classes
+            or len(set(consumer_classes)) != len(consumer_classes)
+            or any(item not in SUPPORTED_EVIDENCE_CLASSES for item in consumer_classes)
+        ):
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer evidence classes",
+                    "registered consumer classes are empty, repeated, or unsupported",
+                )
+            )
+            continue
+
+        producer_record = producer_records[0]
+        consumer_record = consumer_records[0]
+        undeclared_producer = sorted(
+            set(producer_classes) - set(producer_record.evidence_classes)
+        )
+        if undeclared_producer:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "producer evidence classes",
+                    (
+                        f"classes {undeclared_producer!r} are not declared by "
+                        f"promise {producer_record.promise_id}"
+                    ),
+                )
+            )
+        dropped = sorted(set(producer_classes) - set(consumer_classes))
+        if dropped:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer evidence classes",
+                    f"consumer dropped producer classes {dropped!r}",
+                )
+            )
+        additions = set(consumer_classes) - set(producer_classes)
+        undeclared_additions = sorted(
+            additions - set(consumer_record.evidence_classes)
+        )
+        if undeclared_additions:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer evidence classes",
+                    (
+                        f"added classes {undeclared_additions!r} are not declared by "
+                        f"promise {consumer_record.promise_id}"
+                    ),
+                )
+            )
+    return findings
+
+
+def composition_reference_paths(root: Path, references):
+    if not isinstance(references, list) or not references:
+        return None, "references are not a non-empty array"
+    paths: list[str] = []
+    digests: set[str] = set()
+    for reference in references:
+        error = runtime_reference_error(root, reference)
+        if error is not None:
+            return None, error
+        if reference["path"] in paths or reference["sha256"] in digests:
+            return None, "references repeat a path or digest"
+        paths.append(reference["path"])
+        digests.add(reference["sha256"])
+    return tuple(paths), None
+
+
+def expected_composition_binding_keys(spec):
+    return set(COMPOSITION_COMMON_FIELDS) | set(spec["bindings"])
+
+
+def expected_json_value(value):
+    return list(value) if isinstance(value, tuple) else value
+
+
+def validate_composition_record(root: Path, raw_spec: dict, record, path: str):
+    relation_id = raw_spec.get("relation_id")
+    if relation_id is None and isinstance(record, dict):
+        relation_id = record.get("relation_id")
+    if relation_id not in COMPOSITION_RELATIONS:
+        return [
+            composition_generic_finding(
+                path, "relation identity", f"unknown relation {relation_id!r}"
+            )
+        ]
+    spec = composition_spec(relation_id, COMPOSITION_RELATIONS[relation_id])
+
+    def refuse(field, message):
+        return [composition_finding(spec, path, field, message)]
+
+    if not isinstance(record, dict) or set(record) != {
+        "schema",
+        "relation_id",
+        "producer",
+        "consumer",
+        "transformation",
+    }:
+        return refuse("record shape", "record fields are not the closed composition shape")
+    if record.get("schema") != COMPOSITION_RECORD_SCHEMA:
+        return refuse("schema", "composition schema identity is absent or unsupported")
+    if record.get("relation_id") != relation_id:
+        return refuse("relation identity", "record names a different relation")
+    producer = record.get("producer")
+    consumer = record.get("consumer")
+    if not isinstance(producer, dict) or set(producer) != {"promise_id", "bindings"}:
+        return refuse("producer identity", "producer is not the closed promise and bindings object")
+    if not isinstance(consumer, dict) or set(consumer) != {
+        "promise_id",
+        "transition",
+        "consequence",
+        "bindings",
+    }:
+        return refuse("consumer identity", "consumer is not the closed promise, transition, consequence, and bindings object")
+    if producer.get("promise_id") != spec["producer"]:
+        return refuse("producer identity", "producer promise does not match the registered relation")
+    if consumer.get("promise_id") != spec["consumer"]:
+        return refuse("consumer identity", "consumer promise does not match the registered relation")
+
+    producer_bindings = producer.get("bindings")
+    consumer_bindings = consumer.get("bindings")
+    if relation_id == "synkrisis-verification-to-fiat-integration" and (
+        isinstance(producer_bindings, dict)
+        and isinstance(consumer_bindings, dict)
+        and (
+            "inferred" in producer_bindings.get("evidence-classes", [])
+            or "inferred" in consumer_bindings.get("evidence-classes", [])
+            or consumer.get("transition") != spec["transition"]
+        )
+    ):
+        return refuse(
+            "model-graded domain overclaim",
+            "model-graded evidence or a stronger external-action transition was introduced",
+        )
+    if consumer.get("transition") != spec["transition"]:
+        return refuse("consumer transition", "consumer transition changed or strengthened")
+    if consumer.get("consequence") != spec["consequence"]:
+        return refuse("consequence", "consumer consequence changed from the registered level")
+    if record.get("transformation") != "preserve-producer-boundary":
+        return refuse("transformation", "composition no longer preserves the producer boundary")
+    expected_keys = expected_composition_binding_keys(spec)
+    for role, bindings in (("producer", producer_bindings), ("consumer", consumer_bindings)):
+        if not isinstance(bindings, dict):
+            return refuse(f"{role} bindings", f"{role} bindings are not an object")
+        observed_keys = set(bindings)
+        if observed_keys != expected_keys:
+            missing = sorted(expected_keys - observed_keys)
+            extra = sorted(observed_keys - expected_keys)
+            field = missing[0] if len(missing) == 1 and not extra else "preserved fields"
+            return refuse(
+                field,
+                f"{role} binding keys omit {missing!r} or add {extra!r}",
+            )
+
+    for field, expected in spec["bindings"].items():
+        expected_value = expected_json_value(expected)
+        if producer_bindings.get(field) != expected_value:
+            label = "refused overclaim" if field == "refusals" else field
+            return refuse(label, f"producer {field} does not match the registered boundary")
+        if consumer_bindings.get(field) != expected_value:
+            label = "refused overclaim" if field == "refusals" else field
+            return refuse(label, f"consumer did not preserve producer {field}")
+
+    producer_paths, error = composition_reference_paths(
+        root, producer_bindings.get("evidence-references")
+    )
+    if error is not None or producer_paths != spec["producer_sources"]:
+        return refuse(
+            "evidence references",
+            error or "producer references do not match the registered evidence source",
+        )
+    consumer_paths, error = composition_reference_paths(
+        root, consumer_bindings.get("evidence-references")
+    )
+    expected_consumer_paths = spec["producer_sources"] + spec["consumer_sources"]
+    if error is not None or consumer_paths != expected_consumer_paths:
+        return refuse(
+            "evidence references",
+            error or "consumer dropped producer evidence or added an unregistered source",
+        )
+    if producer_bindings.get("evidence-classes") != list(spec["producer_classes"]):
+        return refuse(
+            "evidence-classes",
+            "producer evidence class changed from the registered source class",
+        )
+    if consumer_bindings.get("evidence-classes") != list(spec["consumer_classes"]):
+        return refuse(
+            "evidence-classes",
+            "consumer evidence classes dropped or strengthened the producer class",
+        )
+    return []
+
+
+def apply_composition_mutations(record, mutations):
+    try:
+        mutated = json.loads(json.dumps(record, separators=(",", ":")))
+    except (TypeError, ValueError) as exc:
+        return None, f"positive record is not JSON data: {exc}"
+    if not isinstance(mutations, list) or not mutations or len(mutations) > 8:
+        return None, "mutations are not a bounded non-empty array"
+    for mutation in mutations:
+        if not isinstance(mutation, dict) or set(mutation) not in (
+            {"operation", "path"},
+            {"operation", "path", "value"},
+        ):
+            return None, "mutation is not the closed operation, path, and optional value object"
+        operation = mutation.get("operation")
+        path = mutation.get("path")
+        if (
+            operation not in {"remove", "replace"}
+            or not isinstance(path, list)
+            or not path
+            or len(path) > 8
+            or any(not closed_non_empty_scalar(part) for part in path)
+            or (operation == "replace") != ("value" in mutation)
+        ):
+            return None, "mutation operation or path is invalid"
+        target = mutated
+        for part in path[:-1]:
+            if not isinstance(target, dict) or part not in target:
+                return None, f"mutation path does not resolve at {part!r}"
+            target = target[part]
+        final = path[-1]
+        if not isinstance(target, dict) or final not in target:
+            return None, f"mutation path does not resolve at {final!r}"
+        if operation == "remove":
+            target.pop(final)
+        else:
+            target[final] = mutation["value"]
+    if mutated == record:
+        return None, "mutations do not change the positive record"
+    return mutated, None
+
+
+def validate_composition_relation_case(root: Path, relation, path: str, spec):
+    relation_id = spec["relation_id"]
+    if not isinstance(relation, dict) or set(relation) != {
+        "obligation_id",
+        "relation_id",
+        "positive",
+        "negative",
+    }:
+        return [
+            composition_finding(
+                spec, path, "case shape", "relation case is not the closed positive and negative shape"
+            )
+        ]
+    if relation.get("obligation_id") != spec["obligation_id"]:
+        return [composition_finding(spec, path, "obligation identity", "case names a different law obligation")]
+    if relation.get("relation_id") != relation_id:
+        return [composition_finding(spec, path, "relation identity", "case names a different relation")]
+    positive_path = f"{path}#{relation_id}.positive"
+    positive_findings = validate_composition_record(
+        root, spec, relation.get("positive"), positive_path
+    )
+    if positive_findings:
+        return positive_findings
+    negatives = relation.get("negative")
+    if not isinstance(negatives, list) or len(negatives) != 2:
+        return [composition_finding(spec, path, "negative specimens", "relation does not carry exactly two hostile cases")]
+    fields: set[str] = set()
+    for index, negative in enumerate(negatives):
+        negative_path = f"{path}#{relation_id}.negative[{index}]"
+        if not isinstance(negative, dict) or set(negative) != {"field", "mutations"}:
+            return [composition_finding(spec, negative_path, "negative specimen", "hostile case is not the closed field and mutations object")]
+        field = negative.get("field")
+        if not closed_non_empty_scalar(field) or field in fields:
+            return [composition_finding(spec, negative_path, "negative specimen", "hostile case field is invalid or repeated")]
+        fields.add(field)
+        mutated, error = apply_composition_mutations(
+            relation["positive"], negative.get("mutations")
+        )
+        if error is not None:
+            return [composition_finding(spec, negative_path, field, error)]
+        produced = validate_composition_record(root, spec, mutated, negative_path)
+        if (
+            len(produced) != 1
+            or produced[0].code != "PM097"
+            or produced[0].obligation_id != spec["obligation_id"]
+            or field not in produced[0].message
+        ):
+            observed = [item.code for item in produced]
+            return [
+                composition_finding(
+                    spec,
+                    negative_path,
+                    field,
+                    f"hostile case produced {observed!r}; expected one contextual PM097 refusal",
+                )
+            ]
+    return []
+
+
+def validate_composition_cases(root: Path, document, path: str):
+    findings: list[Finding] = []
+    if not isinstance(document, dict) or set(document) != {"schema", "relations"}:
+        return 0, [composition_generic_finding(path, "case shape", "fixture fields are not exactly schema and relations")]
+    if document.get("schema") != COMPOSITION_CASES_SCHEMA:
+        return 0, [composition_generic_finding(path, "schema", "fixture schema identity is absent or unsupported")]
+    relations = document.get("relations")
+    if not isinstance(relations, list) or not relations or len(relations) > 32:
+        return 0, [composition_generic_finding(path, "relations", "fixture relations are not a bounded non-empty array")]
+    seen: set[str] = set()
+    for index, relation in enumerate(relations):
+        relation_path = f"{path}#relations[{index}]"
+        relation_id = relation.get("relation_id") if isinstance(relation, dict) else None
+        raw_spec = COMPOSITION_RELATIONS.get(relation_id)
+        if raw_spec is None:
+            findings.append(
+                composition_generic_finding(
+                    relation_path,
+                    "relation identity",
+                    f"unknown relation {relation_id!r}",
+                )
+            )
+            continue
+        spec = composition_spec(relation_id, raw_spec)
+        if relation_id in seen:
+            findings.append(
+                composition_finding(
+                    spec,
+                    relation_path,
+                    "relation identity",
+                    "registered relation is repeated",
+                )
+            )
+            continue
+        seen.add(relation_id)
+        findings.extend(
+            validate_composition_relation_case(root, relation, relation_path, spec)
+        )
+    for relation_id in sorted(set(COMPOSITION_RELATIONS) - seen):
+        spec = composition_spec(relation_id, COMPOSITION_RELATIONS[relation_id])
+        findings.append(
+            composition_finding(
+                spec,
+                path,
+                "relation identity",
+                "registered root-law relation is absent",
+            )
+        )
+    return len(seen), findings
+
+
+def validate_composition_obligation_specimen(
+    root: Path,
+    relative_specimen: Path,
+    document,
+    row,
+    inventory: Inventory | None = None,
+):
+    path = relative_specimen.as_posix()
+    if not isinstance(document, dict) or set(document) != {"schema", "relations"}:
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition specimen fields are not exactly schema and relations",
+                "restore the closed promise-machine-composition-cases/v1 document",
+                row,
+            )
+        ]
+    if document.get("schema") != COMPOSITION_CASES_SCHEMA:
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition specimen schema identity is unsupported",
+                f"declare {COMPOSITION_CASES_SCHEMA}",
+                row,
+            )
+        ]
+    matching_specs = [
+        composition_spec(relation_id, spec)
+        for relation_id, spec in COMPOSITION_RELATIONS.items()
+        if spec["obligation_id"] == row.get("id")
+    ]
+    if len(matching_specs) != 1:
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition obligation does not own exactly one registered relation",
+                "bind the stable law obligation to one producer-to-consumer relation",
+                row,
+            )
+    ]
+    spec = matching_specs[0]
+    if inventory is not None:
+        registration_findings = [
+            finding
+            for finding in validate_composition_registrations(root, inventory)
+            if finding.obligation_id == row.get("id")
+        ]
+    else:
+        registration_findings = []
+    if registration_findings:
+        observed = [item.code for item in registration_findings]
+        return [
+            obligation_finding(
+                "PM089",
+                path,
+                (
+                    f"composition registration for {spec['relation_id']} did not "
+                    f"resolve its native promise boundary: {observed!r}"
+                ),
+                "restore the producer and consumer identities and their declared evidence classes",
+                row,
+            )
+        ]
+    relations = document.get("relations")
+    if not isinstance(relations, list):
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition specimen relations are not an array",
+                "restore the bounded relation cases",
+                row,
+            )
+        ]
+    matches = [
+        relation
+        for relation in relations
+        if isinstance(relation, dict)
+        and relation.get("relation_id") == spec["relation_id"]
+    ]
+    if len(matches) != 1:
+        return [
+            obligation_finding(
+                "PM089",
+                path,
+                f"composition specimen contains {len(matches)} cases for {spec['relation_id']}",
+                "restore one positive case and its two bounded hostile mutations",
+                row,
+            )
+        ]
+    produced = validate_composition_relation_case(
+        root, matches[0], path, spec
+    )
+    if produced:
+        return [
+            obligation_finding(
+                "PM089",
+                path,
+                (
+                    f"composition specimen did not exercise the {spec['relation_id']} "
+                    f"gate cleanly: {[item.code for item in produced]!r}"
+                ),
+                "restore the positive case and hostile mutations against the production gate",
+                row,
+            )
+        ]
+    return []
+
+
+def check_composition(root: Path, coverage, inventory: Inventory | None = None):
+    findings: list[Finding] = []
+    if inventory is None:
+        inventory, inventory_findings = discover_inventory(root)
+        findings.extend(inventory_findings)
+    findings.extend(validate_composition_registrations(root, inventory))
+    catalogue = coverage.get("composition") if isinstance(coverage, dict) else None
+    if not isinstance(catalogue, dict) or set(catalogue) != {"fixture", "relations"}:
+        for relation_id, raw_spec in COMPOSITION_RELATIONS.items():
+            spec = composition_spec(relation_id, raw_spec)
+            findings.append(
+                composition_finding(
+                    spec,
+                    COVERAGE_PATH.as_posix(),
+                    "relation identity",
+                    "composition catalogue is absent or not the closed fixture and relations object",
+                )
+            )
+        return 0, findings
+    fixture = catalogue.get("fixture")
+    expected_fixture_path = COMPOSITION_FIXTURE.as_posix()
+    if not isinstance(fixture, dict) or set(fixture) != {"path", "sha256"}:
+        return 0, [composition_generic_finding(COVERAGE_PATH.as_posix(), "fixture", "fixture reference is not the closed path and digest object")]
+    if fixture.get("path") != expected_fixture_path:
+        return 0, [composition_generic_finding(COVERAGE_PATH.as_posix(), "fixture", "fixture path does not name the registered composition cases")]
+    payload, error = read_bound_reference(root, fixture, "composition cases")
+    if error is not None:
+        return 0, [composition_generic_finding(COVERAGE_PATH.as_posix(), "fixture", error)]
+    document, error = parse_json_object_bytes(payload, "composition cases")
+    if error is not None:
+        return 0, [composition_generic_finding(expected_fixture_path, "fixture", error)]
+
+    descriptors = catalogue.get("relations")
+    seen: set[str] = set()
+    if not isinstance(descriptors, list) or len(descriptors) > 32:
+        findings.append(composition_generic_finding(COVERAGE_PATH.as_posix(), "relations", "relation descriptors are not a bounded array"))
+        descriptors = []
+    for index, descriptor in enumerate(descriptors):
+        descriptor_path = f"{COVERAGE_PATH.as_posix()}#composition.relations[{index}]"
+        relation_id = descriptor.get("relation_id") if isinstance(descriptor, dict) else None
+        raw_spec = COMPOSITION_RELATIONS.get(relation_id)
+        if raw_spec is None:
+            findings.append(composition_generic_finding(descriptor_path, "relation identity", f"unknown relation {relation_id!r}"))
+            continue
+        spec = composition_spec(relation_id, raw_spec)
+        if relation_id in seen:
+            findings.append(composition_finding(spec, descriptor_path, "relation identity", "coverage relation is repeated"))
+            continue
+        seen.add(relation_id)
+        if descriptor != composition_descriptor(relation_id, raw_spec):
+            findings.append(composition_finding(spec, descriptor_path, "preserved fields", "coverage descriptor differs from the registered producer, consumer, transition, preservation, or refusal"))
+    for relation_id in sorted(set(COMPOSITION_RELATIONS) - seen):
+        spec = composition_spec(relation_id, COMPOSITION_RELATIONS[relation_id])
+        findings.append(composition_finding(spec, COVERAGE_PATH.as_posix(), "relation identity", "coverage descriptor is absent"))
+    count, case_findings = validate_composition_cases(
+        root, document, expected_fixture_path
+    )
+    findings.extend(case_findings)
+    return count, findings
+
+
+def check_runtime(root: Path, inventory: Inventory):
+    findings: list[Finding] = []
+    records = {
+        record.promise_id: record
+        for record in promise_records(root, inventory)
+        if record.consequence >= 2
+    }
+    document, read_findings = read_json(
+        root / COVERAGE_PATH,
+        root,
+        max_bytes=MAX_COVERAGE_BYTES,
+        missing_code="PM095",
+        unsafe_code="PM095",
+        malformed_code="PM095",
+        noun="runtime coverage catalogue",
+    )
+    findings.extend(read_findings)
+    if document is None:
+        return 0, findings
+    catalogue = document.get("runtime")
+    if not isinstance(catalogue, dict):
+        return 0, [
+            Finding(
+                "PM095",
+                "runtime-binding",
+                COVERAGE_PATH.as_posix(),
+                "runtime catalogue is not an object",
+                "restore one source-bound row for every required runtime promise",
+                obligation_id="law-runtime-result-binding",
+                consequence=3,
+            )
+        ]
+    for promise_id in sorted(set(records) - set(catalogue)):
+        record = records[promise_id]
+        findings.append(
+            runtime_finding(
+                record,
+                {},
+                COVERAGE_PATH.as_posix(),
+                "catalogue",
+                "required runtime row is absent",
+            )
+        )
+    for promise_id in sorted(set(catalogue) - set(records)):
+        findings.append(
+            Finding(
+                "PM095",
+                "runtime-binding",
+                f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}",
+                f"runtime catalogue row {promise_id!r} does not belong to a required level-two or level-three promise",
+                "remove the stale row or restore its authored high-consequence declaration",
+                promise_id=promise_id if PROMISE_ID.fullmatch(promise_id) else None,
+                obligation_id="law-runtime-result-binding",
+                consequence=2,
+            )
+        )
+    for promise_id in sorted(set(records) & set(catalogue)):
+        record = records[promise_id]
+        binding = catalogue[promise_id]
+        binding_path = f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}"
+        positive_evidence, positive_error = runtime_positive_evidence(
+            document, promise_id
+        )
+        if positive_error is not None:
+            findings.append(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding_path,
+                    "source",
+                    positive_error,
+                )
+            )
+            continue
+        catalogue_findings = validate_runtime_catalogue_entry(
+            root, record, binding, binding_path, positive_evidence
+        )
+        if catalogue_findings:
+            findings.extend(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding_path,
+                    "catalogue",
+                    item.message,
+                )
+                for item in catalogue_findings
+            )
+            continue
+        positive, positive_findings = read_runtime_specimen(
+            root, binding["positive"], record, "positive"
+        )
+        findings.extend(positive_findings)
+        positive_produced = []
+        if positive is not None:
+            positive_produced = validate_runtime_result(
+                root, record, binding, positive, binding["positive"]["path"]
+            )
+            findings.extend(positive_produced)
+        negative, negative_findings = read_runtime_specimen(
+            root, binding["negative"], record, "negative"
+        )
+        if negative_findings:
+            findings.append(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding["negative"]["path"],
+                    "negative",
+                    f"negative specimen could not reach the production reader: {negative_findings[0].message}",
+                    code="PM096",
+                )
+            )
+        elif negative is not None:
+            mutation_error = None
+            if positive is not None and not positive_produced:
+                mutation_error = runtime_negative_mutation_error(
+                    binding, positive, negative
+                )
+            if mutation_error is not None:
+                findings.append(
+                    runtime_finding(
+                        record,
+                        binding,
+                        binding["negative"]["path"],
+                        "negative",
+                        mutation_error,
+                        code="PM096",
+                    )
+                )
+                continue
+            produced = validate_runtime_result(
+                root, record, binding, negative, binding["negative"]["path"]
+            )
+            expected = binding["negative"]["finding"]
+            if len(produced) != 1 or produced[0].code != expected:
+                findings.append(
+                    runtime_finding(
+                        record,
+                        binding,
+                        binding["negative"]["path"],
+                        "negative",
+                        f"negative specimen produced {[item.code for item in produced]!r}; expected only {expected}",
+                        code="PM096",
+                    )
+                )
+    return len(records), findings
+
+
+def evaluation_finding(code, path, message, *, promise_id=None):
+    details = {
+        "PM107": (
+            "evaluation-catalogue",
+            "restore exactly eleven closed labelled-case rows and their source-bound cases",
+            "accept the labelled-case-classification gate",
+        ),
+        "PM108": (
+            "evaluation-state",
+            "run every isolated case with one full model identity and record the result",
+            "accept an absent, partial or not-run model evaluation",
+        ),
+        "PM109": (
+            "evaluation-binding",
+            "restore the confined raw answers and recompute the digest-bound run record",
+            "accept a stale, edited or incomplete evaluation record",
+        ),
+        "PM110": (
+            "evidence-boundary",
+            "restore required-separately and not-supplied, then run the domain operation independently",
+            "substitute a model grade for domain-operation evidence",
+        ),
+    }
+    fault, recovery, blocked = details[code]
+    return Finding(
+        code,
+        fault,
+        path,
+        message,
+        recovery,
+        promise_id=(
+            promise_id
+            if isinstance(promise_id, str) and PROMISE_ID.fullmatch(promise_id)
+            else None
+        ),
+        consequence=2,
+        blocked_transition=blocked,
+        recovery=recovery,
+    )
+
+
+def read_evaluation_bytes(root: Path, raw_path, noun: str, limit: int, code="PM109"):
+    if not closed_non_empty_scalar(raw_path):
+        return None, [
+            evaluation_finding(code, COVERAGE_PATH.as_posix(), f"{noun} path is absent")
+        ]
+    candidate = Path(raw_path)
+    if (
+        candidate.is_absolute()
+        or "\\" in raw_path
+        or any(ord(character) < 32 for character in raw_path)
+        or any(part in {"", ".", ".."} for part in raw_path.split("/"))
+    ):
+        return None, [
+            evaluation_finding(
+                code,
+                str(raw_path),
+                f"{noun} path is not a safe repository-relative path",
+            )
+        ]
+    path = root / candidate
+    if path.is_symlink() or not confined(path, root) or not path.is_file():
+        return None, [
+            evaluation_finding(
+                code,
+                candidate.as_posix(),
+                f"{noun} is absent, non-regular, a symlink or outside the repository",
+            )
+        ]
+    try:
+        payload = bounded_read_bytes(path, root, limit)
+    except OSError as exc:
+        return None, [
+            evaluation_finding(
+                code,
+                candidate.as_posix(),
+                f"{noun} could not be read safely: {exc}",
+            )
+        ]
+    if len(payload) > limit:
+        return None, [
+            evaluation_finding(
+                code,
+                candidate.as_posix(),
+                f"{noun} is larger than the {limit}-byte limit",
+            )
+        ]
+    return payload, []
+
+
+def read_evaluation_json(root: Path, raw_path, noun: str, limit: int, code="PM109"):
+    payload, findings = read_evaluation_bytes(root, raw_path, noun, limit, code)
+    if payload is None:
+        return None, None, findings
+    document, error = parse_json_object_bytes(payload, noun)
+    if error is not None:
+        return None, payload, [
+            evaluation_finding(code, str(raw_path), error)
+        ]
+    return document, payload, []
+
+
+def evaluation_digest(value) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def evaluation_canonical(value) -> bytes:
+    return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def check_evaluation(root: Path):
+    findings: list[Finding] = []
+    coverage, coverage_payload, read_findings = read_evaluation_json(
+        root,
+        COVERAGE_PATH.as_posix(),
+        "evaluation coverage catalogue",
+        MAX_COVERAGE_BYTES,
+        "PM107",
+    )
+    findings.extend(read_findings)
+    if coverage is None:
+        return 0, 0, findings
+    rows = coverage.get("rows")
+    if not isinstance(rows, list):
+        return 0, 0, findings + [
+            evaluation_finding(
+                "PM107",
+                COVERAGE_PATH.as_posix(),
+                "evaluation coverage has no rows array",
+            )
+        ]
+
+    selected = []
+    for index, row in enumerate(rows):
+        evaluation = row.get("evaluation") if isinstance(row, dict) else None
+        if isinstance(evaluation, dict) and evaluation.get("model") == "not-run":
+            findings.append(
+                evaluation_finding(
+                    "PM108",
+                    f"{COVERAGE_PATH.as_posix()}#rows[{index}].evaluation.model",
+                    "evaluation is explicitly not-run",
+                    promise_id=row.get("promise_id"),
+                )
+            )
+        if isinstance(evaluation, dict) and evaluation.get("gate") == EVALUATION_GATE:
+            selected.append((index, row))
+
+    if len(selected) != EVALUATION_EXPECTED_CASES:
+        findings.append(
+            evaluation_finding(
+                "PM107",
+                COVERAGE_PATH.as_posix(),
+                f"coverage discovers {len(selected)} labelled-case evaluations; expected {EVALUATION_EXPECTED_CASES}",
+            )
+        )
+
+    valid_rows = {}
+    models = set()
+    run_paths = set()
+    for index, row in selected:
+        row_path = f"{COVERAGE_PATH.as_posix()}#rows[{index}]"
+        promise_id = row.get("promise_id")
+        evaluation = row.get("evaluation")
+        if (
+            not isinstance(promise_id, str)
+            or PROMISE_ID.fullmatch(promise_id) is None
+            or promise_id in valid_rows
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    row_path,
+                    "evaluation promise id is missing, malformed or repeated",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if (
+            not isinstance(row.get("group"), str)
+            or row["group"] not in {"prompt", "vendored"}
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    row_path,
+                    "labelled-case evaluation belongs to neither prompt nor vendored coverage",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if not closed_non_empty_scalar(row.get("skill_path")):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    f"{row_path}.skill_path",
+                    "labelled-case evaluation has no closed canonical skill path",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if (
+            not isinstance(evaluation, dict)
+            or set(evaluation) != EVALUATION_GATE_KEYS
+            or any(
+                not closed_non_empty_scalar(evaluation.get(key))
+                for key in EVALUATION_GATE_KEYS
+            )
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    f"{row_path}.evaluation",
+                    "evaluation row is not the closed gate, run, model, corpus and boundary record",
+                    promise_id=promise_id,
+                )
+            )
+            continue
+        if (
+            evaluation["status"] != "recorded"
+            or EVALUATION_MODEL_ID.fullmatch(evaluation["model"]) is None
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM108",
+                    f"{row_path}.evaluation",
+                    "evaluation status is not recorded or its full model identity is malformed",
+                    promise_id=promise_id,
+                )
+            )
+        if evaluation["domain_evidence"] != EVALUATION_DOMAIN_BOUNDARY:
+            findings.append(
+                evaluation_finding(
+                    "PM110",
+                    f"{row_path}.evaluation.domain_evidence",
+                    "evaluation row does not require domain evidence separately",
+                    promise_id=promise_id,
+                )
+            )
+        valid_rows[promise_id] = row
+        models.add(evaluation["model"])
+        run_paths.add(evaluation["run"])
+
+    if len(models) != 1 or len(run_paths) != 1:
+        findings.append(
+            evaluation_finding(
+                "PM109",
+                COVERAGE_PATH.as_posix(),
+                "labelled-case rows do not bind one model identity and one run record",
+            )
+        )
+    if len(valid_rows) != EVALUATION_EXPECTED_CASES:
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    source_payloads = {COVERAGE_PATH.as_posix(): coverage_payload}
+    expected_source_paths = {
+        COVERAGE_PATH.as_posix(),
+        EVALUATION_TEMPLATE_PATH.as_posix(),
+    }
+    corpus_paths = set()
+    for promise_id, row in valid_rows.items():
+        evaluation = row["evaluation"]
+        corpus_paths.add(evaluation["corpus"])
+        source_paths = [row.get("skill_path"), evaluation["corpus"]]
+        if row.get("group") == "vendored":
+            source_paths.append(OVERLAY_PATH.as_posix())
+        expected_source_paths.update(source_paths)
+        for source_path in source_paths:
+            if source_path in source_payloads:
+                continue
+            payload, errors = read_evaluation_bytes(
+                root,
+                source_path,
+                f"evaluation input for {promise_id}",
+                MAX_RUNTIME_SOURCE_BYTES,
+                "PM109",
+            )
+            findings.extend(errors)
+            if payload is not None:
+                source_payloads[source_path] = payload
+    template_payload, template_findings = read_evaluation_bytes(
+        root,
+        EVALUATION_TEMPLATE_PATH.as_posix(),
+        "evaluation prompt template",
+        MAX_RUNTIME_SOURCE_BYTES,
+        "PM109",
+    )
+    findings.extend(template_findings)
+    if template_payload is not None:
+        source_payloads[EVALUATION_TEMPLATE_PATH.as_posix()] = template_payload
+        try:
+            template_text = template_payload.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    EVALUATION_TEMPLATE_PATH.as_posix(),
+                    f"evaluation prompt template is not UTF-8: {exc}",
+                )
+            )
+        else:
+            if any(
+                template_text.count(field) != 1
+                for field in EVALUATION_TEMPLATE_FIELDS
+            ):
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        EVALUATION_TEMPLATE_PATH.as_posix(),
+                        "evaluation prompt template does not carry each required field exactly once",
+                    )
+                )
+    if set(source_payloads) != expected_source_paths:
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    corpus_documents = {}
+    expected_answers = {}
+    for corpus_path in sorted(corpus_paths):
+        payload = source_payloads.get(corpus_path)
+        document = None
+        if payload is not None:
+            document, error = parse_json_object_bytes(
+                payload, f"evaluation corpus {corpus_path}"
+            )
+            if error is not None:
+                findings.append(evaluation_finding("PM107", corpus_path, error))
+        if document is None:
+            continue
+        corpus_documents[corpus_path] = document
+        assigned = {
+            promise_id
+            for promise_id, row in valid_rows.items()
+            if row["evaluation"]["corpus"] == corpus_path
+        }
+        cases = document.get("cases")
+        if (
+            set(document) != {"schema", "cases"}
+            or document.get("schema") != EVALUATION_CASE_SCHEMA
+            or not isinstance(cases, dict)
+            or set(cases) != assigned
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM107",
+                    corpus_path,
+                    "evaluation corpus schema or exact assigned promise set is wrong",
+                )
+            )
+            continue
+        for promise_id in sorted(assigned):
+            record = cases[promise_id]
+            if (
+                not isinstance(record, dict)
+                or set(record) != set(EVALUATION_CASE_CODES) | {"request"}
+                or record.get("request") != valid_rows[promise_id]["evaluation"]["prompt"]
+            ):
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        f"{corpus_path}#cases.{promise_id}",
+                        "evaluation case has an open shape or disagrees with its coverage request",
+                        promise_id=promise_id,
+                    )
+                )
+                continue
+            expected = {}
+            malformed = False
+            for scenario_id, code in zip(
+                EVALUATION_SCENARIO_IDS, EVALUATION_PROMPT_CASE_ORDER
+            ):
+                case = record.get(code)
+                if (
+                    not isinstance(case, dict)
+                    or set(case) != {"disposition", "scenario", "boundary"}
+                    or not isinstance(case.get("disposition"), str)
+                    or case["disposition"] not in EVALUATION_DISPOSITIONS
+                    or not closed_non_empty_scalar(case.get("scenario"))
+                    or not closed_non_empty_scalar(case.get("boundary"))
+                ):
+                    malformed = True
+                    break
+                expected[scenario_id] = case["disposition"]
+            if malformed:
+                findings.append(
+                    evaluation_finding(
+                        "PM107",
+                        f"{corpus_path}#cases.{promise_id}",
+                        "evaluation case has a missing or malformed P/M/S/O/R scenario",
+                        promise_id=promise_id,
+                    )
+                )
+            else:
+                expected_answers[promise_id] = expected
+
+    if set(expected_answers) != set(valid_rows):
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    inventory = [
+        {
+            "path": path,
+            "sha256": hashlib.sha256(source_payloads[path]).hexdigest(),
+        }
+        for path in sorted(source_payloads)
+    ]
+    tree_sha256 = evaluation_digest(inventory)
+    corpus_inventory = [
+        {
+            "path": path,
+            "sha256": hashlib.sha256(source_payloads[path]).hexdigest(),
+        }
+        for path in sorted(corpus_paths)
+    ]
+    corpus_sha256 = evaluation_digest(corpus_inventory)
+    prompt_template_sha256 = hashlib.sha256(template_payload).hexdigest()
+
+    answers_document, _, answer_findings = read_evaluation_json(
+        root,
+        EVALUATION_ANSWERS_PATH.as_posix(),
+        "evaluation raw answer sheet",
+        MAX_EVALUATION_ANSWERS_BYTES,
+        "PM109",
+    )
+    findings.extend(answer_findings)
+    raw_answers = {}
+    if answers_document is not None:
+        answers = answers_document.get("answers")
+        if (
+            set(answers_document) != {"contract", "answers"}
+            or answers_document.get("contract") != EVALUATION_ANSWERS_SCHEMA
+            or not isinstance(answers, dict)
+            or set(answers) != set(valid_rows)
+        ):
+            findings.append(
+                evaluation_finding(
+                    "PM109",
+                    EVALUATION_ANSWERS_PATH.as_posix(),
+                    "raw answer sheet has an open shape or the wrong exact case set",
+                )
+            )
+        else:
+            for promise_id in sorted(valid_rows):
+                raw = answers[promise_id]
+                encoded = raw.encode("utf-8") if isinstance(raw, str) else b""
+                parsed, error = parse_json_object_bytes(
+                    encoded, f"raw answer for {promise_id}"
+                )
+                if (
+                    not isinstance(raw, str)
+                    or not raw.strip()
+                    or raw.strip().lower() == "not-run"
+                    or len(encoded) > MAX_EVALUATION_ANSWER_BYTES
+                    or error is not None
+                    or set(parsed or {}) != set(EVALUATION_SCENARIO_IDS)
+                    or any(
+                        not isinstance(value, str)
+                        or value not in EVALUATION_DISPOSITIONS
+                        for value in (parsed or {}).values()
+                    )
+                ):
+                    findings.append(
+                        evaluation_finding(
+                            "PM109",
+                            f"{EVALUATION_ANSWERS_PATH.as_posix()}#answers.{promise_id}",
+                            "raw answer is absent, partial, duplicated, oversized, not-run or uses an open disposition",
+                            promise_id=promise_id,
+                        )
+                    )
+                else:
+                    raw_answers[promise_id] = (raw, parsed)
+
+    run_path = next(iter(run_paths)) if len(run_paths) == 1 else ""
+    run_document, run_payload, run_findings = read_evaluation_json(
+        root,
+        run_path,
+        "evaluation run record",
+        MAX_EVALUATION_RUN_BYTES,
+        "PM109",
+    )
+    findings.extend(run_findings)
+    if run_document is None or set(raw_answers) != set(valid_rows):
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    if run_document.get("domain_evidence") != EVALUATION_RUN_DOMAIN:
+        findings.append(
+            evaluation_finding(
+                "PM110",
+                f"{run_path}#domain_evidence",
+                "evaluation run claims or implies domain-operation evidence",
+            )
+        )
+    model = run_document.get("model")
+    date = run_document.get("date")
+    valid_date = False
+    if isinstance(date, str):
+        try:
+            valid_date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d") == date
+        except ValueError:
+            pass
+    if (
+        not isinstance(model, str)
+        or EVALUATION_MODEL_ID.fullmatch(model) is None
+        or model not in models
+        or not valid_date
+    ):
+        findings.append(
+            evaluation_finding(
+                "PM108",
+                run_path,
+                "run record has no matching full model identity or real YYYY-MM-DD date",
+            )
+        )
+        return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
+
+    answer_records = []
+    failures = []
+    passed = 0
+    for promise_id in sorted(valid_rows):
+        raw, parsed = raw_answers[promise_id]
+        case_passed = 0
+        for scenario_id in EVALUATION_SCENARIO_IDS:
+            if parsed[scenario_id] == expected_answers[promise_id][scenario_id]:
+                case_passed += 1
+            else:
+                failures.append(
+                    {
+                        "case": promise_id,
+                        "scenario": scenario_id,
+                        "selected": parsed[scenario_id],
+                    }
+                )
+        passed += case_passed
+        encoded = raw.encode("utf-8")
+        answer_records.append(
+            {
+                "case": promise_id,
+                "sha256": hashlib.sha256(encoded).hexdigest(),
+                "bytes": len(encoded),
+                "passed": case_passed,
+                "failed": len(EVALUATION_SCENARIO_IDS) - case_passed,
+            }
+        )
+    expected_run = {
+        "contract": EVALUATION_RUN_SCHEMA,
+        "model": model,
+        "date": date,
+        "prompt_template_sha256": prompt_template_sha256,
+        "corpus_sha256": corpus_sha256,
+        "tree_sha256": tree_sha256,
+        "cases": sorted(valid_rows),
+        "answers": answer_records,
+        "counts": {
+            "answers": len(answer_records),
+            "cases": len(valid_rows),
+            "outcomes": len(valid_rows) * len(EVALUATION_SCENARIO_IDS),
+            "passed": passed,
+            "failed": len(failures),
+        },
+        "failures": failures,
+        "domain_evidence": EVALUATION_RUN_DOMAIN,
+    }
+    if run_document != expected_run or run_payload != evaluation_canonical(expected_run):
+        findings.append(
+            evaluation_finding(
+                "PM109",
+                run_path,
+                "run record does not match current inputs, raw answer identities and recomputed counts",
+            )
+        )
+    elif failures:
+        findings.append(
+            evaluation_finding(
+                "PM108",
+                run_path,
+                f"model evaluation has {len(failures)} failed labelled outcomes",
+            )
+        )
+    return len(selected), len(selected) * len(EVALUATION_CASE_CODES), findings
 
 
 def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
     findings: list[Finding] = []
     expected_records = promise_records(root, inventory)
     expected = {item.promise_id: item for item in expected_records}
+    law_path = root / LAW_NAME
+    composition_required = (
+        law_path.is_file()
+        and not law_path.is_symlink()
+        and confined(law_path, root)
+    )
+    composition_relations = 0
     required_handoffs = {
         pair for pair in REQUIRED_HANDOFFS if pair[0] in expected and pair[1] in expected
     }
@@ -1426,7 +7248,7 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
     )
     findings.extend(read_findings)
     if document is None:
-        return 0, 0, findings
+        return 0, 0, 0, findings
     if document.get("contract") != CONTRACT_ID or document.get("schema") != COVERAGE_SCHEMA:
         findings.append(
             Finding(
@@ -1437,6 +7259,11 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
                 f"use contract {CONTRACT_ID!r} and schema {COVERAGE_SCHEMA!r}",
             )
         )
+    if composition_required:
+        composition_relations, composition_findings = check_composition(
+            root, document, inventory
+        )
+        findings.extend(composition_findings)
     handoffs = document.get("handoffs")
     seen_handoffs: set[tuple[str, str]] = set()
     if not isinstance(handoffs, list):
@@ -1611,114 +7438,16 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             )
         )
     for promise_id in sorted(required_runtime & actual_runtime):
-        binding = runtime_catalog[promise_id]
-        binding_path = f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}"
-        if not isinstance(binding, dict) or set(binding) != {
-            "source",
-            "sha256",
-            "bindings",
-        }:
-            findings.append(
-                Finding(
-                    "PM070",
-                    "structural",
-                    binding_path,
-                    "runtime binding must contain exactly source, sha256 and bindings",
-                    "name one digest-bound result schema, writer or contract and its field map",
-                    promise_id=promise_id,
-                )
+        positive_evidence, _ = runtime_positive_evidence(document, promise_id)
+        findings.extend(
+            validate_runtime_catalogue_entry(
+                root,
+                expected[promise_id],
+                runtime_catalog[promise_id],
+                f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}",
+                positive_evidence,
             )
-            continue
-        source = binding.get("source")
-        if not isinstance(source, str) or not source.strip():
-            findings.append(
-                Finding(
-                    "PM070",
-                    "structural",
-                    binding_path,
-                    "runtime binding source is absent",
-                    "name the existing result schema, writer or contract",
-                    promise_id=promise_id,
-                )
-            )
-        else:
-            source_path = Path(source)
-            source_target = root / source_path
-            if (
-                source_path.is_absolute()
-                or ".." in source_path.parts
-                or source_target.is_symlink()
-                or not confined(source_target, root)
-                or not source_target.is_file()
-            ):
-                findings.append(
-                    Finding(
-                        "PM070",
-                        "identity",
-                        binding_path,
-                        f"runtime binding source does not resolve inside the repository: {source!r}",
-                        "name a confined existing result schema, writer or contract",
-                        promise_id=promise_id,
-                    )
-                )
-            else:
-                digest = binding.get("sha256")
-                if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
-                    findings.append(
-                        Finding(
-                            "PM070",
-                            "structural",
-                            binding_path,
-                            "runtime binding source digest is absent or malformed",
-                            "record the full lowercase SHA-256 of the reviewed source bytes",
-                            promise_id=promise_id,
-                        )
-                    )
-                else:
-                    actual, digest_error = bounded_sha256(
-                        source_target, MAX_RUNTIME_SOURCE_BYTES
-                    )
-                    if digest_error is not None:
-                        findings.append(
-                            Finding(
-                                "PM070",
-                                "structural",
-                                binding_path,
-                                f"runtime binding {digest_error}",
-                                "name a bounded readable result surface inside the repository",
-                                promise_id=promise_id,
-                            )
-                        )
-                    elif actual != digest:
-                        findings.append(
-                            Finding(
-                                "PM071",
-                                "drift",
-                                binding_path,
-                                f"runtime binding source digest is {actual}; inventory records {digest}",
-                                "review the changed result surface and update its field map and digest together",
-                                promise_id=promise_id,
-                            )
-                        )
-        fields = binding.get("bindings")
-        if (
-            not isinstance(fields, dict)
-            or set(fields) != RUNTIME_BINDING_KEYS
-            or any(
-                not isinstance(fields.get(key), str) or not fields[key].strip()
-                for key in RUNTIME_BINDING_KEYS
-            )
-        ):
-            findings.append(
-                Finding(
-                    "PM070",
-                    "structural",
-                    binding_path,
-                    "runtime field map is absent, incomplete or contains unknown fields",
-                    "bind promise id, subject, scope, evidence references and classes, unknowns, transition and exception",
-                    promise_id=promise_id,
-                )
-            )
+        )
 
     seen: dict[str, int] = {}
     selected = 0
@@ -1835,12 +7564,13 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             evaluation = row.get("evaluation")
             if (
                 not isinstance(evaluation, dict)
-                or set(evaluation) != EVALUATION_KEYS
-                or evaluation.get("status") not in {"recorded", "unknown"}
+                or set(evaluation) not in {frozenset(EVALUATION_KEYS), frozenset(EVALUATION_GATE_KEYS)}
+                or not isinstance(evaluation.get("status"), str)
+                or evaluation["status"] not in {"recorded", "unknown"}
                 or any(
                     not isinstance(evaluation.get(key), str)
                     or not evaluation[key].strip()
-                    for key in EVALUATION_KEYS - {"status"}
+                    for key in set(evaluation) - {"status"}
                 )
             ):
                 findings.append(
@@ -2070,7 +7800,7 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
                     promise_id=promise_id,
                 )
             )
-    return len(rows), selected, findings
+    return len(rows), selected, composition_relations, findings
 
 
 def check_identity(inventory: Inventory):
@@ -2621,7 +8351,21 @@ def sync_copies(root: Path, law: bytes, plugins: list[Path]):
                 )
             )
             continue
-        current = destination.read_bytes() if destination.is_file() else None
+        current = None
+        if destination.is_file():
+            try:
+                current = bounded_read_bytes(destination, root, MAX_MARKDOWN_BYTES)
+            except OSError as exc:
+                findings.append(
+                    Finding(
+                        "PM013",
+                        "identity",
+                        relative(destination, root),
+                        f"copy could not be read safely: {exc}",
+                        "restore a readable regular copy inside the plugin directory",
+                    )
+                )
+                continue
         if current == law:
             continue
         try:
@@ -2640,6 +8384,44 @@ def sync_copies(root: Path, law: bytes, plugins: list[Path]):
     return written, findings
 
 
+def actionable_finding(item: Finding):
+    context = SEMANTIC_OBLIGATIONS.get(item.obligation_id or "", {})
+    promise_id = item.promise_id
+    if not isinstance(promise_id, str) or PROMISE_ID.fullmatch(promise_id) is None:
+        promise_id = CHECKER_REFUSAL_CONTEXT["promise_id"]
+    obligation_id = item.obligation_id
+    if (
+        obligation_id is not None
+        and (
+            not isinstance(obligation_id, str)
+            or PROMISE_ID.fullmatch(obligation_id) is None
+        )
+    ):
+        obligation_id = None
+    consequence = item.consequence
+    if type(consequence) is not int or consequence not in range(4):
+        consequence = context.get(
+            "consequence", CHECKER_REFUSAL_CONTEXT["consequence"]
+        )
+    blocked_transition = item.blocked_transition or context.get(
+        "blocked_transition",
+        CHECKER_REFUSAL_CONTEXT["blocked_transition"],
+    )
+    recovery = item.recovery or context.get("recovery") or item.remedy
+    return Finding(
+        item.code,
+        item.fault,
+        item.path,
+        item.message,
+        item.remedy,
+        promise_id=promise_id,
+        obligation_id=obligation_id,
+        consequence=consequence,
+        blocked_transition=blocked_transition,
+        recovery=recovery,
+    )
+
+
 def report(
     command: str,
     root: Path,
@@ -2651,9 +8433,13 @@ def report(
     copies: int = 0,
     inventory: Inventory | None = None,
     promises: int = 0,
+    obligations: int = 0,
     stats: dict[str, int] | None = None,
 ):
-    findings = sorted(findings, key=lambda item: (item.path, item.code, item.message))
+    findings = sorted(
+        (actionable_finding(item) for item in findings),
+        key=lambda item: (item.path, item.code, item.message),
+    )
     counts = {
         "plugins": len(plugins),
         "copies": copies,
@@ -2673,11 +8459,16 @@ def report(
         "routers": len(inventory.routers) if inventory else 0,
         "overlays": len(inventory.overlays) if inventory else 0,
         "promises": promises,
+        "obligations": obligations,
         "claude_plugins": 0,
         "codex_plugins": 0,
         "package_versions": 0,
         "skill_versions": 0,
         "licensed_plugins": 0,
+        "composition_relations": 0,
+        "runtime_bindings": 0,
+        "history_entries": 0,
+        "active_history_ids": 0,
     }
     if stats:
         counts.update(stats)
@@ -2700,8 +8491,23 @@ def report(
     elif findings:
         for item in findings:
             promise = f" promise={item.promise_id}" if item.promise_id else ""
+            obligation = (
+                f" obligation={item.obligation_id}" if item.obligation_id else ""
+            )
+            consequence = (
+                f" consequence={item.consequence}"
+                if item.consequence is not None
+                else ""
+            )
+            blocked = (
+                f" blocked={item.blocked_transition!r}"
+                if item.blocked_transition
+                else ""
+            )
+            recovery = f" recovery={item.recovery!r}" if item.recovery else ""
             print(
-                f"{item.code} fault={item.fault} path={item.path}{promise}: "
+                f"{item.code} fault={item.fault} path={item.path}{promise}"
+                f"{obligation}{consequence}{blocked}{recovery}: "
                 f"{item.message}; repair: {item.remedy}"
             )
         print(f"refused: {len(findings)} finding(s)")
@@ -2749,7 +8555,14 @@ def parse_only(raw: str):
         "versions",
         "hosts",
         "coverage",
+        "evaluation",
+        "composition",
         "licences",
+        "obligations",
+        "exceptions",
+        "imports",
+        "runtime",
+        "history",
     }
     unknown = sorted(set(requested) - allowed)
     if unknown or not requested:
@@ -2771,7 +8584,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences"
+            "versions,hosts,coverage,evaluation,licences,obligations,exceptions,imports,runtime,history"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -2826,12 +8639,19 @@ def main(argv=None):
             require_hexaemeron_contracts=True,
         )
         overlay_promises, overlay_findings = check_overlays(root, inventory)
-        coverage_rows, coverage_selected, coverage_findings = check_coverage(
+        (
+            coverage_rows,
+            coverage_selected,
+            composition_relations,
+            coverage_findings,
+        ) = check_coverage(
             root, inventory, selected_groups
         )
+        runtime_bindings, runtime_findings = check_runtime(root, inventory)
         findings.extend(structure_findings)
         findings.extend(overlay_findings)
         findings.extend(coverage_findings)
+        findings.extend(runtime_findings)
         return report(
             "coverage",
             root,
@@ -2843,6 +8663,8 @@ def main(argv=None):
             stats={
                 "coverage_rows": coverage_rows,
                 "coverage_selected": coverage_selected,
+                "composition_relations": composition_relations,
+                "runtime_bindings": runtime_bindings,
             },
         )
 
@@ -2857,7 +8679,7 @@ def main(argv=None):
         inventory = None
         promises = 0
         stats: dict[str, int] = {}
-        if "law" in only or "copies" in only:
+        if "law" in only or "copies" in only or "obligations" in only:
             law, law_findings = check_law(root)
             findings.extend(law_findings)
         if "copies" in only:
@@ -2875,6 +8697,8 @@ def main(argv=None):
             "hosts",
             "coverage",
             "licences",
+            "runtime",
+            "history",
         }
         if only & inventory_components:
             inventory, inventory_findings = discover_inventory(root)
@@ -2892,6 +8716,13 @@ def main(argv=None):
             overlay_promises, overlay_findings = check_overlays(root, inventory)
             promises += overlay_promises
             findings.extend(overlay_findings)
+        if "history" in only and inventory is not None:
+            history_entries, active_history_ids, history_findings = check_history(
+                root, inventory
+            )
+            stats["history_entries"] = history_entries
+            stats["active_history_ids"] = active_history_ids
+            findings.extend(history_findings)
         if "identity" in only and inventory is not None:
             findings.extend(check_identity(inventory))
         if "routers" in only and inventory is not None:
@@ -2913,12 +8744,64 @@ def main(argv=None):
             stats["licensed_plugins"] = licensed_plugins
             findings.extend(licence_findings)
         if "coverage" in only and inventory is not None:
-            coverage_rows, coverage_selected, coverage_findings = check_coverage(
+            (
+                coverage_rows,
+                coverage_selected,
+                composition_relations,
+                coverage_findings,
+            ) = check_coverage(
                 root, inventory, {"executable", "prompt", "vendored"}
             )
             stats["coverage_rows"] = coverage_rows
             stats["coverage_selected"] = coverage_selected
+            stats["composition_relations"] = composition_relations
             findings.extend(coverage_findings)
+        if "evaluation" in only:
+            evaluation_cases, evaluation_outcomes, evaluation_findings = check_evaluation(
+                root
+            )
+            stats["evaluation_cases"] = evaluation_cases
+            stats["evaluation_outcomes"] = evaluation_outcomes
+            findings.extend(evaluation_findings)
+        if "composition" in only and "coverage" not in only:
+            composition_document, composition_read_findings = read_json(
+                root / COVERAGE_PATH,
+                root,
+                max_bytes=MAX_COVERAGE_BYTES,
+                missing_code="PM097",
+                unsafe_code="PM097",
+                malformed_code="PM097",
+                noun="composition coverage catalogue",
+            )
+            findings.extend(composition_read_findings)
+            if composition_document is not None:
+                composition_relations, composition_findings = check_composition(
+                    root, composition_document
+                )
+                stats["composition_relations"] = composition_relations
+                findings.extend(composition_findings)
+        if "runtime" in only and inventory is not None:
+            runtime_bindings, runtime_findings = check_runtime(root, inventory)
+            stats["runtime_bindings"] = runtime_bindings
+            findings.extend(runtime_findings)
+        obligations = 0
+        if "obligations" in only:
+            obligations, obligation_findings = check_obligations(root, law)
+            findings.extend(obligation_findings)
+        if "contracts" in only:
+            consequence_fixtures, consequence_findings = check_consequence_fixtures(
+                root
+            )
+            stats["consequence_fixtures"] = consequence_fixtures
+            findings.extend(consequence_findings)
+        if "exceptions" in only:
+            exception_fixtures, exception_findings = check_exception_fixture(root)
+            stats["exception_fixtures"] = exception_fixtures
+            findings.extend(exception_findings)
+        if "imports" in only:
+            core_checkers, import_findings = check_core_imports(root)
+            stats["core_checkers"] = core_checkers
+            findings.extend(import_findings)
         return report(
             "check",
             root,
@@ -2928,6 +8811,7 @@ def main(argv=None):
             copies=len(plugins) if "copies" in only else 0,
             inventory=inventory,
             promises=promises,
+            obligations=obligations,
             stats=stats,
         )
 

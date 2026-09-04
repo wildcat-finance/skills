@@ -1084,7 +1084,7 @@ class CompositionContractTests(unittest.TestCase):
         self.assertIn(
             "- Path: `plugins/hexaemeron/skills/x-ray/SKILL.md`", overlay
         )
-        self.assertIn(f"- SHA-256: `{xray_digest}`", overlay)
+        self.assertIn(f"- Local SHA-256: `{xray_digest}`", overlay)
         self.assertIn("`plugins/hexaemeron/lib/xray_reuse.py`", overlay)
         self.assertIn(f"SHA-256 `{adapter_digest}`", overlay)
 

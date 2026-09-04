@@ -106,6 +106,13 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:1f102e7d14ee9c2baac2f7651352563826810667c05dad9b5e37d45143a0c0b6",
+      "path": "plugins/alexandria/scripts/alexandria_lib/proof_backed.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:afa8c843bddb8a2bc978401df37455e4486d612ed39401cf52dc82ab5afb49f1",
       "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
       "suppressed": false,
@@ -1471,17 +1478,17 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:bb6d948c552a3889a30df19db03e134b8d7857374b56e168e9372f362f496baa",
+      "id": "sha256:55158b4b53bdcca720e34d69dc80ee274d5372a474474a480836d5b37dd5f997",
       "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "_validate_measurement_record.model_tokens@2843"
+      "symbol": "_validate_measurement_record.model_tokens@3047"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:62134cf15f9a0a125adee86c01f072cd7c2e08c91c52c04617756bee1d752d5f",
+      "id": "sha256:1966b8da052d6e78a7c45b9b4fa780a0d06a212963878da98f171b0fe3ec2665",
       "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "parse.depth@1083"
+      "symbol": "parse.depth@1130"
     },
     {
       "analyser_id": "python",
@@ -1499,17 +1506,17 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:9d8278c8a4b55ff65a70648541385b820349f1d01efd76871bf7004cea75d10f",
+      "id": "sha256:849517978184449dd789d6fb439798647444d4b548a1d802deb3db35b07b74c7",
       "path": "tests/test_agent_instruction.py",
       "suppressed": false,
-      "symbol": "test_governed_node_shrink_with_rebound_derivatives_refuses.compact_path@1821"
+      "symbol": "test_governed_node_shrink_with_rebound_derivatives_refuses.compact_path@1823"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:41fc4d462456ae9bf3d917e0d1dc7739abf58bf5e04dbe97486d6c05cb024019",
+      "id": "sha256:8b818903456e3c1d1f8fcaeea79348c70c66d86cf604a477a4e704e1e4fe2371",
       "path": "tests/test_promise_machine_contract.py",
       "suppressed": false,
-      "symbol": "test_missing_root_licence_is_refused.plugin@295"
+      "symbol": "test_missing_root_licence_is_refused.plugin@2689"
     },
     {
       "analyser_id": "python",
@@ -1536,10 +1543,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "3dd0b2291366b2e9fc0ca54fe62c86d0cc58e807",
-    "git_tree": "4f3f5226d1ef1723db2a71bb168b93424fa4cd5c"
+    "commit": "223c1c86e0a9c1bf233f0cecb0cbdda5e8e0b988",
+    "git_tree": "f20573c3f96c6e6e299303194679b10205c055a6"
   },
   "universe": {
-    "id": "sha256:027604f782c150527354a85619d4a0bd4f3d7837ff6e6dd7c0c6df2c94748fea"
+    "id": "sha256:f0b6f7fcdffadd3848b2df224a7b076508f3f59c810dbb8e77720e0f3fd9a1a0"
   }
 }

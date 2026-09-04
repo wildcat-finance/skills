@@ -46,18 +46,96 @@ ROOT_FILES = (
     Path("repo_contract.py"),
     Path("schemas/promise-machine-run-observation-capture-v1.schema.json"),
     Path("schemas/promise-machine-run-observation-v1.schema.json"),
+    Path("schemas/promise-machine-semantic-v1.schema.json"),
     Path("scripts/promise_machine.py"),
+    Path("scripts/verify_vendored_provenance.py"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
+    Path("tests/promise_evaluation_driver.py"),
+    Path("tests/promise_machine_coverage.json"),
+    Path("tests/promise_machine_obligations.json"),
+    Path("tests/promise_machine_id_history.json"),
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
     Path("docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md"),
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
     Path("docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"),
     Path("docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
+    Path("docs/promise-machine/obligation-gates/evaluation-answers.json"),
+    Path("docs/promise-machine/obligation-gates/evaluation-run.json"),
+)
+
+OBLIGATION_FIXTURE_FILES = (
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-contract-identity.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-declaration-fields.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-governing-principle.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-required-sections.json"
+    ),
+)
+
+EVALUATION_FIXTURE_FILES = (
+    Path("tests/fixtures/promise-machine/evaluation/prompt-template.txt"),
+)
+
+SEMANTIC_FIXTURE_FILES = tuple(
+    Path(path)
+    for path in (
+        "tests/fixtures/promise-machine/consequences/authority.json",
+        "tests/fixtures/promise-machine/composition/cases.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-3.json",
+        "tests/fixtures/promise-machine/consequences/evidence/content.json",
+        "tests/fixtures/promise-machine/consequences/evidence/independent.json",
+        "tests/fixtures/promise-machine/consequences/evidence/negative.json",
+        "tests/fixtures/promise-machine/consequences/evidence/provenance.json",
+        "tests/fixtures/promise-machine/consequences/evidence/recovery.json",
+        "tests/fixtures/promise-machine/consequences/evidence/structure.json",
+        "tests/fixtures/promise-machine/consequences/evidence/tests.json",
+        "tests/fixtures/promise-machine/consequences/level-0.json",
+        "tests/fixtures/promise-machine/consequences/level-1.json",
+        "tests/fixtures/promise-machine/consequences/level-2.json",
+        "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+        "tests/fixtures/promise-machine/consequences/level-3.json",
+        "tests/fixtures/promise-machine/consequences/unknown.json",
+        "tests/fixtures/promise-machine/exceptions/expired.json",
+        "tests/fixtures/promise-machine/exceptions/reason.md",
+        "tests/fixtures/promise-machine/exceptions/valid.json",
+        "tests/fixtures/promise-machine/findings/missing-recovery.json",
+        "tests/fixtures/promise-machine/imports/subprocess.json",
+        "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
+    )
 )
 
 PORTABLE_TEST_FILES = (
+    Path("plugins/alexandria/tests/test_release.py"),
+    Path("plugins/ariadne/tests/test_examples.py"),
+    Path("plugins/ariadne/tests/test_gates.py"),
+    Path("plugins/berean/tests/test_corpus.py"),
+    Path("plugins/berean/tests/test_examples.py"),
+    Path("plugins/berean/tests/test_promote.py"),
+    Path("plugins/hexaemeron/tests/test_hexctl.py"),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json"
+    ),
+    Path("plugins/hexaemeron/tests/test_run_observation_binding.py"),
+    Path("plugins/lazarus/tests/test_capture.py"),
+    Path("plugins/lazarus/tests/test_verifier.py"),
+    Path("plugins/lemma/tests/test_markdown.py"),
+    Path("plugins/sapheneia/tests/fixtures/promise-machine/cases.json"),
+    Path("plugins/synkrisis/tests/test_cohort.py"),
+    Path("plugins/synkrisis/tests/test_verify.py"),
     Path(
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json"
     ),
@@ -106,8 +184,8 @@ OMISSIONS = (
         "exceptions": [path.as_posix() for path in PORTABLE_TEST_FILES],
         "reason": (
             "development suites and other fixtures remain in the full source "
-            "checkout; the listed closed model-proxy-v1 fixture set closes the "
-            "portable commands and vectors advertised by the copied reference"
+            "checkout; the listed composition evidence sources and closed "
+            "model-proxy-v1 fixture set close the portable gates and commands"
         ),
     },
     {
@@ -187,6 +265,9 @@ def _omitted(relative: Path) -> bool:
 def source_files(root: Path) -> list[Path]:
     """Return the exact canonical files copied into the portable runtime."""
     selected = set(ROOT_FILES)
+    selected.update(OBLIGATION_FIXTURE_FILES)
+    selected.update(EVALUATION_FIXTURE_FILES)
+    selected.update(SEMANTIC_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
     selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
     ordered = sorted(selected, key=lambda path: path.as_posix())

@@ -1,0 +1,187 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "kronos_fiat_dispatch": {
+          "authorised_by": {
+            "id": "promise-owner:kronos-fiat-dispatch",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
+              "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
+            }
+          },
+          "binding": {
+            "promise_id": "kronos-fiat-dispatch",
+            "scope": "structural binding for kronos-fiat-dispatch",
+            "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+              "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:kronos-fiat-dispatch",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
+            "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+          "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+        },
+        "promise_id": "kronos-fiat-dispatch",
+        "scope": "structural binding for kronos-fiat-dispatch",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
+        "transition": {
+          "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "kronos_fiat_dispatch": {
+          "authorised_by": {
+            "id": "promise-owner:kronos-fiat-dispatch",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
+              "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
+            }
+          },
+          "binding": {
+            "promise_id": "kronos-fiat-dispatch",
+            "scope": "structural binding for kronos-fiat-dispatch",
+            "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+              "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+            }
+          ],
+          "source_digest": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
+          "transition": {
+            "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:kronos-fiat-dispatch",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
+            "sha256": "27656a446c2890b2d87bf996583a63a2ed1f6f897a15e52b3f660773408a3c7c"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+          "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+        },
+        "promise_id": "kronos-fiat-dispatch",
+        "scope": "structural binding for kronos-fiat-dispatch",
+        "source_digest": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
+        "transition": {
+          "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

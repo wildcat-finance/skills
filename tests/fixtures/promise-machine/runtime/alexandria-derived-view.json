@@ -1,0 +1,147 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "alexandria_derived_view": {
+          "authorised_transition": {
+            "action": "structurally bind alexandria-derived-view without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/alexandria/tests/test_demo.py",
+                "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "alexandria-derived-view",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for alexandria-derived-view",
+            "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/alexandria/tests/test_demo.py",
+            "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "alexandria-derived-view",
+        "scope": "structural binding for alexandria-derived-view",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly",
+        "transition": {
+          "action": "structurally bind alexandria-derived-view without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "alexandria_derived_view": {
+          "authorised_transition": {
+            "action": "structurally bind alexandria-derived-view without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/alexandria/tests/test_demo.py",
+                "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "alexandria-derived-view",
+          "source": {
+            "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
+          },
+          "target": {
+            "scope": "structural binding for alexandria-derived-view",
+            "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/alexandria/tests/test_demo.py",
+            "sha256": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "alexandria-derived-view",
+        "scope": "structural binding for alexandria-derived-view",
+        "source_digest": "70a6b4f22c60a49e7f21e883b994d0cb2fd85b21150710ea9b56cacc5710f85d",
+        "subject": "runtime source plugins/alexandria/tests/test_demo.py#test_documented_build_and_verify_commands_run_exactly",
+        "transition": {
+          "action": "structurally bind alexandria-derived-view without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

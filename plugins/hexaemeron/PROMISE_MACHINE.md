@@ -6,6 +6,10 @@
 
 # Promise Machine contract
 
+<!-- promise-machine-obligation: id=law-generated-copy-identity -->
+> Obligation: This authored law header carries the fixed
+> `promise-machine/v1` canonical and generated-copy identity marker.
+
 The Promise Machine is the rule that stops one useful result becoming a larger,
 unsupported claim as it moves between agents.
 
@@ -33,11 +37,23 @@ example-led introduction.
 
 ## Contract identity
 
+<!-- promise-machine-obligation: id=law-contract-identity -->
+> Obligation: This authored law names only `promise-machine/v1` as its
+> contract identity.
+
 The shared contract identity is `promise-machine/v1`. It identifies this law's
 format and semantics. It is neither a plugin package version nor a skill
 evolution version.
 
+<!-- promise-machine-obligation: id=law-required-sections -->
+> Obligation: Every required normative section of this authored law appears
+> exactly once.
+
 ## Governing principle
+
+<!-- promise-machine-obligation: id=law-governing-principle -->
+> Obligation: This authored law carries the settled governing-principle
+> sentence exactly.
 
 > No skill may claim more than its evidence establishes, or authorise a more
 > consequential transition than that evidence warrants.
@@ -90,12 +106,21 @@ Evidence classes describe relations, not a universal strength ordering:
 
 A domain may refine a class, such as `proved: EIP-1186 account proof`, while
 keeping the base class recognisable. A consumer records any change of class and
-the evidence that supports it. Absence, ambiguity and `unknown` never pass.
+the evidence that supports it.
+
+<!-- promise-machine-obligation: id=law-unknowns-non-authorising -->
+> Obligation: `unknown`, `not-run`, missing, stale or unresolved evidence never
+> authorises a positive transition.
 
 ## Promise declarations
 
 Every governed first-party canonical skill has exactly one `## Promise Machine
 contract` section. It contains one or more stable `### <promise-id>` blocks.
+
+<!-- promise-machine-obligation: id=law-declaration-fields -->
+> Obligation: This authored law contains each of the nine required promise
+> declaration-field tokens.
+
 Each block carries these fields exactly once:
 
 - `Promise`
@@ -128,6 +153,15 @@ whole:
 | 2 | Repository or durable-data mutation | Tests, negative evidence and recoverable change |
 | 3 | Publication, deployment, external action, security or financial conclusion | Fail-closed gate, recorded authority and independently inspectable evidence |
 
+<!-- promise-machine-obligation: id=law-consequence-separation -->
+> Obligation: Consequence levels zero through three take distinct enforcement
+> paths, and level three never accepts level-two-only evidence.
+
+<!-- promise-machine-obligation: id=law-runtime-result-binding -->
+> Obligation: Every level-two or level-three runtime promise resolves its
+> native binding fields through a bounded source-bound reader; level three
+> also resolves authority and independently inspectable evidence.
+
 A skill with operations at different levels declares separate promises. A
 level-3 transition cannot rest only on model judgement, unrecorded operator
 memory, an unchecked receipt or evidence whose subject does not match.
@@ -142,20 +176,62 @@ or recovery path.
 
 In particular:
 
+<!-- promise-machine-obligation: id=law-composition-lemma-boundary -->
+> Obligation: Relation `lemma-retrieval-to-berean-corpus` preserves its subject,
+> scope, source links, chunk locations, evidence references and classes, time
+> domain, unknowns, conflicts, refusals and recovery, and refuses answer truth.
+
 - Lemma chunks remain source-linked retrieval material; they do not establish
   answer truth.
+<!-- promise-machine-obligation: id=law-composition-lazarus-boundary -->
+> Obligation: Relation `lazarus-rpc-to-berean-answer` preserves its subject,
+> scope, block, RPC methods, proof relation, evidence references and classes,
+> time domain, unknowns, conflicts, refusals and recovery, and refuses proof or
+> answer truth that its recorded evidence did not establish.
+
 - Lazarus recorded RPC evidence remains recorded unless its named proof check
   established a narrower proved relation.
+<!-- promise-machine-obligation: id=law-composition-berean-boundary -->
+> Obligation: Relation `berean-promotion-to-ariadne-capture` preserves its
+> subject, scope, release digests, evidence references and classes, time domain,
+> unknowns, conflicts, refusals and recovery, and refuses answer truth and model
+> quality.
+
 - Berean citations, evaluations and promotion records establish their declared
   release gates; they do not establish factual truth or model quality.
+<!-- promise-machine-obligation: id=law-composition-janus-boundary -->
+> Obligation: Relation `janus-bounded-to-ariadne-capture` preserves its subject,
+> scope, adapter, manifest, recorder, bounded search, evidence references and
+> classes, time domain, unknowns, conflicts, refusals and recovery, and refuses
+> hook safety, complete liveness and cross-host conformance.
+
 - Janus results remain bound to the named host adapter, manifest, recorder and
   bounded search; they do not establish hook safety, complete liveness or
   cross-host conformance.
+<!-- promise-machine-obligation: id=law-composition-ariadne-boundary -->
+> Obligation: Relation `ariadne-verification-to-fiat-delivery` preserves its
+> subject, scope, artefact digest, predicate type, signature-verifier state,
+> evidence references and classes, time domain, unknowns, conflicts, refusals
+> and recovery, and refuses author identity without an external verifier.
+
 - Ariadne binds an artefact digest to declared evidence; without an external
   signature verifier it does not establish author identity.
+<!-- promise-machine-obligation: id=law-composition-fiat-observation-boundary -->
+> Obligation: Relation `fiat-observation-to-synkrisis-cohort` preserves its
+> subject, scope, validator, capture boundary, receipt, evidence references and
+> classes, time domain, unknowns, conflicts, refusals and recovery, and refuses
+> event truth and delivery evidence.
+
 - A Fiat run-observation binding preserves the observation validator and
   capture boundaries. It attaches only the checked prefix to one receipt; it
   does not make observation availability or event truth delivery evidence.
+<!-- promise-machine-obligation: id=law-composition-synkrisis-boundary -->
+> Obligation: Relation `synkrisis-verification-to-fiat-integration` preserves
+> its subject, scope, cohort, findings and report digests, counterevidence,
+> unknown runs, evidence references and classes, time domain, unknowns,
+> conflicts, refusals and recovery, and refuses cause, model quality and
+> authority to act.
+
 - Synkrisis contributes a checked cohort, bounded findings over it, a
   fixed-template report and a recomputation of all three. Verification
   establishes recomputability alone: it cannot turn repeated observations into
@@ -173,9 +249,12 @@ Failure blocks the dependent transition and no broader one. Inspection,
 diagnosis, repair, rerun, rollback and safe exit remain available unless the
 promise explains why a particular recovery cannot exist.
 
-A refusal report names the promise id, failed field or evidence, consequence
-level, blocked transition and recovery action. A checker never deletes,
-rewrites or quarantines the failing source merely to produce a passing result.
+<!-- promise-machine-obligation: id=law-refusal-shape -->
+> Obligation: Every refusal report names the promise id, failed field or
+> evidence, consequence level, blocked transition and recovery action.
+
+A checker never deletes, rewrites or quarantines the failing source merely to
+produce a passing result.
 
 ## Exceptions
 
@@ -187,6 +266,10 @@ An exception is evidence, not silence. It names:
 - the durable record holding the reason;
 - the expiry, or why expiry cannot apply; and
 - the recovery or revocation path.
+
+<!-- promise-machine-obligation: id=law-exception-resolution -->
+> Obligation: Every exception resolves its authority, promise and gate,
+> subject, scope, durable record, expiry, revocation state and recovery path.
 
 An exception cannot claim that missing evidence exists, strengthen an evidence
 class, erase a recorded conflict or authorise a transition beyond the named
@@ -208,7 +291,11 @@ divergent copies and unbound vendored instructions are failures.
 
 Checker output names a stable finding code, fault class, path, promise id when
 known and the action that clears it. JSON and text reports describe the same
-findings. The checker reaches no network and executes no evidence command.
+findings.
+
+<!-- promise-machine-obligation: id=law-core-checker-side-effects -->
+> Obligation: The core checker reaches no network, reads no credential and
+> executes no shell, subprocess, dynamic code or evidence command.
 
 ## First-party licence promise
 

@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "dokimasia_disposition_closure": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-disposition-closure without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_reconcile.py",
+                "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_reconcile.py",
+                "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-disposition-closure",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-disposition-closure",
+            "subject": "runtime source plugins/dokimasia/tests/test_reconcile.py#test_one_is_reached_only_when_nothing_is_unanswered"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_reconcile.py",
+            "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_reconcile.py",
+            "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-disposition-closure",
+        "scope": "structural binding for dokimasia-disposition-closure",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/dokimasia/tests/test_reconcile.py#test_one_is_reached_only_when_nothing_is_unanswered",
+        "transition": {
+          "action": "structurally bind dokimasia-disposition-closure without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "dokimasia_disposition_closure": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-disposition-closure without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_reconcile.py",
+                "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_reconcile.py",
+                "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-disposition-closure",
+          "source": {
+            "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-disposition-closure",
+            "subject": "runtime source plugins/dokimasia/tests/test_reconcile.py#test_one_is_reached_only_when_nothing_is_unanswered"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_reconcile.py",
+            "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_reconcile.py",
+            "sha256": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-disposition-closure",
+        "scope": "structural binding for dokimasia-disposition-closure",
+        "source_digest": "864d721ae106ac16c3fe473ee949c78c0f15f55685696db6ab9913eeceb011d0",
+        "subject": "runtime source plugins/dokimasia/tests/test_reconcile.py#test_one_is_reached_only_when_nothing_is_unanswered",
+        "transition": {
+          "action": "structurally bind dokimasia-disposition-closure without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

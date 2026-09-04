@@ -1,0 +1,636 @@
+{
+  "commands": [
+    {
+      "command": "test -z \"$(git status --porcelain)\"",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "entry clean tree"
+    },
+    {
+      "command": "python3 scripts/promise_machine.py check",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "law and copies"
+    },
+    {
+      "command": "python3 scripts/promise_machine.py coverage --check",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "coverage"
+    },
+    {
+      "command": "python3 tests/promise_evaluation_driver.py emit --out \"$work/packet\"",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "evaluation packet"
+    },
+    {
+      "command": "python3 tests/promise_evaluation_driver.py verify --packet \"$work/packet\" --answers docs/promise-machine/obligation-gates/evaluation-answers.json --run docs/promise-machine/obligation-gates/evaluation-run.json",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "evaluation verify"
+    },
+    {
+      "command": "python3 scripts/promise_machine.py sync --check",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "generated copies"
+    },
+    {
+      "command": "python3 scripts/portable_promise_machine.py check",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "portable runtime"
+    },
+    {
+      "command": "python3 plugins/horos/skills/horos/scripts/horos.py scan . --write",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "horos boundary"
+    },
+    {
+      "command": "test -z \"$(git status --porcelain)\"",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "post-horos clean tree"
+    },
+    {
+      "command": "python3 scripts/run_checks.py --full --jobs 12 --report .reports/issue-884-full.json",
+      "evidence_class": "recorded",
+      "exit_status": 1,
+      "stage": "whole check graph"
+    },
+    {
+      "command": "python3 tests/run_tests.py --elenchus-report .elenchus/promise-obligations-step-7.json",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "elenchus runner"
+    },
+    {
+      "command": "python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/promise-machine/obligation-gates/study.md docs/promise-machine/obligation-gates/runbook.md docs/promise-machine/obligation-gates/demonstration-evidence.md",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "imprimatur"
+    },
+    {
+      "command": "python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "hypomnema"
+    },
+    {
+      "command": "python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "audit synopsis currency"
+    },
+    {
+      "command": "test -z \"$(git status --porcelain)\"",
+      "evidence_class": "recorded",
+      "exit_status": 0,
+      "stage": "exit clean tree"
+    }
+  ],
+  "contract": "promise-machine/v1",
+  "counts": {
+    "active_history_ids": 94,
+    "composition_relations": 7,
+    "coverage_rows": 94,
+    "evaluation_cases": 11,
+    "evaluation_outcomes": 55,
+    "gate_classes": 10,
+    "history_cases": 9,
+    "history_rows": 94,
+    "negative_specimens": 12,
+    "obligation_markers": 18,
+    "promises": 94,
+    "provenance_rows": 12,
+    "registry_rows": 18,
+    "repository_checks": 28,
+    "repository_scopes": 26,
+    "runtime_rows": 45
+  },
+  "date": "2026-09-02",
+  "evidence_classes": {
+    "checked": "Counts, digests, the registry partition, the finding-code emitters and every named test selector recompute in tests/test_obligation_gate_demonstration.py.",
+    "declared": "The two case inventories and the issue-class-to-gate mapping are stated here and are not enforced by a production gate.",
+    "recorded": "Command exit statuses, the host and the model grade are observations of one run and authorise nothing on their own."
+  },
+  "gate_classes": [
+    {
+      "blocked_transitions": [
+        "accept a level-two or level-three result without its source-bound native fields"
+      ],
+      "checker_function": "check_runtime",
+      "class": "result-binding",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only runtime",
+      "finding_codes": [
+        "PM095"
+      ],
+      "issue_obligation": "result binding",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 45,
+        "kind": "runtime binding rows"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-runtime-result-binding"
+      ],
+      "recovery_actions": [
+        "restore the bounded reader, native fields, source digest, and level-three authority evidence, then rerun the runtime check"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json"
+      ],
+      "tests": [
+        "PromiseCoverageTests.test_every_runtime_binding_field_has_a_red_mutation",
+        "PromiseCoverageTests.test_level_three_authority_and_evidence_require_distinct_bytes",
+        "PromiseCoverageTests.test_level_two_result_cannot_replay_at_level_three",
+        "PromiseCoverageTests.test_repository_high_consequence_runtime_bindings_are_complete",
+        "PromiseCoverageTests.test_repository_runtime_specimens_use_the_production_reader",
+        "PromiseCoverageTests.test_runtime_binding_refuses_missing_evidence_reference_and_header_mismatch",
+        "PromiseCoverageTests.test_runtime_binding_source_must_be_the_covered_positive_surface",
+        "PromiseCoverageTests.test_runtime_catalogue_reports_every_independent_row_fault",
+        "PromiseCoverageTests.test_runtime_evidence_references_are_unique",
+        "PromiseCoverageTests.test_runtime_satisfying_classes_require_corresponding_references",
+        "PromiseCoverageTests.test_runtime_specimen_reads_refuse_hostile_paths_and_bytes",
+        "PromiseCoverageTests.test_runtime_unknown_codes_are_unique",
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "authorise a transition without its consequence-specific evidence path"
+      ],
+      "checker_function": "check_obligations",
+      "class": "level-3-separation",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only obligations",
+      "finding_codes": [
+        "PM090"
+      ],
+      "issue_obligation": "level-3 separation",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 4,
+        "kind": "consequence specimens"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-consequence-separation"
+      ],
+      "recovery_actions": [
+        "supply the exact evidence required by the declared consequence and rerun the transition check"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json"
+      ],
+      "tests": [
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean",
+        "PromiseSemanticGateTests.test_evidence_scope_must_match_the_transition",
+        "PromiseSemanticGateTests.test_evidence_subject_must_match_the_transition",
+        "PromiseSemanticGateTests.test_level_three_adds_authority_and_independent_evidence",
+        "PromiseSemanticGateTests.test_level_three_refuses_a_level_two_only_replay",
+        "PromiseSemanticGateTests.test_mismatched_transition_declaration_is_refused",
+        "PromiseSemanticGateTests.test_missing_transition_declaration_is_refused",
+        "PromiseSemanticGateTests.test_stale_transition_declaration_digest_is_refused",
+        "PromiseSemanticGateTests.test_unknown_or_malformed_evidence_cannot_authorise",
+        "PromiseSemanticGateTests.test_visible_unknowns_cannot_authorise_a_positive_transition"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "authorise a transition through an unresolved, mismatched, expired or revoked exception"
+      ],
+      "checker_function": "check_exception_fixture",
+      "class": "exception-resolution",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only exceptions",
+      "finding_codes": [
+        "PM093",
+        "PM038"
+      ],
+      "issue_obligation": "exception resolution",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 1,
+        "kind": "exception specimen"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-exception-resolution"
+      ],
+      "recovery_actions": [
+        "restore a digest-bound authority and reason record, matching promise, gate, subject and scope, valid expiry and explicit revocation state"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/exceptions/expired.json"
+      ],
+      "tests": [
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean",
+        "PromiseSemanticGateTests.test_absent_exception_reference_is_refused",
+        "PromiseSemanticGateTests.test_calendar_invalid_exception_evaluation_time_is_refused",
+        "PromiseSemanticGateTests.test_calendar_invalid_exception_expiry_is_refused",
+        "PromiseSemanticGateTests.test_declared_exceptions_require_structured_canonical_records",
+        "PromiseSemanticGateTests.test_exception_gate_must_match_the_transition",
+        "PromiseSemanticGateTests.test_exception_promise_must_match_the_transition",
+        "PromiseSemanticGateTests.test_exception_scope_must_match_the_transition",
+        "PromiseSemanticGateTests.test_exception_subject_must_match_the_transition",
+        "PromiseSemanticGateTests.test_exception_without_a_durable_reason_record_is_refused",
+        "PromiseSemanticGateTests.test_expired_exception_is_refused",
+        "PromiseSemanticGateTests.test_non_expiring_exception_requires_a_reason",
+        "PromiseSemanticGateTests.test_revoked_exception_is_refused",
+        "PromiseSemanticGateTests.test_unresolvable_exception_authority_is_refused",
+        "PromiseStructureValidationTests.test_exception_keywords_without_structured_attribution_are_refused",
+        "PromiseStructureValidationTests.test_unattributed_exception_fixture_is_refused"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "admit recorded RPC evidence to the pinned answer evidence set",
+        "admit source-linked chunks as retrieval input",
+        "admit the checked observation prefix to the named comparison cohort",
+        "bind the bounded Janus result to its host-specific evidence",
+        "bind the promoted Berean release digest to its declared evidence",
+        "consume the recomputable comparison as bounded integration evidence",
+        "consume the verified statement as an artefact-evidence binding"
+      ],
+      "checker_function": "check_composition",
+      "class": "composition",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only composition",
+      "finding_codes": [
+        "PM097"
+      ],
+      "issue_obligation": "all seven composition clauses",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 7,
+        "kind": "composition relations"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-composition-lemma-boundary",
+        "law-composition-lazarus-boundary",
+        "law-composition-berean-boundary",
+        "law-composition-janus-boundary",
+        "law-composition-ariadne-boundary",
+        "law-composition-fiat-observation-boundary",
+        "law-composition-synkrisis-boundary"
+      ],
+      "recovery_actions": [
+        "inspect the cohort, findings, report, counterevidence, and unknown runs",
+        "inspect the pinned corpus, answers, and evaluation record",
+        "rerun against the named host adapter and bounded manifest",
+        "return to the cited source bytes",
+        "return to the validator, capture, and bound receipt",
+        "run an external signature verifier bound to the statement",
+        "run the named proof checker for the exact fixture"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/composition/cases.json"
+      ],
+      "tests": [
+        "PromiseCompositionGateTests.test_composition_refuses_a_dropped_inherited_class",
+        "PromiseCompositionGateTests.test_composition_refuses_an_undeclared_consumer_addition",
+        "PromiseCompositionGateTests.test_composition_refuses_an_undeclared_producer_class",
+        "PromiseCompositionGateTests.test_composition_refuses_an_unknown_native_promise_identity",
+        "PromiseCompositionGateTests.test_duplicate_relation_identity_is_refused",
+        "PromiseCompositionGateTests.test_recorded_evidence_cannot_be_promoted_to_proved_by_composition",
+        "PromiseCompositionGateTests.test_removing_each_relation_is_refused_by_stable_identity",
+        "PromiseCompositionGateTests.test_unknown_relation_identity_is_refused",
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "accept a root law with a missing or duplicated normative section",
+        "accept an authored law that omits a required promise declaration field",
+        "accept an authored law whose governing-principle sentence changed",
+        "publish generated installation copies without the canonical-source identity",
+        "publish or consume a law under a competing contract identity"
+      ],
+      "checker_function": "check_law",
+      "class": "field-semantics",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only law,obligations",
+      "finding_codes": [
+        "PM005",
+        "PM006",
+        "PM007",
+        "PM008",
+        "PM009"
+      ],
+      "issue_obligation": "semantic contract fields",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 5,
+        "kind": "law obligation specimens"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-contract-identity",
+        "law-generated-copy-identity",
+        "law-governing-principle",
+        "law-declaration-fields",
+        "law-required-sections"
+      ],
+      "recovery_actions": [
+        "restore all nine required schema fields and rerun the obligation check",
+        "restore every required heading exactly once and rerun the obligation check",
+        "restore the canonical generated-copy marker, regenerate copies, and rerun the obligation check",
+        "restore the one promise-machine/v1 contract identity and rerun the obligation check",
+        "restore the settled governing-principle sentence and rerun the obligation check"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/obligations/law-contract-identity.json",
+        "tests/fixtures/promise-machine/obligations/law-declaration-fields.json",
+        "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
+        "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
+        "tests/fixtures/promise-machine/obligations/law-required-sections.json"
+      ],
+      "tests": [
+        "PromiseObligationTests.test_a_retained_row_detects_removal_of_its_production_gate",
+        "PromiseObligationTests.test_compact_self_closing_raw_text_tags_do_not_hide_law_headings",
+        "PromiseObligationTests.test_contract_identity_gate_ignores_an_html_comment_decoy",
+        "PromiseObligationTests.test_contract_identity_gate_rejects_an_unrecognised_declaration",
+        "PromiseObligationTests.test_declaration_field_gate_ignores_an_indented_code_decoy",
+        "PromiseObligationTests.test_each_normative_root_promise_section_is_required",
+        "PromiseObligationTests.test_governing_principle_gate_ignores_a_fenced_quote_decoy",
+        "PromiseObligationTests.test_law_gates_honour_remaining_html_block_boundaries",
+        "PromiseObligationTests.test_law_gates_ignore_type_seven_closing_tag_blocks",
+        "PromiseObligationTests.test_law_gates_reject_non_commonmark_line_separator_decoys",
+        "PromiseObligationTests.test_malformed_type_six_slash_tags_do_not_hide_law_headings",
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_obligation_id_cannot_be_rebound_to_another_production_gate",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean",
+        "PromiseObligationTests.test_required_section_gate_counts_commonmark_heading_forms",
+        "PromiseObligationTests.test_required_section_gate_ignores_a_fenced_heading_decoy",
+        "PromiseObligationTests.test_required_section_gate_ignores_yaml_frontmatter_decoy",
+        "PromiseObligationTests.test_required_section_gate_rejects_container_nested_heading_decoys",
+        "PromiseObligationTests.test_section_gates_stop_at_commonmark_h1_and_h2_boundaries",
+        "PromiseObligationTests.test_unclosed_obligation_comment_cannot_expose_hidden_law_content"
+      ]
+    },
+    {
+      "blocked_transitions": [],
+      "checker_function": "check_overlays",
+      "class": "upstream-provenance",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only overlays",
+      "finding_codes": [
+        "PM052",
+        "PM054",
+        "PM056",
+        "PM057",
+        "PM060",
+        "PM061",
+        "PM062",
+        "PM063"
+      ],
+      "issue_obligation": "upstream vendored identity",
+      "marker_backed": false,
+      "negative_cases": {
+        "count": 12,
+        "kind": "declared provenance cases"
+      },
+      "network_findings": [
+        "PV003",
+        "PV004"
+      ],
+      "obligation_ids": [],
+      "recovery_actions": [],
+      "specimens": [],
+      "tests": [
+        "PromiseCoverageTests.test_duplicate_json_key_is_refused",
+        "PromiseCoverageTests.test_missing_coverage_row_is_refused",
+        "PromiseOverlayTests.test_container_hidden_overlay_declaration_is_refused",
+        "PromiseOverlayTests.test_missing_or_duplicate_provenance_field_is_refused",
+        "PromiseOverlayTests.test_mutable_commit_and_switched_repository_host_are_refused",
+        "PromiseOverlayTests.test_one_byte_vendored_mutation_is_refused",
+        "PromiseOverlayTests.test_overlay_fields_cannot_be_borrowed_from_a_later_section",
+        "PromiseOverlayTests.test_verification_status_preserves_unknown_and_matches_digests",
+        "VendoredUpstreamVerifierTests.test_oversized_or_digest_mismatched_upstream_bytes_are_refused",
+        "VendoredUpstreamVerifierTests.test_redirect_is_refused_without_following_it",
+        "VendoredUpstreamVerifierTests.test_slow_final_read_cannot_cross_the_total_deadline"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "emit or consume an incomplete refusal record"
+      ],
+      "checker_function": "check_obligations",
+      "class": "refusal-shape",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only obligations",
+      "finding_codes": [
+        "PM092"
+      ],
+      "issue_obligation": "complete refusal reports",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 1,
+        "kind": "finding specimen"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-refusal-shape"
+      ],
+      "recovery_actions": [
+        "restore the complete refusal fields and render text and JSON again from the same finding"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/findings/missing-recovery.json"
+      ],
+      "tests": [
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean",
+        "PromiseSemanticGateTests.test_refusal_payload_requires_every_actionable_field",
+        "PromiseSemanticGateTests.test_text_and_json_reports_share_one_actionable_finding"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "authorise a positive transition from unknown, not-run, missing, stale or unresolved evidence"
+      ],
+      "checker_function": "check_obligations",
+      "class": "unknown-evidence",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only obligations",
+      "finding_codes": [
+        "PM091"
+      ],
+      "issue_obligation": "non-authorising unknown evidence",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 1,
+        "kind": "consequence specimen"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-unknowns-non-authorising"
+      ],
+      "recovery_actions": [
+        "record resolved positive evidence for the same subject and scope, preserve remaining unknowns, and rerun the transition check"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/consequences/unknown.json"
+      ],
+      "tests": [
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean",
+        "PromiseSemanticGateTests.test_missing_evidence_cannot_authorise",
+        "PromiseSemanticGateTests.test_not_run_evidence_status_cannot_authorise",
+        "PromiseSemanticGateTests.test_stale_evidence_status_cannot_authorise",
+        "PromiseSemanticGateTests.test_unknown_or_malformed_evidence_cannot_authorise",
+        "PromiseSemanticGateTests.test_visible_unknowns_cannot_authorise_a_positive_transition"
+      ]
+    },
+    {
+      "blocked_transitions": [],
+      "checker_function": "check_history",
+      "class": "id-history",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only history",
+      "finding_codes": [
+        "PM100",
+        "PM102",
+        "PM103",
+        "PM104",
+        "PM105",
+        "PM106"
+      ],
+      "issue_obligation": "historical ID stability",
+      "marker_backed": false,
+      "negative_cases": {
+        "count": 9,
+        "kind": "declared history cases"
+      },
+      "network_findings": [],
+      "obligation_ids": [],
+      "recovery_actions": [],
+      "specimens": [],
+      "tests": [
+        "PromiseHistoryTests.test_broken_rename_edge_is_refused",
+        "PromiseHistoryTests.test_deleted_or_duplicated_history_id_is_refused",
+        "PromiseHistoryTests.test_invalid_rename_shape_returns_a_stable_finding",
+        "PromiseHistoryTests.test_missing_declaration_and_undeclared_active_id_are_refused",
+        "PromiseHistoryTests.test_non_object_history_returns_a_stable_finding",
+        "PromiseHistoryTests.test_semantic_split_cannot_reuse_one_id",
+        "PromiseHistoryTests.test_unhashable_continuity_action_returns_a_stable_finding",
+        "PromiseHistoryTests.test_unrecorded_retirement_is_refused"
+      ]
+    },
+    {
+      "blocked_transitions": [
+        "run a core checker capable of network, credential, shell, subprocess, dynamic-code or evidence-command access"
+      ],
+      "checker_function": "check_core_imports",
+      "class": "no-side-effect",
+      "disposition": "refused-with-declared-finding",
+      "evaluator": "python3 scripts/promise_machine.py check --only imports",
+      "finding_codes": [
+        "PM094"
+      ],
+      "issue_obligation": "enforced no-network and no-evidence-command boundary",
+      "marker_backed": true,
+      "negative_cases": {
+        "count": 1,
+        "kind": "import specimen"
+      },
+      "network_findings": [],
+      "obligation_ids": [
+        "law-core-checker-side-effects"
+      ],
+      "recovery_actions": [
+        "remove the forbidden import or call and rerun the offline core-checker guard"
+      ],
+      "specimens": [
+        "tests/fixtures/promise-machine/imports/subprocess.json"
+      ],
+      "tests": [
+        "PromiseObligationTests.test_marked_structural_claims_match_their_production_gates",
+        "PromiseObligationTests.test_repository_obligation_registry_and_specimens_are_clean",
+        "PromiseSemanticGateTests.test_aliases_and_dynamic_lookups_cannot_hide_forbidden_calls",
+        "PromiseSemanticGateTests.test_forbidden_network_credential_and_process_imports_are_refused",
+        "PromiseSemanticGateTests.test_forbidden_shell_dynamic_and_environment_calls_are_refused"
+      ]
+    }
+  ],
+  "host": {
+    "machine": "arm64",
+    "platform": "darwin",
+    "python": "3.14.6"
+  },
+  "inputs": [
+    {
+      "bytes": 32144,
+      "path": "PROMISE_MACHINE.md",
+      "sha256": "ae019700f378a250fe08a3d6cb68c0553ee60a410cbb6035d3c9c3cd2866b34f"
+    },
+    {
+      "bytes": 9630,
+      "path": "tests/promise_machine_obligations.json",
+      "sha256": "384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f"
+    },
+    {
+      "bytes": 246806,
+      "path": "tests/promise_machine_coverage.json",
+      "sha256": "07e08fa81b129767f49a19d1a99185cfabd270fe2a0627a087624d7da8e00dd8"
+    },
+    {
+      "bytes": 49776,
+      "path": "tests/promise_machine_id_history.json",
+      "sha256": "3317259b6d9ecabbebd07e968bba9114a646a8413fa83461a1bd890141234844"
+    },
+    {
+      "bytes": 26778,
+      "path": "tests/fixtures/promise-machine/composition/cases.json",
+      "sha256": "112f898050ceebf1236a03f6fc4dbe79f0411e9f53c1ce2a0aff94e8ec42e053"
+    },
+    {
+      "bytes": 685,
+      "path": "tests/fixtures/promise-machine/history/cases.json",
+      "sha256": "9051ac6c291330f527705177bffa70985657ec7f96707b7a9349d4e574cfc3f0"
+    },
+    {
+      "bytes": 935,
+      "path": "tests/fixtures/promise-machine/upstream-provenance/cases.json",
+      "sha256": "f60821b1edf450d47a581f12562c13e1931c2b09c960bce2fb8a0b1767c154cf"
+    },
+    {
+      "bytes": 1911,
+      "path": "docs/promise-machine/obligation-gates/evaluation-answers.json",
+      "sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855"
+    },
+    {
+      "bytes": 3231,
+      "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+      "sha256": "1314c68a5a5ee664d0a4078338693eba5405773490d28000c41417f87ec6a4d3"
+    }
+  ],
+  "issue": "wildcat-finance/skills#884",
+  "non_goals": [
+    "Rewriting any skill result into a framework-owned schema.",
+    "Claiming that the eighty declared promises are true in fact.",
+    "Replacing Fizz, Solidity Auditor, Hypomnema, Sapheneia, or Vulgate domain evaluation with a framework assertion.",
+    "Reporting the recorded model grade as domain execution.",
+    "Making any GitHub mutation: this demonstration is local and read-only outside its own committed record."
+  ],
+  "schema": "promise-machine-obligation-demonstration/v1",
+  "step": 7,
+  "unknowns": [
+    "The nine history cases and twelve upstream-provenance cases are declared inventories: no code reads either cases.json, so each case name is joined to the test that exercises its finding code by this record rather than by a gate. The finding codes themselves are exercised by the named methods.",
+    "PM005 is emitted by the checker but no contract-suite method names it literally; its coverage rests on the registry-wide specimen test rather than on a dedicated case.",
+    "The eleven-case evaluation grade is one recorded run of one named local model on one date. It establishes labelled-case classification only, and says nothing about repeatability, variance, or a second model.",
+    "scripts/verify_vendored_provenance.py reaches upstream over the network and was deliberately not run. Upstream byte identity at the pinned commits is not re-established here; only the locally recorded digests and status fields were checked.",
+    "Every exit status here is one run on one host. Windows, Linux, and any other CPython build remain unobserved.",
+    "Durations were observed but are not recorded as a budget, a threshold, or an optimisation claim."
+  ]
+}

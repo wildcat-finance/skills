@@ -1,8 +1,8 @@
 {
-  "schema": "promise-machine-labelled-cases/v1",
+  "schema": "promise-machine-evaluation-cases/v1",
   "cases": {
     "hypomnema-record-placement": {
-      "evaluation": {"model": "not-run", "prompt": "Review record placement against the canonical Hypomnema contract.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; forward model behaviour not tested."},
+      "request": "Review record placement against the canonical Hypomnema contract.",
       "P": {"disposition": "accept", "scenario": "The step inventory names every expensive decision and each has an established record with rejected alternatives and resolving pointers.", "boundary": "Acceptance covers the decisions identified in the named step."},
       "M": {"disposition": "refuse", "scenario": "A durable interface is introduced without a reasoned record or rejected alternatives.", "boundary": "An expensive unidentified choice cannot be treated as settled."},
       "S": {"disposition": "refuse", "scenario": "The cited decision record belongs to another step and repository revision.", "boundary": "A record for another subject does not establish this step's decision."},
@@ -10,7 +10,7 @@
       "R": {"disposition": "recover", "scenario": "Inventory the missing choice, record its reason and alternatives, repair every pointer and repeat the review.", "boundary": "Recovery supplies a new record without rewriting the refused review."}
     },
     "kronos-fiat-dispatch": {
-      "evaluation": {"model": "not-run", "prompt": "Decide whether a ranked Kronos job may enter Fiat under the canonical authority boundary.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; user authority remains external evidence."},
+      "request": "Decide whether a ranked Kronos job may enter Fiat under the canonical authority boundary.",
       "P": {"disposition": "accept", "scenario": "The user explicitly authorised Kronos execution, the selected job remains current and unparked, and Fiat returned a new init receipt.", "boundary": "Acceptance authorises one dispatch, not completion or global optimality."},
       "M": {"disposition": "refuse", "scenario": "A valid ranking exists but no explicit user instruction authorises Kronos execution.", "boundary": "Ranking evidence cannot supply user authority."},
       "S": {"disposition": "refuse", "scenario": "The selected ledger or held-job digest changed after ranking and before dispatch.", "boundary": "A stale selection cannot authorise a new Fiat run."},
@@ -18,7 +18,7 @@
       "R": {"disposition": "recover", "scenario": "Return to rank-only output, refresh scope and eligibility, obtain explicit authority or park the blocker, then rerank.", "boundary": "Recovery creates a fresh selection and authority record."}
     },
     "vulgate-register-rewrite": {
-      "evaluation": {"model": "not-run", "prompt": "Rewrite a source passage under Vulgate while holding all content constant.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; cross-model content parity remains unknown."},
+      "request": "Rewrite a source passage under Vulgate while holding all content constant.",
       "P": {"disposition": "accept", "scenario": "The source and rewrite are compared line by line and every fact, qualifier, uncertainty, relation and required structure survives in the selected register.", "boundary": "Acceptance covers content parity for the named pair of texts."},
       "M": {"disposition": "refuse", "scenario": "The rewrite is supplied without its source or without a completed parity comparison.", "boundary": "A pleasant register cannot substitute for source evidence."},
       "S": {"disposition": "refuse", "scenario": "The source bytes belong to another draft than the rewrite under review.", "boundary": "Parity requires the exact source subject."},
@@ -26,7 +26,7 @@
       "R": {"disposition": "recover", "scenario": "Restore the lost caveat or relation, redo only the affected sentence and repeat the complete source comparison.", "boundary": "Recovery preserves the earlier refusal and supplies a corrected rewrite."}
     },
     "hexaemeron-fizz-harness-campaign": {
-      "evaluation": {"model": "not-run", "prompt": "Classify a Fizz harness and campaign record under the digest-bound overlay.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; no campaign was run by this fixture."},
+      "request": "Classify a Fizz harness and campaign result under its digest-bound overlay.",
       "P": {"disposition": "accept", "scenario": "The digest matches, the generated harness builds and the named engine campaign ran with preserved configuration and retained results.", "boundary": "Acceptance covers only the exercised harness, properties and campaign."},
       "M": {"disposition": "refuse", "scenario": "A harness was generated but no campaign command or actual result was retained.", "boundary": "Generated files are not evidence that a campaign ran."},
       "S": {"disposition": "refuse", "scenario": "The overlay digest or source snapshot differs from the harness and campaign record.", "boundary": "Evidence from another instruction or source subject cannot satisfy the overlay."},
@@ -34,7 +34,7 @@
       "R": {"disposition": "recover", "scenario": "Reconcile the digest, regenerate from the named source, restore the configuration, run the engine and retain its result.", "boundary": "Recovery requires a real campaign rather than an inferred one."}
     },
     "hexaemeron-fizz-convert-properties": {
-      "evaluation": {"model": "not-run", "prompt": "Classify a Fizz Convert result under the digest-bound overlay.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; no conversion was run by this fixture."},
+      "request": "Classify a Fizz Convert result under its digest-bound overlay.",
       "P": {"disposition": "accept", "scenario": "One selected property is translated into a wired assertion, the harness builds and only its checklist entry changes.", "boundary": "Acceptance proves mechanical conversion and buildability for that property."},
       "M": {"disposition": "refuse", "scenario": "The assertion is unwired, the build fails or the matching checklist entry is unchanged.", "boundary": "An incomplete mechanical conversion cannot be marked implemented."},
       "S": {"disposition": "refuse", "scenario": "The overlay digest, selected property or harness differs from the conversion record.", "boundary": "Evidence must name the exact instruction, property and target harness."},
@@ -42,7 +42,7 @@
       "R": {"disposition": "recover", "scenario": "Clarify one property, repair its assertion and wiring, rebuild and update only the matching checklist entry.", "boundary": "Recovery does not broaden the selected property."}
     },
     "hexaemeron-fizz-sync-drift": {
-      "evaluation": {"model": "not-run", "prompt": "Classify a Fizz Sync result under the digest-bound overlay.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; no sync was run by this fixture."},
+      "request": "Classify a Fizz Sync result under its digest-bound overlay.",
       "P": {"disposition": "accept", "scenario": "Before and after snapshots bound the drift, every item is classified, stale properties are quarantined, stubs and snapshot are refreshed and the harness builds.", "boundary": "Acceptance covers bounded interface reconciliation."},
       "M": {"disposition": "refuse", "scenario": "A snapshot is missing, drift is unclassified, stale properties disappear or the refreshed harness does not build.", "boundary": "Incomplete drift evidence blocks reconciliation."},
       "S": {"disposition": "refuse", "scenario": "The overlay digest or either source snapshot belongs to another harness revision.", "boundary": "The reconciliation record is subject-bound."},
@@ -50,7 +50,7 @@
       "R": {"disposition": "recover", "scenario": "Restore both snapshots, classify every drift item, quarantine stale properties, regenerate affected stubs and rebuild.", "boundary": "Recovery keeps unresolved properties visible."}
     },
     "hexaemeron-x-ray-preaudit": {
-      "evaluation": {"model": "not-run", "prompt": "Classify an X-Ray result under the digest-bound overlay.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; no pre-audit was run by this fixture."},
+      "request": "Classify an X-Ray result under its digest-bound overlay.",
       "P": {"disposition": "accept", "scenario": "The digest, repository snapshot and source inventory bind all four required pre-audit artefacts and their unresolved gaps.", "boundary": "Acceptance makes the artefacts scoped orientation material."},
       "M": {"disposition": "refuse", "scenario": "A required artefact, source boundary, citation or unresolved-gap record is absent.", "boundary": "Incomplete preparation cannot be presented as the prescribed result."},
       "S": {"disposition": "refuse", "scenario": "The overlay digest or repository snapshot differs from the artefacts.", "boundary": "Pre-audit evidence applies only to its named source subject."},
@@ -58,7 +58,7 @@
       "R": {"disposition": "recover", "scenario": "Reconcile the digest and source boundary, regenerate missing or stale views and keep every gap explicit.", "boundary": "Recovery produces new scoped orientation material."}
     },
     "hexaemeron-solidity-audit-report": {
-      "evaluation": {"model": "not-run", "prompt": "Classify a Solidity Auditor result under the digest-bound overlay.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; no audit was run by this fixture."},
+      "request": "Classify a Solidity Auditor result under its digest-bound overlay.",
       "P": {"disposition": "accept", "scenario": "All twelve roles inspect the exact scope, every raw result crosses the wait barrier and the final report records deduplication, completeness and judgement.", "boundary": "Acceptance establishes performance of the prescribed scoped review process."},
       "M": {"disposition": "refuse", "scenario": "Fewer than twelve role results exist, raw output is missing or synthesis begins before the wait barrier.", "boundary": "An incomplete role set cannot satisfy the report promise."},
       "S": {"disposition": "refuse", "scenario": "The overlay digest, repository revision or Solidity scope differs from the role outputs and final report.", "boundary": "The report is bound to the exact reviewed subject."},

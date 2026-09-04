@@ -1,0 +1,187 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "probitas_dossier_verification": {
+          "authorised_by": {
+            "id": "promise-owner:probitas-dossier-verification",
+            "reference": {
+              "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
+              "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
+            }
+          },
+          "binding": {
+            "promise_id": "probitas-dossier-verification",
+            "scope": "structural binding for probitas-dossier-verification",
+            "subject": "runtime source plugins/probitas/tests/test_demo.py#test_it_exits_zero"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/probitas/tests/test_demo.py",
+            "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/probitas/tests/test_demo.py",
+              "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind probitas-dossier-verification without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:probitas-dossier-verification",
+          "reference": {
+            "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
+            "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/probitas/tests/test_demo.py",
+            "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/probitas/tests/test_demo.py",
+          "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+        },
+        "promise_id": "probitas-dossier-verification",
+        "scope": "structural binding for probitas-dossier-verification",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/probitas/tests/test_demo.py#test_it_exits_zero",
+        "transition": {
+          "action": "structurally bind probitas-dossier-verification without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "probitas_dossier_verification": {
+          "authorised_by": {
+            "id": "promise-owner:probitas-dossier-verification",
+            "reference": {
+              "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
+              "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
+            }
+          },
+          "binding": {
+            "promise_id": "probitas-dossier-verification",
+            "scope": "structural binding for probitas-dossier-verification",
+            "subject": "runtime source plugins/probitas/tests/test_demo.py#test_it_exits_zero"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/probitas/tests/test_demo.py",
+            "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/probitas/tests/test_demo.py",
+              "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+            }
+          ],
+          "source_digest": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb",
+          "transition": {
+            "action": "structurally bind probitas-dossier-verification without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:probitas-dossier-verification",
+          "reference": {
+            "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
+            "sha256": "00bfcd1a1dc66c02f79adb1d5c57ac676a80deeefeec4e37e1b74b72bb29c1cf"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/probitas/tests/test_demo.py",
+            "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/probitas/tests/test_demo.py",
+          "sha256": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb"
+        },
+        "promise_id": "probitas-dossier-verification",
+        "scope": "structural binding for probitas-dossier-verification",
+        "source_digest": "5431f4bfa839cc5a8ea1cb929fd85978d2805872a4b00dc77bfdfec5ee5e66fb",
+        "subject": "runtime source plugins/probitas/tests/test_demo.py#test_it_exits_zero",
+        "transition": {
+          "action": "structurally bind probitas-dossier-verification without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}
