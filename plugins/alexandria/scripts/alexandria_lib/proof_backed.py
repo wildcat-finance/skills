@@ -85,6 +85,8 @@ def _verify_capture(manifest, components, read_component, capture) -> None:
     verify_fixture, lazarus_error = _lazarus_api()
 
     temporary = Path(tempfile.mkdtemp(prefix="alexandria-lazarus-"))
+    failure = None
+    cleanup_failure = None
     try:
         (temporary / "manifest.json").write_bytes(manifest_bytes)
         for entry, component in mapped:
@@ -97,10 +99,24 @@ def _verify_capture(manifest, components, read_component, capture) -> None:
             _refuse(capture, f"Lazarus refused the fixture: {exc}")
         plan = load_bytes((temporary / "plan.json").read_bytes(), "verified Lazarus plan")
         _verify_binding(capture, report, plan)
+    except AlexandriaError as exc:
+        failure = exc
     except OSError as exc:
-        _refuse(capture, f"cannot reconstruct the Lazarus fixture: {exc}")
+        failure = AlexandriaError(
+            _prefix(capture) + f"cannot reconstruct the Lazarus fixture: {exc}"
+        )
     finally:
-        shutil.rmtree(temporary)
+        try:
+            shutil.rmtree(temporary)
+        except OSError as exc:
+            cleanup_failure = exc
+    if failure is not None:
+        raise failure
+    if cleanup_failure is not None:
+        _refuse(
+            capture,
+            f"cannot remove the reconstruction directory: {cleanup_failure}",
+        )
 
 
 def _manifest_entries(capture, lazarus_manifest):

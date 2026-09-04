@@ -424,6 +424,38 @@ class ProofBackedCompatibilityTests(ProofBackedTestCase):
         self.assertEqual(verify(self.release), release_id)
 
 
+class ProofBackedCleanupTests(ProofBackedTestCase):
+    def test_cleanup_failure_after_success_is_a_named_refusal(self):
+        self.build()
+        unavailable_cleanup = SimpleNamespace(
+            rmtree=mock.Mock(side_effect=OSError("cleanup denied"))
+        )
+        with mock.patch.object(proof_backed, "shutil", unavailable_cleanup):
+            with self.assertRaises(AlexandriaError) as raised:
+                verify(self.release)
+        self.assertEqual(
+            str(raised.exception),
+            "capture state-proof proof-backed-state is not earned: "
+            "cannot remove the reconstruction directory: cleanup denied",
+        )
+
+    def test_cleanup_failure_does_not_replace_the_first_refusal(self):
+        plan = self.plan()
+        plan["captures"][0]["scope"]["finality"] = "provider-reported"
+        self.write_plan(plan)
+        unavailable_cleanup = SimpleNamespace(
+            rmtree=mock.Mock(side_effect=OSError("cleanup denied"))
+        )
+        with mock.patch.object(proof_backed, "shutil", unavailable_cleanup):
+            with self.assertRaises(AlexandriaError) as raised:
+                self.build()
+        self.assertEqual(
+            str(raised.exception),
+            "capture state-proof proof-backed-state is not earned: finality must be "
+            "unknown because Lazarus proves block binding but reports no finality class",
+        )
+
+
 class ProofBackedRealFixtureTests(ProofBackedTestCase):
     def test_aave_v4_nested_real_chain_fixture_verifies(self):
         shutil.rmtree(self.input / "fixture")
