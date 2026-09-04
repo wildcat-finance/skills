@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from pathlib import Path
+import re
 import shutil
 import socket
 import stat
@@ -87,6 +88,11 @@ class ProofBackedTestCase(unittest.TestCase):
             SimpleNamespace(mkdtemp=record),
         )
 
+    def assert_exact_refusal(self, action, reason):
+        expected = "capture state-proof proof-backed-state is not earned: " + reason
+        with self.assertRaisesRegex(AlexandriaError, "^" + re.escape(expected) + "$"):
+            action()
+
     def assert_plan_refused(self, mutate, message, *, reconstruction=None):
         original = self.plan()
         expected_id = self.build()
@@ -97,11 +103,10 @@ class ProofBackedTestCase(unittest.TestCase):
         attempted = self.root / "attempted"
         created, tracker = self._tracked_reconstruction()
         with tracker:
-            with self.assertRaisesRegex(
-                AlexandriaError,
-                "^capture state-proof proof-backed-state is not earned: .*" + message,
-            ):
-                ingest(self.plan_path, attempted)
+            self.assert_exact_refusal(
+                lambda: ingest(self.plan_path, attempted),
+                message,
+            )
         if reconstruction is not None:
             self.assertEqual(bool(created), reconstruction)
         self.assertTrue(all(not path.exists() for path in created))
@@ -138,11 +143,10 @@ class ProofBackedTestCase(unittest.TestCase):
         attempted = self.root / "attempted"
         created, tracker = self._tracked_reconstruction()
         with tracker:
-            with self.assertRaisesRegex(
-                AlexandriaError,
-                "^capture state-proof proof-backed-state is not earned: .*" + message,
-            ):
-                ingest(self.plan_path, attempted)
+            self.assert_exact_refusal(
+                lambda: ingest(self.plan_path, attempted),
+                message,
+            )
         if reconstruction is not None:
             self.assertEqual(bool(created), reconstruction)
         self.assertTrue(all(not path.exists() for path in created))
@@ -208,7 +212,11 @@ class ProofBackedMappingTests(ProofBackedTestCase):
                 item for item in plan["components"] if item["path"] != "fixture/anchors.jsonl"
             ]
 
-        self.assert_plan_refused(mutate, "fixture path anchors\\.jsonl", reconstruction=False)
+        self.assert_plan_refused(
+            mutate,
+            "release has no component for Lazarus fixture path anchors.jsonl",
+            reconstruction=False,
+        )
 
     def test_changed_fixture_bytes_are_refused_by_lazarus_digest(self):
         release_id = self.build()
@@ -235,11 +243,10 @@ class ProofBackedMappingTests(ProofBackedTestCase):
 
         created, tracker = self._tracked_reconstruction()
         with tracker, mock.patch.object(derivation, "component_reader", changed_reader):
-            with self.assertRaisesRegex(
-                AlexandriaError,
-                "Lazarus refused the fixture: component size mismatch: anchors\\.jsonl",
-            ):
-                verify(self.release)
+            self.assert_exact_refusal(
+                lambda: verify(self.release),
+                "Lazarus refused the fixture: component size mismatch: anchors.jsonl",
+            )
         self.assertTrue(created)
         self.assertTrue(all(not path.exists() for path in created))
         self.assertEqual(_tree_bytes(self.release), unchanged)
@@ -248,14 +255,14 @@ class ProofBackedMappingTests(ProofBackedTestCase):
     def test_parent_traversal_is_refused_before_reconstruction(self):
         self.assert_manifest_refused(
             lambda value: value["components"][0].update(path="../escape"),
-            "\\.\\./escape",
+            "Lazarus component path '../escape' must stay below its declared root",
             reconstruction=False,
         )
 
     def test_absolute_path_is_refused_before_reconstruction(self):
         self.assert_manifest_refused(
             lambda value: value["components"][0].update(path="/absolute/escape"),
-            "/absolute/escape",
+            "Lazarus component path '/absolute/escape' must stay below its declared root",
             reconstruction=False,
         )
 
@@ -269,7 +276,7 @@ class ProofBackedMappingTests(ProofBackedTestCase):
 
         self.assert_manifest_refused(
             lambda value: value.pop("components"),
-            "manifest has no components list",
+            "Lazarus manifest has no components list",
             mutate_plan=no_coverage,
             reconstruction=False,
         )
@@ -296,7 +303,7 @@ class ProofBackedBindingTests(ProofBackedTestCase):
     def test_wrong_fixture_digest_reference_is_refused(self):
         self.assert_plan_refused(
             lambda plan: self._capture(plan)["source"].update(reference="0" * 64),
-            "source reference does not match",
+            "source reference does not match the Lazarus fixture digest",
             reconstruction=True,
         )
 
@@ -315,7 +322,11 @@ class ProofBackedBindingTests(ProofBackedTestCase):
                 "eip155:10:0x2222222222222222222222222222222222222222"
             ]
 
-        self.assert_plan_refused(mutate, "chain must match.*eip155:1", reconstruction=True)
+        self.assert_plan_refused(
+            mutate,
+            "chain must match the proved fixture chain eip155:1",
+            reconstruction=True,
+        )
 
     def test_full_dataset_scope_is_refused(self):
         def mutate(plan):
@@ -323,21 +334,27 @@ class ProofBackedBindingTests(ProofBackedTestCase):
             scope["kind"] = "full-dataset"
             scope.pop("subjects")
 
-        self.assert_plan_refused(mutate, "finite proof set is not a full dataset", reconstruction=True)
+        self.assert_plan_refused(
+            mutate,
+            "scope must be subject-scoped because a finite proof set is not a full dataset",
+            reconstruction=True,
+        )
 
     def test_subject_outside_proof_targets_is_refused(self):
         self.assert_plan_refused(
             lambda plan: self._capture(plan)["scope"].update(
                 subjects=["eip155:1:0x3333333333333333333333333333333333333333"]
             ),
-            "outside the fixture proof targets",
+            "subject eip155:1:0x3333333333333333333333333333333333333333 "
+            "is outside the fixture proof targets",
             reconstruction=True,
         )
 
     def _assert_finality_refused(self, finality):
         self.assert_plan_refused(
             lambda plan: self._capture(plan)["scope"].update(finality=finality),
-            "finality must be unknown",
+            "finality must be unknown because Lazarus proves block binding but reports no "
+            "finality class",
             reconstruction=True,
         )
 
@@ -358,11 +375,12 @@ class ProofBackedBindingTests(ProofBackedTestCase):
         )
 
     def test_wrong_block_hash_is_refused(self):
+        proved_hash = self.plan()["captures"][0]["scope"]["interval"]["block_hash"]
         self.assert_plan_refused(
             lambda plan: self._capture(plan)["scope"]["interval"].update(
                 block_hash="0x" + "0" * 64
             ),
-            "block_hash must match the proved block",
+            f"block_hash must match the proved block {proved_hash}",
             reconstruction=True,
         )
 
@@ -374,7 +392,7 @@ class ProofBackedBindingTests(ProofBackedTestCase):
                 "end": "0",
             }
 
-        self.assert_plan_refused(mutate, "interval must be a snapshot", reconstruction=True)
+        self.assert_plan_refused(mutate, "scope interval must be a snapshot", reconstruction=True)
 
     def test_snapshot_without_block_identifiers_is_refused(self):
         def mutate(plan):
@@ -382,7 +400,11 @@ class ProofBackedBindingTests(ProofBackedTestCase):
             interval.pop("block_number")
             interval.pop("block_hash")
 
-        self.assert_plan_refused(mutate, "snapshot must carry the proved block", reconstruction=True)
+        self.assert_plan_refused(
+            mutate,
+            "snapshot must carry the proved block number and hash",
+            reconstruction=True,
+        )
 
 
 class ProofBackedCompatibilityTests(ProofBackedTestCase):
@@ -418,8 +440,10 @@ class ProofBackedCompatibilityTests(ProofBackedTestCase):
             "_lazarus_api",
             side_effect=AlexandriaError(proof_backed.UNAVAILABLE_REASON),
         ):
-            with self.assertRaisesRegex(AlexandriaError, "Lazarus verifier is unavailable"):
-                verify(self.release)
+            self.assert_exact_refusal(
+                lambda: verify(self.release),
+                proof_backed.UNAVAILABLE_REASON,
+            )
         self.assertEqual(_tree_bytes(self.release), before)
         self.assertEqual(verify(self.release), release_id)
 
@@ -431,13 +455,10 @@ class ProofBackedCleanupTests(ProofBackedTestCase):
             rmtree=mock.Mock(side_effect=OSError("cleanup denied"))
         )
         with mock.patch.object(proof_backed, "shutil", unavailable_cleanup):
-            with self.assertRaises(AlexandriaError) as raised:
-                verify(self.release)
-        self.assertEqual(
-            str(raised.exception),
-            "capture state-proof proof-backed-state is not earned: "
-            "cannot remove the reconstruction directory: cleanup denied",
-        )
+            self.assert_exact_refusal(
+                lambda: verify(self.release),
+                "cannot remove the reconstruction directory: cleanup denied",
+            )
 
     def test_cleanup_failure_does_not_replace_the_first_refusal(self):
         plan = self.plan()
@@ -447,13 +468,11 @@ class ProofBackedCleanupTests(ProofBackedTestCase):
             rmtree=mock.Mock(side_effect=OSError("cleanup denied"))
         )
         with mock.patch.object(proof_backed, "shutil", unavailable_cleanup):
-            with self.assertRaises(AlexandriaError) as raised:
-                self.build()
-        self.assertEqual(
-            str(raised.exception),
-            "capture state-proof proof-backed-state is not earned: finality must be "
-            "unknown because Lazarus proves block binding but reports no finality class",
-        )
+            self.assert_exact_refusal(
+                self.build,
+                "finality must be unknown because Lazarus proves block binding but reports no "
+                "finality class",
+            )
 
 
 class ProofBackedRealFixtureTests(ProofBackedTestCase):
@@ -515,7 +534,8 @@ class ProofBackedRealFixtureTests(ProofBackedTestCase):
             lambda candidate: candidate["captures"][0]["scope"].update(
                 subjects=["eip155:1:0x3333333333333333333333333333333333333333"]
             ),
-            "outside the fixture proof targets",
+            "subject eip155:1:0x3333333333333333333333333333333333333333 "
+            "is outside the fixture proof targets",
             reconstruction=True,
         )
 
@@ -537,14 +557,19 @@ class ProofBackedPromiseCoverageTests(ProofBackedTestCase):
                 item for item in plan["components"] if item["path"] != "fixture/anchors.jsonl"
             ]
 
-        self.assert_plan_refused(mutate, "fixture path anchors\\.jsonl", reconstruction=False)
+        self.assert_plan_refused(
+            mutate,
+            "release has no component for Lazarus fixture path anchors.jsonl",
+            reconstruction=False,
+        )
 
     def test_alexandria_proof_backed_o_refuses_proof_overclaim(self):
         self.assert_plan_refused(
             lambda plan: plan["captures"][0]["scope"].update(
                 subjects=["eip155:1:0x3333333333333333333333333333333333333333"]
             ),
-            "outside the fixture proof targets",
+            "subject eip155:1:0x3333333333333333333333333333333333333333 "
+            "is outside the fixture proof targets",
             reconstruction=True,
         )
 
@@ -553,8 +578,10 @@ class ProofBackedPromiseCoverageTests(ProofBackedTestCase):
         broken = deepcopy(original)
         broken["captures"][0]["source"]["reference"] = "0" * 64
         self.write_plan(broken)
-        with self.assertRaisesRegex(AlexandriaError, "source reference does not match"):
-            self.build()
+        self.assert_exact_refusal(
+            self.build,
+            "source reference does not match the Lazarus fixture digest",
+        )
         self.assertFalse(self.release.exists())
         self.write_plan(original)
         release_id = self.build()
