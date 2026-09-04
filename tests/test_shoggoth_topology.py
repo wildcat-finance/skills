@@ -27,6 +27,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))  # noqa: E402  (locates shoggoth_topology.py)
@@ -203,6 +204,37 @@ class RefusalTests(unittest.TestCase):
                 self._read(root)
         self.assertEqual(caught.exception.code, "symlinked-entry")
 
+    def test_a_symlinked_ledger_leaf_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            ledger = (
+                root
+                / "plugins"
+                / "quarry"
+                / "skills"
+                / "granite"
+                / shoggoth_topology.LEDGER_NAME
+            )
+            outside = root / "outside-ledger.md"
+            outside.write_text("# outside\n", encoding="utf-8")
+            ledger.unlink()
+            ledger.symlink_to(outside)
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "symlinked-entry")
+
+    def test_a_dangling_symlinked_skills_root_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            skills = root / "plugins" / "quarry" / "skills"
+            skills.rename(skills.with_name("skills-real"))
+            skills.symlink_to(root / "missing-skills", target_is_directory=True)
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "unsafe-path")
+
     def test_a_source_outside_plugins_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -262,6 +294,264 @@ class RefusalTests(unittest.TestCase):
             with self.assertRaises(shoggoth_topology.TopologyError) as caught:
                 self._read(root)
         self.assertEqual(caught.exception.code, "duplicate-json-key")
+
+    def test_manifest_plugin_ids_cannot_traverse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            path = root / ".claude-plugin" / "marketplace.json"
+            body = json.loads(path.read_text(encoding="utf-8"))
+            body["plugins"][0]["name"] = "../../outside"
+            write_json(path, body)
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "invalid-plugin-id")
+
+    def test_manifest_plugin_source_must_name_its_own_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            for relative in (
+                Path(".claude-plugin") / "marketplace.json",
+                Path(".agents") / "plugins" / "marketplace.json",
+            ):
+                path = root / relative
+                body = json.loads(path.read_text(encoding="utf-8"))
+                entry = body["plugins"][0]
+                other = body["plugins"][1]["name"]
+                if isinstance(entry["source"], str):
+                    entry["source"] = f"./plugins/{other}"
+                else:
+                    entry["source"]["path"] = f"./plugins/{other}"
+                write_json(path, body)
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "path-outside-plugins")
+
+    def test_a_tree_only_governed_plugin_is_a_manifest_disagreement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            where = root / "plugins" / "sundial" / "skills" / "sundial"
+            where.mkdir(parents=True)
+            (where / shoggoth_topology.LEDGER_NAME).write_text(
+                "# ledger\n", encoding="utf-8"
+            )
+            (where / shoggoth_topology.ENTRY_NAME).write_text(
+                "# skill\n", encoding="utf-8"
+            )
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "manifest-disagreement")
+        self.assertEqual(caught.exception.detail["tree-only"], ["sundial"])
+
+    def test_tree_plugin_ids_are_validated_before_their_contents(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            (root / "plugins" / "Bad Plugin").mkdir()
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "invalid-plugin-id")
+
+    def test_nested_governed_skill_is_discovered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            where = root / "plugins" / "quarry" / "skills" / "nested" / "sundial"
+            where.mkdir(parents=True)
+            (where / shoggoth_topology.LEDGER_NAME).write_text(
+                "# ledger\n", encoding="utf-8"
+            )
+            (where / shoggoth_topology.ENTRY_NAME).write_text(
+                "# skill\n", encoding="utf-8"
+            )
+            derived = self._read(root)
+        self.assertIn(
+            "plugins/quarry/skills/nested/sundial", derived.governed
+        )
+        self.assertIn("sundial", derived.phase_ids)
+
+    def test_skill_tree_depth_is_bounded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            where = root / "plugins" / "quarry" / "skills"
+            depth_limit = getattr(shoggoth_topology, "MAX_SKILL_DEPTH", 8)
+            for depth in range(depth_limit + 1):
+                where /= f"layer-{depth}"
+            where.mkdir(parents=True)
+            (where / shoggoth_topology.LEDGER_NAME).write_text(
+                "# ledger\n", encoding="utf-8"
+            )
+            (where / shoggoth_topology.ENTRY_NAME).write_text(
+                "# skill\n", encoding="utf-8"
+            )
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "tree-oversized")
+
+    def test_governed_skill_id_must_be_portable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            where = root / "plugins" / "quarry" / "skills" / "Bad Skill"
+            where.mkdir()
+            (where / shoggoth_topology.LEDGER_NAME).write_text(
+                "# ledger\n", encoding="utf-8"
+            )
+            (where / shoggoth_topology.ENTRY_NAME).write_text(
+                "# skill\n", encoding="utf-8"
+            )
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "invalid-skill-id")
+
+    def test_duplicate_governed_skill_ids_are_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            where = root / "plugins" / "lantern" / "skills" / "granite"
+            where.mkdir(parents=True)
+            (where / shoggoth_topology.LEDGER_NAME).write_text(
+                "# ledger\n", encoding="utf-8"
+            )
+            (where / shoggoth_topology.ENTRY_NAME).write_text(
+                "# skill\n", encoding="utf-8"
+            )
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "duplicate-skill-id")
+
+    def test_entry_cap_stops_iteration_before_consuming_the_rest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            wide = root / "plugins" / "quarry" / "skills"
+            for index in range(shoggoth_topology.MAX_SKILLS_PER_PLUGIN + 2):
+                (wide / f"dummy-{index:04d}").touch()
+
+            real_scandir = shoggoth_topology.os.scandir
+
+            class CappedScan:
+                def __init__(self, target):
+                    self.context = real_scandir(target)
+                    self.iterator = None
+                    self.count = 0
+
+                def __enter__(self):
+                    self.iterator = self.context.__enter__()
+                    return self
+
+                def __exit__(self, *arguments):
+                    return self.context.__exit__(*arguments)
+
+                def __iter__(self):
+                    return self
+
+                def __next__(self):
+                    self.count += 1
+                    if self.count > shoggoth_topology.MAX_SKILLS_PER_PLUGIN + 1:
+                        raise AssertionError(
+                            "scanner consumed past the declared entry cap"
+                        )
+                    return next(self.iterator)
+
+            with (
+                patch.object(shoggoth_topology.os, "scandir", CappedScan),
+                patch.object(
+                    shoggoth_topology.os,
+                    "listdir",
+                    side_effect=AssertionError("unbounded listdir consumed the tree"),
+                ),
+            ):
+                with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                    shoggoth_topology._governed_skills(root, "quarry")
+        self.assertEqual(caught.exception.code, "tree-oversized")
+
+    def test_manifest_identity_must_stay_stable_through_the_read(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            manifest = root / ".claude-plugin" / "marketplace.json"
+            manifest_inode = manifest.stat().st_ino
+            replacement = manifest.read_text(encoding="utf-8").replace(
+                "quarry", "quarxy", 1
+            )
+            real_read = shoggoth_topology.os.read
+            changed = False
+
+            def racing_read(descriptor, amount):
+                nonlocal changed
+                chunk = real_read(descriptor, amount)
+                if (
+                    not changed
+                    and shoggoth_topology.os.fstat(descriptor).st_ino
+                    == manifest_inode
+                ):
+                    staged = manifest.with_suffix(".replacement")
+                    staged.write_text(replacement, encoding="utf-8")
+                    os.replace(staged, manifest)
+                    changed = True
+                return chunk
+
+            with patch.object(shoggoth_topology.os, "read", racing_read):
+                with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                    shoggoth_topology._read_confined_regular(
+                        root,
+                        shoggoth_topology.CLAUDE_MANIFEST,
+                        label="claude manifest",
+                    )
+            self.assertTrue(changed)
+        self.assertEqual(caught.exception.code, "file-changed-during-read")
+
+    def test_platform_without_no_follow_flags_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for flag in ("O_NOFOLLOW", "O_DIRECTORY"):
+                with self.subTest(flag=flag):
+                    with patch.object(shoggoth_topology.os, flag, 0):
+                        with self.assertRaises(
+                            shoggoth_topology.TopologyError
+                        ) as caught:
+                            shoggoth_topology._open_confined_directory(root, ())
+                    self.assertEqual(caught.exception.code, "unsupported-platform")
+
+    def test_regular_file_open_is_nonblocking_before_type_check(self):
+        if not getattr(shoggoth_topology.os, "O_NONBLOCK", 0):
+            self.skipTest("platform does not expose O_NONBLOCK")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            real_open = shoggoth_topology.os.open
+            checked_leaf = False
+
+            def checked_open(target, flags, *arguments, **keywords):
+                nonlocal checked_leaf
+                if target == "marketplace.json":
+                    checked_leaf = True
+                    self.assertTrue(flags & shoggoth_topology.os.O_NONBLOCK)
+                return real_open(target, flags, *arguments, **keywords)
+
+            with patch.object(shoggoth_topology.os, "open", checked_open):
+                shoggoth_topology._read_confined_regular(
+                    root,
+                    shoggoth_topology.CLAUDE_MANIFEST,
+                    label="claude manifest",
+                )
+            self.assertTrue(checked_leaf)
+
+    def test_a_symlinked_plugins_ancestor_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "root"
+            root.mkdir()
+            plant(root, self.specimen["plugins"])
+            outside = Path(tmp) / "outside-plugins"
+            (root / "plugins").rename(outside)
+            (root / "plugins").symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(caught.exception.code, "unsafe-path")
 
 
 class LiveTreeAgreementTests(unittest.TestCase):
