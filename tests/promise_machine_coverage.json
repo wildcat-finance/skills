@@ -29,7 +29,7 @@
       },
       {
         "path": "docs/decisions/ADR-074-digest-neutral-measured-corpus.md",
-        "sha256": "10bcd12317fe862bfe1a9c4a2abb683c6b7251279891962b54ab8a191b78b9b7"
+        "sha256": "504ed674633e3fb807837128a95faa50618206d696b7b847abdbd3a65fdfc4ff"
       }
     ],
     "fixtures": [
@@ -122,7 +122,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "5a4b1fbeb0e0ca80480ecad17a891efea9675bbd398ae997e94bbbd2a8c5e84e",
+      "sha256": "c63a4daf33e93e0979712eade1353b701f8fc9bef6ba6619ff9837dbb0c21ddf",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
@@ -139,7 +139,9 @@
         "test_stale_measurement_report_refuses",
         "test_stale_parity_report_refuses",
         "test_undefined_measurement_projection_refuses",
-        "test_undefined_parity_projection_refuses"
+        "test_undefined_parity_projection_refuses",
+        "test_an_edited_token_count_refuses_on_its_own",
+        "test_a_consistent_token_count_edit_is_not_detected"
       ]
     },
     "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"

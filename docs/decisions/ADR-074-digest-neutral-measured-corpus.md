@@ -173,6 +173,22 @@ boundary. `test_no_reviewed_span_carries_a_bound_digest` observes that no span
 would be changed by the projection anyway, so measuring it raw is a checked
 fact rather than an exception carved out in the code.
 
+One trap comes with the widening, and it is latent rather than present. The
+projection substitutes a digest *value*, so it cannot tell a `source.sha256`
+apart from any other field carrying the same bytes. No fixture's reviewed span
+covers its whole file today, so no `span_sha256` holds the same bytes as its own
+`source.sha256` and the review boundary survives. A fourth fixture whose span ran
+from 0 to the file's length would make those two digests identical, the
+projection would neutralise the span digest along with the binding it aims at,
+and an in-span edit would stop moving the corpus digest: `in-span-edit-refusal`
+would fail while every other property still held.
+`test_the_reviewed_span_digest_is_distinct_from_the_projected_digest` asserts
+that `(start, end)` is not `(0, len(source))` for every fixture and that no
+`span_sha256` is in the bound set, so the trap is caught by the suite and not by
+`check`. Whoever adds a fourth fixture meets it as a test failure rather than as
+a refusal naming the cause; closing that gap means a new refusal in `check`, and
+a new refusal is a change to a version-1 contract, so it was not taken here.
+
 Every measured stream in both records carries a `projection` field naming the
 rule applied before it was counted, either `none` or
 `digest-neutral-bound-sha256/v1`. The name is versioned because it identifies
