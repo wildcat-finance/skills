@@ -1309,15 +1309,22 @@ def write_confined_atomic(root: str | os.PathLike[str], relative: str, data: byt
         os.close(parent)
 
 
-def _hash_executable(path: str, node_path: str) -> str:
+def _hash_executable(path: str, node_path: str, detail: str | None = None) -> str:
+    """Digest one pinned executable, or refuse.
+
+    `detail` is the operator guidance every refusal here carries. It is passed
+    in rather than built, because this helper is given a path and a node path
+    and never the profile those came from, and widening it to take the profile
+    would make a digest function depend on a record shape. See skills#1098.
+    """
     descriptor = -1
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
         metadata = os.fstat(descriptor)
         if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > MAX_EXECUTABLE_BYTES:
-            refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+            refuse("WAI-E-ADAPTER.EXECUTABLE", node_path, detail)
         if metadata.st_mode & 0o111 == 0:
-            refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+            refuse("WAI-E-ADAPTER.EXECUTABLE", node_path, detail)
         digest = hashlib.sha256()
         total = 0
         while True:
@@ -1326,7 +1333,7 @@ def _hash_executable(path: str, node_path: str) -> str:
                 break
             total += len(chunk)
             if total > MAX_EXECUTABLE_BYTES:
-                refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+                refuse("WAI-E-ADAPTER.EXECUTABLE", node_path, detail)
             digest.update(chunk)
         after = os.fstat(descriptor)
         if (metadata.st_dev, metadata.st_ino, metadata.st_size, metadata.st_mtime_ns) != (
@@ -1335,12 +1342,12 @@ def _hash_executable(path: str, node_path: str) -> str:
             after.st_size,
             after.st_mtime_ns,
         ):
-            refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", node_path)
+            refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", node_path, detail)
         return digest.hexdigest()
     except CodecError:
         raise
     except OSError:
-        refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+        refuse("WAI-E-ADAPTER.EXECUTABLE", node_path, detail)
     finally:
         if descriptor >= 0:
             os.close(descriptor)
@@ -1383,7 +1390,20 @@ def _run_bounded(
     stdout_cap: int,
     stderr_cap: int,
     path: str,
+    detail: str | None = None,
 ) -> tuple[bytes, bytes]:
+    """Run one pinned executable under a timeout and output caps, or refuse.
+
+    `detail` is carried by the two `WAI-E-ADAPTER.UNAVAILABLE` refusals and by
+    no other refusal here: those are the two a contributor reaches by being on
+    a machine the profile does not pin. A timeout, an output cap or an IO error
+    is the adapter answering out of contract, which is a different situation
+    and is left with its code and node path.
+
+    It is passed in rather than built, for the reason `_hash_executable` gives:
+    this helper is given an argument list, not the profile behind it. See
+    skills#1098.
+    """
     if len(input_bytes) > MAX_ADAPTER_INPUT_BYTES:
         refuse("WAI-E-ADAPTER.INPUT_CAP", path)
     if timeout_seconds <= 0 or stdout_cap <= 0 or stderr_cap <= 0:
@@ -1399,7 +1419,7 @@ def _run_bounded(
             start_new_session=True,
         )
     except (OSError, ValueError):
-        refuse("WAI-E-ADAPTER.UNAVAILABLE", path)
+        refuse("WAI-E-ADAPTER.UNAVAILABLE", path, detail)
     assert process.stdin is not None and process.stdout is not None and process.stderr is not None
     selector = selectors.DefaultSelector()
     buffers = {"stdout": bytearray(), "stderr": bytearray()}
@@ -1459,7 +1479,7 @@ def _run_bounded(
             _kill_process(process)
             refuse("WAI-E-ADAPTER.TIMEOUT", path)
         if returncode != 0:
-            refuse("WAI-E-ADAPTER.UNAVAILABLE", path)
+            refuse("WAI-E-ADAPTER.UNAVAILABLE", path, detail)
         return bytes(buffers["stdout"]), bytes(buffers["stderr"])
     except CodecError:
         _kill_process(process)
@@ -1474,16 +1494,22 @@ def _run_bounded(
                 stream.close()
 
 
-def _adapter_identity_detail(profile: Mapping[str, Any], which: str) -> str:
-    """Name the tokenizer and the machine a pinned adapter needs.
+def _adapter_machine_detail(profile: Mapping[str, Any], opening: str) -> str:
+    """One opening sentence, then the tokenizer and the machine it needs.
 
-    `WAI-E-ADAPTER.EXECUTABLE_CHANGED` at a digest node tells a reader that a
-    hash differed, not that this profile is bound to one machine's build. The
-    codes stay bounded, so the sentence a contributor can act on rides on
-    stderr instead. See skills#1098.
+    Every in-scope adapter refusal ends in the same place -- this profile is
+    bound to one machine's build, and `measure` and `parity` cannot run
+    anywhere that build is absent -- and differs only in how it got there. The
+    tail is written once here so a contributor reads the same instruction from
+    a missing client, a client that will not run, a version that moved and an
+    identity that moved, rather than four descriptions of one situation.
+
+    Only the profile's own recorded fields are named. Nothing is read from the
+    environment, so the sentence cannot carry a path or an account name the
+    profile does not already record in plain sight.
     """
     return (
-        f"adapter refused: the recorded {which} is not the one on this machine. "
+        f"{opening} "
         f"This profile pins tokenizer {profile.get('id', 'unrecorded')}, run as "
         f"{profile.get('runtime_executable', 'an unrecorded runtime')} "
         f"through {profile.get('executable', 'an unrecorded client')}. "
@@ -1494,16 +1520,85 @@ def _adapter_identity_detail(profile: Mapping[str, Any], which: str) -> str:
     )
 
 
+def _adapter_identity_detail(profile: Mapping[str, Any], which: str) -> str:
+    """Name the tokenizer and the machine a pinned adapter needs.
+
+    `WAI-E-ADAPTER.EXECUTABLE_CHANGED` at a digest node tells a reader that a
+    hash differed, not that this profile is bound to one machine's build. The
+    codes stay bounded, so the sentence a contributor can act on rides on
+    stderr instead. See skills#1098.
+
+    For a recorded value that is present and different: an executable digest,
+    the runtime's version output, its identity output, or the model blobs that
+    output names.
+    """
+    return _adapter_machine_detail(
+        profile,
+        f"adapter refused: the recorded {which} is not the one on this machine.",
+    )
+
+
+def _adapter_executable_detail(profile: Mapping[str, Any], which: str) -> str:
+    """The same guidance, for an executable that could not be read at all.
+
+    `_hash_executable` refuses `WAI-E-ADAPTER.EXECUTABLE` when the path is
+    absent, is not a regular file, is not executable, or is larger than the
+    cap, and `WAI-E-ADAPTER.EXECUTABLE_CHANGED` when the file moves under the
+    read. One sentence covers all five, because what a contributor does about
+    them is the same and the distinction is already in the code and node path.
+
+    The helper is not given the profile, so this is built by its caller and
+    passed in. See skills#1098.
+    """
+    return _adapter_machine_detail(
+        profile,
+        f"adapter refused: the recorded {which} could not be read as a stable "
+        "executable file on this machine.",
+    )
+
+
+def _adapter_run_detail(profile: Mapping[str, Any], which: str) -> str:
+    """The same guidance, for a pinned executable that would not run.
+
+    `WAI-E-ADAPTER.UNAVAILABLE` covers both halves of that: the process would
+    not start, and the process started and exited non-zero. On a machine that
+    is not the one the profile pins, the first is the usual way a contributor
+    meets this code, and the node path alone does not say that the profile is
+    machine-bound.
+
+    `_run_bounded` is not given the profile, so this is built by its caller and
+    passed in. See skills#1098.
+    """
+    return _adapter_machine_detail(
+        profile,
+        f"adapter refused: {which} did not run to completion on this machine.",
+    )
+
+
 def _verify_profile_identity(profile: Mapping[str, Any], path: str = "$.profile") -> None:
     executable = _absolute_executable(profile["executable"], f"{path}.executable")
-    if _hash_executable(executable, f"{path}.executable") != profile["executable_sha256"]:
+    if (
+        _hash_executable(
+            executable,
+            f"{path}.executable",
+            _adapter_executable_detail(profile, "client executable"),
+        )
+        != profile["executable_sha256"]
+    ):
         refuse(
             "WAI-E-ADAPTER.EXECUTABLE_CHANGED",
             f"{path}.executable_sha256",
             _adapter_identity_detail(profile, "client executable"),
         )
     runtime = _absolute_executable(profile["runtime_executable"], f"{path}.runtime_executable")
-    if _hash_executable(runtime, f"{path}.runtime_executable") != profile["runtime_executable_sha256"]:
+    if (
+        _hash_executable(
+            runtime,
+            f"{path}.runtime_executable",
+            _adapter_executable_detail(profile, "runtime executable"),
+        )
+        != profile["runtime_executable_sha256"]
+    ):
         refuse(
             "WAI-E-ADAPTER.EXECUTABLE_CHANGED",
             f"{path}.runtime_executable_sha256",
@@ -1522,9 +1617,14 @@ def _verify_profile_identity(profile: Mapping[str, Any], path: str = "$.profile"
         stdout_cap,
         stderr_cap,
         f"{path}.version",
+        _adapter_run_detail(profile, "the pinned runtime's version call"),
     )
     if _digest(version_bytes) != profile["version_sha256"]:
-        refuse("WAI-E-ADAPTER.VERSION_CHANGED", f"{path}.version_sha256")
+        refuse(
+            "WAI-E-ADAPTER.VERSION_CHANGED",
+            f"{path}.version_sha256",
+            _adapter_identity_detail(profile, "runtime version output"),
+        )
     identity_bytes, _ = _run_bounded(
         runtime,
         _argv(profile["identity_argv"], f"{path}.identity_argv"),
@@ -1534,14 +1634,27 @@ def _verify_profile_identity(profile: Mapping[str, Any], path: str = "$.profile"
         stdout_cap,
         stderr_cap,
         f"{path}.identity",
+        _adapter_run_detail(profile, "the pinned runtime's identity call"),
     )
     if _digest(identity_bytes) != profile["acquisition_sha256"]:
-        refuse("WAI-E-ADAPTER.IDENTITY_CHANGED", f"{path}.acquisition_sha256")
+        refuse(
+            "WAI-E-ADAPTER.IDENTITY_CHANGED",
+            f"{path}.acquisition_sha256",
+            _adapter_identity_detail(profile, "runtime identity output"),
+        )
     observed_blobs = tuple(item.decode("ascii") for item in MODEL_BLOB_RE.findall(identity_bytes))
     if observed_blobs != tuple(profile["model_blobs_sha256"]):
-        refuse("WAI-E-TOKENIZER.MISMATCH", f"{path}.model_blobs_sha256")
+        refuse(
+            "WAI-E-TOKENIZER.MISMATCH",
+            f"{path}.model_blobs_sha256",
+            _adapter_identity_detail(profile, "model blob set"),
+        )
     if profile["vocabulary_sha256"] not in observed_blobs:
-        refuse("WAI-E-TOKENIZER.MISMATCH", f"{path}.vocabulary_sha256")
+        refuse(
+            "WAI-E-TOKENIZER.MISMATCH",
+            f"{path}.vocabulary_sha256",
+            _adapter_identity_detail(profile, "tokenizer vocabulary blob"),
+        )
 
 
 def _duplicate_checked_external_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -1703,7 +1816,14 @@ def _ollama_generate(
         request["format"] = {"type": "object", "additionalProperties": False}
     body = json.dumps(request, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     executable = _absolute_executable(profile["executable"], f"{path}.executable")
-    if _hash_executable(executable, f"{path}.executable") != profile["executable_sha256"]:
+    if (
+        _hash_executable(
+            executable,
+            f"{path}.executable",
+            _adapter_executable_detail(profile, "client executable"),
+        )
+        != profile["executable_sha256"]
+    ):
         refuse(
             "WAI-E-ADAPTER.EXECUTABLE_CHANGED",
             f"{path}.executable_sha256",
@@ -1723,6 +1843,7 @@ def _ollama_generate(
         _small_decimal(profile["max_stdout_bytes"], f"{path}.max_stdout_bytes", MAX_ADAPTER_OUTPUT_BYTES),
         _small_decimal(profile["max_stderr_bytes"], f"{path}.max_stderr_bytes", MAX_ADAPTER_OUTPUT_BYTES),
         path,
+        _adapter_run_detail(profile, "the pinned client's model call"),
     )
     response = (
         _ollama_chat_response(stdout, profile["model"], path)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import collections
 import hashlib
 import importlib.util
 import contextlib
@@ -3624,6 +3626,299 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
                 allow_integers=True,
             )
             self.assertEqual("-165", committed["totals"]["delta_tokens"])
+
+
+class AdapterRefusalDetailTests(unittest.TestCase):
+    """`refusal-detail-coverage`, closed over an enumerated set.
+
+    The register item's scope is "every adapter refusal a contributor can
+    actually reach". PR #1100 attached the guidance to the `EXECUTABLE_CHANGED`
+    sites, which is three of them, and left nine reachable refusals bare: a
+    client executable present at another path returned a bare
+    `WAI-E-ADAPTER.EXECUTABLE`, a runtime that would not start returned a bare
+    `WAI-E-ADAPTER.UNAVAILABLE`, and `_verify_profile_identity` split down the
+    middle with `VERSION_CHANGED` and `IDENTITY_CHANGED` bare beside two
+    detailed siblings.
+
+    Closing an item with that scope over a described set would over-claim, so
+    the set is enumerated from the source instead. `scripts/agent_instruction.py`
+    is parsed and every `refuse(...)` call is read out of the tree with its
+    enclosing function, its code and whether it carries a detail. In scope is
+    every `WAI-E-ADAPTER.*` and `WAI-E-TOKENIZER.*` refusal inside a covered
+    function that is not a declared exclusion; out of scope is exactly the
+    complement. So a refusal added to a covered function under a code no
+    exclusion names fails here until it is detailed or excluded with a reason.
+
+    The boundary that remains, stated rather than left to be discovered: an
+    exclusion is keyed by function and code, so a second refusal added under an
+    already-excluded code in a covered function is admitted by the exclusion
+    that already reasons about that situation. The per-function site counts
+    below are what makes even that visible in a diff.
+    """
+
+    SOURCE = ROOT / "scripts/agent_instruction.py"
+
+    #: The functions a contributor reaches from a machine the profile does not
+    #: pin. Everything else refuses only when the profile record is edited or
+    #: an adapter answers out of contract.
+    COVERED_FUNCTIONS = (
+        "_hash_executable",
+        "_run_bounded",
+        "_verify_profile_identity",
+        "_ollama_generate",
+    )
+
+    #: The helpers that are not given the profile and take the detail instead.
+    THREADED_HELPERS = ("_hash_executable", "_run_bounded")
+
+    #: The three builders. Every detail in the source is one of these called
+    #: with the profile, or the threaded parameter carrying one.
+    DETAIL_BUILDERS = (
+        "_adapter_identity_detail",
+        "_adapter_executable_detail",
+        "_adapter_run_detail",
+    )
+
+    #: In a covered function and still out of scope, with the reason. Each is
+    #: the adapter answering out of contract or the caller passing bounds that
+    #: are not about which machine this is.
+    EXCLUSIONS = {
+        ("_run_bounded", "WAI-E-ADAPTER.INPUT_CAP"): "the caller's input exceeded the cap",
+        ("_run_bounded", "WAI-E-ADAPTER.BOUNDS"): "the caller passed a non-positive bound",
+        ("_run_bounded", "WAI-E-ADAPTER.TIMEOUT"): "the adapter answered too slowly",
+        ("_run_bounded", "WAI-E-ADAPTER.OUTPUT_CAP"): "the adapter answered past its cap",
+        ("_run_bounded", "WAI-E-ADAPTER.IO"): "the pipes failed mid-run",
+        ("_ollama_generate", "WAI-E-ADAPTER.INPUT_CAP"): "the prompt exceeded the cap",
+        ("_ollama_generate", "WAI-E-ADAPTER.SCHEMA"): "the profile names another adapter",
+    }
+
+    #: The runbook's own counts, which are checkable and therefore checked.
+    ADAPTER_SITE_COUNT = 64
+    IN_SCOPE_ADAPTER_COUNT = 12
+    IN_SCOPE_TOKENIZER_COUNT = 2
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        tree = ast.parse(cls.SOURCE.read_text(encoding="utf-8"))
+        cls.sites = []
+        cls.helper_calls = []
+        cls.functions = {}
+
+        stack: list[ast.FunctionDef] = []
+
+        class Walk(ast.NodeVisitor):
+            def visit_FunctionDef(self, node):
+                stack.append(node)
+                cls.functions[node.name] = node
+                self.generic_visit(node)
+                stack.pop()
+
+            visit_AsyncFunctionDef = visit_FunctionDef
+
+            def visit_Call(self, node):
+                function = node.func
+                enclosing = stack[-1].name if stack else "<module>"
+                if isinstance(function, ast.Name):
+                    if function.id == "refuse":
+                        code = (
+                            node.args[0].value
+                            if node.args and isinstance(node.args[0], ast.Constant)
+                            else None
+                        )
+                        cls.sites.append(
+                            {
+                                "function": enclosing,
+                                "code": code,
+                                "line": node.lineno,
+                                "detail": node.args[2] if len(node.args) >= 3 else None,
+                            }
+                        )
+                    elif function.id in cls.THREADED_HELPERS:
+                        cls.helper_calls.append(
+                            {
+                                "callee": function.id,
+                                "caller": enclosing,
+                                "line": node.lineno,
+                                "arguments": list(node.args),
+                            }
+                        )
+                self.generic_visit(node)
+
+        Walk().visit(tree)
+
+    def adapter_sites(self) -> list[dict]:
+        return [
+            site
+            for site in self.sites
+            if site["code"] and site["code"].startswith("WAI-E-ADAPTER.")
+        ]
+
+    def in_scope_sites(self) -> list[dict]:
+        """Derived, not restated: covered function, adapter or tokenizer code,
+        and not a declared exclusion."""
+        found = []
+        for site in self.sites:
+            code = site["code"]
+            if code is None or site["function"] not in self.COVERED_FUNCTIONS:
+                continue
+            if not code.startswith(("WAI-E-ADAPTER.", "WAI-E-TOKENIZER.")):
+                continue
+            if (site["function"], code) in self.EXCLUSIONS:
+                continue
+            found.append(site)
+        return found
+
+    def test_every_in_scope_adapter_refusal_carries_the_operator_detail(self):
+        """All twelve, and the two tokenizer refusals reached by the same route.
+
+        Static and dynamic halves, because either alone is weak. Statically:
+        every in-scope site passes a third argument to `refuse`, and that
+        argument is either one of the three builders called with the profile or
+        the `detail` parameter of a helper that was given one -- which is what
+        says the two helpers not holding a profile receive the sentence rather
+        than inventing one. Every call to those helpers is then checked to
+        supply a builder call, so the parameter cannot be reaching them empty.
+
+        Dynamically: each builder is called with the committed profile and the
+        result is required to name the tokenizer, the runtime, the client and
+        what to do about it. Only fields the profile itself records are named,
+        so the sentence cannot carry a path or an account name out of the
+        environment, which is this step's phylax boundary.
+        """
+        in_scope = self.in_scope_sites()
+        self.assertEqual(
+            self.IN_SCOPE_ADAPTER_COUNT + self.IN_SCOPE_TOKENIZER_COUNT, len(in_scope)
+        )
+        for site in in_scope:
+            with self.subTest(function=site["function"], line=site["line"]):
+                detail = site["detail"]
+                self.assertIsNotNone(
+                    detail,
+                    f"{site['code']} at {self.SOURCE.name}:{site['line']} is bare",
+                )
+                if isinstance(detail, ast.Name):
+                    self.assertEqual("detail", detail.id)
+                    self.assertIn(site["function"], self.THREADED_HELPERS)
+                else:
+                    self.assertIsInstance(detail, ast.Call)
+                    self.assertIsInstance(detail.func, ast.Name)
+                    self.assertIn(detail.func.id, self.DETAIL_BUILDERS)
+                    self.assertEqual("profile", detail.args[0].id)
+
+        self.assertTrue(self.helper_calls)
+        for call in self.helper_calls:
+            with self.subTest(callee=call["callee"], line=call["line"]):
+                # The position is read off the helper's own signature rather
+                # than assumed, so the two helpers can keep different argument
+                # lists and a later reorder cannot make this pass vacuously.
+                names = [item.arg for item in self.functions[call["callee"]].args.args]
+                self.assertIn("detail", names)
+                index = names.index("detail")
+                self.assertGreater(
+                    len(call["arguments"]),
+                    index,
+                    f"{call['callee']} at {self.SOURCE.name}:{call['line']} is given no detail",
+                )
+                supplied = call["arguments"][index]
+                self.assertIsInstance(supplied, ast.Call)
+                self.assertIn(supplied.func.id, self.DETAIL_BUILDERS)
+
+        profile = AI.load_canonical_record(
+            (ROOT / "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json").read_bytes(),
+            allow_integers=True,
+        )
+        for name in self.DETAIL_BUILDERS:
+            with self.subTest(builder=name):
+                text = getattr(AI, name)(profile, "client executable")
+                self.assertIn(profile["id"], text)
+                self.assertIn(profile["runtime_executable"], text)
+                self.assertIn(profile["executable"], text)
+                self.assertIn("machine that recorded the profile", text)
+                self.assertLessEqual(len(text), 1024)
+
+    def test_the_in_scope_refusal_set_is_enumerated_from_the_source(self):
+        """The set is read out of the tree, so a new refusal joins it uninvited.
+
+        Every covered function is required to exist, so a rename does not
+        silently empty the set; every declared exclusion is required to match a
+        real site, so a stale exclusion cannot widen the boundary after the
+        refusal it named is gone; and the per-function counts are asserted, so
+        adding a refusal to a covered function fails here whether or not it
+        carries a detail. That last one is the whole reason for enumerating
+        rather than listing: the case has to break when the source grows.
+        """
+        for name in self.COVERED_FUNCTIONS:
+            self.assertIn(name, self.functions)
+
+        keys = {(site["function"], site["code"]) for site in self.sites}
+        for key, reason in sorted(self.EXCLUSIONS.items()):
+            with self.subTest(exclusion=key):
+                self.assertIn(key, keys, "the exclusion names no refusal in the source")
+                self.assertTrue(reason)
+
+        counts = collections.Counter(site["function"] for site in self.in_scope_sites())
+        self.assertEqual(
+            {
+                "_hash_executable": 5,
+                "_run_bounded": 2,
+                "_verify_profile_identity": 6,
+                "_ollama_generate": 1,
+            },
+            dict(counts),
+        )
+
+        codes = collections.Counter(site["code"] for site in self.in_scope_sites())
+        self.assertEqual(
+            {
+                "WAI-E-ADAPTER.EXECUTABLE": 4,
+                "WAI-E-ADAPTER.EXECUTABLE_CHANGED": 4,
+                "WAI-E-ADAPTER.UNAVAILABLE": 2,
+                "WAI-E-ADAPTER.VERSION_CHANGED": 1,
+                "WAI-E-ADAPTER.IDENTITY_CHANGED": 1,
+                "WAI-E-TOKENIZER.MISMATCH": 2,
+            },
+            dict(codes),
+        )
+
+    def test_the_out_of_scope_adapter_refusals_are_exactly_the_complement(self):
+        """52 of the 64, each with a reason rather than an inference.
+
+        The two halves partition the adapter refusals: nothing is in both and
+        nothing is in neither. Each out-of-scope site is then required to be
+        out of scope for one of exactly two recorded reasons -- it sits outside
+        the covered functions, so it is reached by editing the profile record
+        or by an adapter answering out of contract, or it is a declared
+        exclusion carrying its own reason. A site that is out of scope for no
+        stated reason fails here, which is what stops the complement being
+        whatever is left over.
+        """
+        adapter = self.adapter_sites()
+        self.assertEqual(self.ADAPTER_SITE_COUNT, len(adapter))
+
+        in_scope = [
+            site for site in self.in_scope_sites() if site["code"].startswith("WAI-E-ADAPTER.")
+        ]
+        self.assertEqual(self.IN_SCOPE_ADAPTER_COUNT, len(in_scope))
+
+        identified = {(site["function"], site["code"], site["line"]) for site in adapter}
+        inside = {(site["function"], site["code"], site["line"]) for site in in_scope}
+        outside = identified - inside
+        self.assertEqual(
+            self.ADAPTER_SITE_COUNT - self.IN_SCOPE_ADAPTER_COUNT, len(outside)
+        )
+        self.assertEqual(identified, inside | outside)
+        self.assertEqual(set(), inside & outside)
+
+        for function, code, line in sorted(outside):
+            with self.subTest(function=function, line=line):
+                if function in self.COVERED_FUNCTIONS:
+                    self.assertIn(
+                        (function, code),
+                        self.EXCLUSIONS,
+                        "a refusal in a covered function is neither detailed nor excluded",
+                    )
+                else:
+                    self.assertNotIn((function, code), self.EXCLUSIONS)
 
 
 class DigestNeutralProjectionTests(unittest.TestCase):
