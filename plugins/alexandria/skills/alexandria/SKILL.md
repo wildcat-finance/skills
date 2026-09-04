@@ -330,3 +330,15 @@ reported block is canonical. Those claims require separate evidence.
 - Refuses: Generalising the witness to another deployment, transaction, interval, implementation, layout or evidence class.
 - Recovery: Inspect the named registry, implementation, state, call, write or selector mismatch, recapture under an amended fixed plan and rerun the check.
 - Exceptions: none
+
+### alexandria-proof-backed-state
+
+- Promise: A successful `verify` of a release whose capture claims `proof-backed-state` establishes that the capture component is an embedded Lazarus fixture manifest, every file it names is present by digest, Lazarus's offline verifier accepted the reconstructed fixture, and the capture's chain, block, finality and subjects claim no more than that fixture proves.
+- Evidence: The verified Alexandria manifest and components, digest-and-byte-count fixture reconstruction, Lazarus verification report, bound capture fields and executable P/M/O/R/S cases in `plugins/alexandria/tests/test_proof_backed.py`.
+- Evidence classes: recorded, checked, recomputed, proved: EIP-1186 state relation
+- Boundary: The result does not establish canonical-chain membership, provider independence, source completeness or anything outside the named proof targets at the bound block; it borrows no verdict because Alexandria reruns Lazarus instead of trusting one.
+- Authorises: Retaining or handing off the verified capture's `proof-backed-state` class for its named subjects at the bound block.
+- Consequence: 1
+- Refuses: Describing such a capture as verified when the sibling verifier is absent, the fixture is incomplete or altered, or the claim exceeds the proof.
+- Recovery: Repair the plan or fixture, ingest into a new output and rerun `verify`.
+- Exceptions: none

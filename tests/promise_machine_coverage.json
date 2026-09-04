@@ -283,6 +283,31 @@
       "path": "plugins/alexandria/tests/test_demo.py",
       "selector": "test_documented_build_and_verify_commands_run_exactly"
     },
+    "alexandria-proof-backed-m": {
+      "claim": "A proof-backed capture is refused when a manifest-named fixture component is missing.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_m_refuses_missing_fixture_component"
+    },
+    "alexandria-proof-backed-o": {
+      "claim": "A proof-backed capture is refused when its subject exceeds the fixture proof targets.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_o_refuses_proof_overclaim"
+    },
+    "alexandria-proof-backed-p": {
+      "claim": "A complete embedded Lazarus fixture earns proof-backed state through offline verification.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_p_accepts_verified_fixture"
+    },
+    "alexandria-proof-backed-r": {
+      "claim": "A refused proof-backed plan can be repaired, ingested and verified in a new output.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_r_accepts_repaired_plan"
+    },
+    "alexandria-proof-backed-s": {
+      "claim": "Proof-backed verification reaches no network and changes no release byte.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_s_is_offline_and_read_only"
+    },
     "alexandria-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
       "path": "plugins/alexandria/tests/test_demo.py",
@@ -2020,6 +2045,22 @@
       },
       "group": "executable",
       "promise_id": "alexandria-derived-view",
+      "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "alexandria-proof-backed-m",
+        "O": "alexandria-proof-backed-o",
+        "P": "alexandria-proof-backed-p",
+        "R": "alexandria-proof-backed-r",
+        "S": "alexandria-proof-backed-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "alexandria-proof-backed-state",
       "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
