@@ -1,4 +1,4 @@
-# ADR-075: Measure the instruction corpus through a digest-neutral projection
+# ADR-076: Measure the instruction corpus through a digest-neutral projection
 
 ## Status
 
@@ -7,11 +7,16 @@ Accepted, 2026-09-04, for
 
 The Fiat runbook allocated this decision as `ADR-<next>`, which was ADR-069 on
 the branch the step was cut from. Concurrent work landed ADR-069 through
-ADR-074 on `main` while the run was in flight, so the decision lands as
-ADR-075. It was renumbered twice for this reason, the second time during the
-step's prose pass, after ADR-074 was taken on `main` between the step's
-implementation and its prose. Whoever renumbers it again should expect the same
-cause and check the default branch immediately before merging.
+ADR-075 on `main` while the run was in flight, so the decision lands as
+ADR-076. It was renumbered three times: to ADR-074 when the record was first
+written, to ADR-075 at `aa5035cc` in step 3's prose pass once ADR-074 was
+taken, and to ADR-076 at `33085188` in step 4's audit once ADR-075 was taken
+by [skills#1187](https://github.com/wildcat-finance/skills/pull/1187), merged
+2026-09-04T06:55:01Z. The last two were found by
+`test_no_number_collides_with_one_already_on_the_default_branch`; the first
+preceded the file, so no test saw it. From then on that test is the only thing
+between this file and a silent duplicate. Whoever renumbers it again should
+expect the same cause and check the default branch immediately before merging.
 
 Depends on [ADR-062](ADR-062-encode-a-closed-agent-instruction-model.md), which
 settled two things this record does not reopen: that the bound corpus retains
@@ -143,9 +148,23 @@ measured byte.
 
 ## Consequences
 
-An out-of-span edit to a bound instruction document, with the five mechanical
-passes applied, no longer moves the corpus digest, and neither evidence record
-is staled by it. An in-span edit still moves it and still refuses, at
+An out-of-span edit to a bound instruction document *after* the reviewed span
+end, with the five mechanical passes applied, no longer moves the corpus digest,
+and neither evidence record is staled by it.
+
+An out-of-span edit *before* the reviewed span start does not cost the same
+thing, and this record does not close it. Such an edit leaves the reviewed bytes
+identical but moves every recorded offset, including the `source.start` and
+`source.end` the corpus subject carries. Reconciling it needs a sixth pass,
+`span-offsets`, which re-derives those offsets from the reviewed span's own
+bytes; with that pass applied the edit gets past `WAI-E-DIGEST.SOURCE_SPAN` and
+then refuses `WAI-E-DIGEST.CORPUS` at `$.evidence.measurement_record`. Only a
+`measure` run clears it. That follows from keeping recorded offsets in the
+subject, stated three paragraphs below, rather than contradicting the paragraph
+above; the two placements are recorded here together because a reader who takes
+"out-of-span edit" to mean both would otherwise be wrong about one of them.
+
+An in-span edit still moves the corpus digest and still refuses, at
 `WAI-E-DIGEST.SOURCE_SPAN` before any evidence record is consulted and at
 `WAI-E-DIGEST.CORPUS` behind a rebound span digest.
 

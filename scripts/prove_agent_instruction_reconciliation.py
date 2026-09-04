@@ -7,11 +7,19 @@ skills#1030 records.  This tool runs that sequence against a throwaway copy of
 the tree and reports what the repository's own checker says afterwards, so the
 cost of an edit is observed rather than argued about.
 
-    offline      an out-of-span edit, every mechanical pass applied: does
-                 `agent_instruction.py check` go green with no model consulted?
+    offline      an out-of-span edit *after* the reviewed span end, every
+                 mechanical pass applied: does `agent_instruction.py check` go
+                 green with no model consulted?  It answers for that placement
+                 and says nothing about the other one.
     span-shift   the edit placements whose reconciliation outcome is proved,
                  because only an edit before a reviewed span start moves the
-                 recorded binding offsets.
+                 recorded binding offsets.  Its count is placements covered,
+                 not placements green, and the two do not agree: the after-span
+                 placement reconciles accepted, and the before-span placement
+                 refuses `WAI-E-DIGEST.CORPUS` at
+                 `$.evidence.measurement_record` once its offsets are
+                 reconciled.  The seven-key report carries the count and the
+                 exit; the outcome of each placement is on `--detail`.
     selftest     the tool's own machinery: fixture-copy isolation, a no-op
                  reconciliation that reproduces the committed bytes, and the
                  path confinement that keeps every write inside the copy.
@@ -48,6 +56,16 @@ where those bytes now are. Adding a byte delta to each recorded number would
 produce the same integers here while proving nothing about where the span went,
 so `rederive_offsets` computes the uniform delta from the anchor and then checks
 every independently located span against it rather than assuming it.
+
+What a test can separate from arithmetic is bounded by the fixture. A prepend
+moves every span by one uniform delta, so a node located by its own bytes and a
+node moved by `delta` land on the same integers, and no assertion on the
+integers can tell the two apart. What separates them is the refusal a shift has
+no opinion about: bytes that occur more than once inside the reviewed span
+identify no offset, and the node loop refuses instead of taking the first
+occurrence. `test_a_before_span_edit_has_its_offsets_re_derived_rather_than_shifted`
+pins that refusal for a node as well as for the anchor, which is where the claim
+in this paragraph is held rather than merely stated.
 
 A live reconciliation owes one more pass this tool does not exercise: the
 matching digests in the `agent_instruction` row of
@@ -314,8 +332,6 @@ class Reconciliation:
         self.manifest = self._live_record(MANIFEST)
         self.fixture = self._subject_fixture(self.manifest)
         self.source_path = self.fixture["source"]["path"]
-        self.start = int(self.fixture["source"]["start"])
-        self.end = int(self.fixture["source"]["end"])
         self.source = self._live_bytes(self.source_path)
         self.old_digest = self.fixture["source"]["sha256"]
 
@@ -324,8 +340,22 @@ class Reconciliation:
                 f"{self.source_path} is already off its manifest digest; "
                 "reconcile the live tree before proving anything about it"
             )
-        if len(self.source) < self.end:
-            raise ProverError(f"{self.source_path} is shorter than its reviewed span")
+
+        # Read the way every other recorded offset in this tool is read. These
+        # two are the anchor the whole re-derivation hangs off, so leaving them
+        # on bare `int()` would exempt the one pair that matters most from the
+        # rule `recorded_offset` exists to state.
+        limit = len(self.source)
+        self.start = recorded_offset(
+            self.fixture["source"]["start"], "the reviewed span's start", limit
+        )
+        self.end = recorded_offset(
+            self.fixture["source"]["end"], "the reviewed span's end", limit
+        )
+        if self.end <= self.start:
+            raise ProverError(
+                f"{self.source_path} has a reviewed span that ends at or before it starts"
+            )
         self.span = self.source[self.start : self.end]
         if digest(self.span) != self.fixture["source"]["span_sha256"]:
             raise ProverError(f"{self.source_path} has a reviewed span off its manifest digest")

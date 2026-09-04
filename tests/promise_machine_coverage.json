@@ -4,7 +4,7 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "28db0c71286ade17b6f3a281c8b9127f53b288d35943aff1d5e48ff1873d84ea"
+      "sha256": "797a2aa71214a8cf5f21225c18f89ec21a5fca6ad5fe1d8bb151bb68fc8e78d4"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
@@ -12,11 +12,11 @@
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "524fb33b58b38701f816163fefe7c2f8dab444f9409d8466f991cdb47a926625"
+      "sha256": "f193d9a71d04cfcaa518fc353fc301e5490b4ddaa80b3efd733292c435216d58"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "a058a991d6c2ce3c6324ce3499dc2d04d635c599360fea844cf5b0c734092d7e"
+      "sha256": "a261a3eb96a0672afb091c453d5e5f138c69660a890a75f41496b2e76226f1e8"
     },
     "documentation": [
       {
@@ -28,8 +28,8 @@
         "sha256": "7cfd343c6d8fd498ea1084f8ed93e0dcf5fe1262afc1ee00fb8f4ac43b348c93"
       },
       {
-        "path": "docs/decisions/ADR-075-digest-neutral-measured-corpus.md",
-        "sha256": "c3023689accf21432f078e10fa5a86cffa00e113eb1885b800bd879aa7c85ca4"
+        "path": "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
+        "sha256": "2897a223b06ec2b7dbc3cd1bcf9089ba622a1cba807e887eb8bfa429283b9dde"
       }
     ],
     "fixtures": [
@@ -122,7 +122,7 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "b9551e2e63c5013037b4c7fdc28885243145d405d0eacf747b672d4f978dc782",
+      "sha256": "f924634552ce593618f80dfb8aa49515474eba617b98b8050d876cd6f5bc22cc",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
