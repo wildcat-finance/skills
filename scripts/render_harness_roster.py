@@ -79,6 +79,24 @@ UNSUPPORTED = "unsupported"
 # refusal rather than a silently short roster.
 PUBLISHED_CLASSIFICATIONS = (MANUAL_ROUTE, UNSUPPORTED)
 
+# What `schemas/harness-classification-v1.json` requires of a `recorded` block
+# and of every harness entry. `read_manifest` checks the schema id and a
+# non-empty roster and nothing else, so `refuse_unrecorded_shape` checks these
+# rather than assuming them. `tests/test_harness_manifest.py` binds both tuples
+# to the schema document, so a schema that gains a required field goes red here
+# rather than reaching a surface as a `KeyError`.
+REQUIRED_RECORDED_FIELDS = ("host", "date", "base_ref")
+REQUIRED_HARNESS_FIELDS = (
+    "name",
+    "classification",
+    "client_present",
+    "client_version",
+    "version_read",
+    "auth_configured",
+    "launcher_contract",
+    "blocker",
+)
+
 # What joins the manual-route names on the harness page. `pdf_drift` needs it
 # as well, to tell a whole roster line from the head of a longer one.
 ROSTER_SEPARATOR = "  /  "
@@ -148,8 +166,90 @@ def load_manifest(path=None):
         document = probe.read_manifest(MANIFEST_PATH if path is None else path)
     except probe.ProbeError as error:
         raise RenderError(f"manifest refused: {error}") from error
+    refuse_unrecorded_shape(document)
     refuse_unpublished_class(document)
     return document
+
+
+def refuse_unrecorded_shape(document):
+    """Refuse a manifest the probe's own writer would not have produced.
+
+    `read_manifest` is the whole of the renderer's structural validation, and it
+    checks three things: the file parses as JSON, it declares
+    `harness-classification/v1`, and its `harnesses` list is not empty. Every
+    other constraint `schemas/harness-classification-v1.json` declares -- the
+    `recorded` patterns, the eight required entry fields -- is enforced on the
+    write path only, by `probe_harnesses.manifest_document`. The renderer does
+    not read only what that function wrote: `--manifest PATH` admits any
+    document declaring the schema id, and since the harness page is now drawn
+    from that same document, the surfaces an unchecked manifest reaches are all
+    three. The patterns are read off the probe rather than restated, so the
+    reader enforces exactly what the writer does and there is no second source
+    of truth to drift.
+
+    Three consequences were measured on this tree before this guard existed.
+
+    A `recorded.date` reached every surface in a form the schema's own
+    `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` refuses. `recorded` parses the date with
+    `datetime.date.fromisoformat`, which on this host's Python 3.14.6 accepts
+    `20260904`, `2026-W36-5` and `2026W365`, all three the same day as
+    `2026-09-04`, and each one rendered the README sentence, the guide table
+    footer, both provenance comments and the PDF roster card label. Shape and
+    calendar are different properties and neither implies the other:
+    `2026-13-45` passes the pattern and fails the calendar, which is what
+    `recorded` was added for, and `20260904` passes the calendar and fails the
+    pattern, which is this. Both gates are kept.
+
+    An unpatterned `recorded.host` defeated the harness page's drift check.
+    `pdf_label` is the one PDF expectation carrying no bounding guard, on the
+    reading that its tail is a fixed-width date so no differently built label
+    could contain it. That reading holds only while the host carries no comma.
+    Driven on a real page built from host `darwin, 2026-09-04 extra` on
+    `2026-09-05`: a manifest recording host `darwin` on `2026-09-04` renders a
+    label that is a strict prefix of the drawn one, `pdf_drift` returns `[]`,
+    and `--check` reports no drift against a page naming another host and
+    another day. With the pattern enforced the reading becomes sound rather
+    than lucky, and the argument is short enough to keep: the host holds no
+    comma, so the expectation's comma can only align with the label's, which
+    forces the two hosts equal; the date is then exactly ten characters against
+    a drawn date of exactly ten, which forces the two dates equal. That is why
+    no fourth bounding guard is added beside `_bounded` and `_terminal`.
+
+    A missing required field left an uncaught `KeyError`.
+    `refuse_unpublished_class` reads `entry["classification"]` and `recorded`
+    reads `block["date"]`, while `main` catches `RenderError` and `OSError` and
+    neither of those. Dropping one field from one entry printed a nineteen-line
+    traceback carrying the worktree's absolute path, and it did so through
+    `draw_harness_page` as well, which catches `RenderError` precisely so that
+    it can report one line rather than a traceback that would "carry an
+    absolute path out with it".
+    """
+    probe = _probe()
+    block = document.get("recorded")
+    if not isinstance(block, dict):
+        raise RenderError("manifest refused: recorded is not an object")
+    absent = tuple(field for field in REQUIRED_RECORDED_FIELDS if field not in block)
+    if absent:
+        raise RenderError(f"manifest refused: recorded carries no {', '.join(absent)}")
+    for field, pattern, shape in (
+        ("host", probe.HOST_PATTERN, "a short alphanumeric platform name"),
+        ("date", probe.DATE_PATTERN, "YYYY-MM-DD"),
+        ("base_ref", probe.BASE_REF_PATTERN, "40 hex characters"),
+    ):
+        value = block[field]
+        if not isinstance(value, str) or not pattern.match(value):
+            raise RenderError(
+                f"manifest refused: recorded {field} {value!r} is not {shape}"
+            )
+    for position, entry in enumerate(harnesses(document)):
+        if not isinstance(entry, dict):
+            raise RenderError(f"manifest refused: harness {position} is not an object")
+        missing = tuple(field for field in REQUIRED_HARNESS_FIELDS if field not in entry)
+        if missing:
+            shown = entry.get("name", position)
+            raise RenderError(
+                f"manifest refused: harness {shown!r} carries no {', '.join(missing)}"
+            )
 
 
 def refuse_unpublished_class(document):

@@ -35,6 +35,7 @@ the case run, including the statement where it flags itself passed.
 from __future__ import annotations
 
 import contextlib
+import datetime
 import importlib.util
 import itertools
 import json
@@ -1919,6 +1920,146 @@ class RenderTests(unittest.TestCase):
         self.assertIn('parser.add_argument("--manifest"', builder)
         self.assertIn("draw_harness_page(pdf, manifest_path)", builder)
         self.assertIn("render.load_manifest(manifest_path)", builder)
+
+    def test_the_required_field_tuples_are_the_schema_s_own(self):
+        # S3-R4-01..03 are all one omission: `read_manifest` checks the schema
+        # id and a non-empty roster, and nothing else the schema declares. The
+        # renderer restates the required names so it can refuse rather than
+        # raise, and this binds that restatement to the document, so a schema
+        # that gains or renames a required field goes red here rather than
+        # reaching a surface.
+        schema = load_schema()
+        self.assertEqual(
+            sorted(render_harness_roster.REQUIRED_HARNESS_FIELDS),
+            sorted(schema["$defs"]["harness"]["required"]),
+        )
+        self.assertEqual(
+            sorted(render_harness_roster.REQUIRED_RECORDED_FIELDS),
+            sorted(schema["$defs"]["recorded"]["required"]),
+        )
+        # The patterns are read off the probe rather than restated, so there is
+        # one source of truth for them and it is the writer's.
+        self.assertEqual(
+            schema["$defs"]["recorded"]["properties"]["date"]["pattern"],
+            probe_harnesses.DATE_PATTERN.pattern,
+        )
+
+    def test_a_recorded_block_the_probe_would_not_write_is_refused(self):
+        # S3-R4-02. `recorded` parses the date with `datetime.date.fromisoformat`,
+        # which since Python 3.11 is not a `YYYY-MM-DD` gate: it accepts the
+        # basic and week forms below, all of them the same day as `2026-09-04`
+        # and all of them refused by the schema's own pattern. Nothing else
+        # checked the shape, because `read_manifest` does not, so each one
+        # rendered the README sentence, the guide footer, both provenance
+        # comments and the PDF label.
+        for date in ("20260904", "2026-W36-5", "2026W365"):
+            with self.subTest(date=date):
+                # The reachability, asserted rather than assumed.
+                self.assertEqual(
+                    datetime.date.fromisoformat(date), datetime.date(2026, 9, 4)
+                )
+                self.assertIsNone(probe_harnesses.DATE_PATTERN.match(date))
+                self.assertRaisesRefusal(
+                    {"date": date}, "is not YYYY-MM-DD"
+                )
+        # The other two fields the probe patterns on the way out, and which no
+        # reader checked on the way in.
+        self.assertRaisesRefusal({"host": "not a host name"}, "platform name")
+        self.assertRaisesRefusal({"base_ref": "nope"}, "40 hex characters")
+        self.assertRaisesRefusal({"date": None}, "is not YYYY-MM-DD")
+        # Shape and calendar are different properties, neither implies the
+        # other, and both gates are kept. They fire at different points, which
+        # is worth pinning rather than leaving to be rediscovered: the shape is
+        # refused by `load_manifest`, while S3-R1-04's calendar check lives in
+        # `recorded` and fires when a surface is derived. Both still precede
+        # every write, because `write` loads before it renders and renders
+        # before it writes.
+        calendar = landed()
+        calendar["recorded"]["date"] = "2026-13-45"
+        self.assertIsNotNone(probe_harnesses.DATE_PATTERN.match("2026-13-45"))
+        self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(calendar))
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.readme_block(calendar)
+        self.assertIn("is not a calendar date", str(refused.exception))
+        # And the landed document still renders, so the guard refuses documents
+        # rather than everything.
+        self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(landed()))
+
+    def assertRaisesRefusal(self, recorded, expected):
+        """One `recorded` override, refused by name through `load_manifest`."""
+        document = landed()
+        document["recorded"].update(recorded)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "harness-classification.json"
+            target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.load_manifest(target)
+            self.assertIn(expected, str(refused.exception))
+
+    def test_a_host_carrying_a_comma_cannot_hide_a_stale_label(self):
+        # S3-R4-01, the fourth instance of the containment shape rounds 1 and 2
+        # closed on the roster line and the detail. `pdf_label` carries no
+        # bounding guard, on the reading that its tail is a fixed-width date so
+        # no differently built label can contain it. That reading holds only
+        # while the host carries no comma: with one, a shorter host and an
+        # earlier date render a label that is a strict prefix of the drawn one.
+        drawn = landed()
+        drawn["recorded"]["host"] = "darwin, 2026-09-04 extra"
+        drawn["recorded"]["date"] = "2026-09-05"
+        stale = landed()
+        stale["recorded"]["host"] = "darwin"
+        stale["recorded"]["date"] = "2026-09-04"
+        shown = render_harness_roster._normalise(
+            " ".join(render_harness_roster.pdf_expectations(drawn))
+        )
+        # The hole itself: every expectation of the stale manifest is contained
+        # in a page drawn from another host on another day, and the check is
+        # silent. Driven against a real built page in the round that found it.
+        self.assertIn(
+            render_harness_roster._normalise(
+                render_harness_roster.pdf_label(stale).upper()
+            ),
+            shown,
+        )
+        self.assertEqual(render_harness_roster.pdf_drift(stale, shown), [])
+        # It is unreachable because the host that opens it is refused, which is
+        # why no fourth bounding guard sits beside `_bounded` and `_terminal`.
+        self.assertIsNone(probe_harnesses.HOST_PATTERN.match(drawn["recorded"]["host"]))
+        with self.assertRaises(render_harness_roster.RenderError):
+            render_harness_roster.refuse_unrecorded_shape(drawn)
+
+    def test_a_manifest_missing_a_required_field_is_refused_rather_than_raised(self):
+        # S3-R4-03. `refuse_unpublished_class` reads `entry["classification"]`
+        # and `recorded` reads `block["date"]`, while `main` catches
+        # `RenderError` and `OSError` and neither of those, so one dropped field
+        # printed a traceback carrying this worktree's absolute path -- through
+        # `draw_harness_page` too, which catches `RenderError` precisely to
+        # avoid that.
+        drops = [
+            (field, lambda document, field=field: document["harnesses"][-1].pop(field))
+            for field in render_harness_roster.REQUIRED_HARNESS_FIELDS
+        ] + [
+            (field, lambda document, field=field: document["recorded"].pop(field))
+            for field in render_harness_roster.REQUIRED_RECORDED_FIELDS
+        ]
+        for field, drop in drops:
+            with self.subTest(field=field):
+                document = landed()
+                drop(document)
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "harness-classification.json"
+                    target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+                    with self.assertRaises(render_harness_roster.RenderError) as refused:
+                        render_harness_roster.load_manifest(target)
+                    self.assertIn(field, str(refused.exception))
+                    with open(os.devnull, "w", encoding="utf-8") as sink:
+                        with contextlib.redirect_stderr(sink):
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--check", "--manifest", str(target)]
+                                ),
+                                1,
+                            )
 
 
 if __name__ == "__main__":
