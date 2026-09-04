@@ -50,8 +50,12 @@ local tool.
   does not change the source files and refuses to replace a different release.
 - `verify <release-directory>` reads the canonical manifest and its confined
   digest-keyed objects. For a derived release it also reads and rebuilds the
-  two declared JSONL files. It refuses undeclared release entries, reaches no
-  network and does not change the release.
+  two declared JSONL files. For a capture that claims `proof-backed-state` it
+  rebuilds the embedded Lazarus fixture from those objects in an
+  operating-system temporary directory, re-runs the sibling Lazarus plugin's
+  offline verifier over it and removes that directory before returning. It
+  refuses undeclared release entries, reaches no network and does not change
+  the release.
 - `statement <release-directory> --output <file>` completes that same offline
   verification before projecting the release and every component into a
   canonical unsigned in-toto Statement v1. It refuses an output inside or
