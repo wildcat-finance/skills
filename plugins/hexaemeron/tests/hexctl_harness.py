@@ -254,11 +254,18 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             declared_paths = [
                 row["path"] for row in declaration.get("paths", [])
             ]
+            tree_absent = set(
+                getattr(self, "next_prose_tree_absent_paths", [])
+            )
+            if hasattr(self, "next_prose_tree_absent_paths"):
+                del self.next_prose_tree_absent_paths
             for relative in declared_paths:
                 candidate = Path(self.target, *relative.split("/"))
                 pending_tree[prose_head][relative] = (
                     candidate.read_bytes().hex()
-                    if candidate.is_file() and not candidate.is_symlink()
+                    if relative not in tree_absent
+                    and candidate.is_file()
+                    and not candidate.is_symlink()
                     else None
                 )
             source_commit = declaration.get("source_commit")

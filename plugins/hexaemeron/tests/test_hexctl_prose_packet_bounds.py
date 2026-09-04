@@ -28,9 +28,9 @@ from io import StringIO
 from pathlib import Path
 
 try:
-    from .hexctl_harness import HexctlCase, LINTS_CLEAN, SUITE
+    from .hexctl_harness import AUDIT_FILTER, HexctlCase, LINTS_CLEAN, SUITE
 except ImportError:
-    from hexctl_harness import HexctlCase, LINTS_CLEAN, SUITE
+    from hexctl_harness import AUDIT_FILTER, HexctlCase, LINTS_CLEAN, SUITE
 
 
 HERE = Path(__file__).resolve().parent
@@ -271,6 +271,14 @@ class ClosedProseAuthorityTests(HexctlCase):
             for name in ("state.json", "ledger.jsonl")
         )
 
+    def append_zero_round_candidate(self, *extra):
+        args = (
+            "audit-round", "--findings", "0", *LINTS_CLEAN, *extra,
+            *AUDIT_FILTER,
+        )
+        self.append_valid_audit_record(args, self.state())
+        return args
+
     def to_prose(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
@@ -349,7 +357,7 @@ class ClosedProseAuthorityTests(HexctlCase):
         relative = "docs/decisions/ADR-999-fixture.md"
         source = controller_module().last_local_commit(self.state()["steps"][0])
         self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
-            source: {relative: None},
+            source: {".gitignore": None, relative: None},
         })
         self.run_ctl(
             "audit-round", "--findings", "0",
@@ -362,11 +370,6 @@ class ClosedProseAuthorityTests(HexctlCase):
             declaration["paths"], [{"path": relative, "baseline": "absent"}]
         )
         self.run_ctl("done", "audit")
-        destination = Path(self.target, *relative.split("/"))
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text("# Decision\n", encoding="utf-8")
-        self.git("add", "--", relative)
-        self.git("commit", "-q", "-m", "fixture prose")
         packet = self.next_json()
         self.assertEqual(packet["brief"]["files"], [relative])
         self.assertEqual(packet["brief"]["writable_files"], [relative])
@@ -374,11 +377,203 @@ class ClosedProseAuthorityTests(HexctlCase):
             packet["brief"]["writable_baselines"], declaration["paths"]
         )
         self.assertIn("review_files", packet["brief"])
+        destination = Path(self.target, *relative.split("/"))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text("# Decision\n", encoding="utf-8")
+        self.git("add", "--", relative)
+        self.git("commit", "-q", "-m", "fixture prose")
         self.run_ctl(
             "done", "prose", "--files", "2", "--skills",
             "hexaemeron:imprimatur,hexaemeron:vulgate",
         )
         self.run_ctl("verify")
+
+    def test_prose_declaration_refuses_git_administrative_paths(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        before = self.controller_bytes()
+        args = self.append_zero_round_candidate(
+            "--prose-writable", ".git/config"
+        )
+        refused = self.run_ctl(
+            *args, audit_filter=False, expect=1,
+        )
+        self.assertIn("Git administrative path", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_declaration_refuses_casefolded_nested_git_admin(self):
+        module = controller_module()
+        stderr = StringIO()
+        with self.assertRaises(SystemExit) as raised, redirect_stderr(stderr):
+            module._prose_relative_paths(
+                ["docs/.GiT/config"], "fixture.paths", limit=1
+            )
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("Git administrative path", stderr.getvalue())
+
+    def test_prose_declaration_bounds_component_depth_before_filesystem_walks(self):
+        module = controller_module()
+        relative = "/".join(["d"] * (module.PROSE_PATH_DEPTH_MAX + 1))
+        stderr = StringIO()
+        with self.assertRaises(SystemExit) as raised, redirect_stderr(stderr):
+            module._prose_relative_paths([relative], "fixture.paths", limit=1)
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("component depth limit", stderr.getvalue())
+
+    def test_prose_ignore_probe_refuses_status_zero_without_a_path(self):
+        module = controller_module()
+        original = module.bounded_probe
+        module.bounded_probe = lambda *args, **kwargs: (0, b"", None)
+        try:
+            stderr = StringIO()
+            with self.assertRaises(SystemExit), redirect_stderr(stderr):
+                module._prose_ignored_worktree_paths(
+                    self.target, ["docs/future.md"], "fixture"
+                )
+        finally:
+            module.bounded_probe = original
+        self.assertIn("ignore status is malformed", stderr.getvalue())
+
+    def test_prose_declaration_refuses_an_ignored_controller_path(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = ".hexaemeron/state.json"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {
+                ".gitignore": (relative + "\n").encode().hex(),
+                relative: None,
+            },
+        })
+        before = self.controller_bytes()
+        args = self.append_zero_round_candidate(
+            "--prose-writable", relative
+        )
+        refused = self.run_ctl(
+            *args, audit_filter=False, expect=2,
+        )
+        self.assertIn("absent path ignored by Git", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_declaration_preserves_a_tracked_ignored_blob(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "docs/guide.md"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {
+                ".gitignore": (relative + "\n").encode().hex(),
+                relative: b"# Guide\n".hex(),
+            },
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0", *LINTS_CLEAN,
+            "--prose-writable", relative,
+        )
+        binding = self.state()["steps"][0]["audit"]["rounds"][-1][
+            "prose_writable"
+        ]["paths"][0]
+        self.assertEqual(binding["path"], relative)
+        self.assertTrue(binding["baseline"].startswith("blob:100644:"))
+
+    def test_prose_declaration_refuses_existing_untracked_bytes(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "docs/untracked-fixture.md"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {".gitignore": None, relative: None},
+        })
+        destination = Path(self.target, *relative.split("/"))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text("private draft\n", encoding="utf-8")
+        before = self.controller_bytes()
+        args = self.append_zero_round_candidate(
+            "--prose-writable", relative
+        )
+        refused = self.run_ctl(
+            *args, audit_filter=False, expect=2,
+        )
+        self.assertIn("tree-absent path present in worktree", refused.stderr)
+        self.assertEqual(destination.read_text(encoding="utf-8"), "private draft\n")
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_declaration_does_not_follow_an_untracked_parent_link(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "linked-docs/new.md"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {".gitignore": None, relative: None},
+        })
+        os.symlink("docs", Path(self.target, "linked-docs"))
+        before = self.controller_bytes()
+        args = self.append_zero_round_candidate(
+            "--prose-writable", relative
+        )
+        refused = self.run_ctl(
+            *args, audit_filter=False, expect=2,
+        )
+        self.assertIn("unsafe parent", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_receipt_rechecks_new_ignore_rules(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "docs/decisions/ADR-999-fixture.md"
+        ignore = ".gitignore"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {ignore: None, relative: None},
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0", *LINTS_CLEAN,
+            "--prose-writable", ignore,
+            "--prose-writable", relative,
+        )
+        self.run_ctl("done", "audit")
+        Path(self.target, ignore).write_text(relative + "\n", encoding="utf-8")
+        self.git("add", "--", ignore)
+        self.git("commit", "-q", "-m", "fixture ignore rule")
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+        )
+        self.assertIn("absent path ignored by Git", refused.stderr)
+        self.assertEqual(self.controller_bytes(), before)
+
+    def test_prose_receipt_refuses_an_ignored_untracked_payload(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        relative = "docs/decisions/hidden-fixture.md"
+        ignore = ".gitignore"
+        source = controller_module().last_local_commit(self.state()["steps"][0])
+        self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
+            source: {ignore: None, relative: None},
+        })
+        self.run_ctl(
+            "audit-round", "--findings", "0", *LINTS_CLEAN,
+            "--prose-writable", ignore,
+            "--prose-writable", relative,
+        )
+        self.run_ctl("done", "audit")
+        self.next_json()
+        Path(self.target, ignore).write_text(relative + "\n", encoding="utf-8")
+        payload = Path(self.target, *relative.split("/"))
+        payload.parent.mkdir(parents=True, exist_ok=True)
+        payload.write_text("hidden prose\n", encoding="utf-8")
+        self.git("add", "--", ignore)
+        self.git("commit", "-q", "-m", "fixture ignore rule")
+        self.next_prose_tree_absent_paths = [relative]
+        before = self.controller_bytes()
+        refused = self.run_ctl(
+            "done", "prose", "--files", "2", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate", expect=2,
+        )
+        self.assertIn("absent path ignored by Git", refused.stderr)
+        self.assertEqual(payload.read_text(encoding="utf-8"), "hidden prose\n")
+        self.assertEqual(self.controller_bytes(), before)
 
     def test_prose_refuses_unlisted_operative_text_and_markdown(self):
         self.to_prose()
@@ -427,7 +622,7 @@ class ClosedProseAuthorityTests(HexctlCase):
         self.run_ctl("record", "security_suite", SUITE)
         source = controller_module().last_local_commit(self.state()["steps"][0])
         self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
-            source: {relative: None},
+            source: {".gitignore": None, relative: None},
         })
         self.run_ctl(
             "audit-round", "--findings", "0", "--prose-writable", relative,
@@ -469,7 +664,7 @@ class ClosedProseAuthorityTests(HexctlCase):
         relative = "docs/decisions/ADR-999-fixture.md"
         source = controller_module().last_local_commit(self.state()["steps"][0])
         self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
-            source: {relative: None},
+            source: {".gitignore": None, relative: None},
         })
         self.run_ctl(
             "audit-round", "--findings", "0", "--prose-writable", relative,
@@ -509,7 +704,10 @@ class ProseDirectiveTests(HexctlCase):
         self.run_ctl("record", "security_suite", '"waived: fixture"')
         source = controller_module().last_local_commit(self.state()["steps"][0])
         self.env["FAKE_GIT_TREE_BY_COMMIT"] = json.dumps({
-            source: {"docs/record.md": None},
+            source: {
+                ".gitignore": None,
+                "docs/record.md": b"original\n".hex(),
+            },
         })
         self.run_ctl(
             "audit-round",

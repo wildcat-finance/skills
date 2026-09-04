@@ -265,6 +265,7 @@ INTEGRATION_PATHS_MAX = 4096
 # because the two surfaces answer to different work and may diverge.
 PROSE_PATHS_MAX = 4096
 PROSE_WRITABLE_PATHS_MAX = PROSE_PATHS_MAX - 2
+PROSE_PATH_DEPTH_MAX = 128
 PROSE_WRITABLE_SCHEMA = "fiat-prose-writable/v1"
 PROSE_RECEIPT_SCHEMA = "fiat-prose-receipt/v1"
 PROSE_BASELINE_RE = re.compile(
@@ -1714,6 +1715,15 @@ def _prose_relative_paths(value, path: str, *, limit: int) -> list[str]:
             or any(byte < 0x20 or byte == 0x7F for byte in encoded)
         ):
             _prose_state_fault(f"{path}[{index}]", "is malformed")
+        if any(part.casefold() == ".git" for part in item.split("/")):
+            _prose_state_fault(
+                f"{path}[{index}]", "enters a Git administrative path"
+            )
+        if len(item.split("/")) > PROSE_PATH_DEPTH_MAX:
+            _prose_state_fault(
+                f"{path}[{index}]",
+                f"exceeds the {PROSE_PATH_DEPTH_MAX}-component depth limit",
+            )
     return value
 
 
@@ -8185,6 +8195,217 @@ def _sync_tree_entries(
     return identities
 
 
+def _prose_ignore_files(paths: list[str]) -> list[str]:
+    """Name the versioned ignore files that can classify the supplied paths."""
+    ignore_files = {".gitignore"}
+    for path in paths:
+        parts = path.split("/")
+        ignore_files.update(
+            "/".join([*parts[:depth], ".gitignore"])
+            for depth in range(1, len(parts))
+        )
+        if len(ignore_files) > PROSE_PATHS_MAX:
+            die(
+                "prose-writable ignore proof exceeds the "
+                f"{PROSE_PATHS_MAX}-path ceiling"
+            )
+    return sorted(ignore_files)
+
+
+def _prose_ignored_worktree_paths(
+    base_dir: str, paths: list[str], label: str
+) -> set[str]:
+    """Ask native Git which absent paths its current ignore rules conceal."""
+    paths = _prose_relative_paths(
+        sorted(paths), f"{label}.paths", limit=PROSE_WRITABLE_PATHS_MAX
+    )
+    ignored: set[str] = set()
+    for batch in _sync_tree_path_batches(paths):
+        status, raw, failure = bounded_probe(
+            base_dir,
+            "git",
+            [
+                "--no-replace-objects",
+                "-c",
+                "core.quotePath=false",
+                "check-ignore",
+                "--no-index",
+                "--",
+                *batch,
+            ],
+            environment=_native_relation_environment(),
+        )
+        if failure is not None or status not in {0, 1}:
+            die(f"{label} ignore status cannot be read")
+        try:
+            observed = raw.decode("utf-8", errors="strict").splitlines()
+        except UnicodeDecodeError:
+            die(f"{label} ignore status is not UTF-8")
+        if (
+            (status == 0) != bool(observed)
+            or len(observed) != len(set(observed))
+            or not set(observed) <= set(batch)
+        ):
+            die(f"{label} ignore status is malformed")
+        ignored.update(observed)
+    return ignored
+
+
+def _require_prose_worktree_absence(
+    base_dir: str, paths: list[str], label: str
+) -> None:
+    """Require tree-absent paths to be physically absent without following links."""
+    if not paths:
+        return
+    paths = _prose_relative_paths(
+        sorted(paths), f"{label}.paths", limit=PROSE_WRITABLE_PATHS_MAX
+    )
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    close_on_exec = getattr(os, "O_CLOEXEC", 0)
+    if (
+        not no_follow
+        or not directory_only
+        or not close_on_exec
+        or os.open not in os.supports_dir_fd
+        or os.stat not in os.supports_dir_fd
+        or os.stat not in os.supports_follow_symlinks
+    ):
+        die(f"{label} cannot prove no-follow worktree absence")
+    flags = os.O_RDONLY | no_follow | directory_only | close_on_exec
+    try:
+        root_fd = os.open(os.path.realpath(base_dir), flags)
+    except OSError:
+        die(f"{label} repository root is unavailable or unsafe")
+    try:
+        try:
+            root_metadata = os.fstat(root_fd)
+        except OSError:
+            die(f"{label} repository root is unavailable or unsafe")
+        if not stat.S_ISDIR(root_metadata.st_mode):
+            die(f"{label} repository root is unavailable or unsafe")
+        for path in paths:
+            try:
+                current = os.dup(root_fd)
+            except OSError:
+                die(f"{label} repository root is unavailable or unsafe")
+            try:
+                missing_parent = False
+                parts = path.split("/")
+                for part in parts[:-1]:
+                    try:
+                        child = os.open(part, flags, dir_fd=current)
+                    except FileNotFoundError:
+                        missing_parent = True
+                        break
+                    except OSError:
+                        die(f"{label} path '{path}' has an unsafe parent")
+                    try:
+                        child_metadata = os.fstat(child)
+                    except OSError:
+                        os.close(child)
+                        die(f"{label} path '{path}' has an unsafe parent")
+                    if not stat.S_ISDIR(child_metadata.st_mode):
+                        os.close(child)
+                        die(f"{label} path '{path}' has an unsafe parent")
+                    os.close(current)
+                    current = child
+                if missing_parent:
+                    continue
+                try:
+                    os.stat(parts[-1], dir_fd=current, follow_symlinks=False)
+                except FileNotFoundError:
+                    continue
+                except OSError:
+                    die(f"{label} path '{path}' cannot be inspected safely")
+                die(f"{label} contains a tree-absent path present in worktree: {path}")
+            finally:
+                os.close(current)
+    finally:
+        os.close(root_fd)
+
+
+def _prose_ignored_paths_at_commit(
+    base_dir: str, commit_sha: str, paths: list[str], label: str
+) -> set[str]:
+    """Evaluate only an exact commit's tracked ignore rules in a private repo."""
+    if not paths:
+        return set()
+    commit_sha = _native_relation_commit(
+        base_dir, commit_sha, f"{label} commit"
+    )
+    ignore_paths = _prose_ignore_files(paths)
+    identities = _sync_tree_entries(
+        base_dir, commit_sha, ignore_paths, f"{label} ignore files"
+    )
+    total = 0
+    with tempfile.TemporaryDirectory(prefix="fiat-prose-ignore-") as temporary:
+        root = Path(temporary)
+        _native_relation_git(
+            str(root),
+            ["init", "--quiet", "--template="],
+            f"{label} private ignore repository cannot be initialized",
+        )
+        try:
+            for path in paths:
+                (root / Path(*path.split("/")).parent).mkdir(
+                    mode=0o700, parents=True, exist_ok=True
+                )
+            for relative, identity in identities.items():
+                if identity is None or not re.fullmatch(
+                    r"100(?:644|755) blob [0-9a-f]{40}(?:[0-9a-f]{24})?",
+                    identity,
+                ):
+                    continue
+                _object, raw = read_commit_blob(
+                    base_dir,
+                    commit_sha,
+                    relative,
+                    f"{label} ignore file '{relative}'",
+                )
+                total += len(raw)
+                if total > SOURCE_BYTES_MAX:
+                    die(
+                        f"{label} ignore files exceed the "
+                        f"{SOURCE_BYTES_MAX}-byte cap"
+                    )
+                destination = root / Path(*relative.split("/"))
+                destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                with destination.open("xb") as handle:
+                    handle.write(raw)
+        except OSError:
+            die(f"{label} private ignore tree cannot be materialized")
+        return _prose_ignored_worktree_paths(str(root), paths, label)
+
+
+def _require_prose_unignored_absent_paths(
+    base_dir: str,
+    commit_sha: str,
+    paths: list[str],
+    label: str,
+    *,
+    check_worktree: bool,
+) -> None:
+    if not paths:
+        return
+    ignored = _prose_ignored_paths_at_commit(
+        base_dir, commit_sha, paths, label
+    )
+    if ignored:
+        die(
+            f"{label} contains an absent path ignored by Git: "
+            f"{sorted(ignored)[0]}"
+        )
+    if check_worktree:
+        _require_prose_worktree_absence(base_dir, paths, label)
+        ignored = _prose_ignored_worktree_paths(base_dir, paths, label)
+        if ignored:
+            die(
+                f"{label} contains an absent path ignored by Git: "
+                f"{sorted(ignored)[0]}"
+            )
+
+
 def _audit_synopsis_repo_path(log_path: str) -> str:
     """Return the renderer-owned sibling for one supported audit source."""
     directory, separator, name = log_path.rpartition("/")
@@ -8249,6 +8470,11 @@ def _build_prose_writable_declaration(
         sorted(supplied_paths),
         "prose-writable declaration",
     )
+    _prose_relative_paths(
+        paths,
+        "prose-writable declaration",
+        limit=PROSE_WRITABLE_PATHS_MAX,
+    )
     if len(paths) > PROSE_WRITABLE_PATHS_MAX:
         die(
             "prose-writable declaration exceeds the "
@@ -8267,6 +8493,13 @@ def _build_prose_writable_declaration(
     identities = _sync_tree_entries(
         base_dir, source_commit, paths, "prose-writable baseline"
     )
+    _require_prose_unignored_absent_paths(
+        base_dir,
+        source_commit,
+        [path for path in paths if identities[path] is None],
+        "prose-writable declaration",
+        check_worktree=True,
+    )
     body = {
         "schema": PROSE_WRITABLE_SCHEMA,
         "source_commit": source_commit,
@@ -8284,7 +8517,11 @@ def _build_prose_writable_declaration(
 
 
 def _verify_prose_writable_declaration(
-    base_dir: str, declaration: dict, label: str
+    base_dir: str,
+    declaration: dict,
+    label: str,
+    *,
+    check_worktree: bool = False,
 ) -> dict:
     declaration = validate_prose_writable_shape(declaration, label)
     source_commit = _native_relation_commit(
@@ -8301,6 +8538,13 @@ def _verify_prose_writable_declaration(
     )
     if observed != expected:
         die(f"{label} baseline no longer matches its audited source commit", 1)
+    _require_prose_unignored_absent_paths(
+        base_dir,
+        source_commit,
+        [path for path, identity in expected.items() if identity is None],
+        label,
+        check_worktree=check_worktree,
+    )
     return declaration
 
 
@@ -8396,11 +8640,18 @@ def _require_prose_audit_identity(
 
 
 def _prose_tree_evidence(
-    base_dir: str, declaration: dict, head_commit: str, round_entry: dict
+    base_dir: str,
+    declaration: dict,
+    head_commit: str,
+    round_entry: dict,
+    *,
+    check_worktree: bool = False,
 ) -> None:
     """Prove the final committed tree changes only Warden-declared prose."""
     declaration = _verify_prose_writable_declaration(
-        base_dir, declaration, "prose-writable declaration"
+        base_dir,
+        declaration,
+        "prose-writable declaration",
     )
     source_commit = declaration["source_commit"]
     head_commit = _native_relation_commit(base_dir, head_commit, "prose head")
@@ -8431,6 +8682,18 @@ def _prose_tree_evidence(
         _require_prose_final_entry(
             row["path"], row["baseline"], final_entries[row["path"]]
         )
+    _require_prose_unignored_absent_paths(
+        base_dir,
+        head_commit,
+        [
+            row["path"]
+            for row in declaration["paths"]
+            if row["baseline"] == "absent"
+            and final_entries[row["path"]] is None
+        ],
+        "prose head",
+        check_worktree=check_worktree,
+    )
     _require_prose_audit_identity(base_dir, head_commit, round_entry)
 
 
@@ -8445,7 +8708,13 @@ def _build_prose_receipt(
     rounds = as_dict(step.get("audit")).get("rounds") or []
     round_entry = as_dict(rounds[-1])
     head_commit = _native_relation_commit(base_dir, head_commit, "prose head")
-    _prose_tree_evidence(base_dir, declaration, head_commit, round_entry)
+    _prose_tree_evidence(
+        base_dir,
+        declaration,
+        head_commit,
+        round_entry,
+        check_worktree=True,
+    )
     verified = verify_local_range(
         base_dir,
         declaration["source_commit"],
@@ -13123,6 +13392,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             root,
             declaration,
             f"step {step['n']} prose-writable declaration",
+            check_worktree=True,
         )
         packet["brief"].update({
             "files": [row["path"] for row in declaration["paths"]],
