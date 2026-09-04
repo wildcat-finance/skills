@@ -97,22 +97,18 @@ printed into the controller's context first. An unknown field path is refused
 rather than answered, so a wrong path fails visibly instead of reading as
 absent.
 
-This clause lives here for a different reason from the two above. The
-instructions that would otherwise carry it are inside
+This clause lived here for a different reason from the two above, and that
+reason is gone. The instructions that would otherwise carry it are inside
 [fiat/SKILL.md](fiat/SKILL.md), which
 `tests/fixtures/agent-instruction-v1/manifest.json` binds by whole-file
-SHA-256; editing it invalidates a bound measurement record that only
-`scripts/agent_instruction.py measure` can reissue, and that measurement has no
-machine to run on. Both flags landed on `main` and are available now, so the
-saving is reachable from here while the bound document waits. Ordinary
-non-frontier runs still read whatever `fiat/SKILL.md` says and still pay for
-it; this is not a substitute for that edit, and it does not settle
-[skills#1066](https://github.com/wildcat-finance/skills/issues/1066)'s
-acceptance checks, which name the controller's transcript rather than a
-frontier run's conduct. See
-[skills#1030](https://github.com/wildcat-finance/skills/issues/1030) and
-[skills#1098](https://github.com/wildcat-finance/skills/issues/1098) for the
-reconciliation this defers.
+SHA-256. Editing it used to invalidate a bound measurement record that only
+`scripts/agent_instruction.py measure` could reissue, on one machine, so the
+clause was written here instead.
+[skills#1098](https://github.com/wildcat-finance/skills/issues/1098) closed
+that for an edit outside the reviewed span, and `fiat/SKILL.md` now says both
+things itself, so an ordinary run gets the saving rather than only a frontier
+one. The clause stays because a frontier run owes it explicitly, not because
+the controller cannot be told.
 
 A mature frontier can reopen only when a maintainer supplies a new external
 failure, requirement, dependency change, or other evidence that invalidates

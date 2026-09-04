@@ -717,8 +717,11 @@ attest the comment's semantic passes or bytes.
 Every `next` envelope carries `state_sha256`, an explicit `agent`, and a
 source-bound `brief`. Delegate the exact packet to `surveyor`, `mason`,
 `warden`, or `scribe` when the runtime supports isolated agents. An inline
-directive carries explicit null packet fields. Refuse an artefact whose digest
-has drifted; do not reconstruct its design selection, study block, runbook
+directive carries explicit null packet fields. Where the directive is an
+`audit-round`, run `hexctl next --brief-out <path>` and hand the delegate that
+path: the step markdown, risk register and design evidence reach the Warden
+without being printed into the controller's own transcript first. Refuse an
+artefact whose digest has drifted; do not reconstruct its design selection, study block, runbook
 step, risk register, or sorted prose diff from chat. If delegation is
 unavailable, execute the same
 packet in the main session. After compaction, rerun `next`: the receipted
@@ -775,7 +778,9 @@ Use `hexctl halt --reason ...` so the stop itself is on the ledger.
 ## Optional companion observation receipt
 
 Observation is never a phase gate. When a selected controller receipt needs a
-companion record, obtain `observation_run_id` from `hexctl status --json`, emit
+companion record, obtain `observation_run_id` from
+`hexctl status --field observation_run_id`, which prints that one value rather
+than every step, receipt and audit round recorded so far, emit
 the stream beneath `.hexaemeron/observations/`, and run the root
 `scripts/run_observation.py check-prefix` command. Immediately after the
 receipt being described, bind the accepted prefix:
