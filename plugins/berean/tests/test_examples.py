@@ -9,7 +9,7 @@ import unittest
 
 from tests.support import PLUGIN_ROOT, REPO_ROOT, SCRIPTS  # noqa: F401
 
-from berean_lib import evals, jsonio, promote, release
+from berean_lib import evals, jsonio, release
 from tests.test_corpus import failures
 
 EXAMPLE = PLUGIN_ROOT / "examples" / "aave-v4-demo-v0"

@@ -12415,6 +12415,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "design_output_path": scoped_path(
                 root, DESIGN_EVIDENCE_FILE, "design-evidence output"
             ),
+            # Surveyor applies Protasis and Mason applies five more siblings.
+            # Neither could resolve a path to them, so each brief carries the
+            # plugin root the way Warden's and Scribe's already do.
+            "plugin_root": plugin_root(),
         }
         return packet
 
@@ -12435,6 +12439,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
 
     step = current_step(state)
     plan = branch_plan(state, step)
+    root_plugin = plugin_root()
     if action == "implement":
         packet["agent"] = "mason"
         packet["brief"] = {
@@ -12446,12 +12451,12 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             ),
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
+            "plugin_root": root_plugin,
         }
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
 
-    root_plugin = plugin_root()
     if action == "audit-round":
         audit = as_dict(as_dict(state.get("config")).get("audit"))
         log = configured_audit_log(state)
@@ -12465,13 +12470,22 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "stacked_branch is not a valid Git branch",
         )
         packet["agent"] = "warden"
+        # Which Warden the controller delegates to, not what that Warden has
+        # read. A step's first round has no earlier agent to continue, so it
+        # says `new`; a later round of the same step says `same-agent`. The
+        # value never asserts that the suite documents are loaded: a Warden
+        # decides that from its own context, and a host that cannot keep the
+        # agent alive starts a new one and reads them in full.
+        prior_rounds = as_dict(step.get("audit")).get("rounds") or []
         packet["brief"] = {
             "step_branch": plan["branch"],
             "stacked_branch": stacked_branch,
             "security_suite": as_dict(state.get("receipts")).get("security_suite"),
             "plugin_root": root_plugin,
             "audit_log_path": scoped_path(root, log, "audit log path"),
+            "step": step["n"],
             "round": directive["round"],
+            "warden_continuity": "new" if not prior_rounds else "same-agent",
             "audit_filter": directive["audit_filter"],
             "risk_register": source_risk_register(study),
             "runbook_step": source_runbook_step(

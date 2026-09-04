@@ -899,6 +899,7 @@ class ParsedPython:
     dynamic_boundaries: tuple[str, ...]
     retained_names: frozenset[str]
     imports: tuple[tuple[str, int], ...]
+    marked_lines: frozenset[int]
 
 
 @dataclass(frozen=True)
@@ -949,6 +950,34 @@ def _call_name(node: ast.Call) -> str:
     if isinstance(target, ast.Attribute):
         return target.attr
     return ""
+
+
+UNUSED_IMPORT_MARKER = re.compile(
+    r"#[^\S\n]*noqa(?::[^\S\n]*(?P<codes>[A-Za-z]+[0-9]+"
+    r"(?:[^\S\n]*,[^\S\n]*[A-Za-z]+[0-9]+)*))?"
+)
+UNUSED_IMPORT_CODE = "F401"
+
+
+def _marked_lines(source: str) -> frozenset[int]:
+    """Line numbers whose comment waives the unused-import finding.
+
+    A bare ``# noqa`` waives every finding on its line; a coded one waives this
+    finding only when it names F401, the code the marker is conventionally
+    written for, so an ``E402`` waiver does not silence an unused import.
+    Comments never reach the AST, so the lexical read happens once here rather
+    than once per candidate. A marker inside a string literal on an import line
+    would be honoured; that costs one candidate and never hides a load.
+    """
+    marked: set[int] = set()
+    for number, line in enumerate(source.splitlines(), start=1):
+        match = UNUSED_IMPORT_MARKER.search(line)
+        if match is None:
+            continue
+        codes = match.group("codes")
+        if codes is None or UNUSED_IMPORT_CODE in codes.upper():
+            marked.add(number)
+    return frozenset(marked)
 
 
 def _literal_exports(tree: ast.Module) -> set[str]:
@@ -1165,6 +1194,7 @@ def parse_python_snapshot(root: Path, universe: Universe) -> PythonSnapshot:
                     tree=tree,
                     bytes_count=size,
                     dynamic_boundaries=dynamic,
+                    marked_lines=_marked_lines(source),
                     retained_names=_retained_names(path, tree),
                     imports=_import_targets(
                         module,
@@ -1270,6 +1300,10 @@ def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
         if isinstance(node, ast.Import):
             aliases = node.names
         elif isinstance(node, ast.ImportFrom):
+            if node.module == "__future__":
+                # A future import is a compiler directive, not a binding any
+                # reader is meant to load, so its name carries no evidence.
+                continue
             aliases = node.names
         else:
             continue
@@ -1279,6 +1313,11 @@ def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
             binding = alias.asname or alias.name.split(".")[0]
             identity = (binding, node.lineno)
             if binding in loads or binding.startswith("_") or identity in seen_imports:
+                continue
+            lines = {node.lineno, getattr(alias, "lineno", node.lineno)}
+            if lines & item.marked_lines:
+                # The author declared the side effect on the import's own line;
+                # the underscore convention above is the same kind of signal.
                 continue
             seen_imports.add(identity)
             yield _candidate(
@@ -1354,6 +1393,11 @@ def _block_findings(item: ParsedPython) -> Iterable[Finding]:
         if isinstance(node.test, ast.Constant) and isinstance(node.test.value, (bool, type(None))):
             truth = bool(node.test.value)
         if truth is None:
+            continue
+        if truth and isinstance(node, ast.While):
+            # `while True:` is the only unbounded-loop spelling Python has. The
+            # exit is a break, return or raise in the body, so the condition is
+            # never a dead branch. `while False:` still is one.
             continue
         direction = "true" if truth else "false"
         yield _candidate(
