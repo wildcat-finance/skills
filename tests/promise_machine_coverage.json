@@ -8,12 +8,12 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "c7f0bea52aee68f3c561fd95f8648a74695cf25182b89d9f177ef4d5e3d71775"
+      "sha256": "bad9151f8238b33d0a3569e4d623cc4ad857f00ac2aa8372443bddbd6dfbb6d9"
     },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "398cd69ac8beadb112b135380be2597bec42a7274d3819b1b9b465ad49e39f65"
+        "sha256": "19e4ae88616f09de7dcfd4bf50df35f95f80e4019def5b9c764f15dc9b0c5cbb"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
@@ -23,11 +23,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "beaf79abd92c011d7ecaed9a901e2a6c17c5b627e91b2551dcdefa45ee102b1b"
+        "sha256": "8d0dbab3f247aa43e5b6e3ac0c1c7e5b2b1edb0a79aa04bdd8d6c754b6087e4f"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "d24b03f9679bc32798c46a80bb911be141a0c2c13df59e624aecbc036d823d82"
+        "sha256": "bdb2f83c4f2fa57e2ab49ceca2e8d543e97e4caea873aba67618aa56346bbab4"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -39,7 +39,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "7105769c55ef6241d5f4fb1857726de36875163139e9255c5a0f292122a156dc"
+        "sha256": "6ce6da97f85b72da057824ceaf5385c1908463bff56eb7c1509a55b6f9a4ee1f"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -93,7 +93,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "2af54575ac07eade7a81a2a39322e90d52cbce9e95ecc836395f2daee06c73b8"
+        "sha256": "fae11309f9402f8706068cb7a83cfdd6584357c723559b252a03ea51af7da7f4"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -101,7 +101,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "74ab855ceb19e7d033a981341db03ecf1d4d7bc4711831bf9c306ed17ef1b816"
+        "sha256": "84c94177459f717836e9fd934ea711928cb4fc42e513eeb4b20b6b1ae64b6a26"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
