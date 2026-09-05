@@ -136,6 +136,27 @@ commit is refused if the gate is on, and passes silently if it is off. This
 decision does not close that hole. It makes the hole announce itself the first
 time the suite runs.
 
+**The 200-millisecond budget is a steady-state budget, and the first commit
+after the hook file is written breaches it.** Steady state is where the design
+has room: three fresh repositories timed the gate at 18.97, 23.20 and 20.57
+milliseconds against 6.49, 2.13 and 7.03 for a hook whose entire body is a bare
+success, so the gate's own logic costs roughly 14 milliseconds and the budget
+has an order of magnitude in hand. The first execution of a hook file does not.
+It was measured at 219.61, 253.05 and 322.49 milliseconds in one round and at
+150.13 to 250.40 in another for the same quantity, with a bare-success hook
+paying 182.79 of it in the first and 137.11 to 140.75 in the second; nothing
+established why the range moved between the two. That cost is paid per hook
+file rather than per machine or per content, which three clones of one origin
+showed with every hook byte-identical and each paying it again at 159.05,
+165.57 and 152.28 milliseconds against the origin's 158.53. So a contributor
+meets it after a clone and after any pull that rewrites the gate, and no gate
+design avoids it, because the bare-success hook pays most of the same bill. The
+measurements are recorded; that they belong to the operating system's
+first-execution assessment is inferred from the per-file recurrence signature
+on one macOS arm64 machine, with nothing instrumented to confirm it. The
+figures and their conditions are in `docs/commit-gate/study.md`, section 10 and
+the amendments that correct it.
+
 Where the gate lives is expensive to reverse. Once contributors have set
 `core.hooksPath` in their own clones, moving the directory leaves every one of
 those settings pointing at nothing, and the failure they get names a path that
