@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17621188,
+    "bytes_blob": 17674420,
     "bytes_generated": 98
   },
   "entries": [
@@ -341,6 +341,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-ship-the-content-addressed-object-rule-whose-evi.synopsis.md"
+    },
+    {
+      "bytes": 53232,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-ship-the-markdown-outline-extractor-the-census-n.synopsis.md"
     },
     {
       "bytes": 59394,

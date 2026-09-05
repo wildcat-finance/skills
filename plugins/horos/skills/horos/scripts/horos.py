@@ -3,7 +3,7 @@
 scan <root>    classify the tree; --json prints the boundary document,
                --write commits it to .horos/boundary.json atomically
 check <root>   re-derive the boundary and name every drifted path
-map <file.py>  print the file's skeleton instead of the file
+map <file>     print the file's skeleton instead of the file
 
 Classification is fail-open: a file the rules cannot evidence stays readable
 and earns no entry. The scanner stats every file but reads at most
@@ -1225,8 +1225,10 @@ def main(argv=None):
     )
     checker = subparsers.add_parser("check", help="verify the committed boundary")
     checker.add_argument("root", help="directory to check")
-    mapper = subparsers.add_parser("map", help="print a Python file's skeleton")
-    mapper.add_argument("file", help="Python file to map")
+    mapper = subparsers.add_parser(
+        "map", help=f"print a file's skeleton; supports {languages.supported()}"
+    )
+    mapper.add_argument("file", help=f"file to map ({languages.supported()})")
     args = parser.parse_args(argv)
 
     if args.command == "map":

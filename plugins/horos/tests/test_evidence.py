@@ -22,6 +22,8 @@ BUNDLE_6 = EVIDENCE / "solidity-outline.md"
 RESULTS_6 = EVIDENCE / "solidity-outline.results.json"
 BUNDLE_7 = EVIDENCE / "v2-protocol-outline.md"
 RESULTS_7 = EVIDENCE / "v2-protocol-outline.results.json"
+BUNDLE_9 = EVIDENCE / "skills-markdown-outline.md"
+RESULTS_9 = EVIDENCE / "skills-markdown-outline.results.json"
 BUNDLE_8 = EVIDENCE / "three-repository-marking.md"
 MARKING_V2P = EVIDENCE / "v2-protocol.boundary.json"
 MARKING_APP = EVIDENCE / "wildcat-app-v2.boundary.v2.json"
@@ -228,6 +230,39 @@ class SecondCaptureTests(unittest.TestCase):
         self.assertEqual(totals["extra"], 0)
         self.assertEqual(totals["oracle_unparsed"], 0)
         self.assertEqual(totals["matched"], totals["oracle"])
+
+    def test_the_markdown_outline_bundle_matches_its_committed_results(self):
+        lines = capture_lines(BUNDLE_9, "mdoutline")
+        totals = json.loads(RESULTS_9.read_text(encoding="utf-8"))["totals"]
+        for key in (
+            "files",
+            "bytes",
+            "crashes",
+            "oracle",
+            "matched",
+            "missed",
+            "missed_confessed",
+            "extra",
+            "fence_oracle",
+            "fence_matched",
+            "fence_missed",
+            "fence_missed_confessed",
+            "fence_extra",
+            "regions",
+            "files_with_regions",
+        ):
+            self.assertEqual(int(lines[key]), totals[key], key)
+        self.assertRegex(lines["commit"], r"^[0-9a-f]{40}$")
+
+    def test_the_markdown_outline_acceptance_holds(self):
+        totals = json.loads(RESULTS_9.read_text(encoding="utf-8"))["totals"]
+        self.assertEqual(totals["crashes"], 0)
+        self.assertEqual(totals["missed"], 0)
+        self.assertEqual(totals["extra"], 0)
+        self.assertEqual(totals["fence_missed"], 0)
+        self.assertEqual(totals["fence_extra"], 0)
+        self.assertEqual(totals["matched"], totals["oracle"])
+        self.assertEqual(totals["fence_matched"], totals["fence_oracle"])
 
     def test_the_marking_bundle_matches_the_committed_boundaries(self):
         lines = capture_lines(BUNDLE_8, "marking")

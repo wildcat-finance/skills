@@ -8,7 +8,7 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "015e011b4ee8acff2a277529823f65be736fb28361b18d924d01a5b7bef59b0b"
+      "sha256": "608ca6c0309c97250b59f53ebea3c5fc8b009d4c7e7537b1578cc210566eb828"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
@@ -55,11 +55,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
-        "sha256": "33d7f5bd2b07ee3e431ab52723458e0bd1f9a9c474d562d89ab38eeb65fd7aae"
+        "sha256": "a70d1f815e04b76d39ee0868fad79e9609fab52424ee9580dd91846a7d774ead"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json",
-        "sha256": "014f2fb264d0bc428e05437aa4a75b8f0e5c1f90b2a545883f51e19d9566f5bd"
+        "sha256": "555fb748fbfb8b9035d6807e7c71455a6ec65ed90afc948fb29e08703b707256"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/mutations.json",
@@ -71,7 +71,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json",
-        "sha256": "1b51c7050615f407817d9b2259a83fad6f1ac374f8e520302262cac9f76bcc58"
+        "sha256": "6b801306019e2b49f6ff18af082113c09ad21fd342eea24116b5683d302cbb28"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
@@ -105,7 +105,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "2d11765b5be9996e7e77b998cc28d49843722753564ef90cfc39f544ce76315c"
+        "sha256": "1f1f168fc66489d497464772946caa5affc71656c41b2325843c9a4297fa158f"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -113,7 +113,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "a5dcf3dea24f60e724b38b23a49df840618cddab49680fb1f05117bcb0dc6f15"
+        "sha256": "5c628fe267bb9862cc165848be1380b545b68c416cf9d914c608da71670687c7"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
@@ -4488,7 +4488,7 @@
         "transition": "atomic scan write and zero exit joined to the canonical Authorises field",
         "unknowns": "omitted paths and fail-open unproven classifications"
       },
-      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
+      "sha256": "66f9f90d3b0791674949b2004250e19a588e4d94243ed91ab2befca79fdf4a8a",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
     "hypomnema-record-placement": {
