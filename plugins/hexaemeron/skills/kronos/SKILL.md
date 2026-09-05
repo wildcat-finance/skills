@@ -8,7 +8,7 @@ description: >-
   Fiat frontier loop, or for the ranking on its own without running anything.
   Do not use it for one ordinary Fiat delivery.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 <p align="center">
@@ -150,12 +150,18 @@ rank-only pass over the six phase skills records `mode` as `phase-only` and
    `done integrate` refuses until the ledger carries exactly one new valid row.
    A loop that ranks by held job cannot afford to take an unchanged ledger for
    a closed one, because the next pass would rank the same job again. Before
-   rescanning, restore controller currency: run `hexctl currency`, and while
-   it exits 3, reinstall every plugin it reports behind through this host's
-   own installer, refresh, and re-resolve the paths, so the next ranking runs
-   on the pins the merged run just published rather than the ones the chain
-   started with; `../fiat/references/plugin-currency.md` names the host
-   mechanism. Then
+   rescanning, restore controller currency. Run `hexctl currency` and read its
+   exact exit status. Exit 0 alone permits the rescan. On exit 3, reinstall
+   every plugin it reports behind through this host's own installer, refresh,
+   re-resolve the paths, and run `hexctl currency` again; repeat until it exits
+   0. On exit 1, record the command's exact refusal text and exit status as an
+   unresolved controller-currency boundary in the current task report, then
+   stop. Treat any other exit status the same way. Do not rescan, rerank, or
+   dispatch another Fiat run until the fleet report exits 0. If an install or
+   refresh fails, or one complete repair cycle changes no reported-behind
+   plugin's recorded pin, record that exact failure and stop under the same
+   boundary.
+   `../fiat/references/plugin-currency.md` names the host mechanism. Then
    rescan the entire scope from disk -- every plugin and every governed skill,
    not only those ranked in the previous pass -- rerank from scratch, and
    repeat. A skill whose frontier was replaced re-enters the ranking carrying
@@ -295,6 +301,10 @@ The store decision is
 - Never release a park on the loop's own judgement, and never call the loop
   complete while one stands.
 - Never treat a failed pull of an existing state ref as an empty lane.
+- Never rescan, rerank, or dispatch another Fiat run while the latest
+  controller-currency report has not exited 0.
+- Never retry controller currency forever when an install or refresh fails or
+  no reported-behind plugin's recorded pin changes across a repair cycle.
 - Never commit `.kronos/` into a Fiat run branch or into `main`.
 - Never rewrite history on `kronos/state`.
 
@@ -315,13 +325,13 @@ The store decision is
 ### kronos-fiat-dispatch
 
 - Promise: A full or phase-only loop dispatches the selected held job to Fiat only when the user explicitly authorised Kronos execution and the candidate remains eligible and unparked at dispatch.
-- Evidence: The user's explicit Kronos request, current ranking record, selected ledger and held-job digest, empty standing park for that job and the newly initialised Fiat run receipt.
+- Evidence: The user's explicit Kronos request, current ranking record, selected ledger and held-job digest, empty standing park for that job and the newly initialised Fiat run receipt. For any dispatch after a completed iteration, evidence also includes that iteration's terminal state and an exit-0 `hexctl currency` fleet report before the next rescan.
 - Evidence classes: checked, recorded, inferred
-- Boundary: Dispatch establishes why this eligible job entered Fiat; it does not prove the ranking globally optimal, the job complete or Fiat's later receipts true.
-- Authorises: Starting one Fiat delivery for the selected held job and reranking from disk only after that run reaches a terminal recorded state.
+- Boundary: Dispatch establishes why this eligible job entered Fiat; it does not prove the ranking globally optimal, the job complete, Fiat's later receipts true or the fleet current after the named report.
+- Authorises: Starting one Fiat delivery for the selected held job and reranking from disk only after that run reaches a terminal recorded state and the fleet report exits 0.
 - Consequence: 3
-- Refuses: Implicit activation, self-selection, a mature or vendored frontier, a standing park, a lower-ranked skip with no park or continuation after no eligible frontier remains.
-- Recovery: Return to rank-only output, correct scope or eligibility, obtain explicit authority, or park the exact Fiat blocker and rerank the remaining candidates.
+- Refuses: Implicit activation, self-selection, a mature or vendored frontier, a standing park, a lower-ranked skip with no park, continuation after no eligible frontier remains, or treating a currency refusal or unrecognised status as a fleet with nothing behind.
+- Recovery: Return to rank-only output, correct scope or eligibility, obtain explicit authority, park the exact Fiat blocker, or record and repair the exact controller-currency refusal before rerunning the fleet report.
 - Exceptions: none
 
 ### kronos-parked-lane

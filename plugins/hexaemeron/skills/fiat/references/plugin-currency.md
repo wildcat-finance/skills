@@ -70,11 +70,18 @@ registry bytes cannot forge a row.
 
 ## The Kronos re-pin boundary
 
-The Kronos loop runs `hexctl currency` at its step 8 rescan boundary and,
-while the report exits 3, reinstalls every plugin it names behind through this
-host's own installer, refreshes, and re-resolves the paths before the next
-ranking. A chain that merges its own pull requests otherwise drives every
-later run with the pins the chain started on.
+The Kronos loop runs `hexctl currency` at its step 8 rescan boundary and reads
+its exact exit status. Exit 0 alone permits the rescan. On exit 3, it reinstalls
+every plugin the report names behind through this host's own installer,
+refreshes, re-resolves the paths, and runs the report again until it exits 0.
+On exit 1, record the command's exact refusal text and exit status as an
+unresolved controller-currency boundary in the current task report, then stop.
+Treat any other exit status the same way. Do not rescan, rerank, or dispatch
+another Fiat run until the fleet report exits 0. If an install or refresh
+fails, or one complete repair cycle changes no reported-behind plugin's
+recorded pin, record that exact failure and stop under the same boundary. A
+chain that merges its own pull requests otherwise drives every later run with
+the pins the chain started on.
 
 ## The two limits
 
