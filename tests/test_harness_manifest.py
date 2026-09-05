@@ -31,10 +31,11 @@ observed, and a case that failed cannot report success. The second direction is
 the dangerous one, because ``subTest`` swallows a failure and lets the rest of
 the case run, including the statement where it flags itself passed.
 
-The last class holds the surfaces rather than the probe. ``DriftTests``
+The last two classes hold the surfaces rather than the probe. ``DriftTests``
 holds the drift check as a declared check in ``tests/check-map-v1.json``, so
 that a correct check nobody runs is a failure here; every case runs the argv the
-map declares.
+map declares. ``AtlasClaimTests`` holds the guide's claim about the Atlas
+repository against one recorded read of it, and reaches no network.
 """
 
 from __future__ import annotations
@@ -2838,6 +2839,130 @@ class DriftTests(unittest.TestCase):
                     )
                     completed = self.run_declared(extra=self.options(staged))
                     self.assertEqual(completed.returncode, 1, completed.stdout)
+
+
+EVIDENCE_PATH = ROOT / "tests/atlas-route-test-evidence.json"
+
+# The sentence the guide makes about the two bootstrap routes, and the sentence
+# that limits it. Both are held here as exact bytes because neither sits inside
+# a generated region: the roster markers open at the harness table, well below
+# these, so `render_harness_roster --check` never reads them and nothing else
+# would notice either one being edited away.
+ATLAS_CLAIM = "The ChatGPT and Claude routes are covered by the Atlas launcher tests."
+ATLAS_LIMIT = (
+    "That is a bootstrap, not evidence that the browser chat can edit a local "
+    "checkout, sign commits, restore a checkpoint, or publish through your "
+    "GitHub account."
+)
+
+
+class AtlasClaimTests(unittest.TestCase):
+    """The guide's claim about another repository, held to what was read there.
+
+    The claim is not about this tree, so no run here can settle it: the Atlas
+    repository is where the answer lives. It was read once, over the GitHub API
+    at a named commit, and that read is recorded in
+    ``tests/atlas-route-test-evidence.json``. These cases hold the guide against
+    that record. They open no socket, and a host with no network runs them
+    unchanged.
+
+    That boundary is the point rather than a convenience. A case that fetched
+    the repository would make the suite fail when GitHub is unreachable, when a
+    rate limit is hit, or when somebody force-pushes the branch the commit sits
+    on, and none of those is the guide being wrong. The trade is that the record
+    goes stale silently: it is true of ``commit`` and says nothing about the
+    Atlas repository today. Refreshing it means re-reading that commit, or
+    pinning a newer one, and the file says so.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.evidence = json.loads(EVIDENCE_PATH.read_text(encoding="utf-8"))
+        cls.raw_guide = GUIDE_PATH.read_text(encoding="utf-8")
+        # Both surfaces are hard-wrapped Markdown, so every sentence held here
+        # spans two or three source lines. Matching the wrapped bytes would tie
+        # these cases to one particular reflow: a paragraph rewrapped by an
+        # editor is the same claim, and this would report it as the claim being
+        # deleted. Collapsing runs of whitespace compares the sentence instead.
+        cls.guide = " ".join(cls.raw_guide.split())
+        cls.readme = " ".join(README_PATH.read_text(encoding="utf-8").split())
+
+    def test_the_guides_coverage_claim_agrees_with_the_pinned_atlas_read(self):
+        evidence = self.evidence
+        self.assertEqual(evidence["schema"], "atlas-route-test-evidence/v1")
+        self.assertEqual(
+            evidence["commit"], "ce866e3d7e8b489fcb8b70c608f7af72d9b7a673"
+        )
+        route = evidence["route_test"]
+        conclusion = evidence["conclusion"]
+        # The claim is only as good as the read behind it, so the read is
+        # checked for the two things that make it a coverage claim at all: a
+        # test file exists, and it exercises both routes the guide links.
+        self.assertTrue(conclusion["route_test_present"])
+        self.assertEqual(
+            len(evidence["test_files"]), conclusion["test_file_count"]
+        )
+        self.assertIn(
+            route["path"].removeprefix("tests/"),
+            [item["name"] for item in evidence["test_files"]],
+        )
+        self.assertEqual(route["providers"], ["chatgpt", "claude"])
+        self.assertEqual(route["asserts"]["status"], 307)
+        self.assertEqual(route["asserts"]["cache_control"], "no-store")
+        self.assertEqual(
+            route["asserts"]["destination_origin"],
+            {"chatgpt": "https://chatgpt.com", "claude": "https://claude.ai"},
+        )
+        # Every route the guide links has to be one the read covers. Reading the
+        # links out of the guide rather than listing them here is what keeps
+        # this honest: a third bootstrap button added tomorrow fails this case
+        # until somebody reads the Atlas repository again.
+        linked = sorted(set(re.findall(r"/go/([a-z0-9-]+)", self.raw_guide)))
+        self.assertEqual(
+            sorted(f"/go/{name}" for name in linked), sorted(conclusion["covered_routes"])
+        )
+        self.assertEqual(linked, route["providers"])
+        self.assertIn(ATLAS_CLAIM, self.guide)
+
+    def test_the_sentence_limiting_the_claim_survives(self):
+        # The claim and its limit travel together or the claim misleads. A
+        # reader who takes "covered by the Atlas launcher tests" on its own has
+        # been told a redirect is tested and may hear that the chat behind it is
+        # a working harness. The limit is what says otherwise, so it is held to
+        # its position as well as its presence.
+        self.assertIn(ATLAS_LIMIT, self.guide)
+        self.assertLess(
+            self.guide.index(ATLAS_CLAIM),
+            self.guide.index(ATLAS_LIMIT),
+            "the limiting sentence has to follow the claim it limits",
+        )
+        for capability in (
+            "edit a local checkout",
+            "sign commits",
+            "restore a checkpoint",
+            "publish through your GitHub account",
+        ):
+            with self.subTest(capability=capability):
+                self.assertIn(capability, ATLAS_LIMIT)
+        # The recorded read says the same thing from the other side: it states
+        # what a passing route test does not establish. If that note were
+        # dropped the record would read as broader evidence than it is.
+        self.assertIn("bootstrap", self.evidence["conclusion"]["not_established"])
+
+    def test_neither_surface_claims_a_checked_one_click_local_launcher(self):
+        # The bootstrap routes are web routes. No local harness has a launcher
+        # anybody checked, and both surfaces say so: the README inside its
+        # generated region, from `client_present` and `auth_configured` the
+        # probe recorded, and the guide in the hand-written paragraph above its
+        # table. Neither may drift into advertising one.
+        self.assertIn(
+            "No local harness holds a checked one-click Atlas launcher.", self.readme
+        )
+        self.assertIn("Neither has a one-click Atlas launcher", self.guide)
+        # No harness the probe recorded earned a class that would imply one.
+        for record in landed()["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertNotIn(record["classification"], EARNED_CLASSIFICATIONS)
 
 
 if __name__ == "__main__":
