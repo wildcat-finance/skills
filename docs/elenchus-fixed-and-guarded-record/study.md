@@ -666,3 +666,13 @@ record. Claim a command ran when it did not.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Section 11 now names six refusals rather than four. The two added ones are: a record whose `unfixed_parent.commit` equals its `fixed_tree.commit` is refused by `--check` as well as on emit, because a guard observed red and green on one commit is not the two trees the Evidence clause names; and a record whose `verdict.status` is `guarded` while its own `unfixed_parent.report` shows zero assertion failures and zero errors is refused, because the Promise's Refuses clause names a guard that never failed without the fix. Both are decided from fields the record already carries, and neither reads anything outside it. Section 1's parent-derivation rendering `git rev-parse <ref>^` is replaced by the exact shipped argv `git rev-parse <ref>^{commit} <ref>^`, which peels an annotated tag before taking the parent, and the tracked-destination call is `git ls-files --error-unmatch -- <path>`; these two renderings supersede the ones the 2026-09-05 amendment above gave. The nine-field set and its derivation are unchanged.
+
+**Why.** Warden findings S1-R2-03, S1-R2-04 and S1-R2-06 in round 2 of step 1. Round 2 demonstrated that `--check` accepted a record whose parent and fixed tree were one commit, the exact shape round 1 had demonstrated on the emit path, and accepted a `guarded` record whose own parent report showed nothing had failed. The round declined to close either in code, because section 11 authorised four refusals and writing a fifth and sixth ahead of the study is what produced finding S1-R1-01. The renderings were incomplete rather than wrong in substance: round 1's fix added the `--` operand and round 2's added the `^{commit}` peel, and the study still described the call as it stood before both.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

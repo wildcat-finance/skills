@@ -149,3 +149,33 @@ made. elenchus: the demonstration is exactly the reproduce-and-guard shape the
 skill describes, so its recorded run follows that procedure rather than a
 narrative of it. hypomnema: none, the demonstration records an observation and
 reverses no decision.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: `plugins/hexaemeron/tests/test_elenchus_fixed_and_guarded.py` is new and covers the closed key set, each refusal path named in the exit, the staged rename under an interrupted write, and one accepted record. Existing decision-record, documentation, Horos-boundary and root checks stay green, and `test_elenchus_checker.py` is not edited. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-1.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06 in round 1 of step 1, restated in round 2. The declared runner could not collect this step's tests, so round 2's `guarded` verdict rested on two failures in the boundary tests rather than on the emitter's own module. The replacement names the runner whose discovery root contains that module, which I confirmed by reading both runners' `discover` calls rather than from the report.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: `plugins.hexaemeron.tests.test_evolution` covers the row's axis arithmetic and retained frontier line and is not edited. No new executable behaviour is added, so no new test module is written; the emitter's own suite from step 1 stays green. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-2.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, which names a defect in the runner contract every step of this runbook declared, not one peculiar to step 1. Step 2's tests are `plugins.hexaemeron.tests.test_evolution` and the step-1 emitter suite, both under `plugins/hexaemeron/tests/`, so the same replacement applies before the step is built.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: The existing test module gains the end-to-end case that builds the scratch repository, repairs the failure, emits the record and asserts both the acceptance and the two refusals, so the demonstration is reproduced by the suite rather than only by hand. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-3.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, applied to the last step for the same reason as the first two. Step 3 extends `plugins/hexaemeron/tests/test_elenchus_fixed_and_guarded.py`, which the previously declared runner does not collect, so a fix during its audit would have been graded against a suite that never ran the case it repaired.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

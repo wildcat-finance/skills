@@ -22,6 +22,8 @@ Codes:
   F009  the output path is not a free symlink-free relative worktree descendant,
         or the record could not be written there
   F010  the result's ref is not the commit the draft names as the repair
+  F011  the record names one commit as both the parent and the fixed tree
+  F012  the verdict is guarded while the parent's own report never failed
 
 Exit 0 written or clean, 1 refused, 2 bad invocation.  Every refusal names its
 code and its field on stderr and writes nothing.  The record is staged in the
@@ -379,6 +381,33 @@ def _verdict_findings(value) -> list[Finding]:
     return findings
 
 
+def _relation_findings(record) -> list[Finding]:
+    """The two refusals that read one field against another.
+
+    Both are decided from fields the record already carries, so `--check`
+    settles them on a record alone.  They run only once every field they
+    read has passed its own rule, because a relation between two values the
+    schema has already refused says nothing about the record.
+    """
+    findings: list[Finding] = []
+    if record["unfixed_parent"]["commit"] == record["fixed_tree"]["commit"]:
+        findings.append(Finding(
+            "F011", "unfixed_parent.commit",
+            "equals fixed_tree.commit; a guard observed red and green on one "
+            "commit is not the two trees the Evidence clause names",
+        ))
+    report = record["unfixed_parent"]["report"]
+    if (record["verdict"]["status"] == GUARDED
+            and report["assertion_failures"] == 0 and report["errors"] == 0):
+        findings.append(Finding(
+            "F012", "verdict.status",
+            "is guarded while unfixed_parent.report records 0 assertion failures "
+            "and 0 errors; the Refuses clause names a guard that never failed "
+            "without the fix",
+        ))
+    return findings
+
+
 def record_findings(record) -> list[Finding]:
     """Everything a record establishes about itself, without its inputs."""
     if not isinstance(record, dict) or set(record) != set(RECORD_KEYS):
@@ -398,7 +427,9 @@ def record_findings(record) -> list[Finding]:
     findings.extend(_tree_findings(record["fixed_tree"], "fixed_tree"))
     findings.extend(_suites_findings(record["suites"]))
     findings.extend(_verdict_findings(record["verdict"]))
-    return findings
+    if findings:
+        return findings
+    return _relation_findings(record)
 
 
 def draft_findings(draft) -> list[Finding]:

@@ -360,6 +360,54 @@ class Verdicts(Harness):
         self.assertRefused(self.invoke(["--check", str(path)]), "F004", "verdict.status")
 
 
+class RecordRelations(Harness):
+    """Two refusals decided from fields the record already carries."""
+
+    def test_a_record_naming_one_commit_as_both_trees_is_refused(self):
+        record = self.accepted_record()
+        record["unfixed_parent"]["commit"] = record["fixed_tree"]["commit"]
+        path = self.fixture.inputs / "one-commit.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.assertRefused(
+            self.invoke(["--check", str(path)]), "F011", "unfixed_parent.commit")
+
+    def test_a_guarded_record_whose_parent_report_never_failed_is_refused(self):
+        record = self.accepted_record()
+        record["unfixed_parent"]["report"]["assertion_failures"] = 0
+        record["unfixed_parent"]["report"]["errors"] = 0
+        path = self.fixture.inputs / "never-failed.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.assertRefused(
+            self.invoke(["--check", str(path)]), "F012", "verdict.status")
+
+    def test_a_record_whose_two_trees_differ_and_whose_parent_failed_is_accepted(self):
+        """The pair above must not refuse the record the emitter actually writes."""
+        record = self.accepted_record()
+        self.assertNotEqual(
+            record["unfixed_parent"]["commit"], record["fixed_tree"]["commit"])
+        self.assertGreater(
+            record["unfixed_parent"]["report"]["assertion_failures"]
+            + record["unfixed_parent"]["report"]["errors"], 0)
+        path = self.fixture.inputs / "genuine.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        code, out, err = self.invoke(["--check", str(path)])
+        self.assertEqual(code, 0, err)
+        self.assertIn("clean", out)
+
+    def test_a_malformed_record_is_not_also_charged_the_relation_refusals(self):
+        """A shape the per-field rules already refuse names those rules only."""
+        record = self.accepted_record()
+        record["unfixed_parent"]["commit"] = "not-a-commit"
+        record["unfixed_parent"]["report"]["assertion_failures"] = "none"
+        path = self.fixture.inputs / "malformed.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        code, _out, err = self.invoke(["--check", str(path)])
+        self.assertEqual(code, 1, err)
+        self.assertIn("F002", err)
+        self.assertNotIn("F011", err)
+        self.assertNotIn("F012", err)
+
+
 class ParentDerivation(Harness):
     def test_a_commit_with_no_parent_is_refused(self):
         result = result_for(self.fixture, ref=self.fixture.base)
