@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17674420,
+    "bytes_blob": 18289139,
     "bytes_generated": 98
   },
   "entries": [
@@ -264,6 +264,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
+    },
+    {
+      "bytes": 306795,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 304747",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-856-framework-13-test-the-remaining-atlas-hand-o.md"
+    },
+    {
+      "bytes": 307924,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-856-framework-13-test-the-remaining-atlas-hand-o.synopsis.md"
     },
     {
       "bytes": 90295,
