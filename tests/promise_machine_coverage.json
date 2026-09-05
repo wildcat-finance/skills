@@ -8,7 +8,7 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "ab68ae0b3eee0d2a09626806495fd26fcd705546609db09ec3c29fb1086e097d"
+      "sha256": "77f9592cc57e7f665fa447bba5c80a8fce7cc57bfcc5f0bdf2c8cf9c76443826"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
@@ -55,11 +55,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
-        "sha256": "1b96359606cdfab06d730be9046d6deaf574216c065ad3184c76fdbcdb1ceec0"
+        "sha256": "a70d1f815e04b76d39ee0868fad79e9609fab52424ee9580dd91846a7d774ead"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json",
-        "sha256": "9af9c0d61ad77bf991d56c09f13cccf55eb86e7c8a97bfc7f1008e9c8b8a5f95"
+        "sha256": "555fb748fbfb8b9035d6807e7c71455a6ec65ed90afc948fb29e08703b707256"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/mutations.json",
@@ -71,7 +71,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json",
-        "sha256": "823730494360cea9fb9b9e1ec464609e7cf73fe96851c19e5999417c4de5e11c"
+        "sha256": "6b801306019e2b49f6ff18af082113c09ad21fd342eea24116b5683d302cbb28"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
@@ -105,7 +105,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "67eb7d44682333ba22b44a3979374f08b8b0b55db770f0d2f18d52c7cad22b67"
+        "sha256": "1f1f168fc66489d497464772946caa5affc71656c41b2325843c9a4297fa158f"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -113,7 +113,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "67462bcf901e27b85cb8e7b26d938ad15ea3ae6aa16c2097c1de94e17494d900"
+        "sha256": "5c628fe267bb9862cc165848be1380b545b68c416cf9d914c608da71670687c7"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
