@@ -2098,6 +2098,37 @@ class RenderTests(unittest.TestCase):
                 self.assertEqual(exit_code, 1)
                 self.assertIn(expected, stderr.getvalue())
 
+    def test_freshness_command_reads_the_calendar_once(self):
+        real_date = datetime.date
+        today = real_date(2026, 9, 5)
+        tomorrow = today + datetime.timedelta(days=1)
+        document = landed()
+        document["recorded"]["date"] = (
+            today - datetime.timedelta(days=30)
+        ).isoformat()
+        reads = []
+
+        class SequencedDate(real_date):
+            @classmethod
+            def today(cls):
+                reads.append(None)
+                return today if len(reads) == 1 else tomorrow
+
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "manifest.json"
+            target.write_text(json.dumps(document), encoding="utf-8")
+            stdout = io.StringIO()
+            with (
+                mock.patch.object(render_harness_roster.datetime, "date", SequencedDate),
+                contextlib.redirect_stdout(stdout),
+            ):
+                exit_code = render_harness_roster.main(
+                    ["--check-freshness", "--manifest", str(target)]
+                )
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(len(reads), 1)
+        self.assertIn("age 30 days is within", stdout.getvalue())
+
     def test_a_manifest_missing_a_required_field_is_refused_rather_than_raised(self):
         # S3-R4-03. `refuse_unpublished_class` reads `entry["classification"]`
         # and `recorded` reads `block["date"]`, while `main` catches

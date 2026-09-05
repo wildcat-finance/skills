@@ -1232,7 +1232,10 @@ def main(argv=None):
             print(f"three surfaces match {len(harnesses(document))} recorded harnesses")
             return 0
         if arguments.check_freshness:
-            document, problems = check_freshness(manifest=surfaces["manifest"])
+            current = datetime.date.today()
+            document, problems = check_freshness(
+                manifest=surfaces["manifest"], today=current
+            )
             _, recorded_date, _ = recorded(document)
             if problems:
                 age = problems[0]
@@ -1249,7 +1252,7 @@ def main(argv=None):
                         file=sys.stderr,
                     )
                 return 1
-            age = (datetime.date.today() - datetime.date.fromisoformat(recorded_date)).days
+            age = (current - datetime.date.fromisoformat(recorded_date)).days
             print(
                 f"manifest observation age {age} days is within the "
                 f"{FRESHNESS_BUDGET_DAYS}-day budget"
