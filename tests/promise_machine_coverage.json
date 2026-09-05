@@ -4446,7 +4446,7 @@
         "transition": "atomic scan write and zero exit joined to the canonical Authorises field",
         "unknowns": "omitted paths and fail-open unproven classifications"
       },
-      "sha256": "09edab05d87777db3457e6d9a687be0e06ad1d5e8e06e05240dc81e4b6c9ace3",
+      "sha256": "66f9f90d3b0791674949b2004250e19a588e4d94243ed91ab2befca79fdf4a8a",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
     "hypomnema-record-placement": {
