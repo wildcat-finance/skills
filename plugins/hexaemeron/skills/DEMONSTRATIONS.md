@@ -195,7 +195,7 @@ cannot silently change the boundary it names.
 - `D081` -- the report's parent is no longer confined below the output root, or the report could not be published atomically; no partial object was left under its name.
 - `D082` -- the public set passed its aggregate ceiling.
 - `D083` -- the private work root could not be created or prepared.
-- `D084` -- a registered public demonstration runs a program no source declares, the program's bytes differ from the digest its source declared, or a command puts an option word outside the closed interpreter grammar where its program belongs.
+- `D084` -- a registered public demonstration runs a program no source declares, reaches its program through `-c`, `-m`, standard input or a `{work}` path rather than a committed file, or the program's bytes differ from the digest its source declared, either before the record runs or in the moment the command runs; or a command puts an option word outside the closed interpreter grammar where its program belongs.
 - `D085` -- a command left a process holding its pipes after its process group was killed, so something it started is outside the runner's teardown.
 <!-- refusal-catalogue:end -->
 
@@ -264,11 +264,14 @@ Each command is bounded by its record's `timeout_seconds`, further clipped by
 the public set's aggregate ceiling of 600,000 milliseconds. A command that
 passes its budget is killed with its whole process group, and the group is torn
 down on every path, so a command that exits 0 after forking leaves nothing
-behind it. The recorded duration ends when the command's own process is reaped,
-so teardown is never charged to it. A grandchild that leaves the group, by
-calling `setsid` or equivalent, is beyond a process-group teardown: it is
-detected by the grip it keeps on the command's pipes and refused with `D085`,
-not silently allowed to survive. Stdout and stderr
+inside that group behind it. The recorded duration ends when the command's own
+process is reaped, so teardown is never charged to it. A grandchild that leaves
+the group, by calling `setsid` or `setpgid`, is beyond a process-group
+teardown, and only part of that is caught: one that keeps the command's pipes
+is detected by that grip and refused with `D085`, while one that also drops its
+inherited descriptors keeps no grip, is not detected, and survives the run. That
+is a third route outside what this runner observes, beside the two the network
+paragraph names. Stdout and stderr
 are each capped at one mebibyte; a command that writes past the cap is
 truncated and refused. Exit status, observations, durations, output digests
 and bounded output tails are recorded per command and per repetition;
@@ -297,12 +300,19 @@ other record's program is proved to exist and not digested, and its entry
 reads `found`. The distinction is the point: `verified` names bytes checked
 against a declared digest, `found` names a file that was there. A program
 reached through `-c`, `-m`, standard input or a `{work}` path is not a
-committed file, so it carries no entry and no digest at all. Which word is the
-program is read from a closed interpreter grammar rather than from position:
-flag bundles such as `-u` and `-OO`, the argument-taking `-W` and `-X`, and a
-closing `--` are walked past to the program they precede, so an option word
-cannot carry a committed file past the declaration gate or the digest re-read.
-An option word the grammar cannot place is refused with `D084`.
+committed file, so it carries no entry and no digest at all -- and `-c` and `-m`
+still reach committed files, because the runner's working directory is the
+repository root and both put it on `sys.path`. A registered public
+demonstration is therefore refused with `D084` unless its program is a
+committed file a source declares, which is the only form the digest can bind.
+Which word is the program is read from a closed interpreter grammar rather than
+from position: flag bundles such as `-u` and `-OO`, the argument-taking `-W`
+and `-X`, and a closing `--` are walked past to the program they precede, so an
+option word cannot carry a committed file past the declaration gate or the
+digest re-read. An option word the grammar cannot place is refused with `D084`.
+The digest is read again immediately before each command runs, not once per
+record, so a record carrying several commands binds each program to the moment
+that command executes.
 
 The runner emits `demonstration.selected` with the record count,
 `demonstration.started` per command, `demonstration.verified` or

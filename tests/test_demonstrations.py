@@ -1253,6 +1253,80 @@ class DeclaredProgramTests(unittest.TestCase):
             demonstrations.check_record(ROOT, skill, record)
         self.assertIn("D084", str(caught.exception))
 
+    def test_a_public_program_reached_through_m_or_c_is_refused(self):
+        # `-m package.module` and `-c "import module"` are not committed files,
+        # and both still run one: the runner's working directory is the
+        # repository root, so `sys.path` carries every tracked module. The
+        # declaration gate bound nothing for either form, so a registered
+        # public demonstration could execute a committed file whose bytes no
+        # digest named, with an empty `programs` array in its report.
+        for argv in (
+            ["python3", "-m", "repo_contract"],
+            ["python3", "-c", "import repo_contract"],
+            ["python3", "-"],
+            ["python3", "{work}/written-here.py"],
+        ):
+            with self.subTest(argv=argv):
+                skill, record = self._public()
+                record["commands"] = [
+                    {"id": "run", "argv": argv, "expect_exit": 0}
+                ]
+                record["observations"] = ['run: line "x"']
+                with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                    demonstrations.check_record(ROOT, skill, record)
+                self.assertIn("D084", str(caught.exception))
+
+    def test_a_public_program_reached_through_m_or_c_is_refused_before_it_runs(self):
+        for argv in (
+            ["python3", "-m", "repo_contract"],
+            ["python3", "-c", "import repo_contract"],
+        ):
+            with self.subTest(argv=argv):
+                skill, record = self._public()
+                record["commands"] = [
+                    {"id": "run", "argv": argv, "expect_exit": 0}
+                ]
+                record["observations"] = ['run: line "x"']
+                with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                    demonstrations.preflight_record(ROOT, skill, record)
+                self.assertIn("D084", str(caught.exception))
+
+    def test_a_program_is_reverified_in_the_moment_its_command_runs(self):
+        # `preflight_record` reads every command's program once, before the
+        # record's first command executes, so in a record carrying more than
+        # one command the later programs were verified against a tree the
+        # earlier commands had already had their turn with.
+        self.assertTrue(hasattr(demonstrations, "verify_command_program"))
+        with tempfile.TemporaryDirectory() as name:
+            root = pathlib.Path(name)
+            (root / "sub").mkdir()
+            program = root / "sub" / "prog.py"
+            program.write_bytes(b"print('first')\n")
+            entry = {
+                "path": "sub/prog.py",
+                "sha256": hashlib.sha256(program.read_bytes()).hexdigest(),
+                "evidence": "verified",
+            }
+            demonstrations.verify_command_program(root, entry, where="unchanged")
+            program.write_bytes(b"print('second')\n")
+            with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                demonstrations.verify_command_program(root, entry, where="changed")
+            self.assertIn("D084", str(caught.exception))
+
+    def test_the_contract_states_the_teardown_route_it_cannot_detect(self):
+        # `D085` reads the grip a process keeps on the command's pipes. A
+        # grandchild that leaves the group and also drops its inherited
+        # descriptors keeps no grip, is not detected, and survives the run, so
+        # the contract may not say such a process is never allowed to survive.
+        text = " ".join(POLICY.read_text(encoding="utf-8").split())
+        self.assertNotIn("not silently allowed to survive", text)
+        for clause in (
+            "drops its inherited descriptors",
+            "is not detected, and survives the run",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, text)
+
     def test_an_option_word_the_grammar_cannot_place_is_refused(self):
         # An ambiguous bundle is refused rather than walked past, because
         # guessing which word is the program is how the binding was lost.

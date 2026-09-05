@@ -943,11 +943,26 @@ def check_record(
                     f"{where} commands[{index}] puts {word!r} where its program belongs; "
                     "the digest binding cannot place that option word",
                 )
-            program = word if kind == "file" else None
-            if program is not None and program not in declared:
+            # `-c`, `-m`, stdin and a `{work}` path are not committed files, and
+            # treating that as the end of it left the gate open: the runner's
+            # working directory is the repository root, so `-m package.module`
+            # and `-c "import module"` both put the repository on `sys.path` and
+            # execute tracked files. The declaration gate saw an option word,
+            # bound nothing, and the report carried an empty `programs` array
+            # while a committed file ran. A registered public demonstration
+            # therefore runs a committed file a source declares, and nothing
+            # else reaches the interpreter's program position.
+            if kind != "file":
+                reached = word if word is not None else "no program"
                 _fail(
                     "D084",
-                    f"{where} commands[{index}] runs {program!r}, which no source declares; "
+                    f"{where} commands[{index}] reaches its program through {reached!r}; "
+                    "a registered public demonstration runs a committed file a source declares",
+                )
+            if word not in declared:
+                _fail(
+                    "D084",
+                    f"{where} commands[{index}] runs {word!r}, which no source declares; "
                     "a registered public demonstration digests the program it runs",
                 )
 
@@ -1654,6 +1669,18 @@ def preflight_record(
                 f"{where} commands[{index}] puts {word!r} where its program belongs; "
                 "the digest binding cannot place that option word",
             )
+        # The same closed rule the declaration gate applies, applied again on
+        # the path that actually executes. `-m` and `-c` reach committed files
+        # through the repository root this runner uses as its working
+        # directory, so neither is a program a registered public demonstration
+        # may run.
+        if record.get("claim_id") in PUBLIC_SET and kind != "file":
+            reached = word if word is not None else "no program"
+            _refuse(
+                "D084",
+                f"{where} commands[{index}] reaches its program through {reached!r}; "
+                "a registered public demonstration runs a committed file a source declares",
+            )
         program = word if kind == "file" else None
         if program is not None:
             try:
@@ -1699,6 +1726,38 @@ def preflight_record(
     return observations, programs
 
 
+def verify_command_program(root: Path, entry: dict | None, *, where: str) -> None:
+    """Re-read one command's declared program in the moment before it runs.
+
+    `preflight_record` reads every command's program once, before the record's
+    first command executes. For a record carrying more than one command that
+    leaves the later programs verified against a tree that the earlier commands
+    have already had their turn with, so "verified before execution" named the
+    record's execution rather than this command's. Reading again here is what
+    makes the digest describe the bytes this command is about to run.
+    """
+
+    if entry is None or entry["evidence"] != "verified":
+        return
+    try:
+        payload = _read_regular_file(
+            root, entry["path"], maximum=MAX_SOURCE_BYTES,
+            label=f"{where} program",
+        )
+    except TopologyError as exc:
+        _refuse(
+            "D084",
+            f"{where} program {entry['path']!r} could not be read as it ran: {exc}",
+        )
+    observed = hashlib.sha256(payload).hexdigest()
+    if observed != entry["sha256"]:
+        _refuse(
+            "D084",
+            f"{where} program {entry['path']!r} is {observed} as it runs, "
+            f"verified {entry['sha256']}",
+        )
+
+
 class Runner:
     """Execute selected records and build one closed report."""
 
@@ -1732,11 +1791,13 @@ class Runner:
     def _run_command(
         self, skill: GovernedSkill, record: dict, command: dict,
         observations: list[Observation], repetition: int,
+        program: dict | None = None,
     ) -> tuple[dict, tuple[str, str] | None]:
         where = f"{skill.directory}/{LEDGER_NAME} commands[{command['id']}]"
         argv = self.work.expand(command["argv"])
         if argv[0] == PYTHON_LAUNCHER:
             argv[0] = sys.executable
+        verify_command_program(self.root, program, where=where)
         budget_ms = self._budget_ms(record["timeout_seconds"])
         _emit_event(
             "demonstration.started",
@@ -1852,7 +1913,8 @@ class Runner:
                 report["repetitions"].append(run)
                 for command in record["commands"]:
                     entry, refusal = self._run_command(
-                        skill, record, command, observations, repetition
+                        skill, record, command, observations, repetition,
+                        programs.get(command["id"]),
                     )
                     commands.append(entry)
                     run["duration_ms"] += entry["duration_ms"]
