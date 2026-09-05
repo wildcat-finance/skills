@@ -203,6 +203,13 @@
       "cwd": ".",
       "kind": "lint",
       "script": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
+    },
+    "harness-roster-check": {
+      "title": "Harness roster drift: change the roster in scripts/probe_harnesses.py, re-run the probe, then re-run scripts/render_harness_roster.py",
+      "argv": ["python3", "scripts/render_harness_roster.py", "--check"],
+      "cwd": ".",
+      "kind": "command",
+      "script": "scripts/render_harness_roster.py"
     }
   },
   "groups": {
@@ -226,7 +233,7 @@
     },
     "docs": {
       "title": "Decision records and documentation",
-      "checks": []
+      "checks": ["harness-roster-check"]
     },
     "schemas": {
       "title": "Published JSON schemas",

@@ -30,6 +30,11 @@ directions: a partial selection of the class cannot report a failure nothing
 observed, and a case that failed cannot report success. The second direction is
 the dangerous one, because ``subTest`` swallows a failure and lets the rest of
 the case run, including the statement where it flags itself passed.
+
+The last class holds the surfaces rather than the probe. ``DriftTests``
+holds the drift check as a declared check in ``tests/check-map-v1.json``, so
+that a correct check nobody runs is a failure here; every case runs the argv the
+map declares.
 """
 
 from __future__ import annotations
@@ -2690,6 +2695,149 @@ class RenderTests(unittest.TestCase):
         # box refuses far sooner, which is S3-R7-04's subject.
         self.assertEqual(schema["$defs"]["nonEmptyString"]["maxLength"], 4096)
         self.assertIsNone(render_harness_roster.refuse_forged_name("C" * 4096))
+
+
+CHECK_MAP_PATH = ROOT / "tests/check-map-v1.json"
+CHECK_ID = "harness-roster-check"
+
+
+def check_map():
+    return json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
+
+
+class DriftTests(unittest.TestCase):
+    """The drift check, held as a declared check rather than as a script.
+
+    ``RenderTests`` holds ``render_harness_roster.check`` as a function: given a
+    manifest and three surfaces, it returns the right drift lines. That says
+    nothing about whether anybody runs it. A renderer whose check mode is
+    correct and unreached leaves the published roster free to rot, which is the
+    on-call question this step exists to answer: is what the README, the guide
+    and the PDF say still what the manifest says?
+
+    So every case here goes through the check map, not through an argv written
+    out by hand. The map is the execution authority: ``run_checks.py`` builds
+    its plan from it, and a case that reproduced the command instead would pass
+    on a repository where the declaration had been deleted. Each case reads the
+    declared argv, runs that, and reads the exit status.
+    """
+
+    def setUp(self):
+        self.graph = check_map()
+        self.check = self.graph["checks"].get(CHECK_ID)
+        if self.check is None:
+            self.fail(f"{CHECK_MAP_PATH} declares no check {CHECK_ID!r}")
+
+    def run_declared(self, root=None, extra=()):
+        """The declared check, run against `root` or the repository itself."""
+        completed = subprocess.run(
+            [sys.executable if a == "python3" else a for a in self.check["argv"]]
+            + list(extra),
+            cwd=ROOT / self.check.get("cwd", "."),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+            stdin=subprocess.DEVNULL,
+        )
+        return completed
+
+    def stage(self, directory):
+        """Copies of the four files, as the paths the declared check takes."""
+        root = Path(directory)
+        (root / "docs" / "pdf").mkdir(parents=True)
+        staged = {
+            "--manifest": root / "docs/harness-classification.json",
+            "--readme": root / "README.md",
+            "--guide": root / "docs/how-to-help-shoggoth.md",
+            "--pdf": root / "docs/pdf/how-to-help-shoggoth.pdf",
+        }
+        for option, source in (
+            ("--manifest", MANIFEST_PATH),
+            ("--readme", README_PATH),
+            ("--guide", GUIDE_PATH),
+            ("--pdf", PDF_PATH),
+        ):
+            staged[option].write_bytes(source.read_bytes())
+        return staged
+
+    @staticmethod
+    def options(staged):
+        return [str(part) for option, path in staged.items() for part in (option, path)]
+
+    def test_the_check_mode_is_reachable_from_the_repository_suite(self):
+        # Declared, owned by a scope, and green on the committed tree. The scope
+        # is what makes it run: `run_checks.py` reaches a check through the
+        # scope that lists it, and a check no scope lists is refused as
+        # unreachable rather than run.
+        self.assertEqual(self.check["kind"], "command")
+        self.assertEqual(
+            self.check["argv"], ["python3", "scripts/render_harness_roster.py", "--check"]
+        )
+        self.assertTrue((ROOT / self.check["script"]).exists(), self.check["script"])
+        owning = sorted(
+            scope for scope, body in self.graph["scopes"].items()
+            if CHECK_ID in body["checks"]
+        )
+        self.assertTrue(owning, f"no scope lists {CHECK_ID}")
+        completed = self.run_declared()
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("three surfaces match", completed.stdout)
+
+    def test_a_changed_surface_reddens_the_declared_check(self):
+        # One character, inside the generated region, in a name the manifest
+        # supplied. This is the same edit the step's demonstration makes by
+        # hand; running it here means the demonstration is not the only place
+        # the binding is ever exercised.
+        for surface in ("--readme", "--guide"):
+            with self.subTest(surface=surface):
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    target = staged[surface]
+                    text = target.read_text(encoding="utf-8")
+                    edited = text.replace("Windsurf", "Windsurg", 1)
+                    self.assertNotEqual(edited, text)
+                    target.write_text(edited, encoding="utf-8")
+                    completed = self.run_declared(extra=self.options(staged))
+                    self.assertEqual(completed.returncode, 1, completed.stdout)
+                    self.assertIn(str(target), completed.stderr)
+
+    def test_a_missing_manifest_reddens_the_declared_check(self):
+        # The source going absent is the failure mode a check that only ever
+        # compared surfaces to each other would report as clean.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            staged["--manifest"].unlink()
+            completed = self.run_declared(extra=self.options(staged))
+            self.assertEqual(completed.returncode, 1, completed.stdout)
+            self.assertIn("render_harness_roster:", completed.stderr)
+
+    def test_a_recorded_run_the_surfaces_do_not_carry_reddens_the_check(self):
+        # `recorded` is the staleness signal: host, date and base ref. It is not
+        # a harness name, so none of the roster comparisons touch it, and a
+        # manifest re-recorded on another host or another day against surfaces
+        # nobody regenerated is exactly the drift a reader cannot see. Each
+        # field is driven separately, because they reach the surfaces by
+        # different routes: host and date reach all three, and the base ref
+        # reaches the two Markdown regions alone.
+        for field, replacement in (
+            ("host", "linux-x86_64"),
+            ("date", "2026-09-05"),
+            ("base_ref", "0" * 40),
+        ):
+            with self.subTest(field=field):
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    document = json.loads(
+                        staged["--manifest"].read_text(encoding="utf-8")
+                    )
+                    self.assertNotEqual(document["recorded"][field], replacement)
+                    document["recorded"][field] = replacement
+                    staged["--manifest"].write_text(
+                        json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                    )
+                    completed = self.run_declared(extra=self.options(staged))
+                    self.assertEqual(completed.returncode, 1, completed.stdout)
 
 
 if __name__ == "__main__":
