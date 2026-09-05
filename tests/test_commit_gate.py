@@ -1664,25 +1664,35 @@ class HookIndexMutationTests(unittest.TestCase):
 # place cannot leave the two disagreeing.
 ACTIVATION_COMMAND = "git " + " ".join(ACTIVATION)
 
-# Hosted runners, by variables the runner sets rather than by anything the
-# repository can be asked. No evidence of a contributor's local hook reaches a
-# server, so the hosted half of this decision holds the tracked bytes alone --
-# that the directory exists and its pre-commit is executable -- and leaves
-# activation to a checkout somebody actually commits from. The draft record
-# says the same thing in prose, under "Hosted execution cannot see whether a
-# contributor activated the gate locally".
-HOSTED_RUNNER_VARIABLES = ("GITHUB_ACTIONS", "CI")
+# Executions nobody commits from, each named by a variable whoever started the
+# process sets. Nothing here is inferred from the tree, because a faithful copy
+# of a checkout looks exactly like one:
+#
+#   * `GITHUB_ACTIONS` and `CI` name a hosted runner. No evidence of a
+#     contributor's local hook reaches a server, so the hosted half of this
+#     decision holds the tracked bytes alone -- that the directory exists and
+#     its pre-commit is executable.
+#   * `WILDCAT_CHECK_CONTAINMENT` is set by `scripts/run_checks.py` for every
+#     check it starts, however many sessions deep. It runs the root suite from
+#     a disposable snapshot under `tmp/check-runner` that carries a git
+#     directory of its own, so `git config` there reads the snapshot's
+#     configuration rather than the checkout's, and the snapshot is deleted
+#     when the run ends.
+#
+# A contributor's clone carries none of them, which is why the case below
+# still fires there. The draft record says the same in prose, under "Hosted
+# execution cannot see whether a contributor activated the gate locally".
+NOBODY_COMMITS_HERE = ("GITHUB_ACTIONS", "CI", "WILDCAT_CHECK_CONTAINMENT")
 
-# Values a runner uses to say the variable is set and off. Anything else that
-# is non-empty counts as hosted.
-NOT_HOSTED = frozenset({"0", "false", "no", "off"})
+# Values that say the variable is set and off. Anything else non-empty counts.
+DECLARED_OFF = frozenset({"0", "false", "no", "off"})
 
 
-def hosted_runner() -> str | None:
-    """The variable naming this process a hosted runner, or None."""
-    for name in HOSTED_RUNNER_VARIABLES:
+def nobody_commits_here() -> str | None:
+    """The variable saying this is not a checkout anybody commits from."""
+    for name in NOBODY_COMMITS_HERE:
         value = os.environ.get(name, "").strip()
-        if value and value.lower() not in NOT_HOSTED:
+        if value and value.lower() not in DECLARED_OFF:
             return name
     return None
 
@@ -1770,8 +1780,8 @@ class ActivationTests(unittest.TestCase):
     def test_the_tracked_directory_holds_an_executable_pre_commit(self):
         """Activation points somewhere; this is what has to be there.
 
-        It is also the half a hosted runner can see, which is why it carries
-        no exemption while the case below does.
+        It is also the half that travels with the bytes, which is why it
+        carries no exemption while the case below does.
         """
         self.assertTrue(
             HOOK.is_file(),
@@ -1792,12 +1802,12 @@ class ActivationTests(unittest.TestCase):
         activated -- and the only place that failure can be raised, because
         nothing else in a fresh clone runs before the first commit.
         """
-        hosted = hosted_runner()
-        if hosted is not None:
+        declared = nobody_commits_here()
+        if declared is not None:
             self.skipTest(
-                f"{hosted} names this a hosted runner, and no evidence of a "
-                "contributor's local activation reaches a server; the tracked "
-                "bytes are what the hosted half of this decision holds"
+                f"{declared} says this is not a checkout anybody commits from, "
+                "so its core.hooksPath reports on nobody; the tracked bytes "
+                "are what an execution like this one can hold"
             )
         complaint = activation_complaint(configured_hooks_path())
         if complaint is not None:
