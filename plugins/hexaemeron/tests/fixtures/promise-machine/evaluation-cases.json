@@ -11,11 +11,11 @@
     },
     "kronos-fiat-dispatch": {
       "evaluation": {"model": "not-run", "prompt": "Decide whether a ranked Kronos job may enter Fiat under the canonical authority boundary.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; user authority remains external evidence."},
-      "P": {"disposition": "accept", "scenario": "The user explicitly authorised Kronos execution, the selected job remains current and unparked, and Fiat returned a new init receipt.", "boundary": "Acceptance authorises one dispatch, not completion or global optimality."},
+      "P": {"disposition": "accept", "scenario": "For a later iteration, the user explicitly authorised Kronos execution, the previous Fiat run is terminal, `hexctl currency` exited 0, the selected job remains current and unparked, and Fiat returned a new init receipt.", "boundary": "Acceptance authorises one dispatch, not completion, global optimality or fleet currency after the named report."},
       "M": {"disposition": "refuse", "scenario": "A valid ranking exists but no explicit user instruction authorises Kronos execution.", "boundary": "Ranking evidence cannot supply user authority."},
       "S": {"disposition": "refuse", "scenario": "The selected ledger or held-job digest changed after ranking and before dispatch.", "boundary": "A stale selection cannot authorise a new Fiat run."},
       "O": {"disposition": "refuse", "scenario": "A successful dispatch is presented as proof that the job is complete or the ranking was globally optimal.", "boundary": "Dispatch explains entry into Fiat and nothing later."},
-      "R": {"disposition": "recover", "scenario": "Return to rank-only output, refresh scope and eligibility, obtain explicit authority or park the blocker, then rerank.", "boundary": "Recovery creates a fresh selection and authority record."}
+      "R": {"disposition": "recover", "scenario": "After `hexctl currency` exits 1, record its exact refusal and status, repair the registry route or run the installed controller, and repeat the fleet report before reranking.", "boundary": "Recovery preserves the refusal and requires a later exit 0 rather than treating an empty report as current."}
     },
     "vulgate-register-rewrite": {
       "evaluation": {"model": "not-run", "prompt": "Rewrite a source passage under Vulgate while holding all content constant.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; cross-model content parity remains unknown."},
