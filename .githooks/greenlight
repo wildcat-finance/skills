@@ -18,16 +18,20 @@
 set -eu
 
 # The suite and the recorded tree have to be the same repository, and git's own
-# answers cannot establish that on their own. Git exports GIT_DIR into every
-# hook and every command it runs, and with GIT_DIR inherited `git rev-parse
-# --show-toplevel` reports the *caller's* directory as the working tree while
-# `git write-tree` still reads the index GIT_DIR names. Run from anywhere with
-# that variable set, the original `cd "$(git rev-parse --show-toplevel)"` landed
-# in the caller's directory, ran whatever `tests/` was there, and recorded a
-# green for another repository's staged tree. The substitution failing was never
-# the only way in: `cd ""` is a no-op and a failed substitution inside a simple
-# command's arguments does not trip `set -e`, but here the substitution
-# succeeds and simply answers about the wrong directory.
+# answers cannot establish that on their own. GIT_DIR reaches this script from
+# whoever started it. Git exports it into a hook it runs in a linked worktree,
+# naming that worktree's own git directory; measured on git 2.50.1, it exports
+# it into neither a hook it runs in a plain checkout nor a `git bisect run` or
+# rebase `exec` command, so in those a caller has to have set it itself. Either
+# way, with GIT_DIR inherited `git rev-parse --show-toplevel` reports the
+# *caller's* directory as the working tree while `git write-tree` still reads
+# the index GIT_DIR names. Run from anywhere with that variable set, the
+# original `cd "$(git rev-parse --show-toplevel)"` landed in the caller's
+# directory, ran whatever `tests/` was there, and recorded a green for another
+# repository's staged tree. The substitution failing was never the only way
+# in: `cd ""` is a no-op and a failed substitution inside a simple command's
+# arguments does not trip `set -e`, but here the substitution succeeds and
+# simply answers about the wrong directory.
 #
 # So drop the redirection git may have exported, then anchor to the one thing
 # the environment cannot move: where this script is. The hook does the opposite

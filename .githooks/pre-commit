@@ -93,9 +93,12 @@ fi
 # for an operand whose first component is neither `.` nor `..`, and `.git` is
 # what git answers for both sides of the check in a plain checkout. Measured on
 # git 2.50.1 with CDPATH naming a directory that holds a `.git`: `commit -a` and
-# `commit -a --amend`, the two shapes whose GIT_INDEX_FILE git makes absolute,
-# were refused on the index cause with that index inside the git directory all
-# along. It opens nothing, because `cd` prints the directory CDPATH found and a
+# `commit -a --amend` were refused on the index cause with that index inside the
+# git directory all along, because those are the two shapes git gives an
+# absolute GIT_INDEX_FILE while `--git-dir` stays relative, so only one side of
+# the comparison moved. A commit in a linked worktree gets an absolute index
+# too, and an absolute `--git-dir` beside it, so CDPATH moves neither side
+# there. It opens nothing, because `cd` prints the directory CDPATH found and a
 # two-line answer never equals a one-line one, so the crossing at either depth
 # stays refused. It is dropped for the false refusal.
 unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
