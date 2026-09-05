@@ -46,6 +46,17 @@ Any accepted overlay replaces only the `entry` file the descriptor names, and
 the `references/` beside it. Nothing else about the phase changes: the same
 suite runs in the same order for the same reasons.
 
+## What an overlay run supplies to a suite promise
+
+`PROMISES.md` binds each vendored suite skill to the SHA-256 of its vendored
+bytes and names the digest-matched instruction as evidence. An accepted
+overlay replaces those bytes for one run, so for that run the digest-matched
+instruction is the accepted descriptor's `manifest_sha256`, verified as
+above. No other clause of the promise moves. The number of isolated role
+results it requires, its wait barrier, its raw outputs, its scope rules and
+every refusal bind the instruction the run actually read, whichever copy that
+is. An overlay does not relax any of them.
+
 ## When resolution fails
 
 A failed fetch, an unreadable descriptor, a rejected field, or a digest
