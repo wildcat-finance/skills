@@ -311,3 +311,38 @@ is honest because the reviewed bytes do not move.
 **Steps touched.** Step 3.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Files:
+`plugins/horos/docs/evidence/skills-content-addressed.md` (a final section,
+"Demonstration at the run head", carrying the demo path transcript verbatim),
+`.horos/boundary.json` where the appended bytes move the walk counts, and
+`audit/rounds/fiat-ship-the-content-addressed-object-rule-whose-evi.md`
+(the round record carries the same transcript); no source file changes.
+Complete replacement Exit: From the repository root, in order, all as stated:
+`python3 plugins/horos/skills/horos/scripts/horos.py check .` exit 0 with
+`boundary matches the tree`;
+`<sign-off> python3 -m unittest discover -s plugins/horos/tests -t plugins/horos`
+green at 239 tests;
+`printf x >> plugins/horos/examples/fixture/store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82`
+then
+`python3 plugins/horos/skills/horos/scripts/horos.py check plugins/horos/examples/fixture`
+exit 1 naming that object as drift;
+`git checkout -- plugins/horos/examples/fixture/store` restoring the tree;
+`<sign-off> python3 -m unittest discover -s tests` green in a clean detached
+snapshot of the run head; and
+`<sign-off> python3 -m unittest tests.test_marketplace_prose` green. The
+transcript is committed as the last section of
+`plugins/horos/docs/evidence/skills-content-addressed.md` and lands in the
+run's audit log
+(`audit/rounds/fiat-ship-the-content-addressed-object-rule-whose-evi.md`)
+inside the step's round record; `python3 <imprimatur.py>` exit 0 on the
+bundle after the append.
+**Why.** The controller refuses an implement receipt whose branch adds no
+commit, and the audit log's grammar admits only round records, so the
+transcript needs a product home of its own. The evidence bundle already
+carries the drift demonstration and is the natural place for the run-head
+transcript; the round record still carries it, as the baseline said.
+**Steps touched.** Step 4.
+**Still holding.** Step 4: entry holds; exit holds.
