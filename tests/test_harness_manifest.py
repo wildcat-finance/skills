@@ -2729,8 +2729,16 @@ class DriftTests(unittest.TestCase):
         if self.check is None:
             self.fail(f"{CHECK_MAP_PATH} declares no check {CHECK_ID!r}")
 
-    def run_declared(self, root=None, extra=()):
-        """The declared check, run against `root` or the repository itself."""
+    def run_declared(self, extra=()):
+        """The declared check, with `extra` naming the surfaces to read.
+
+        The declared ``python3`` is replaced by the interpreter running these
+        cases. The map names an interpreter by PATH, and on a host where that
+        is not this one these cases would otherwise report on a build the rest
+        of the suite never touched. What that leaves uncovered is the PATH
+        lookup itself; ``run_checks.py`` runs the argv verbatim, so the full
+        run is where that half is exercised.
+        """
         completed = subprocess.run(
             [sys.executable if a == "python3" else a for a in self.check["argv"]]
             + list(extra),
