@@ -616,6 +616,7 @@ class PromiseStructureTests(unittest.TestCase):
             },
             "plugins/probitas/skills/probitas/SKILL.md": {
                 "probitas-evidence-collection",
+                "probitas-evidence-diff",
                 "probitas-dossier-rendering",
                 "probitas-dossier-verification",
                 "probitas-statement-emission",

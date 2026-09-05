@@ -1525,6 +1525,31 @@
       "path": "plugins/hexaemeron/tests/test_phylax_checker.py",
       "selector": "test_a_bare_pragma_without_a_reason_does_not_suppress"
     },
+    "probitas-diff-m": {
+      "claim": "An input that cannot pass its generated dossier gates is refused without a partial comparison artifact.",
+      "path": "plugins/probitas/tests/test_cli.py",
+      "selector": "test_a_gate_breach_exits_one_without_partial_output"
+    },
+    "probitas-diff-o": {
+      "claim": "Operator-designated prior and current roles remain explicitly unavailable as proof of chronology.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_direction_is_operator_designated_not_a_chronological_claim"
+    },
+    "probitas-diff-p": {
+      "claim": "Two gate-checkable inputs produce deterministic Markdown and JSON comparison artifacts.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_json_and_markdown_are_deterministic_and_retain_full_sources"
+    },
+    "probitas-diff-r": {
+      "claim": "Repairing the failed input permits a complete rerun while the old report survives the failed attempt.",
+      "path": "plugins/probitas/tests/test_cli.py",
+      "selector": "test_repairing_the_input_and_rerunning_replaces_the_old_report"
+    },
+    "probitas-diff-s": {
+      "claim": "A different entity, address set or provenance tier is refused as a subject mismatch.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_entity_address_set_and_tier_must_match_exactly"
+    },
     "probitas-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/probitas/tests/test_evidence.py",
@@ -2031,7 +2056,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "06d44e9dd6c03a53f5c9a6ba5ae2e954772015786f7a6a8cf341eae5970217e3"
+        "sha256": "6f1ee314708b7873dafb7f93296de85a6811f67df1ba51c3f988ff31e4a14c86"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -2063,10 +2088,11 @@
         "test_every_declared_pair_has_at_least_one_contested_case",
         "test_every_expected_canonical_name_is_a_real_canonical_skill",
         "test_every_router_row_is_named_by_at_least_one_case",
+        "test_probitas_evidence_comparison_is_not_synkrisis_run_comparison",
         "test_the_corpus_declares_the_supported_schema",
         "test_the_recorded_run_block_is_complete_and_names_its_failures"
       ],
-      "sha256": "e0cebf8aaa3efd0fcc2a205f994550f6a454dc1bf14eec7be94388910628dea1"
+      "sha256": "bf65aba2c13d8200a6109ae510e324c674d854c28eab578211858715dbc36f42"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },
@@ -3105,6 +3131,22 @@
       },
       "group": "executable",
       "promise_id": "probitas-evidence-collection",
+      "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "probitas-diff-m",
+        "O": "probitas-diff-o",
+        "P": "probitas-diff-p",
+        "R": "probitas-diff-r",
+        "S": "probitas-diff-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "probitas-evidence-diff",
       "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
@@ -4600,7 +4642,7 @@
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "9ada5e0cca35f8482796acbc24d3c1d93e6633ec5ca40c68d810610db5d75837",
+      "sha256": "22a1a386efb7391cc664b8f811f6e59949bf804c781fcca75cf7faf3bd967f37",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {
