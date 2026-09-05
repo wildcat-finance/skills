@@ -2086,5 +2086,114 @@ class ShippedCopyTests(unittest.TestCase):
         )
 
 
+# --- the run that answered the acceptance conditions -----------------------
+#
+# The five conditions the study sets are answered by one observed run on a
+# clone that had never seen the gate, and `demonstration.md` is where a later
+# reader finds what that run actually did. These cases hold the record rather
+# than the run: they do not clone the repository or drive the gate again, which
+# costs two full suites and the better part of a quarter of an hour.
+#
+# What they can hold is the property that makes the record worth reading. It
+# reports commands, and a command reported without its exit code is a claim
+# again, which is the thing this step exists to replace. So every command the
+# record names in its own prose has to appear in the transcript table with a
+# code beside it.
+
+DEMONSTRATION = SHIPPED / "demonstration.md"
+
+# The conditions as the study numbers them, by the words each one turns on.
+# Matching the number alone would pass on a record that lists five headings and
+# answers none of them.
+ACCEPTANCE_CONDITIONS = {
+    1: "where the gate lives",
+    2: "survives a clone and absence is visible",
+    3: "green tree against untested tree",
+    4: "deliberate escape hatch",
+    5: "index-mutation regression on the hook path",
+}
+
+CONDITION_HEADING = "### Acceptance condition {number}, {name}"
+
+# A backticked span is a command when it starts the way this run's commands
+# start. `.githooks/greenlight` takes no arguments and is still one, which is
+# why it is named exactly; `.githooks/pre-commit` and the document paths beside
+# it are files rather than commands, and a prefix list leaves them out where
+# "anything holding a slash" would not.
+COMMAND_PREFIXES = ("git ", "python3 ", "FIAT_SKIP_PRECOMMIT=1 ")
+COMMAND_EXACT = (".githooks/greenlight",)
+
+# Output quoted from the run goes in a fenced block, and nothing in a fenced
+# block is read as a command the record is reporting. The gate's own refusal
+# names `.githooks/greenlight` inside the message it prints, and that is the
+# hook talking rather than the record naming something it ran.
+FENCED_BLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+INLINE_CODE = re.compile(r"`([^`\n]+)`")
+TRANSCRIPT_ROW = re.compile(
+    r"^\|\s*\d+\s*\|\s*`(?P<command>[^`]+)`\s*\|\s*(?P<exit>\d+)\s*\|",
+    re.MULTILINE,
+)
+
+
+def demonstration_text() -> str:
+    return DEMONSTRATION.read_text(encoding="utf-8")
+
+
+def reported_commands(text: str) -> set[str]:
+    """Every command the record names outside its quoted output."""
+    prose = FENCED_BLOCK.sub("", text)
+    found = set()
+    for span in INLINE_CODE.findall(prose):
+        span = span.strip()
+        if span in COMMAND_EXACT or span.startswith(COMMAND_PREFIXES):
+            found.add(span)
+    return found
+
+
+class DemonstrationRecordTests(unittest.TestCase):
+    """The record of that run, held to reporting a run rather than a claim."""
+
+    def test_the_demonstration_record_is_here(self):
+        self.assertTrue(
+            DEMONSTRATION.is_file(),
+            f"{DEMONSTRATION} is missing, so the five conditions are answered "
+            "by the study saying what a run would show and by nothing else",
+        )
+        self.assertTrue(
+            demonstration_text().strip(), f"{DEMONSTRATION} is empty"
+        )
+
+    def test_it_answers_every_acceptance_condition(self):
+        text = demonstration_text()
+        missing = [
+            CONDITION_HEADING.format(number=number, name=name)
+            for number, name in ACCEPTANCE_CONDITIONS.items()
+            if CONDITION_HEADING.format(number=number, name=name) not in text
+        ]
+        self.assertEqual(
+            missing, [],
+            f"{DEMONSTRATION} does not answer every condition the study sets, "
+            "so a reader cannot tell whether the ones it leaves out were "
+            f"observed, refused or forgotten: {missing}",
+        )
+
+    def test_every_command_it_reports_carries_an_exit_code(self):
+        text = demonstration_text()
+        rows = TRANSCRIPT_ROW.findall(text)
+        self.assertTrue(
+            rows,
+            f"{DEMONSTRATION} carries no transcript row at all, so nothing in "
+            "it is a command with a code beside it",
+        )
+        recorded = {command.strip() for command, _ in rows}
+        uncoded = sorted(reported_commands(text) - recorded)
+        self.assertEqual(
+            uncoded, [],
+            f"{DEMONSTRATION} names commands its transcript reports no exit "
+            "code for, which is the claim this record exists to replace: "
+            f"{uncoded}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
