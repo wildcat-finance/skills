@@ -140,6 +140,20 @@ class FiatSkillContractTests(unittest.TestCase):
             overlays,
         )
 
+    def test_overlay_run_supplies_manifest_digest_to_suite_promise(self):
+        overlays = " ".join(self.overlays.split())
+        self.assertIn(
+            "the digest-matched instruction is the accepted descriptor's "
+            "`manifest_sha256`",
+            overlays,
+        )
+        self.assertIn("No other clause of the promise moves", overlays)
+        self.assertIn(
+            "bind the instruction the run actually read, whichever copy that is",
+            overlays,
+        )
+        self.assertIn("An overlay does not relax any of them", overlays)
+
     def test_overlay_resolution_failure_falls_back_without_reporting(self):
         overlays = " ".join(self.overlays.split())
         self.assertIn(
