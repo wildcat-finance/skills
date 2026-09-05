@@ -3,7 +3,7 @@
 
 `docs/harness-classification.json` is the roster's single source, written by
 `scripts/probe_harnesses.py` and pinned by
-`docs/decisions/ADR-078-generate-the-harness-roster-from-one-probed-manifest.md`.
+`docs/decisions/ADR-079-generate-the-harness-roster-from-one-probed-manifest.md`.
 This module is the renderer. It turns that manifest into the three surfaces the
 decision record names: the roster block in `README.md`, the harness table in
 `docs/how-to-help-shoggoth.md`, and the harness page
@@ -565,7 +565,7 @@ def refuse_unobserved_version(entry, shown):
     it carries three conditionals binding `client_version` to `client_present`
     and to `version_read`, and none of them was read here, so a document the
     schema refuses reached all three surfaces. `_version` is why that shows.
-    ADR-078 tells a reader to consult `version_read` rather than recognise the
+    ADR-079 tells a reader to consult `version_read` rather than recognise the
     sentinel, so `_version` returns `entry["client_version"]` whenever
     `version_read` is true and never asks what it holds.
 
@@ -720,7 +720,7 @@ def recorded(document):
 def _version(entry):
     """What to print for a version, without recognising the unread sentinel.
 
-    `version_read` is the field ADR-078 tells a reader to consult, so this reads
+    `version_read` is the field ADR-079 tells a reader to consult, so this reads
     that boolean rather than comparing `client_version` against a magic string.
     """
     return entry["client_version"] if entry["version_read"] else "not read"

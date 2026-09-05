@@ -24,6 +24,7 @@
     "block_first_line": 99,
     "block_last_line": 114,
     "block_sha256": "fde7877ff915b8f207b9b05c094938b34808a40c8d67b47d6b10fe191ca3d387",
+    "block_sha256_over": "The 16 block lines joined by a newline, with no trailing newline. The obvious re-derivation keeps the trailing newline and returns db590ad55812e1b05744160631578125b0f769425ba74d4e6b79635fd88d581a over the same 16 lines, so a reader who gets that digest has met this convention rather than the wrong file. Every other identifier here reproduces with the obvious command: file_sha256 is the sha256 of the whole file, and each test_files blob is the git blob id the read returned.",
     "cited_as": "lines 98 to 114 in the 2026-09-05 runbook amendment, which counts the blank line above the block",
     "test_name_template": "${provider} redirect carries the API-selected issue and prompt",
     "providers": ["chatgpt", "claude"],

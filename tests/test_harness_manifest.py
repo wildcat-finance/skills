@@ -14,7 +14,7 @@ declared rule; it does not quietly skip.
 The other four classes hold ``scripts/probe_harnesses.py``. The schema fixes
 the roster's vocabulary and refuses an unknown name, and its own description
 says so, but it will admit an earned class on an entry that never ran a client.
-ADR-078 puts that enforcement in the probe's classifier, and these are the cases
+ADR-079 puts that enforcement in the probe's classifier, and these are the cases
 that hold it there.
 
 ``ClassifierTests`` sweeps the input matrix for a shape that reaches an earned
@@ -93,7 +93,7 @@ DERIVED_FIELDS = ("version_read",)
 
 REQUIRED_ENTRY_FIELDS = OBSERVATION_FIELDS + DERIVED_FIELDS
 
-# ADR-078 names these two optional in as many words, so the schema may not
+# ADR-079 names these two optional in as many words, so the schema may not
 # quietly start requiring them. A tightening here is a decision the record
 # owns, not an audit fix.
 OPTIONAL_ENTRY_FIELDS = ("testable_here", "probe")
@@ -237,7 +237,7 @@ class SchemaTests(unittest.TestCase):
         self.assert_valid(document)
 
     def test_every_declared_field_is_either_required_or_named_optional(self):
-        # ADR-078 enumerates this entry and states which two fields are
+        # ADR-079 enumerates this entry and states which two fields are
         # optional, so the schema and the record can be read against each
         # other. A field added to `properties` without landing in `required`
         # or in the optional pair is the drift that put a required
@@ -247,7 +247,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(
             declared - required,
             set(OPTIONAL_ENTRY_FIELDS),
-            "a declared field is neither required nor one ADR-078 calls optional",
+            "a declared field is neither required nor one ADR-079 calls optional",
         )
         self.assertEqual(
             required,
@@ -269,7 +269,7 @@ class SchemaTests(unittest.TestCase):
                 self.assert_refused(manifest(record))
 
     def test_the_fields_adr_076_calls_optional_stay_optional(self):
-        # ADR-078 enumerates the entry and calls `testable_here` and `probe`
+        # ADR-079 enumerates the entry and calls `testable_here` and `probe`
         # optional in as many words. Requiring either would put the schema at
         # odds with the record that pins it, so the omission has to keep
         # validating even though the generator always writes `testable_here`.
@@ -1773,8 +1773,17 @@ class RenderTests(unittest.TestCase):
                     with self.assertRaises(render_harness_roster.RenderError):
                         render(document)
         # A real date still renders, so the guard refuses the calendar and not
-        # the field.
-        self.assertIn("2026-09-04", render_harness_roster.pdf_label(landed()))
+        # the field. The control reads the landed date rather than pinning a
+        # literal: `recorded.date` moves on every re-probe, and a pinned one
+        # made this positive control the single case that a demonstration run
+        # of the documented four commands could not pass. Parsing it first
+        # keeps the control load-bearing, because `assertIn` alone would be
+        # vacuous on an empty date.
+        recorded_date = landed()["recorded"]["date"]
+        self.assertEqual(
+            datetime.date.fromisoformat(recorded_date).isoformat(), recorded_date
+        )
+        self.assertIn(recorded_date, render_harness_roster.pdf_label(landed()))
 
     def test_the_readme_states_how_many_clients_answered(self):
         # S3-R1-03. The sentence used to claim the probe "read every client
@@ -2701,6 +2710,21 @@ class RenderTests(unittest.TestCase):
 CHECK_MAP_PATH = ROOT / "tests/check-map-v1.json"
 CHECK_ID = "harness-roster-check"
 
+# Two values of the right shape for each `recorded` field, so a case can always
+# take one the landed manifest does not already carry. Each first choice is
+# tried and the second is there for the day it collides. The pair replaces three
+# single literals: `"2026-09-05"` was the day the case below was written, and
+# `"linux-x86_64"` is exactly what `probe_harnesses.default_host` returns on any
+# Linux x86_64 host, so both sat inside the value space of the field they were
+# meant to differ from. Re-running the probe -- the maintenance path the check
+# map's own title names -- would then have reddened a manifest that was correct,
+# in the step whose whole point is that a red here means real drift.
+OTHER_RECORDED = {
+    "host": ("recorded-elsewhere", "recorded-elsewhere-2"),
+    "date": ("1970-01-01", "1970-01-02"),
+    "base_ref": ("0" * 40, "1" * 40),
+}
+
 
 def check_map():
     return json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
@@ -2829,18 +2853,22 @@ class DriftTests(unittest.TestCase):
         # field is driven separately, because they reach the surfaces by
         # different routes: host and date reach all three, and the base ref
         # reaches the two Markdown regions alone.
-        for field, replacement in (
-            ("host", "linux-x86_64"),
-            ("date", "2026-09-05"),
-            ("base_ref", "0" * 40),
-        ):
+        for field in ("host", "date", "base_ref"):
             with self.subTest(field=field):
                 with tempfile.TemporaryDirectory() as directory:
                     staged = self.stage(directory)
                     document = json.loads(
                         staged["--manifest"].read_text(encoding="utf-8")
                     )
-                    self.assertNotEqual(document["recorded"][field], replacement)
+                    # Derived from what the manifest carries rather than fixed,
+                    # so no probe run can make the replacement equal the value
+                    # it has to differ from. Both candidates keep the shape the
+                    # renderer's own `recorded` patterns require, so the check
+                    # reddens on drift rather than on a refused field.
+                    recorded = document["recorded"][field]
+                    first, second = OTHER_RECORDED[field]
+                    replacement = first if recorded != first else second
+                    self.assertNotEqual(recorded, replacement)
                     document["recorded"][field] = replacement
                     staged["--manifest"].write_text(
                         json.dumps(document, indent=2) + "\n", encoding="utf-8"
@@ -2887,13 +2915,14 @@ class AtlasClaimTests(unittest.TestCase):
     def setUpClass(cls):
         cls.evidence = json.loads(EVIDENCE_PATH.read_text(encoding="utf-8"))
         cls.raw_guide = GUIDE_PATH.read_text(encoding="utf-8")
+        cls.raw_readme = README_PATH.read_text(encoding="utf-8")
         # Both surfaces are hard-wrapped Markdown, so every sentence held here
         # spans two or three source lines. Matching the wrapped bytes would tie
         # these cases to one particular reflow: a paragraph rewrapped by an
         # editor is the same claim, and this would report it as the claim being
         # deleted. Collapsing runs of whitespace compares the sentence instead.
         cls.guide = " ".join(cls.raw_guide.split())
-        cls.readme = " ".join(README_PATH.read_text(encoding="utf-8").split())
+        cls.readme = " ".join(cls.raw_readme.split())
 
     def test_the_guides_coverage_claim_agrees_with_the_pinned_atlas_read(self):
         evidence = self.evidence
@@ -2921,15 +2950,29 @@ class AtlasClaimTests(unittest.TestCase):
             route["asserts"]["destination_origin"],
             {"chatgpt": "https://chatgpt.com", "claude": "https://claude.ai"},
         )
-        # Every route the guide links has to be one the read covers. Reading the
-        # links out of the guide rather than listing them here is what keeps
-        # this honest: a third bootstrap button added tomorrow fails this case
-        # until somebody reads the Atlas repository again.
-        linked = sorted(set(re.findall(r"/go/([a-z0-9-]+)", self.raw_guide)))
-        self.assertEqual(
-            sorted(f"/go/{name}" for name in linked), sorted(conclusion["covered_routes"])
-        )
-        self.assertEqual(linked, route["providers"])
+        # Every route either surface links has to be one the read covers.
+        # Reading the links out of the surfaces rather than listing them here is
+        # what keeps this honest: a third bootstrap button added tomorrow fails
+        # this case until somebody reads the Atlas repository again.
+        #
+        # The README is read as well as the guide because it carries the same
+        # two badges, at `README.md:317` and `:318`, under its own sentence
+        # saying a checked bootstrap can allocate the issue and prepare a
+        # prompt. Both sit outside the roster markers, so `--check` reads
+        # neither; with only the guide read here, a fourth route added to the
+        # README alone, or the two it has repointed at a provider the read never
+        # covered, passed every case in this file.
+        for surface, text in (
+            ("docs/how-to-help-shoggoth.md", self.raw_guide),
+            ("README.md", self.raw_readme),
+        ):
+            with self.subTest(surface=surface):
+                linked = sorted(set(re.findall(r"/go/([a-z0-9-]+)", text)))
+                self.assertEqual(
+                    sorted(f"/go/{name}" for name in linked),
+                    sorted(conclusion["covered_routes"]),
+                )
+                self.assertEqual(linked, route["providers"])
         self.assertIn(ATLAS_CLAIM, self.guide)
 
     def test_the_sentence_limiting_the_claim_survives(self):

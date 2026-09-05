@@ -707,3 +707,46 @@ fenced block, so the honest record is that they are stale and why.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** The `atlas-claim` row of the risk register at line 341 states
+that the mitigation is to correct the guide sentence "to what the Atlas
+repository actually holds, which is no route test". That is false, and this
+amendment supersedes it. The Atlas repository at
+`ce866e3d7e8b489fcb8b70c608f7af72d9b7a673` holds six test files and a route
+test. `tests/rendered-html.test.mjs` lines 99 to 114 loop over `chatgpt` and
+`claude` and assert that `/go/{provider}` returns 307 with `cache-control:
+no-store`, that the destination origin is `https://chatgpt.com` or
+`https://claude.ai`, and that the destination's `q` parameter equals a prompt
+the same test read from `/api/job?all=true`. The file is 5,075 bytes over 114
+lines at sha256
+`4dd6c8e55eb728c70dfcc3605775d5760ed882922975bea476a4fb061f6baa0c`, and that
+digest was confirmed by three independent reads.
+
+The mitigation for `atlas-claim` is therefore the opposite of what the row
+records. The guide sentence at `docs/how-to-help-shoggoth.md:117` is true as
+written and is kept; what step 4 owed was a check binding the claim to a
+recorded read of the Atlas repository, which is `tests/atlas-route-test-evidence.json`
+and the `AtlasClaimTests` cases that consume it. The row's subject, the guide
+sentence claiming Atlas launcher tests cover the two web routes, is unchanged.
+
+**Why.** The row asserted a fact about another repository that nobody read
+before writing it into a mitigation, and step 4's receipted `Exit` carried the
+same claim until the runbook amendment of this date replaced that field. This
+study amendment closes the last place the falsehood stands live rather than
+superseded. Step 4's first audit round found it at
+`docs/atlas-harness-handoff/study.md:341` and recorded it accepted, because a
+fenced block cannot be rewritten by an append-only amendment and no audit round
+can close a controller record.
+
+Every one of step 3's seven audit rounds recorded the same unknown, that the
+Atlas repository had not been fetched in any round. It was closed with one API
+read. The lesson the register should carry is that a mitigation naming another
+repository's contents owes a recorded read of them before it is written down,
+not after a step is built against it.
+
+**Steps touched.** Step 4, step 5.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.

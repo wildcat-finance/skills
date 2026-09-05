@@ -1,4 +1,4 @@
-# ADR-078: Generate the harness roster from one probed manifest
+# ADR-079: Generate the harness roster from one probed manifest
 
 ## Status
 
@@ -158,7 +158,7 @@ a silent edit to either.
 ## Numbering, and the stale pointers this leaves behind
 
 This record was written as ADR-074, which was free when the run checked, and it
-collided three times. Pull request 1181 merged
+collided four times. Pull request 1181 merged
 `ADR-074-shape-every-written-record-through-sapheneia.md` into `main`
 fifty-five minutes later, at 2026-09-04T01:40:30Z against this record's own
 commit at 00:45:16Z. `tests/test_decision_records.py` compares numbers against
@@ -170,12 +170,16 @@ That number collided too. `main` acquired a different
 gate went red at two failures. The record then took 077, and lost that one as well.
 `main` acquired `ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md` in
 `b0b21874` at 2026-09-05T00:23:03+01:00, after this step's audit had closed, and
-the gate went red a third time. The record now takes 078, which is free on this
-branch and on `origin/main`, whose numbered records run 074 to 077. Thirteen
-occurrences moved with it: this file's heading, one full path in the schema
-description, three in the probe, three in the renderer and five in the test
-module. Nothing reserves 078 either, so it is rechecked before this step is
-pushed.
+the gate went red a third time. The record then took 078 and lost that one too.
+`main` acquired `ADR-078-echo-fiat-required-as-a-filer-set-label.md` through
+pull request 1248 while step 5 was building, and the same gate went red a fourth
+time. The record now takes 079, checked free against `origin/main`, whose
+numbered records run 074 to 078, and against every open pull request head.
+Thirteen occurrences move with each renumber: this file's heading, one full path
+in the schema description, three in the probe, three in the renderer and five in
+the test module. Nothing reserves 079 either, so it is rechecked immediately
+before the run is merged rather than only before this step is pushed, because
+three of the four collisions landed while the branch was waiting.
 
 The record that took 077 is the one implementing assign-at-merge. Issue 888 is
 rebuilding ADR numbering to assign a number at merge rather than at authoring,

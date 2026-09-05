@@ -2,7 +2,7 @@
   "$id": "https://wildcat.finance/schemas/harness-classification-v1.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "harness-classification/v1",
-  "description": "The one record every Atlas hand-off roster surface is generated from. Each harness entry carries what the host actually showed, so a class can never outrun the observation behind it. Pinned by docs/decisions/ADR-078-generate-the-harness-roster-from-one-probed-manifest.md.",
+  "description": "The one record every Atlas hand-off roster surface is generated from. Each harness entry carries what the host actually showed, so a class can never outrun the observation behind it. Pinned by docs/decisions/ADR-079-generate-the-harness-roster-from-one-probed-manifest.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
