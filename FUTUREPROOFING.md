@@ -1,11 +1,11 @@
 # Futureproofing the Shoggoth
 
-This is the honest roadmap for Wildcat Labs Skills, the Shoggoth collective,
-and the complete roster: every governed member, the four bounded delivery
+This is the honest roadmap for Wildcat Labs Skills, the Shoggoth collective. It
+is also the complete roster: every governed member, the four bounded delivery
 worker roles, and the upstream skills that ship unchanged. It describes what
 exists in the repository, what evidence is still missing, and what each member
-could become if contributors close that gap. The root
-[README](./README.md) is a front door and links here rather than repeating it.
+could become if contributors close that gap. The root [README](./README.md) is
+a front door and links here rather than repeating it.
 
 It is not a product forecast. “Could become” means that the current contract
 has a credible direction, not that the work is scheduled, funded, or already
