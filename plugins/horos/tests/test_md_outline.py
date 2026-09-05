@@ -5,6 +5,7 @@ import io
 import os
 import sys
 import tempfile
+import time
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills" / "horos" / "scripts"))  # noqa: E402  (locates horos.py)
@@ -188,6 +189,49 @@ class MarkdownOutlineTests(unittest.TestCase):
         code, output = run("## only an h2\n")
         self.assertEqual(code, 0)
         self.assertIn("module: (no title)", output)
+
+    # hostile-input: S2-R1-01
+    def test_a_long_line_of_markers_and_spaces_is_outlined_in_linear_time(self):
+        # Each case took 5 s or more before the fix and takes milliseconds
+        # after it; the bound leaves room for a loaded host.
+        markers, spaces = 20_000, 30_000
+        cases = (
+            ("* " * markers + "x\n", [], "declarations: 0"),
+            ("# a" + " " * spaces + "b\n", ["# a" + " " * spaces + "b  (line 1)"], "module: a" + " " * spaces + "b"),
+            ("# a" + " " * spaces + "b #\n", ["# a" + " " * spaces + "b #  (line 1)"], "module: a" + " " * spaces + "b"),
+        )
+        for source, heads, expected in cases:
+            with self.subTest(source=source[:12]):
+                started = time.perf_counter()
+                code, output = run(source)
+                elapsed = time.perf_counter() - started
+                self.assertLess(elapsed, 2.0, f"{elapsed:.1f} s on one line of {len(source)} bytes")
+                self.assertEqual(code, 0)
+                self.assertEqual(headings(output), heads)
+                self.assertIn(expected, output)
+
+    # container-prefix, html-hidden-heading, setext-under-lazy-line: S2-R1-02
+    def test_a_container_closing_closes_the_html_block_or_fence_it_holds(self):
+        code, output = run("> <!--\n# h\n")
+        self.assertEqual(code, 0)
+        self.assertEqual(headings(output), ["# h  (line 2)"])
+        self.assertIn("unparsed: 1 region(s): line 1", output)
+        code, output = run("> ```\n\n> ```\n# h\n")
+        self.assertEqual(code, 0)
+        self.assertIn("```  (lines 1-1)", output)
+        self.assertIn("```  (lines 3-3)", output)
+        self.assertEqual(headings(output), ["# h  (line 4)"])
+        self.assertNotIn("lexer:", output)
+
+    def test_an_underline_at_the_paragraph_depth_after_a_lazy_line_is_a_heading(self):
+        for source, head in (
+            ("> Foo\nbar\n> ===\n", "Foo  (setext h1)  (line 1)"),
+            ("- foo\nbar\n  ---\n", "foo  (setext h2)  (line 1)"),
+        ):
+            with self.subTest(source=source):
+                code, output = run(source)
+                self.assertEqual(code, 0)
+                self.assertEqual(headings(output), [head])
 
 
 if __name__ == "__main__":

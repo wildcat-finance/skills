@@ -51,13 +51,17 @@ marker. Exit 1 only for an unterminated fence.
 
 import re
 
-ATX = re.compile(r"^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$")
-CLOSING_HASHES = re.compile(r"(?:^|[ \t]+)#+[ \t]*$")
+# Greedy, so one pass over the line: a lazy `.*?` before a trailing
+# `[ \t]*$` re-scans the tail at every step and goes quadratic on a long
+# heading line of interior spaces.
+ATX = re.compile(r"^ {0,3}(#{1,6})(?:[ \t]+(.*))?$")
 FENCE = re.compile(r"^( {0,3})(`{3,}|~{3,})(.*)$")
 SETEXT = re.compile(r"^ {0,3}(=+|-+)[ \t]*$")
-THEMATIC = re.compile(r"^ {0,3}((\*[ \t]*){3,}|(-[ \t]*){3,}|(_[ \t]*){3,})$")
-QUOTE = re.compile(r"^ {0,3}>")
-LIST_ITEM = re.compile(r"^( {0,3})([-+*]|\d{1,9}[.)])([ \t]+|$)")
+# Matched at a position inside the line, so unanchored: `match(line, pos)`
+# never lets `^` match there.
+QUOTE = re.compile(r" {0,3}>")
+LIST_ITEM = re.compile(r"( {0,3})([-+*]|\d{1,9}[.)])([ \t]+|$)")
+SPACES = re.compile(r" *")
 INDENTED = re.compile(r"^(?: {4}|\t)")
 
 # List markers that may interrupt a paragraph (a bullet, or an ordered item
@@ -91,28 +95,72 @@ HTML_STARTS = (
 )
 
 
+def _uniform_start(line):
+    """The index from which the line holds one non-blank character and
+    blanks only, and that character; (0, "") for a blank line."""
+    end = len(line.rstrip(" \t"))
+    if end == 0:
+        return 0, ""
+    char = line[end - 1]
+    k = end - 1
+    while k > 0 and line[k - 1] in (char, " ", "\t"):
+        k -= 1
+    return k, char
+
+
+def _thematic(line, pos=0, uniform=None):
+    """Whether the line from `pos` is a thematic break: three or more of
+    one of `*`, `-` or `_`, blanks between them, indented up to three
+    spaces. Not a regex, and answered from the line's uniform tail: the
+    repeated-group form backtracks quadratically, and a line of a million
+    list markers asks this once per marker."""
+    indent = 0
+    while indent < 4 and line.startswith(" ", pos + indent):
+        indent += 1
+    body = pos + indent
+    if indent > 3 or body >= len(line) or line[body] not in "*-_":
+        return False
+    start, char = uniform if uniform is not None else _uniform_start(line)
+    if line[body] != char or body < start:
+        return False
+    return line.count(char, body) >= 3
+
+
+def _atx_text(content):
+    """The heading text after the marker, closing hashes dropped when they
+    follow a space or make up the whole text."""
+    text = content.strip(" \t")
+    core = text.rstrip("#")
+    if core != text and (core == "" or core[-1] in " \t"):
+        text = core.rstrip(" \t")
+    return text
+
+
 def _strip_containers(line, stack, blank):
     """Strip the open containers' prefixes from the line. Returns
     (remainder, matched_depth): how many of the open containers this line
     continued."""
+    pos = 0
     depth = 0
+    run_end = -1             # end of the space run starting at pos, once measured
     for kind, indent in stack:
         if kind == "quote":
-            m = QUOTE.match(line)
+            m = QUOTE.match(line, pos)
             if not m:
                 break
-            line = line[m.end():]
-            if line.startswith(" "):
-                line = line[1:]
-            elif line.startswith("\t"):
-                line = " " * 3 + line[1:]
+            pos = m.end()
+            if line.startswith(" ", pos):
+                pos += 1
+            run_end = -1
         elif not blank:
-            if len(line) - len(line.lstrip(" ")) >= indent:
-                line = line[indent:]
+            if run_end < pos:
+                run_end = SPACES.match(line, pos).end()
+            if run_end - pos >= indent:
+                pos += indent
             else:
                 break
         depth += 1
-    return line, depth
+    return line[pos:], depth
 
 
 class _Outline:
@@ -144,36 +192,36 @@ class _Outline:
                     i = j + 1
                     break
         stack = []               # open containers: ("quote", 0) or ("item", indent)
-        para = None              # (first_line, sig, lazy, text)
-        fence = None             # (char, length, first_line, info, sig)
+        para = None              # (first_line, sig, text)
+        fence = None             # (char, length, first_line, info)
         html = None              # (end_regex or None, first_line)
         while i < n:
             raw = lines[i].rstrip("\r").expandtabs(4)
             lineno = i + 1
             blank = raw.strip() == ""
             rest, depth = _strip_containers(raw, stack, blank)
+            # A container this line did not continue closes here, and takes
+            # any fence or HTML block it holds with it: neither takes a lazy
+            # continuation. A blank line keeps a list item open but closes
+            # a blockquote it does not mark.
+            closes = depth < len(stack) and (not blank or stack[depth][0] == "quote")
 
             if html is not None:
                 end, first = html
-                if end is None:
-                    if blank or depth < len(stack):
-                        self.confess(first, lineno - 1)
-                        html = None
-                    else:
-                        i += 1
-                        continue
+                if closes or (end is None and blank):
+                    self.confess(first, lineno - 1)
+                    html = None
+                    stack = stack[:depth]
                 else:
-                    if end.search(rest):
+                    if end is not None and end.search(rest):
                         self.confess(first, lineno)
                         html = None
                     i += 1
                     continue
 
             if fence is not None:
-                char, length, first, info, sig = fence
-                if not blank and depth < len(sig):
-                    # the container holding the fence closed, and the fence
-                    # with it
+                char, length, first, info = fence
+                if closes:
                     self.emit_fence(first, lineno - 1, info)
                     fence = None
                     stack = stack[:depth]
@@ -202,41 +250,48 @@ class _Outline:
                 # the line did not continue every open container: either a
                 # lazy paragraph continuation or the containers close
                 if para is not None and not self.starts_block(rest, True):
-                    para = (para[0], para[1], True, para[3])
                     i += 1
                     continue
                 stack = stack[:depth]
 
-            # open new containers on this line
+            # open new containers on this line, scanning by position: a
+            # slice per marker is quadratic on a line of many markers
             sig_changed = lazy
+            pos = 0
+            end = len(rest.rstrip())
+            uniform = None
             while True:
-                m = QUOTE.match(rest)
+                m = QUOTE.match(rest, pos)
                 if m:
-                    rest = rest[m.end():]
-                    if rest.startswith(" "):
-                        rest = rest[1:]
+                    pos = m.end()
+                    if rest.startswith(" ", pos):
+                        pos += 1
                     stack.append(("quote", 0))
                     sig_changed = True
                     continue
-                m = LIST_ITEM.match(rest)
+                m = LIST_ITEM.match(rest, pos)
                 if m and not (para is not None and not sig_changed
                               and m.group(2) not in INTERRUPTING_MARKERS):
-                    if THEMATIC.match(rest):
+                    if uniform is None:
+                        uniform = _uniform_start(rest)
+                    if _thematic(rest, pos, uniform):
                         break
                     marker_end = m.end(2)
-                    after = rest[marker_end:]
-                    spaces = len(after) - len(after.lstrip(" "))
-                    if after.strip() == "" or spaces > 4:
-                        content = marker_end + 1
+                    spaces = SPACES.match(rest, marker_end).end() - marker_end
+                    empty = marker_end + spaces >= end
+                    if empty or spaces > 4:
+                        content = marker_end + 1 - pos
                     else:
-                        content = marker_end + spaces
-                    rest = rest[content:] if after.strip() != "" else ""
+                        content = marker_end + spaces - pos
                     stack.append(("item", content))
                     sig_changed = True
-                    if rest.strip() == "":
+                    if empty:
+                        pos = end
                         break
+                    pos += content
                     continue
                 break
+            rest = rest[pos:]
             if sig_changed:
                 para = None
             sig = tuple(stack)
@@ -251,27 +306,29 @@ class _Outline:
 
             m = FENCE.match(rest)
             if m and not (m.group(2)[0] == "`" and "`" in m.group(3)):
-                fence = (m.group(2)[0], len(m.group(2)), lineno, m.group(3).strip(), sig)
+                fence = (m.group(2)[0], len(m.group(2)), lineno, m.group(3).strip())
                 para = None
                 i += 1
                 continue
 
             m = ATX.match(rest)
             if m:
-                text = CLOSING_HASHES.sub("", m.group(2) or "").strip()
+                text = _atx_text(m.group(2) or "")
                 self.emit_heading(len(m.group(1)), lineno, rest.strip(), text)
                 para = None
                 i += 1
                 continue
 
-            if para is not None and not para[2] and para[1] == sig and SETEXT.match(rest):
+            # An underline at the paragraph's own depth is a setext heading
+            # even after a lazy line; only a lazy underline is refused, above.
+            if para is not None and para[1] == sig and SETEXT.match(rest):
                 level = 1 if rest.strip()[0] == "=" else 2
-                self.emit_heading(level, para[0], para[3], para[3], setext=True)
+                self.emit_heading(level, para[0], para[2], para[2], setext=True)
                 para = None
                 i += 1
                 continue
 
-            if THEMATIC.match(rest):
+            if _thematic(rest):
                 para = None
                 i += 1
                 continue
@@ -291,7 +348,7 @@ class _Outline:
                 continue
 
             if para is None:
-                para = (lineno, sig, False, rest.strip())
+                para = (lineno, sig, rest.strip())
             i += 1
 
         if fence is not None:
@@ -304,7 +361,7 @@ class _Outline:
     def starts_block(self, rest, para_open):
         """Whether the line would start a new block rather than lazily
         continue the open paragraph."""
-        if FENCE.match(rest) or ATX.match(rest) or THEMATIC.match(rest) or QUOTE.match(rest):
+        if FENCE.match(rest) or ATX.match(rest) or _thematic(rest) or QUOTE.match(rest):
             return True
         m = LIST_ITEM.match(rest)
         if m and (not para_open or m.group(2) in INTERRUPTING_MARKERS):
