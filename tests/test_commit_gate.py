@@ -189,6 +189,22 @@ class FixtureTests(unittest.TestCase):
         self.fail("this fixture suite fails so greenlight records nothing")
 """
 
+# A passing suite that records having run, so a case can say which
+# repository's suite greenlight ran rather than inferring it from where the
+# record landed. It passes, because the point is what greenlight does after a
+# green suite: a red one would stop it before it recorded anything.
+SUITE_MARKER = "suite-ran"
+
+MARKING_SUITE = f"""import pathlib
+import unittest
+
+
+class FixtureTests(unittest.TestCase):
+    def test_the_fixture_suite_records_having_run(self):
+        marker = pathlib.Path(__file__).resolve().parents[1] / "{SUITE_MARKER}"
+        marker.write_text("ran\\n", encoding="utf-8")
+"""
+
 MARKER = """#!/bin/sh
 printf 'marker: {name}\\n' >&2
 exit 1
@@ -1477,6 +1493,113 @@ class HookIndexMutationTests(unittest.TestCase):
                     marker.exists(),
                     f"an inherited configuration override made the gate start "
                     f"a process nothing in the gate names, via {route}",
+                )
+
+    def test_each_half_keeps_its_own_repository_under_an_inherited_cdpath(self):
+        """S3-R7-01: `cd` searches CDPATH, and both halves hand it an operand it
+        will search for.
+
+        CDPATH is not git's, so neither `unset` of git variables reached it and
+        neither `/dev/null` pin covers it. `cd` searches it whenever the operand
+        does not begin with a slash and its first component is neither `.` nor
+        `..`, which is what both halves pass: greenlight anchors on
+        `<clone>/.githooks/..` when a contributor starts it from beside the
+        clone, and the hook resolves the `.git` git answers for `--git-dir` in a
+        plain checkout.
+
+        The two CDPATH entries below are the ones that match those first
+        components: the other fixture's parent, which holds a directory of the
+        same name, and the other fixture's own root, which holds a `.git`.
+        Measured on git 2.50.1 with the entries in place and each half's
+        `CDPATH` cut from its `unset`: greenlight ran the other repository's
+        suite and wrote that repository's tree into that repository's record
+        while this one's stayed absent, and `commit -a` was refused on the index
+        cause, because git makes `GIT_INDEX_FILE` absolute for that shape while
+        `--git-dir` stays relative, so only one side of the comparison moved.
+
+        So this case drives an ordinary green and an ordinary commit, and holds
+        that the inherited value changes neither.
+        """
+        with gate_repository() as here, gate_repository(MARKING_SUITE) as outer:
+            self.assertEqual(
+                here.name, outer.name,
+                "the two fixtures no longer share a directory name, so the "
+                "parent entry in CDPATH below matches nothing",
+            )
+            marker = outer / SUITE_MARKER
+            self.assertFalse(marker.exists(), "the fixture ran its own suite")
+            before = staged_state(outer)
+            environment = clean_environment({
+                "CDPATH": f"{outer.parent}:{outer}",
+            })
+
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            staged = git(here, "write-tree").stdout.strip()
+
+            # Started the way its own header documents it, from beside the
+            # clone rather than inside it, which is the shape whose first
+            # component CDPATH can match.
+            recorded = subprocess.run(
+                [str(Path(here.name) / ".githooks" / GREENLIGHT_NAME)],
+                cwd=str(here.parent),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=environment,
+            )
+
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed under an inherited CDPATH: "
+                f"{recorded.stderr}",
+            )
+            self.assertFalse(
+                marker.exists(),
+                "greenlight ran the suite of a repository it was not started "
+                "from",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "greenlight recorded a green in a repository it was not "
+                "started from",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "greenlight changed the staged state of a repository it was "
+                "not started from",
+            )
+            self.assertEqual(
+                record_path(here).read_text(encoding="utf-8").strip(), staged,
+                "greenlight recorded something other than the tree staged in "
+                "the repository it was started from",
+            )
+
+            # `commit -a` and `commit -a --amend` are the two shapes git gives
+            # an absolute GIT_INDEX_FILE, so they are the ones an inherited
+            # CDPATH separated from a relative `--git-dir`. Both commit the
+            # tree the record above names.
+            for arguments in (("commit", "-a"), ("commit", "-a", "--amend")):
+                admitted = git(
+                    here, *arguments, "-qm", "gated under an inherited CDPATH",
+                    env=environment, check=False,
+                )
+
+                self.assertEqual(
+                    admitted.returncode, 0,
+                    f"the gate refused `git {' '.join(arguments)}` on the tree "
+                    f"its own record names: {admitted.stderr}",
+                )
+                self.assertEqual(
+                    refusals(admitted), [],
+                    f"the gate refused a shape no control is aimed at: "
+                    f"{admitted.stderr!r}",
+                )
+                self.assertEqual(
+                    git(here, "rev-parse", "HEAD^{tree}").stdout.strip(),
+                    staged,
+                    f"`git {' '.join(arguments)}` committed a tree other than "
+                    f"the recorded one",
                 )
 
     def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
