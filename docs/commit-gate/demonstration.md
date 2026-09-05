@@ -150,7 +150,9 @@ it exited zero on both runs with no failed sample.
 
 The two runs agree to 0.26 ms, and the gap between the arms is several times
 the spread inside either of them, so the difference is the gate rather than
-noise. It is not the same comparison the study's 22 millisecond figure made:
+noise. Gap 9 below records what a later pair of runs of the same method
+measured, and what that leaves of the figure itself. It is not the same
+comparison the study's 22 millisecond figure made:
 this one is the shipped gate against no hook at all on the real repository,
 where step 2 measured the shipped gate against a hook whose body does nothing,
 on small fixture repositories. The larger index here is the likely difference,
@@ -205,3 +207,14 @@ them by its own terms.
    measured both halves in a fresh clone -- the empty-commit refusal from the
    rows as printed, and the gate's refusal naming both trees once the staging
    command is put back.
+9. **The overhead figure is not a constant.** The two runs above agree to
+   0.26 ms because they were taken minutes apart under one machine load, which
+   is repeatability inside a session rather than stability of the quantity.
+   Step 5's audit round ran the same method on the same machine against a
+   clone of this branch and measured 26.68 and 28.27 ms, both arms lower in
+   the same direction: gated medians 49.97 and 52.46 against 81.94 and 77.74
+   above, ungated 23.29 and 24.19 against 40.38 and 35.91. All four overheads
+   sit far inside the 200 ms budget, and in all four the gap between the arms
+   is many times the spread inside either of them. What the measurements
+   establish together is that the gate costs tens of milliseconds on this
+   machine, not that it costs 41.
