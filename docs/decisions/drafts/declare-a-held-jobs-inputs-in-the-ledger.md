@@ -99,10 +99,10 @@ refuses a malformed block on any governed ledger, so a mature ledger Kronos
 never ranks is still caught by the marketplace gate.
 
 Three things this does not do. It does not make a readiness score objective:
-the block supplies the basis and the score stays the ranking agent's own work.
-It does not verify that a declared input exists; nothing here reaches out to
-check whether a declared endpoint answers or a declared person is available. It
-does not stop a ledger declaring an input wrongly.
+the block supplies the basis, and the score stays the ranking agent's own work.
+Nothing here verifies that a declared input exists, or reaches out to check
+whether a declared endpoint answers or a declared person is available. And a
+ledger can still declare an input wrongly.
 
 The closed `kind` and `availability` vocabularies and the 16-row cap are
 extendable by an ordinary change to `VERSIONING.md`, and earn no record of their
