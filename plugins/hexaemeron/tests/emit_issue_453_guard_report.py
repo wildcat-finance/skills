@@ -52,10 +52,51 @@ def missing_surface_suite(root: Path):
     return unittest.TestSuite([unittest.FunctionTestCase(required_surface_is_present)])
 
 
+def repository_cwd() -> Path | None:
+    """Return the physical guard repository only when cwd is that repository."""
+    try:
+        root = Path.cwd().resolve(strict=True)
+        repository = REPOSITORY_ROOT.resolve(strict=True)
+        root_stat = root.stat()
+        repository_stat = repository.stat()
+    except OSError:
+        return None
+    if (root_stat.st_dev, root_stat.st_ino) != (
+        repository_stat.st_dev,
+        repository_stat.st_ino,
+    ):
+        return None
+    return root
+
+
+def result_is_clean(result) -> bool:
+    """Accept only a positive, ordinary, assertion-free unittest run."""
+    required = (
+        "failures",
+        "errors",
+        "skipped",
+        "expectedFailures",
+        "unexpectedSuccesses",
+    )
+    tests_run = getattr(result, "testsRun", None)
+    if isinstance(tests_run, bool) or not isinstance(tests_run, int) or tests_run <= 0:
+        return False
+    try:
+        return all(not getattr(result, field) for field in required)
+    except (AttributeError, TypeError):
+        return False
+
+
 def main(argv=None):
     options = arguments(sys.argv[1:] if argv is None else argv)
+    root = repository_cwd()
+    if root is None:
+        print(
+            "emit_issue_453_guard_report.py: cwd is not the reporter repository",
+            file=sys.stderr,
+        )
+        return 2
     target = report_target([options.report])
-    root = Path.cwd().resolve(strict=True)
     suite = missing_surface_suite(root)
     if suite is None:
         suite = unittest.defaultTestLoader.loadTestsFromName(CASES[options.case])
@@ -65,9 +106,18 @@ def main(argv=None):
     except OSError:
         print("emit_issue_453_guard_report.py: report write failed", file=sys.stderr)
         return 2
-    failed = len(result.failures) + len(result.errors)
-    print(f"{result.testsRun - failed}/{result.testsRun} tests passed")
-    return 1 if failed else 0
+    rejected = sum(
+        len(getattr(result, field, ()))
+        for field in (
+            "failures",
+            "errors",
+            "skipped",
+            "expectedFailures",
+            "unexpectedSuccesses",
+        )
+    )
+    print(f"{max(result.testsRun - rejected, 0)}/{result.testsRun} tests passed")
+    return 0 if result_is_clean(result) else 1
 
 
 if __name__ == "__main__":

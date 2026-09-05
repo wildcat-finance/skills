@@ -3,27 +3,64 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
+import io
 import json
+import os
+import shutil
+import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = PLUGIN_ROOT.parents[1]
 SCRIPT = PLUGIN_ROOT / "skills/protasis/scripts/known_failure_inventory.py"
+EMITTER = PLUGIN_ROOT / "tests/emit_issue_453_guard_report.py"
 FIXTURE = Path(__file__).resolve().parent / "fixtures/issue-453/inventory.json"
+COMMITTED_STUDY = REPOSITORY_ROOT / "docs/known-failure-inoculation-study.md"
+COMMITTED_RUNBOOK = PLUGIN_ROOT / "docs/known-failure-inoculation/runbook.md"
+EXPECTED_IDS = frozenset(
+    {
+        "kf-453-01",
+        "kf-453-02",
+        "kf-453-03",
+        "kf-453-04",
+        "kf-453-05",
+        "kf-453-06",
+        "kf-453-07",
+    }
+)
 
 RUNBOOK = """# Known-failure inoculation runbook
 
 ## Step 1: Define the inventory
 
+Known-failure assignment: `kf-453-01` -> Step 1
+
 ## Step 2: Open the inoculation phase
+
+Known-failure assignment: `kf-453-02` -> Step 2
 
 ## Step 3: Retain the guard evidence
 
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+
 ## Step 4: Prove recovery and final green
+
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+"""
+
+NO_FINDINGS_RUNBOOK = """# No-known-findings runbook
+
+## Step 1: Record the explicit claim
 """
 
 
@@ -34,6 +71,16 @@ def load_checker(test: unittest.TestCase):
         "known-failure inventory checker is absent on the unfixed parent",
     )
     spec = importlib.util.spec_from_file_location("known_failure_inventory", SCRIPT)
+    test.assertIsNotNone(spec)
+    test.assertIsNotNone(spec.loader)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_emitter(test: unittest.TestCase):
+    test.assertTrue(EMITTER.is_file())
+    spec = importlib.util.spec_from_file_location("issue_453_guard_report", EMITTER)
     test.assertIsNotNone(spec)
     test.assertIsNotNone(spec.loader)
     module = importlib.util.module_from_spec(spec)
@@ -61,6 +108,30 @@ def encoded(value: dict) -> str:
 class KnownFailureInventoryTests(unittest.TestCase):
     def setUp(self):
         self.checker = load_checker(self)
+        self.emitter = load_emitter(self)
+
+    def _copy_source_repository(self, root: Path) -> str:
+        """Copy only the source/view pairs named by the fixed inventory."""
+        first_source = ""
+        for view in inventory_object()["source_views"]:
+            view_source = REPOSITORY_ROOT / view["path"]
+            view_target = root / view["path"]
+            view_target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(view_source, view_target)
+            first_line = next(
+                self.checker._markdown_physical_lines(
+                    view_source.read_text(encoding="utf-8")
+                )
+            ).rstrip("\r\n")
+            header = self.checker.SYNOPSIS_HEADER.fullmatch(first_line)
+            self.assertIsNotNone(header)
+            source_path = header.group("source")
+            if not first_source:
+                first_source = source_path
+            source_target = root / source_path
+            source_target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(REPOSITORY_ROOT / source_path, source_target)
+        return first_source
 
     def _findings(
         self,
@@ -70,6 +141,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
         study: str | None = None,
         runbook: str = RUNBOOK,
         repository: Path = REPOSITORY_ROOT,
+        expected_ids=EXPECTED_IDS,
     ):
         if study is None:
             if body is None:
@@ -81,7 +153,12 @@ class KnownFailureInventoryTests(unittest.TestCase):
             runbook_path = root / "runbook.md"
             study_path.write_text(study, encoding="utf-8")
             runbook_path.write_text(runbook, encoding="utf-8")
-            return self.checker.check(study_path, runbook_path, repository)
+            return self.checker.check(
+                study_path,
+                runbook_path,
+                repository,
+                expected_ids=expected_ids,
+            )
 
     def _codes(self, *args, **kwargs):
         return [finding.code for finding in self._findings(*args, **kwargs)]
@@ -90,6 +167,33 @@ class KnownFailureInventoryTests(unittest.TestCase):
         found = self._findings()
         self.assertEqual([finding.as_dict() for finding in found], [])
 
+    def test_committed_study_fixture_and_exact_checker_command_have_parity(self):
+        study = COMMITTED_STUDY.read_text(encoding="utf-8")
+        body, _line, error = self.checker._inventory_block(study)
+        self.assertIsNone(error)
+        self.assertIsNotNone(body)
+        self.assertEqual(inventory_object(), self.checker._json(body))
+
+        command = [
+            "python3",
+            SCRIPT.relative_to(REPOSITORY_ROOT).as_posix(),
+            COMMITTED_STUDY.relative_to(REPOSITORY_ROOT).as_posix(),
+            COMMITTED_RUNBOOK.relative_to(REPOSITORY_ROOT).as_posix(),
+            "--repository",
+            ".",
+        ]
+        for finding_id in sorted(EXPECTED_IDS):
+            command.extend(("--expected-id", finding_id))
+        completed = subprocess.run(
+            command,
+            cwd=REPOSITORY_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
+
     def test_exactly_one_closed_inventory_fence_is_required(self):
         body = encoded(inventory_object())
         cases = (
@@ -97,10 +201,63 @@ class KnownFailureInventoryTests(unittest.TestCase):
             study_text(body) + "\n" + study_text(body),
             "# Study\n\n```known-failure-inventory\n" + body,
             "# Study\n\n~~~known-failure-inventory\n" + body + "\n```\n",
+            study_text(body).replace("\n", "\u2028"),
+            "# Study\n\n```known-failure-inventory\u00a0\n"
+            + body
+            + "\n```\n",
+            "# Study\n\n```known-failure-inventory\n"
+            + body
+            + "\n```\u00a0\n",
+            study_text(body)
+            + "\n- item\n\n"
+            + "  ```known-failure-inventory\n"
+            + body
+            + "\n  ```\n",
         )
         for source in cases:
             with self.subTest(source=source[:40]):
                 self.assertIn("K001", self._codes(study=source))
+
+        for tag in ("pre", "div", "guard-record"):
+            hidden = f"<{tag}>\n{study_text(body)}</{tag}>\n\n"
+            with self.subTest(raw_html=tag):
+                self.assertIn("K001", self._codes(study=hidden))
+
+        duplicate_wrappers = (
+            "    <!--",
+            "paragraph\n<guard-record>",
+            "<guard-record ???>",
+            "<x a=?>",
+            "<pre/foo",
+            "paragraph <pre>",
+            "<![cdata[",
+            "<!foo",
+            "![",
+        )
+        for wrapper in duplicate_wrappers:
+            hostile = study_text(body) + "\n" + wrapper + "\n" + study_text(body)
+            with self.subTest(raw_html_duplicate=wrapper):
+                self.assertIn("K001", self._codes(study=hostile))
+
+        visible_html_examples = study_text(body) + (
+            "\n```text\n<!-- visible example -->\n<guard-record>\n```\n"
+        )
+        self.assertEqual([], self._codes(study=visible_html_examples))
+
+        inventory_fence = "```known-failure-inventory\n" + body + "\n```"
+        hidden_inventory_cases = (
+            "[foo](https://example.invalid \"\n" + inventory_fence + "\n\")",
+            "[foo]: /url \"\n" + inventory_fence + "\n\"",
+            "[\n" + inventory_fence + "\n]: /url",
+        )
+        for hidden in hidden_inventory_cases:
+            with self.subTest(hidden_inventory=hidden[:30]):
+                self.assertIn("K001", self._codes(study=hidden))
+
+        bad_backtick_info = (
+            "# Study\n\n```bad`info\n" + study_text(body) + "\n"
+        )
+        self.assertIn("K001", self._codes(study=bad_backtick_info))
 
     def test_duplicate_keys_malformed_json_and_excessive_depth_refuse(self):
         valid = encoded(inventory_object())
@@ -114,7 +271,8 @@ class KnownFailureInventoryTests(unittest.TestCase):
         deep = '{"schema":"protasis-known-failure-inventory/v1","x":' + (
             "[" * 40 + "0" + "]" * 40
         ) + ',"source_views":[],"findings":[],"no_known_findings":null}'
-        for body in (duplicate, malformed, deep):
+        nonfinite = valid.replace('"consuming_step": 1', '"consuming_step": NaN', 1)
+        for body in (duplicate, malformed, deep, nonfinite):
             with self.subTest(body=body[:60]):
                 self.assertIn("K002", self._codes(body=body))
 
@@ -149,6 +307,12 @@ class KnownFailureInventoryTests(unittest.TestCase):
         value = inventory_object()
         value["source_views"][1]["id"] = value["source_views"][0]["id"]
         self.assertIn("K004", self._codes(value))
+        value = inventory_object()
+        value["source_views"][1]["path"] = value["source_views"][0]["path"]
+        self.assertIn("K004", self._codes(value))
+        value = inventory_object()
+        value["source_views"][1]["path"] = value["source_views"][0]["path"].upper()
+        self.assertIn("K004", self._codes(value))
         for field in ("source_sha256", "view_sha256"):
             value = inventory_object()
             value["source_views"][0][field] = "0" * 63
@@ -160,7 +324,13 @@ class KnownFailureInventoryTests(unittest.TestCase):
             value = inventory_object()
             value["source_views"][0][field] = "0" * 64
             with self.subTest(drift=field):
-                self.assertIn("K005", self._codes(value))
+                found = self._findings(value)
+                self.assertEqual(["K005"], [finding.code for finding in found])
+                self.assertEqual(
+                    REPOSITORY_ROOT / value["source_views"][0]["path"],
+                    found[0].path,
+                )
+                self.assertIn(field, found[0].message)
 
     def test_source_view_paths_are_portable_and_confined(self):
         for path in (
@@ -197,7 +367,14 @@ class KnownFailureInventoryTests(unittest.TestCase):
         value = inventory_object()
         value["findings"][0]["extra"] = "no"
         self.assertIn("K006", self._codes(value))
-        for source_ref in ("missing-colon", "unknown-source: detail", "issue-327-root:"):
+        for source_ref in (
+            "missing-colon",
+            "unknown-source: detail",
+            "issue-327-root:",
+            "issue-327-root: line one\nline two",
+            "issue-327-root: line one\u2028line two",
+            "issue-327-root: " + "x" * 4096,
+        ):
             value = inventory_object()
             value["findings"][0]["source_ref"] = source_ref
             with self.subTest(source_ref=source_ref):
@@ -213,6 +390,39 @@ class KnownFailureInventoryTests(unittest.TestCase):
         value["findings"][1]["id"] = value["findings"][0]["id"]
         self.assertIn("K006", self._codes(value))
 
+    def test_the_whole_finding_id_set_is_independent_and_exact(self):
+        missing = inventory_object()
+        missing["findings"].pop()
+        self.assertIn("K006", self._codes(missing))
+
+        extra = inventory_object()
+        finding = copy.deepcopy(extra["findings"][-1])
+        finding["id"] = "kf-453-08"
+        for field in ("test_command", "report_file", "green_command"):
+            finding[field] = finding[field].replace("kf-453-07", "kf-453-08")
+        extra["findings"].append(finding)
+        extra_runbook = RUNBOOK.replace(
+            "Known-failure assignment: `kf-453-07` -> Step 4",
+            "Known-failure assignment: `kf-453-07` -> Step 4\n"
+            "Known-failure assignment: `kf-453-08` -> Step 4",
+        )
+        self.assertIn("K006", self._codes(extra, runbook=extra_runbook))
+
+        self.assertIn("K006", self._codes(expected_ids=()))
+        self.assertIn("K006", self._codes(expected_ids=["kf-453-01", []]))
+        self.assertIn(
+            "K006",
+            self._codes(expected_ids=["kf-453-01", "kf-453-01"]),
+        )
+
+        def unbounded_ids():
+            index = 0
+            while True:
+                yield f"kf-unbounded-{index}"
+                index += 1
+
+        self.assertIn("K006", self._codes(expected_ids=unbounded_ids()))
+
     def test_guard_paths_are_nonempty_unique_portable_and_confined(self):
         for path in (
             "/tmp/test.py",
@@ -221,6 +431,9 @@ class KnownFailureInventoryTests(unittest.TestCase):
             "tests\\test.py",
             "tests//test.py",
             "./tests/test.py",
+            "tests/$(touch-pwn).py",
+            "tests/`touch-pwn`.py",
+            "tests/guard\u2028other.py",
             "",
         ):
             value = inventory_object()
@@ -231,6 +444,37 @@ class KnownFailureInventoryTests(unittest.TestCase):
         path = value["findings"][0]["guard_paths"][0]
         value["findings"][0]["guard_paths"] = [path, path]
         self.assertIn("K007", self._codes(value))
+        value = inventory_object()
+        path = value["findings"][0]["guard_paths"][0]
+        value["findings"][0]["guard_paths"] = [path, path.upper()]
+        self.assertIn("K007", self._codes(value))
+        value = inventory_object()
+        value["findings"][0]["guard_paths"] = [
+            "tests/cafe\u0301.py",
+            "tests/caf\u00e9.py",
+        ]
+        self.assertIn("K007", self._codes(value))
+
+    def test_command_substitution_is_not_a_portable_runner_path(self):
+        for runner in (
+            "plugins/hexaemeron/tests/$(touch-pwn).py",
+            "plugins/hexaemeron/tests/`touch-pwn`.py",
+        ):
+            value = inventory_object()
+            finding = value["findings"][0]
+            reporter = "plugins/hexaemeron/tests/emit_issue_453_guard_report.py"
+            finding["guard_paths"] = [
+                runner if path == reporter else path for path in finding["guard_paths"]
+            ]
+            finding["test_command"] = (
+                f"python3 {runner} --case kf-453-01 --report {{report}}"
+            )
+            finding["green_command"] = (
+                f"python3 {runner} --case kf-453-01 --report "
+                ".elenchus/issue-453-kf-453-01-green.json"
+            )
+            with self.subTest(runner=runner):
+                self.assertIn("K007", self._codes(value))
 
     def test_test_command_has_one_exact_report_argument(self):
         cases = (
@@ -238,6 +482,14 @@ class KnownFailureInventoryTests(unittest.TestCase):
             "python3 runner.py --report={report}",
             "python3 runner.py --report {report} {report}",
             "python3 runner.py --report '{report",
+            "env python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report {report}",
+            "bash -c 'python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report {report}'",
+            "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --report {report} --case kf-453-01",
+            "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report {report} --verbose",
+            "python3 " + "x" * 4096,
+            "python3 " + " ".join(f"arg-{index}" for index in range(17)),
+            "python3\u2028plugins/hexaemeron/tests/emit_issue_453_guard_report.py "
+            "--case kf-453-01 --report {report}",
             "",
         )
         for command in cases:
@@ -246,20 +498,83 @@ class KnownFailureInventoryTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertIn("K008", self._codes(value))
 
+    def test_commands_bind_the_reporter_case_and_declared_green_path(self):
+        mutations = (
+            ("test_command", "python3 other.py --case kf-453-01 --report {report}"),
+            ("test_command", "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report {report}"),
+            ("test_command", "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --case kf-453-01 --report {report}"),
+            ("green_command", "python3 other.py --case kf-453-01 --report .elenchus/issue-453-kf-453-01-green.json"),
+            ("green_command", "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report .elenchus/issue-453-kf-453-01-green.json"),
+            ("green_command", "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report .elenchus/wrong.json"),
+        )
+        for field, command in mutations:
+            value = inventory_object()
+            value["findings"][0][field] = command
+            with self.subTest(field=field, command=command):
+                self.assertIn("K008" if field == "test_command" else "K009", self._codes(value))
+
     def test_report_contract_and_green_command_are_closed(self):
         value = inventory_object()
         value["findings"][0]["report_format"] = "tap-v1"
         self.assertIn("K009", self._codes(value))
         value = inventory_object()
+        value["findings"][0]["report_format"] = []
+        self.assertIn("K009", self._codes(value))
+        value = inventory_object()
         value["findings"][0]["expected_guard_verdict"] = "passed"
         self.assertIn("K009", self._codes(value))
-        for path in ("/tmp/report.json", "../report.json", ".elenchus\\report.json"):
+        for path in (
+            "/tmp/report.json",
+            "../report.json",
+            ".elenchus\\report.json",
+            "reports/report.json",
+            ".elenchus",
+        ):
             value = inventory_object()
             value["findings"][0]["report_file"] = path
             with self.subTest(path=path):
                 self.assertIn("K009", self._codes(value))
         value = inventory_object()
         value["findings"][0]["green_command"] = ""
+        self.assertIn("K009", self._codes(value))
+
+    def test_report_and_green_paths_are_unique_across_the_inventory(self):
+        value = inventory_object()
+        value["findings"][1]["report_file"] = value["findings"][0]["report_file"]
+        self.assertIn("K009", self._codes(value))
+
+        value = inventory_object()
+        value["findings"][1]["report_file"] = (
+            ".elenchus/issue-453-kf-453-01-green.json"
+        )
+        value["findings"][1]["green_command"] = (
+            "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py "
+            "--case kf-453-02 --report "
+            ".elenchus/issue-453-kf-453-01-green-green.json"
+        )
+        self.assertIn("K009", self._codes(value))
+
+        value = inventory_object()
+        report = value["findings"][0]["report_file"].upper()
+        value["findings"][1]["report_file"] = report
+        green = self.checker._expected_green_report(report)
+        value["findings"][1]["green_command"] = (
+            "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py "
+            f"--case kf-453-02 --report {green}"
+        )
+        self.assertIn("K009", self._codes(value))
+
+        value = inventory_object()
+        for finding, report in zip(
+            value["findings"][:2],
+            (".elenchus/cafe\u0301.json", ".elenchus/caf\u00e9.json"),
+        ):
+            finding["report_file"] = report
+            green = self.checker._expected_green_report(report)
+            finding["green_command"] = (
+                "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py "
+                f"--case {finding['id']} --report {green}"
+            )
         self.assertIn("K009", self._codes(value))
 
     def test_each_finding_is_assigned_to_one_real_runbook_step(self):
@@ -271,6 +586,190 @@ class KnownFailureInventoryTests(unittest.TestCase):
         duplicate_step = RUNBOOK + "\n## Step 1: Duplicate\n"
         self.assertIn("K010", self._codes(runbook=duplicate_step))
         self.assertIn("K010", self._codes(runbook="# No steps\n"))
+
+        value = inventory_object()
+        value["findings"][0]["consuming_step"] = 2
+        self.assertIn("K010", self._codes(value))
+
+        fenced = RUNBOOK + (
+            "\n```markdown\n"
+            "## Step 99: Not a real step\n"
+            "Known-failure assignment: `kf-not-real` -> Step 99\n"
+            "```\n"
+        )
+        self.assertEqual([], self._codes(runbook=fenced))
+
+        misplaced = RUNBOOK.replace(
+            "Known-failure assignment: `kf-453-01` -> Step 1\n",
+            "```markdown\n"
+            "Known-failure assignment: `kf-453-01` -> Step 1\n"
+            "```\n",
+        )
+        self.assertIn("K010", self._codes(runbook=misplaced))
+
+        repeated = RUNBOOK.replace(
+            "Known-failure assignment: `kf-453-02` -> Step 2",
+            "Known-failure assignment: `kf-453-02` -> Step 2\n"
+            "Known-failure assignment: `kf-453-01` -> Step 2",
+        )
+        self.assertIn("K010", self._codes(runbook=repeated))
+
+        wrong_declared_step = RUNBOOK.replace(
+            "Known-failure assignment: `kf-453-01` -> Step 1",
+            "Known-failure assignment: `kf-453-01` -> Step 2",
+        )
+        self.assertIn("K010", self._codes(runbook=wrong_declared_step))
+
+    def test_only_exact_visible_assignment_lines_are_authoritative(self):
+        assignment = "Known-failure assignment: `kf-453-01` -> Step 1"
+        hostile_replacements = (
+            "<!--\n" + assignment + "\n-->",
+            "This step does not consume kf-453-01.",
+            "See [kf-453-01](https://example.invalid/kf-453-01).",
+        )
+        for replacement in hostile_replacements:
+            hostile = RUNBOOK.replace(assignment, replacement)
+            with self.subTest(replacement=replacement):
+                self.assertIn("K010", self._codes(runbook=hostile))
+
+        unclosed_comment = RUNBOOK.replace(assignment, "<!--\n" + assignment)
+        self.assertIn("K010", self._codes(runbook=unclosed_comment))
+
+        second_comment = RUNBOOK.replace(
+            assignment,
+            "<!-- closed --> <!--\n" + assignment + "\n-->",
+        )
+        self.assertIn("K010", self._codes(runbook=second_comment))
+
+        overlapping_code_spans = RUNBOOK.replace(
+            assignment,
+            "`x``y`<!--``\n" + assignment + "\n-->",
+        )
+        self.assertEqual(
+            [(0, 6)],
+            self.checker._inline_code_spans("`x``y`<!--``"),
+        )
+        self.assertIn("K010", self._codes(runbook=overlapping_code_spans))
+
+        escaped_inside_code = RUNBOOK.replace(
+            assignment,
+            "`x\\`<!--`\n" + assignment + "\n-->",
+        )
+        self.assertEqual(
+            [(0, 4)],
+            self.checker._inline_code_spans("`x\\`<!--`"),
+        )
+        self.assertIn("K010", self._codes(runbook=escaped_inside_code))
+
+        multiline_code_span = RUNBOOK.replace(
+            assignment,
+            "`x\n`<!--`\n" + assignment + "\n-->",
+        )
+        self.assertIn("K010", self._codes(runbook=multiline_code_span))
+
+        for delimiter in ("`", "``"):
+            hidden_assignment = RUNBOOK.replace(
+                assignment,
+                f"{delimiter}\n{assignment}\n{delimiter}",
+            )
+            with self.subTest(multiline_delimiter=delimiter):
+                self.assertIn("K010", self._codes(runbook=hidden_assignment))
+
+        image_alt_assignment = RUNBOOK.replace(
+            assignment,
+            "![\n" + assignment + "\n](https://example.invalid/x)",
+        )
+        self.assertIn("K010", self._codes(runbook=image_alt_assignment))
+
+        hidden_link_cases = (
+            "[foo](https://example.invalid \"\n" + assignment + "\n\")",
+            "[foo]: /url \"\n" + assignment + "\n\"",
+            "[\n" + assignment + "\n]: /url",
+        )
+        for hidden in hidden_link_cases:
+            hostile = RUNBOOK.replace(assignment, hidden)
+            with self.subTest(hidden_link=hidden[:30]):
+                self.assertIn("K010", self._codes(runbook=hostile))
+
+        list_scoped_fence = RUNBOOK + (
+            "\n- item\n\n"
+            "  ```\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n"
+            "  ```\n"
+        )
+        self.assertIn("K010", self._codes(runbook=list_scoped_fence))
+
+        list_scoped_step = RUNBOOK + (
+            "\n- item\n\n"
+            "  ## Step 99: nested\n"
+            "Known-failure assignment: `kf-extra` -> Step 99\n"
+        )
+        self.assertIn("K010", self._codes(runbook=list_scoped_step))
+
+        many_visible_spans = "`<`" * 50_000
+        surface, surface_error = self.checker._markdown_surface(many_visible_spans)
+        self.assertEqual(many_visible_spans, surface)
+        self.assertIsNone(surface_error)
+        surface, surface_error = self.checker._markdown_surface("`![visible]`")
+        self.assertEqual("`![visible]`", surface)
+        self.assertIsNone(surface_error)
+
+        step_block = (
+            "## Step 1: Define the inventory\n\n"
+            "Known-failure assignment: `kf-453-01` -> Step 1"
+        )
+        for tag in ("pre", "div", "guard-record"):
+            hidden_step = RUNBOOK.replace(
+                step_block,
+                f"<{tag}>\n{step_block}\n</{tag}>\n",
+            )
+            with self.subTest(raw_html=tag):
+                self.assertIn("K010", self._codes(runbook=hidden_step))
+
+        phantom = (
+            "# One physical line\u2028## Step 1: Phantom\u2028"
+            "Known-failure assignment: `kf-453-01` -> Step 1"
+        )
+        self.assertIn("K010", self._codes(runbook=phantom))
+
+        malformed_extra = RUNBOOK + (
+            "\nKnown-failure assignment: kf-extra -> Step 1\n"
+        )
+        self.assertIn("K010", self._codes(runbook=malformed_extra))
+
+        extra_assignment = "Known-failure assignment: `kf-extra` -> Step 1"
+        hostile_openers = (
+            "    <!--",
+            "paragraph\n<guard-record>",
+            "<guard-record ???>",
+            "<x a=?>",
+            "<pre/foo",
+            "paragraph <pre>",
+            "<![cdata[",
+            "<!foo",
+        )
+        for opener in hostile_openers:
+            hostile = RUNBOOK + "\n" + opener + "\n" + extra_assignment + "\n"
+            with self.subTest(raw_html_extra=opener):
+                self.assertIn("K010", self._codes(runbook=hostile))
+
+        first_assignment = "Known-failure assignment: `kf-453-01` -> Step 1"
+        through_eof_fence = RUNBOOK.replace(
+            first_assignment,
+            "```text\n```\u00a0\n" + first_assignment,
+        )
+        self.assertIn("K010", self._codes(runbook=through_eof_fence))
+
+        visible_after_bad_info = RUNBOOK + (
+            "\n```bad`info\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n"
+        )
+        self.assertIn("K010", self._codes(runbook=visible_after_bad_info))
+
+        for token in ("0", "01", "9" * 5000):
+            hostile = RUNBOOK.replace("## Step 1:", f"## Step {token}:")
+            with self.subTest(step_token=token[:20]):
+                self.assertIn("K010", self._codes(runbook=hostile))
 
     def test_nonempty_findings_require_a_null_no_findings_claim(self):
         value = inventory_object()
@@ -284,7 +783,10 @@ class KnownFailureInventoryTests(unittest.TestCase):
     def test_empty_inventory_requires_the_closed_digest_bound_claim(self):
         value = inventory_object()
         value["findings"] = []
-        self.assertIn("K011", self._codes(value))
+        self.assertIn(
+            "K011",
+            self._codes(value, expected_ids=(), runbook=NO_FINDINGS_RUNBOOK),
+        )
 
         bound_views = [
             {
@@ -300,7 +802,10 @@ class KnownFailureInventoryTests(unittest.TestCase):
             "surveyor_assertion": "no-known-findings",
         }
         value["no_known_findings"] = claim
-        self.assertEqual(self._codes(value), [])
+        self.assertEqual(
+            self._codes(value, expected_ids=(), runbook=NO_FINDINGS_RUNBOOK),
+            [],
+        )
 
         mutations = []
         missing_view = copy.deepcopy(value)
@@ -317,7 +822,14 @@ class KnownFailureInventoryTests(unittest.TestCase):
         mutations.append(extra)
         for mutation in mutations:
             with self.subTest(mutation=mutation["no_known_findings"]):
-                self.assertIn("K011", self._codes(mutation))
+                self.assertIn(
+                    "K011",
+                    self._codes(
+                        mutation,
+                        expected_ids=(),
+                        runbook=NO_FINDINGS_RUNBOOK,
+                    ),
+                )
 
     def test_finding_and_guard_path_caps_refuse_the_unchecked_tail(self):
         value = inventory_object()
@@ -343,6 +855,275 @@ class KnownFailureInventoryTests(unittest.TestCase):
             found = self.checker.check(missing, missing, REPOSITORY_ROOT)
         self.assertTrue(found)
         self.assertTrue(all(finding.code == "K000" for finding in found))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            study_path = root / "study.md"
+            runbook_path = root / "missing-runbook.md"
+            study_path.write_text(
+                study_text(encoded(inventory_object())), encoding="utf-8"
+            )
+            found = self.checker.check(
+                study_path,
+                runbook_path,
+                REPOSITORY_ROOT,
+                expected_ids=EXPECTED_IDS,
+            )
+            self.assertEqual(["K000"], [finding.code for finding in found])
+            self.assertEqual(runbook_path, found[0].path)
+            self.assertIn("runbook", found[0].message)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            study_path = root / "study.md"
+            runbook_path = root / "runbook.md"
+            study_path.write_text(oversized, encoding="utf-8")
+            runbook_path.write_text(RUNBOOK, encoding="utf-8")
+            found = self.checker.check(
+                study_path,
+                runbook_path,
+                REPOSITORY_ROOT,
+                expected_ids=EXPECTED_IDS,
+            )
+            self.assertEqual(["K000"], [finding.code for finding in found])
+            study_path.write_text(
+                study_text(encoded(inventory_object())), encoding="utf-8"
+            )
+            self.assertEqual(
+                [],
+                self.checker.check(
+                    study_path,
+                    runbook_path,
+                    REPOSITORY_ROOT,
+                    expected_ids=EXPECTED_IDS,
+                ),
+            )
+
+    def test_synopsis_header_uses_commonmark_physical_lines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            self._copy_source_repository(repository)
+            value = inventory_object()
+            view = value["source_views"][0]
+            view_path = repository / view["path"]
+            text = view_path.read_text(encoding="utf-8")
+            text = text.replace("\n", "\u2028", 1)
+            view_path.write_text(text, encoding="utf-8")
+            view["view_sha256"] = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            found = self._findings(value, repository=repository)
+        self.assertEqual(["K005"], [finding.code for finding in found])
+        self.assertEqual(view_path, found[0].path)
+        self.assertIn("source_sha256", found[0].message)
+
+    def test_secure_read_primitives_are_required(self):
+        with mock.patch.object(self.checker, "_secure_read_primitives", return_value=False):
+            self.assertEqual(["K000"], self._codes())
+
+    def test_input_and_source_symlinks_refuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            regular = root / "regular-study.md"
+            regular.write_text(study_text(encoded(inventory_object())), encoding="utf-8")
+            linked = root / "study.md"
+            linked.symlink_to(regular.name)
+            runbook = root / "runbook.md"
+            runbook.write_text(RUNBOOK, encoding="utf-8")
+            found = self.checker.check(
+                linked,
+                runbook,
+                REPOSITORY_ROOT,
+                expected_ids=EXPECTED_IDS,
+            )
+            self.assertEqual(["K000"], [finding.code for finding in found])
+
+        for alias_kind in ("leaf", "directory"):
+            with self.subTest(alias_kind=alias_kind), tempfile.TemporaryDirectory() as directory:
+                repository = Path(directory)
+                self._copy_source_repository(repository)
+                if alias_kind == "leaf":
+                    relative = inventory_object()["source_views"][0]["path"]
+                    target = repository / relative
+                    saved = target.with_name(target.name + ".saved")
+                    target.rename(saved)
+                    target.symlink_to(saved.name)
+                else:
+                    target = repository / "audit"
+                    saved = repository / "audit-real"
+                    target.rename(saved)
+                    target.symlink_to(saved.name, target_is_directory=True)
+                self.assertIn("K005", self._codes(repository=repository))
+
+    def test_a_fifo_swapped_in_at_leaf_open_refuses_without_blocking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            study = root / "study.md"
+            runbook = root / "runbook.md"
+            study.write_text(study_text(encoded(inventory_object())), encoding="utf-8")
+            runbook.write_text(RUNBOOK, encoding="utf-8")
+            original_open = self.checker.os.open
+            swapped = False
+
+            def racing_open(path, flags, *args, **kwargs):
+                nonlocal swapped
+                if not swapped and Path(path) == study and "dir_fd" not in kwargs:
+                    swapped = True
+                    study.unlink()
+                    os.mkfifo(study)
+                return original_open(path, flags, *args, **kwargs)
+
+            with (
+                mock.patch.object(self.checker, "_secure_read_primitives", return_value=True),
+                mock.patch.object(self.checker.os, "open", side_effect=racing_open),
+            ):
+                found = self.checker.check(
+                    study,
+                    runbook,
+                    REPOSITORY_ROOT,
+                    expected_ids=EXPECTED_IDS,
+                )
+            self.assertTrue(swapped)
+            self.assertEqual(["K000"], [finding.code for finding in found])
+
+    def test_study_and_runbook_replacement_at_the_final_boundary_refuse(self):
+        for target_name in ("study.md", "runbook.md"):
+            with self.subTest(target=target_name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                study = root / "study.md"
+                runbook = root / "runbook.md"
+                study.write_text(study_text(encoded(inventory_object())), encoding="utf-8")
+                runbook.write_text(RUNBOOK, encoding="utf-8")
+                target = root / target_name
+                original_read = self.checker._stable_file
+                target_reads = 0
+
+                def replacing_read(path, limit=self.checker.MAX_BYTES):
+                    nonlocal target_reads
+                    path = Path(path)
+                    if path == target:
+                        target_reads += 1
+                        if target_reads == 2:
+                            replacement = target.with_name(target.name + ".replacement")
+                            replacement.write_bytes(target.read_bytes() + b"\n")
+                            os.replace(replacement, target)
+                    return original_read(path, limit)
+
+                with mock.patch.object(self.checker, "_stable_file", side_effect=replacing_read):
+                    found = self.checker.check(
+                        study,
+                        runbook,
+                        REPOSITORY_ROOT,
+                        expected_ids=EXPECTED_IDS,
+                    )
+                self.assertEqual(2, target_reads)
+                self.assertEqual(["K000"], [finding.code for finding in found])
+                self.assertEqual(target, found[0].path)
+                self.assertIn(target_name.removesuffix(".md"), found[0].message)
+
+    def test_source_and_view_replacement_at_the_final_boundary_refuse(self):
+        for target_kind in ("source", "view"):
+            with self.subTest(target_kind=target_kind), tempfile.TemporaryDirectory() as directory:
+                repository = Path(directory)
+                source_path = self._copy_source_repository(repository)
+                view = inventory_object()["source_views"][0]
+                relative = source_path if target_kind == "source" else view["path"]
+                target = repository / relative
+                replace_at = 2 if target_kind == "source" else 3
+                original_read = self.checker._confined_file
+                target_reads = 0
+
+                def replacing_read(root, candidate, limit=self.checker.MAX_BYTES):
+                    nonlocal target_reads
+                    if candidate == relative:
+                        target_reads += 1
+                        if target_reads == replace_at:
+                            replacement = target.with_name(target.name + ".replacement")
+                            replacement.write_bytes(target.read_bytes() + b"\n")
+                            os.replace(replacement, target)
+                    return original_read(root, candidate, limit)
+
+                with mock.patch.object(
+                    self.checker,
+                    "_confined_file",
+                    side_effect=replacing_read,
+                ):
+                    found = self._findings(repository=repository)
+                self.assertEqual(replace_at, target_reads)
+                self.assertEqual(["K005"], [finding.code for finding in found])
+                self.assertEqual(target, found[0].path)
+                self.assertIn(view["id"], found[0].message)
+                self.assertIn(f"{target_kind}_sha256", found[0].message)
+
+    def test_reporter_refuses_nonpositive_or_nonordinary_results(self):
+        def result(**counts):
+            candidate = unittest.TestResult()
+            candidate.testsRun = counts.pop("testsRun", 1)
+            for field in (
+                "failures",
+                "errors",
+                "skipped",
+                "expectedFailures",
+                "unexpectedSuccesses",
+            ):
+                setattr(candidate, field, [object()] * counts.pop(field, 0))
+            self.assertEqual({}, counts)
+            return candidate
+
+        clean = result()
+        self.assertTrue(self.emitter.result_is_clean(clean))
+        dirty_results = (
+            result(testsRun=0),
+            result(failures=1),
+            result(errors=1),
+            result(skipped=1),
+            result(expectedFailures=1),
+            result(unexpectedSuccesses=1),
+        )
+        for dirty in dirty_results:
+            with self.subTest(payload=self.emitter.result_payload(dirty)):
+                self.assertFalse(self.emitter.result_is_clean(dirty))
+                fake_unittest = mock.Mock()
+                fake_unittest.defaultTestLoader.loadTestsFromName.return_value = object()
+                fake_unittest.TextTestRunner.return_value.run.return_value = dirty
+                with (
+                    mock.patch.object(self.emitter, "repository_cwd", return_value=REPOSITORY_ROOT),
+                    mock.patch.object(self.emitter, "report_target", return_value=object()),
+                    mock.patch.object(self.emitter, "missing_surface_suite", return_value=None),
+                    mock.patch.object(self.emitter, "write_report"),
+                    mock.patch.object(self.emitter, "unittest", fake_unittest),
+                    redirect_stdout(io.StringIO()),
+                ):
+                    status = self.emitter.main(
+                        [
+                            "--case",
+                            "kf-453-01",
+                            "--report",
+                            ".elenchus/hostile-result.json",
+                        ]
+                    )
+                self.assertEqual(1, status)
+
+    def test_reporter_refuses_a_different_cwd_even_with_copied_surface(self):
+        with tempfile.TemporaryDirectory() as directory:
+            other = Path(directory)
+            for relative in self.emitter.REQUIRED_SURFACE:
+                target = other / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("copied\n", encoding="utf-8")
+            previous = Path.cwd()
+            try:
+                os.chdir(other)
+                with redirect_stderr(io.StringIO()):
+                    status = self.emitter.main(
+                        [
+                            "--case",
+                            "kf-453-01",
+                            "--report",
+                            ".elenchus/copied-surface.json",
+                        ]
+                    )
+            finally:
+                os.chdir(previous)
+        self.assertEqual(2, status)
 
 
 if __name__ == "__main__":

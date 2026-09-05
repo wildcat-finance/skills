@@ -1600,6 +1600,31 @@
       "path": "plugins/probitas/tests/test_statement.py",
       "selector": "test_stale_case_changes_only_the_mutated_input_digest"
     },
+    "protasis-inventory-m": {
+      "claim": "An inventory with a missing required field is refused instead of treated as complete.",
+      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "selector": "test_top_level_shape_and_schema_are_closed"
+    },
+    "protasis-inventory-o": {
+      "claim": "An empty finding list remains unavailable as readiness without a digest-bound no-known-findings claim.",
+      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "selector": "test_empty_inventory_requires_the_closed_digest_bound_claim"
+    },
+    "protasis-inventory-p": {
+      "claim": "The committed study inventory equals its fixture and the exact seven-id checker command accepts current sources and runbook steps.",
+      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "selector": "test_committed_study_fixture_and_exact_checker_command_have_parity"
+    },
+    "protasis-inventory-r": {
+      "claim": "Unreadable and oversized inputs refuse with one bounded code and remain repairable by replacing the named input and rerunning.",
+      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "selector": "test_unreadable_or_oversized_inputs_refuse"
+    },
+    "protasis-inventory-s": {
+      "claim": "Changed source or synopsis digests cannot inherit an earlier inventory result.",
+      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "selector": "test_source_and_view_digest_drift_refuse_separately"
+    },
     "protasis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/hexaemeron/tests/test_protasis_checker.py",
@@ -3164,6 +3189,22 @@
       "group": "executable",
       "promise_id": "probitas-statement-emission",
       "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "protasis-inventory-m",
+        "O": "protasis-inventory-o",
+        "P": "protasis-inventory-p",
+        "R": "protasis-inventory-r",
+        "S": "protasis-inventory-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "protasis-known-failure-inventory",
+      "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
     },
     {
       "cases": {
