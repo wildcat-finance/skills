@@ -2701,6 +2701,21 @@ class RenderTests(unittest.TestCase):
 CHECK_MAP_PATH = ROOT / "tests/check-map-v1.json"
 CHECK_ID = "harness-roster-check"
 
+# Two values of the right shape for each `recorded` field, so a case can always
+# take one the landed manifest does not already carry. Each first choice is
+# tried and the second is there for the day it collides. The pair replaces three
+# single literals: `"2026-09-05"` was the day the case below was written, and
+# `"linux-x86_64"` is exactly what `probe_harnesses.default_host` returns on any
+# Linux x86_64 host, so both sat inside the value space of the field they were
+# meant to differ from. Re-running the probe -- the maintenance path the check
+# map's own title names -- would then have reddened a manifest that was correct,
+# in the step whose whole point is that a red here means real drift.
+OTHER_RECORDED = {
+    "host": ("recorded-elsewhere", "recorded-elsewhere-2"),
+    "date": ("1970-01-01", "1970-01-02"),
+    "base_ref": ("0" * 40, "1" * 40),
+}
+
 
 def check_map():
     return json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
@@ -2829,18 +2844,22 @@ class DriftTests(unittest.TestCase):
         # field is driven separately, because they reach the surfaces by
         # different routes: host and date reach all three, and the base ref
         # reaches the two Markdown regions alone.
-        for field, replacement in (
-            ("host", "linux-x86_64"),
-            ("date", "2026-09-05"),
-            ("base_ref", "0" * 40),
-        ):
+        for field in ("host", "date", "base_ref"):
             with self.subTest(field=field):
                 with tempfile.TemporaryDirectory() as directory:
                     staged = self.stage(directory)
                     document = json.loads(
                         staged["--manifest"].read_text(encoding="utf-8")
                     )
-                    self.assertNotEqual(document["recorded"][field], replacement)
+                    # Derived from what the manifest carries rather than fixed,
+                    # so no probe run can make the replacement equal the value
+                    # it has to differ from. Both candidates keep the shape the
+                    # renderer's own `recorded` patterns require, so the check
+                    # reddens on drift rather than on a refused field.
+                    recorded = document["recorded"][field]
+                    first, second = OTHER_RECORDED[field]
+                    replacement = first if recorded != first else second
+                    self.assertNotEqual(recorded, replacement)
                     document["recorded"][field] = replacement
                     staged["--manifest"].write_text(
                         json.dumps(document, indent=2) + "\n", encoding="utf-8"
@@ -2887,13 +2906,14 @@ class AtlasClaimTests(unittest.TestCase):
     def setUpClass(cls):
         cls.evidence = json.loads(EVIDENCE_PATH.read_text(encoding="utf-8"))
         cls.raw_guide = GUIDE_PATH.read_text(encoding="utf-8")
+        cls.raw_readme = README_PATH.read_text(encoding="utf-8")
         # Both surfaces are hard-wrapped Markdown, so every sentence held here
         # spans two or three source lines. Matching the wrapped bytes would tie
         # these cases to one particular reflow: a paragraph rewrapped by an
         # editor is the same claim, and this would report it as the claim being
         # deleted. Collapsing runs of whitespace compares the sentence instead.
         cls.guide = " ".join(cls.raw_guide.split())
-        cls.readme = " ".join(README_PATH.read_text(encoding="utf-8").split())
+        cls.readme = " ".join(cls.raw_readme.split())
 
     def test_the_guides_coverage_claim_agrees_with_the_pinned_atlas_read(self):
         evidence = self.evidence
@@ -2921,15 +2941,29 @@ class AtlasClaimTests(unittest.TestCase):
             route["asserts"]["destination_origin"],
             {"chatgpt": "https://chatgpt.com", "claude": "https://claude.ai"},
         )
-        # Every route the guide links has to be one the read covers. Reading the
-        # links out of the guide rather than listing them here is what keeps
-        # this honest: a third bootstrap button added tomorrow fails this case
-        # until somebody reads the Atlas repository again.
-        linked = sorted(set(re.findall(r"/go/([a-z0-9-]+)", self.raw_guide)))
-        self.assertEqual(
-            sorted(f"/go/{name}" for name in linked), sorted(conclusion["covered_routes"])
-        )
-        self.assertEqual(linked, route["providers"])
+        # Every route either surface links has to be one the read covers.
+        # Reading the links out of the surfaces rather than listing them here is
+        # what keeps this honest: a third bootstrap button added tomorrow fails
+        # this case until somebody reads the Atlas repository again.
+        #
+        # The README is read as well as the guide because it carries the same
+        # two badges, at `README.md:317` and `:318`, under its own sentence
+        # saying a checked bootstrap can allocate the issue and prepare a
+        # prompt. Both sit outside the roster markers, so `--check` reads
+        # neither; with only the guide read here, a fourth route added to the
+        # README alone, or the two it has repointed at a provider the read never
+        # covered, passed every case in this file.
+        for surface, text in (
+            ("docs/how-to-help-shoggoth.md", self.raw_guide),
+            ("README.md", self.raw_readme),
+        ):
+            with self.subTest(surface=surface):
+                linked = sorted(set(re.findall(r"/go/([a-z0-9-]+)", text)))
+                self.assertEqual(
+                    sorted(f"/go/{name}" for name in linked),
+                    sorted(conclusion["covered_routes"]),
+                )
+                self.assertEqual(linked, route["providers"])
         self.assertIn(ATLAS_CLAIM, self.guide)
 
     def test_the_sentence_limiting_the_claim_survives(self):
