@@ -12,6 +12,7 @@ import io
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout, redirect_stderr
@@ -20,6 +21,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "kronos" / "scripts" / "kronos.py"
+FIXTURES = ROOT / "tests" / "fixtures" / "kronos"
 REPO = ROOT.parents[1]
 
 spec = importlib.util.spec_from_file_location("kronos_scoreboard", SCRIPT)
@@ -40,6 +42,22 @@ LEDGER = """# Example evolution ledger
 def canonical_digest(status, revision, frontier, job):
     line = "|".join((status, revision, frontier, job)) + "\n"
     return hashlib.sha256(line.encode("utf-8")).hexdigest()
+
+
+def governed_ledgers():
+    """Every skill ledger in the checkout, which is what a real pass reads."""
+    return sorted(REPO.glob("plugins/*/skills/**/EVOLUTION.md"))
+
+
+def ledger_declaring(*rows):
+    """The example ledger carrying one declared-inputs block holding these rows.
+
+    Whole-ledger shape comes from the fixtures beside this file. This builder
+    exists for the row rules, where a specimen per rule would be nine more
+    files that differ by one line.
+    """
+    body = "".join(row + "\n" for row in rows)
+    return LEDGER + "\n```declared-inputs\n" + body + "```\n\n## History\n"
 
 
 class ScoreboardTest(unittest.TestCase):
@@ -582,6 +600,189 @@ class ScoreboardTest(unittest.TestCase):
         self.assertIn("no run recorded", out)
         self.assertNotIn("ungoverned:", out)
 
+    # -- the inputs a ledger declares -----------------------------------
+
+    def write_ledger(self, text, skill="alpha"):
+        (self.root / skill / "EVOLUTION.md").write_text(text, encoding="utf-8")
+        return text
+
+    def declare(self, name, skill="alpha"):
+        """Stand one fixture ledger in for a candidate's own."""
+        return self.write_ledger(
+            (FIXTURES / name).read_text(encoding="utf-8"), skill=skill
+        )
+
+    def assertRefusedFor(self, document, code_name, reason):
+        code, _, err = self.run_record(document)
+        self.assertEqual(code, 1, err)
+        self.assertIn(code_name, err)
+        self.assertIn(reason, err)
+        self.assertFalse(self.scoreboard.exists(), "a refusal must append nothing")
+
+    def declarations(self):
+        """What each recorded pass says the one candidate declared."""
+        return [json.loads(line)["candidates"][0]["declared_inputs"] for line in self.lines()]
+
+    def test_a_declared_block_is_recorded_as_an_object(self):
+        self.declare("ledger-with-declaration.md")
+        code, _, err = self.run_record(self.document())
+        self.assertEqual(code, 0, err)
+        declared = json.loads(self.lines()[0])["candidates"][0]["declared_inputs"]
+        self.assertEqual([row["id"] for row in declared["rows"]],
+                         ["archive-rpc", "release-key", "reviewer"])
+        self.assertEqual(declared["rows"][0],
+                         {"id": "archive-rpc", "kind": "endpoint", "availability": "absent",
+                          "note": "An archive JSON-RPC endpoint for the capture window."})
+        self.assertEqual(declared["digest"],
+                         kronos.declaration_digest(declared["rows"]))
+
+    def test_a_ledger_with_no_block_records_declared_inputs_as_null(self):
+        self.declare("ledger-without-declaration.md")
+        code, _, err = self.run_record(self.document())
+        self.assertEqual(code, 0, err)
+        candidate = json.loads(self.lines()[0])["candidates"][0]
+        self.assertIn("declared_inputs", candidate)
+        self.assertIsNone(candidate["declared_inputs"])
+
+    def test_a_pass_declaring_nothing_matches_the_line_recorded_before(self):
+        """The recorded line gained one field and moved no other byte.
+
+        The fixture holds the exact line this writer produced before it could
+        read a declaration, so the comparison is against those bytes rather
+        than against a restatement of what the fields used to be.
+        """
+        self.run_record(self.document())
+        entry = json.loads(self.lines()[0])
+        for candidate in entry["candidates"]:
+            self.assertIn("declared_inputs", candidate)
+            self.assertIsNone(candidate.pop("declared_inputs"))
+        before = (FIXTURES / "pass-before-declared-inputs.jsonl").read_text(encoding="utf-8")
+        self.assertEqual(json.dumps(entry, sort_keys=True) + "\n", before)
+
+    def test_the_declaration_comes_from_disk_and_never_from_the_caller(self):
+        """A stated declaration is refused, and an unstated one is still recorded.
+
+        Half of this passes against a writer that cannot read a declaration at
+        all, because an unknown field was always refused. The recorded half is
+        what makes the pair a guard on where the value comes from.
+        """
+        self.declare("ledger-with-declaration.md")
+        stated = self.candidate(declared_inputs={"digest": "0" * 64, "rows": []})
+        self.assertRefused(self.document([stated]), "K003")
+        code, _, err = self.run_record(self.document())
+        self.assertEqual(code, 0, err)
+        recorded = json.loads(self.lines()[0])["candidates"][0]["declared_inputs"]
+        self.assertEqual(len(recorded["rows"]), 3)
+        self.assertNotEqual(recorded["digest"], "0" * 64)
+
+    def test_a_malformed_block_refuses_the_whole_pass(self):
+        reasons = {
+            "ledger-unclosed-fence.md": "never closed",
+            "ledger-duplicate-block.md": "2 declared-inputs blocks",
+            "ledger-block-above-bullets.md": "above the last frontier header bullet",
+            "ledger-block-below-history.md": "below the History heading",
+            "ledger-too-many-rows.md": "over the 16",
+            "ledger-oversized-block.md": "over the 4096",
+            "ledger-field-caps.md": "over the 64",
+        }
+        for name, reason in reasons.items():
+            with self.subTest(ledger=name):
+                self.declare(name)
+                self.assertRefusedFor(self.document(), "K022", reason)
+
+    def test_each_malformed_row_refuses_the_whole_pass(self):
+        cases = [
+            (("- archive-rpc | endpoint | absent | Spelled like a header bullet.",),
+             "a hyphen, a pipe or a backtick"),
+            (("archive-rpc | endpoint | absent",), "3 fields rather than four"),
+            (("archive-rpc | endpoint |  | An availability left empty.",), "an empty field"),
+            (("Archive_RPC | endpoint | absent | An id in the wrong case.",), "kebab-case"),
+            (("a" * 65 + " | endpoint | absent | An id one byte past the cap.",),
+             "over the 64"),
+            (("archive-rpc | endpoint | absent | The first row.",
+              "archive-rpc | tool | absent | The same id again."), "'archive-rpc' twice"),
+            (("release-key | widget | absent | A kind nobody defined.",),
+             "kind 'widget'"),
+            (("reviewer | person | maybe | An availability nobody defined.",),
+             "availability 'maybe'"),
+            (("archive-rpc | endpoint | absent | " + "n" * 201,), "over the 200"),
+        ]
+        for rows, reason in cases:
+            with self.subTest(row=rows[0][:40]):
+                self.write_ledger(ledger_declaring(*rows))
+                self.assertRefusedFor(self.document(), "K022", reason)
+
+    def test_the_reader_and_the_repository_check_agree(self):
+        """The rules live in VERSIONING.md and are checked repository-wide.
+
+        This reader restates them because the script ships inside a plugin that
+        carries no test suite. A reader that accepted what that check refuses,
+        or refused what it accepts, would be a second contract.
+        """
+        sys.path.insert(0, str(REPO))
+        try:
+            from tests.test_evolution_contract import declared_inputs_defects
+        finally:
+            sys.path.remove(str(REPO))
+        ledgers = sorted(FIXTURES.glob("ledger-*.md")) + governed_ledgers()
+        self.assertGreater(len(ledgers), 25)
+        for path in ledgers:
+            with self.subTest(ledger=path.name):
+                text = path.read_text(encoding="utf-8")
+                defects = declared_inputs_defects(text)
+                try:
+                    kronos.declaration(text, path.name)
+                    refused = None
+                except kronos.Refusal as refusal:
+                    refused = refusal
+                self.assertEqual(refused is not None, bool(defects), defects)
+                if refused is not None:
+                    self.assertEqual(refused.code, "K022")
+
+    def test_no_governed_ledger_declares_anything_today(self):
+        for path in governed_ledgers():
+            with self.subTest(ledger=str(path.relative_to(REPO))):
+                text = path.read_text(encoding="utf-8")
+                self.assertIsNone(kronos.declaration(text, path.name))
+
+    def test_show_marks_a_declaration_that_moved_under_an_unchanged_held_job(self):
+        text = self.declare("ledger-with-declaration.md")
+        self.run_record(self.document())
+        self.write_ledger(text.replace("| absent | An archive", "| available | An archive"))
+        self.run_record(self.document())
+        code, out = self.run_show()
+        self.assertEqual(code, 0)
+        self.assertIn("drift: declaration ", out)
+        self.assertIn(", held job unchanged", out)
+        self.assertIn("2 pass(es), 1 with drift", out)
+
+    def test_re_spacing_a_row_is_not_a_declaration_that_moved(self):
+        """The digest covers the fields, so a reformat states no new claim."""
+        text = self.declare("ledger-with-declaration.md")
+        self.run_record(self.document())
+        self.write_ledger(text.replace("archive-rpc | endpoint | absent | ",
+                                       "archive-rpc|endpoint|absent|"))
+        self.run_record(self.document())
+        first, second = self.declarations()
+        self.assertEqual(first, second)
+        _, out = self.run_show()
+        self.assertNotIn("drift:", out)
+        self.assertIn("2 pass(es), 0 with drift", out)
+
+    def test_a_declaration_that_moved_with_the_held_job_is_not_drift(self):
+        text = self.declare("ledger-with-declaration.md")
+        self.run_record(self.document())
+        self.write_ledger(
+            text.replace("| absent | An archive", "| available | An archive")
+                .replace("Do the thing that is held.", "Do a different held thing.")
+        )
+        self.run_record(self.document())
+        first, second = self.declarations()
+        self.assertNotEqual(first["digest"], second["digest"])
+        _, out = self.run_show()
+        self.assertNotIn("drift:", out)
+        self.assertIn("2 pass(es), 0 with drift", out)
+
     # -- the skill and the script agree ---------------------------------
 
     def test_every_field_the_script_accepts_is_named_in_the_skill(self):
@@ -616,6 +817,7 @@ class ScoreboardTest(unittest.TestCase):
         def boom(*_args, **_kwargs):
             raise AssertionError("ranking verbs start no subprocess")
 
+        self.declare("ledger-with-declaration.md")
         original_popen = kronos.subprocess.Popen
         original_run = kronos.subprocess.run
         kronos.subprocess.Popen = boom
