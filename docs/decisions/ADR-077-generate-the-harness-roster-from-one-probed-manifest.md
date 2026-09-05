@@ -1,4 +1,4 @@
-# ADR-076: Generate the harness roster from one probed manifest
+# ADR-077: Generate the harness roster from one probed manifest
 
 ## Status
 
@@ -51,16 +51,34 @@ test, and a later reader who does not know it was decided will reopen it.
 under the identifier `harness-classification/v1`. A manifest carries a
 `recorded` block naming the host, the date and the base ref it was written
 against, and a `harnesses` array. Each harness entry carries `name`,
-`classification`, and the five observation fields `client_present`,
-`client_version`, `auth_configured`, `launcher_contract` and `blocker`, with
-optional `testable_here` and `probe`. Objects are closed: an undeclared field is
-refused rather than ignored. `client_version` may be null only where
-`client_present` is false, so an absent client cannot be recorded as a version
-nobody read.
+`classification`, the five observation fields `client_present`,
+`client_version`, `auth_configured`, `launcher_contract` and `blocker`, and the
+derived field `version_read`. Exactly two fields are optional, `testable_here`
+and `probe`; every other field named here is required. Objects are closed: an
+undeclared field is refused rather than ignored. `client_version` may be null
+only where `client_present` is false, so an absent client cannot be recorded as
+a version nobody read.
 
 `client_present` and `auth_configured` are separate fields on purpose. A client
 that is missing and a client that is installed but unauthenticated are different
 facts, and a single verdict field would collapse them into one.
+
+**A present client that did not answer is fielded, not spelled.** Such a client
+is present with its version unread, so `client_present` stays true and
+`client_version` carries the sentinel `unread`. A sentinel is prose where a
+reader wants a field, so `version_read` carries the same fact as a boolean and
+is required: false both where no client was present and where a present client
+did not answer, true only where `client_version` holds a version a client
+reported. Nothing downstream may recognise the sentinel to tell a version from
+the absence of one, and the schema refuses a document whose two fields
+disagree. `version_read` is required rather than optional for the reason the
+closed object exists: a field a conforming producer may omit is one a consumer
+cannot rely on, which leaves it string-matching the sentinel after all.
+
+`testable_here` stays optional, and is `client_present` and `auth_configured`
+together rather than a claim that a run succeeded: a present client that never
+answered is `testable_here` with `version_read` false. Read `classification`
+for what the run earned.
 
 **Four classification names, and no fifth.** A harness is exactly one of
 `Atlas launcher`, `tested local route`, `manual route` or `unsupported`. The
@@ -137,27 +155,40 @@ with. If a later reader decides the PR #479 clause should be honoured after all,
 the change is to those two assertions and to this record, in that order, and not
 a silent edit to either.
 
-## Numbering, and one stale pointer this leaves behind
+## Numbering, and the stale pointers this leaves behind
 
-This record was written as ADR-074, which was free when the run checked. Pull
-request 1181 merged `ADR-074-shape-every-written-record-through-sapheneia.md`
-into `main` fifty-five minutes later, at 2026-09-04T01:40:30Z against this
-record's own commit at 00:45:16Z. `tests/test_decision_records.py`
-compares numbers against the default branch, so the collision turned the step's
-own exit gate red. ADR-075 was already claimed by open pull request 1185, so
-this record took 076. Issue 888 is rebuilding ADR numbering to assign at merge
-instead of at authoring, which is the general answer to the race; renumbering
-here is the local one.
+This record was written as ADR-074, which was free when the run checked, and it
+collided twice. Pull request 1181 merged
+`ADR-074-shape-every-written-record-through-sapheneia.md` into `main`
+fifty-five minutes later, at 2026-09-04T01:40:30Z against this record's own
+commit at 00:45:16Z. `tests/test_decision_records.py` compares numbers against
+the default branch, so the collision turned the step's own exit gate red.
+ADR-075 was already claimed by open pull request 1185, so the record took 076.
+That number collided too. `main` acquired a different
+`ADR-076-digest-neutral-measured-corpus.md` in `530efcec` at
+2026-09-04T11:07:49+01:00, which is not an ancestor of this branch, and the same
+gate went red at two failures. The record then took 077, which was free on this
+branch and on `origin/main`, whose numbered records run 074, 075 and 076. Ten occurrences moved with it: this file's heading, one full path in the
+schema description, three in the probe and five in the test module. Nothing
+reserves 077 either, so it is rechecked before this step is pushed. Issue 888 is
+rebuilding ADR numbering to assign at merge rather than at authoring, which is
+the general answer to the race; renumbering twice by hand is the local one.
 
-One pointer did not survive the renumber. Between the two events the run's study
-gained a `hypomnema-design-bridge/v1` block naming
+The renumbers left pointers behind that no amendment can reach. Between the
+first two events the run's study gained a `hypomnema-design-bridge/v1` block
+naming
 `docs/decisions/ADR-074-generate-the-harness-roster-from-one-probed-manifest.md`.
 Study amendments are append-only, and Hypomnema refuses a study that declares
 more than one design bridge home, so the block cannot be repointed and cannot be
 removed. The study at `docs/atlas-harness-handoff/study.md` therefore names a
 file that does not exist, and `hypomnema --study` reports H008 against it. The
 repository suite exercises study mode only against its own fixtures and never
-against this study, so nothing here goes red on it.
+against this study, so nothing here goes red on it. Step 1's baseline `Exit` and
+`Files` fields in the runbook name the ADR-076 path, and step 1 is complete, so
+the controller refuses the amendment that would rewrite them. The audit log for
+this run and its synopsis name the record as ADR-076 twenty-five times each;
+those are append-only history, they were correct when written, and a step may
+not edit anything under `audit/`.
 
-The decision the bridge was meant to reach is this file. Anyone following that
-block should read it here.
+The decision every one of them was meant to reach is this file. Anyone following
+one should read it here.

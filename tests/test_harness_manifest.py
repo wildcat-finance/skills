@@ -14,7 +14,7 @@ declared rule; it does not quietly skip.
 The other four classes hold ``scripts/probe_harnesses.py``. The schema fixes
 the roster's vocabulary and refuses an unknown name, and its own description
 says so, but it will admit an earned class on an entry that never ran a client.
-ADR-076 puts that enforcement in the probe's classifier, and these are the cases
+ADR-077 puts that enforcement in the probe's classifier, and these are the cases
 that hold it there.
 
 ``ClassifierTests`` sweeps the input matrix for a shape that reaches an earned
@@ -25,15 +25,22 @@ feeds the probe a client output fixture carrying a token and sweeps both the
 manifest and the log for it. ``KilledProbeTests`` kills a real child process
 between the temporary write and the rename, and is the resolver for the
 ``killed-probe-recovery`` gate; it writes that gate's report on the way out.
+``GateReportTests`` holds that report to the run that earned it in both
+directions: a partial selection of the class cannot report a failure nothing
+observed, and a case that failed cannot report success. The second direction is
+the dangerous one, because ``subTest`` swallows a failure and lets the rest of
+the case run, including the statement where it flags itself passed.
 """
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import itertools
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -69,6 +76,20 @@ OBSERVATION_FIELDS = (
     "blocker",
 )
 
+# `version_read` is derived rather than read off the host, and it is what the
+# schema tells a reader to consult instead of recognising the `unread`
+# sentinel. That instruction only means something if every entry carries the
+# field, because one that sits in `properties` alone constrains its value where
+# a producer supplies one and compels nothing where it does not.
+DERIVED_FIELDS = ("version_read",)
+
+REQUIRED_ENTRY_FIELDS = OBSERVATION_FIELDS + DERIVED_FIELDS
+
+# ADR-077 names these two optional in as many words, so the schema may not
+# quietly start requiring them. A tightening here is a decision the record
+# owns, not an audit fix.
+OPTIONAL_ENTRY_FIELDS = ("testable_here", "probe")
+
 # The six harnesses issue #856 asks about. Named here so a missing-field case
 # removes a field from a realistic record rather than from a stub.
 HARNESSES = (
@@ -102,9 +123,11 @@ def entry(name, **overrides):
         "classification": "manual route",
         "client_present": False,
         "client_version": None,
+        "version_read": False,
         "auth_configured": False,
         "launcher_contract": "documented deep link, not exercised here",
         "blocker": "absent from this host and unauthenticated",
+        "testable_here": False,
     }
     record.update(overrides)
     return record
@@ -124,6 +147,7 @@ def shaped(classification):
         "classification": classification,
         "client_present": True,
         "client_version": "2026.8.1",
+        "version_read": True,
         "auth_configured": True,
         "launcher_contract": "deep link exercised on this host",
         "blocker": None,
@@ -194,9 +218,9 @@ class SchemaTests(unittest.TestCase):
                     manifest(entry("Cursor", classification=unknown))
                 )
 
-    def test_every_harness_entry_requires_the_five_observation_fields(self):
+    def test_every_harness_entry_requires_every_observed_and_derived_field(self):
         required = self.harness["required"]
-        for field in OBSERVATION_FIELDS:
+        for field in REQUIRED_ENTRY_FIELDS:
             with self.subTest(field=field):
                 self.assertIn(field, required)
         self.assertFalse(self.harness["additionalProperties"])
@@ -204,15 +228,91 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(len(document["harnesses"]), len(HARNESSES))
         self.assert_valid(document)
 
-    def test_a_harness_entry_missing_any_observation_field_is_refused(self):
-        for field in OBSERVATION_FIELDS:
+    def test_every_declared_field_is_either_required_or_named_optional(self):
+        # ADR-077 enumerates this entry and states which two fields are
+        # optional, so the schema and the record can be read against each
+        # other. A field added to `properties` without landing in `required`
+        # or in the optional pair is the drift that put a required
+        # `version_read` outside the record's enumeration in the first place.
+        declared = set(self.harness["properties"])
+        required = set(self.harness["required"])
+        self.assertEqual(
+            declared - required,
+            set(OPTIONAL_ENTRY_FIELDS),
+            "a declared field is neither required nor one ADR-077 calls optional",
+        )
+        self.assertEqual(
+            required,
+            {"name", "classification"} | set(REQUIRED_ENTRY_FIELDS),
+        )
+
+    def test_a_harness_entry_missing_any_required_field_is_refused(self):
+        for field in REQUIRED_ENTRY_FIELDS:
             with self.subTest(field=field):
                 # Document level: being listed in `required` is the mechanism
-                # that turns the omission below into a refusal.
+                # that turns the omission below into a refusal. A field that
+                # sits in `properties` alone constrains its value where a
+                # producer supplies one and compels nothing where it does not,
+                # which is what makes an optional `version_read` no better than
+                # the sentinel it was added to replace.
                 self.assertIn(field, self.harness["required"])
                 record = entry("Cline")
                 del record[field]
                 self.assert_refused(manifest(record))
+
+    def test_the_fields_adr_076_calls_optional_stay_optional(self):
+        # ADR-077 enumerates the entry and calls `testable_here` and `probe`
+        # optional in as many words. Requiring either would put the schema at
+        # odds with the record that pins it, so the omission has to keep
+        # validating even though the generator always writes `testable_here`.
+        for field in OPTIONAL_ENTRY_FIELDS:
+            with self.subTest(field=field):
+                self.assertIn(field, self.harness["properties"])
+                self.assertNotIn(field, self.harness["required"])
+        record = entry("Cline")
+        for field in OPTIONAL_ENTRY_FIELDS:
+            record.pop(field, None)
+        self.assert_valid(manifest(record))
+
+    def test_version_read_and_client_version_may_not_disagree(self):
+        # The `client_version` description tells a reader to consult
+        # `version_read` rather than recognise the sentinel. That instruction
+        # is only worth following if the document cannot say both things at
+        # once, so the pairing is a schema rule and not a generator habit.
+        for label, overrides in (
+            (
+                "a read version that is the sentinel",
+                {"client_present": True, "client_version": "unread", "version_read": True},
+            ),
+            (
+                "a read version that is absent",
+                {"client_present": False, "client_version": None, "version_read": True},
+            ),
+            (
+                "an unread version carrying a real version",
+                {"client_present": True, "client_version": "2026.8.1", "version_read": False},
+            ),
+        ):
+            with self.subTest(contradiction=label):
+                self.assert_refused(manifest(entry("Cursor", **overrides)))
+        # Both coherent pairings stand.
+        self.assert_valid(
+            manifest(
+                entry("Cursor", client_present=True, client_version="unread", version_read=False)
+            )
+        )
+        self.assert_valid(
+            manifest(
+                entry(
+                    "Cursor",
+                    client_present=True,
+                    client_version="2026.8.1",
+                    version_read=True,
+                    auth_configured=True,
+                    testable_here=True,
+                )
+            )
+        )
 
     def test_a_null_client_version_is_admitted_when_the_client_is_absent(self):
         # Document level: the union type admits null, and the conditional that
@@ -240,6 +340,11 @@ class SchemaTests(unittest.TestCase):
                     "Cursor",
                     client_present=True,
                     client_version="2026.8.1",
+                    # A record carrying a version says a version was read. The
+                    # default here is False, for the absent client the helper
+                    # describes, and leaving it False beside a real version
+                    # would be the contradiction the pairing rule refuses.
+                    version_read=True,
                     classification="manual route",
                 )
             )
@@ -441,6 +546,62 @@ class ClassifierTests(unittest.TestCase):
                 self.assertNotIn(record["classification"], probe_harnesses.EARNED_CLASSIFICATIONS)
                 self.assertTrue(record["blocker"])
 
+    def test_version_read_carries_the_unread_encoding_as_a_field(self):
+        # The schema requires a non-null client_version wherever the client is
+        # present, so a present client that never answered carries the sentinel
+        # rather than null. A sentinel is prose, and a reader that has to
+        # recognise the literal "unread" to tell a version from the absence of
+        # one is a reader the schema has not told the truth to. This is the
+        # boolean that keeps the fact machine-readable.
+        cases = (
+            (ABSENT, False, None, False),
+            (UNREAD, True, probe_harnesses.UNREAD_VERSION, False),
+            (ANSWERED, True, "2026.8.1", True),
+        )
+        for probe, present, version, expected in cases:
+            with self.subTest(probe=probe.status):
+                record = probe_harnesses.entry_document(
+                    observation(probe=probe, client_present=present, client_version=version)
+                )
+                self.assertEqual(record["client_version"], version)
+                self.assertIn("version_read", record)
+                self.assertEqual(record.get("version_read"), expected)
+        # The field says exactly what the sentinel says, and never disagrees
+        # with it, so neither can drift away from the other unnoticed.
+        for flags, probe in itertools.product(FLAG_MATRIX, (None, ABSENT, UNREAD, ANSWERED)):
+            observed = observation(probe=probe, **flags)
+            record = probe_harnesses.entry_document(observed)
+            with self.subTest(probe=None if probe is None else probe.status, **flags):
+                self.assertEqual(
+                    record.get("version_read"),
+                    record["client_version"] not in (None, probe_harnesses.UNREAD_VERSION),
+                )
+
+    def test_a_probe_written_document_validates_against_the_schema(self):
+        # entry_document is the only writer of a harnesses entry and the schema
+        # closes additionalProperties, so a field added on one side and not the
+        # other is a manifest the published contract refuses. This case is the
+        # join: it validates what the probe actually writes.
+        recorder = probe_harnesses.Recorder("00000000")
+        observations = probe_harnesses.probe_roster(
+            recorder=recorder,
+            runner=RecordingRunner(),
+            path_lookup=present_everywhere,
+            environ={},
+            home=Path(tempfile.gettempdir()),
+        )
+        document = probe_harnesses.manifest_document(
+            observations, host="darwin-arm64", date="2026-09-04", base_ref=BASE_REF
+        )
+        declared = set(load_schema()["$defs"]["harness"]["properties"])
+        for record in document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertEqual(set(record) - declared, set())
+        checker = validator()
+        if checker is None:
+            self.skipTest("jsonschema is a Lazarus dependency and is not installed")
+        self.assertEqual([e.message for e in checker.iter_errors(document)], [])
+
     def test_every_class_the_classifier_returns_is_one_of_the_schema_names(self):
         declared = tuple(load_schema()["$defs"]["classification"]["enum"])
         self.assertEqual(declared, probe_harnesses.CLASSIFICATIONS)
@@ -566,6 +727,114 @@ class SubprocessTests(unittest.TestCase):
         self.assertIn("did not answer within 10s", entry_record["blocker"])
         self.assertIn("did not answer within 10s", entry_record["probe"]["result"])
 
+    def test_a_client_that_fails_never_answers_however_its_error_reads(self):
+        # VERSION_TOKEN matches any dotted number, and a failing client prints
+        # plenty of them. Each of these is one real client failure whose error
+        # text carries something version-shaped: a loopback address, a library
+        # version in a stack trace, an expiry date, a docs URL. None of them is
+        # the client reporting its version, so none may reach `answered`, and
+        # none may earn a class on a host where the client is installed and an
+        # API key happens to be set.
+        failures = (
+            ("Error: connect ECONNREFUSED 127.0.0.1:8080\n", 1),
+            ("node:internal/errors 4.18.2 unhandled rejection\n", 1),
+            ("fatal: credentials expired at 2026.09.04\n", 1),
+            ("unknown flag --version; see cursor.com/cli/0.1.2\n", 2),
+        )
+        harness = probe_harnesses.ROSTER[1]
+        for stderr, code in failures:
+            with self.subTest(code=code, stderr=stderr.strip()[:40]):
+                runner = RecordingRunner(stdout="", stderr=stderr, returncode=code)
+                record = probe_harnesses.probe_client(
+                    harness, runner=runner, path_lookup=present_everywhere
+                )
+                self.assertEqual(record.status, "unread")
+                self.assertIsNone(record.version)
+                self.assertIn(f"exited {code}", record.result)
+                self.assertIn("unread rather than absent", record.result)
+                # Nothing the client printed rode along into the record.
+                self.assertNotIn("127.0.0.1", record.result)
+                self.assertNotIn("2026.09.04", record.result)
+                # And the class the whole design turns on stays unearned even
+                # with the client present and authentication configured.
+                observed = probe_harnesses.observe(
+                    harness,
+                    runner=runner,
+                    path_lookup=present_everywhere,
+                    environ={"CURSOR_API_KEY": "set"},
+                )
+                self.assertTrue(observed.client_present)
+                self.assertEqual(observed.client_version, probe_harnesses.UNREAD_VERSION)
+                self.assertTrue(observed.auth_configured)
+                self.assertNotIn(
+                    probe_harnesses.classify(observed),
+                    probe_harnesses.EARNED_CLASSIFICATIONS,
+                )
+
+    def test_a_zero_exit_client_still_answers_with_its_version(self):
+        # The other half of the rule above: reading the exit status first must
+        # not stop a client that succeeded from being recorded as answering.
+        runner = RecordingRunner(stdout="cursor-agent 2026.8.1\n", returncode=0)
+        record = probe_harnesses.probe_client(
+            probe_harnesses.ROSTER[1], runner=runner, path_lookup=present_everywhere
+        )
+        self.assertEqual(record.status, "answered")
+        self.assertEqual(record.version, "2026.8.1")
+
+    def test_a_version_cut_in_half_by_the_output_bound_is_never_recorded(self):
+        # The bound on how much client output is read can land inside the token
+        # itself, and half of a version is not the version the client
+        # reported. `1.234` recorded for a client that said `1.23456789` is the
+        # same defect as a token scraped out of a failure: a `client_version`
+        # nobody reported, under a schema description that calls it exact.
+        cap = probe_harnesses.MAX_CLIENT_OUTPUT_CHARS
+        version = "1.23456789"
+        cut = "x" * (cap - 6) + " " + version
+        self.assertGreater(len(cut), cap)
+        self.assertIsNone(probe_harnesses.recognise_version(cut))
+
+        # A whole token inside the bound is still read, wherever it sits, and a
+        # client whose version is followed by more output is unaffected.
+        self.assertEqual(probe_harnesses.recognise_version(f"cursor-agent {version}"), version)
+        self.assertEqual(
+            probe_harnesses.recognise_version(f"cursor-agent {version}\n" + "x" * cap), version
+        )
+        # A cut that landed on a newline left every line it kept intact, so the
+        # guard must not withhold a version that was never truncated.
+        self.assertEqual(
+            probe_harnesses.recognise_version(f"cursor-agent {version}\n" + "x" * cap + "\ntail"),
+            version,
+        )
+        # And the fixture the rest of this class uses stays exact.
+        self.assertEqual(probe_harnesses.recognise_version("cursor-agent 2026.8.1\n"), "2026.8.1")
+
+    def test_only_a_cut_that_could_extend_the_token_withholds_it(self):
+        # Which side of the bound a character falls on does not decide whether
+        # a version is whole; what the cut removed does. Deciding it on the
+        # match reaching the end of the line withheld `1.2.3` from a client
+        # whose only truncated character was the newline after it.
+        cap = probe_harnesses.MAX_CLIENT_OUTPUT_CHARS
+        head = "x" * (cap - 6) + " 1.2.3"
+        self.assertEqual(len(head), cap)
+
+        for tail, expected in (
+            ("4", None),          # a digit extends the last group
+            (".4", None),         # a dot opens another group
+            ("-rc1", None),       # a dash opens the build suffix
+            ("+build", None),     # so does a plus
+            ("\n", "1.2.3"),      # a newline cannot extend anything
+            (" ", "1.2.3"),
+            (")", "1.2.3"),
+            (",", "1.2.3"),
+        ):
+            with self.subTest(dropped=tail[:1]):
+                stream = head + tail
+                self.assertGreater(len(stream), cap)
+                self.assertEqual(probe_harnesses.recognise_version(stream), expected)
+
+        # Nothing was truncated at all, so the token stands whatever it abuts.
+        self.assertEqual(probe_harnesses.recognise_version(head), "1.2.3")
+
     def test_the_default_runner_really_bounds_the_timeout(self):
         harness = probe_harnesses.Harness(
             name="fixture",
@@ -676,6 +945,50 @@ class CredentialTests(unittest.TestCase):
             with self.subTest(clean=clean[:40]):
                 self.assertEqual(probe_harnesses.credential_findings(clean), [])
 
+    def test_every_refusal_the_reader_can_meet_is_one_refusal_type(self):
+        # `read_manifest` is the oracle step 3's renderer reads through, and its
+        # docstring promises a refusal. A renderer catching `ProbeError` -- the
+        # only refusal type the rest of the module raises -- would otherwise
+        # miss the two cases it is likeliest to meet, an absent manifest and an
+        # unreadable one, because those arrive from the filesystem instead.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for label, target in (
+                ("absent", root / "absent.json"),
+                ("a directory", root),
+            ):
+                with self.subTest(target=label):
+                    # Caught broadly and then asserted on, rather than
+                    # `assertRaises(ProbeError)`. On a tree that does not
+                    # convert the filesystem error, the narrow form lets the
+                    # OSError escape as an uncaught error, and the mechanical
+                    # guard check reads an error as broken infrastructure
+                    # rather than as a guard that failed.
+                    with self.assertRaises(Exception) as caught:
+                        probe_harnesses.read_manifest(target)
+                    self.assertIsInstance(caught.exception, probe_harnesses.ProbeError)
+
+    def test_an_output_path_the_filesystem_rejects_exits_one_without_a_traceback(self):
+        # `main` reports operator-facing failures as one line and exit 1. A
+        # destination that is a directory reaches `os.replace` rather than any
+        # of the checks above it, so it arrived as an uncaught OSError and a
+        # traceback carrying the path back out.
+        with tempfile.TemporaryDirectory() as directory:
+            # The escape is turned into an assertion for the same reason as
+            # above: an uncaught OSError here would read as broken
+            # infrastructure rather than as this guard doing its job.
+            try:
+                outcome = probe_harnesses.main(["--out", directory])
+            except OSError as error:
+                self.fail(
+                    f"main let {type(error).__name__} escape instead of returning 1"
+                )
+            self.assertEqual(outcome, 1)
+            # The neighbouring case already refused cleanly, and still does.
+            self.assertEqual(
+                probe_harnesses.main(["--out", str(Path(directory) / "absent" / "m.json")]), 1
+            )
+
     def test_a_planted_leak_fails_the_write_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -755,7 +1068,43 @@ class KilledProbeTests(unittest.TestCase):
         "test_a_killed_probe_leaves_no_partial_file_the_reader_would_accept",
         "test_the_temporary_file_is_written_beside_the_target_and_renamed",
     )
+    attempted: set[str] = set()
     passed: set[str] = set()
+    failed: set[str] = set()
+
+    def setUp(self):
+        self.attempted.add(self._testMethodName)
+
+    @contextlib.contextmanager
+    def checked_subtest(self, **parameters):
+        """A ``subTest`` whose failure is remembered as well as reported.
+
+        ``subTest`` swallows the failure so the loop can carry on, which means
+        the statement after the loop runs either way -- and that statement is
+        where a case flags itself passed. An unremembered subtest failure
+        therefore lets a red run write ``value: true``, which is the inversion
+        of the partial-run defect the ``attempted`` gate closes, and the worse
+        direction of the two: it admits a broken atomic write at ``step:3``
+        rather than blocking a sound one.
+        """
+        with self.subTest(**parameters):
+            try:
+                yield
+            except unittest.SkipTest:
+                raise
+            except Exception:
+                self.failed.add(self._testMethodName)
+                raise
+
+    def _passed(self):
+        """Flag this case, unless something inside it failed.
+
+        A case that raises never reaches its call to this. A case whose failure
+        was confined to a ``checked_subtest`` does reach it, and this is what
+        stops it speaking for the gate anyway.
+        """
+        if self._testMethodName not in self.failed:
+            self.passed.add(self._testMethodName)
 
     @classmethod
     def tearDownClass(cls):
@@ -763,7 +1112,18 @@ class KilledProbeTests(unittest.TestCase):
         directory = cls.REPORT_PATH.parent
         if not directory.is_dir():
             return
-        resolved = cls.passed == set(cls.CASES)
+        # A partial selection is not a failed gate. Running one case by name,
+        # or filtering with -k, would otherwise write `value: false` and
+        # `exit: 1` for a run in which nothing failed and nothing exited 1 --
+        # and Fiat's design checker reads this file at the step:3 transition.
+        # Only a run that attempted every case may speak for the gate.
+        if cls.attempted != set(cls.CASES):
+            return
+        # Two conditions, because each catches the other's blind spot. Every
+        # case has to have flagged itself, and nothing may have failed along
+        # the way -- a case whose failure was confined to a subtest would
+        # otherwise still be holding its flag.
+        resolved = cls.passed == set(cls.CASES) and not cls.failed
         report = {
             "candidate": "probe-manifest",
             "command": "python3 -m unittest tests.test_harness_manifest.KilledProbeTests",
@@ -805,25 +1165,25 @@ class KilledProbeTests(unittest.TestCase):
             probe_harnesses.write_manifest(target, manifest())
             before = target.read_bytes()
             for mode in ("rename", "flush"):
-                with self.subTest(mode=mode):
+                with self.checked_subtest(mode=mode):
                     self.kill_during_write(root, target, mode)
                     self.assertEqual(target.read_bytes(), before)
                     self.assertEqual(
                         probe_harnesses.read_manifest(target)["harnesses"][0]["name"],
                         "GitHub Copilot",
                     )
-        self.passed.add(self._testMethodName)
+        self._passed()
 
     def test_a_killed_probe_leaves_nothing_where_there_was_no_manifest(self):
         for mode in ("rename", "flush"):
-            with self.subTest(mode=mode):
+            with self.checked_subtest(mode=mode):
                 with tempfile.TemporaryDirectory() as directory:
                     root = Path(directory)
                     target = root / "harness-classification.json"
                     self.kill_during_write(root, target, mode)
                     self.assertFalse(target.exists())
                     self.assertEqual(list(root.glob("*.json")), [])
-        self.passed.add(self._testMethodName)
+        self._passed()
 
     def test_a_killed_probe_leaves_no_partial_file_the_reader_would_accept(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -839,7 +1199,7 @@ class KilledProbeTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), good)
             self.assertEqual(list(root.glob("*.json")), [target])
             for leftover in root.glob(f"{probe_harnesses.TEMPORARY_PREFIX}*"):
-                with self.subTest(leftover=leftover.name):
+                with self.checked_subtest(leftover=leftover.name):
                     self.assertTrue(leftover.name.startswith("."))
                     self.assertTrue(leftover.name.endswith(probe_harnesses.TEMPORARY_SUFFIX))
                     self.assertNotEqual(leftover, target)
@@ -855,7 +1215,7 @@ class KilledProbeTests(unittest.TestCase):
             other.write_text(json.dumps({"schema": "something-else/v1"}), encoding="utf-8")
             with self.assertRaises(probe_harnesses.ProbeError):
                 probe_harnesses.read_manifest(other)
-        self.passed.add(self._testMethodName)
+        self._passed()
 
     def test_the_temporary_file_is_written_beside_the_target_and_renamed(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -881,7 +1241,385 @@ class KilledProbeTests(unittest.TestCase):
             self.assertTrue(temporary.name.endswith(probe_harnesses.TEMPORARY_SUFFIX))
             self.assertFalse(temporary.exists())
             self.assertEqual(list(root.glob("*.json")), [target])
-        self.passed.add(self._testMethodName)
+        self._passed()
+
+
+class GateReportTests(unittest.TestCase):
+    """The gate report may only speak for a run that attempted and passed every case.
+
+    ``KilledProbeTests`` writes the ``killed-probe-recovery`` report on its way
+    out, and Fiat's design checker reads that file at the ``step:3``
+    transition. A run that selects one case by name passes it, so a report
+    saying ``value: false`` and ``exit: 1`` would describe a failure nothing
+    observed and block the step on it. The inverse costs more: a case whose
+    failure was confined to a ``subTest`` still runs the statement that flags
+    it passed, so a red run would report ``value: true`` and let a broken
+    atomic write through the gate.
+
+    These cases drive ``KilledProbeTests.tearDownClass`` directly rather than
+    through a real kill, so they cost nothing and cannot disturb the real
+    class's own bookkeeping.
+    """
+
+    def write_report(self, attempted, passed, root, failed=()):
+        target = root / "gate.json"
+        with mock.patch.multiple(
+            KilledProbeTests,
+            REPORT_PATH=target,
+            attempted=set(attempted),
+            passed=set(passed),
+            failed=set(failed),
+        ):
+            KilledProbeTests.tearDownClass()
+        return target
+
+    def test_a_partial_selection_writes_no_report_at_all(self):
+        for selected in ((), KilledProbeTests.CASES[:1], KilledProbeTests.CASES[:3]):
+            with self.subTest(attempted=len(selected)):
+                with tempfile.TemporaryDirectory() as directory:
+                    # Every selected case passed. The only thing missing is the
+                    # rest of the class, and that is not a failed gate.
+                    target = self.write_report(selected, selected, Path(directory))
+                    self.assertFalse(target.exists())
+
+    def test_a_complete_run_writes_the_resolved_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = self.write_report(
+                KilledProbeTests.CASES, KilledProbeTests.CASES, Path(directory)
+            )
+            report = json.loads(target.read_text(encoding="utf-8"))
+            self.assertEqual(report["criterion"], "killed-probe-recovery")
+            self.assertEqual(report["candidate"], "probe-manifest")
+            self.assertIs(report["value"], True)
+            self.assertEqual(report["exit"], 0)
+
+    def test_a_complete_run_with_a_failure_writes_the_unresolved_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = self.write_report(
+                KilledProbeTests.CASES, KilledProbeTests.CASES[:-1], Path(directory)
+            )
+            report = json.loads(target.read_text(encoding="utf-8"))
+            self.assertIs(report["value"], False)
+            self.assertEqual(report["exit"], 1)
+
+    def test_a_case_that_failed_cannot_leave_the_report_resolved(self):
+        # The inverse of the partial-selection rule, and the worse direction:
+        # a partial run that reports failure blocks a sound step, while a
+        # failed run that reports success admits a broken atomic write.
+        with tempfile.TemporaryDirectory() as directory:
+            target = self.write_report(
+                KilledProbeTests.CASES,
+                KilledProbeTests.CASES,
+                Path(directory),
+                failed=KilledProbeTests.CASES[:1],
+            )
+            report = json.loads(target.read_text(encoding="utf-8"))
+            self.assertIs(report["value"], False)
+            self.assertEqual(report["exit"], 1)
+
+    def test_a_failing_subtest_stops_a_case_reporting_itself_passed(self):
+        """``subTest`` swallows the failure, so the flag has to know about it.
+
+        Without this, every statement after a ``subTest`` loop runs on a failed
+        case, including the one that flags it passed -- and four of this file's
+        gate cases end in exactly that statement.
+        """
+
+        class Sample(unittest.TestCase):
+            passed: set[str] = set()
+            failed: set[str] = set()
+            checked_subtest = KilledProbeTests.checked_subtest
+            _passed = KilledProbeTests._passed
+
+            def test_one_mode_of_two_fails(self):
+                for mode in ("rename", "flush"):
+                    with self.checked_subtest(mode=mode):
+                        self.assertEqual(mode, "flush")
+                self._passed()
+
+        with open(os.devnull, "w", encoding="utf-8") as sink:
+            result = unittest.TextTestRunner(stream=sink, verbosity=0).run(
+                unittest.TestLoader().loadTestsFromTestCase(Sample)
+            )
+
+        # The run is red, the failure was remembered, and the case did not
+        # flag itself even though execution reached the flag.
+        self.assertFalse(result.wasSuccessful())
+        self.assertEqual(Sample.failed, {"test_one_mode_of_two_fails"})
+        self.assertEqual(Sample.passed, set())
+
+    def test_every_case_the_report_speaks_for_is_a_real_test_method(self):
+        # The gate's case list is the report's denominator, so a renamed or
+        # deleted case must not leave it claiming coverage it no longer has.
+        for name in KilledProbeTests.CASES:
+            with self.subTest(case=name):
+                self.assertTrue(callable(getattr(KilledProbeTests, name, None)))
+        declared = {
+            name for name in vars(KilledProbeTests) if name.startswith("test_")
+        }
+        self.assertEqual(declared, set(KilledProbeTests.CASES))
+
+
+MANIFEST_PATH = ROOT / "docs/harness-classification.json"
+RENDERER_PATH = ROOT / "scripts/render_harness_roster.py"
+README_PATH = ROOT / "README.md"
+GUIDE_PATH = ROOT / "docs/how-to-help-shoggoth.md"
+PDF_PATH = ROOT / "docs/pdf/how-to-help-shoggoth.pdf"
+
+# A PDF this repository already ships that carries no harness page, used to
+# prove the check reads the page rather than accepting any file it is handed.
+OTHER_PDF_PATH = ROOT / "docs/pdf/the-promise-machine-explained-properly.pdf"
+
+_RENDER_SPEC = importlib.util.spec_from_file_location(
+    "render_harness_roster", RENDERER_PATH
+)
+render_harness_roster = importlib.util.module_from_spec(_RENDER_SPEC)
+sys.modules[_RENDER_SPEC.name] = render_harness_roster
+_RENDER_SPEC.loader.exec_module(render_harness_roster)
+
+
+def landed():
+    """The manifest this host's probe actually wrote and the tree carries."""
+    return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+class RecordTests(unittest.TestCase):
+    """The landed record, held to what a probe on this host may claim.
+
+    ``SchemaTests`` holds the contract in the abstract, against constructed
+    documents. These cases hold the one document three wording surfaces are
+    generated from: it validates, it names every harness the probe declares,
+    it awards no class a client run did not earn, and nothing it could not run
+    is left without a stated reason.
+    """
+
+    def setUp(self):
+        self.document = landed()
+
+    def test_the_landed_manifest_validates_against_the_schema(self):
+        schema = load_schema()
+        self.assertEqual(self.document["schema"], schema["properties"]["schema"]["const"])
+        required = set(schema["$defs"]["harness"]["required"])
+        for record in self.document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertTrue(required.issubset(record), required - set(record))
+        checker = validator()
+        if checker is None:
+            self.skipTest("jsonschema is a Lazarus dependency and is absent here")
+        checker.validate(self.document)
+
+    def test_the_landed_manifest_names_every_declared_harness(self):
+        # The probe's own ROSTER is the declaration; a manifest that dropped or
+        # reordered a row would generate three surfaces missing a harness and
+        # nothing else would notice.
+        declared = [harness.name for harness in probe_harnesses.ROSTER]
+        self.assertEqual([record["name"] for record in self.document["harnesses"]], declared)
+        self.assertEqual(sorted(declared), sorted(HARNESSES))
+
+    def test_no_landed_entry_carries_an_earned_class(self):
+        # Not one client is installed or authenticated on this host, so an
+        # earned class here would mean the classifier was bypassed rather than
+        # that a harness improved.
+        for record in self.document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertIn(record["classification"], CLASSIFICATIONS)
+                self.assertNotIn(record["classification"], EARNED_CLASSIFICATIONS)
+                self.assertFalse(record["version_read"])
+
+    def test_every_untestable_entry_carries_a_blocker(self):
+        untestable = [
+            record for record in self.document["harnesses"]
+            if not record.get("testable_here", False)
+        ]
+        self.assertEqual(len(untestable), len(self.document["harnesses"]))
+        for record in untestable:
+            with self.subTest(harness=record["name"]):
+                self.assertIsInstance(record["blocker"], str)
+                self.assertTrue(record["blocker"].strip())
+
+    def test_the_recorded_block_is_the_staleness_signal(self):
+        # Host, date and base ref are what a later reader compares a surface
+        # against, so each has to be present and shaped rather than merely
+        # truthy.
+        recorded = self.document["recorded"]
+        self.assertEqual(set(recorded), {"host", "date", "base_ref"})
+        self.assertTrue(probe_harnesses.HOST_PATTERN.match(recorded["host"]))
+        self.assertTrue(probe_harnesses.DATE_PATTERN.match(recorded["date"]))
+        self.assertTrue(probe_harnesses.BASE_REF_PATTERN.match(recorded["base_ref"]))
+
+
+class RenderTests(unittest.TestCase):
+    """The three surfaces, held to the manifest they are generated from.
+
+    Every case works on a staged copy of the four files rather than on the
+    repository's own, so a case that fails leaves the tree exactly as it found
+    it and no case can pass by rewriting the thing it is checking.
+
+    The PDF is compared as the harness page's shown text rather than as bytes.
+    Two cases hold that from both directions: a file whose creation timestamp
+    was changed still passes, and a file that never carried the roster still
+    fails. Comparing whole bytes would invert both.
+    """
+
+    def stage(self, directory):
+        """Copies of the four files, and the keyword arguments to check them."""
+        root = Path(directory)
+        (root / "docs" / "pdf").mkdir(parents=True)
+        (root / "scripts").mkdir()
+        staged = {
+            "manifest": root / "docs/harness-classification.json",
+            "readme": root / "README.md",
+            "guide": root / "docs/how-to-help-shoggoth.md",
+            "pdf": root / "docs/pdf/how-to-help-shoggoth.pdf",
+        }
+        for key, source in (
+            ("manifest", MANIFEST_PATH),
+            ("readme", README_PATH),
+            ("guide", GUIDE_PATH),
+            ("pdf", PDF_PATH),
+        ):
+            staged[key].write_bytes(source.read_bytes())
+        return staged
+
+    def drift(self, staged):
+        _, lines = render_harness_roster.check(**staged)
+        return lines
+
+    def test_two_renders_of_one_manifest_produce_the_same_bytes(self):
+        # Nothing in the renderer reads a clock or an environment, so a second
+        # render has to be the first one. Without this the check below would be
+        # a diff of two build times rather than a drift test.
+        document = landed()
+        again = landed()
+        for name, render in (
+            ("readme", render_harness_roster.readme_block),
+            ("guide", render_harness_roster.guide_block),
+        ):
+            with self.subTest(surface=name):
+                self.assertEqual(render(document), render(again))
+        self.assertEqual(
+            render_harness_roster.pdf_expectations(document),
+            render_harness_roster.pdf_expectations(again),
+        )
+
+    def test_check_passes_on_the_surfaces_the_renderer_wrote(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.drift(self.stage(directory)), [])
+
+    def test_one_changed_character_in_a_written_surface_fails_the_check(self):
+        for surface in ("readme", "guide"):
+            with self.subTest(surface=surface):
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    target = staged[surface]
+                    text = target.read_text(encoding="utf-8")
+                    # One character, inside the generated region, in a name the
+                    # manifest supplied. Neither surface mentions a harness
+                    # before its markers, so the first occurrence is the
+                    # generated one.
+                    edited = text.replace("Windsurf", "Windsurg", 1)
+                    self.assertNotEqual(edited, text)
+                    target.write_text(edited, encoding="utf-8")
+                    lines = self.drift(staged)
+                    self.assertEqual(len(lines), 1, lines)
+                    self.assertIn(str(target), lines[0])
+
+    def test_one_changed_character_in_the_manifest_reaches_every_surface(self):
+        # The manifest is the source, so a single character changed there has to
+        # show up as drift in all three surfaces at once. This is what proves
+        # the PDF is genuinely compared rather than assumed to agree.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            raw = staged["manifest"].read_text(encoding="utf-8")
+            edited = raw.replace('"name": "Cline"', '"name": "Clins"', 1)
+            self.assertNotEqual(edited, raw)
+            staged["manifest"].write_text(edited, encoding="utf-8")
+            lines = self.drift(staged)
+            self.assertEqual(len(lines), 3, lines)
+            for surface in ("readme", "guide", "pdf"):
+                with self.subTest(surface=surface):
+                    self.assertTrue(
+                        any(str(staged[surface]) in line for line in lines), lines
+                    )
+
+    def test_a_changed_creation_timestamp_does_not_fail_the_pdf_check(self):
+        # The point of reading the page rather than the file. The replacement
+        # is the same length as what it replaces, so only the timestamp moves.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            original = staged["pdf"].read_bytes()
+            found = re.search(rb"/CreationDate \(D:\d{14}", original)
+            self.assertIsNotNone(found, "the guide PDF carries no creation date")
+            stamped = original.replace(found.group(0), b"/CreationDate (D:20310607081533", 1)
+            self.assertNotEqual(stamped, original)
+            self.assertEqual(len(stamped), len(original))
+            staged["pdf"].write_bytes(stamped)
+            self.assertEqual(self.drift(staged), [])
+
+    def test_a_pdf_without_a_harness_page_fails_the_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            staged["pdf"].write_bytes(OTHER_PDF_PATH.read_bytes())
+            lines = self.drift(staged)
+            self.assertEqual(len(lines), 1, lines)
+            self.assertIn(render_harness_roster.PDF_PAGE_MARKER, lines[0])
+
+    def test_a_missing_manifest_fails_the_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            staged["manifest"].unlink()
+            with self.assertRaises(render_harness_roster.RenderError):
+                render_harness_roster.check(**staged)
+            # And the command line answers the same way, without a traceback
+            # carrying the path back out. Its refusal line is not the subject
+            # here, so it goes to the bin rather than into the suite's output.
+            with open(os.devnull, "w", encoding="utf-8") as sink:
+                with contextlib.redirect_stderr(sink):
+                    exit_code = render_harness_roster.main(
+                        ["--check", "--manifest", str(staged["manifest"])]
+                    )
+            self.assertEqual(exit_code, 1)
+
+    def test_a_credential_in_the_manifest_never_reaches_a_surface(self):
+        # The probe sweeps what a client printed. This is the same sweep one
+        # boundary later: a token typed into the manifest afterwards would
+        # otherwise be published in three surfaces at once. Feeding it hostile
+        # input is what makes the control established rather than asserted.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
+            document["harnesses"][0]["blocker"] = f"bearer: {LEAKED_SECRET}"
+            staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
+            before = {key: path.read_bytes() for key, path in staged.items()}
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.write(**staged)
+            self.assertIn("token", str(refused.exception))
+            # Nothing was written at all, which is the probe's rule as well.
+            for key, path in staged.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(path.read_bytes(), before[key])
+
+    def test_an_operator_path_the_renderer_rejects_exits_one(self):
+        with open(os.devnull, "w", encoding="utf-8") as sink:
+            with contextlib.redirect_stderr(sink):
+                for option in ("--manifest", "--readme", "--guide", "--pdf"):
+                    with self.subTest(option=option):
+                        self.assertEqual(
+                            render_harness_roster.main(["--check", option, ""]), 1
+                        )
+
+    def test_every_harness_the_manifest_names_reaches_every_surface(self):
+        document = landed()
+        readme = render_harness_roster.readme_block(document)
+        guide = render_harness_roster.guide_block(document)
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        for record in document["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertIn(record["name"], readme)
+                self.assertIn(record["name"], guide)
+                self.assertIn(record["name"], shown)
+                # And the guide carries the exact reason, not a summary of it.
+                self.assertIn(record["blocker"], guide)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
   "$id": "https://wildcat.finance/schemas/harness-classification-v1.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "harness-classification/v1",
-  "description": "The one record every Atlas hand-off roster surface is generated from. Each harness entry carries what the host actually showed, so a class can never outrun the observation behind it. Pinned by docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md.",
+  "description": "The one record every Atlas hand-off roster surface is generated from. Each harness entry carries what the host actually showed, so a class can never outrun the observation behind it. Pinned by docs/decisions/ADR-077-generate-the-harness-roster-from-one-probed-manifest.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -95,6 +95,7 @@
         "classification",
         "client_present",
         "client_version",
+        "version_read",
         "auth_configured",
         "launcher_contract",
         "blocker"
@@ -111,13 +112,17 @@
           "type": "boolean"
         },
         "client_version": {
-          "description": "The exact version the client reported. Null only where no client was present to report one.",
+          "description": "The exact version the client reported, or the sentinel \"unread\" where a client was present and did not answer. Null only where no client was present to report one. Read version_read rather than comparing this value against the sentinel.",
           "type": [
             "string",
             "null"
           ],
           "minLength": 1,
           "maxLength": 4096
+        },
+        "version_read": {
+          "description": "Whether client_version holds a version a client actually reported. False both where no client was present and where a present client did not answer, so no reader has to recognise the \"unread\" sentinel to tell a version from the absence of one.",
+          "type": "boolean"
         },
         "auth_configured": {
           "description": "Whether an authentication method is configured here. Kept separate from client_present so absence and a failed authentication never collapse into one verdict.",
@@ -137,7 +142,7 @@
           "maxLength": 4096
         },
         "testable_here": {
-          "description": "Whether an authenticated read-only client run was possible on this host.",
+          "description": "Whether the client was found on this host and an authentication method is configured here. This is client_present and auth_configured together, not a claim that a run succeeded: a present client that never answered is testable_here with version_read false. Read classification for what the run earned.",
           "type": "boolean"
         },
         "probe": {
@@ -160,6 +165,56 @@
             "properties": {
               "client_version": {
                 "$ref": "#/$defs/nonEmptyString"
+              }
+            }
+          }
+        },
+        {
+          "$comment": "version_read is the field a reader is told to trust instead of recognising the sentinel, so the two may not disagree. A read version is a string that is not the sentinel.",
+          "if": {
+            "required": [
+              "version_read"
+            ],
+            "properties": {
+              "version_read": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "client_version": {
+                "type": "string",
+                "not": {
+                  "const": "unread"
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "An unread version is either the sentinel, where a client was present and did not answer, or null, where no client was present to answer.",
+          "if": {
+            "required": [
+              "version_read"
+            ],
+            "properties": {
+              "version_read": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "client_version": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "const": "unread"
+                  }
+                ]
               }
             }
           }

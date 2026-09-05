@@ -3,7 +3,7 @@
 
 The roster's single source is a `harness-classification/v1` manifest, validated
 by `schemas/harness-classification-v1.json` and pinned by
-`docs/decisions/ADR-076-generate-the-harness-roster-from-one-probed-manifest.md`.
+`docs/decisions/ADR-077-generate-the-harness-roster-from-one-probed-manifest.md`.
 This module is the generator. It observes each client, classifies it, and
 writes the manifest three later wording surfaces are rendered from.
 
@@ -14,7 +14,11 @@ Four properties are load-bearing, and each has a case in
 route` are earned classes. `classify` returns one only when the harness carries
 a probe whose status is `answered` and whose client was found present. Every
 other input shape reaches `manual route` or `unsupported`, whatever the rest of
-the record claims.
+the record claims. `answered` is itself earned: `probe_client` reads the exit
+status before the output and records a non-zero exit as `unread`, because
+`VERSION_TOKEN` matches dotted numbers that are not versions -- a loopback
+address in a connection error, a date in an expiry message -- and a token
+scraped out of a failure is not an answer.
 
 **The command is fixed, and never read from a manifest.** Each harness declares
 its own argv in `ROSTER`, as a tuple of plain strings. Nothing in this module
@@ -45,13 +49,17 @@ run, so two probes of the same host can be told apart. Nothing else is emitted:
 no raw client output, no credential, no absolute path and no account identifier
 reaches either surface.
 
-One encoding is worth stating, because the schema has no field for it. A client
-that resolves on `PATH` but does not answer inside the timeout is present, and
-its version is unread. Recording it absent would collapse two different facts,
-which is exactly what `client_present` and `auth_configured` exist to prevent,
-so `client_present` stays true and `client_version` carries `UNREAD_VERSION`.
-The full reason is in `probe.result` and in `blocker`, and no reader can mistake
-the sentinel for a version somebody read.
+One encoding is worth stating. A client that resolves on `PATH` but does not
+answer -- it timed out, it exited non-zero, it printed no version -- is present,
+and its version is unread. Recording it absent would collapse two different
+facts, which is exactly what `client_present` and `auth_configured` exist to
+prevent, so `client_present` stays true and `client_version` carries
+`UNREAD_VERSION`. That sentinel cannot collide with a real version, because
+`recognise_version` only ever returns a digit-led `VERSION_TOKEN` match, but a
+sentinel is still prose where a reader wants a field: `version_read` carries
+the same fact as a boolean the schema declares, so nothing downstream has to
+string-match `"unread"` to know whether a version was read. The full reason is
+in `probe.result` and in `blocker`.
 """
 
 from __future__ import annotations
@@ -82,7 +90,7 @@ UNSUPPORTED = "unsupported"
 
 CLASSIFICATIONS = (ATLAS_LAUNCHER, TESTED_LOCAL_ROUTE, MANUAL_ROUTE, UNSUPPORTED)
 
-# The two classes a harness only reaches by a recorded client run. ADR-076
+# The two classes a harness only reaches by a recorded client run. ADR-077
 # makes the classifier, not the schema, the thing that enforces that.
 EARNED_CLASSIFICATIONS = (ATLAS_LAUNCHER, TESTED_LOCAL_ROUTE)
 
@@ -125,8 +133,7 @@ RESULT_NO_VERSION = (
     "so its version is unread rather than absent"
 )
 RESULT_EXIT = (
-    "unread: {binary} exited {code} with no version-shaped token, "
-    "so its version is unread rather than absent"
+    "unread: {binary} exited {code}, so its version is unread rather than absent"
 )
 RESULT_TIMEOUT = (
     "unread: {binary} did not answer within {seconds}s, "
@@ -381,20 +388,57 @@ def _run(argv: tuple[str, ...], timeout: float) -> subprocess.CompletedProcess[s
 
 
 def recognise_version(*streams: str | None) -> str | None:
-    """The first version-shaped token in bounded client output, or None.
+    """The first whole version-shaped token in bounded client output, or None.
 
     This is an allowlist rather than a filter: the token comes back and the
     surrounding output is dropped, so nothing a client printed can reach the
     manifest by having been near a version.
+
+    The character bound can land inside a token, and half of a version is not
+    the version the client reported. A match the cut could have continued is
+    discarded rather than recorded, so a client that buries its version past the
+    bound lands in `unread` -- where a client that printed no version at all
+    already lands -- instead of having a fragment recorded as its exact version.
+
+    Whether the cut could have continued the token is decided by the first
+    character it removed, not by the match merely reaching the end of the line.
+    A version followed by a newline or a space is whole, and deciding this on
+    the line end alone withheld it anyway.
     """
     for stream in streams:
         if not stream:
             continue
-        for line in stream[:MAX_CLIENT_OUTPUT_CHARS].splitlines()[:MAX_CLIENT_OUTPUT_LINES]:
+        bounded = stream[:MAX_CLIENT_OUTPUT_CHARS]
+        # The tail is a fragment only where the cut landed mid-line. A cut that
+        # landed on a newline left every line it kept intact.
+        partial_tail = len(stream) > len(bounded) and not bounded.endswith(("\n", "\r"))
+        dropped = stream[len(bounded):len(bounded) + 1]
+        kept = bounded.splitlines()
+        tail = len(kept) - 1
+        for index, line in enumerate(kept[:MAX_CLIENT_OUTPUT_LINES]):
             match = VERSION_TOKEN.search(line)
-            if match is not None:
-                return match.group(0)
+            if match is None:
+                continue
+            if (
+                partial_tail
+                and index == tail
+                and match.end() == len(line)
+                and _extends_version(dropped)
+            ):
+                continue
+            return match.group(0)
     return None
+
+
+def _extends_version(character: str) -> bool:
+    """Whether this character could have continued a `VERSION_TOKEN` match.
+
+    A digit or a dot extends the numeric part, and `-` or `+` opens the build
+    suffix that alphanumerics and dots then extend. Anything else -- a newline,
+    a space, a bracket, a comma -- cannot, so a token the cut stopped there was
+    already whole.
+    """
+    return bool(character) and (character.isalnum() or character in ".-+")
 
 
 def probe_client(
@@ -424,10 +468,17 @@ def probe_client(
         reason = RESULT_UNRUNNABLE.format(binary=binary, reason=type(error).__name__)
         return ProbeRecord(argv, reason, STATUS_UNREAD, None)
 
-    version = recognise_version(completed.stdout, completed.stderr)
-    if version is None and completed.returncode != 0:
+    # The exit status is read before the output, and it is decisive. A client
+    # that exited non-zero did not answer, whatever its output happens to
+    # contain, and `VERSION_TOKEN` matches plenty of things that are not
+    # versions: a loopback address in a connection error, a date in an expiry
+    # message, a version fragment inside a documentation URL. Scraping one of
+    # those out of a failure and calling it an answer is how a client that
+    # never worked earns `tested local route`.
+    if completed.returncode != 0:
         reason = RESULT_EXIT.format(binary=binary, code=completed.returncode)
         return ProbeRecord(argv, reason, STATUS_UNREAD, None)
+    version = recognise_version(completed.stdout, completed.stderr)
     if version is None:
         return ProbeRecord(argv, RESULT_NO_VERSION.format(binary=binary), STATUS_UNREAD, None)
     return ProbeRecord(argv, RESULT_ANSWERED.format(version=version), STATUS_ANSWERED, version)
@@ -509,7 +560,7 @@ def recorded_client_run(observation: Observation) -> bool:
 def classify(observation: Observation) -> str:
     """The one class this observation earns.
 
-    The first branch is the gate ADR-076 puts here rather than in the schema:
+    The first branch is the gate ADR-077 puts here rather than in the schema:
     with no recorded client run, neither earned name is reachable from any input
     shape, whatever else the record claims.
     """
@@ -545,6 +596,13 @@ def entry_document(observation: Observation) -> dict[str, object]:
         "classification": classification,
         "client_present": observation.client_present,
         "client_version": observation.client_version,
+        # The structured half of the unread encoding. A reader must not have to
+        # compare `client_version` against a magic string the schema does not
+        # enumerate to learn whether anybody read a version, so the fact gets
+        # its own boolean: true exactly when `client_version` holds a version a
+        # client reported.
+        "version_read": observation.client_version is not None
+        and observation.client_version != UNREAD_VERSION,
         "auth_configured": observation.auth_configured,
         "launcher_contract": observation.launcher_contract,
         "blocker": blocker_for(observation, classification),
@@ -671,13 +729,22 @@ def read_manifest(path):
     This is the oracle behind the killed-write guard. A torn file is not valid
     JSON, and a file that parses but declares another schema is not this
     roster, so neither can be mistaken for a manifest somebody finished writing.
+
+    Every refusal here is a `ProbeError`, including the ones the filesystem
+    raises. A renderer told to expect one refusal type would otherwise miss an
+    absent or unreadable manifest, which are the two it is most likely to meet.
     """
     target = Path(path)
-    size = target.stat().st_size
+    try:
+        size = target.stat().st_size
+    except OSError as error:
+        raise ProbeError(f"manifest cannot be inspected ({type(error).__name__})") from error
     if size > MAX_MANIFEST_BYTES:
         raise ProbeError(f"manifest is {size} bytes, over the {MAX_MANIFEST_BYTES} cap")
     try:
         document = json.loads(target.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise ProbeError(f"manifest cannot be read ({type(error).__name__})") from error
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ProbeError(f"manifest is not readable JSON: {error}") from error
     if not isinstance(document, dict) or document.get("schema") != SCHEMA_ID:
@@ -758,6 +825,14 @@ def main(argv=None) -> int:
             write_log(_checked_out(arguments.log), recorder)
     except ProbeError as error:
         print(f"probe_harnesses: {error}", file=sys.stderr)
+        return 1
+    except OSError as error:
+        # An operator path the filesystem rejects for a reason the checks above
+        # do not enumerate -- a destination that is a directory, a read-only
+        # mount, a name too long. This is the same class of failure as a
+        # `ProbeError` from the operator's side and gets the same one line,
+        # rather than a traceback carrying the path back out.
+        print(f"probe_harnesses: {type(error).__name__} writing the output", file=sys.stderr)
         return 1
     for event in recorder.events:
         if event["event"] == "harness_probe_done":
