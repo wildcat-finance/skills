@@ -1,7 +1,7 @@
 # Horos runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Horos.** Horos records evidence-backed reading exclusions and deterministic skeleton maps for ordinary repository work. It does not chunk source, measure runtime cost, or narrow any security review. **Current frontier:** The v9.2.3 reopening's second job is done: the content-addressed object rule ships with four guard tests, documentation and an evidence bundle, binding 78 files and 7,850,052 bytes of this repository's object stores by the digest of each file's own bytes. One held job remains, the Markdown outline extractor, with maturity expected after it.
+> **Marketplace context: Horos.** Horos records evidence-backed reading exclusions and deterministic skeleton maps for ordinary repository work. It does not chunk source, measure runtime cost, or narrow any security review. **Current frontier:** The v9.2.3 reopening's third and last job is done: map reads Markdown through a per-language extractor, held against markdown-it-py over all 900 tracked Markdown files of this repository with 9,527 of 9,527 headings and 1,130 of 1,130 fenced code blocks matched, zero misses, zero extras and zero crashes. Every filetype above 1% of this tree's readable bytes is now mapped or is a data format with no declarations to outline, so the frontier closes mature.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding

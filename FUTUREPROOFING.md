@@ -107,11 +107,15 @@ retain the stop control.
 ### Horos
 
 **Today.** Horos emits and verifies repository reading boundaries, byte
-censuses, drift reports, and skeleton maps for Python, TypeScript, Go, C++, and
-Solidity. A boundary is fail-open and never applies during a security review.
+censuses, drift reports, and skeleton maps for Python, TypeScript, Go, C++,
+Solidity, and Markdown. A boundary is fail-open and never applies during a
+security review.
 
-**Missing.** Markdown has no outline extractor. The content-addressed object
-rule shipped with guard tests and an evidence bundle; only that job remains.
+**Missing.** Nothing the recorded evidence names. The Markdown outline
+extractor closed the last held job, so every filetype above 1% of this
+repository's readable bytes is mapped or is a data format with no
+declarations to outline, and the frontier is mature. Reopening it needs a
+maintainer's new external evidence.
 
 **With enough contribution.** Horos could give an agent a cheap, proved map of
 large mixed repositories: generated and vendored sinks excluded with reasons,

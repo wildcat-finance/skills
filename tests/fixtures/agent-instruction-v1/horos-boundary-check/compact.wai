@@ -1,6 +1,6 @@
 WAI1
 D i20:horos-boundary-check t20:Horos\sboundary\scheck
-  S i5:horos p35:plugins/horos/skills/horos/SKILL.md h64:24f121a3f8929bd6ca2e39fe5e0caac5e289d955687232a1fc0bdff217925eaf
+  S i5:horos p35:plugins/horos/skills/horos/SKILL.md h64:b03fb485073074df2e5ca4fa928e350cefd22a4ff86752808b1f0fa19c3f1634
   H i22:boundary-check-promise t20:horos-boundary-check
     R i14:boundary-check t133:Trust\sa\shard\sreading\sboundary\sonly\safter\scheck\sproves\sit\sequals\sthe\scurrent\sre-derived\sclassification\sfor\sthe\sstated\sroot\sor\ssubtree.
       E i14:boundary-check t49:the\swork\sis\sa\ssecurity\sreview,\saudit,\sor\sincident
@@ -14,7 +14,7 @@ D i20:horos-boundary-check t20:Horos\sboundary\scheck
         J t107:Refuse\sa\sstale,\sforged,\smissing,\sor\sout-of-scope\sboundary\sand\srefuse\severy\sboundary\sduring\ssecurity\sreview.
         Z c66:python3\splugins/horos/skills/horos/scripts/horos.py\sscan\s.\s--write
         Z t96:Read\sdrifted\spaths\snormally,\smake\sonly\san\sauthorised\supdate,\sthen\scheck\sthe\sintended\sroot\sagain.
-  B i5:horos i22:boundary-check-promise 11633 12651 i8:shoggoth
-  B i5:horos i20:horos-boundary-check 11633 12651 i8:shoggoth
-  B i5:horos i14:boundary-check 11659 12649 i8:shoggoth
-  B i5:horos i23:horos-boundary-check.v1 11659 12649 i8:shoggoth
+  B i5:horos i22:boundary-check-promise 12450 13468 i8:shoggoth
+  B i5:horos i20:horos-boundary-check 12450 13468 i8:shoggoth
+  B i5:horos i14:boundary-check 12476 13466 i8:shoggoth
+  B i5:horos i23:horos-boundary-check.v1 12476 13466 i8:shoggoth

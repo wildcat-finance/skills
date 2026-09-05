@@ -3,7 +3,7 @@
 scan <root>    classify the tree; --json prints the boundary document,
                --write commits it to .horos/boundary.json atomically
 check <root>   re-derive the boundary and name every drifted path
-map <file.py>  print the file's skeleton instead of the file
+map <file>     print the file's skeleton instead of the file
 
 Classification is fail-open: a file the rules cannot evidence stays readable
 and earns no entry. The scanner stats every file but reads at most
