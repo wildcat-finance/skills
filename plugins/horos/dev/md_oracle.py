@@ -47,6 +47,7 @@ acceptance. A crash on any file fails it too.
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -128,6 +129,51 @@ SUMMED = (
 )
 
 
+CLEAN_NOTE = (
+    "A path under `clean` matched the oracle exactly at the declared altitudes: no miss, "
+    "no extra, no confessed region and no crash. Its value is [headings, fenced blocks], "
+    "the count the oracle found and the outliner matched, so `totals` remains the sum over "
+    "`files` and `clean`. Only a file with something to report keeps a row in `files`."
+)
+
+
+def is_clean(row):
+    """True when the row records a file the outliner read exactly as the oracle did.
+
+    A clean row carries no information the totals do not already hold, and there
+    are hundreds of them in a corpus this size, so the document keeps the file's
+    two counts instead of its thirteen zeroes and matches.
+    """
+    if "crash" in row:
+        return False
+    return (
+        row["missed"] == 0
+        and row["missed_confessed"] == 0
+        and row["extra"] == 0
+        and row["regions"] == 0
+        and row["matched"] == row["oracle"] == row["ours"]
+        and row["fence_missed"] == 0
+        and row["fence_missed_confessed"] == 0
+        and row["fence_extra"] == 0
+        and row["fence_matched"] == row["fence_oracle"] == row["fence_ours"]
+    )
+
+
+def results_document(totals, per_file):
+    """The committed results file: totals, the rows worth reading, and the rest by count."""
+    keep, clean = {}, {}
+    for path, row in per_file.items():
+        if is_clean(row):
+            clean[path] = [row["oracle"], row["fence_oracle"]]
+        else:
+            keep[path] = row
+    document = {"totals": totals, "files": keep, "clean": clean, "note": CLEAN_NOTE}
+    text = json.dumps(document, indent=1, sort_keys=True) + "\n"
+    # One line per clean path. The pair is the whole value, and three lines to
+    # carry two integers is what this document is being trimmed out of.
+    return re.sub(r"\[\s*\n\s*(\d+),\s*\n\s*(\d+)\s*\n\s*\]", r"[\1, \2]", text)
+
+
 def run(commit, out_path, oracle_path):
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=ROOT,
@@ -166,9 +212,7 @@ def run(commit, out_path, oracle_path):
         if row["missed"] or row["extra"] or row["fence_missed"] or row["fence_extra"]:
             mismatched.append((path, row))
     totals["elapsed_ms"] = int((time.perf_counter() - started) * 1000)
-    Path(out_path).write_text(
-        json.dumps({"totals": totals, "files": per_file}, indent=1, sort_keys=True) + "\n"
-    )
+    Path(out_path).write_text(results_document(totals, per_file))
     if oracle_path:
         Path(oracle_path).write_text(json.dumps(readings, sort_keys=True))
     print(json.dumps(totals, indent=1, sort_keys=True))

@@ -297,5 +297,61 @@ class SecondCaptureTests(unittest.TestCase):
         self.assertAlmostEqual(share, 83.3, places=1)
 
 
+class OutlineResultsShapeTests(unittest.TestCase):
+    """Every outline results document stays summable after the clean rows leave.
+
+    A differential's evidence is its totals and its exceptions. Carrying a row
+    for each file the outliner read exactly as the oracle did put 33,000 lines
+    of matches and zeroes in the tree that no check read, so those files are
+    recorded by count under `clean` instead. That only stays honest while the
+    totals are still the sum of what the document holds, which is what these
+    cases check; see skills#1259.
+    """
+
+    RESULTS = (RESULTS_3, RESULTS_5, RESULTS_6, RESULTS_7, RESULTS_9)
+    SUMMED = (
+        "matched", "missed", "missed_confessed", "extra", "oracle", "ours", "regions",
+        "fence_matched", "fence_missed", "fence_missed_confessed", "fence_extra",
+        "fence_oracle", "fence_ours",
+    )
+
+    def test_every_results_document_carries_the_trimmed_shape(self):
+        for path in self.RESULTS:
+            with self.subTest(results=path.name):
+                document = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(
+                    sorted(document), ["clean", "files", "note", "totals"]
+                )
+                for name, value in document["clean"].items():
+                    if isinstance(value, list):
+                        self.assertEqual(len(value), 2, name)
+                        self.assertTrue(all(isinstance(n, int) for n in value), name)
+                    else:
+                        self.assertIsInstance(value, int, name)
+                self.assertEqual(set(document["clean"]) & set(document["files"]), set())
+
+    def test_the_totals_are_the_sum_of_the_rows_and_the_clean_counts(self):
+        for path in self.RESULTS:
+            with self.subTest(results=path.name):
+                document = json.loads(path.read_text(encoding="utf-8"))
+                totals = document["totals"]
+                summed = {key: 0 for key in self.SUMMED}
+                for row in document["files"].values():
+                    for key in self.SUMMED:
+                        summed[key] += row.get(key, 0)
+                for value in document["clean"].values():
+                    heads, fences = value if isinstance(value, list) else (value, 0)
+                    for key in ("matched", "ours", "oracle"):
+                        summed[key] += heads
+                    for key in ("fence_matched", "fence_ours", "fence_oracle"):
+                        summed[key] += fences
+                for key, total in totals.items():
+                    if key in summed:
+                        self.assertEqual(summed[key], total, f"{path.name}:{key}")
+                self.assertEqual(
+                    len(document["files"]) + len(document["clean"]), totals["files"]
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
