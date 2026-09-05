@@ -86,7 +86,7 @@ Against the manifest that shipped from step 3:
 | `recorded.host` | `darwin-arm64` | `darwin-arm64` | same |
 | `recorded.date` | `2026-09-04` | `2026-09-05` | moved |
 | `recorded.base_ref` | `c0524f0cd1288cc35316ae9acec6c7d2a6bd4272` | `8851ea80b59631cfafcdd3c8bbbb979ebe3bba79` | moved |
-| 59 per-harness fields across 6 entries | — | — | **0 differences** |
+| 59 per-harness fields across 6 entries | not applicable | not applicable | **0 differences** |
 
 Entry order is identical, every `name`, `classification`, `client_present`,
 `client_version`, `version_read`, `auth_configured`, `launcher_contract`,
@@ -96,7 +96,7 @@ Entry order is identical, every `name`, `classification`, `client_present`,
 unchanged 2,702,681 bytes.
 
 **Nothing the probe observed changed. Only the metadata describing when and
-where it observed it changed** — and that alone rewrote both Markdown surfaces
+where it observed it changed**, and that alone rewrote both Markdown surfaces
 and a 2.7 MB PDF.
 
 That churn is a filed defect,
@@ -160,8 +160,8 @@ The sixth entry, **Roo Code**, declares no client binary, so no client run was
 attempted. The product is sunset and its repository archived, and no active
 successor was named.
 
-Both boundaries the issue forbids — an organisation policy change and a new
-account — are the only things that would clear blockers 1 through 5. The run
+Both boundaries the issue forbids (an organisation policy change and a new
+account) are the only things that would clear blockers 1 through 5. The run
 therefore delivers the record and the machinery, and records five named
 blockers instead of five passes.
 
@@ -179,21 +179,19 @@ to show. After the write, it exits 0 with `three surfaces match 6 recorded
 harnesses`. The check is wired into the repository suite as
 `harness-roster-check`, so a drifted roster fails a normal run.
 
-The recorded triple reaches every surface:
-
-| Surface | What it shows |
-| --- | --- |
-| manifest | `host darwin-arm64`, `date 2026-09-05`, `base_ref 8851ea80…` |
-| README provenance | `recorded on darwin-arm64 on 2026-09-05 against 8851ea80…` |
-| README sentence | `A probe on darwin-arm64 recorded every harness below on 2026-09-05` |
-| guide provenance | `recorded on darwin-arm64 on 2026-09-05 against 8851ea80…` |
-| PDF roster card | `Manual only - probed darwin-arm64, 2026-09-05` |
+The recorded triple reaches every surface. The manifest shows `host
+darwin-arm64`, `date 2026-09-05`, and `base_ref 8851ea80…`. The README
+provenance reads `recorded on darwin-arm64 on 2026-09-05 against 8851ea80…`,
+and its sentence reads `A probe on darwin-arm64 recorded every harness below on
+2026-09-05`. The guide provenance carries the same `recorded on darwin-arm64 on
+2026-09-05 against 8851ea80…` text. The PDF roster card reads `Manual only -
+probed darwin-arm64, 2026-09-05`.
 
 **"Why did this harness get the class it got?"** Every entry carries its probe
 command, the observed result and its blocker. Copilot is `manual route` because
-`copilot --version` was not run — the binary did not resolve on `PATH` — and
-because the seat check and the organisation policy value both came back empty.
-A reader gets those facts, not an adjective.
+`copilot --version` was not run because the binary did not resolve on `PATH`,
+and because the seat check and the organisation policy value both came back
+empty. A reader gets those facts, not an adjective.
 
 The structured probe log carries one `run_id` correlating
 `probe_run_started`, six `harness_probe_done` events and the write event, so a
@@ -230,14 +228,15 @@ carrying a token and sweeps both the manifest and the log for it.
 `tests/test_harness_manifest.py:1777` held a positive control asserting that a
 real date still renders, and it pinned the literal `2026-09-04` against the
 landed manifest. The control's job is to show that the calendar guard refuses a
-bad date rather than the field itself, so the specific date was never the point
-— but pinning it made this the one case that no re-probe could ever pass.
+bad date rather than the field itself, so the specific date was never the point.
+Pinning it made this the one case that no re-probe could ever pass.
 
 The control now reads `recorded.date` off the landed manifest and parses it as a
-calendar date before asserting it reaches the label. Parsing first keeps it
-load-bearing, because `assertIn` on an empty string would pass vacuously. The
-refusal loop over `2026-13-45`, `2026-02-31` and `0000-00-00` is unchanged, and
-nothing about the compare semantics or the `stale-manifest` case was touched.
+calendar date before asserting it reaches the label. Parsing first makes the
+control fail on an empty date; `assertIn` on an empty string would pass
+vacuously. The refusal loop over `2026-13-45`, `2026-02-31` and `0000-00-00`
+is unchanged, and nothing about the compare semantics or the `stale-manifest`
+case was touched.
 
 This was the only place a landed `recorded` value was pinned. Every other
 `2026-09-04` in the module belongs to a synthetic fixture that builds its own
@@ -247,10 +246,10 @@ document.
 
 On the committed tree:
 
-- `python3 scripts/render_harness_roster.py --check` — exit 0,
+- `python3 scripts/render_harness_roster.py --check`: exit 0,
   `three surfaces match 6 recorded harnesses`
-- `python3 -m unittest tests.test_harness_manifest -v` — exit 0, 95 tests, OK
-- `python3 scripts/run_checks.py --full` — exit 0, 29 of 29 checks pass. It read
+- `python3 -m unittest tests.test_harness_manifest -v`: exit 0, 95 tests, OK
+- `python3 scripts/run_checks.py --full`: exit 0, 29 of 29 checks pass. It read
   28 of 29 when this document was written at `bc0d8b12`: `root-suite` was red on
   two cases carrying the ADR-078 collision described below, which `311c0a89`
   then cleared.
