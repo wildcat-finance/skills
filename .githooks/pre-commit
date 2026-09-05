@@ -16,8 +16,12 @@
 #
 # One line goes to standard error on a refusal, naming which cause applies, so
 # "why was my commit refused" is answered where it is asked. Git's own stderr
-# from the two commands below is suppressed for that reason: the cause is named
-# here or not at all.
+# from the two commands below is suppressed so that line stays the only one.
+# When locating the repository is what failed, the line carries the first line
+# git wrote about it, stripped of control characters and cut at 256 characters,
+# because git knows that cause and this script does not: a directory that is no
+# repository and a repository git refuses to trust each say so there. The
+# write-tree refusal names its command and carries nothing git wrote.
 
 set -u
 
@@ -45,8 +49,9 @@ fi
 # repository's own config is untouched, because that is the repository being
 # gated rather than something an inherited variable can move. The trade is a
 # clone that needs `safe.directory` from global config: `git rev-parse
-# --git-dir` then fails here, which refuses the commit and names the cause,
-# which is the direction this gate is meant to fail.
+# --git-dir` then fails here, which refuses the commit with git's own line
+# about dubious ownership on it, which is the direction this gate is meant to
+# fail.
 #
 # Which repository "the repository's own config" means is the last thing an
 # inherited variable can move. GIT_DIR reaches this hook two ways. Git sets it
@@ -65,8 +70,8 @@ fi
 # worktree, which names the directory git had set -- and the record and
 # configuration it reads are that repository's. The trade is a work tree with
 # no `.git` of its own, driven through `--git-dir`, `--work-tree` or those
-# variables: discovery finds nothing there, the commit
-# is refused, and the bypass token recovers.
+# variables: discovery finds nothing there, the commit is refused with git's
+# line about it, and the bypass token recovers.
 #
 # The index git exports is kept, and must be. Git runs this hook for one
 # particular commit and names that commit's index in GIT_INDEX_FILE -- `git
@@ -89,7 +94,14 @@ gate_git() {
 fix='run .githooks/greenlight on the staged tree, or commit with FIAT_SKIP_PRECOMMIT=1'
 
 if ! git_dir="$(gate_git rev-parse --git-dir 2>/dev/null)"; then
-    printf 'pre-commit: refused, git rev-parse --git-dir failed, so the green record cannot be located; %s\n' "$fix" >&2
+    # The decision is taken; what follows only says why. Git's account comes
+    # from a second run of the same command, because reading its standard
+    # error into a variable while its standard output still reaches the one
+    # above needs either that or a file, and this gate writes nothing. The
+    # line is stripped and bounded for the reason the stale-record path gives.
+    cause="$(gate_git rev-parse --git-dir 2>&1 >/dev/null | head -n 1 | tr -d '[:cntrl:]' | cut -c1-256)"
+    [ -n "$cause" ] || cause='nothing on standard error'
+    printf 'pre-commit: refused, git rev-parse --git-dir failed, so the green record cannot be located; git said: %s; %s\n' "$cause" "$fix" >&2
     exit 1
 fi
 

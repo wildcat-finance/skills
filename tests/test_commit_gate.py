@@ -725,6 +725,40 @@ class RefusalLineTests(unittest.TestCase):
             self.assertNotIn("\x1b", refused.stderr)
             self.assertNotIn("\r", refused.stderr)
 
+    def test_a_refusal_outside_any_repository_carries_gits_own_cause(self):
+        """S3-R1-04: when git cannot locate the repository, the line says what git said.
+
+        The hook suppresses git's standard error so a refusal stays one line,
+        and on this path that left the line naming the symptom and a remedy
+        that fails under the same condition. The fixture's parent is a ceiling
+        directory, so discovery from a directory beside the fixture stops
+        there instead of climbing into the repository this suite runs in.
+        """
+        with gate_repository() as root:
+            outside = root.parent / "outside"
+            outside.mkdir()
+            attempted = subprocess.run(
+                [str(root / ".githooks" / "pre-commit")],
+                cwd=str(outside),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=clean_environment({"GIT_CEILING_DIRECTORIES": str(root.parent)}),
+            )
+            self.assertNotEqual(
+                attempted.returncode, 0,
+                "the gate admitted a commit from outside any repository",
+            )
+            lines = attempted.stderr.splitlines()
+            self.assertEqual(
+                len(lines), 1, f"the refusal is not one line: {attempted.stderr!r}"
+            )
+            self.assertEqual(refusals(attempted), lines, f"{attempted.stderr!r}")
+            self.assertIn(
+                "not a git repository", lines[0],
+                f"the refusal does not carry git's own cause: {lines[0]}",
+            )
+
 
 class StagedTreeTests(unittest.TestCase):
     def test_a_failing_write_tree_is_refused_and_named(self):
