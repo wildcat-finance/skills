@@ -811,9 +811,15 @@ def guide_block(document):
         "stopped where it did:",
         "",
     ])
+    # The name is not bolded. `- **Name** -- reason` is the shape Imprimatur
+    # calls `bold_lead_bullet`, and these lines land inside a generated region
+    # no hand edit may repair, so the bold has to go from the renderer or the
+    # guide carries six medium defects for as long as the region exists. The
+    # plain form also matches the README's own bullets, which have never been
+    # bolded.
     for entry in harnesses(document):
         blocker = entry["blocker"]
-        lines.append(f"- **{entry['name']}** -- {blocker if blocker else 'nothing blocked it.'}")
+        lines.append(f"- {entry['name']} -- {blocker if blocker else 'nothing blocked it.'}")
     return "\n".join(lines)
 
 
