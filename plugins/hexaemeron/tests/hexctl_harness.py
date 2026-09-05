@@ -552,7 +552,8 @@ mode = os.environ.get("FAKE_GH_MODE", "valid")
 # Written here rather than in each test so a case that is not about the contract
 # does not have to restate it.
 DEFAULT_ISSUE_BODY = (
-    "A fixture issue.\\n"
+    "Protasis decides which skill or skills this observation upgrades. "
+    "The filer is the wrong party to guess.\\n"
     "\\n"
     "Fiat-Required: 1\\n"
     "\\n"
@@ -560,6 +561,8 @@ DEFAULT_ISSUE_BODY = (
     "none | none | this fixture carries nothing forward\\n"
     "```\\n"
 )
+DEFAULT_ISSUE_TITLE = "framework-1: A fixture observation"
+DEFAULT_ISSUE_LABELS = [{"name": "observation"}, {"name": "origin:ai"}]
 if os.environ.get("FAKE_GH_LOG"):
     with open(os.environ["FAKE_GH_LOG"], "a", encoding="utf-8") as log:
         log.write(json.dumps(args) + "\\n")
@@ -586,12 +589,21 @@ if issue:
     if mode == "issue-missing":
         raise SystemExit(4)
     if url in bodies:
-        body = bodies[url]
+        entry = bodies[url]
     else:
-        body = os.environ.get("FAKE_GH_ISSUE_BODY", DEFAULT_ISSUE_BODY)
+        entry = os.environ.get("FAKE_GH_ISSUE_BODY", DEFAULT_ISSUE_BODY)
+    if isinstance(entry, dict):
+        body = entry.get("body")
+        title = entry.get("title")
+        labels = entry.get("labels")
+    else:
+        body = entry
+        title = DEFAULT_ISSUE_TITLE
+        labels = DEFAULT_ISSUE_LABELS
     if mode == "issue-body-not-text":
         body = 17
-    print(json.dumps({"number": int(issue.group("number")), "body": body}))
+    print(json.dumps({"number": int(issue.group("number")), "body": body,
+                      "title": title, "labels": labels}))
     raise SystemExit(0)
 pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
 if pull:

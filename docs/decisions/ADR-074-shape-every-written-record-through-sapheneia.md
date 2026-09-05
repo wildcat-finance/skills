@@ -48,7 +48,8 @@ The repository sequence in `AGENTS.md` moves from issues and comments to every
 written record under the heading `## Written-record publication`. Its steps are
 unchanged: freeze the structure and inventory, apply the Sapheneia pass, run
 Imprimatur, apply Vulgate, run Imprimatur again on the exact publishable bytes,
-and for an issue body run `hexctl issue-check --body` on those bytes.
+and for an issue run `hexctl issue-check --body <path> --title '<exact title>'`
+with its complete repeated `--label` set on those bytes.
 
 ## Alternatives
 

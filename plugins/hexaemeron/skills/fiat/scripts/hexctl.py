@@ -21,7 +21,10 @@ independent pull request rather than a run. The same read requires the issue's
 `carryover` block, and `done integrate` requires it of the run's own pull
 request body, so an outstanding item is either filed as its own issue, pointed
 at the issue that already carries it, or refused with a stated reason.
-`issue-check` runs that contract over a candidate body before anything is filed.
+`issue-check` also binds a candidate's title and labels to the repository's
+four issue queues before anything is filed. At integration, every `filed`
+carryover reference into wildcat-finance/skills is opened and replayed against
+that same publication contract; a URL alone is not a filing receipt.
 
 Exit codes: 0 success, 2 validation/usage error, 1 unexpected failure.
 `issue-check` exits 1 on findings, which is a report rather than a crash.
@@ -97,6 +100,19 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 )
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
+ISSUE_TITLE_BYTES_MAX = 512
+ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation"))
+FRAMEWORK_ISSUE_OPENING = (
+    "Protasis decides which skill or skills this observation upgrades. "
+    "The filer is the wrong party to guess."
+)
+FRAMEWORK_ISSUE_TITLE_RE = re.compile(
+    r"^framework-(?P<number>[1-9][0-9]*): (?P<summary>\S.*)$"
+)
+SKILL_ISSUE_TITLE_RE = re.compile(
+    r"^(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
+    r"(?P<kind>next|wish|[1-9][0-9]*): (?P<summary>\S.*)$"
+)
 
 # The status block ADR-014's amendment authorises: one span at the top of an open
 # issue's body recording its current status, supersession, or changed
@@ -449,6 +465,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.50.1",
         "fiat-v5.51.1",
         "fiat-v5.52.1",
+        "fiat-v5.53.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -4830,6 +4847,125 @@ def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
     return record, [*value_faults, *carryover_faults, *status_faults]
 
 
+def issue_queue_contract(
+    title: str, labels: list[str], text: str, label: str
+) -> tuple[dict, list[str]]:
+    """The canonical queue selected by one publishable issue title.
+
+    The repository has four queues, not a free-form title convention. Queue
+    labels are checked as one mutually exclusive set while unrelated labels
+    remain allowed. A framework observation also carries the exact opening
+    that leaves ownership for Protasis to decide.
+    """
+    faults: list[str] = []
+    queue = required_label = owner = None
+    if not isinstance(title, str):
+        return {}, [f"{label} carries a title that is not text"]
+    if len(title.encode("utf-8")) > ISSUE_TITLE_BYTES_MAX:
+        faults.append(
+            f"{label} title is above the {ISSUE_TITLE_BYTES_MAX}-byte cap"
+        )
+    if _contains_nonprinting_character(title):
+        faults.append(f"{label} title contains a control character")
+    framework = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+    skill = None if framework else SKILL_ISSUE_TITLE_RE.fullmatch(title)
+    if framework:
+        queue, required_label, owner = "framework-N", "observation", "framework"
+    elif skill:
+        owner = skill.group("skill")
+        kind = skill.group("kind")
+        if kind == "next":
+            queue, required_label = "{skill}-next", "held-job"
+        elif kind == "wish":
+            queue = "{skill}-wish"
+        else:
+            queue, required_label = "{skill}-N", "wish"
+    else:
+        faults.append(
+            f"{label} title is not one of `{{skill}}-next: <summary>`, "
+            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, or "
+            "`framework-N: <summary>`"
+        )
+
+    queue_labels = sorted(set(labels) & ISSUE_QUEUE_LABELS)
+    expected = [] if required_label is None else [required_label]
+    if queue is not None and queue_labels != expected:
+        actual = ", ".join(f"`{value}`" for value in queue_labels) or "none"
+        wanted = ", ".join(f"`{value}`" for value in expected) or "no queue label"
+        faults.append(
+            f"{label} queue {queue} requires {wanted}; its queue labels are {actual}"
+        )
+
+    if queue == "framework-N":
+        lines = _unfenced_markdown_lines(text)
+        span, _ = status_block_span(text, label)
+        if span is not None:
+            lines = lines[span[1]:]
+        first_visible = None
+        for physical in lines:
+            line = physical.strip()
+            if not line or (line.startswith("<!--") and line.endswith("-->")):
+                continue
+            first_visible = line
+            break
+        if first_visible != FRAMEWORK_ISSUE_OPENING:
+            faults.append(
+                f"{label} framework body must open with exactly "
+                f"{FRAMEWORK_ISSUE_OPENING!r}"
+            )
+
+    return {
+        "queue": queue,
+        "owner": owner,
+        "title": title,
+        "labels": sorted(set(labels)),
+    }, faults
+
+
+def issue_label_names(payload: dict, label: str, path: str) -> list[str]:
+    """Read GitHub's issue labels without accepting an untyped substitute."""
+    raw = payload.get("labels")
+    if not isinstance(raw, list):
+        github_unreachable(label, path, "returned labels that are not an array")
+    names = []
+    for index, entry in enumerate(raw, start=1):
+        name = entry.get("name") if isinstance(entry, dict) else entry
+        if not isinstance(name, str) or not name:
+            github_unreachable(
+                label, path, f"returned label {index} without a text name"
+            )
+        names.append(name)
+    return names
+
+
+def issue_publication_contract_faults(
+    title: str, labels: list[str], text: str, label: str
+) -> tuple[dict, list[str]]:
+    """The complete machine-checkable contract for a newly filed issue."""
+    body_record, body_faults = issue_contract_faults(text, label)
+    queue_record, queue_faults = issue_queue_contract(title, labels, text, label)
+    return {**queue_record, **body_record}, [*queue_faults, *body_faults]
+
+
+def issue_publication_from_payload(
+    payload: dict, label: str, path: str
+) -> tuple[dict, list[str]]:
+    """Read and check one GitHub issue payload as exact publication bytes."""
+    title = payload.get("title")
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(label, path, "returned a body that is not text")
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            "reader will parse, so its publication contract went unread"
+        )
+    labels = issue_label_names(payload, label, path)
+    return issue_publication_contract_faults(title, labels, body, label)
+
+
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     """The filing decisions one GitHub issue carries, read over REST.
 
@@ -4968,6 +5104,51 @@ def carried_forward_record(path: str) -> dict:
         "duplicates": [row["id"] for row in rows
                        if row["disposition"] == CARRYOVER_DUPLICATE],
     }
+
+
+def filed_issue_publication_records(
+    base_dir: str, path: str
+) -> tuple[list[dict], list[str]]:
+    """Replay newly filed Skills issues named by the run's carryover rows.
+
+    `duplicate` may point at a legacy issue and therefore remains a reference,
+    not a claim that the old filing follows today's convention. `filed` is the
+    run's own publication claim. For this repository, integration proves that
+    claim by reading the issue back and applying the same contract as the
+    pre-publication command.
+    """
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read()
+    section = carried_forward_section(text) or ""
+    rows, _ = carryover_triage(section, path)
+    records: list[dict] = []
+    faults: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        if row["disposition"] != CARRYOVER_FILED:
+            continue
+        reference = row["reference"]
+        identity = github_issue_identity(reference)
+        if identity is None or identity[0] != "wildcat-finance/skills":
+            continue
+        if reference in seen:
+            continue
+        seen.add(reference)
+        repository, number = identity
+        api_path = f"repos/{repository}/issues/{number}"
+        label = f"filed issue {repository}#{number}"
+        payload = github_rest(base_dir, api_path, label)
+        record, issue_faults = issue_publication_from_payload(
+            payload, label, api_path
+        )
+        faults.extend(issue_faults)
+        records.append({
+            "issue": reference,
+            "repository": repository,
+            "number": number,
+            **record,
+        })
+    return records, faults
 
 
 def base_ledger_versions(base_dir: str, base_commit: str, ledger: str) -> frozenset:
@@ -5671,22 +5852,25 @@ def cmd_stale_bodies(args) -> None:
 
 
 def cmd_issue_check(args) -> None:
-    """Check one candidate or filed issue body against the filing contract.
+    """Check one candidate or filed issue against the publication contract.
 
-    Stateless, so it runs before an issue exists and outside any run. Both
-    questions are reported together: the `Fiat-Required` decision, and whether
-    every outstanding item has been considered for an issue of its own and
-    compared against what is already filed.
+    Stateless, so it runs before an issue exists and outside any run.
+    The queue title, queue label, framework opening, `Fiat-Required` decision,
+    and carryover triage are reported together.
 
     Shape alone. A `duplicate` row pointing at a real issue about something else
-    passes here, an issue that exists is never opened, and a `none` reason
-    nobody should have accepted still counts as an answer. Whether the
-    disposition was the right one stays with the reviewer; whether the filer
+    passes here, and a `none` reason nobody should have accepted still counts as
+    an answer. Carryover references are not followed by this command. Whether
+    the disposition was right stays with the reviewer; whether the filer
     answered at all is settled here.
     """
     if bool(args.body) == bool(args.issue):
         die("issue-check needs exactly one of --body <path> or --issue <url>")
     if args.body:
+        repository = target_repository_binding(args.dir)
+        skills_contract = repository == "wildcat-finance/skills"
+        if skills_contract and args.title is None:
+            die("issue-check --body also needs the exact candidate --title")
         label = args.body
         try:
             with open(args.body, "rb") as handle:
@@ -5701,23 +5885,38 @@ def cmd_issue_check(args) -> None:
         except UnicodeDecodeError:
             die(f"{args.body} is not UTF-8")
     else:
+        if args.title is not None or args.label:
+            die(
+                "issue-check --issue reads the remote title and labels; "
+                "do not supply them"
+            )
         identity = github_issue_identity(args.issue)
         if identity is None:
             die(f"--issue {args.issue} is not a canonical GitHub issue URL")
         repository, number = identity
+        skills_contract = repository.casefold() == "wildcat-finance/skills"
         label = f"{repository}#{number}"
         payload = github_rest(
             args.dir, f"repos/{repository}/issues/{number}", f"issue {label}"
         )
-        text = payload.get("body") or ""
-        if not isinstance(text, str):
-            github_unreachable(
-                f"issue {label}",
-                f"repos/{repository}/issues/{number}",
-                "returned a body that is not text",
+        path = f"repos/{repository}/issues/{number}"
+        if skills_contract:
+            record, faults = issue_publication_from_payload(
+                payload, label, path
             )
+        else:
+            text = payload.get("body") or ""
+            if not isinstance(text, str):
+                github_unreachable(label, path, "returned a body that is not text")
+            record, faults = issue_contract_faults(text, label)
 
-    record, faults = issue_contract_faults(text, label)
+    if args.body:
+        if skills_contract:
+            record, faults = issue_publication_contract_faults(
+                args.title, args.label, text, label
+            )
+        else:
+            record, faults = issue_contract_faults(text, label)
     for fault in faults:
         print(f"{label}: {fault}" if not fault.startswith(label) else fault,
               file=sys.stderr)
@@ -5734,6 +5933,10 @@ def cmd_issue_check(args) -> None:
     duplicates = [row for row in record["carryover"]
                   if row["disposition"] == CARRYOVER_DUPLICATE]
     print(f"{label}: clean")
+    if skills_contract:
+        queue_labels = sorted(set(record["labels"]) & ISSUE_QUEUE_LABELS)
+        rendered_labels = ", ".join(queue_labels) or "none"
+        print(f"queue: {record['queue']} (queue labels: {rendered_labels})")
     print(f"{FIAT_REQUIRED_KEY}: {record['fiat_required']} ({route})")
     print(
         f"carryover: {len(record['carryover'])} row(s), {len(filed)} filed, "
@@ -7451,6 +7654,13 @@ def _integrate_directive(
                 "done integrate reads the section and refuses prose that "
                 "disposes of nothing, so integration does not proceed on "
                 "leftovers nothing was decided about"
+            ),
+            "filed_issue_gate": (
+                "for every `filed` reference into wildcat-finance/skills, "
+                "done integrate reads the remote title, labels and body, "
+                "replays the canonical queue and filing contract, and records "
+                "the checked publication shape; `duplicate` remains "
+                "legacy-compatible"
             ),
         },
         **({"version_resolution": resolution} if resolution is not None else {}),
@@ -10324,6 +10534,14 @@ def done_integrate(args, state: dict) -> None:
     carried = carried_forward_fault(run_pr_path(args.dir))
     if carried:
         die(carried)
+    filed_issue_contracts, filed_issue_faults = filed_issue_publication_records(
+        args.dir, run_pr_path(args.dir)
+    )
+    if filed_issue_faults:
+        die(
+            "a `filed` carryover issue does not satisfy the publication "
+            "contract: " + "; ".join(filed_issue_faults)
+        )
     remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
     final_step = state["steps"][-1]["n"]
     integrate = as_dict(state.get("integrate"))
@@ -10366,6 +10584,8 @@ def done_integrate(args, state: dict) -> None:
     )
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
     attribution = merged_attribution(args.dir, state, args.merge_commit)
+    carried_forward = carried_forward_record(run_pr_path(args.dir))
+    carried_forward["filed_issue_contracts"] = filed_issue_contracts
     state["receipts"]["integrate"] = {
         "run_branch": run_branch_of(state),
         "base": integration_base,
@@ -10373,7 +10593,7 @@ def done_integrate(args, state: dict) -> None:
         "pr_url": args.pr_url,
         "merge_commit": args.merge_commit,
         "closed_issue_url": args.closed_issue_url,
-        "carried_forward": carried_forward_record(run_pr_path(args.dir)),
+        "carried_forward": carried_forward,
         "github_verified": github_verified,
         "pull_request": pr_record,
         "run_head": remote_tip,
@@ -17132,6 +17352,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="check one candidate or filed issue against the filing contract",
     )
     sp.add_argument("--body", help="path to the candidate issue body")
+    sp.add_argument("--title", help="exact candidate issue title")
+    sp.add_argument("--label", action="append", default=[],
+                    help="candidate label; repeat for every label")
     sp.add_argument("--issue", help="canonical GitHub issue URL to read")
     sp.set_defaults(fn=cmd_issue_check)
 
