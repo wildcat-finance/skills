@@ -5,7 +5,8 @@ the repository into a fresh directory, run the suite and read the refusal, run
 the one activation command, record a green, commit, then edit a file and watch
 the next commit be refused. Every command below was run; every exit code below
 was read from the shell that ran it. Where this record could not establish
-something, the last section says so rather than leaving the reader to notice.
+something, or where the transcript leaves out a command the run made, the last
+section says so rather than leaving the reader to notice.
 
 ## The clone
 
@@ -37,7 +38,7 @@ unset until row 5 of the transcript, which is the point of the first two rows.
 | 6 | `git add -A` | 0 | Staged one edit, an appended comment line in `.githooks/README.md`. |
 | 7 | `.githooks/greenlight` | 0 | 1181 cases in 146.233 s, no failures, two skips. Recorded tree `54f30131bff16d3f5513ed56de6b3e82b501c5ad` in `.git/LAST_GREEN`. |
 | 8 | `git commit -m "Demonstration: commit the tree greenlight recorded"` | 0 | Commit `ddb54b3c`. The gate admitted it because the staged tree was the recorded one. 162.27 ms, the first execution of the hook file in this clone. |
-| 9 | `git commit -m "Demonstration: an edit no suite has passed on"` | 1 | Refused. A second appended line moved the staged tree to `4a914f3fba45cf3732e6a28830a0560e5e48c788`; the record still named `54f30131`. 46.39 ms. |
+| 9 | `git commit -m "Demonstration: an edit no suite has passed on"` | 1 | Refused. Between this row and row 8 a second line was appended and staged with `git add -A`, neither of them numbered here; that moved the staged tree to `4a914f3fba45cf3732e6a28830a0560e5e48c788` while the record still named `54f30131`. Gap 8 below. 46.39 ms. |
 | 10 | `FIAT_SKIP_PRECOMMIT=1 git commit -m "Demonstration: an edit no suite has passed on"` | 0 | Commit `cf80bf05`, whose tree is `4a914f3f` -- the same commit row 9 refused, admitted by the token alone. 29.84 ms. |
 | 11 | `python3 -m unittest tests.test_commit_gate.GreenTreeTests -v` | 0 | 5 cases. |
 | 12 | `python3 -m unittest tests.test_commit_gate.HookIndexMutationTests -v` | 0 | 14 cases. |
@@ -195,3 +196,12 @@ them by its own terms.
    comment leaves the suite green. Adding a new path instead would have moved
    the reading boundary's file count and made row 7 fail for a reason that has
    nothing to do with the gate.
+8. **The transcript numbers the commands the conditions turn on, not every
+   command the run made.** The two edits are unnumbered, and so is the
+   `git add -A` that staged the second one between rows 8 and 9. Following
+   rows 1 to 16 in order therefore does not reproduce row 9: with the second
+   edit unstaged the tree is still `54f30131`, git finds nothing to commit and
+   exits 1 saying so, and the gate is never consulted. Step 5's audit round
+   measured both halves in a fresh clone -- the empty-commit refusal from the
+   rows as printed, and the gate's refusal naming both trees once the staging
+   command is put back.
