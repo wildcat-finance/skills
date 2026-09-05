@@ -78,14 +78,16 @@ HTML_BLOCK_NAMES = (
 )
 
 # The seven CommonMark HTML block starts: (start, end-condition or None for
-# "ends at a blank line", may interrupt a paragraph).
+# "ends at a blank line", may interrupt a paragraph). An end condition is a
+# literal string where CommonMark gives one, and a pattern only where the
+# condition really is a pattern.
 HTML_STARTS = (
     (re.compile(r"^ {0,3}<(?:script|pre|style|textarea)(?:[ \t>]|$)", re.I),
      re.compile(r"</(?:script|pre|style|textarea)>", re.I), True),
-    (re.compile(r"^ {0,3}<!--"), re.compile(r"-->"), True),
-    (re.compile(r"^ {0,3}<\?"), re.compile(r"\?>"), True),
-    (re.compile(r"^ {0,3}<![A-Za-z]"), re.compile(r">"), True),
-    (re.compile(r"^ {0,3}<!\[CDATA\["), re.compile(r"\]\]>"), True),
+    (re.compile(r"^ {0,3}<!--"), "-->", True),
+    (re.compile(r"^ {0,3}<\?"), "?>", True),
+    (re.compile(r"^ {0,3}<![A-Za-z]"), ">", True),
+    (re.compile(r"^ {0,3}<!\[CDATA\["), "]]>", True),
     (re.compile(r"^ {0,3}</?(?:" + HTML_BLOCK_NAMES + r")(?:[ \t]|/?>|$)", re.I),
      None, True),
     (re.compile(
@@ -93,6 +95,22 @@ HTML_STARTS = (
         r"(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^']*'|\"[^\"]*\"))?)*[ \t]*/?>"
         r"|</[A-Za-z][A-Za-z0-9-]*[ \t]*>)[ \t]*$"), None, False),
 )
+
+
+
+def _html_block_ends(line, end):
+    """True when this line carries the open HTML block's end condition.
+
+    CommonMark states four of the five conditions as literal strings, and a
+    pattern object around `-->` says nothing the substring does not. Carrying
+    them as strings also stops a static analyser reading the block scanner as
+    an HTML sanitiser: a filter that ends a comment at `-->` and not at `--!>`
+    can be bypassed, but CommonMark ends a type 2 block at `-->` alone, and
+    the differential oracle agrees. See skills#1258.
+    """
+    if isinstance(end, str):
+        return end in line
+    return end.search(line) is not None
 
 
 def _uniform_start(line):
@@ -194,7 +212,7 @@ class _Outline:
         stack = []               # open containers: ("quote", 0) or ("item", indent)
         para = None              # (first_line, sig, text)
         fence = None             # (char, length, first_line, info)
-        html = None              # (end_regex or None, first_line)
+        html = None              # (end condition or None, first_line)
         while i < n:
             raw = lines[i].rstrip("\r").expandtabs(4)
             lineno = i + 1
@@ -213,7 +231,7 @@ class _Outline:
                     html = None
                     stack = stack[:depth]
                 else:
-                    if end is not None and end.search(rest):
+                    if end is not None and _html_block_ends(rest, end):
                         self.confess(first, lineno)
                         html = None
                     i += 1
@@ -336,7 +354,9 @@ class _Outline:
             started = False
             for start, end, interrupts in HTML_STARTS:
                 if start.match(rest) and (interrupts or para is None):
-                    if end is not None and end.search(rest[rest.find("<") + 1:]):
+                    if end is not None and _html_block_ends(
+                        rest[rest.find("<") + 1:], end
+                    ):
                         self.confess(lineno, lineno)
                     else:
                         html = (end, lineno)
