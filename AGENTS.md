@@ -141,16 +141,19 @@ kebab-case and used once. A filing that carries nothing writes the single row
 run-level pull request body under `## Carried forward`, and `hexctl done
 integrate` refuses without it.
 
-Check a candidate body before filing it:
+Check the complete candidate title, body, and labels before filing it:
 
 ```bash
-python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check --body <path>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check \
+  --body <path> --title '<exact title>' --label '<label>'
 ```
 
-It exits 1 on findings and reports both questions at once. `--issue <url>` reads
-an already-filed issue instead. The check reads shape, never judgement: it does
-not open a referenced issue, and a disposition nobody should have accepted still
-counts as an answer.
+Repeat `--label` for every label; omit it only when the complete candidate has
+none. The command exits 1 on findings and reports the queue and both body
+questions at once. `--issue <url>` reads an already-filed issue's title, body,
+and labels instead. The check reads shape, never judgement: it does not open a
+referenced issue, and a disposition nobody should have accepted still counts as
+an answer.
 
 Closing a delivered issue belongs to whoever merges its pull request. The
 Atlas draws from open issues alone, so one whose delivery has merged keeps
@@ -170,9 +173,11 @@ message.
 3. run Imprimatur and clear every reported defect without dropping protected content;
 4. apply Vulgate to the surface only and compare its content with the source;
 5. re-run Imprimatur on the exact publishable bytes; and
-6. for an issue body, run `hexctl issue-check --body` on those exact bytes and
-   clear every finding. The decision line and the `carryover` block are
-   protected content, so a wording pass may not drop or reword either.
+6. for an issue, run `hexctl issue-check --body <path> --title '<exact title>'`
+   with every label supplied through repeated `--label` flags, and clear every
+   finding. The title prefix, queue label, required opening, decision line and
+   `carryover` block are protected content, so a wording pass may not drop or
+   reword them.
 
 The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
 `framework-N`. Keep every queue-specific body rule from the section above.
