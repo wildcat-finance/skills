@@ -2,7 +2,7 @@
 name: horos
 description: Emit and verify an evidence-backed reading boundary over a repository. Classify token sinks (generated files, vendored trees, lockfiles, minified bundles, single-line blobs), write the deterministic boundary agents consult before reading, and print Python skeleton maps for oriented reading. Use when a user names Horos or asks to cut the reading cost of a repository without rewriting its code. Never apply a boundary during security review.
 metadata:
-  version: "11.3.3"
+  version: "12.3.3"
 ---
 
 <p align="center">
@@ -27,7 +27,7 @@ A Synkrisis finding may suggest a Horos review when validated observations
 repeat. The finding does not write or widen a reading boundary; Horos still
 checks the repository evidence before changing one.
 
-**Current frontier.** The v9.2.3 reopening's second job is done: the content-addressed object rule ships with four guard tests, documentation and an evidence bundle, binding 78 files and 7,850,052 bytes of this repository's object stores by the digest of each file's own bytes. One held job remains, the Markdown outline extractor, with maturity expected after it.
+**Current frontier.** The v9.2.3 reopening's third and last job is done: map reads Markdown through a per-language extractor, held against markdown-it-py over all 900 tracked Markdown files of this repository with 9,527 of 9,527 headings and 1,130 of 1,130 fenced code blocks matched, zero misses, zero extras and zero crashes. Every filetype above 1% of this tree's readable bytes is now mapped or is a data format with no declarations to outline, so the frontier closes mature.
 
 ## The verbs
 
@@ -100,13 +100,15 @@ whole. Extractors live one folder per language under
 [scripts/languages/](./scripts/languages/) and a suffix registry dispatches
 between them; an unregistered suffix is refused naming the supported list.
 Python (`.py`) parses through the standard library's own ast. TypeScript
-(`.ts`, `.tsx`), Go (`.go`), C++ (`.cpp`, `.h`, `.hpp`, `.cc`, `.cxx`) and
-Solidity (`.sol`) are lexed, never parsed: declarations are quoted as
-verbatim source slices (grouped Go declarations one line per member, C++
-template prefixes and Solidity inheritance lists and attribute chains
-riding along), and every region the recognisers do not understand is
-confessed by count and line range instead of guessed at. No path imports or
-executes what it reads.
+(`.ts`, `.tsx`), Go (`.go`), C++ (`.cpp`, `.h`, `.hpp`, `.cc`, `.cxx`),
+Solidity (`.sol`) and Markdown (`.md`) are lexed, never parsed:
+declarations are quoted as verbatim source slices (grouped Go declarations
+one line per member, C++ template prefixes and Solidity inheritance lists
+and attribute chains riding along; a Markdown declaration is a heading or a
+fenced code block, read by CommonMark's block rules and never its inline
+ones), and every region the recognisers do not understand is confessed by
+count and line range instead of guessed at. No path imports or executes
+what it reads.
 
 The TypeScript extractor exists by revision of a recorded refusal. Parsing
 TypeScript or taking a parser dependency was refused on 2026-08-18 and
@@ -129,6 +131,13 @@ The Solidity extractor was held against tree-sitter's Solidity grammar over
 all 151 files of v2-protocol: 2,329 of 2,329 declarations matched with zero
 confessions and every file oracle-parsed, recorded at
 [../../docs/evidence/v2-protocol-outline.md](../../docs/evidence/v2-protocol-outline.md).
+The Markdown extractor was held against markdown-it-py in its CommonMark
+preset over all 900 tracked `.md` files of this repository: 9,527 of 9,527
+headings and 1,130 of 1,130 fenced code blocks matched at declared
+altitudes, zero misses, zero extras and zero crashes, recorded at
+[../../docs/evidence/skills-markdown-outline.md](../../docs/evidence/skills-markdown-outline.md).
+Front matter is named by line range and outlined inside on neither side, and
+a fence that never closes is confessed rather than invented.
 
 ## The discipline
 
