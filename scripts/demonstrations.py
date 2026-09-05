@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Check the per-skill demonstration ledgers and rank the demo frontier."""
+"""Check the per-skill demonstration ledgers, rank the demo frontier, and run
+the closed public demonstration set offline."""
 
 from __future__ import annotations
 
@@ -8,8 +9,17 @@ from dataclasses import dataclass
 import hashlib
 import json
 import os
+import platform
 import re
+import resource
+import secrets
+import shutil
+import signal
+import subprocess
 import sys
+import tempfile
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +53,36 @@ MAX_COMMANDS = 16
 MAX_ARGV = 32
 MAX_OBSERVATIONS = 32
 MAX_JSON_DEPTH = 32
+
+# The runner. Selection is a checked record or the closed public set; every
+# argv runs without a shell under the interpreter `.python-version` pins, in a
+# private work root, with an allowlisted environment and sockets denied.
+REPORT_SCHEMA = "shoggoth-demonstration-report/v1"
+PUBLIC_SET = (
+    "anamnesis-corpus-demo",
+    "lazarus-goldfinch-replay",
+    "alexandria-credit-history-v0",
+    "dokimasia-wildcat-app-v2-scrutiny",
+)
+PUBLIC_SET_CEILING_MS = 600_000
+PYTHON_VERSION_PATH = ".python-version"
+MAX_PYTHON_VERSION_BYTES = 64
+MAX_OUTPUT_BYTES = 1_048_576
+MAX_OUTPUT_TAIL = 2048
+MAX_REPEAT = 10
+WORK_TOKEN = "{work}"
+HOOK_DIRECTORY = "site-hook"
+NETWORK_MARKER = "network-attempt"
+# The child sees these ambient keys and nothing else. There is no denylist to
+# keep current: a credential or Git key is stripped by never being copied.
+CHILD_ENVIRONMENT_KEYS = ("PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE")
+PYTHON_LAUNCHER = "python3"
+OBSERVATION_RE = re.compile(
+    r"^(?P<command>[a-z][a-z0-9-]{0,63}): (?P<kind>line|json) (?P<rest>.+)$"
+)
+JSON_PATH_RE = re.compile(r"^(?P<path>[A-Za-z0-9_.-]+) (?P<value>.+)$")
+POLL_SECONDS = 0.02
+TEARDOWN_SECONDS = 5.0
 
 STATUSES = ("real-data", "mixed", "constructed", "absent", "not-applicable")
 EXECUTABLE_STATUSES = ("real-data", "mixed", "constructed")
@@ -119,6 +159,20 @@ REFUSALS = {
     "D045": "absent demonstration cannot be mature",
     "D050": "unique public claim ids",
     "D060": "committed schema validation",
+    "D070": "non-empty executable selection",
+    "D071": "registered demonstration present and real-data",
+    "D072": "command program present",
+    "D073": "pinned interpreter",
+    "D074": "sockets denied in children",
+    "D075": "expected command exit",
+    "D076": "per-command timeout and process-group teardown",
+    "D077": "bounded command output",
+    "D078": "checkable observation grammar",
+    "D079": "declared observation holds",
+    "D080": "contained new report path",
+    "D081": "atomic report publication",
+    "D082": "aggregate public-set ceiling",
+    "D083": "private work root boundary",
 }
 
 
@@ -894,6 +948,824 @@ def command_frontier(args: argparse.Namespace) -> int:
     return 0
 
 
+# --- The runner -------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Observation:
+    """One parsed, checkable observation from a record."""
+
+    text: str
+    command: str
+    kind: str
+    line: str | None
+    path: tuple[str, ...]
+    value: Any
+
+
+@dataclass
+class CommandOutcome:
+    """What one executed argv produced, bounded."""
+
+    exit_code: int | None
+    duration_ms: int
+    stdout: bytes
+    stderr: bytes
+    stdout_truncated: bool
+    stderr_truncated: bool
+    timed_out: bool
+    network_attempt: bool
+
+
+class RunRefusal(DemonstrationError):
+    """A refusal raised while running one demonstration."""
+
+    def __init__(self, code: str, message: str) -> None:
+        if code not in REFUSALS:
+            raise RuntimeError(f"undeclared demonstration refusal {code}")
+        super().__init__(f"{code} {message}")
+        self.code = code
+        self.message = message
+
+
+def _refuse(code: str, message: str) -> None:
+    raise RunRefusal(code, message)
+
+
+def parse_observation(text: str, *, where: str) -> Observation:
+    """Parse one observation into its command, channel, and expected value.
+
+    Two forms are checkable: ``<command>: line <json-string>`` holds when that
+    exact line appears on the command's stdout, and ``<command>: json <path>
+    <json-value>`` holds when the command's last stdout line parses as JSON and
+    the dotted path equals the value. Anything else is prose, not evidence.
+    """
+
+    match = OBSERVATION_RE.fullmatch(text)
+    if match is None:
+        _refuse("D078", f"{where} is not a checkable observation: {text!r}")
+    command = match.group("command")
+    kind = match.group("kind")
+    rest = match.group("rest")
+    if kind == "line":
+        try:
+            expected = json.loads(rest)
+        except ValueError:
+            expected = None
+        if not isinstance(expected, str) or not expected or "\n" in expected:
+            _refuse("D078", f"{where} line observation needs one JSON string")
+        return Observation(text, command, kind, expected, (), None)
+    inner = JSON_PATH_RE.fullmatch(rest)
+    if inner is None:
+        _refuse("D078", f"{where} json observation needs a path and a value")
+    try:
+        value = json.loads(inner.group("value"))
+    except ValueError:
+        _refuse("D078", f"{where} json observation value is not JSON")
+    return Observation(
+        text, command, kind, None, tuple(inner.group("path").split(".")), value
+    )
+
+
+def _json_lookup(document: Any, path: tuple[str, ...]) -> tuple[bool, Any]:
+    current = document
+    for part in path:
+        if isinstance(current, dict):
+            if part not in current:
+                return False, None
+            current = current[part]
+        elif isinstance(current, list) and part.isdigit():
+            index = int(part)
+            if index >= len(current):
+                return False, None
+            current = current[index]
+        else:
+            return False, None
+    return True, current
+
+
+def observation_holds(observation: Observation, stdout: bytes) -> bool:
+    """Decide one observation against the bytes a command actually wrote."""
+
+    text = stdout.decode("utf-8", errors="replace")
+    lines = [line for line in text.split("\n") if line.strip()]
+    if observation.kind == "line":
+        return observation.line in lines
+    if not lines:
+        return False
+    try:
+        document = json.loads(lines[-1], object_pairs_hook=_reject_duplicate_keys)
+        _refuse_deep(document)
+    except ValueError:
+        return False
+    found, actual = _json_lookup(document, observation.path)
+    return found and actual == observation.value
+
+
+def pinned_python_version(root: Path) -> str:
+    """Return the version `.python-version` pins, refusing an absent pin."""
+
+    try:
+        raw = _read_regular_file(
+            root, PYTHON_VERSION_PATH, maximum=MAX_PYTHON_VERSION_BYTES,
+            label="interpreter pin",
+        )
+        pinned = raw.decode("utf-8").strip()
+    except (TopologyError, UnicodeDecodeError) as exc:
+        _refuse("D073", f"cannot read {PYTHON_VERSION_PATH}: {exc}")
+    if re.fullmatch(r"\d+\.\d+\.\d+", pinned) is None:
+        _refuse("D073", f"{PYTHON_VERSION_PATH} does not pin one interpreter version")
+    return pinned
+
+
+def require_pinned_interpreter(root: Path) -> dict[str, str]:
+    pinned = pinned_python_version(root)
+    running = platform.python_version()
+    if running != pinned:
+        _refuse(
+            "D073",
+            f"interpreter {sys.executable} is {running}, not the pinned {pinned}",
+        )
+    return {"executable": sys.executable, "version": running, "pinned": pinned}
+
+
+def resolve_report_target(report: str, output_root: Path) -> Path:
+    """Resolve one new report path and prove it sits below the output root."""
+
+    if not isinstance(report, str) or not report or "\x00" in report:
+        _refuse("D080", "--report needs a non-empty path")
+    supplied = Path(report)
+    if ".." in supplied.parts:
+        _refuse("D080", f"--report {report!r} traverses with '..'")
+    try:
+        root = output_root.resolve(strict=True)
+    except (OSError, RuntimeError, ValueError) as exc:
+        _refuse("D080", f"output root cannot be resolved: {exc}")
+    lexical = supplied if supplied.is_absolute() else Path.cwd() / supplied
+    try:
+        target = lexical.resolve(strict=False)
+    except (OSError, RuntimeError, ValueError) as exc:
+        _refuse("D080", f"--report cannot be resolved: {exc}")
+    if target == root or root not in target.parents:
+        _refuse("D080", f"--report {report!r} resolves outside the output root {root}")
+    try:
+        lexical.lstat()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        _refuse("D080", f"--report cannot be inspected: {exc}")
+    else:
+        _refuse("D080", f"--report {report!r} already exists")
+    try:
+        target.lstat()
+    except FileNotFoundError:
+        return target
+    except OSError as exc:
+        _refuse("D080", f"--report cannot be inspected: {exc}")
+    _refuse("D080", f"--report {report!r} already exists")
+    raise AssertionError("unreachable")
+
+
+def publish_report(target: Path, payload: dict) -> str:
+    """Write the report beside its target and link it in without replacing.
+
+    The body lands in a sibling ``.partial`` file first. ``os.link`` then
+    publishes it under the final name and fails on an existing entry, so the
+    target is either the complete object or absent; the partial is unlinked on
+    every path, and a partial that survives an unlink failure keeps its
+    visible ``.partial`` suffix.
+    """
+
+    body = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    parent = target.parent
+    try:
+        parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        _refuse("D081", f"report parent cannot be created: {exc}")
+    partial = parent / f".{target.name}.partial-{secrets.token_hex(8)}"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    fd = -1
+    try:
+        fd = os.open(partial, flags, 0o600)
+        remaining = memoryview(body)
+        while remaining:
+            written = os.write(fd, remaining)
+            if written <= 0:
+                raise OSError("report write made no progress")
+            remaining = remaining[written:]
+        os.fsync(fd)
+        os.close(fd)
+        fd = -1
+        os.link(partial, target)
+    except OSError as exc:
+        if fd >= 0:
+            os.close(fd)
+        try:
+            os.unlink(partial)
+        except OSError:
+            pass
+        _refuse("D081", f"report {target} was not published: {exc}")
+    try:
+        os.unlink(partial)
+    except OSError:
+        pass
+    return hashlib.sha256(body).hexdigest()
+
+
+def _hook_source(marker: Path) -> str:
+    return (
+        '"""Deny sockets in one demonstration child; written by demonstrations.py."""\n'
+        "import os\n"
+        "import socket\n"
+        "import _socket\n"
+        f"MARKER = {str(marker)!r}\n"
+        "\n"
+        "def _record():\n"
+        "    try:\n"
+        "        fd = os.open(MARKER, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)\n"
+        "        try:\n"
+        "            os.write(fd, b'socket\\n')\n"
+        "        finally:\n"
+        "            os.close(fd)\n"
+        "    except OSError:\n"
+        "        pass\n"
+        "\n"
+        "def _deny(*args, **kwargs):\n"
+        "    _record()\n"
+        "    raise PermissionError('demonstration network policy: sockets are denied')\n"
+        "\n"
+        "class _DeniedSocket(socket.socket):\n"
+        "    def __init__(self, *args, **kwargs):\n"
+        "        _deny()\n"
+        "\n"
+        "socket.socket = _DeniedSocket\n"
+        "socket.SocketType = _DeniedSocket\n"
+        "_socket.socket = _DeniedSocket\n"
+        "for _name in ('create_connection', 'create_server', 'socketpair', 'fromfd',\n"
+        "              'getaddrinfo', 'gethostbyname', 'gethostbyname_ex',\n"
+        "              'gethostbyaddr', 'getnameinfo'):\n"
+        "    setattr(socket, _name, _deny)\n"
+        "    if hasattr(_socket, _name):\n"
+        "        setattr(_socket, _name, _deny)\n"
+    )
+
+
+class WorkRoot:
+    """A private 0700 temporary root holding the hook, the marker, and {work}."""
+
+    def __init__(self) -> None:
+        try:
+            self.path = Path(tempfile.mkdtemp(prefix="shoggoth-demonstration-"))
+        except OSError as exc:
+            _refuse("D083", f"private work root cannot be created: {exc}")
+        self.work = self.path / "work"
+        self.hook = self.path / HOOK_DIRECTORY
+        self.marker = self.path / NETWORK_MARKER
+        try:
+            self.work.mkdir(mode=0o700)
+            self.hook.mkdir(mode=0o700)
+            (self.hook / "sitecustomize.py").write_text(
+                _hook_source(self.marker), encoding="utf-8"
+            )
+        except OSError as exc:
+            self.remove()
+            _refuse("D083", f"private work root cannot be prepared: {exc}")
+
+    def network_attempted(self) -> bool:
+        try:
+            return self.marker.lstat().st_size > 0
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return True
+
+    def clear_marker(self) -> None:
+        try:
+            self.marker.unlink()
+        except FileNotFoundError:
+            pass
+
+    def environment(self) -> dict[str, str]:
+        env = {
+            key: os.environ[key]
+            for key in CHILD_ENVIRONMENT_KEYS
+            if key in os.environ
+        }
+        # PYTHONPATH is the hook alone; the interpreter's own site, including
+        # the pinned dependencies Lazarus installs there, stays reachable.
+        env["PYTHONPATH"] = str(self.hook)
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
+        return env
+
+    def expand(self, argv: list[str]) -> list[str]:
+        """Expand only the reserved {work} token; every other brace is literal."""
+
+        return [word.replace(WORK_TOKEN, str(self.work)) for word in argv]
+
+    def redact(self, text: str) -> str:
+        return text.replace(str(self.work), WORK_TOKEN)
+
+    def remove(self) -> bool:
+        removed = True
+
+        def _failed(*_args: object) -> None:
+            nonlocal removed
+            removed = False
+
+        shutil.rmtree(self.path, onexc=_failed)
+        return removed
+
+
+def _drain(stream: Any, sink: bytearray, overflow: threading.Event) -> None:
+    try:
+        while True:
+            chunk = os.read(stream.fileno(), 65_536)
+            if not chunk:
+                return
+            room = MAX_OUTPUT_BYTES - len(sink)
+            if len(chunk) > room:
+                sink.extend(chunk[:room])
+                overflow.set()
+                return
+            sink.extend(chunk)
+    except (OSError, ValueError):
+        return
+
+
+def _kill_group(proc: subprocess.Popen) -> None:
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
+
+def execute_command(
+    argv: list[str], *, cwd: Path, env: dict[str, str], timeout_ms: int,
+    work: WorkRoot,
+) -> CommandOutcome:
+    """Run one argv without a shell, bounded by time and output, in its own group."""
+
+    work.clear_marker()
+    started = time.monotonic_ns()
+    try:
+        proc = subprocess.Popen(
+            argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            start_new_session=True, close_fds=True,
+        )
+    except OSError as exc:
+        _refuse("D072", f"command {argv[0]!r} could not start: {exc}")
+    out, err = bytearray(), bytearray()
+    out_over, err_over = threading.Event(), threading.Event()
+    readers = (
+        threading.Thread(target=_drain, args=(proc.stdout, out, out_over), daemon=True),
+        threading.Thread(target=_drain, args=(proc.stderr, err, err_over), daemon=True),
+    )
+    for reader in readers:
+        reader.start()
+    deadline = started + timeout_ms * 1_000_000
+    timed_out = False
+    try:
+        while proc.poll() is None:
+            if out_over.is_set() or err_over.is_set():
+                _kill_group(proc)
+                break
+            if time.monotonic_ns() > deadline:
+                timed_out = True
+                _kill_group(proc)
+                break
+            time.sleep(POLL_SECONDS)
+        try:
+            proc.wait(timeout=TEARDOWN_SECONDS)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc)
+            proc.wait()
+    finally:
+        # The group is down, so nothing legitimate holds the pipes; close them
+        # so an escaped writer cannot keep a reader thread alive.
+        for reader in readers:
+            reader.join(timeout=TEARDOWN_SECONDS)
+        for stream in (proc.stdout, proc.stderr):
+            try:
+                stream.close()
+            except OSError:
+                pass
+    duration_ms = (time.monotonic_ns() - started) // 1_000_000
+    return CommandOutcome(
+        exit_code=proc.returncode,
+        duration_ms=duration_ms,
+        stdout=bytes(out),
+        stderr=bytes(err),
+        stdout_truncated=out_over.is_set(),
+        stderr_truncated=err_over.is_set(),
+        timed_out=timed_out,
+        network_attempt=work.network_attempted(),
+    )
+
+
+def _children_max_rss_bytes() -> int:
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    return usage if sys.platform == "darwin" else usage * 1024
+
+
+def record_digest(record: dict) -> str:
+    canonical = json.dumps(record, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _tail(payload: bytes, work: WorkRoot) -> str:
+    text = payload[-MAX_OUTPUT_TAIL:].decode("utf-8", errors="replace")
+    return work.redact(text)
+
+
+def _source_evidence(source: dict) -> dict:
+    if source["class"] == "chain":
+        # A chain anchor is what the record declared. The runner has no chain
+        # and proves nothing about it; the report says so rather than implying
+        # a verification it never performed.
+        return {
+            "id": source["id"], "class": "chain", "chain": source["chain"],
+            "block": source["block"], "anchor": source["anchor"],
+            "evidence": "recorded",
+        }
+    return {
+        "id": source["id"], "class": source["class"], "path": source["path"],
+        "sha256": source["sha256"], "evidence": "verified",
+    }
+
+
+def preflight_record(root: Path, skill: GovernedSkill, record: dict) -> list[Observation]:
+    """Refuse a record whose commands or observations cannot be executed as declared."""
+
+    where = f"{skill.directory}/{LEDGER_NAME}"
+    command_ids = {command["id"] for command in record["commands"]}
+    for index, command in enumerate(record["commands"]):
+        argv = command["argv"]
+        if argv[0] == PYTHON_LAUNCHER and len(argv) > 1 and not argv[1].startswith("-"):
+            program = argv[1]
+            if WORK_TOKEN not in program:
+                try:
+                    _read_regular_file(
+                        root, program, maximum=MAX_SOURCE_BYTES,
+                        label=f"{where} commands[{index}] program",
+                    )
+                except TopologyError as exc:
+                    _refuse(
+                        "D072",
+                        f"{where} commands[{index}] program {program!r} is absent: {exc}",
+                    )
+    observations = []
+    for index, text in enumerate(record["observations"]):
+        observation = parse_observation(text, where=f"{where} observations[{index}]")
+        if observation.command not in command_ids:
+            _refuse(
+                "D078",
+                f"{where} observations[{index}] names unknown command {observation.command!r}",
+            )
+        observations.append(observation)
+    return observations
+
+
+class Runner:
+    """Execute selected records and build one closed report."""
+
+    def __init__(
+        self, root: Path, *, correlation_id: str, repeat: int,
+        ceiling_ms: int | None, work: WorkRoot,
+    ) -> None:
+        self.root = root
+        self.correlation_id = correlation_id
+        self.repeat = repeat
+        self.ceiling_ms = ceiling_ms
+        self.work = work
+        self.aggregate_ms = 0
+        self.started_ns = time.monotonic_ns()
+
+    def _elapsed_ms(self) -> int:
+        return (time.monotonic_ns() - self.started_ns) // 1_000_000
+
+    def _budget_ms(self, timeout_seconds: int) -> int:
+        timeout_ms = timeout_seconds * 1000
+        if self.ceiling_ms is None:
+            return timeout_ms
+        remaining = self.ceiling_ms - self._elapsed_ms()
+        if remaining <= 0:
+            _refuse(
+                "D082",
+                f"the public set passed its {self.ceiling_ms} ms ceiling before every command ran",
+            )
+        return min(timeout_ms, remaining)
+
+    def _run_command(
+        self, skill: GovernedSkill, record: dict, command: dict,
+        observations: list[Observation], repetition: int,
+    ) -> tuple[dict, tuple[str, str] | None]:
+        where = f"{skill.directory}/{LEDGER_NAME} commands[{command['id']}]"
+        argv = self.work.expand(command["argv"])
+        if argv[0] == PYTHON_LAUNCHER:
+            argv[0] = sys.executable
+        budget_ms = self._budget_ms(record["timeout_seconds"])
+        _emit_event(
+            "demonstration.started",
+            claim_id=record["claim_id"],
+            command=command["id"],
+            correlation_id=self.correlation_id,
+            repetition=repetition,
+            skill=record["skill"],
+            timeout_ms=budget_ms,
+        )
+        outcome = execute_command(
+            argv, cwd=self.root, env=self.work.environment(), timeout_ms=budget_ms,
+            work=self.work,
+        )
+        entry = {
+            "id": command["id"],
+            "argv": command["argv"],
+            "exit": outcome.exit_code,
+            "expect_exit": command["expect_exit"],
+            "duration_ms": outcome.duration_ms,
+            "timeout_ms": budget_ms,
+            "stdout_bytes": len(outcome.stdout),
+            "stderr_bytes": len(outcome.stderr),
+            "stdout_sha256": hashlib.sha256(outcome.stdout).hexdigest(),
+            "stderr_sha256": hashlib.sha256(outcome.stderr).hexdigest(),
+            "stdout_tail": _tail(outcome.stdout, self.work),
+            "stderr_tail": _tail(outcome.stderr, self.work),
+            "truncated": outcome.stdout_truncated or outcome.stderr_truncated,
+            "timed_out": outcome.timed_out,
+            "network_attempt": outcome.network_attempt,
+            "children_max_rss_bytes": _children_max_rss_bytes(),
+        }
+        refusal = None
+        if outcome.network_attempt:
+            refusal = ("D074", f"{where} opened or resolved a socket; the record denies the network")
+        elif outcome.timed_out:
+            refusal = (
+                "D076",
+                f"{where} exceeded its {budget_ms} ms budget; its process group was killed",
+            )
+        elif outcome.stdout_truncated or outcome.stderr_truncated:
+            refusal = (
+                "D077",
+                f"{where} wrote past the {MAX_OUTPUT_BYTES}-byte output cap; output truncated",
+            )
+        elif outcome.exit_code != command["expect_exit"]:
+            refusal = (
+                "D075",
+                f"{where} exited {outcome.exit_code}, expected {command['expect_exit']}",
+            )
+        held = []
+        for observation in observations:
+            if refusal is not None or observation.command != command["id"]:
+                continue
+            if observation_holds(observation, outcome.stdout):
+                held.append(observation.text)
+            else:
+                refusal = ("D079", f"{where} did not show {observation.text!r}")
+        entry["observations"] = held
+        entry["refusal"] = None if refusal is None else refusal[0]
+        return entry, refusal
+
+    def run_record(self, skill: GovernedSkill, record: dict) -> dict:
+        report = {
+            "directory": skill.directory,
+            "skill": record["skill"],
+            "plugin": record["plugin"],
+            "claim_id": record["claim_id"],
+            "status": record["status"],
+            "claim": record["claim"],
+            "non_claim": record["non_claim"],
+            "demo_version": record["frontier"]["version"],
+            "record_sha256": record_digest(record),
+            "network": {
+                "policy": record["network"]["policy"],
+                "enforcement": "python-site-hook",
+            },
+            "timeout_seconds": record["timeout_seconds"],
+            "sources": [_source_evidence(source) for source in record["sources"]],
+            "repetitions": [],
+            "slowest_ms": 0,
+            "result": "refused",
+            "refusal": None,
+        }
+        try:
+            if record["status"] not in EXECUTABLE_STATUSES:
+                _refuse("D070", f"{skill.directory} is {record['status']} and runs nothing")
+            if record["network"]["policy"] != "denied":
+                _refuse(
+                    "D074",
+                    f"{skill.directory} allowlists the network; this run declares no capture exception",
+                )
+            observations = preflight_record(self.root, skill, record)
+            for repetition in range(1, self.repeat + 1):
+                commands: list[dict] = []
+                run = {"index": repetition, "commands": commands, "duration_ms": 0}
+                report["repetitions"].append(run)
+                for command in record["commands"]:
+                    entry, refusal = self._run_command(
+                        skill, record, command, observations, repetition
+                    )
+                    commands.append(entry)
+                    run["duration_ms"] += entry["duration_ms"]
+                    self.aggregate_ms += entry["duration_ms"]
+                    report["slowest_ms"] = max(report["slowest_ms"], run["duration_ms"])
+                    if refusal is not None:
+                        _refuse(*refusal)
+        except RunRefusal as exc:
+            report["refusal"] = {"code": exc.code, "message": self.work.redact(exc.message)}
+            _emit_event(
+                "demonstration.refused",
+                claim_id=record["claim_id"],
+                code=exc.code,
+                correlation_id=self.correlation_id,
+                message=report["refusal"]["message"],
+                skill=record["skill"],
+            )
+            return report
+        report["result"] = "verified"
+        _emit_event(
+            "demonstration.verified",
+            claim_id=record["claim_id"],
+            correlation_id=self.correlation_id,
+            repetitions=self.repeat,
+            skill=record["skill"],
+            slowest_ms=report["slowest_ms"],
+        )
+        return report
+
+
+def select_records(
+    records: dict[str, dict], skills: dict[str, GovernedSkill], *,
+    public_set: bool, record_directory: str | None,
+) -> list[tuple[GovernedSkill, dict]]:
+    """Resolve the closed public set or one named record; nothing else."""
+
+    if public_set:
+        by_claim = {record["claim_id"]: directory for directory, record in records.items()}
+        selected = []
+        for claim_id in PUBLIC_SET:
+            directory = by_claim.get(claim_id)
+            if directory is None:
+                _refuse("D071", f"registered public demonstration {claim_id!r} has no ledger")
+            record = records[directory]
+            if record["status"] != "real-data":
+                _refuse(
+                    "D071",
+                    f"registered public demonstration {claim_id!r} is {record['status']}, not real-data",
+                )
+            selected.append((skills[directory], record))
+        return selected
+    directory = record_directory or ""
+    if directory not in records:
+        _refuse("D071", f"{directory!r} is not a governed demonstration ledger")
+    return [(skills[directory], records[directory])]
+
+
+def run_demonstrations(
+    root: Path, selected: list[tuple[GovernedSkill, dict]], *, report: str,
+    output_root: Path, repeat: int, ceiling_ms: int | None,
+    correlation_id: str, interpreter: dict[str, str], mode: str,
+) -> tuple[int, dict]:
+    """Execute the selection, publish the report, and return the exit status."""
+
+    target = resolve_report_target(report, output_root)
+    executable = [
+        (skill, record)
+        for skill, record in selected
+        if record["status"] in EXECUTABLE_STATUSES
+    ]
+    _emit_event(
+        "demonstration.selected",
+        claim_ids=[record["claim_id"] for _skill, record in executable],
+        correlation_id=correlation_id,
+        count=len(executable),
+        mode=mode,
+    )
+    if not executable:
+        _refuse("D070", f"the {mode} selection resolved to zero executable records")
+    work = WorkRoot()
+    try:
+        runner = Runner(
+            root, correlation_id=correlation_id, repeat=repeat,
+            ceiling_ms=ceiling_ms, work=work,
+        )
+        demonstrations = []
+        ceiling_refusal = None
+        for skill, record in executable:
+            demonstrations.append(runner.run_record(skill, record))
+            if ceiling_ms is not None and runner.aggregate_ms > ceiling_ms:
+                ceiling_refusal = {
+                    "code": "D082",
+                    "message": f"aggregate {runner.aggregate_ms} ms passed the {ceiling_ms} ms ceiling",
+                }
+                _emit_event(
+                    "demonstration.refused",
+                    code="D082",
+                    correlation_id=correlation_id,
+                    message=ceiling_refusal["message"],
+                )
+                break
+        work_removed = work.remove()
+    except BaseException:
+        work.remove()
+        raise
+    refusals = [
+        {"claim_id": entry["claim_id"], **entry["refusal"]}
+        for entry in demonstrations
+        if entry["refusal"] is not None
+    ]
+    if ceiling_refusal is not None:
+        refusals.append(ceiling_refusal)
+    complete = ceiling_refusal is None and len(demonstrations) == len(executable)
+    status = "verified" if complete and not refusals else "refused"
+    payload = {
+        "schema": REPORT_SCHEMA,
+        "correlation_id": correlation_id,
+        "status": status,
+        "selection": {
+            "mode": mode,
+            "count": len(executable),
+            "claim_ids": [record["claim_id"] for _skill, record in executable],
+        },
+        "interpreter": interpreter,
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "machine": platform.machine(),
+        },
+        "repeat": repeat,
+        "ceiling_ms": ceiling_ms,
+        "aggregate_ms": runner.aggregate_ms,
+        "slowest_ms": max((entry["slowest_ms"] for entry in demonstrations), default=0),
+        "work_root_removed": work_removed,
+        "demonstrations": demonstrations,
+        "refusals": refusals,
+    }
+    digest = publish_report(target, payload)
+    _emit_event(
+        "demonstration.report",
+        correlation_id=correlation_id,
+        path=str(target),
+        sha256=digest,
+        status=status,
+    )
+    return (0 if status == "verified" else 2), payload
+
+
+def command_run(args: argparse.Namespace) -> int:
+    root = Path(os.path.abspath(args.root))
+    output_root = Path(os.path.abspath(args.output_root or args.root))
+    correlation_id = secrets.token_hex(8)
+    try:
+        interpreter = require_pinned_interpreter(root)
+        resolve_report_target(args.report, output_root)
+        records = load_records(root)
+        skills = {skill.directory: skill for skill in governed_skills(root)}
+        selected = select_records(
+            records, skills, public_set=args.public_set, record_directory=args.record
+        )
+        code, payload = run_demonstrations(
+            root, selected, report=args.report, output_root=output_root,
+            repeat=args.repeat,
+            ceiling_ms=PUBLIC_SET_CEILING_MS if args.public_set else None,
+            correlation_id=correlation_id, interpreter=interpreter,
+            mode="public-set" if args.public_set else "record",
+        )
+    except RunRefusal as exc:
+        _emit_event(
+            "demonstration.refused",
+            code=exc.code,
+            correlation_id=correlation_id,
+            message=exc.message,
+        )
+        raise
+    print(f"demonstrations {payload['status']}: {payload['selection']['count']} record(s), "
+          f"{payload['aggregate_ms']} ms aggregate over {args.repeat} repetition(s)")
+    for entry in payload["demonstrations"]:
+        line = f"  {entry['claim_id']:<36} {entry['result']:<9} slowest {entry['slowest_ms']} ms"
+        if entry["refusal"] is not None:
+            line += f"  {entry['refusal']['code']} {entry['refusal']['message']}"
+        print(line)
+    print(f"report    {args.report}")
+    return code
+
+
+def _repeat_count(raw: str) -> int:
+    try:
+        value = int(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError("--repeat needs an integer") from None
+    if not 1 <= value <= MAX_REPEAT:
+        raise argparse.ArgumentTypeError(f"--repeat must be between 1 and {MAX_REPEAT}")
+    return value
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="demonstrations.py",
@@ -915,6 +1787,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="the only supported mode in this generation",
     )
     frontier.set_defaults(handler=command_frontier)
+
+    runner = sub.add_parser("run", help="execute a checked record or the public set offline")
+    runner.add_argument("--root", default=".", help="repository root")
+    selection = runner.add_mutually_exclusive_group(required=True)
+    selection.add_argument(
+        "--public-set", action="store_true", help="run the closed public demonstration set"
+    )
+    selection.add_argument(
+        "--record", metavar="DIRECTORY", help="run one governed skill directory's record"
+    )
+    runner.add_argument(
+        "--report", required=True, help="new report path below the output root"
+    )
+    runner.add_argument(
+        "--output-root", default=None, help="declared output root; defaults to --root"
+    )
+    runner.add_argument(
+        "--repeat", type=_repeat_count, default=1,
+        help=f"repetitions per record, 1 to {MAX_REPEAT}; durations are observations",
+    )
+    runner.set_defaults(handler=command_run)
     return parser
 
 
@@ -925,6 +1818,9 @@ def main(argv: list[str] | None = None) -> int:
     except (DemonstrationError, TopologyError) as exc:
         print(f"demonstrations.py: {exc}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print("demonstrations.py: interrupted; no report was published", file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":

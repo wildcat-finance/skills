@@ -181,7 +181,94 @@ cannot silently change the boundary it names.
 - `D045` -- an absent demonstration claims its demo frontier is mature.
 - `D050` -- two governed ledgers claim the same public claim id.
 - `D060` -- the committed schema is unreadable, open, malformed, or does not validate the record.
+- `D070` -- a run's selection resolves to zero executable records.
+- `D071` -- a registered public demonstration has no ledger or is not `real-data`, or a named directory is not governed.
+- `D072` -- a command's program file is absent or cannot start.
+- `D073` -- the running interpreter is not the version `.python-version` pins, or no pin can be read.
+- `D074` -- a child opened or resolved a socket, or the record allowlists a network this run does not admit.
+- `D075` -- a command's exit status differs from its declared `expect_exit`.
+- `D076` -- a command passed its timeout and its process group was killed.
+- `D077` -- a command wrote past the output cap and was truncated.
+- `D078` -- an observation is prose, names an unknown command, or is outside the checkable grammar.
+- `D079` -- a checkable observation did not hold against the command's stdout.
+- `D080` -- the report path traverses, resolves outside the output root, or already exists.
+- `D081` -- the report could not be published atomically; no partial object was left under its name.
+- `D082` -- the public set passed its aggregate ceiling.
+- `D083` -- the private work root could not be created or prepared.
 <!-- refusal-catalogue:end -->
+
+## Observations are checkable, not prose
+
+A record that the runner executes carries observations in one of two forms,
+each naming the command it reads:
+
+```text
+run: line "1. two fresh builds agree on 079ed18d... across 7 components"
+run: json relation.receipt_count 224
+```
+
+`line` holds when that exact line, given as one JSON string, appears on the
+command's stdout. `json` holds when the command's last stdout line parses as a
+JSON document and the dotted path, with integer segments indexing lists, equals
+the JSON value. A sentence such as "the command exits in about a second" is
+not evidence: the runner refuses it with `D078` before any command starts. A
+duration is recorded in the report as an observation of the run, never
+declared in the record as a thing to assert.
+
+## Running the public set
+
+`scripts/demonstrations.py run` executes either one governed record named by
+`--record <directory>` or the closed public set named by `--public-set`, and
+nothing else. The public set is the fixed claim-id list `PUBLIC_SET` in the
+runner; a member whose ledger is absent or whose status is no longer
+`real-data` fails the run rather than being skipped. A selection that resolves
+to zero executable records is a refusal, never a clean pass.
+
+Before anything executes, the runner reads `.python-version` and refuses an
+interpreter that differs from it, checks that the `--report` path traverses
+nothing and resolves below the declared output root (`--output-root`,
+defaulting to `--root`) to a name that does not yet exist, loads every ledger
+through `check`, so every declared source digest is verified, and parses each
+selected record's observations. A file source is recorded in the report as
+verified; a chain anchor is recorded as declared, because the runner has no
+chain and proves nothing about one.
+
+Each command's argv runs without a shell. `python3` in the first position is
+replaced by the running, pinned interpreter. The only substitution inside an
+argv element is the reserved `{work}` token, which expands to a private `0700`
+directory beneath a fresh temporary root that is removed when the run ends;
+every other brace is passed literally. The child sees an allowlisted
+environment (`PATH`, `HOME`, `TMPDIR`, `LANG`, `LC_ALL`, `LC_CTYPE`) plus a
+`PYTHONPATH` naming only the runner's site hook, so credential and Git keys
+are stripped by never being copied. The hook replaces the socket constructors
+and resolvers in every Python child with a function that records the attempt
+and raises; a child that opens or resolves a socket is refused even when it
+swallows the exception and exits 0. This is a process-level denial inside
+Python, not a kernel sandbox, and no capture exception is declared: a record
+that allowlists a network is refused.
+
+Each command is bounded by its record's `timeout_seconds`, further clipped by
+the public set's aggregate ceiling of 600,000 milliseconds. A command that
+passes its budget is killed with its whole process group. Stdout and stderr
+are each capped at one mebibyte; a command that writes past the cap is
+truncated and refused. Exit status, observations, durations, output digests
+and bounded output tails are recorded per command and per repetition;
+`--repeat` runs each record up to ten times so a three-repetition baseline can
+be recorded without claiming an improvement.
+
+The run publishes one `shoggoth-demonstration-report/v1` object to the report
+path: the body lands in a sibling `.partial` file and is linked in under the
+final name without replacing anything, so the target is either complete or
+absent. The report repeats each record's claim, non-claim, record digest and
+sources, and its `status` is `verified` only when every selected record
+verified; the process exits 0 in that case and 2 otherwise. A report is
+evidence of one run on one machine and promotes nothing a record's non-claim
+withholds.
+
+The runner emits `demonstration.selected` with the record count,
+`demonstration.started` per command, `demonstration.verified` or
+`demonstration.refused` per record, and `demonstration.report` with the
+published digest, all carrying one correlation id.
 
 ## What the checker establishes
 

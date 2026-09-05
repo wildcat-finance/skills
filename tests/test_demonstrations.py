@@ -8,10 +8,12 @@ import io
 import json
 import os
 import pathlib
+import platform
 import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -40,6 +42,16 @@ REFUSAL_SPECIMENS = (
     "unknown-status.md",
     "unsafe-argv.md",
 )
+RUNNER_SPECIMENS = (
+    "network-attempt.md",
+    "oversized-output.md",
+    "timeout.md",
+    "partial-report.md",
+    "stale-source.md",
+    "traversing-report-path.md",
+    "empty-selection.md",
+)
+RUNNER = demonstrations is not None and hasattr(demonstrations, "run_demonstrations")
 SPECIMEN = (
     demonstrations.GovernedSkill(
         id="specimen", plugin_id="specimen", directory="plugins/specimen"
@@ -66,7 +78,7 @@ def check(
 
 
 class EntryParentGuardTests(unittest.TestCase):
-    """Each refusal specimen is red before the Step 2 checker exists."""
+    """Each refusal specimen is red before the checker or runner it needs exists."""
 
     def test_each_refusal_specimen_requires_the_step_two_checker(self):
         for name in REFUSAL_SPECIMENS:
@@ -75,6 +87,12 @@ class EntryParentGuardTests(unittest.TestCase):
                 self.assertIsNotNone(
                     demonstrations, f"{name} has no checker on the entry parent"
                 )
+
+    def test_each_runner_specimen_requires_the_step_three_runner(self):
+        for name in RUNNER_SPECIMENS:
+            with self.subTest(specimen=name):
+                self.assertTrue((FIXTURES / name).is_file())
+                self.assertTrue(RUNNER, f"{name} has no runner on the entry parent")
 
 
 @unittest.skipIf(demonstrations is None, "Step 2 checker is absent on the entry parent")
@@ -682,10 +700,507 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(before, after)
         self.assertEqual(existed, kronos.exists())
 
-    def test_the_module_starts_no_process_of_its_own(self):
+    def test_check_and_frontier_start_no_process_of_their_own(self):
+        # Only `run` executes anything. The checker and the ranking read files.
         source = (ROOT / "scripts" / "demonstrations.py").read_text(encoding="utf-8")
-        for banned in ("subprocess", "os.system", "os.exec", "socket", "urllib"):
+        for banned in ("os.system", "os.exec", "urllib", "shell=True"):
             self.assertNotIn(banned, source)
+        check_args = type("Args", (), {"root": ROOT})()
+        frontier_args = type("Args", (), {"root": ROOT, "lane": "demo"})()
+        with mock.patch.object(
+            subprocess, "Popen", side_effect=AssertionError("a process was started")
+        ), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(demonstrations.command_check(check_args), 0)
+            self.assertEqual(demonstrations.command_frontier(frontier_args), 0)
+
+
+def _events(output: str) -> list[dict]:
+    return [json.loads(line) for line in output.splitlines() if line.startswith("{")]
+
+
+def _skill(name: str = "specimen") -> "demonstrations.GovernedSkill":
+    return demonstrations.GovernedSkill(id=name, plugin_id=name, directory=f"plugins/{name}")
+
+
+@unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")
+class RunnerHarness(unittest.TestCase):
+    """Shared fixtures for driving the runner through its Python entry point."""
+
+    def setUp(self):
+        self.stack = contextlib.ExitStack()
+        self.addCleanup(self.stack.close)
+        self.out = pathlib.Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
+        self.interpreter = {
+            "executable": sys.executable,
+            "version": platform.python_version(),
+            "pinned": platform.python_version(),
+        }
+
+    def run_records(self, records, *, report="report.json", repeat=1, ceiling_ms=None,
+                    mode="record", root=ROOT):
+        output = io.StringIO()
+        target = self.out / report
+        with contextlib.redirect_stdout(output):
+            code, payload = demonstrations.run_demonstrations(
+                root, records, report=str(target), output_root=self.out,
+                repeat=repeat, ceiling_ms=ceiling_ms, correlation_id="c0ffee",
+                interpreter=self.interpreter, mode=mode,
+            )
+        return code, payload, _events(output.getvalue()), target
+
+    def run_specimen(self, name, **kwargs):
+        record = check(fixture_record(name))
+        return self.run_records([(SPECIMEN, record)], **kwargs)
+
+    def run_argv(self, argv, observations, *, timeout_seconds=30, environ=None):
+        record = check(fixture_record("valid-ledger.md"))
+        record["timeout_seconds"] = timeout_seconds
+        record["commands"] = [{"id": "run", "argv": argv, "expect_exit": 0}]
+        record["observations"] = observations
+        record = check(record)
+        if environ is None:
+            return self.run_records([(SPECIMEN, record)])
+        with mock.patch.dict(os.environ, environ, clear=False):
+            return self.run_records([(SPECIMEN, record)])
+
+
+class RunnerSpecimenTests(RunnerHarness):
+    """Each named refusal condition is refused, never skipped or passed."""
+
+    def test_a_child_that_opens_a_socket_is_refused_even_when_it_exits_zero(self):
+        code, payload, events, _target = self.run_specimen("network-attempt.md")
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D074")
+        command = entry["repetitions"][0]["commands"][0]
+        self.assertEqual(command["exit"], 0)
+        self.assertTrue(command["network_attempt"])
+        self.assertIn("swallowed", command["stdout_tail"])
+        self.assertEqual(
+            [event["code"] for event in events if event["event"] == "demonstration.refused"],
+            ["D074"],
+        )
+
+    def test_a_child_past_the_output_cap_is_truncated_and_refused(self):
+        code, payload, _events, _target = self.run_specimen("oversized-output.md")
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D077")
+        command = entry["repetitions"][0]["commands"][0]
+        self.assertTrue(command["truncated"])
+        self.assertEqual(command["stdout_bytes"], demonstrations.MAX_OUTPUT_BYTES)
+        self.assertLessEqual(len(command["stdout_tail"]), demonstrations.MAX_OUTPUT_TAIL)
+
+    def test_a_child_past_its_timeout_is_killed_with_its_process_group(self):
+        code, payload, _events, _target = self.run_specimen("timeout.md")
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D076")
+        command = entry["repetitions"][0]["commands"][0]
+        self.assertTrue(command["timed_out"])
+        self.assertLessEqual(command["timeout_ms"], 1000)
+        grandchild = int(command["stdout_tail"].strip())
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            try:
+                os.kill(grandchild, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(0.05)
+        else:
+            self.fail(f"grandchild {grandchild} survived the process-group teardown")
+
+    def test_a_partial_report_is_never_published(self):
+        with mock.patch.object(os, "link", side_effect=OSError("disk full")):
+            with self.assertRaises(demonstrations.RunRefusal) as caught:
+                self.run_specimen("partial-report.md")
+        self.assertEqual(caught.exception.code, "D081")
+        self.assertFalse((self.out / "report.json").exists())
+        self.assertEqual(
+            [path.name for path in self.out.iterdir() if ".partial-" in path.name], []
+        )
+
+    def test_a_stale_source_is_refused_before_execution(self):
+        record = fixture_record("stale-source.md")
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            check(record, verify_bytes=True)
+        self.assertIn("D026", str(caught.exception))
+        stderr = io.StringIO()
+        with mock.patch.object(
+            demonstrations, "load_records", side_effect=demonstrations.DemonstrationError(
+                "D026 sources[0].path digest differs"
+            )
+        ), mock.patch.object(
+            subprocess, "Popen", side_effect=AssertionError("a command started")
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(stderr):
+            code = demonstrations.main([
+                "run", "--root", str(ROOT), "--record", "plugins/specimen",
+                "--report", str(self.out / "stale.json"), "--output-root", str(self.out),
+            ])
+        self.assertEqual(code, 2)
+        self.assertIn("D026", stderr.getvalue())
+        self.assertFalse((self.out / "stale.json").exists())
+
+    def test_a_traversing_or_escaping_or_existing_report_path_is_refused(self):
+        record = check(fixture_record("traversing-report-path.md"))
+        (self.out / "taken.json").write_text("{}", encoding="utf-8")
+        outside = pathlib.Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
+        for report in (
+            str(self.out / ".." / "escape.json"),
+            str(self.out / "nested" / ".." / ".." / "escape.json"),
+            str(outside / "escape.json"),
+            str(self.out / "taken.json"),
+            str(self.out),
+        ):
+            with self.subTest(report=report):
+                with mock.patch.object(
+                    subprocess, "Popen", side_effect=AssertionError("a command started")
+                ), contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(demonstrations.RunRefusal) as caught:
+                        demonstrations.run_demonstrations(
+                            ROOT, [(SPECIMEN, record)], report=report, output_root=self.out,
+                            repeat=1, ceiling_ms=None, correlation_id="c0ffee",
+                            interpreter=self.interpreter, mode="record",
+                        )
+                self.assertEqual(caught.exception.code, "D080")
+        self.assertFalse((self.out.parent / "escape.json").exists())
+        self.assertFalse((outside / "escape.json").exists())
+
+    def test_an_empty_selection_exits_nonzero_and_is_visible(self):
+        record = check(fixture_record("empty-selection.md"))
+        self.assertEqual(record["status"], "absent")
+        output, stderr = io.StringIO(), io.StringIO()
+        with mock.patch.object(
+            demonstrations, "load_records", return_value={"plugins/specimen": record}
+        ), mock.patch.object(
+            demonstrations, "governed_skills", return_value=(SPECIMEN,)
+        ), contextlib.redirect_stdout(output), contextlib.redirect_stderr(stderr):
+            code = demonstrations.main([
+                "run", "--root", str(ROOT), "--record", "plugins/specimen",
+                "--report", str(self.out / "empty.json"), "--output-root", str(self.out),
+            ])
+        self.assertEqual(code, 2)
+        self.assertIn("D070", stderr.getvalue())
+        events = _events(output.getvalue())
+        selected = [event for event in events if event["event"] == "demonstration.selected"]
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected[0]["count"], 0)
+        refused = [event for event in events if event["event"] == "demonstration.refused"]
+        self.assertEqual([event["code"] for event in refused], ["D070"])
+        self.assertEqual(selected[0]["correlation_id"], refused[0]["correlation_id"])
+        self.assertFalse((self.out / "empty.json").exists())
+
+
+class RunnerBoundaryTests(RunnerHarness):
+    """The runner's subprocess, environment, path and interpreter boundaries."""
+
+    def test_shell_metacharacters_are_passed_literally(self):
+        hostile = "$HOME; echo pwned > /tmp/pwned `id` $(id) | cat"
+        code, payload, _events, _target = self.run_argv(
+            ["python3", "-c", "import sys; print(sys.argv[1])", hostile],
+            [f"run: line {json.dumps(hostile)}"],
+        )
+        self.assertEqual(code, 0, payload["demonstrations"][0]["refusal"])
+
+    def test_only_the_reserved_work_token_is_expanded(self):
+        code, payload, _events, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "import os, sys; print(os.path.isdir(os.path.dirname(sys.argv[1]))); print(sys.argv[2])",
+                "{work}/credit-history-v0", "{other}",
+            ],
+            ['run: line "True"', 'run: line "{other}"'],
+        )
+        self.assertEqual(code, 0, payload["demonstrations"][0]["refusal"])
+        command = payload["demonstrations"][0]["repetitions"][0]["commands"][0]
+        self.assertEqual(command["argv"][3], "{work}/credit-history-v0")
+        self.assertTrue(payload["work_root_removed"])
+
+    def test_credential_and_git_environment_keys_never_reach_the_child(self):
+        hostile = {
+            "GIT_DIR": "/nowhere",
+            "GIT_AUTHOR_NAME": "nobody",
+            "WILDCAT_RPC_TOKEN": "not-a-real-value",  # phylax: allow test material shaped like a credential
+            "AWS_SECRET_ACCESS_KEY": "not-a-real-value",  # phylax: allow test material shaped like a credential
+            "SSH_AUTH_SOCK": "/nowhere",
+        }
+        code, payload, _events, _target = self.run_argv(
+            ["python3", "-c", "import json, os; print('env'); print(json.dumps(sorted(os.environ)))"],
+            ['run: line "env"'],
+            environ=hostile,
+        )
+        self.assertEqual(code, 0, payload["demonstrations"][0]["refusal"])
+        tail = payload["demonstrations"][0]["repetitions"][0]["commands"][0]["stdout_tail"]
+        keys = json.loads(tail.strip().splitlines()[-1])
+        for name in hostile:
+            self.assertNotIn(name, keys)
+        allowed = set(demonstrations.CHILD_ENVIRONMENT_KEYS) | {
+            "PYTHONPATH", "PYTHONDONTWRITEBYTECODE", "PYTHONIOENCODING",
+            "__CF_USER_TEXT_ENCODING",  # injected by the macOS runtime, not by the runner
+        }
+        self.assertLessEqual(set(keys), allowed)
+
+    def test_the_child_pythonpath_is_the_socket_hook_alone(self):
+        code, payload, _events, _target = self.run_argv(
+            ["python3", "-c", "import os; print(os.environ['PYTHONPATH'].count(os.pathsep))"],
+            ['run: line "0"'],
+            environ={"PYTHONPATH": "/nowhere"},
+        )
+        self.assertEqual(code, 0, payload["demonstrations"][0]["refusal"])
+
+    def test_a_dns_lookup_is_a_network_attempt(self):
+        code, payload, _events, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "with __import__('contextlib').suppress(Exception): print('x'); __import__('socket').getaddrinfo('example.invalid', 443)",
+            ],
+            ['run: line "x"'],
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["demonstrations"][0]["refusal"]["code"], "D074")
+
+    def test_an_absent_command_program_fails_rather_than_skips(self):
+        code, payload, _events, _target = self.run_argv(
+            ["python3", "plugins/specimen/scripts/absent.py"], ['run: line "ok"'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D072")
+        self.assertEqual(entry["repetitions"], [])
+
+    def test_a_nonzero_exit_is_refused_against_the_declared_expectation(self):
+        code, payload, _events, _target = self.run_argv(
+            ["python3", "-c", "raise SystemExit(3)"], ['run: line "ok"'],
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["demonstrations"][0]["refusal"]["code"], "D075")
+
+    def test_a_record_that_allowlists_the_network_is_refused_in_this_run(self):
+        record = check(fixture_record("valid-ledger.md"))
+        record["network"] = {"policy": "allowlisted", "endpoints": ["https://example.invalid/rpc"]}
+        record["commands"] = [{"id": "run", "argv": ["python3", "-c", "print('ok')"], "expect_exit": 0}]
+        record["observations"] = ['run: line "ok"']
+        code, payload, _events, _target = self.run_records([(SPECIMEN, check(record))])
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["demonstrations"][0]["refusal"]["code"], "D074")
+
+    def test_the_interpreter_must_match_the_pin(self):
+        pinned = demonstrations.pinned_python_version(ROOT)
+        self.assertEqual(pinned, platform.python_version())
+        with mock.patch.object(platform, "python_version", return_value="0.0.0"):
+            with self.assertRaises(demonstrations.RunRefusal) as caught:
+                demonstrations.require_pinned_interpreter(ROOT)
+        self.assertEqual(caught.exception.code, "D073")
+        with tempfile.TemporaryDirectory() as name:
+            with self.assertRaises(demonstrations.RunRefusal) as caught:
+                demonstrations.pinned_python_version(pathlib.Path(name))
+        self.assertEqual(caught.exception.code, "D073")
+
+    def test_the_ceiling_bounds_every_command_and_the_aggregate(self):
+        record = check(fixture_record("valid-ledger.md"))
+        record["commands"] = [
+            {"id": "run", "argv": ["python3", "-c", "import time; time.sleep(2)"], "expect_exit": 0}
+        ]
+        record["observations"] = ['run: line "unreached"']
+        code, payload, _events, _target = self.run_records(
+            [(SPECIMEN, check(record))], ceiling_ms=50, mode="public-set"
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["ceiling_ms"], 50)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D076")
+        self.assertLessEqual(entry["repetitions"][0]["commands"][0]["timeout_ms"], 50)
+        self.assertIn("D082", [refusal["code"] for refusal in payload["refusals"]])
+
+
+class RunnerObservationTests(RunnerHarness):
+    """Observations are checked against output, never against prose."""
+
+    def test_prose_is_not_a_checkable_observation(self):
+        for index, text in enumerate((
+            "The command exits 0 in about 0.1 seconds with no network.",
+            "run: line unquoted",
+            'run: json relation.receipt_count',
+            'run: stdout "x"',
+            'other: line "ok"',
+        )):
+            with self.subTest(observation=text):
+                record = check(fixture_record("valid-ledger.md"))
+                record["commands"] = [{"id": "run", "argv": ["python3", "-c", "print('ok')"], "expect_exit": 0}]
+                record["observations"] = [text]
+                with mock.patch.object(
+                    subprocess, "Popen", side_effect=AssertionError("a command started")
+                ):
+                    code, payload, _events, _target = self.run_records(
+                        [(SPECIMEN, check(record))], report=f"prose-{index}.json"
+                    )
+                self.assertEqual(code, 2)
+                self.assertEqual(payload["demonstrations"][0]["refusal"]["code"], "D078")
+
+    def test_an_observation_that_does_not_hold_is_refused(self):
+        code, payload, _events, _target = self.run_argv(
+            ["python3", "-c", "print('{\"count\": 224}')"],
+            ['run: json count 224', 'run: json count 225'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D079")
+        self.assertEqual(
+            entry["repetitions"][0]["commands"][0]["observations"], ["run: json count 224"]
+        )
+
+    def test_the_grammar_parses_lines_and_json_paths(self):
+        line = demonstrations.parse_observation('run: line "a b"', where="t")
+        self.assertEqual((line.command, line.kind, line.line), ("run", "line", "a b"))
+        nested = demonstrations.parse_observation(
+            'run: json relation.target_index "0xbf"', where="t"
+        )
+        self.assertEqual(nested.path, ("relation", "target_index"))
+        self.assertTrue(demonstrations.observation_holds(
+            nested, b'noise\n{"relation": {"target_index": "0xbf"}}\n'
+        ))
+        self.assertFalse(demonstrations.observation_holds(nested, b"not json\n"))
+        indexed = demonstrations.parse_observation('run: json 0 1', where="t")
+        self.assertTrue(demonstrations.observation_holds(indexed, b"[1]\n"))
+        self.assertFalse(demonstrations.observation_holds(indexed, b"[2]\n"))
+        self.assertFalse(demonstrations.observation_holds(indexed, b""))
+
+    def test_every_public_set_ledger_declares_only_checkable_observations(self):
+        records = demonstrations.load_records(ROOT)
+        skills = {skill.directory: skill for skill in demonstrations.governed_skills(ROOT)}
+        selected = demonstrations.select_records(
+            records, skills, public_set=True, record_directory=None
+        )
+        self.assertEqual(len(selected), len(demonstrations.PUBLIC_SET))
+        for skill, record in selected:
+            with self.subTest(skill=skill.id):
+                parsed = demonstrations.preflight_record(ROOT, skill, record)
+                self.assertEqual(len(parsed), len(record["observations"]))
+                self.assertEqual(record["status"], "real-data")
+
+
+class RunnerSelectionTests(RunnerHarness):
+    """Only a checked record or the closed public set can be selected."""
+
+    def setUp(self):
+        super().setUp()
+        self.records = demonstrations.load_records(ROOT)
+        self.skills = {skill.directory: skill for skill in demonstrations.governed_skills(ROOT)}
+
+    def test_the_public_set_is_closed_and_real_data(self):
+        self.assertEqual(len(demonstrations.PUBLIC_SET), len(set(demonstrations.PUBLIC_SET)))
+        selected = demonstrations.select_records(
+            self.records, self.skills, public_set=True, record_directory=None
+        )
+        self.assertEqual(
+            [record["claim_id"] for _skill, record in selected], list(demonstrations.PUBLIC_SET)
+        )
+
+    def test_a_missing_public_member_fails_rather_than_skips(self):
+        records = {
+            directory: record for directory, record in self.records.items()
+            if record["claim_id"] != demonstrations.PUBLIC_SET[1]
+        }
+        with self.assertRaises(demonstrations.RunRefusal) as caught:
+            demonstrations.select_records(
+                records, self.skills, public_set=True, record_directory=None
+            )
+        self.assertEqual(caught.exception.code, "D071")
+
+    def test_a_downgraded_public_member_is_refused(self):
+        records = copy.deepcopy(self.records)
+        for record in records.values():
+            if record["claim_id"] == demonstrations.PUBLIC_SET[0]:
+                record["status"] = "mixed"
+        with self.assertRaises(demonstrations.RunRefusal) as caught:
+            demonstrations.select_records(
+                records, self.skills, public_set=True, record_directory=None
+            )
+        self.assertEqual(caught.exception.code, "D071")
+
+    def test_an_ungoverned_directory_is_refused(self):
+        with self.assertRaises(demonstrations.RunRefusal) as caught:
+            demonstrations.select_records(
+                self.records, self.skills, public_set=False, record_directory="plugins/nowhere"
+            )
+        self.assertEqual(caught.exception.code, "D071")
+
+
+class RunnerReportTests(RunnerHarness):
+    """The report is one closed object, published atomically, repeating the non-claim."""
+
+    def test_a_verified_run_publishes_the_report_and_its_events(self):
+        code, payload, events, target = self.run_specimen("partial-report.md", repeat=2)
+        self.assertEqual(code, 0, payload["demonstrations"][0]["refusal"])
+        self.assertEqual(payload["schema"], demonstrations.REPORT_SCHEMA)
+        self.assertEqual(payload["status"], "verified")
+        self.assertEqual(payload["repeat"], 2)
+        published = json.loads(target.read_text(encoding="utf-8"))
+        self.assertEqual(published, payload)
+        entry = payload["demonstrations"][0]
+        record = fixture_record("partial-report.md")
+        self.assertEqual(entry["non_claim"], record["non_claim"])
+        self.assertEqual(entry["record_sha256"], demonstrations.record_digest(record))
+        self.assertEqual(entry["sources"][0]["evidence"], "recorded")
+        self.assertEqual(entry["sources"][0]["anchor"], record["sources"][0]["anchor"])
+        self.assertEqual(len(entry["repetitions"]), 2)
+        self.assertEqual({event["correlation_id"] for event in events}, {"c0ffee"})
+        self.assertEqual(
+            [event["event"] for event in events],
+            [
+                "demonstration.selected",
+                "demonstration.started",
+                "demonstration.started",
+                "demonstration.verified",
+                "demonstration.report",
+            ],
+        )
+        self.assertEqual(events[0]["count"], 1)
+        self.assertEqual(events[-1]["sha256"], hashlib_of(target))
+        with self.assertRaises(demonstrations.RunRefusal) as caught:
+            self.run_specimen("partial-report.md")
+        self.assertEqual(caught.exception.code, "D080")
+
+    def test_the_public_set_runs_and_is_asserted_against_its_ledgers(self):
+        records = demonstrations.load_records(ROOT)
+        skills = {skill.directory: skill for skill in demonstrations.governed_skills(ROOT)}
+        selected = demonstrations.select_records(
+            records, skills, public_set=True, record_directory=None
+        )
+        code, payload, events, _target = self.run_records(
+            selected, report="public-set.json",
+            ceiling_ms=demonstrations.PUBLIC_SET_CEILING_MS, mode="public-set",
+        )
+        self.assertEqual(code, 0, payload["refusals"])
+        self.assertEqual(payload["status"], "verified")
+        self.assertLessEqual(payload["aggregate_ms"], demonstrations.PUBLIC_SET_CEILING_MS)
+        self.assertEqual(
+            [entry["claim_id"] for entry in payload["demonstrations"]],
+            list(demonstrations.PUBLIC_SET),
+        )
+        for (_skill, record), entry in zip(selected, payload["demonstrations"]):
+            with self.subTest(claim_id=record["claim_id"]):
+                self.assertEqual(entry["result"], "verified")
+                self.assertEqual(entry["non_claim"], record["non_claim"])
+                held = [
+                    text
+                    for command in entry["repetitions"][0]["commands"]
+                    for text in command["observations"]
+                ]
+                self.assertEqual(sorted(held), sorted(record["observations"]))
+                for command in entry["repetitions"][0]["commands"]:
+                    self.assertFalse(command["network_attempt"])
+                    self.assertFalse(command["truncated"])
+        self.assertEqual(
+            [event["event"] for event in events if event["event"] == "demonstration.verified"],
+            ["demonstration.verified"] * len(demonstrations.PUBLIC_SET),
+        )
+
+
+def hashlib_of(path: pathlib.Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 class HorosCensusCurrencyTests(unittest.TestCase):
