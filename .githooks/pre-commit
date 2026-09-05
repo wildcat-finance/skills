@@ -152,15 +152,15 @@ if ! git_dir="$(gate_git rev-parse --git-dir 2>/dev/null)"; then
     exit 1
 fi
 
-# The index git names is the one inherited value this gate keeps, so it is the
-# one an inherited environment can still aim elsewhere. Git names the index for
-# the commit in hand and puts it in the git directory discovery answers:
-# measured on git 2.50.1, `.git/index` for a plain commit, a commit from a
-# subdirectory and `commit --amend`, the absolute `.git/index.lock` for `commit
-# -a` from a subdirectory, and an absolute index under
-# `<common>/worktrees/<name>` for a linked worktree nested inside its own main
-# checkout and for a subdirectory of that worktree. A commit reached through a
-# symlinked path answers the same. The two agree in all seven.
+# The index git names is kept rather than dropped, so an inherited environment
+# can still aim it elsewhere. Git names the index for the commit in hand and
+# puts it in the git directory discovery answers: measured on git 2.50.1,
+# `.git/index` for a plain commit, a commit from a subdirectory and
+# `commit --amend`, the absolute `.git/index.lock` for `commit -a` from a
+# subdirectory, and an absolute index under `<common>/worktrees/<name>` for a
+# linked worktree nested inside its own main checkout and for a subdirectory of
+# that worktree. A commit reached through a symlinked path answers the same. The
+# two agree in all seven.
 #
 # They differ where a second git directory's work tree is this repository's own
 # root. Git runs the hook from that root, so the prefix above is empty and the
@@ -186,9 +186,9 @@ fi
 # against. Set and empty, it reads no index at all -- `write-tree` answers the
 # empty tree 4b825dc6 and `ls-files` nothing -- so the comparison below sees a
 # tree no record of a populated repository names, and refuses. Neither value
-# admits a tree the record does not name. The trade is a
-# commit whose index git placed outside the git directory: no shape measured
-# above does that, one built by hand is refused, and the bypass token admits it.
+# admits a tree the record does not name. The trade is a commit whose index git
+# placed outside the git directory: no shape measured above does that, one built
+# by hand is refused, and the bypass token admits it.
 if [ -n "${GIT_INDEX_FILE:-}" ]; then
     case "$GIT_INDEX_FILE" in
         */*) index_dir="${GIT_INDEX_FILE%/*}" ;;

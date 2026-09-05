@@ -38,7 +38,7 @@ set -eu
 # and correctly so -- it is invoked by git, and the index git exports is exactly
 # the one it is meant to check.
 #
-# The last two are the configuration half of the same problem. Git carries the
+# Two more are the configuration half of the same problem. Git carries the
 # caller's one-shot configuration in GIT_CONFIG_PARAMETERS, and in
 # GIT_CONFIG_COUNT with the indexed GIT_CONFIG_KEY_<n>/GIT_CONFIG_VALUE_<n>
 # pairs it drives; the pairs are inert once the count is gone. Either form
