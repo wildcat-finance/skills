@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16647169,
+    "bytes_blob": 16654441,
     "bytes_generated": 98
   },
   "entries": [
@@ -308,7 +308,7 @@
       "path": "audit/rounds/fiat-dokimasia-proposed-dispositions.synopsis.md"
     },
     {
-      "bytes": 28615,
+      "bytes": 35887,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
