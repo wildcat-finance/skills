@@ -43,6 +43,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import importlib.util
+import io
 import itertools
 import json
 import os
@@ -792,7 +793,7 @@ class SubprocessTests(unittest.TestCase):
     def test_a_version_cut_in_half_by_the_output_bound_is_never_recorded(self):
         # The bound on how much client output is read can land inside the token
         # itself, and half of a version is not the version the client
-        # reported. `1.234` recorded for a client that said `1.23456789` is the
+        # reported. `1.234` recorded when the client output was `1.23456789` is the
         # same defect as a token scraped out of a failure: a `client_version`
         # nobody reported, under a schema description that calls it exact.
         cap = probe_harnesses.MAX_CLIENT_OUTPUT_CHARS
@@ -1446,9 +1447,8 @@ class RecordTests(unittest.TestCase):
                 self.assertTrue(record["blocker"].strip())
 
     def test_the_recorded_block_is_the_staleness_signal(self):
-        # Host, date and base ref are what a later reader compares a surface
-        # against, so each has to be present and shaped rather than merely
-        # truthy.
+        # Date is the freshness signal; host and base ref preserve provenance.
+        # All three remain required and shaped even though none is rendered.
         recorded = self.document["recorded"]
         self.assertEqual(set(recorded), {"host", "date", "base_ref"})
         self.assertTrue(probe_harnesses.HOST_PATTERN.match(recorded["host"]))
@@ -1513,6 +1513,63 @@ class RenderTests(unittest.TestCase):
     def test_check_passes_on_the_surfaces_the_renderer_wrote(self):
         with tempfile.TemporaryDirectory() as directory:
             self.assertEqual(self.drift(self.stage(directory)), [])
+
+    def test_metadata_only_change_neither_renders_nor_writes_a_surface(self):
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            original = landed()
+            changed = json.loads(json.dumps(original))
+            changed["recorded"].update(
+                host="recorded-elsewhere",
+                date="2026-09-04",
+                base_ref="0" * 40,
+            )
+            self.assertNotEqual(changed["recorded"], original["recorded"])
+            self.assertEqual(
+                render_harness_roster.readme_block(changed),
+                render_harness_roster.readme_block(original),
+            )
+            self.assertEqual(
+                render_harness_roster.guide_block(changed),
+                render_harness_roster.guide_block(original),
+            )
+            self.assertEqual(
+                render_harness_roster.pdf_expectations(changed),
+                render_harness_roster.pdf_expectations(original),
+            )
+            staged["manifest"].write_text(
+                json.dumps(changed, indent=2) + "\n", encoding="utf-8"
+            )
+            before = {
+                key: staged[key].read_bytes()
+                for key in ("readme", "guide", "pdf")
+            }
+            with mock.patch.object(render_harness_roster, "build_pdf") as build:
+                _, written = render_harness_roster.write(**staged)
+            build.assert_not_called()
+            self.assertEqual(written, [])
+            self.assertEqual(self.drift(staged), [])
+            for key, expected in before.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(staged[key].read_bytes(), expected)
+
+    def test_freshness_has_exact_calendar_day_boundaries(self):
+        today = datetime.date(2026, 9, 5)
+        for age, expected in ((0, []), (30, []), (31, [31]), (-1, [-1])):
+            with self.subTest(age=age):
+                document = landed()
+                document["recorded"]["date"] = (
+                    today - datetime.timedelta(days=age)
+                ).isoformat()
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "manifest.json"
+                    target.write_text(
+                        json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                    )
+                    _, problems = render_harness_roster.check_freshness(
+                        manifest=target, today=today
+                    )
+                self.assertEqual(problems, expected)
 
     def test_one_changed_character_in_a_written_surface_fails_the_check(self):
         for surface in ("readme", "guide"):
@@ -1624,7 +1681,7 @@ class RenderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             staged = self.stage(directory)
             document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
-            document["recorded"]["base_ref"] = "0" * 40
+            document["harnesses"][0]["name"] = "GitHub Copilot Next"
             document["harnesses"][0]["blocker"] = f"bearer: {FABRICATED_CREDENTIAL}"
             staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
             # The precondition that makes this a real hole: the README body
@@ -1757,33 +1814,24 @@ class RenderTests(unittest.TestCase):
         # S3-R1-04, handed here by step 2's round 4. `manifest_document`
         # matches the shape and nothing more, so an operator `--date` of
         # `2026-13-45` reaches a written manifest. This is the last gate before
-        # that string is published in three surfaces at once.
+        # that string reaches either the content or freshness command.
         for bad in ("2026-13-45", "2026-02-31", "0000-00-00"):
             with self.subTest(date=bad):
                 document = landed()
                 document["recorded"]["date"] = bad
                 # The shape check the probe applies still passes it, which is
-                # what makes this refusal load-bearing rather than redundant.
+                # what makes this refusal necessary rather than redundant.
                 self.assertTrue(probe_harnesses.DATE_PATTERN.match(bad))
-                for render in (
-                    render_harness_roster.readme_block,
-                    render_harness_roster.guide_block,
-                    render_harness_roster.pdf_label,
-                ):
-                    with self.assertRaises(render_harness_roster.RenderError):
-                        render(document)
-        # A real date still renders, so the guard refuses the calendar and not
-        # the field. The control reads the landed date rather than pinning a
-        # literal: `recorded.date` moves on every re-probe, and a pinned one
-        # made this positive control the single case that a demonstration run
-        # of the documented four commands could not pass. Parsing it first
-        # keeps the control load-bearing, because `assertIn` alone would be
-        # vacuous on an empty date.
+                self.assertRaisesRefusal(
+                    {"date": bad}, "is not a calendar date"
+                )
+        # A real date still validates, so the guard refuses the calendar and
+        # not the field.
         recorded_date = landed()["recorded"]["date"]
         self.assertEqual(
             datetime.date.fromisoformat(recorded_date).isoformat(), recorded_date
         )
-        self.assertIn(recorded_date, render_harness_roster.pdf_label(landed()))
+        self.assertIsNotNone(render_harness_roster.load_manifest())
 
     def test_the_readme_states_how_many_clients_answered(self):
         # S3-R1-03. The sentence used to claim the probe "read every client
@@ -1985,17 +2033,18 @@ class RenderTests(unittest.TestCase):
         # Shape and calendar are different properties, neither implies the
         # other, and both gates are kept. They fire at different points, which
         # is worth pinning rather than leaving to be rediscovered: the shape is
-        # refused by `load_manifest`, while S3-R1-04's calendar check lives in
-        # `recorded` and fires when a surface is derived. Both still precede
-        # every write, because `write` loads before it renders and renders
-        # before it writes.
+        # refused by `load_manifest`, while S3-R1-04's calendar check is called
+        # by that same load boundary. Both still precede every check or write.
         calendar = landed()
         calendar["recorded"]["date"] = "2026-13-45"
         self.assertIsNotNone(probe_harnesses.DATE_PATTERN.match("2026-13-45"))
         self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(calendar))
-        with self.assertRaises(render_harness_roster.RenderError) as refused:
-            render_harness_roster.readme_block(calendar)
-        self.assertIn("is not a calendar date", str(refused.exception))
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "harness-classification.json"
+            target.write_text(json.dumps(calendar), encoding="utf-8")
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.load_manifest(target)
+            self.assertIn("is not a calendar date", str(refused.exception))
         # And the landed document still renders, so the guard refuses documents
         # rather than everything.
         self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(landed()))
@@ -2011,37 +2060,74 @@ class RenderTests(unittest.TestCase):
                 render_harness_roster.load_manifest(target)
             self.assertIn(expected, str(refused.exception))
 
-    def test_a_host_carrying_a_comma_cannot_hide_a_stale_label(self):
-        # S3-R4-01, the fourth instance of the containment shape rounds 1 and 2
-        # closed on the roster line and the detail. `pdf_label` carries no
-        # bounding guard, on the reading that its tail is a fixed-width date so
-        # no differently built label can contain it. That reading holds only
-        # while the host carries no comma: with one, a shorter host and an
-        # earlier date render a label that is a strict prefix of the drawn one.
+    def test_invalid_host_is_refused_even_though_surfaces_ignore_metadata(self):
         drawn = landed()
         drawn["recorded"]["host"] = "darwin, 2026-09-04 extra"
-        drawn["recorded"]["date"] = "2026-09-05"
-        stale = landed()
-        stale["recorded"]["host"] = "darwin"
-        stale["recorded"]["date"] = "2026-09-04"
-        shown = render_harness_roster._normalise(
-            " ".join(render_harness_roster.pdf_expectations(drawn))
+        valid = landed()
+        self.assertEqual(
+            render_harness_roster.readme_block(drawn),
+            render_harness_roster.readme_block(valid),
         )
-        # The hole itself: every expectation of the stale manifest is contained
-        # in a page drawn from another host on another day, and the check is
-        # silent. Driven against a real built page in the round that found it.
-        self.assertIn(
-            render_harness_roster._normalise(
-                render_harness_roster.pdf_label(stale).upper()
-            ),
-            shown,
+        self.assertEqual(
+            render_harness_roster.pdf_expectations(drawn),
+            render_harness_roster.pdf_expectations(valid),
         )
-        self.assertEqual(render_harness_roster.pdf_drift(stale, shown), [])
-        # It is unreachable because the host that opens it is refused, which is
-        # why no fourth bounding guard sits beside `_bounded` and `_terminal`.
         self.assertIsNone(probe_harnesses.HOST_PATTERN.match(drawn["recorded"]["host"]))
         with self.assertRaises(render_harness_roster.RenderError):
             render_harness_roster.refuse_unrecorded_shape(drawn)
+
+    def test_freshness_command_names_stale_and_future_observations(self):
+        today = datetime.date.today()
+        for age, expected in (
+            (31, "exceeds the 30-day budget"),
+            (-1, "in the future"),
+        ):
+            with self.subTest(age=age):
+                document = landed()
+                document["recorded"]["date"] = (
+                    today - datetime.timedelta(days=age)
+                ).isoformat()
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "manifest.json"
+                    target.write_text(json.dumps(document), encoding="utf-8")
+                    stderr = io.StringIO()
+                    with contextlib.redirect_stderr(stderr):
+                        exit_code = render_harness_roster.main(
+                            ["--check-freshness", "--manifest", str(target)]
+                        )
+                self.assertEqual(exit_code, 1)
+                self.assertIn(expected, stderr.getvalue())
+
+    def test_freshness_command_reads_the_calendar_once(self):
+        real_date = datetime.date
+        today = real_date(2026, 9, 5)
+        tomorrow = today + datetime.timedelta(days=1)
+        document = landed()
+        document["recorded"]["date"] = (
+            today - datetime.timedelta(days=30)
+        ).isoformat()
+        reads = []
+
+        class SequencedDate(real_date):
+            @classmethod
+            def today(cls):
+                reads.append(None)
+                return today if len(reads) == 1 else tomorrow
+
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "manifest.json"
+            target.write_text(json.dumps(document), encoding="utf-8")
+            stdout = io.StringIO()
+            with (
+                mock.patch.object(render_harness_roster.datetime, "date", SequencedDate),
+                contextlib.redirect_stdout(stdout),
+            ):
+                exit_code = render_harness_roster.main(
+                    ["--check-freshness", "--manifest", str(target)]
+                )
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(len(reads), 1)
+        self.assertIn("age 30 days is within", stdout.getvalue())
 
     def test_a_manifest_missing_a_required_field_is_refused_rather_than_raised(self):
         # S3-R4-03. `refuse_unpublished_class` reads `entry["classification"]`
@@ -2186,17 +2272,12 @@ class RenderTests(unittest.TestCase):
         )
 
     def test_a_name_carrying_the_label_stem_cannot_forge_the_page_label(self):
-        # S3-R5-01, the fifth instance of the containment shape. `pdf_label`
-        # carries no bounding guard because S3-R4-01 argued one is unnecessary
-        # while the host holds no comma. That argument assumes the page draws
-        # `MANUAL ONLY - PROBED` exactly once, justified by no manifest-supplied
-        # string being drawn uppercased -- but a name only has to arrive
-        # already uppercase. `pdf_roster_line` draws names verbatim.
-        forged = render_harness_roster.PDF_LABEL_STEM.upper() + "H1, 2026-09-04"
-        drawn, stale = landed(), landed()
-        drawn["recorded"].update(host="h2", date="2026-09-04")
-        stale["recorded"].update(host="h1", date="2026-09-04")
-        for document in (drawn, stale):
+        # The fixed content label still needs one unforgeable occurrence.
+        # A harness name arrives at the PDF already cased, so spelling the
+        # uppercased label in a name would make containment ambiguous.
+        forged = render_harness_roster.pdf_label(landed()).upper()
+        drawn = landed()
+        for document in (drawn,):
             for entry in document["harnesses"]:
                 if entry["classification"] == render_harness_roster.MANUAL_ROUTE:
                     entry["name"] = forged
@@ -2204,21 +2285,15 @@ class RenderTests(unittest.TestCase):
         shown = render_harness_roster._normalise(
             " ".join(render_harness_roster.pdf_expectations(drawn))
         )
-        # The hole: the stale manifest's label is present in a page built from
-        # another host, because a harness name spells it out. Driven against
-        # two real built pages in the round that found it, where `--check`
-        # exited 0 printing `three surfaces match 2 recorded harnesses`.
         self.assertEqual(
             render_harness_roster._normalise(
-                render_harness_roster.pdf_label(stale).upper()
+                render_harness_roster.pdf_label(drawn).upper()
             ),
             forged,
         )
         self.assertIn(forged, shown)
-        self.assertEqual(render_harness_roster.pdf_drift(stale, shown), [])
-        # It is unreachable because the name that opens it is refused, which is
-        # why no fourth bounding guard sits beside `_bounded` and `_terminal`.
-        for document in (drawn, stale):
+        # It is unreachable because the name that opens it is refused.
+        for document in (drawn,):
             with self.assertRaises(render_harness_roster.RenderError) as refused:
                 render_harness_roster.refuse_unrecorded_shape(document)
             self.assertIn("structure", str(refused.exception))
@@ -2709,6 +2784,7 @@ class RenderTests(unittest.TestCase):
 
 CHECK_MAP_PATH = ROOT / "tests/check-map-v1.json"
 CHECK_ID = "harness-roster-check"
+FRESHNESS_CHECK_ID = "harness-roster-freshness"
 
 # Two values of the right shape for each `recorded` field, so a case can always
 # take one the landed manifest does not already carry. Each first choice is
@@ -2752,6 +2828,11 @@ class DriftTests(unittest.TestCase):
         self.check = self.graph["checks"].get(CHECK_ID)
         if self.check is None:
             self.fail(f"{CHECK_MAP_PATH} declares no check {CHECK_ID!r}")
+        self.freshness_check = self.graph["checks"].get(FRESHNESS_CHECK_ID)
+        if self.freshness_check is None:
+            self.fail(
+                f"{CHECK_MAP_PATH} declares no check {FRESHNESS_CHECK_ID!r}"
+            )
 
     def run_declared(self, extra=()):
         """The declared check, with `extra` naming the surfaces to read.
@@ -2836,7 +2917,7 @@ class DriftTests(unittest.TestCase):
                     self.assertIn(str(target), completed.stderr)
 
     def test_a_missing_manifest_reddens_the_declared_check(self):
-        # The source going absent is the failure mode a check that only ever
+        # The source going absent is the condition a check that only ever
         # compared surfaces to each other would report as clean.
         with tempfile.TemporaryDirectory() as directory:
             staged = self.stage(directory)
@@ -2845,36 +2926,35 @@ class DriftTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 1, completed.stdout)
             self.assertIn("render_harness_roster:", completed.stderr)
 
-    def test_a_recorded_run_the_surfaces_do_not_carry_reddens_the_check(self):
-        # `recorded` is the staleness signal: host, date and base ref. It is not
-        # a harness name, so none of the roster comparisons touch it, and a
-        # manifest re-recorded on another host or another day against surfaces
-        # nobody regenerated is exactly the drift a reader cannot see. Each
-        # field is driven separately, because they reach the surfaces by
-        # different routes: host and date reach all three, and the base ref
-        # reaches the two Markdown regions alone.
-        for field in ("host", "date", "base_ref"):
-            with self.subTest(field=field):
-                with tempfile.TemporaryDirectory() as directory:
-                    staged = self.stage(directory)
-                    document = json.loads(
-                        staged["--manifest"].read_text(encoding="utf-8")
-                    )
-                    # Derived from what the manifest carries rather than fixed,
-                    # so no probe run can make the replacement equal the value
-                    # it has to differ from. Both candidates keep the shape the
-                    # renderer's own `recorded` patterns require, so the check
-                    # reddens on drift rather than on a refused field.
-                    recorded = document["recorded"][field]
-                    first, second = OTHER_RECORDED[field]
-                    replacement = first if recorded != first else second
-                    self.assertNotEqual(recorded, replacement)
-                    document["recorded"][field] = replacement
-                    staged["--manifest"].write_text(
-                        json.dumps(document, indent=2) + "\n", encoding="utf-8"
-                    )
-                    completed = self.run_declared(extra=self.options(staged))
-                    self.assertEqual(completed.returncode, 1, completed.stdout)
+    def test_metadata_only_change_keeps_the_declared_content_check_green(self):
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(
+                staged["--manifest"].read_text(encoding="utf-8")
+            )
+            for field, candidates in OTHER_RECORDED.items():
+                current = document["recorded"][field]
+                document["recorded"][field] = next(
+                    candidate for candidate in candidates if candidate != current
+                )
+            staged["--manifest"].write_text(
+                json.dumps(document, indent=2) + "\n", encoding="utf-8"
+            )
+            completed = self.run_declared(extra=self.options(staged))
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def test_freshness_check_is_reachable_from_the_docs_scope(self):
+        self.assertEqual(self.freshness_check["kind"], "command")
+        self.assertEqual(
+            self.freshness_check["argv"],
+            ["python3", "scripts/render_harness_roster.py", "--check-freshness"],
+        )
+        owners = sorted(
+            scope
+            for scope, body in self.graph["scopes"].items()
+            if FRESHNESS_CHECK_ID in body["checks"]
+        )
+        self.assertEqual(owners, ["docs"])
 
 
 EVIDENCE_PATH = ROOT / "tests/atlas-route-test-evidence.json"
