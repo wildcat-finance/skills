@@ -85,6 +85,31 @@ receipt. A failed or unavailable check changes nothing and is not mentioned.
 This clause lives here for the same reason as the one above: the obligation
 belongs to the frontier run, not to any one held job's text.
 
+A frontier run reads controller state one field at a time and keeps the audit
+brief out of its own transcript. Where it needs a single value, use
+`hexctl status --field <path>` rather than `hexctl status --json`, which prints
+every step, receipt and audit round recorded so far and grows for the whole
+run: `--field phase` on resume, `--field observation_run_id` for a companion
+observation receipt. Where it delegates an audit round, pass
+`hexctl next --brief-out <path>` and hand the subagent that path, so the step
+markdown, risk register and design evidence reach the Warden without being
+printed into the controller's context first. An unknown field path is refused
+rather than answered, so a wrong path fails visibly instead of reading as
+absent.
+
+This clause lived here for a different reason from the two above, and that
+reason is gone. The instructions that would otherwise carry it are inside
+[fiat/SKILL.md](fiat/SKILL.md), which
+`tests/fixtures/agent-instruction-v1/manifest.json` binds by whole-file
+SHA-256. Editing it used to invalidate a bound measurement record that only
+`scripts/agent_instruction.py measure` could reissue, on one machine, so the
+clause was written here instead.
+[skills#1098](https://github.com/wildcat-finance/skills/issues/1098) closed
+that for an edit outside the reviewed span, and `fiat/SKILL.md` now says both
+things itself, so an ordinary run gets the saving rather than only a frontier
+one. The clause stays because a frontier run owes it explicitly, not because
+the controller cannot be told.
+
 A mature frontier can reopen only when a maintainer supplies a new external
 failure, requirement, dependency change, or other evidence that invalidates
 the closure. Record that compatibility boundary as an epoch entry, with the

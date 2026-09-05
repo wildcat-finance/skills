@@ -9,7 +9,6 @@ import json
 import os
 
 from . import BereanError
-from . import digests
 
 MAX_JSON_BYTES = 4 * 1024 * 1024
 MAX_DEPTH = 32

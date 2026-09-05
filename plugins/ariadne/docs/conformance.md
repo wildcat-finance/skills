@@ -84,7 +84,7 @@ generic guards.
 | `fail-check-coverage-dataset-no-gaps-block.json` | Dataset v1 | A coverage interval with no gaps block, which reads as complete without saying so |
 | `fail-check-inputs-dataset-locator-only.json` | Dataset v1 | An input with a locator and neither a digest nor a reason for not having one |
 | `fail-check-predicate-fields-dataset-unknown-field.json` | Dataset v1 | A dataset predicate carrying a field the type does not define |
-| `pass-state-fixture.json` | State fixture v1 | A Lazarus state fixture published as a statement: the pinned block with its state root, four components, the three evidence counts, and a replay that reaches no network. The digests, byte counts and counts are the ones Lazarus wrote for `plugins/lazarus/examples/goldfinch-v0` |
+| `pass-state-fixture.json` | State fixture v1 | A Lazarus state fixture published as a statement: the pinned block with its state root, four components, the three evidence counts, and a replay that reaches no network. The digests, byte counts and counts are the ones Lazarus wrote for `plugins/lazarus/examples/aave-v4-spoke-v0` |
 | `fail-gate2-state-fixture-hex-block-number.json` | State fixture v1 | A block number written as the hex quantity string a Lazarus manifest carries, which is right on the wire and orders as text |
 | `fail-gate5-state-fixture-unnamed-current.json` | State fixture v1 | A first capture whose current side has no name and a digest the statement does not cover |
 | `fail-check-evidence-state-fixture-proved-without-a-state-root.json` | State fixture v1 | Two proof-backed records counted with no state root to have proved them against. Gate 2 passes, which is the point: the rule reaches statements the pin check accepts |

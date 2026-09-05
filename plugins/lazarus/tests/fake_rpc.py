@@ -105,19 +105,32 @@ class FakeRpc:
 
 
 def material_dispatch(material: dict[str, Any], *, reject_hash_selectors: bool = False):
-    proof_record = material["proof_records"][0]
-    proof_result = {
-        "address": proof_record["address"],
-        "accountProof": proof_record["account_proof"],
-        "balance": proof_record["balance"],
-        "codeHash": proof_record["code_hash"],
-        "nonce": proof_record["nonce"],
-        "storageHash": proof_record["storage_hash"],
-        "storageProof": [
-            {"key": item["key"], "value": item["value"], "proof": item["proof"]}
-            for item in reversed(proof_record["storage_proof"])
-        ],
-    }
+    def as_result(record: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "address": record["address"],
+            "accountProof": record["account_proof"],
+            "balance": record["balance"],
+            "codeHash": record["code_hash"],
+            "nonce": record["nonce"],
+            "storageHash": record["storage_hash"],
+            "storageProof": [
+                {"key": item["key"], "value": item["value"], "proof": item["proof"]}
+                for item in reversed(record["storage_proof"])
+            ],
+        }
+
+    # A plan may prove more than one account, so answer for the address that
+    # was asked for and fall back to the first record for material that
+    # carries only one.
+    records = material["proof_records"]
+    by_address = {record["address"].lower(): record for record in records}
+
+    def chosen(params: Any) -> dict[str, Any]:
+        if isinstance(params, list) and params and isinstance(params[0], str):
+            record = by_address.get(params[0].lower())
+            if record is not None:
+                return record
+        return records[0]
 
     def dispatch(method: str, params: Any, server: FakeRpc) -> Any:
         if method == "eth_chainId":
@@ -128,7 +141,8 @@ def material_dispatch(material: dict[str, Any], *, reject_hash_selectors: bool =
             selector = params[-1]
             if reject_hash_selectors and isinstance(selector, dict):
                 return RpcError(-32602, "block object unsupported")
-            return proof_result if method == "eth_getProof" else proof_record["code"]
+            record = chosen(params)
+            return as_result(record) if method == "eth_getProof" else record["code"]
         return {"method": method, "params": params}
 
     return dispatch

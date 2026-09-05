@@ -1,53 +1,116 @@
 {
   "format": "alexandria-test-sources/v1",
-  "release": {"name": "credit-view-sources", "created_at": "2026-08-16T12:00:00Z"},
+  "release": {
+    "name": "credit-view-sources",
+    "created_at": "2026-08-16T12:00:00Z"
+  },
   "components": [
     {
-      "name": "goldfinch-source", "path": "goldfinch.json",
-      "repository_path": "plugins/tabularium/examples/goldfinch-v0/source.json",
-      "media_type": "application/json", "role": "raw-capture", "access": "public", "redistribution": "permitted"
+      "name": "aave-v4-source",
+      "path": "aave-v4.json",
+      "repository_path": "plugins/tabularium/examples/aave-v4-v0/source.json",
+      "media_type": "application/json",
+      "role": "raw-capture",
+      "access": "public",
+      "redistribution": "permitted"
     },
     {
-      "name": "clearpool-source", "path": "clearpool.json",
+      "name": "clearpool-source",
+      "path": "clearpool.json",
       "repository_path": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json",
-      "media_type": "application/json", "role": "raw-capture", "access": "public", "redistribution": "permitted"
+      "media_type": "application/json",
+      "role": "raw-capture",
+      "access": "public",
+      "redistribution": "permitted"
     }
   ],
   "captures": [
     {
-      "id": "goldfinch-full", "component": "goldfinch-source", "venue": "goldfinch", "chain": "eip155:1", "evidence_class": "hosted-indexer",
-      "source": {"kind": "hosted-indexer", "locator_class": "local-fixture", "reference": "plugins/tabularium/examples/goldfinch-v0/source.json"},
+      "id": "aave-v4-window",
+      "component": "aave-v4-source",
+      "venue": "aave-v4",
+      "chain": "eip155:1",
+      "evidence_class": "archive-log",
+      "source": {
+        "kind": "ethereum-logs",
+        "locator_class": "local-fixture",
+        "reference": "plugins/tabularium/examples/aave-v4-v0/source.json"
+      },
       "scope": {
-        "kind": "full-dataset", "deployment": "goldfinch-v1", "finality": "provider-reported",
-        "interval": {"kind": "snapshot", "observed_at": "2026-08-16T12:00:00Z"}
+        "kind": "full-dataset",
+        "deployment": "aave-v4-mainnet",
+        "finality": "provider-reported",
+        "interval": {
+          "kind": "block-range",
+          "start": "25855441",
+          "end": "25870892"
+        }
       },
       "coverage": {
-        "status": "complete", "record_count": 567,
+        "status": "complete",
+        "record_count": 545,
         "collections": [
-          {"name": "borrows", "selector": "/borrows", "record_count": 34},
-          {"name": "callable-loans", "selector": "/callableLoans", "record_count": 1},
-          {"name": "credit-lines", "selector": "/creditLines", "record_count": 31},
-          {"name": "repays", "selector": "/repays", "record_count": 477},
-          {"name": "tranched-pools", "selector": "/tranchedPools", "record_count": 24}
+          {
+            "name": "logs",
+            "selector": "/logs",
+            "record_count": 500
+          },
+          {
+            "name": "reserve-reads",
+            "selector": "/reserve_reads",
+            "record_count": 35
+          },
+          {
+            "name": "token-reads",
+            "selector": "/token_reads",
+            "record_count": 10
+          }
         ],
-        "unsupported_collections": [], "gaps": []
+        "unsupported_collections": [],
+        "gaps": []
       }
     },
     {
-      "id": "clearpool-subject", "component": "clearpool-source", "venue": "clearpool", "chain": "eip155:1", "evidence_class": "archive-log",
-      "source": {"kind": "ethereum-logs", "locator_class": "local-fixture", "reference": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json"},
+      "id": "clearpool-subject",
+      "component": "clearpool-source",
+      "venue": "clearpool",
+      "chain": "eip155:1",
+      "evidence_class": "archive-log",
+      "source": {
+        "kind": "ethereum-logs",
+        "locator_class": "local-fixture",
+        "reference": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json"
+      },
       "scope": {
-        "kind": "subject-scoped", "deployment": "clearpool-mainnet", "finality": "unknown",
-        "subjects": ["eip155:1:0x948d589df907c3f5cef1c62eeb051428fccbc709"],
-        "interval": {"kind": "block-range", "start": "14443222", "end": "14791784"}
+        "kind": "subject-scoped",
+        "deployment": "clearpool-mainnet",
+        "finality": "unknown",
+        "subjects": [
+          "eip155:1:0x948d589df907c3f5cef1c62eeb051428fccbc709"
+        ],
+        "interval": {
+          "kind": "block-range",
+          "start": "14443222",
+          "end": "14791784"
+        }
       },
       "coverage": {
-        "status": "complete", "record_count": 12,
+        "status": "complete",
+        "record_count": 12,
         "collections": [
-          {"name": "factory-pools", "selector": "/factory_pools", "record_count": 1},
-          {"name": "pool-logs", "selector": "/pool_logs/0xd70e551c7a90de0a25a4f3acbd126227e1a5d24d", "record_count": 11}
+          {
+            "name": "factory-pools",
+            "selector": "/factory_pools",
+            "record_count": 1
+          },
+          {
+            "name": "pool-logs",
+            "selector": "/pool_logs/0xd70e551c7a90de0a25a4f3acbd126227e1a5d24d",
+            "record_count": 11
+          }
         ],
-        "unsupported_collections": [], "gaps": []
+        "unsupported_collections": [],
+        "gaps": []
       }
     }
   ]

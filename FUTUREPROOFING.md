@@ -110,8 +110,8 @@ retain the stop control.
 censuses, drift reports, and skeleton maps for Python, TypeScript, Go, C++, and
 Solidity. A boundary is fail-open and never applies during a security review.
 
-**Missing.** The content-addressed-object rule has classified a large real
-surface but still owes its frontier run. Markdown has no outline extractor.
+**Missing.** Markdown has no outline extractor. The content-addressed object
+rule shipped with guard tests and an evidence bundle; only that job remains.
 
 **With enough contribution.** Horos could give an agent a cheap, proved map of
 large mixed repositories: generated and vendored sinks excluded with reasons,
@@ -158,7 +158,7 @@ exact bytes, ties live values to a chain and block, records evaluation, and
 governs promotion and rollback of a grounded protocol-agent release.
 
 **Missing.** The reference release uses a demonstration corpus and preserved
-Goldfinch readings. No live Wildcat reference release or Ariadne binding has
+Aave v4 readings. No live Wildcat reference release or Ariadne binding has
 been established.
 
 **With enough contribution.** Berean could support continuously evaluated

@@ -1,4 +1,4 @@
-"""Versioned Goldfinch and Clearpool Tabularium derivation tests."""
+"""Versioned Aave v4 and Clearpool Tabularium derivation tests."""
 
 from copy import deepcopy
 import json
@@ -23,7 +23,7 @@ from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib import derivation  # noqa: E402
 from alexandria_lib.derivation import component_reader, derive  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
-from alexandria_lib.mappings import goldfinch as goldfinch_mapping  # noqa: E402
+from alexandria_lib.mappings import aave_v4 as aave_v4_mapping  # noqa: E402
 from alexandria_lib.release import ingest, sha256, verify  # noqa: E402
 from alexandria_lib.rows import validate_event, validate_observation  # noqa: E402
 
@@ -91,6 +91,44 @@ class DerivationTestCase(unittest.TestCase):
         return [json.loads(line) for line in data.splitlines()]
 
 
+    def synthetic_observation(self):
+        """A position-observation row built by hand.
+
+        No shipped mapping emits one: the Aave v4 log mapping states events
+        only. The observation schema is still enforced, so these guards build
+        their subject rather than deriving it.
+        """
+        from alexandria_lib.rows import observation_row, provenance
+
+        return observation_row(
+            identity="eip155:1:synthetic-observation",
+            chain="eip155:1",
+            venue="aave-v4",
+            subject="eip155:1:0x" + "ab" * 20,
+            deployment="aave-v4-mainnet",
+            facility={"kind": "aave-v4-spoke", "id": "0x" + "bb" * 20},
+            observation={
+                "property": "aave-v4.credit-line-balance",
+                "value": "1",
+                "unit": "base-units",
+                "at": {"block_number": "25870892", "timestamp": "1788106427"},
+                "method": "recorded-read",
+                "evidence_class": "archive-log",
+            },
+            provenance=provenance(
+                source_release_id="sha256:" + "0" * 64,
+                component="aave-v4-source",
+                component_sha256="sha256:" + "0" * 64,
+                capture_id="aave-v4-window",
+                source_selector="/logs/0",
+                source_identity="synthetic",
+                mapping_rule="aave-v4.borrow.v1",
+                adapter="aave-v4",
+                adapter_version="1.0.0",
+                evidence_class="archive-log",
+            ),
+        )
+
 class DeriveIntegrationTests(DerivationTestCase):
     def test_derive_prints_and_verifies_new_release_id(self):
         expected = self.build_derived()
@@ -106,24 +144,28 @@ class DeriveIntegrationTests(DerivationTestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertRegex(result.stdout, r"^sha256:[0-9a-f]{64}\n$")
 
-    def test_goldfinch_and_clearpool_event_counts(self):
+    def test_aave_v4_and_clearpool_event_counts(self):
         self.build_derived()
         events = self.rows()
-        by_venue = {venue: sum(row["venue"] == venue for row in events) for venue in ("goldfinch", "clearpool")}
-        self.assertEqual(by_venue, {"goldfinch": 511, "clearpool": 11})
+        by_venue = {venue: sum(row["venue"] == venue for row in events) for venue in ("aave-v4", "clearpool")}
+        self.assertEqual(by_venue, {"aave-v4": 500, "clearpool": 11})
 
     def test_event_family_counts_reconcile(self):
         self.build_derived()
         counts = self.manifest()["derivation"]["counts"]
-        self.assertEqual(counts["event_families"], {"borrowing": 39, "repayment": 483})
-        self.assertEqual(counts["event_rows"], 522)
+        self.assertEqual(counts["event_families"], {"borrowing": 287, "repayment": 224})
+        self.assertEqual(counts["event_rows"], 511)
 
-    def test_goldfinch_credit_lines_become_observations(self):
+    def test_aave_v4_logs_state_events_and_no_position(self):
         self.build_derived()
-        observations = self.rows(observations=True)
-        self.assertEqual(len(observations), 31)
-        self.assertTrue(all(row["venue"] == "goldfinch" for row in observations))
-        self.assertTrue(all(row["observation"]["property"] == "goldfinch.credit-line-balance" for row in observations))
+        self.assertEqual(self.rows(observations=True), [])
+        for row in self.rows():
+            if row["venue"] != "aave-v4":
+                continue
+            asset = row["amounts"][0]["asset"]
+            self.assertRegex(asset["address"], r"^0x[0-9a-f]{40}$")
+            self.assertTrue(asset["symbol"])
+            self.assertIsInstance(asset["decimals"], int)
 
     def test_clearpool_emits_no_position_observation(self):
         self.build_derived()
@@ -132,7 +174,7 @@ class DeriveIntegrationTests(DerivationTestCase):
     def test_events_retain_source_evidence_classes(self):
         self.build_derived()
         evidence = {(row["venue"], row["provenance"]["evidence_class"]) for row in self.rows()}
-        self.assertEqual(evidence, {("goldfinch", "hosted-indexer"), ("clearpool", "archive-log")})
+        self.assertEqual(evidence, {("aave-v4", "archive-log"), ("clearpool", "archive-log")})
 
     def test_amounts_stay_exact_decimal_strings(self):
         self.build_derived()
@@ -186,7 +228,7 @@ class DeriveIntegrationTests(DerivationTestCase):
 
     def test_every_primary_selector_resolves(self):
         self.build_derived()
-        sources = {name: self.source_json(name) for name in ("goldfinch-source", "clearpool-source")}
+        sources = {name: self.source_json(name) for name in ("aave-v4-source", "clearpool-source")}
         for row in self.rows() + self.rows(observations=True):
             current = sources[row["provenance"]["component"]]
             for token in row["provenance"]["source_selector"].split("/")[1:]:
@@ -198,8 +240,10 @@ class DeriveIntegrationTests(DerivationTestCase):
         self.build_derived()
         clearpool = next(row for row in self.rows() if row["venue"] == "clearpool")
         self.assertEqual(len(clearpool["provenance"]["context_selectors"]), 3)
-        observation = self.rows(observations=True)[0]
-        self.assertEqual(observation["provenance"]["context_selectors"], ["/_meta"])
+        aave = next(row for row in self.rows() if row["venue"] == "aave-v4")
+        self.assertEqual(
+            aave["provenance"]["context_selectors"], ["/reserve_reads", "/token_reads"]
+        )
 
     def test_manifest_binds_both_output_digests(self):
         self.build_derived()
@@ -213,36 +257,31 @@ class DeriveIntegrationTests(DerivationTestCase):
     def test_manifest_names_registered_mapping_revisions(self):
         self.build_derived()
         mappings = {item["adapter"]: item for item in self.manifest()["derivation"]["mappings"]}
-        self.assertEqual(mappings["goldfinch"]["mapping_revision"], "goldfinch.credit.v1")
+        self.assertEqual(mappings["aave-v4"]["mapping_revision"], "aave-v4.credit.v1")
         self.assertEqual(mappings["clearpool"]["mapping_revision"], "clearpool.credit.v1")
 
     def test_mapping_revision_change_changes_release_identity(self):
         first = self.build_derived()
         first_events = (self.derived_release / "credit-events.jsonl").read_bytes()
         second = self.root / "derived-new-revision"
-        with mock.patch.object(goldfinch_mapping, "MAPPING_REVISION", "goldfinch.credit.v2"):
+        with mock.patch.object(aave_v4_mapping, "MAPPING_REVISION", "aave-v4.credit.v2"):
             second_id = derive(self.raw_release, second)
         self.assertNotEqual(first, second_id)
         self.assertEqual(first_events, (second / "credit-events.jsonl").read_bytes())
 
-    def test_observation_identity_includes_snapshot_boundary(self):
-        self.build_derived()
-        first_events = [row["id"] for row in self.rows()]
-        first_observations = [row["id"] for row in self.rows(observations=True)]
-        source = self.source_json("goldfinch-source")
-        source["_meta"]["block"]["number"] += 1
-        self.write_source("goldfinch-source", source)
-        self.raw_release = self.root / "raw-second-snapshot"
-        self.derived_release = self.root / "derived-second-snapshot"
-        self.build_derived()
-        self.assertEqual(first_events, [row["id"] for row in self.rows()])
-        self.assertNotEqual(first_observations, [row["id"] for row in self.rows(observations=True)])
+    def test_source_window_must_match_its_capture_interval(self):
+        source = self.source_json("aave-v4-source")
+        source["_meta"]["window"]["last_block"] += 1
+        self.write_source("aave-v4-source", source)
+        self.build_raw()
+        with self.assertRaisesRegex(AlexandriaError, "window does not match"):
+            derive(self.raw_release, self.derived_release)
 
     def test_row_identity_does_not_depend_on_capture_name(self):
         self.build_derived()
         first_events = [row["id"] for row in self.rows()]
         first_observations = [row["id"] for row in self.rows(observations=True)]
-        self.plan["captures"][0]["id"] = "renamed-goldfinch-capture"
+        self.plan["captures"][0]["id"] = "renamed-aave-v4-capture"
         self.plan["captures"][1]["id"] = "renamed-clearpool-capture"
         self._write_plan()
         self.raw_release = self.root / "renamed-raw"
@@ -272,11 +311,16 @@ class DeriveIntegrationTests(DerivationTestCase):
         }
         self.assertEqual(first, second)
 
-    def test_mapping_coverage_exposes_unsupported_goldfinch_collections(self):
+    def test_mapping_coverage_exposes_unsupported_aave_v4_collections(self):
         self.build_derived()
-        goldfinch = next(item for item in self.manifest()["derivation"]["mappings"] if item["adapter"] == "goldfinch")
-        self.assertEqual(goldfinch["coverage"]["unsupported_collections"], {"callableLoans": 1, "tranchedPools": 24})
-        self.assertEqual(goldfinch["coverage"]["mapped_records"], 542)
+        aave_v4 = next(item for item in self.manifest()["derivation"]["mappings"] if item["adapter"] == "aave-v4")
+        self.assertEqual(aave_v4["coverage"]["unsupported_collections"], {})
+        self.assertEqual(aave_v4["coverage"]["mapped_records"], 500)
+        self.assertEqual(
+            aave_v4["coverage"]["context_collections"],
+            {"reserve-reads": 35, "token-reads": 10},
+        )
+        self.assertEqual(aave_v4["coverage"]["source_records"], 545)
 
     def test_clearpool_coverage_keeps_factory_as_context(self):
         self.build_derived()
@@ -287,8 +331,8 @@ class DeriveIntegrationTests(DerivationTestCase):
     def test_subject_counts_reconcile_to_rows(self):
         self.build_derived()
         counts = self.manifest()["derivation"]["counts"]
-        self.assertEqual(sum(item["events"] for item in counts["subjects"].values()), 522)
-        self.assertEqual(sum(item["observations"] for item in counts["subjects"].values()), 31)
+        self.assertEqual(sum(item["events"] for item in counts["subjects"].values()), 511)
+        self.assertEqual(sum(item["observations"] for item in counts["subjects"].values()), 0)
 
     def test_output_classification_inherits_strictest_input(self):
         self.plan["components"][0].update(access="private", redistribution="prohibited")
@@ -320,23 +364,23 @@ class DeriveIntegrationTests(DerivationTestCase):
 class MappingRefusalTests(DerivationTestCase):
     def test_duplicate_capture_cannot_duplicate_economic_rows(self):
         duplicate = deepcopy(self.plan["captures"][0])
-        duplicate["id"] = "second-name-for-same-goldfinch-capture"
+        duplicate["id"] = "second-name-for-same-aave-v4-capture"
         self.plan["captures"].append(duplicate)
         self._write_plan()
         self.build_raw()
         with self.assertRaisesRegex(AlexandriaError, "duplicate derived row identity"):
             derive(self.raw_release, self.derived_release)
 
-    def test_duplicate_goldfinch_record_identity_is_rejected(self):
-        source = self.source_json("goldfinch-source")
-        source["borrows"].append(deepcopy(source["borrows"][0]))
-        self.write_source("goldfinch-source", source)
+    def test_duplicate_aave_v4_record_identity_is_rejected(self):
+        source = self.source_json("aave-v4-source")
+        source["logs"].append(deepcopy(source["logs"][0]))
+        self.write_source("aave-v4-source", source)
         coverage = self.plan["captures"][0]["coverage"]
         coverage["collections"][0]["record_count"] += 1
         coverage["record_count"] += 1
         self._write_plan()
         self.build_raw()
-        with self.assertRaisesRegex(AlexandriaError, "duplicate Goldfinch"):
+        with self.assertRaisesRegex(AlexandriaError, "repeats the source identity"):
             derive(self.raw_release, self.derived_release)
 
     def test_duplicate_clearpool_log_identity_is_rejected(self):
@@ -367,10 +411,10 @@ class MappingRefusalTests(DerivationTestCase):
         with self.assertRaisesRegex(AlexandriaError, "duplicate Clearpool"):
             derive(self.raw_release, self.derived_release)
 
-    def test_corrupted_goldfinch_native_shape_is_rejected(self):
-        source = self.source_json("goldfinch-source")
-        del source["borrows"][0]["asset"]
-        self.write_source("goldfinch-source", source)
+    def test_corrupted_aave_v4_native_shape_is_rejected(self):
+        source = self.source_json("aave-v4-source")
+        del source["logs"][0]["topics"]
+        self.write_source("aave-v4-source", source)
         self.build_raw()
         with self.assertRaises(AlexandriaError):
             derive(self.raw_release, self.derived_release)
@@ -403,29 +447,28 @@ class MappingRefusalTests(DerivationTestCase):
         with self.assertRaisesRegex(AlexandriaError, "block range"):
             derive(self.raw_release, self.derived_release)
 
-    def test_goldfinch_event_after_snapshot_is_rejected(self):
-        source = self.source_json("goldfinch-source")
-        source["borrows"][0]["timestamp"] = str(source["_meta"]["block"]["timestamp"] + 1)
-        self.write_source("goldfinch-source", source)
+    def test_aave_v4_log_outside_the_capture_interval_is_rejected(self):
+        source = self.source_json("aave-v4-source")
+        source["logs"][0]["blockNumber"] = "0x1"
+        self.write_source("aave-v4-source", source)
         self.build_raw()
-        with self.assertRaisesRegex(AlexandriaError, "later than the source snapshot"):
+        with self.assertRaisesRegex(AlexandriaError, "outside the capture interval"):
             derive(self.raw_release, self.derived_release)
 
-    def test_goldfinch_source_block_after_capture_time_is_rejected(self):
-        source = self.source_json("goldfinch-source")
-        source["_meta"]["block"]["timestamp"] = 4_102_444_800
-        self.write_source("goldfinch-source", source)
+    def test_aave_v4_reserve_read_contradicting_its_bytes_is_rejected(self):
+        source = self.source_json("aave-v4-source")
+        source["reserve_reads"][0]["underlying"] = "0x" + "ab" * 20
+        self.write_source("aave-v4-source", source)
         self.build_raw()
-        with self.assertRaisesRegex(AlexandriaError, "later than its capture time"):
+        with self.assertRaisesRegex(AlexandriaError, "underlying disagrees"):
             derive(self.raw_release, self.derived_release)
 
-    def test_overlong_goldfinch_log_index_is_rejected_before_row_identity(self):
-        source = self.source_json("goldfinch-source")
-        native = source["borrows"][0]
-        native["id"] = native["hash"] + "-" + "1" * 79
-        self.write_source("goldfinch-source", source)
+    def test_malformed_aave_v4_log_index_is_rejected_before_row_identity(self):
+        source = self.source_json("aave-v4-source")
+        source["logs"][0]["logIndex"] = "not-a-quantity"
+        self.write_source("aave-v4-source", source)
         self.build_raw()
-        with self.assertRaisesRegex(AlexandriaError, "transaction hash and log index"):
+        with self.assertRaisesRegex(AlexandriaError, "not a hex quantity"):
             derive(self.raw_release, self.derived_release)
 
     def test_overlong_clearpool_hex_quantity_is_rejected(self):
@@ -445,11 +488,13 @@ class MappingRefusalTests(DerivationTestCase):
             derive(self.raw_release, self.derived_release)
 
     def test_missing_source_collection_is_rejected(self):
-        source = self.source_json("goldfinch-source")
-        del source["callableLoans"]
-        self.write_source("goldfinch-source", source)
+        source = self.source_json("aave-v4-source")
+        del source["token_reads"]
+        self.write_source("aave-v4-source", source)
         coverage = self.plan["captures"][0]["coverage"]
-        removed = coverage["collections"].pop(1)
+        removed = next(item for item in coverage["collections"]
+                       if item["selector"] == "/token_reads")
+        coverage["collections"].remove(removed)
         coverage["record_count"] -= removed["record_count"]
         self._write_plan()
         self.build_raw()
@@ -476,7 +521,7 @@ class MappingRefusalTests(DerivationTestCase):
 
     def test_observation_schema_refuses_current_balance_conclusion(self):
         self.build_derived()
-        row = self.rows(observations=True)[0]
+        row = self.synthetic_observation()
         row["current_balance"] = row["observation"]["value"]
         with self.assertRaises(AlexandriaError):
             validate_observation(row)
@@ -490,7 +535,7 @@ class MappingRefusalTests(DerivationTestCase):
 
     def test_observation_property_must_match_venue(self):
         self.build_derived()
-        row = self.rows(observations=True)[0]
+        row = self.synthetic_observation()
         row["observation"]["property"] = "clearpool.credit-line-balance"
         with self.assertRaisesRegex(AlexandriaError, "match its venue"):
             validate_observation(row)
@@ -505,7 +550,7 @@ class MappingRefusalTests(DerivationTestCase):
         event["provenance"]["evidence_class"] = {}
         with self.assertRaises(AlexandriaError):
             validate_event(event)
-        observation = self.rows(observations=True)[0]
+        observation = self.synthetic_observation()
         observation["observation"]["evidence_class"] = []
         with self.assertRaises(AlexandriaError):
             validate_observation(observation)

@@ -44,6 +44,7 @@ PROSE_PASS = ROOT / "skills" / "fiat" / "references" / "prose-pass.md"
 PLUGIN_CURRENCY = ROOT / "skills" / "fiat" / "references" / "plugin-currency.md"
 AUDIT_LOOP = ROOT / "skills" / "fiat" / "references" / "audit-loop.md"
 XRAY_REUSE = ROOT / "skills" / "fiat" / "references" / "xray-reuse.md"
+OVERLAYS = ROOT / "skills" / "fiat" / "references" / "wildcat-overlays.md"
 KRONOS = ROOT / "skills" / "kronos" / "SKILL.md"
 REPO_ROOT = ROOT.parents[1]
 GUIDE = REPO_ROOT / "docs" / "how-to-help-shoggoth.md"
@@ -71,6 +72,7 @@ class FiatSkillContractTests(unittest.TestCase):
         cls.prose_pass = PROSE_PASS.read_text(encoding="utf-8")
         cls.audit_loop = AUDIT_LOOP.read_text(encoding="utf-8")
         cls.xray_reuse = XRAY_REUSE.read_text(encoding="utf-8")
+        cls.overlays = OVERLAYS.read_text(encoding="utf-8")
 
     def test_marketplace_reference_is_linked(self):
         self.assertIn("[wildcat-marketplace.md](references/wildcat-marketplace.md)", self.fiat)
@@ -91,6 +93,80 @@ class FiatSkillContractTests(unittest.TestCase):
             self.assertIn("all four final outputs", text)
             self.assertIn("Any cache uncertainty", text)
         self.assertIn("Do not add them to `hexctl` state", self.xray_reuse)
+
+    def test_overlay_reference_is_bound_to_audit_loop_and_warden(self):
+        # Reached from the audit phase only, the way xray-reuse.md is: the entry
+        # skill is a bound instruction source, so a phase-local reference is
+        # hooked from the phase document and the worker brief instead.
+        self.assertTrue(OVERLAYS.is_file())
+        self.assertIn("[wildcat-overlays.md](wildcat-overlays.md)", self.audit_loop)
+        self.assertIn(
+            "`<plugin-root>/skills/fiat/references/wildcat-overlays.md`",
+            " ".join(AGENTS["warden"].split()),
+        )
+        self.assertNotIn("wildcat-overlays", self.fiat)
+
+    def test_overlay_check_is_silent_in_both_directions(self):
+        overlays = " ".join(self.overlays.split())
+        self.assertIn(
+            "exit status is the result and it deliberately prints nothing", overlays
+        )
+        self.assertIn("say nothing about the check", overlays)
+        self.assertIn("record no receipt", overlays)
+        self.assertIn(
+            "run the audit phase exactly as written in "
+            "[audit-loop.md](audit-loop.md), from the vendored skills",
+            overlays,
+        )
+        for text in (
+            " ".join(self.audit_loop.split()),
+            " ".join(AGENTS["warden"].split()),
+        ):
+            self.assertIn("prints nothing either way", text)
+
+    def test_overlay_descriptor_contract_is_explicit(self):
+        overlays = " ".join(self.overlays.split())
+        self.assertIn("`.wildcat-labs/private-overlay.json`", overlays)
+        self.assertIn("its `authorization` is `fiat-contributor-check`", overlays)
+        self.assertIn("its `disclosure` is `silent`", overlays)
+        self.assertIn(
+            "is a relative path inside the descriptor's own repository", overlays
+        )
+        self.assertIn("`phases` contains `audit`", overlays)
+        self.assertIn("SHA-256 matches `manifest_sha256`", overlays)
+        self.assertIn("delete the staging directory when the phase ends", overlays)
+        self.assertIn(
+            "Never clone or copy a descriptor's repository root into a plugin cache",
+            overlays,
+        )
+
+    def test_overlay_resolution_failure_falls_back_without_reporting(self):
+        overlays = " ".join(self.overlays.split())
+        self.assertIn(
+            "means there is no overlay for this run. Read the vendored copy and "
+            "continue. Do not report the failure",
+            overlays,
+        )
+        self.assertIn("do not retry it later in the run", overlays)
+
+    def test_overlay_leaves_no_trace_in_any_durable_record(self):
+        overlays = " ".join(self.overlays.split())
+        self.assertIn(
+            "out of user output, Fiat state, its ledger, the Warden brief and "
+            "directive, every receipt, the run's audit file, the audit report, "
+            "the pull request body, and every commit message",
+            overlays,
+        )
+        self.assertIn("The `security_suite` receipt does not change", overlays)
+        self.assertIn(
+            "do not claim in either direction which copy of the instructions was read",
+            overlays,
+        )
+        self.assertIn(
+            "`.git/info/exclude`, which is local and unpublished, and never through "
+            "its `.gitignore`, which is committed",
+            overlays,
+        )
 
     def test_failed_identity_check_is_silent_and_non_persistent(self):
         self.assertIn("do not record a receipt", self.marketplace)
@@ -158,12 +234,19 @@ class FiatSkillContractTests(unittest.TestCase):
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
-            "surveyor": "`topic`, `target_dir`, `base_ref`, `output_path`, and `design_output_path`",
-            "mason": "`runbook_step`, `design_evidence`, `branch`, and `branch_from`",
+            "surveyor": (
+                "`topic`, `target_dir`, `base_ref`, `output_path`, "
+                "`design_output_path`, and `plugin_root`"
+            ),
+            "mason": (
+                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+                "and `plugin_root`"
+            ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
-                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, "
-                "`runbook_step`, and `design_evidence`"
+                "`audit_log_path`, `step`, `round`, `warden_continuity`, "
+                "`audit_filter`, `risk_register`, `runbook_step`, "
+                "and `design_evidence`"
             ),
             "scribe": "`files`, `pr_base`, `pr_draft_path`, and `plugin_root`",
         }
@@ -463,6 +546,33 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("[checked base, checked candidate]", push)
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
+
+    def test_decision_assignment_contract_is_read_only_and_source_bound(self):
+        fiat = " ".join(self.fiat.split())
+        push = " ".join(self.push_discipline.split())
+        for text in (fiat, push):
+            self.assertIn("fiat-decision-assignments/v1", text)
+            self.assertIn("fiat-decision-assignment-composition/v1", text)
+            self.assertIn("verify-decision-assignments", text)
+            self.assertIn("read-only", text)
+            self.assertIn("ADR-Assignment-Base: <base>", text)
+            self.assertIn("ADR-Assignment: adr/<slug>=ADR-NNN", text)
+            self.assertIn("sibling", text)
+        self.assertIn("--decision-assignments", push)
+        self.assertIn("fiat_decision_assignments_v1", push)
+        self.assertIn("must not remain in active ancestry", push)
+
+    def test_decision_assignment_promise_keeps_hypomnema_authority(self):
+        promise = self.fiat.split(
+            "### fiat-decision-assignment-composition", 1
+        )[1].split("### ", 1)[0]
+        self.assertIn("- Consequence: 2", promise)
+        self.assertIn("- Authorises:", promise)
+        self.assertIn("Hypomnema alone owns allocation policy", promise)
+        self.assertIn("does not reserve a number", promise)
+        self.assertIn("does not", promise)
+        self.assertIn("mutate a draft", promise)
+        self.assertIn("superseded assignment retained in active ancestry", promise)
 
     def test_issue_556_generation_records_retain_the_declared_relation(self):
         ledgers = {

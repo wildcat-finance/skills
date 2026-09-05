@@ -1302,6 +1302,83 @@ class PythonAnalyserTests(TemporaryRepositoryTestCase):
         )
         self.assertTrue(any(item.symbol == "line:1:constant-false" for item in findings))
 
+    def test_a_constant_true_branch_is_still_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "if True:" + NL + "    spare()" + NL}
+        )
+        self.assertTrue(any(item.symbol == "line:1:constant-true" for item in findings))
+
+    def test_a_constant_true_loop_is_not_a_dead_branch(self):
+        """`while True:` is how Python spells an unbounded loop, not dead code."""
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "while True:" + NL + "    break" + NL}
+        )
+        self.assertFalse(any(item.symbol == "line:1:constant-true" for item in findings))
+
+    def test_a_constant_false_loop_is_still_a_dead_branch(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "while False:" + NL + "    spare()" + NL}
+        )
+        self.assertTrue(any(item.symbol == "line:1:constant-false" for item in findings))
+
+    def test_a_future_directive_is_not_an_unused_import(self):
+        """The name is a compiler directive; no reader is meant to load it."""
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "from __future__ import annotations" + NL + "value = 1" + NL}
+        )
+        self.assertFalse(any(item.symbol == "annotations@1" for item in findings))
+
+    def test_a_plain_import_beside_a_future_directive_is_still_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "from __future__ import annotations" + NL
+                    + "import os" + NL
+                    + "value = 1" + NL
+                )
+            }
+        )
+        self.assertTrue(any(item.symbol == "os@2" for item in findings))
+
+    def test_a_bare_waiver_retains_a_side_effect_import(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "import os  # noqa" + NL + "value = 1" + NL}
+        )
+        self.assertFalse(any(item.symbol == "os@1" for item in findings))
+
+    def test_a_waiver_naming_the_unused_import_code_retains_it(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "import os  # noqa: F401  (sets sys.path)" + NL + "value = 1" + NL}
+        )
+        self.assertFalse(any(item.symbol == "os@1" for item in findings))
+
+    def test_a_waiver_naming_another_code_does_not_retain_it(self):
+        """An E402 placement waiver says nothing about an unused binding."""
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "import os  # noqa: E402" + NL + "value = 1" + NL}
+        )
+        self.assertTrue(any(item.symbol == "os@1" for item in findings))
+
+    def test_a_waiver_retains_only_the_name_it_sits_beside(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "import os  # noqa: F401" + NL
+                    + "import json" + NL
+                    + "value = 1" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "os@1" for item in findings))
+        self.assertTrue(any(item.symbol == "json@2" for item in findings))
+
+    def test_a_waiver_does_not_retain_an_unused_local(self):
+        """The marker waives an unused import, not every finding on the line."""
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "def f():" + NL + "    spare = 1  # noqa: F401" + NL + "    return 2" + NL}
+        )
+        self.assertTrue(any(item.symbol == "f.spare@2" for item in findings))
+
     def test_computed_import_lowers_candidate_confidence(self):
         _universe, (status, findings) = self._analyse(
             {

@@ -1,4 +1,4 @@
 interface:
   display_name: "Sapheneia"
-  short_description: "AuDHD-shaped replies, audit records, issues and comments."
-  default_prompt: "Use $sapheneia to shape replies for an AuDHD engineer throughout this task, or apply its bounded operation to one audit record, GitHub issue, or issue comment without activating session mode."
+  short_description: "AuDHD-shaped replies and every record the agent writes."
+  default_prompt: "Use $sapheneia to shape replies for an AuDHD engineer throughout this task, and apply its bounded operation to every record you write down, including one audit record, GitHub issue, issue comment, pull request, repository document, or commit message, without activating session mode."

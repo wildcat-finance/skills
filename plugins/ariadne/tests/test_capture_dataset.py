@@ -9,7 +9,7 @@ from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
-from ariadne_lib import envelope, registry, statement, verify  # noqa: E402
+from ariadne_lib import envelope, registry, verify  # noqa: E402
 import ariadne_lib.predicates  # noqa: F401,E402  (registers the shipped predicates)
 from ariadne_lib.capture import dataset as capture  # noqa: E402
 
@@ -24,7 +24,7 @@ COUNTS = {"mapping.json": 1}
 
 def grab(release=V2, **overrides):
     kwargs = {
-        "name": "goldfinch-credit-events-v2",
+        "name": "aave-v4-credit-events-v2",
         "coverage_dimension": "block",
         "coverage_start": 11370000,
         "coverage_end": 15000000,
@@ -66,7 +66,7 @@ class CaptureTests(unittest.TestCase):
     def test_the_release_bundle_is_a_subject_of_its_own(self):
         document = grab()
         names = [s["name"] for s in document["subject"]]
-        self.assertIn("goldfinch-credit-events-v2", names)
+        self.assertIn("aave-v4-credit-events-v2", names)
 
     def test_two_captures_of_the_same_tree_agree(self):
         """A statement that differs run to run cannot be compared with anything."""
@@ -346,7 +346,7 @@ class ArgumentTests(unittest.TestCase):
 
     def test_parameters_that_are_not_a_mapping_are_refused(self):
         with self.assertRaises(capture.CaptureError) as caught:
-            grab(parameters=["venue", "goldfinch"])
+            grab(parameters=["venue", "aave-v4"])
         self.assertIn("--parameter must be a mapping", str(caught.exception))
 
     def test_record_counts_that_are_not_a_mapping_are_refused(self):
@@ -395,15 +395,15 @@ class DeltaTests(unittest.TestCase):
         self.assertIn("first release", found["reason"])
 
     def test_a_comparison_identifies_both_sides(self):
-        found = grab(previous=V1, previous_name="goldfinch-credit-events-v1")["predicate"]["deltas"]
-        self.assertEqual(found["baseline"]["name"], "goldfinch-credit-events-v1")
-        self.assertEqual(found["current"]["name"], "goldfinch-credit-events-v2")
+        found = grab(previous=V1, previous_name="aave-v4-credit-events-v1")["predicate"]["deltas"]
+        self.assertEqual(found["baseline"]["name"], "aave-v4-credit-events-v1")
+        self.assertEqual(found["current"]["name"], "aave-v4-credit-events-v2")
         self.assertNotEqual(found["baseline"]["digest"], found["current"]["digest"])
 
     def test_no_record_level_difference_is_invented(self):
         """Telling which records changed needs a record identity this capture does
         not have, so it records none and says so."""
-        document = grab(previous=V1, previous_name="goldfinch-credit-events-v1")
+        document = grab(previous=V1, previous_name="aave-v4-credit-events-v1")
         self.assertNotIn("records", document["predicate"]["deltas"])
         skipped = [
             c for c in document["predicate"]["claims"] if c["disposition"] == "skipped"
@@ -412,7 +412,7 @@ class DeltaTests(unittest.TestCase):
         self.assertIn("record identity", skipped[0]["reason"])
 
     def test_a_comparison_verifies_clean(self):
-        found = report(grab(previous=V1, previous_name="goldfinch-credit-events-v1"))
+        found = report(grab(previous=V1, previous_name="aave-v4-credit-events-v1"))
         self.assertTrue(found.ok, "\n".join(g.line() for g in found.gates if not g.passed))
 
 
@@ -426,8 +426,8 @@ class InputTests(unittest.TestCase):
         document = grab(
             inputs=[
                 {
-                    "name": "goldfinch capture",
-                    "locator": "alexandria://goldfinch/2024-01",
+                    "name": "aave-v4 capture",
+                    "locator": "alexandria://aave-v4/2024-01",
                     "disposition": "passed",
                 }
             ]
@@ -440,7 +440,7 @@ class InputTests(unittest.TestCase):
     def test_an_input_recorded_absent_survives_and_verifies(self):
         entry = {
             "name": "subgraph backfill",
-            "locator": "https://api.thegraph.com/subgraphs/name/goldfinch",
+            "locator": "https://api.thegraph.com/subgraphs/name/aave-v4",
             "disposition": "skipped",
             "reason": "the endpoint was retired before this release was built",
         }
@@ -457,15 +457,15 @@ class ProducerTests(unittest.TestCase):
         self.assertEqual(found["command"], ["python3", "scripts/tabularium.py", "release"])
 
     def test_the_parameters_digest_is_stable_across_key_order(self):
-        one = grab(parameters={"venue": "goldfinch", "mode": "offline"})
-        two = grab(parameters={"mode": "offline", "venue": "goldfinch"})
+        one = grab(parameters={"venue": "aave-v4", "mode": "offline"})
+        two = grab(parameters={"mode": "offline", "venue": "aave-v4"})
         self.assertEqual(
             one["predicate"]["producer"]["parameters_digest"],
             two["predicate"]["producer"]["parameters_digest"],
         )
 
     def test_different_parameters_give_a_different_digest(self):
-        one = grab(parameters={"venue": "goldfinch"})
+        one = grab(parameters={"venue": "aave-v4"})
         two = grab(parameters={"venue": "clearpool"})
         self.assertNotEqual(
             one["predicate"]["producer"]["parameters_digest"],

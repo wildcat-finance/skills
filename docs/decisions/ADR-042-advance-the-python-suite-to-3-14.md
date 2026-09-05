@@ -31,7 +31,7 @@ false, while another operating-system or value error remains the bounded
 `fixture output cannot be inspected` refusal. The guard simulates suppressed
 boolean predicates so it remains meaningful on either interpreter minor.
 
-Goldfinch v1 includes `demo.py` in its fixture identity. Regenerate its
+Aave v4 v1 includes `demo.py` in its fixture identity. Regenerate its
 manifest, Ariadne statement, and release from the changed bytes. The resulting
 fixture digest is
 `06043f4c4e7f62701d55cc0acb948f9330ec218ae50d786daa43ffefb6079eb2`,
@@ -43,7 +43,7 @@ the release digest is
 The existing locked Lazarus dependencies remain unchanged because the exact
 lock installs on the new interpreter and its full suite remains the dependency
 gate. Historical studies, runbooks, proofs, and audit records retain the
-versions and bytes they observed. The Goldfinch v0 release remains
+versions and bytes they observed. The Aave v4 v0 release remains
 byte-identical.
 
 ## Alternatives

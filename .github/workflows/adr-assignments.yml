@@ -1,0 +1,651 @@
+name: adr-assignments
+
+# Candidate commits are fetched as inert Git objects. The protected base owns
+# every command below; no candidate checkout, configuration, hook, or script is
+# loaded or executed.
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  adr-assignments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Mark exact head pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "adr-assignments: event head object identifier is malformed" >&2
+            exit 2
+          fi
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api --method POST \
+            "repos/wildcat-finance/skills/statuses/$HEAD_SHA" \
+            -f state=pending \
+            -f context=adr-assignments \
+            -f description="Base-owned ADR assignment policy is evaluating this head" \
+            -f target_url="$run_url" \
+            >/dev/null
+
+      - name: Check out exact base policy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Validate exact assignment composition
+        id: evaluate
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          refuse() {
+            local reason="$1"
+            printf 'reason=%s\n' "$reason" >>"$GITHUB_OUTPUT"
+            printf 'adr-assignments: refused (%s)\n' "$reason" >&2
+            exit 2
+          }
+
+          case "$PR_NUMBER" in
+            ""|*[!0-9]*) refuse event-input ;;
+          esac
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] ||
+             [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            refuse event-input
+          fi
+
+          candidate_repository="$RUNNER_TEMP/adr-assignments-candidate.git"
+          policy_repository="$RUNNER_TEMP/adr-assignments-policy"
+          safe_home="$RUNNER_TEMP/adr-assignments-home"
+          remote_url="https://github.com/wildcat-finance/skills.git"
+          test ! -e "$candidate_repository" &&
+            test ! -L "$candidate_repository" || refuse workspace-state
+          test ! -e "$policy_repository" &&
+            test ! -L "$policy_repository" || refuse workspace-state
+          test ! -e "$safe_home" && test ! -L "$safe_home" || refuse workspace-state
+          install -d -m 700 "$safe_home"
+
+          safe_git() {
+            env -i \
+              HOME="$safe_home" \
+              PATH="$PATH" \
+              LC_ALL=C \
+              GIT_CONFIG_NOSYSTEM=1 \
+              GIT_CONFIG_GLOBAL=/dev/null \
+              GIT_ATTR_NOSYSTEM=1 \
+              GIT_TERMINAL_PROMPT=0 \
+              git \
+                -c core.hooksPath=/dev/null \
+                -c protocol.allow=never \
+                -c protocol.https.allow=always \
+                -c protocol.file.allow=never \
+                -c protocol.ext.allow=never \
+                "$@"
+          }
+
+          safe_git init --quiet --bare --template= "$candidate_repository"
+          safe_git --git-dir="$candidate_repository" remote add origin "$remote_url"
+          if ! safe_git --git-dir="$candidate_repository" fetch \
+            --quiet \
+            --no-tags \
+            --no-recurse-submodules \
+            --no-write-fetch-head \
+            origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            "+refs/pull/${PR_NUMBER}/head:refs/pull/request/head"; then
+            refuse history-incomplete
+          fi
+
+          fetched_base="$(
+            safe_git --git-dir="$candidate_repository" rev-parse \
+              refs/remotes/origin/main^{commit}
+          )" || refuse history-incomplete
+          fetched_head="$(
+            safe_git --git-dir="$candidate_repository" rev-parse \
+              refs/pull/request/head^{commit}
+          )" || refuse history-incomplete
+          test "$fetched_base" = "$BASE_SHA" || refuse stale-base
+          test "$fetched_head" = "$HEAD_SHA" || refuse head-moved
+          test "$(safe_git --git-dir="$candidate_repository" rev-parse --is-shallow-repository)" = false || refuse history-incomplete
+
+          # Bound the candidate's own contribution, not the protected base's
+          # history: main already carries tens of thousands of objects, so a
+          # whole-repository ceiling would refuse every pull request as the
+          # repository grows.
+          delta_objects="$RUNNER_TEMP/adr-assignments-delta-objects"
+          if ! safe_git --git-dir="$candidate_repository" rev-list --objects \
+            "$BASE_SHA..$HEAD_SHA" | cut -d ' ' -f 1 >"$delta_objects"; then
+            refuse history-incomplete
+          fi
+          object_count="$(wc -l <"$delta_objects" | tr -d '[:space:]')"
+          case "$object_count" in
+            ""|*[!0-9]*) refuse history-incomplete ;;
+          esac
+          test "$object_count" -le 50000 || refuse object-limit
+          object_bytes="$(
+            safe_git --git-dir="$candidate_repository" cat-file \
+              --batch-check='%(objectsize:disk)' <"$delta_objects" |
+              awk '/^[0-9]+$/ {sum += $1; next} {exit 2} END {print sum + 0}'
+          )" || refuse history-incomplete
+          case "$object_bytes" in
+            ""|*[!0-9]*) refuse history-incomplete ;;
+          esac
+          test "$object_bytes" -le 268435456 || refuse object-limit
+          commit_count="$(
+            safe_git --git-dir="$candidate_repository" rev-list --count \
+              "$BASE_SHA..$HEAD_SHA"
+          )" || refuse history-incomplete
+          case "$commit_count" in
+            ""|*[!0-9]*) refuse history-incomplete ;;
+          esac
+          test "$commit_count" -le 2048 || refuse commit-limit
+
+          delta_file="$RUNNER_TEMP/adr-assignments-delta.z"
+          if ! safe_git --git-dir="$candidate_repository" diff-tree \
+            --no-commit-id --name-status -r -z \
+            "$BASE_SHA" "$HEAD_SHA" -- docs/decisions >"$delta_file"; then
+            refuse history-incomplete
+          fi
+          delta_bytes="$(wc -c <"$delta_file" | tr -d '[:space:]')"
+          test "$delta_bytes" -le 262144 || refuse path-limit
+          finals_file="$RUNNER_TEMP/adr-assignments-finals.json"
+          if ! python3 - "$delta_file" "$finals_file" <<'PY'
+          import json
+          from pathlib import Path
+          import re
+          import sys
+
+          raw = Path(sys.argv[1]).read_bytes()
+          if not raw:
+              Path(sys.argv[2]).write_text("[]\n", encoding="ascii")
+              raise SystemExit(0)
+          if raw[-1:] != b"\0":
+              raise SystemExit(2)
+          tokens = raw[:-1].split(b"\0")
+          status_re = re.compile(br"[ACDMRTUXB][0-9]{0,3}")
+          final_re = re.compile(
+              br"docs/decisions/ADR-[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\.md"
+          )
+          finals = set()
+          index = 0
+          while index < len(tokens):
+              status = tokens[index]
+              index += 1
+              if status_re.fullmatch(status) is None or index >= len(tokens):
+                  raise SystemExit(2)
+              paths = [tokens[index]]
+              index += 1
+              if status[:1] in {b"R", b"C"}:
+                  if index >= len(tokens):
+                      raise SystemExit(2)
+                  paths.append(tokens[index])
+                  index += 1
+              if any(not path or len(path) > 1024 for path in paths):
+                  raise SystemExit(2)
+              final_candidates = [
+                  path for path in paths
+                  if path.startswith(b"docs/decisions/ADR-")
+                  and path.endswith(b".md")
+              ]
+              for path in final_candidates:
+                  if final_re.fullmatch(path) is None:
+                      raise SystemExit(2)
+                  finals.add(path.decode("ascii"))
+          Path(sys.argv[2]).write_text(
+              json.dumps(sorted(finals), separators=(",", ":")) + "\n",
+              encoding="ascii",
+          )
+          PY
+          then
+            refuse path-shape
+          fi
+
+          safe_git --git-dir="$candidate_repository" remote remove origin
+          safe_git init --quiet --template= "$policy_repository"
+          printf '%s\n' "$candidate_repository/objects" \
+            >"$policy_repository/.git/objects/info/alternates"
+          safe_git -C "$policy_repository" update-ref \
+            refs/remotes/origin/main "$BASE_SHA"
+          safe_git -C "$policy_repository" update-ref \
+            refs/pull/request/head "$HEAD_SHA"
+          safe_git -C "$policy_repository" update-ref HEAD "$BASE_SHA"
+
+          final_count="$(
+            python3 - "$finals_file" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+          print(len(json.loads(Path(sys.argv[1]).read_text(encoding="ascii"))))
+          PY
+          )"
+          case "$final_count" in
+            ""|*[!0-9]*) refuse path-shape ;;
+          esac
+
+          if test "$final_count" -gt 0; then
+            parents="$(
+              safe_git --git-dir="$candidate_repository" rev-list \
+                --parents -n 1 "$HEAD_SHA"
+            )" || refuse history-incomplete
+            read -r -a parent_fields <<EOF
+          $parents
+          EOF
+            test "${parent_fields[0]:-}" = "$HEAD_SHA" || refuse history-incomplete
+            if test "${#parent_fields[@]}" -eq 2; then
+              composition_shape=descendant
+              first_parent="${parent_fields[1]}"
+              second_parent=none
+            elif test "${#parent_fields[@]}" -eq 3; then
+              composition_shape=sync
+              first_parent="${parent_fields[1]}"
+              second_parent="${parent_fields[2]}"
+              test "$second_parent" = "$BASE_SHA" || refuse stale-base
+            else
+              refuse assignment-shape
+            fi
+            [[ "$first_parent" =~ ^[0-9a-f]{40}$ ]] || refuse assignment-shape
+            message_file="$RUNNER_TEMP/adr-assignments-message"
+            safe_git --git-dir="$candidate_repository" show \
+              -s --no-show-signature --format=%B "$HEAD_SHA" >"$message_file"
+            message_bytes="$(wc -c <"$message_file" | tr -d '[:space:]')"
+            test "$message_bytes" -le 65536 || refuse message-limit
+            product_file="$RUNNER_TEMP/adr-assignments-product"
+            if ! python3 - \
+              "$candidate_repository" \
+              "$policy_repository" \
+              "$safe_home" \
+              "$message_file" \
+              "$finals_file" \
+              "$BASE_SHA" \
+              "$HEAD_SHA" \
+              "$composition_shape" \
+              "$first_parent" \
+              "$second_parent" \
+              "$product_file" <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+
+          (
+              candidate,
+              policy,
+              safe_home,
+              message_path,
+              finals_path,
+              base,
+              head,
+              shape,
+              first_parent,
+              second_parent,
+              product_path,
+          ) = sys.argv[1:]
+          oid_re = re.compile(r"[0-9a-f]{40}")
+          mapping_re = re.compile(
+              r"ADR-Assignment: adr/([a-z0-9]+(?:-[a-z0-9]+)*)=ADR-([0-9]{3})"
+          )
+          try:
+              message = Path(message_path).read_text(encoding="utf-8")
+              finals = json.loads(Path(finals_path).read_text(encoding="ascii"))
+          except (OSError, UnicodeError, ValueError):
+              raise SystemExit(2)
+          lines = message.splitlines()
+          while lines and not lines[-1]:
+              lines.pop()
+          observed = [
+              line for line in lines
+              if line.casefold().startswith("adr-assignment")
+          ]
+          if not observed or observed[0] != f"ADR-Assignment-Base: {base}":
+              raise SystemExit(2)
+          mappings = []
+          for line in observed[1:]:
+              match = mapping_re.fullmatch(line)
+              if match is None:
+                  raise SystemExit(2)
+              slug, number = match.groups()
+              mappings.append((slug, number))
+          if not 1 <= len(mappings) <= 32:
+              raise SystemExit(2)
+          expected_finals = sorted(
+              f"docs/decisions/ADR-{number}-{slug}.md"
+              for slug, number in mappings
+          )
+          if expected_finals != finals or len(set(mappings)) != len(mappings):
+              raise SystemExit(2)
+          last_blank = max(
+              (index for index, line in enumerate(lines) if not line),
+              default=-1,
+          )
+          expected_trailers = [f"ADR-Assignment-Base: {base}"]
+          expected_trailers.extend(
+              f"ADR-Assignment: adr/{slug}=ADR-{number}"
+              for slug, number in mappings
+          )
+          if last_blank < 0 or lines[last_blank + 1:] != expected_trailers:
+              raise SystemExit(2)
+          if shape == "descendant":
+              if second_parent != "none" or oid_re.fullmatch(first_parent) is None:
+                  raise SystemExit(2)
+              Path(product_path).write_text(first_parent + "\n", encoding="ascii")
+              raise SystemExit(0)
+          if (
+              shape != "sync"
+              or second_parent != base
+              or oid_re.fullmatch(first_parent) is None
+          ):
+              raise SystemExit(2)
+
+          environment = {
+              "HOME": safe_home,
+              "PATH": os.environ["PATH"],
+              "LC_ALL": "C",
+              "GIT_CONFIG_NOSYSTEM": "1",
+              "GIT_CONFIG_GLOBAL": os.devnull,
+              "GIT_ATTR_NOSYSTEM": "1",
+              "GIT_TERMINAL_PROMPT": "0",
+          }
+
+          def git(arguments, *, input_bytes=None, output_cap=262144):
+              result = subprocess.run(
+                  [
+                      "git",
+                      "-c", "core.hooksPath=/dev/null",
+                      "-c", "protocol.allow=never",
+                      "-c", "protocol.file.allow=never",
+                      "-c", "protocol.ext.allow=never",
+                      *arguments,
+                  ],
+                  input=input_bytes,
+                  capture_output=True,
+                  check=False,
+                  env=environment,
+                  timeout=20,
+              )
+              if result.returncode or len(result.stdout) > output_cap:
+                  raise SystemExit(2)
+              return result.stdout
+
+          git(["-C", policy, "read-tree", head], output_cap=128)
+          for slug, number in mappings:
+              final_path = f"docs/decisions/ADR-{number}-{slug}.md"
+              draft_path = f"docs/decisions/drafts/{slug}.md"
+              row = git(
+                  ["--git-dir", candidate, "ls-tree", "-z", head, "--", final_path],
+                  output_cap=2048,
+              )
+              try:
+                  metadata, observed_path = row.rstrip(b"\0").split(b"\t", 1)
+                  mode, kind, blob_oid = metadata.decode("ascii").split(" ")
+                  decoded_path = observed_path.decode("ascii")
+              except (UnicodeError, ValueError):
+                  raise SystemExit(2)
+              if (
+                  kind != "blob"
+                  or decoded_path != final_path
+                  or re.fullmatch(r"100[67][45][45]", mode) is None
+                  or oid_re.fullmatch(blob_oid) is None
+              ):
+                  raise SystemExit(2)
+              size_raw = git(
+                  ["--git-dir", candidate, "cat-file", "-s", blob_oid],
+                  output_cap=64,
+              )
+              try:
+                  size = int(size_raw)
+              except ValueError:
+                  raise SystemExit(2)
+              if not 0 <= size <= 1048576:
+                  raise SystemExit(2)
+              body = git(
+                  ["--git-dir", candidate, "cat-file", "blob", blob_oid],
+                  output_cap=size,
+              )
+              newline = body.find(b"\n")
+              prefix = f"# ADR-{number}: ".encode("ascii")
+              if newline < 0 or newline > 4096 or not body[:newline].startswith(prefix):
+                  raise SystemExit(2)
+              title = body[:newline][len(prefix):]
+              if not title or any(byte < 0x20 or byte == 0x7F for byte in title):
+                  raise SystemExit(2)
+              source = b"# Decision: " + title + body[newline:]
+              input_oid = git(
+                  ["-C", policy, "hash-object", "-w", "--stdin"],
+                  input_bytes=source,
+                  output_cap=128,
+              ).decode("ascii").strip()
+              if oid_re.fullmatch(input_oid) is None:
+                  raise SystemExit(2)
+              git(
+                  ["-C", policy, "update-index", "--force-remove", "--", final_path],
+                  output_cap=128,
+              )
+              git(
+                  [
+                      "-C", policy, "update-index", "--add", "--cacheinfo",
+                      f"{mode},{input_oid},{draft_path}",
+                  ],
+                  output_cap=128,
+              )
+          product_tree = git(
+              ["-C", policy, "write-tree"], output_cap=128
+          ).decode("ascii").strip()
+          if oid_re.fullmatch(product_tree) is None:
+              raise SystemExit(2)
+          product = git(
+              [
+                  "-c", "user.name=Base-owned ADR validator",
+                  "-c", "user.email=validator@example.invalid",
+                  "-C", policy, "commit-tree", product_tree,
+                  "-p", first_parent, "-p", base,
+                  "-m", "Reconstructed unnumbered assignment composition",
+              ],
+              output_cap=128,
+          ).decode("ascii").strip()
+          if oid_re.fullmatch(product) is None:
+              raise SystemExit(2)
+          Path(product_path).write_text(product + "\n", encoding="ascii")
+          PY
+            then
+              refuse assignment-evidence
+            fi
+            product="$(tr -d '\n' <"$product_file")"
+            [[ "$product" =~ ^[0-9a-f]{40}$ ]] || refuse assignment-shape
+            safe_git -C "$policy_repository" update-ref \
+              refs/adr-assignments/product "$product"
+
+            allocator="plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
+            test -f "$allocator" && test ! -L "$allocator" || refuse base-policy
+            report=.hexaemeron/adr-assignment-workflow.json
+            if ! python3 "$allocator" "plan" \
+              --repo "$policy_repository" \
+              --base "$BASE_SHA" \
+              --base-ref refs/remotes/origin/main \
+              --product "$product" \
+              --report "$report" \
+              >"$RUNNER_TEMP/adr-assignments-plan.out" \
+              2>"$RUNNER_TEMP/adr-assignments-plan.err"; then
+              refuse assignment-plan
+            fi
+            if ! python3 "$allocator" "replay" \
+              --repo "$policy_repository" \
+              --report "$report" \
+              >"$RUNNER_TEMP/adr-assignments-replay.out" \
+              2>"$RUNNER_TEMP/adr-assignments-replay.err"; then
+              refuse assignment-replay
+            fi
+            head_tree="$(
+              safe_git --git-dir="$candidate_repository" rev-parse \
+                "$HEAD_SHA^{tree}"
+            )" || refuse history-incomplete
+            summary_file="$RUNNER_TEMP/adr-assignments-mapping"
+            if ! python3 - \
+              "$policy_repository/$report" \
+              "$finals_file" \
+              "$message_file" \
+              "$BASE_SHA" \
+              "$product" \
+              "$HEAD_SHA" \
+              "$head_tree" \
+              "$summary_file" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          report_path, finals_path, message_path = map(Path, sys.argv[1:4])
+          base, product, head, head_tree = sys.argv[4:8]
+          summary_path = Path(sys.argv[8])
+          raw = report_path.read_bytes()
+          if len(raw) > 262144:
+              raise SystemExit("report exceeds the byte ceiling")
+          try:
+              report = json.loads(raw.decode("ascii"))
+          except (UnicodeError, ValueError):
+              raise SystemExit("report is not ASCII JSON")
+          canonical = (
+              json.dumps(
+                  report,
+                  ensure_ascii=True,
+                  sort_keys=True,
+                  separators=(",", ":"),
+              )
+              + "\n"
+          ).encode("ascii")
+          if canonical != raw:
+              raise SystemExit("report is not canonical")
+          if report["base"] != base or report["product"] != product:
+              raise SystemExit("report names another input")
+          if report["result_tree"] != head_tree:
+              raise SystemExit("candidate tree does not match the report")
+          finals = json.loads(finals_path.read_text(encoding="ascii"))
+          mapped = sorted(row["final_path"] for row in report["mappings"])
+          if mapped != finals:
+              raise SystemExit("final decision paths do not match the report")
+          try:
+              message = message_path.read_text(encoding="utf-8")
+          except UnicodeError:
+              raise SystemExit("candidate message is not UTF-8")
+          lines = message.splitlines()
+          while lines and not lines[-1]:
+              lines.pop()
+          expected = [f"ADR-Assignment-Base: {base}"]
+          expected.extend(
+              f"ADR-Assignment: {row['identity']}=ADR-{row['number_text']}"
+              for row in report["mappings"]
+          )
+          observed = [
+              line for line in lines
+              if line.casefold().startswith("adr-assignment")
+          ]
+          last_blank = max(
+              (index for index, line in enumerate(lines) if not line),
+              default=-1,
+          )
+          if last_blank < 0 or observed != expected or lines[last_blank + 1:] != expected:
+              raise SystemExit("candidate trailers do not match the report")
+          mapping = ",".join(
+              f"{row['identity']}=ADR-{row['number_text']}"
+              for row in report["mappings"]
+          )
+          summary_path.write_text(mapping + "\n", encoding="ascii")
+          PY
+            then
+              refuse assignment-evidence
+            fi
+            mapping_summary="$(tr -d '\n' <"$summary_file")"
+            mapping_count="$final_count"
+          else
+            product=none
+            head_tree="$(
+              safe_git --git-dir="$candidate_repository" rev-parse \
+                "$HEAD_SHA^{tree}"
+            )" || refuse history-incomplete
+            mapping_summary=none
+            mapping_count=0
+          fi
+
+          remote_refs="$RUNNER_TEMP/adr-assignments-remote-refs"
+          if ! safe_git ls-remote --refs "$remote_url" \
+            refs/heads/main "refs/pull/${PR_NUMBER}/head" >"$remote_refs"; then
+            refuse history-incomplete
+          fi
+          test "$(wc -c <"$remote_refs" | tr -d '[:space:]')" -le 1024 || refuse remote-output
+          current_base="$(awk '$2 == "refs/heads/main" {print $1}' "$remote_refs")"
+          current_head="$(awk -v ref="refs/pull/${PR_NUMBER}/head" '$2 == ref {print $1}' "$remote_refs")"
+          test "$current_base" = "$BASE_SHA" || refuse stale-base
+          test "$current_head" = "$HEAD_SHA" || refuse head-moved
+
+          {
+            printf '### ADR assignment validation\n\n'
+            printf -- '- Base: `%s`\n' "$BASE_SHA"
+            printf -- '- Head: `%s`\n' "$HEAD_SHA"
+            printf -- '- Product: `%s`\n' "$product"
+            printf -- '- Result tree: `%s`\n' "$head_tree"
+            printf -- '- Mapping: `%s`\n' "$mapping_summary"
+            printf -- '- Enforcement: repository bootstrap only; external ruleset activation was not checked.\n'
+          } >>"$GITHUB_STEP_SUMMARY"
+          printf 'mapping_count=%s\n' "$mapping_count" >>"$GITHUB_OUTPUT"
+          printf 'mapping_summary=%s\n' "$mapping_summary" >>"$GITHUB_OUTPUT"
+          printf 'reason=accepted\n' >>"$GITHUB_OUTPUT"
+
+      - name: Publish exact-head result
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVALUATION_OUTCOME: ${{ steps.evaluate.outcome }}
+          REFUSAL_REASON: ${{ steps.evaluate.outputs.reason }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "adr-assignments: event head object identifier is malformed" >&2
+            exit 2
+          fi
+          state=failure
+          description="Base-owned ADR assignment policy refused this exact head"
+          if [ "$EVALUATION_OUTCOME" = success ]; then
+            state=success
+            description="Base-owned ADR assignment policy accepted this exact head"
+          else
+            case "${REFUSAL_REASON:-internal}" in
+              ""|*[!a-z-]*|?????????????????????????????????*) reason=internal ;;
+              *) reason="$REFUSAL_REASON" ;;
+            esac
+            description="ADR assignment policy refused this exact head: $reason"
+          fi
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api --method POST \
+            "repos/wildcat-finance/skills/statuses/$HEAD_SHA" \
+            -f state="$state" \
+            -f context=adr-assignments \
+            -f description="$description" \
+            -f target_url="$run_url" \
+            >/dev/null

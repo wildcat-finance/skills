@@ -10,6 +10,13 @@
       "kind": "suite",
       "script": "tests"
     },
+    "adr-assignment-workflow": {
+      "title": "Base-owned ADR assignment workflow",
+      "argv": ["python3", "-m", "unittest", "tests.test_adr_assignment_workflow", "-v"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "tests/test_adr_assignment_workflow.py"
+    },
     "dead-code-suite": {
       "title": "Report-only dead-code suite",
       "argv": ["python3", "-m", "unittest", "tests.test_dead_code", "-v"],
@@ -23,6 +30,13 @@
       "cwd": ".",
       "kind": "command",
       "script": "scripts/dead_code.py"
+    },
+    "suite-redundancy-suite": {
+      "title": "Report-only suite-redundancy analyser suite",
+      "argv": ["python3", "-m", "unittest", "tests.test_suite_redundancy", "-v"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "tests/test_suite_redundancy.py"
     },
     "alexandria-suite": {
       "title": "Alexandria suite",
@@ -220,6 +234,10 @@
       "title": "Report-only dead-code discovery",
       "checks": ["dead-code-suite", "dead-code-suppressions-check"]
     },
+    "suite-redundancy": {
+      "title": "Report-only test-suite redundancy discovery",
+      "checks": ["suite-redundancy-suite"]
+    },
     "repo-lints": {
       "title": "Repository-wide tree lints",
       "checks": ["lint-phylax", "lint-ephoros", "lint-hypomnema"]
@@ -242,7 +260,7 @@
     },
     "ci": {
       "title": "Hosted workflow definitions",
-      "checks": []
+      "checks": ["adr-assignment-workflow"]
     },
     "alexandria": {"title": "Alexandria plugin", "checks": ["alexandria-suite"]},
     "anamnesis": {"title": "Anamnesis plugin", "checks": ["anamnesis-suite"]},
@@ -266,6 +284,7 @@
   "dependencies": {
     "root": ["repo-lints", "dead-code"],
     "dead-code": ["repo-lints"],
+    "suite-redundancy": ["repo-lints"],
     "docs": ["root", "repo-lints"],
     "schemas": ["root"],
     "promise-machine": ["root", "hexaemeron"],
@@ -282,7 +301,7 @@
     "homologia": ["repo-lints"],
     "horos": ["repo-lints", "root", "dead-code"],
     "janus": ["repo-lints"],
-    "lazarus": ["repo-lints"],
+    "lazarus": ["repo-lints", "alexandria"],
     "lemma": ["repo-lints"],
     "pandects": ["repo-lints"],
     "probitas": ["repo-lints"],
@@ -319,6 +338,7 @@
     {"path": "docs/dead-code", "scope": "dead-code"},
     {"path": "docs/dead-code-checkout-suppressions", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
+    {"path": "docs/decisions/ADR-075-keep-suite-redundancy-discovery-report-only.md", "scope": "suite-redundancy"},
     {"path": "docs/decisions/ADR-063-separate-live-worktree-reports-from-baselines.md", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-064-check-current-dead-code-suppressions-separately.md", "scope": "dead-code"},
     {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
@@ -330,11 +350,13 @@
     {"path": "schemas/dead-code-suppressions-v1.schema.json", "scope": "dead-code"},
     {"path": "scripts", "scope": "root"},
     {"path": "scripts/dead_code.py", "scope": "dead-code"},
+    {"path": "scripts/suite_redundancy.py", "scope": "suite-redundancy"},
     {"path": "scripts/dead_code_monitoring", "scope": "dead-code"},
     {"path": "scripts/promise_machine.py", "scope": "promise-machine"},
     {"path": "tests", "scope": "root"},
     {"path": "tests/emit_dead_code_report.py", "scope": "dead-code"},
     {"path": "tests/test_dead_code.py", "scope": "dead-code"},
+    {"path": "tests/test_suite_redundancy.py", "scope": "suite-redundancy"},
     {"path": "tests/check-map-v1.json", "scope": "root"},
     {"path": "tests/promise_machine_coverage.json", "scope": "promise-machine"},
     {"path": "plugins/alexandria", "scope": "alexandria"},

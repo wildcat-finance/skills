@@ -94,22 +94,23 @@ class DemoBuildTests(DemoTestCase):
     def test_exact_derived_and_mapping_counts(self):
         self.build()
         derivation = self.manifest()["derivation"]
-        self.assertEqual(derivation["counts"]["event_rows"], 522)
-        self.assertEqual(derivation["counts"]["observation_rows"], 31)
+        self.assertEqual(derivation["counts"]["event_rows"], 511)
+        self.assertEqual(derivation["counts"]["observation_rows"], 0)
         mappings = {item["adapter"]: item for item in derivation["mappings"]}
         self.assertEqual(mappings["clearpool"]["coverage"]["mapped_records"], 11)
         self.assertEqual(mappings["clearpool"]["coverage"]["context_records"], 1)
-        self.assertEqual(mappings["goldfinch"]["coverage"]["mapped_records"], 542)
-        self.assertEqual(mappings["goldfinch"]["coverage"]["unsupported_records"], 25)
+        self.assertEqual(mappings["aave-v4"]["coverage"]["mapped_records"], 500)
+        self.assertEqual(mappings["aave-v4"]["coverage"]["unsupported_records"], 0)
+        self.assertEqual(mappings["aave-v4"]["coverage"]["context_records"], 45)
 
     def test_exact_query_and_probitas_counts(self):
         summary = self.build()
-        self.assertEqual(summary["query"]["events"], {"clearpool": 11})
+        self.assertEqual(summary["query"]["events"], {"aave-v4": 38, "clearpool": 11})
         self.assertEqual(summary["query"]["observations"], {})
         self.assertEqual(summary["query"]["coverage"], {
-            "clearpool": "covered", "goldfinch": "partial",
+            "aave-v4": "covered", "clearpool": "partial",
         })
-        self.assertEqual(summary["probitas"]["records"], 11)
+        self.assertEqual(summary["probitas"]["records"], 49)
         self.assertEqual(summary["probitas"]["coverage"], {
             "checked": 1, "error": 1, "unconfigured": 5, "unimplemented": 8,
         })
@@ -133,7 +134,7 @@ class DemoBuildTests(DemoTestCase):
 
     def test_example_does_not_duplicate_source_bytes(self):
         for source in (
-            REPO_ROOT / "plugins/tabularium/examples/goldfinch-v0/source.json",
+            REPO_ROOT / "plugins/tabularium/examples/aave-v4-v0/source.json",
             EXAMPLE / "sources/clearpool.json",
         ):
             self.assertFalse(any(
@@ -157,22 +158,22 @@ class DemoVerificationTests(DemoTestCase):
         self.assertEqual(before, after)
 
     def test_source_pin_tamper_fails_before_ingest(self):
-        tampered = self.root / "goldfinch.json"
-        source = REPO_ROOT / "plugins/tabularium/examples/goldfinch-v0/source.json"
+        tampered = self.root / "aave-v4.json"
+        source = REPO_ROOT / "plugins/tabularium/examples/aave-v4-v0/source.json"
         tampered.write_bytes(source.read_bytes() + b" ")
         with self.assertRaisesRegex(demo.AlexandriaError, "digest does not match its pin"):
             demo.build_demo(
                 self.output, check_expected=False,
-                source_paths={"goldfinch-source": tampered},
+                source_paths={"aave-v4-source": tampered},
             )
         self.assertFalse(self.output.exists())
 
     def test_materialized_source_symlink_is_refused(self):
         self.build()
-        path = self.output / "inputs" / "goldfinch.json"
+        path = self.output / "inputs" / "aave-v4.json"
         path.unlink()
         path.symlink_to(
-            REPO_ROOT / "plugins/tabularium/examples/goldfinch-v0/source.json"
+            REPO_ROOT / "plugins/tabularium/examples/aave-v4-v0/source.json"
         )
         with self.assertRaisesRegex(demo.AlexandriaError, "symlink"):
             demo.verify_demo(self.output)

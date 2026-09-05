@@ -46,7 +46,7 @@ an owner. A plugin cannot silently arrive outside the hosted gate.
 
 The baseline must be honestly gateable in a fresh clone. Unreachable historical
 fixtures are repaired at their evidence boundary rather than discarded. The
-digest-bound Goldfinch producer is not rewritten: its descriptor cases execute
+digest-bound Aave v4 producer is not rewritten: its descriptor cases execute
 on hosted Ubuntu and explicitly skip only where the local host cannot expose a
 traversable process file-descriptor path. Checkpoint JSON receives an explicit
 structural-depth ceiling because a byte ceiling alone does not bound the shape

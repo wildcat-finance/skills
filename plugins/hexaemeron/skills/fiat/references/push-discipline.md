@@ -525,6 +525,49 @@ hexctl done sync-run --commit <signed merge sha> \
   --revalidation .hexaemeron/integration-revalidation.json
 ```
 
+When this composition assigns unnumbered decisions, first form the unnumbered
+two-parent composition object with the product as first parent and the exact
+assignment base as second parent. Ask Hypomnema to plan from that base and
+unnumbered object, apply only its canonical `fiat-decision-assignments/v1`
+report, then amend and sign the candidate while retaining those exact ordered
+parents. Its final trailer block contains exactly one
+`ADR-Assignment-Base: <base>` followed by the report's ordered
+`ADR-Assignment: adr/<slug>=ADR-NNN` lines. Verify the immutable result before
+publication:
+
+```text
+hexctl verify-decision-assignments \
+  --report .hexaemeron/decision-assignments.json \
+  --candidate <signed sha> \
+  --candidate-ref refs/heads/<run-branch>
+```
+
+The verifier is read-only. It replays the canonical Hypomnema transform, exact
+tree delta, input and output blobs, signature, trailers, clean worktree and
+stable ref observations, then prints one canonical
+`fiat-decision-assignment-composition/v1` receipt. Bind that same report to the
+sync receipt:
+
+```text
+hexctl done sync-run --commit <signed merge sha> \
+  --base-commit <remote base sha> \
+  --revalidation .hexaemeron/integration-revalidation.json \
+  --decision-assignments .hexaemeron/decision-assignments.json
+```
+
+If the base moves again, recompute the report from the unchanged product and
+new exact base. The replacement assignment is a sibling of the superseded
+candidate, never its descendant; the old candidate must not remain in active
+ancestry. Fiat retains the superseded receipt and carries only the newest exact
+mapping to integration.
+
+A self-hosting run whose init-pinned controller predates
+`--decision-assignments` does not replace that controller. Run the checked-in
+read-only verifier, preserve its exact canonical JSON, and record those bytes
+once through the old controller's versioned generic channel as
+`fiat_decision_assignments_v1`. This narrow bootstrap keeps the init-pinned
+controller boundary; later controllers use the dedicated sync flag.
+
 The controller compares the product, base and sync tree entries for every path
 both parents changed. If the sync takes either complete parent entry, it names
 the path and refuses until the operator repeats

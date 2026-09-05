@@ -25,8 +25,8 @@ TAMPERED = os.path.join(EXAMPLES, "tampered")
 BREACHES = {
     "escrow-v1.1.0-claim-repointed.json": 1,
     "escrow-v1.1.0-with-gaps-reason-removed.json": 3,
-    "goldfinch-demo-v0-agent-policy-byte-changed.json": "release-digest",
-    "goldfinch-v0-fixture-state-root-removed.json": "evidence",
+    "aave-v4-demo-v0-agent-policy-byte-changed.json": "release-digest",
+    "aave-v4-spoke-v0-fixture-state-root-removed.json": "evidence",
 }
 """What each tampered copy is meant to breach: a gate number, or the name of a
 check that carries no number.
@@ -40,20 +40,20 @@ TAMPER_PARENTS = {
     "escrow-v1.1.0-with-gaps-reason-removed.json": (
         "escrow-v1.1.0-with-gaps.json"
     ),
-    "goldfinch-demo-v0-agent-policy-byte-changed.json": (
-        "goldfinch-demo-v0-agent.json"
+    "aave-v4-demo-v0-agent-policy-byte-changed.json": (
+        "aave-v4-demo-v0-agent.json"
     ),
-    "goldfinch-v0-fixture-state-root-removed.json": "goldfinch-v0-fixture.json",
+    "aave-v4-spoke-v0-fixture-state-root-removed.json": "aave-v4-spoke-v0-fixture.json",
 }
 
-GROUNDED_STATEMENT = "goldfinch-demo-v0-agent.json"
-GROUNDED_TAMPER = "goldfinch-demo-v0-agent-policy-byte-changed.json"
-GROUNDED_BYTES = 7454
+GROUNDED_STATEMENT = "aave-v4-demo-v0-agent.json"
+GROUNDED_TAMPER = "aave-v4-demo-v0-agent-policy-byte-changed.json"
+GROUNDED_BYTES = 7512
 GROUNDED_SHA256 = (
-    "03fb54176a417248447a5e92ce702acce229855b0378215fd68a4286130165bc"
+    "3da25eb77f22c83697f28118afd140bec15bdeea87bf84c7c7b5000c2851729f"
 )
 GROUNDED_TAMPER_SHA256 = (
-    "aa735b158803934c3c00541dcf3b462769da872399aaa89af429321a8dc0b217"
+    "0bc6e5f8b94c858fe0ccb63b428b25f924964556427b893b223791d97dc2c62c"
 )
 
 
@@ -106,7 +106,7 @@ class ExampleTests(unittest.TestCase):
             predicate["adapter"]["command"],
             [
                 "python3",
-                "plugins/berean/examples/goldfinch-demo-v0/rebuild.py",
+                "plugins/berean/examples/aave-v4-demo-v0/rebuild.py",
             ],
         )
 
@@ -185,28 +185,28 @@ class FreshnessTests(unittest.TestCase):
 
     def test_the_state_fixture_example_still_describes_the_lazarus_fixture(self):
         """The same guard for the other kind. The example is a real capture over
-        `plugins/lazarus/examples/goldfinch-v0`, so a change there without a
+        `plugins/lazarus/examples/aave-v4-spoke-v0`, so a change there without a
         recapture would leave it describing components that no longer exist."""
         from ariadne_lib.capture import state_fixture
 
         root = os.path.abspath(__file__)
         for _ in range(4):  # tests -> ariadne -> plugins -> the checkout
             root = os.path.dirname(root)
-        goldfinch = os.path.join(
-            root, "plugins", "lazarus", "examples", "goldfinch-v0"
+        aave_v4 = os.path.join(
+            root, "plugins", "lazarus", "examples", "aave-v4-spoke-v0"
         )
-        if not os.path.isdir(goldfinch):
+        if not os.path.isdir(aave_v4):
             self.skipTest("Lazarus is not beside this plugin in this checkout")
-        with open(os.path.join(EXAMPLES, "goldfinch-v0-fixture.json"), "rb") as handle:
+        with open(os.path.join(EXAMPLES, "aave-v4-spoke-v0-fixture.json"), "rb") as handle:
             shipped = json.loads(handle.read().decode("utf-8"))
         current = state_fixture.capture(
-            goldfinch,
-            name="goldfinch-v0",
+            aave_v4,
+            name="aave-v4-spoke-v0",
             capture_tool="lazarus",
             capture_command=[
-                "python3", "scripts/lazarus.py", "verify", "examples/goldfinch-v0",
+                "python3", "scripts/lazarus.py", "verify", "examples/aave-v4-spoke-v0",
             ],
-            parameters={"fixture": "goldfinch-v0"},
+            parameters={"fixture": "aave-v4-spoke-v0"},
             first_capture_reason=(
                 "first preservation release of this fixture; there is no earlier "
                 "capture of this block to compare against"
@@ -269,7 +269,7 @@ class TamperTests(unittest.TestCase):
             for offset, (left, right) in enumerate(zip(original, changed))
             if left != right
         ]
-        self.assertEqual(differences, [(6282, ord("u"), ord("v"))])
+        self.assertEqual(differences, [(6765, ord("8"), ord("0"))])
 
 
 if __name__ == "__main__":

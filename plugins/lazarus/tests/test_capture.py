@@ -1165,7 +1165,7 @@ class ReceiptCaptureTests(unittest.TestCase):
             )
             self.assertEqual(
                 report["fixture_digest"],
-                "a88218e27b979a67941bd66f04eec9e0d1208178697c0c3f59a245f22dba0eec",
+                "a1007c769291b0ae4f3a9cf20ca8316ea05b63f10e78511d73c9eb29c3109d2d",
             )
             expected_files = sorted(
                 path.name
@@ -1255,7 +1255,7 @@ class ReceiptCaptureTests(unittest.TestCase):
                     "--rpc-url",
                     f"{primary.url}?token={primary_marker}",
                     "--anchor-rpc-env",
-                    "publicnode=STEP3_ANCHOR_RPC",
+                    "crosscheck-a=STEP3_ANCHOR_RPC",
                     "--out",
                     str(output),
                 ],
@@ -1286,22 +1286,28 @@ class ReceiptCaptureTests(unittest.TestCase):
             "lazarus-capture:" + hashlib.sha256(dumps(material["plan"])).hexdigest(),
         )
         self.assertEqual(event["block"]["hash"], material["plan"]["block"]["hash"])
+        target_request = next(
+            request
+            for request in material["plan"]["requests"]
+            if request["name"]
+            == material["plan"]["receipt_witness"]["target_receipt_lookup_request"]
+        )
         self.assertEqual(
             event["recorded_target_selector"]["value"],
-            material["plan"]["requests"][2]["params"][0],
+            target_request["params"][0],
         )
         self.assertEqual(
             event["recorded_target_selector"]["evidence"], "recorded_rpc"
         )
-        self.assertEqual(event["recorded_target_selector"]["transaction_index"], "0xbf")
-        self.assertEqual(event["counts"]["recorded_rpc"], 5)
+        self.assertEqual(event["recorded_target_selector"]["transaction_index"], "0x3f")
+        self.assertEqual(event["counts"]["recorded_rpc"], 10)
         self.assertEqual(event["counts"]["anchor_records"], 1)
-        self.assertEqual(event["counts"]["receipts"], 224)
-        self.assertEqual(event["counts"]["selected_logs"], 5)
+        self.assertEqual(event["counts"]["receipts"], 177)
+        self.assertEqual(event["counts"]["selected_logs"], 2)
         self.assertEqual(event["counts"]["receipt_trie_proved"], 2)
-        self.assertEqual(event["counts"]["header_transactions"], 224)
-        self.assertEqual(event["counts"]["returned_receipts"], 224)
-        self.assertEqual(event["counts"]["encoded_receipts"], 224)
+        self.assertEqual(event["counts"]["header_transactions"], 177)
+        self.assertEqual(event["counts"]["returned_receipts"], 177)
+        self.assertEqual(event["counts"]["encoded_receipts"], 177)
         self.assertEqual(event["versions"]["plan"], 3)
         self.assertEqual(event["versions"]["manifest"], 2)
         self.assertEqual(event["versions"]["receipt_witness"], 1)
@@ -1356,7 +1362,7 @@ class ReceiptCaptureTests(unittest.TestCase):
                     "--rpc-url",
                     f"https://primary.invalid/?token={marker}",
                     "--anchor-rpc-env",
-                    "publicnode=LAZARUS_STEP3_MISSING_ANCHOR",
+                    "crosscheck-a=LAZARUS_STEP3_MISSING_ANCHOR",
                     "--out",
                     str(output),
                 ],

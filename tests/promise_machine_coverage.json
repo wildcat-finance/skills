@@ -4,30 +4,42 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "62b88c034915def8676556380674d63fe41ea048055ee50dc9c9f6e188cde289"
+      "sha256": "50db4948ab96bce60a73a97d061e1401dd60c0103e428068ce9dc2068c888249"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "e358982087faa2b0f06886e9835933f16448ec4c271df5e65e65b99c303cc43d"
+      "sha256": "dab755aa068ecdaa6be261c6e38e701859a902649d80f3c5972d4968db347476"
+    },
+    "prover": {
+      "path": "scripts/prove_agent_instruction_reconciliation.py",
+      "sha256": "6eda1b38aae1a7860c8ca5fdec836d847867c424cfc4fc2fc3c3d2bbabca6967"
+    },
+    "prover_tests": {
+      "path": "tests/test_agent_instruction_corpus.py",
+      "sha256": "7bf206a385ab4f9e6a634eb538ac0acdab023573da8756246c11006791330176"
     },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "3105fc8a3f48891dd8979f4574b3ba608780341a1906d27c9f00efd6b8bc126e"
+        "sha256": "eb6a948898585fc14072917998f13e2f12b7dfd222abfceb9717ea6858e31731"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
         "sha256": "7cfd343c6d8fd498ea1084f8ed93e0dcf5fe1262afc1ee00fb8f4ac43b348c93"
+      },
+      {
+        "path": "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
+        "sha256": "6bfb5ad4293f3c1151ce0e24a0217768f019425f3b88f4c9eed0b79a4cd5bf0d"
       }
     ],
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "7475bbac49cc7690a754101c94832b7852fb5c22fdcf28f6b0a95592398df512"
+        "sha256": "8efcd8eb13f1196dba21ae8fa47a0bf79160e1bcebc91d269ec2b5b7a7e12179"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "0859573924eeba078a0281994aa396db46d8a539011e5d6e21bf1667a38e60ca"
+        "sha256": "a4e104b4b25bc180deeb2d46b3d6a9fb52fc7ca836b65e5ee0029fc62ea300ef"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -39,15 +51,15 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "20b38c4e51f7c7ea04690c7bbbedad71e89c9810d16de2be01bdc2c67f66424a"
+        "sha256": "2090211257888c051c6615064548cc600d0786b1afc8f2ac0e020b97c8417403"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
-        "sha256": "03e0a8fa255448292f09e4bf6850e5328ebcc7f32bb95cc9fce726801d351aa4"
+        "sha256": "33d7f5bd2b07ee3e431ab52723458e0bd1f9a9c474d562d89ab38eeb65fd7aae"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json",
-        "sha256": "a583d55be1b1b35a531df98a6fe7034c08916cbbf2f4637decfd718669db8b51"
+        "sha256": "014f2fb264d0bc428e05437aa4a75b8f0e5c1f90b2a545883f51e19d9566f5bd"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/mutations.json",
@@ -59,7 +71,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json",
-        "sha256": "792b32ef9b378e01a603f03cfa08f489981242c2861a5349a0cff3d919b4d787"
+        "sha256": "1b51c7050615f407817d9b2259a83fad6f1ac374f8e520302262cac9f76bcc58"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
@@ -89,11 +101,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
-        "sha256": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703"
+        "sha256": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "fd77dc2fc677bb06c1e99289b1cfd3011f65dc4db6f35ffc2236227f60de0908"
+        "sha256": "2d11765b5be9996e7e77b998cc28d49843722753564ef90cfc39f544ce76315c"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -101,7 +113,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "c8fa95fe07dc6511d94619ea5319289ef01d50da0bde2c055dcf58f9f1bca300"
+        "sha256": "a5dcf3dea24f60e724b38b23a49df840618cddab49680fb1f05117bcb0dc6f15"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
@@ -110,12 +122,13 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "483c9b119e8081f6937c607ac8ae89eb28d6cc717654a2d2e97456a05d504769",
+      "sha256": "5dcd25863c25a5a203e61577319351cb50108f4109c141cb9f24060c5ea90164",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
+        "test_specialised_coverage_binds_the_reconciliation_prover",
         "test_specialised_coverage_binds_focused_tests",
         "test_specialised_coverage_binds_all_fixture_artifacts",
         "test_specialised_coverage_binds_all_evidence_records",
@@ -124,7 +137,11 @@
         "test_plugin_promise_machine_copies_are_current",
         "test_portable_promise_machine_package_is_current",
         "test_stale_measurement_report_refuses",
-        "test_stale_parity_report_refuses"
+        "test_stale_parity_report_refuses",
+        "test_undefined_measurement_projection_refuses",
+        "test_undefined_parity_projection_refuses",
+        "test_an_edited_token_count_refuses_on_its_own",
+        "test_a_consistent_token_count_edit_is_not_detected"
       ]
     },
     "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
@@ -219,7 +236,7 @@
     "promise_id": "promise-machine-dead-code-baseline",
     "runtime": {
       "path": "scripts/dead_code.py",
-      "sha256": "838a52981abf9345490f8aeed7059ce27ba0c41c569b6cc76068913d1c126482"
+      "sha256": "4cc6e057df3f0e105b074343e38ae44da9bfee8dd0e6f99a0ba6a77e966e290d"
     },
     "schema_source": {
       "path": "schemas/dead-code-report-v1.schema.json",
@@ -263,7 +280,7 @@
         "test_workflow_and_operator_guide_carry_the_exact_five_command_demo",
         "test_workflow_summary_carries_the_publication_commit_as_plain_text"
       ],
-      "sha256": "6da6f1724e94c573f02fdbb2ea37282a0e4998af2128e159a71d9d17cbca0fc8"
+      "sha256": "5f80a036a558e91c9b86165b23e6760c741f890da937817d2587a71700fcbddd"
     },
     "transition": "record and verify one report-only static candidate baseline over its exact clean source commit, and separately validate exact suppressions against the same clean current commit, with no finding count treated as deletion or merge authority"
   },
@@ -282,6 +299,31 @@
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
       "path": "plugins/alexandria/tests/test_demo.py",
       "selector": "test_documented_build_and_verify_commands_run_exactly"
+    },
+    "alexandria-proof-backed-m": {
+      "claim": "A proof-backed capture is refused when a manifest-named fixture component is missing.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_m_refuses_missing_fixture_component"
+    },
+    "alexandria-proof-backed-o": {
+      "claim": "A proof-backed capture is refused when its subject exceeds the fixture proof targets.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_o_refuses_proof_overclaim"
+    },
+    "alexandria-proof-backed-p": {
+      "claim": "A complete embedded Lazarus fixture earns proof-backed state through offline verification.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_p_accepts_verified_fixture"
+    },
+    "alexandria-proof-backed-r": {
+      "claim": "A refused proof-backed plan can be repaired, ingested and verified in a new output.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_r_accepts_repaired_plan"
+    },
+    "alexandria-proof-backed-s": {
+      "claim": "Proof-backed verification reaches no network and changes no release byte.",
+      "path": "plugins/alexandria/tests/test_proof_backed.py",
+      "selector": "test_alexandria_proof_backed_s_is_offline_and_read_only"
     },
     "alexandria-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
@@ -1365,12 +1407,12 @@
     },
     "lazarus-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
-      "path": "plugins/lazarus/tests/test_goldfinch.py",
+      "path": "plugins/lazarus/tests/test_aave_v4.py",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance"
     },
     "lazarus-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
-      "path": "plugins/lazarus/tests/test_goldfinch.py",
+      "path": "plugins/lazarus/tests/test_aave_v4.py",
       "selector": "test_demo_command_runs_the_complete_application_check"
     },
     "lazarus-s": {
@@ -1482,6 +1524,31 @@
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
       "path": "plugins/hexaemeron/tests/test_phylax_checker.py",
       "selector": "test_a_bare_pragma_without_a_reason_does_not_suppress"
+    },
+    "probitas-diff-m": {
+      "claim": "An input that cannot pass its generated dossier gates is refused without a partial comparison artifact.",
+      "path": "plugins/probitas/tests/test_cli.py",
+      "selector": "test_a_gate_breach_exits_one_without_partial_output"
+    },
+    "probitas-diff-o": {
+      "claim": "Operator-designated prior and current roles remain explicitly unavailable as proof of chronology.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_direction_is_operator_designated_not_a_chronological_claim"
+    },
+    "probitas-diff-p": {
+      "claim": "Two gate-checkable inputs produce deterministic Markdown and JSON comparison artifacts.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_json_and_markdown_are_deterministic_and_retain_full_sources"
+    },
+    "probitas-diff-r": {
+      "claim": "Repairing the failed input permits a complete rerun while the old report survives the failed attempt.",
+      "path": "plugins/probitas/tests/test_cli.py",
+      "selector": "test_repairing_the_input_and_rerunning_replaces_the_old_report"
+    },
+    "probitas-diff-s": {
+      "claim": "A different entity, address set or provenance tier is refused as a subject mismatch.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_entity_address_set_and_tier_must_match_exactly"
     },
     "probitas-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -1701,7 +1768,7 @@
     "tabularium-o": {
       "claim": "The nearest tempting overclaim remains explicitly unavailable.",
       "path": "plugins/tabularium/tests/test_verify.py",
-      "selector": "test_indexed_block_must_match_source_metadata"
+      "selector": "test_capture_window_must_match_the_snapshot_window"
     },
     "tabularium-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
@@ -1897,6 +1964,61 @@
       "path": "plugins/dokimasia/tests/test_propose.py",
       "selector": "test_an_existing_set_answering_twice_refuses",
       "claim": "Recovery evidence requires a set answering for one item twice to refuse by naming the item, so the caller repairs the duplicate rather than the generator picking a copy."
+    },
+    "fiat-decision-assignment-m": {
+      "claim": "A partial or malformed composition receipt refuses before it can be replayed or carried to integration.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_partial_receipt_refuses_replay"
+    },
+    "fiat-decision-assignment-o": {
+      "claim": "The contract keeps Fiat read-only and leaves number allocation and the report transform under Hypomnema's authority.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_decision_assignment_contract_is_read_only_and_source_bound"
+    },
+    "fiat-decision-assignment-p": {
+      "claim": "The exact canonical report, signed candidate, immutable blobs and ordered stable-identity trailers produce one replayable receipt.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_exact_report_candidate_and_ordered_trailers_are_receipted"
+    },
+    "fiat-decision-assignment-r": {
+      "claim": "The canonical receipt survives a JSON recovery round trip and replays from unchanged immutable evidence.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_canonical_receipt_replays_after_recovery_round_trip"
+    },
+    "fiat-decision-assignment-s": {
+      "claim": "A superseded assignment retained in active ancestry cannot inherit the replacement receipt's authority.",
+      "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+      "selector": "test_superseded_assignment_cannot_remain_in_active_ancestry"
+    },
+    "hypomnema-assignment-m": {
+      "claim": "A changed result tree or output blob is refused instead of replayed as the recorded transform.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_report_and_blob_drift_are_refused"
+    },
+    "hypomnema-assignment-o": {
+      "claim": "The assignment changes only the draft path and exact first heading; signing and hosted admission remain outside this helper.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_apply_changes_only_the_path_and_exact_first_heading"
+    },
+    "hypomnema-assignment-p": {
+      "claim": "Planning and replay reproduce one canonical report with the same ordered mapping and result tree.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_plan_and_replay_emit_the_same_canonical_report"
+    },
+    "hypomnema-assignment-r": {
+      "claim": "A refusal before apply leaves every draft and destination unchanged for a corrected retry.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_refusal_rolls_back_every_mapping"
+    },
+    "hypomnema-assignment-s": {
+      "claim": "The exact repository subject is preserved when inherited Git variables try to repoint native object reads.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_repointing_environment_is_ignored"
     }
   },
   "handoffs": [
@@ -1934,7 +2056,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "06d44e9dd6c03a53f5c9a6ba5ae2e954772015786f7a6a8cf341eae5970217e3"
+        "sha256": "6f1ee314708b7873dafb7f93296de85a6811f67df1ba51c3f988ff31e4a14c86"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1966,10 +2088,11 @@
         "test_every_declared_pair_has_at_least_one_contested_case",
         "test_every_expected_canonical_name_is_a_real_canonical_skill",
         "test_every_router_row_is_named_by_at_least_one_case",
+        "test_probitas_evidence_comparison_is_not_synkrisis_run_comparison",
         "test_the_corpus_declares_the_supported_schema",
         "test_the_recorded_run_block_is_complete_and_names_its_failures"
       ],
-      "sha256": "e0cebf8aaa3efd0fcc2a205f994550f6a454dc1bf14eec7be94388910628dea1"
+      "sha256": "bf65aba2c13d8200a6109ae510e324c674d854c28eab578211858715dbc36f42"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },
@@ -2020,6 +2143,22 @@
       },
       "group": "executable",
       "promise_id": "alexandria-derived-view",
+      "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "alexandria-proof-backed-m",
+        "O": "alexandria-proof-backed-o",
+        "P": "alexandria-proof-backed-p",
+        "R": "alexandria-proof-backed-r",
+        "S": "alexandria-proof-backed-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "alexandria-proof-backed-state",
       "skill_path": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
@@ -2996,6 +3135,22 @@
     },
     {
       "cases": {
+        "M": "probitas-diff-m",
+        "O": "probitas-diff-o",
+        "P": "probitas-diff-p",
+        "R": "probitas-diff-r",
+        "S": "probitas-diff-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "probitas-evidence-diff",
+      "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "probitas-statement-m",
         "O": "probitas-statement-o",
         "P": "probitas-statement-p",
@@ -3640,6 +3795,45 @@
       "group": "executable",
       "promise_id": "anamnesis-deterministic-rebuild",
       "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-decision-assignment-m",
+        "O": "fiat-decision-assignment-o",
+        "P": "fiat-decision-assignment-p",
+        "R": "fiat-decision-assignment-r",
+        "S": "fiat-decision-assignment-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-decision-assignment-composition",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hypomnema-assignment-m",
+        "O": "hypomnema-assignment-o",
+        "P": "hypomnema-assignment-p",
+        "R": "hypomnema-assignment-r",
+        "S": "hypomnema-assignment-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic checker",
+        "prompt": "Plan and replay one bounded ADR assignment from exact Git objects.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "hypomnema-decision-assignment",
+      "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     }
   ],
   "run_observation": {
@@ -3734,7 +3928,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32"
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3846,7 +4040,7 @@
           "test_writer_refuses_bypass_and_never_writes_a_gap",
           "test_schema_and_runtime_document_the_same_closed_vocabulary"
         ],
-        "sha256": "431d2114d2b9f49a1a857dd03a2cba1957a39303048f61be9aae23d39650da0d"
+        "sha256": "4232ba03ac7cd735f0918785fda733884ab6083f3abbfbc6155b84a4d1349286"
       },
       {
         "path": "tests/test_run_observation_capture_inoculation.py",
@@ -4084,7 +4278,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-design-evidence": {
@@ -4098,7 +4292,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -4112,7 +4306,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work, disposed of row by row in the run pull request's `carryover` block, and any unrun external check"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4126,7 +4320,7 @@
         "transition": "local archive, checkpoint-store preservation, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -4140,7 +4334,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4154,7 +4348,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -4168,7 +4362,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -4182,7 +4376,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -4196,7 +4390,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "8420a839ecb023532b2870c631e083dcda91de92b5d0d05afce298f6c4b53d32",
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -4308,7 +4502,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "3026fcd1afcf4eeab9b5b4105fd442b0052b3ec6a13a98df8a4afa31859b8ea5",
+      "sha256": "3798b07566de7fce244a1ac78dd1d7ca4ce1bf4fb65263143f1bc1a59a73dac6",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
@@ -4448,7 +4642,7 @@
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "9ada5e0cca35f8482796acbc24d3c1d93e6633ec5ca40c68d810610db5d75837",
+      "sha256": "22a1a386efb7391cc664b8f811f6e59949bf804c781fcca75cf7faf3bd967f37",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {
@@ -4460,9 +4654,9 @@
         "scope": "venue, chain, capture boundary and mapped selectors",
         "subject": "release directory, source digest and adapter version",
         "transition": "atomic build and verification status joined to the canonical Authorises field",
-        "unknowns": "unsupported entities, known gaps and unsigned publisher identity"
+        "unknowns": "unsupported activity types, known gaps and unsigned publisher identity"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+      "sha256": "3de7e74bc14eb70a1d3012e4bf4e82af2ffa2a35590f87f4468d8590bd9827ff",
       "source": "plugins/tabularium/scripts/tabularium.py"
     },
     "tabularium-release-verification": {
@@ -4474,9 +4668,9 @@
         "scope": "venue, capture boundary, paths and one-to-one source selectors",
         "subject": "release directory, source digest and adapter version",
         "transition": "zero-exit verification joined to the canonical Authorises field",
-        "unknowns": "publisher identity, chain proof and unmapped source entities"
+        "unknowns": "publisher identity, chain proof and unmapped source activity types"
       },
-      "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+      "sha256": "3de7e74bc14eb70a1d3012e4bf4e82af2ffa2a35590f87f4468d8590bd9827ff",
       "source": "plugins/tabularium/scripts/tabularium.py"
     },
     "dokimasia-drafted-dispositions": {
@@ -4492,6 +4686,34 @@
       },
       "sha256": "ace9997023fdf4c73813f1ef2cead473f5fee07edef54f214f2481112cf23e6d",
       "source": "plugins/dokimasia/schemas/dispositions-v1.json"
+    },
+    "fiat-decision-assignment-composition": {
+      "bindings": {
+        "evidence_classes": "checked immutable composition evidence and recorded receipt joined to the canonical Evidence classes field",
+        "evidence_references": "canonical report digest, exact base and product, signed candidate tree, ordered mappings, input and output blobs, message trailers, clean worktree, stable refs and supersession history",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the read-only verifier, receipt schema and canonical promise heading",
+        "scope": "one canonical Hypomnema report and its exact immutable Git composition objects",
+        "subject": "assignment base, unnumbered product, signed candidate and ordered stable-identity mapping",
+        "transition": "verified decision assignment receipt carried to active sync and final integration joined to the canonical Authorises field",
+        "unknowns": "decision-text correctness, publication, external merge enforcement and number reservation"
+      },
+      "sha256": "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4",
+      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    },
+    "hypomnema-decision-assignment": {
+      "bindings": {
+        "evidence_classes": "native Git-object checks joined to the canonical Evidence classes field",
+        "evidence_references": "canonical report, base, product, result tree, ordered mappings and blob ids",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "bounded draft set, exact commits, active base ref and fixed transform",
+        "subject": "repository object format and immutable base and product commits",
+        "transition": "zero-exit replay joined to the canonical Authorises field",
+        "unknowns": "commit signature, hosted exact-head status and repository admission policy"
+      },
+      "sha256": "987a0ccb7a2e4e03cd0ef33570bbd9b09cc115e24d092f98304334e4997fe3a7",
+      "source": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
     }
   },
   "schema": "promise-machine-coverage/v1"

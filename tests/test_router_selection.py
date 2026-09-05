@@ -86,6 +86,19 @@ GUARD_CORPORA = {
 }
 
 ROUTER_SECTION = "## Select one runtime contract"
+PROBITAS_COMPARISON_PREDICATE = (
+    "Build a declared-address counterparty dossier, or compare two Probitas "
+    "borrower evidence runs for the same subject"
+)
+SYNKRISIS_COMPARISON_PREDICATE = (
+    "Compare validated run observations across runs, or inspect the cross-run "
+    "comparison boundary"
+)
+PROBITAS_SYNKRISIS_BOUNDARY = (
+    "Probitas compares borrower evidence for one unchanged declared-address "
+    "subject. Synkrisis compares validated run observations from agent executions; "
+    "it does not compare borrower dossiers or their evidence files."
+)
 # The one row whose canonical selection is a phrase rather than a name: the
 # vendored Pashov suite ships several skills behind a single router row, so its
 # case names one of them and quotes the row instead.
@@ -904,6 +917,25 @@ class RouterSelectionCorpus(unittest.TestCase):
             faults, [],
             "the router makes a selection claim the corpus never presents a request "
             f"for; add a case for the row or retire the row:\n  " + "\n  ".join(faults),
+        )
+
+    def test_probitas_evidence_comparison_is_not_synkrisis_run_comparison(self):
+        """The two comparison routes name different subjects, not one broad verb."""
+        rows = dict((selection, request) for request, selection in self.rows)
+
+        self.assertEqual(rows.get("`probitas`"), PROBITAS_COMPARISON_PREDICATE)
+        self.assertEqual(rows.get("`synkrisis`"), SYNKRISIS_COMPARISON_PREDICATE)
+        self.assertIn("borrower evidence", rows["`probitas`"])
+        self.assertNotIn("run observations", rows["`probitas`"])
+        self.assertIn("run observations", rows["`synkrisis`"])
+        self.assertNotIn("borrower evidence", rows["`synkrisis`"])
+
+        section = section_of(self.sources[ROUTER_PATH], ROUTER_SECTION) or ""
+        self.assertIn(
+            collapsed(PROBITAS_SYNKRISIS_BOUNDARY),
+            collapsed(section),
+            "the router rows distinguish the inputs, but no adjacent boundary "
+            "states that Synkrisis does not own borrower evidence comparisons",
         )
 
     def test_every_declared_pair_has_at_least_one_contested_case(self):

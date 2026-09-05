@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.20",
+      "version": "1.6.22",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -67,7 +67,7 @@
     },
     {
       "name": "sapheneia",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "source": {
         "source": "local",
         "path": "./plugins/sapheneia"
