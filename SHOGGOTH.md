@@ -34,8 +34,8 @@ a new collective identity.
 **Shoggoth Interceptor** means the same collective operating through an
 external problem-solving harness against repositories or problems outside this
 skills distribution. It is an operating form, not another member. The harness
-itself lives at
-[laurenceday/shoggoth-interceptor](https://github.com/laurenceday/shoggoth-interceptor)
+itself is a separate repository,
+[laurenceday/shoggoth-interceptor](https://github.com/laurenceday/shoggoth-interceptor),
 and is not part of this distribution.
 
 The Interceptor name changes no authority. The harness still obeys the target

@@ -24,8 +24,8 @@ counts as the suite contract. Do not select a canonical skill until one of
 these two runtime paths has loaded the same law and the selected plugin
 contract.
 
-The router sees the complete collective. Each first-party specialist lives in
-its own plugin. Hexaemeron contains Fiat, Kronos, the engineering phase
+The router sees the complete collective. Each first-party specialist has its
+own plugin. Hexaemeron contains Fiat, Kronos, the engineering phase
 disciplines, the prose masks, the Fiat worker briefs, and the untouched Pashov
 security suite. Together the distribution exposes
 <!-- front-door:count key="governed" -->27 governed first-party skills, a number
