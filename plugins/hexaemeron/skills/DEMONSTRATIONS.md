@@ -227,11 +227,11 @@ runner; a member whose ledger is absent or whose status is no longer
 to zero executable records is a refusal, never a clean pass.
 
 Before anything executes, the runner reads `.python-version` and refuses an
-interpreter that differs from it, checks that the `--report` path traverses
+interpreter that differs from it. It checks that the `--report` path traverses
 nothing and resolves below the declared output root (`--output-root`,
-defaulting to `--root`) to a name that does not yet exist, loads every ledger
-through `check`, so every declared source digest is verified, and parses each
-selected record's observations. A file source is recorded in the report as
+defaulting to `--root`) to a name that does not yet exist. It loads every
+ledger through `check`, so every declared source digest is verified, and parses
+each selected record's observations. A file source is recorded in the report as
 verified; a chain anchor is recorded as declared, because the runner has no
 chain and proves nothing about one.
 
@@ -251,8 +251,8 @@ inside the socket constructor and the name resolvers themselves; and it
 replaces the socket constructors and resolvers in the `socket` and `_socket`
 modules, which is what gives an ordinary attempt its plain message. The audit
 hook is the control and the replacement is the message, because rebinding a
-name binds one name: the type `socket.socket` displaced stays reachable from
-ordinary Python through `socket.socket.__mro__` and through
+name binds one name. The type that `socket.socket` displaced stays reachable
+from ordinary Python through `socket.socket.__mro__` and through
 `object.__subclasses__()`, and constructing it built a live kernel socket with
 nothing recorded and nothing raised. The interpreter offers no way to remove a
 registered audit hook, and the recorder it calls is a closure rather than a
@@ -262,16 +262,15 @@ socket is refused even when it swallows the exception and exits 0. The marker
 is armed as an empty file before each command and its identity is pinned over
 device, inode, size, modification time and change time, so a child that
 unlinks, replaces, truncates or chmods the marker to hide the attempt is
-refused for that change.
-`-S`, `-E` and `-I` would leave the child outside the hook
-entirely, by skipping `site` or ignoring `PYTHONPATH`, and are refused with
-`D074`. This is a process-level denial inside one Python process, not a kernel
-sandbox. Two routes stay outside what the hook can see: a child that reaches
-the kernel's socket call directly, through `ctypes` or another extension, which
-raises no audit event, and a
-child that starts a further process without the hook's `PYTHONPATH`, which gets
-an unhooked interpreter. A run establishes that no denied Python socket call
-went unrecorded; it never establishes that no network call was made. No capture
+refused for that change. `-S`, `-E` and `-I` would leave the child outside the
+hook entirely, by skipping `site` or ignoring `PYTHONPATH`, and are refused
+with `D074`. This is a process-level denial inside one Python process, not a
+kernel sandbox. Two routes stay outside what the hook can see. One is a child
+that reaches the kernel's socket call directly, through `ctypes` or another
+extension, which raises no audit event. The other is a child that starts a
+further process without the hook's `PYTHONPATH`, which gets an unhooked
+interpreter. A run establishes that no denied Python socket call went
+unrecorded; it never establishes that no network call was made. No capture
 exception is declared, so a record that allowlists a network is refused.
 
 Each command is bounded by its record's `timeout_seconds`, further clipped by
@@ -283,11 +282,11 @@ process is reaped, so teardown is never charged to it. A grandchild that leaves
 the group, by calling `setsid` or `setpgid`, is beyond a process-group
 teardown, and only part of that is caught: one that keeps the command's pipes
 is detected by that grip and refused with `D085`, while one that also drops its
-inherited descriptors keeps no grip, is not detected, and survives the run. That
-is a third route outside what this runner observes, beside the two the network
-paragraph names. Stdout and stderr
-are each capped at one mebibyte; a command that writes past the cap is
-truncated and refused. Exit status, observations, durations, output digests
+inherited descriptors keeps no grip, is not detected, and survives the run.
+That is a third route outside what this runner observes, beside the two the
+network paragraph names. Stdout and stderr are each capped at one mebibyte; a
+command that writes past the cap is truncated and refused. Exit status,
+observations, durations, output digests
 and bounded output tails are recorded per command and per repetition;
 `--repeat` runs each record up to ten times so a three-repetition baseline can
 be recorded without claiming an improvement.
@@ -300,9 +299,9 @@ reopened by walking down from the output root with each component opened
 without following a symlink, and both the partial write and the link run
 against that descriptor, so a component swapped during the run refuses with
 `D081` instead of publishing outside the root. The report repeats each record's
-claim, non-claim, record digest and
-sources, and its `status` is `verified` only when every selected record
-verified; the process exits 0 in that case and 2 otherwise. A report is
+claim, non-claim, record digest and sources. Its `status` is `verified` only
+when every selected record verified; the process exits 0 in that case and 2
+otherwise. A report is
 evidence of one run on one machine and promotes nothing a record's non-claim
 withholds.
 
@@ -319,19 +318,21 @@ still reach committed files, because the runner's working directory is the
 repository root and both put it on `sys.path`. A registered public
 demonstration is therefore refused with `D084` unless its program is a
 committed file a source declares, which is the only form the digest can bind.
-Which word is the program is read from a closed interpreter grammar rather than
-from position: flag bundles such as `-u` and `-OO`, the argument-taking `-W`
-and `-X`, and a closing `--` are walked past to the program they precede, so an
-option word cannot carry a committed file past the declaration gate or the
-digest re-read. An option word the grammar cannot place is refused with `D084`.
+Which word counts as the program comes from a closed interpreter grammar rather
+than from position. Flag bundles such as `-u` and `-OO`, the argument-taking
+`-W` and `-X`, and a closing `--` are walked past to the program they precede,
+so an option word cannot carry a committed file past the declaration gate or
+the digest re-read. An option word the grammar cannot place is refused with
+`D084`.
 The digest is read again immediately before each command runs, not once per
 record, so a record carrying several commands binds each program to the read
 that precedes that command rather than to the record's first command. What that
 read cannot reach is the child's own resolution: the program is reached by
 pathname, so bytes replaced between the read and the child's `execvp` execute
 undigested while the entry still reads `verified`, and the run is then refused
-only if an observation fails. Closing that window needs the child to execute the
-descriptor the read holds, which changes what the program sees as its own path.
+only if an observation fails. Closing that window needs the child to execute
+the descriptor the read holds, which changes what the program sees as its own
+path.
 It is a fourth route outside what this runner establishes, beside the two the
 network paragraph names and the one the teardown paragraph names.
 
