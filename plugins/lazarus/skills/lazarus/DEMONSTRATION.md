@@ -34,6 +34,12 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "class": "protocol",
       "path": "plugins/lazarus/examples/goldfinch-v1/manifest.json",
       "sha256": "b350b6070755a2944bafa8035b5c3f97502ee1abe86abd4c560c4492f6412ba6"
+    },
+    {
+      "id": "program",
+      "class": "repository",
+      "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
+      "sha256": "ced9fd95aec57d2dd34f1ee74f552ab4ac9ca66f8c29babeecd64536d0bcfd26"
     }
   ],
   "commands": [

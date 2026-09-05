@@ -1075,9 +1075,164 @@ class RunnerObservationTests(RunnerHarness):
         self.assertEqual(len(selected), len(demonstrations.PUBLIC_SET))
         for skill, record in selected:
             with self.subTest(skill=skill.id):
-                parsed = demonstrations.preflight_record(ROOT, skill, record)
+                result = demonstrations.preflight_record(ROOT, skill, record)
+                # Preflight reports the observations and what it established
+                # about each program. Asserting the shape keeps this a failed
+                # assertion on a tree that returns observations alone, rather
+                # than an unpacking error the guard check cannot classify.
+                self.assertIsInstance(result, tuple)
+                parsed, programs = result
                 self.assertEqual(len(parsed), len(record["observations"]))
                 self.assertEqual(record["status"], "real-data")
+                # Every public-set command that names a file program runs one
+                # whose digest a source declared, so preflight verifies it
+                # rather than merely finding it.
+                self.assertTrue(programs)
+                for entry in programs.values():
+                    self.assertEqual(entry["evidence"], "verified")
+
+
+class BundledInterpreterOptionTests(unittest.TestCase):
+    """A hook-disabling option is refused whether it stands alone or bundles.
+
+    Round 1 refused `-S`, `-E` and `-I` as whole words. CPython bundles short
+    options, so `-Sc` reaches the same interpreter state by another spelling:
+    the child skips `site`, never loads the socket hook, builds a real socket
+    and resolves a name while the run records `network_attempt` false.
+    """
+
+    def _admit(self, argv):
+        return demonstrations.preflight_record(
+            ROOT, SPECIMEN,
+            {"sources": [], "commands": [{"id": "run", "argv": argv, "expect_exit": 0}],
+             "observations": []},
+        )
+
+    def test_a_bundled_hook_disabling_option_is_refused(self):
+        for word in ("-Sc", "-Ic", "-Ec", "-EsSc", "-sSc", "-IB"):
+            with self.subTest(word=word):
+                with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                    self._admit(["python3", word, "pass"])
+                self.assertIn("D074", str(caught.exception))
+
+    def test_a_standalone_hook_disabling_option_is_still_refused(self):
+        for word in demonstrations.HOOK_DISABLING_OPTIONS:
+            with self.subTest(word=word):
+                with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                    self._admit(["python3", word, "-c", "pass"])
+                self.assertIn("D074", str(caught.exception))
+
+    def test_an_option_that_does_not_disable_the_hook_is_admitted(self):
+        # Over-refusing here would refuse the live records, which pass
+        # `--specimen`, `--output` and `--check` to their programs.
+        for argv in (
+            ["python3", "-c", "pass"],
+            ["python3", "-u", "-c", "pass"],
+            ["python3", "-OO", "-c", "pass"],
+            ["python3", "-X", "importtime", "-c", "pass"],
+            ["python3", "-W", "ignore", "-c", "pass"],
+            ["python3", "-m", "json.tool", "--help"],
+        ):
+            with self.subTest(argv=argv):
+                self._admit(argv)
+
+    def test_a_long_option_is_never_read_as_a_bundle(self):
+        # Checked through the admission path rather than the helper alone, so
+        # a tree without the helper fails this assertion instead of raising.
+        self.assertTrue(hasattr(demonstrations, "_disables_socket_hook"))
+        for word in ("--specimen", "--output", "--check", "--Set", "--Isolated"):
+            with self.subTest(word=word):
+                self.assertIsNone(demonstrations._disables_socket_hook(word))
+
+
+class DeclaredProgramTests(unittest.TestCase):
+    """A registered public demonstration digests the program it runs."""
+
+    def _public(self, claim_id=demonstrations.PUBLIC_SET[0]):
+        records = demonstrations.load_records(ROOT)
+        skills = {s.directory: s for s in demonstrations.governed_skills(ROOT)}
+        for directory, record in records.items():
+            if record["claim_id"] == claim_id:
+                return skills[directory], copy.deepcopy(record)
+        raise AssertionError(f"{claim_id} has no ledger")
+
+    @staticmethod
+    def _program(argv):
+        """The file program an argv runs, derived without the new helper."""
+
+        if len(argv) < 2:
+            return None
+        word = argv[1]
+        if word.startswith("-") or demonstrations.WORK_TOKEN in word:
+            return None
+        return word
+
+    def test_every_public_set_record_declares_its_command_program(self):
+        for claim_id in demonstrations.PUBLIC_SET:
+            skill, record = self._public(claim_id)
+            declared = {s["path"] for s in record["sources"] if "path" in s}
+            with self.subTest(claim_id=claim_id):
+                for command in record["commands"]:
+                    program = self._program(command["argv"])
+                    if program is not None:
+                        self.assertIn(program, declared)
+
+    def test_an_undeclared_public_program_is_refused(self):
+        skill, record = self._public()
+        program = self._program(record["commands"][0]["argv"])
+        record["sources"] = [s for s in record["sources"] if s.get("path") != program]
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            demonstrations.check_record(ROOT, skill, record)
+        self.assertIn("D084", str(caught.exception))
+
+    def test_a_program_whose_bytes_drift_is_refused_before_execution(self):
+        skill, record = self._public()
+        program = self._program(record["commands"][0]["argv"])
+        declared = [s for s in record["sources"] if s.get("path") == program]
+        # On a tree where the program is not declared there is nothing to
+        # drift, which is the gap this guard exists to catch.
+        self.assertTrue(declared)
+        for source in declared:
+            source["sha256"] = "0" * 64
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            demonstrations.preflight_record(ROOT, skill, record)
+        self.assertIn("D084", str(caught.exception))
+
+    def test_a_public_program_is_reported_as_verified(self):
+        skill, record = self._public()
+        result = demonstrations.preflight_record(ROOT, skill, record)
+        self.assertIsInstance(result, tuple)
+        _observations, programs = result
+        self.assertTrue(programs)
+        for entry in programs.values():
+            self.assertEqual(entry["evidence"], "verified")
+            self.assertTrue(demonstrations.DIGEST_RE.fullmatch(entry["sha256"]))
+
+    def test_an_undeclared_program_outside_the_public_set_is_reported_as_found(self):
+        # The rule binds registered public demonstrations. Every other record
+        # keeps the weaker evidence, and the report says which it holds.
+        record = check(fixture_record("valid-ledger.md"))
+        record["commands"] = [
+            {"id": "run", "argv": ["python3", "scripts/demonstrations.py", "--help"],
+             "expect_exit": 0}
+        ]
+        record["observations"] = ['run: line "usage"']
+        result = demonstrations.preflight_record(ROOT, SPECIMEN, record)
+        self.assertIsInstance(result, tuple)
+        _observations, programs = result
+        self.assertEqual(
+            [entry["evidence"] for entry in programs.values()], ["found"]
+        )
+
+    def test_an_option_or_work_path_program_carries_no_entry(self):
+        self.assertTrue(hasattr(demonstrations, "_command_program"))
+        for argv in (
+            ["python3", "-c", "print(1)"],
+            ["python3", "-m", "json.tool", "--help"],
+            ["python3", "{work}/built.py"],
+        ):
+            with self.subTest(argv=argv):
+                self.assertIsNone(demonstrations._command_program(argv))
 
 
 class RunnerSelectionTests(RunnerHarness):

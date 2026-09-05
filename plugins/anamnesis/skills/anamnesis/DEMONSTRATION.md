@@ -27,6 +27,12 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "class": "audit",
       "path": "plugins/anamnesis/specimens/pilot/policy.json",
       "sha256": "5de0d04c338776fd29cc6e27a902fac498a1335700dce1eae7b364ba67cf8901"
+    },
+    {
+      "id": "program",
+      "class": "repository",
+      "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+      "sha256": "6318f3ae4cd74e35354d706a1216fa76fea2b6446a2fc2f5b45ad1a61401e645"
     }
   ],
   "commands": [

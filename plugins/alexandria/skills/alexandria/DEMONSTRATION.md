@@ -43,6 +43,12 @@ keep their baseline wording until the lane advances.
       "class": "protocol",
       "path": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json",
       "sha256": "946fbfbad93271b17d5343afad03847992290bf20635d58755b61aa3e56f7509"
+    },
+    {
+      "id": "program",
+      "class": "repository",
+      "path": "plugins/alexandria/examples/credit-history-v0/demo.py",
+      "sha256": "956367805a48218adadbfbfafe345f43bfded3d40caef5609c5d264aceb694c5"
     }
   ],
   "commands": [

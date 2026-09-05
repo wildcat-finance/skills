@@ -39,6 +39,12 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "class": "production-run",
       "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2-scrutiny.md",
       "sha256": "f0555ad692e46c86965b0d4eaf363a41602510a27d51fd10587b5fbecb2c4264"
+    },
+    {
+      "id": "program",
+      "class": "repository",
+      "path": "plugins/dokimasia/scripts/dokimasia.py",
+      "sha256": "34e4b03d422abe14c9c4269b56709027e9590af6b734d90dc906523eed7d7ece"
     }
   ],
   "commands": [

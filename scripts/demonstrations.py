@@ -82,6 +82,44 @@ PYTHON_LAUNCHER = "python3"
 # ignore `PYTHONPATH`, so the hook directory is never on the path. Each one
 # turns the denial off while the report still reads `python-site-hook`.
 HOOK_DISABLING_OPTIONS = ("-S", "-E", "-I")
+# CPython bundles short options, so `-Sc`, `-Ic` and `-EsSc` disable the hook
+# exactly as the separate words do. Matching whole words alone let every
+# bundle through, so the letter is what this looks for. A long option is not a
+# bundle, which keeps `--specimen`, `--output` and `--check` admissible.
+HOOK_DISABLING_LETTERS = frozenset("SEI")
+
+
+def _disables_socket_hook(word: str) -> str | None:
+    """Return the disabling letter in one argv word, or None.
+
+    A short-option bundle carries its letters in one word, so the check reads
+    the characters rather than comparing the whole word. Anything that is not
+    a single-dash option word carries no interpreter option at all.
+    """
+
+    if not word.startswith("-") or word.startswith("--") or word == "-":
+        return None
+    for letter in word[1:]:
+        if letter in HOOK_DISABLING_LETTERS:
+            return letter
+    return None
+
+
+def _command_program(argv: list[str]) -> str | None:
+    """Return the repository-relative file program one argv runs, or None.
+
+    An interpreter option such as `-c` or `-m` carries its work in the option
+    rather than in a file, and a `{work}` path names something the run itself
+    builds inside the private root. Neither is a committed file, so neither is
+    a source a record can declare or a digest this checker can bind.
+    """
+
+    if len(argv) < 2:
+        return None
+    program = argv[1]
+    if program.startswith("-") or WORK_TOKEN in program:
+        return None
+    return program
 OBSERVATION_RE = re.compile(
     r"^(?P<command>[a-z][a-z0-9-]{0,63}): (?P<kind>line|json) (?P<rest>.+)$"
 )
@@ -178,6 +216,7 @@ REFUSALS = {
     "D081": "atomic report publication",
     "D082": "aggregate public-set ceiling",
     "D083": "private work root boundary",
+    "D084": "declared command program",
 }
 
 
@@ -841,6 +880,29 @@ def check_record(
             f"{where} claims constructed with preserved {sorted(set(preserved))} source(s)",
         )
 
+    # A registered public demonstration verifies the program it runs. Proving
+    # the file exists says nothing about its bytes, so a report that recorded
+    # `evidence: verified` for every input while the executable half went
+    # undigested was source-drift over exactly the half that produced the
+    # result. Declaring the program as a source is what puts it under the same
+    # digest check as every other input, and this refusal is what keeps it
+    # declared. The rule reads the record's own claim id, so it holds whether
+    # the record is reached through `--public-set` or run singly.
+    if claim_id in PUBLIC_SET:
+        declared = {
+            source["path"]
+            for source in sources
+            if isinstance(source, dict) and isinstance(source.get("path"), str)
+        }
+        for index, command in enumerate(commands):
+            program = _command_program(command["argv"])
+            if program is not None and program not in declared:
+                _fail(
+                    "D084",
+                    f"{where} commands[{index}] runs {program!r}, which no source declares; "
+                    "a registered public demonstration digests the program it runs",
+                )
+
     frontier = _check_frontier(record, where=where)
     # A mature demo frontier says nothing worth doing remains. An absent record
     # says nothing exists yet. Together they retire a demonstration that was
@@ -1480,11 +1542,24 @@ def _source_evidence(source: dict) -> dict:
     }
 
 
-def preflight_record(root: Path, skill: GovernedSkill, record: dict) -> list[Observation]:
-    """Refuse a record whose commands or observations cannot be executed as declared."""
+def preflight_record(
+    root: Path, skill: GovernedSkill, record: dict
+) -> tuple[list[Observation], dict[str, dict]]:
+    """Refuse a record whose commands or observations cannot be executed as declared.
+
+    Returns the parsed observations and, per command, what was established
+    about the program it runs: `verified` when the bytes matched the digest a
+    source declared, `found` when the record declares no source for them.
+    """
 
     where = f"{skill.directory}/{LEDGER_NAME}"
     command_ids = {command["id"] for command in record["commands"]}
+    declared_digests = {
+        source["path"]: source["sha256"]
+        for source in record["sources"]
+        if isinstance(source, dict) and isinstance(source.get("path"), str)
+    }
+    programs: dict[str, dict] = {}
     for index, command in enumerate(record["commands"]):
         argv = command["argv"]
         # The execution boundary is the pinned interpreter, not whatever the
@@ -1498,17 +1573,22 @@ def preflight_record(root: Path, skill: GovernedSkill, record: dict) -> list[Obs
             )
         if len(argv) < 2:
             _refuse("D072", f"{where} commands[{index}] gives the interpreter no work")
-        disabling = [word for word in argv[1:] if word in HOOK_DISABLING_OPTIONS]
+        disabling = [
+            (word, letter)
+            for word, letter in ((word, _disables_socket_hook(word)) for word in argv[1:])
+            if letter is not None
+        ]
         if disabling:
+            word, letter = disabling[0]
             _refuse(
                 "D074",
-                f"{where} commands[{index}] passes {disabling[0]!r}, which turns off "
+                f"{where} commands[{index}] passes {word!r}, whose {letter!r} turns off "
                 "the site hook that denies sockets",
             )
-        program = argv[1]
-        if not program.startswith("-") and WORK_TOKEN not in program:
+        program = _command_program(argv)
+        if program is not None:
             try:
-                _read_regular_file(
+                payload = _read_regular_file(
                     root, program, maximum=MAX_SOURCE_BYTES,
                     label=f"{where} commands[{index}] program",
                 )
@@ -1517,6 +1597,27 @@ def preflight_record(root: Path, skill: GovernedSkill, record: dict) -> list[Obs
                     "D072",
                     f"{where} commands[{index}] program {program!r} is absent: {exc}",
                 )
+            # The declaration is checked when the record is loaded; the digest
+            # is compared again here, against the bytes this run is about to
+            # execute. Loading and executing are separated by every other
+            # record's read, so re-reading is what makes "verified before
+            # execution" name this execution rather than the earlier check.
+            observed = hashlib.sha256(payload).hexdigest()
+            declared = declared_digests.get(program)
+            if declared is None:
+                programs[command["id"]] = {
+                    "path": program, "sha256": observed, "evidence": "found",
+                }
+            elif observed != declared:
+                _refuse(
+                    "D084",
+                    f"{where} commands[{index}] program {program!r} is {observed}, "
+                    f"declared {declared}",
+                )
+            else:
+                programs[command["id"]] = {
+                    "path": program, "sha256": observed, "evidence": "verified",
+                }
     observations = []
     for index, text in enumerate(record["observations"]):
         observation = parse_observation(text, where=f"{where} observations[{index}]")
@@ -1526,7 +1627,7 @@ def preflight_record(root: Path, skill: GovernedSkill, record: dict) -> list[Obs
                 f"{where} observations[{index}] names unknown command {observation.command!r}",
             )
         observations.append(observation)
-    return observations
+    return observations, programs
 
 
 class Runner:
@@ -1646,6 +1747,10 @@ class Runner:
             },
             "timeout_seconds": record["timeout_seconds"],
             "sources": [_source_evidence(source) for source in record["sources"]],
+            # What the run established about each command's own program, which
+            # `sources` alone never covered: `verified` against a declared
+            # digest, or `found` where the record declares none.
+            "programs": [],
             "repetitions": [],
             "slowest_ms": 0,
             "result": "refused",
@@ -1659,7 +1764,12 @@ class Runner:
                     "D074",
                     f"{skill.directory} allowlists the network; this run declares no capture exception",
                 )
-            observations = preflight_record(self.root, skill, record)
+            observations, programs = preflight_record(self.root, skill, record)
+            report["programs"] = [
+                programs[command["id"]]
+                for command in record["commands"]
+                if command["id"] in programs
+            ]
             for repetition in range(1, self.repeat + 1):
                 commands: list[dict] = []
                 run = {"index": repetition, "commands": commands, "duration_ms": 0}

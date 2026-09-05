@@ -185,7 +185,7 @@ cannot silently change the boundary it names.
 - `D071` -- a registered public demonstration has no ledger or is not `real-data`, or a named directory is not governed.
 - `D072` -- a command names a program other than `python3`, gives the interpreter no work, or its program file is absent or cannot start.
 - `D073` -- the running interpreter is not the version `.python-version` pins, or no pin can be read.
-- `D074` -- a child opened or resolved a socket, removed the armed network marker, or was given an interpreter option that turns the socket hook off, or the record allowlists a network this run does not admit.
+- `D074` -- a child opened or resolved a socket, removed the armed network marker, or was given an interpreter option word whose letters turn the socket hook off, including a bundle such as `-Sc`, or the record allowlists a network this run does not admit.
 - `D075` -- a command's exit status differs from its declared `expect_exit`.
 - `D076` -- a command passed its timeout and its process group was killed.
 - `D077` -- a command wrote past the output cap and was truncated.
@@ -195,6 +195,7 @@ cannot silently change the boundary it names.
 - `D081` -- the report's parent is no longer confined below the output root, or the report could not be published atomically; no partial object was left under its name.
 - `D082` -- the public set passed its aggregate ceiling.
 - `D083` -- the private work root could not be created or prepared.
+- `D084` -- a registered public demonstration runs a program no source declares, or the program's bytes differ from the digest its source declared.
 <!-- refusal-catalogue:end -->
 
 ## Observations are checkable, not prose
@@ -280,6 +281,16 @@ sources, and its `status` is `verified` only when every selected record
 verified; the process exits 0 in that case and 2 otherwise. A report is
 evidence of one run on one machine and promotes nothing a record's non-claim
 withholds.
+
+Each record's `programs` array says what the run established about the program
+each command ran, which `sources` alone never covered. A registered public
+demonstration declares its program as a source, so the program is digested
+before execution like every other input and its entry reads `verified`. Any
+other record's program is proved to exist and not digested, and its entry
+reads `found`. The distinction is the point: `verified` names bytes checked
+against a declared digest, `found` names a file that was there. A program
+reached through `-c`, `-m` or a `{work}` path is not a committed file, so it
+carries no entry and no digest at all.
 
 The runner emits `demonstration.selected` with the record count,
 `demonstration.started` per command, `demonstration.verified` or
