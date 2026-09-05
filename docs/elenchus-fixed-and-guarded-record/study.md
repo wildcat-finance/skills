@@ -676,3 +676,13 @@ record. Claim a command ran when it did not.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Section 11's refusal set is now stated as a rule with a closed enumeration, rather than as a count. The rule: a record is refused when the fields it already carries contradict the Promise's Evidence or Boundary clauses, decided only from those fields and reading nothing outside the record. The enumeration under that rule is closed and currently holds eight members: the six the amendments above name, plus two more. A record is refused when `verdict.status` is `guarded` while its `unfixed_parent.report` records any errors above zero, because `elenchus.py` classifies a report carrying errors as `inconclusive` and the Boundary clause says the result does not turn an inconclusive comparison into a guard. A record is refused when `verdict.status` is `guarded` while its `fixed_tree.report` records any assertion failures or errors above zero, because the Evidence clause requires the guard to pass on the fixed tree. Adding a member to the enumeration requires an amendment; the rule does not authorise a refusal nobody has written down.
+
+**Why.** Warden findings S1-R3-02 and S1-R3-03 in round 3 of step 1, and the pattern the three rounds together establish. Rounds 1, 2 and 3 each demonstrated the same class of defect: `--check` accepting a record whose own fields contradict the claim it makes. Each round could authorise only one more refusal, because section 11 gave a count rather than the principle the count was instancing, and section 11 already said each refusal follows from the Promise's own clauses rather than from taste. Naming that principle is what stops the next round finding the same class again, which is the skill's own three-rounds rule applied to this delivery. The enumeration stays closed so the rule cannot be read as licence to refuse whatever a later reader judges inconsistent.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

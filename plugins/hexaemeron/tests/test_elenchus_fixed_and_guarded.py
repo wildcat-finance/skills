@@ -361,7 +361,7 @@ class Verdicts(Harness):
 
 
 class RecordRelations(Harness):
-    """Two refusals decided from fields the record already carries."""
+    """The refusals decided from fields the record already carries."""
 
     def test_a_record_naming_one_commit_as_both_trees_is_refused(self):
         record = self.accepted_record()
@@ -380,14 +380,36 @@ class RecordRelations(Harness):
         self.assertRefused(
             self.invoke(["--check", str(path)]), "F012", "verdict.status")
 
+    def test_a_guarded_record_whose_parent_report_errored_is_refused(self):
+        record = self.accepted_record()
+        record["unfixed_parent"]["report"]["errors"] = 1
+        self.assertGreater(record["unfixed_parent"]["report"]["assertion_failures"], 0)
+        path = self.fixture.inputs / "parent-errored.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        self.assertRefused(
+            self.invoke(["--check", str(path)]), "F013", "verdict.status")
+
+    def test_a_guarded_record_whose_fixed_tree_report_failed_is_refused(self):
+        for counter in ("assertion_failures", "errors"):
+            with self.subTest(counter=counter):
+                record = self.accepted_record(out=f"records/{counter}.json")
+                record["fixed_tree"]["report"][counter] = 2
+                path = self.fixture.inputs / f"fixed-tree-{counter}.json"
+                path.write_text(json.dumps(record), encoding="utf-8")
+                self.assertRefused(
+                    self.invoke(["--check", str(path)]), "F014", "verdict.status")
+
     def test_a_record_whose_two_trees_differ_and_whose_parent_failed_is_accepted(self):
-        """The pair above must not refuse the record the emitter actually writes."""
+        """The four above must not refuse the record the emitter actually writes."""
         record = self.accepted_record()
         self.assertNotEqual(
             record["unfixed_parent"]["commit"], record["fixed_tree"]["commit"])
         self.assertGreater(
-            record["unfixed_parent"]["report"]["assertion_failures"]
-            + record["unfixed_parent"]["report"]["errors"], 0)
+            record["unfixed_parent"]["report"]["assertion_failures"], 0)
+        self.assertEqual(record["unfixed_parent"]["report"]["errors"], 0)
+        self.assertEqual(
+            record["fixed_tree"]["report"]["assertion_failures"]
+            + record["fixed_tree"]["report"]["errors"], 0)
         path = self.fixture.inputs / "genuine.json"
         path.write_text(json.dumps(record), encoding="utf-8")
         code, out, err = self.invoke(["--check", str(path)])
@@ -404,8 +426,8 @@ class RecordRelations(Harness):
         code, _out, err = self.invoke(["--check", str(path)])
         self.assertEqual(code, 1, err)
         self.assertIn("F002", err)
-        self.assertNotIn("F011", err)
-        self.assertNotIn("F012", err)
+        for code in ("F011", "F012", "F013", "F014"):
+            self.assertNotIn(code, err)
 
 
 class ParentDerivation(Harness):

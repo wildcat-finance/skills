@@ -179,3 +179,33 @@ reverses no decision.
 **Steps touched.** Step 3.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: `plugins/hexaemeron/tests/test_elenchus_fixed_and_guarded.py` is new and covers the closed key set, each refusal path named in the exit, the staged rename under an interrupted write, and one accepted record. Existing decision-record, documentation, Horos-boundary and root checks stay green, and `test_elenchus_checker.py` is not edited. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-1.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, reapplied against the current study digest. The same replacement was receipted earlier in this run, then un-bound when the 2026-09-05 study amendment that states section 11's refusal rule changed the digest every runbook amendment records. The defect it repairs is unchanged: the previously declared runner does not collect this step's tests.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: `plugins.hexaemeron.tests.test_evolution` covers the row's axis arithmetic and retained frontier line and is not edited. No new executable behaviour is added, so no new test module is written; the emitter's own suite from step 1 stays green. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-2.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, reapplied against the current study digest. The same replacement was receipted earlier in this run, then un-bound when the 2026-09-05 study amendment that states section 11's refusal rule changed the digest every runbook amendment records. The defect it repairs is unchanged: the previously declared runner does not collect this step's tests.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: The existing test module gains the end-to-end case that builds the scratch repository, repairs the failure, emits the record and asserts both the acceptance and the two refusals, so the demonstration is reproduced by the suite rather than only by hand. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-3.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, reapplied against the current study digest. The same replacement was receipted earlier in this run, then un-bound when the 2026-09-05 study amendment that states section 11's refusal rule changed the digest every runbook amendment records. The defect it repairs is unchanged: the previously declared runner does not collect this step's tests.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

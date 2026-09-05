@@ -24,6 +24,8 @@ Codes:
   F010  the result's ref is not the commit the draft names as the repair
   F011  the record names one commit as both the parent and the fixed tree
   F012  the verdict is guarded while the parent's own report never failed
+  F013  the verdict is guarded while the parent's own report records an error
+  F014  the verdict is guarded while the fixed tree's own report still fails
 
 Exit 0 written or clean, 1 refused, 2 bad invocation.  Every refusal names its
 code and its field on stderr and writes nothing.  The record is staged in the
@@ -382,9 +384,9 @@ def _verdict_findings(value) -> list[Finding]:
 
 
 def _relation_findings(record) -> list[Finding]:
-    """The two refusals that read one field against another.
+    """The refusals that read one field of the record against another.
 
-    Both are decided from fields the record already carries, so `--check`
+    Each is decided from fields the record already carries, so `--check`
     settles them on a record alone.  They run only once every field they
     read has passed its own rule, because a relation between two values the
     schema has already refused says nothing about the record.
@@ -396,14 +398,31 @@ def _relation_findings(record) -> list[Finding]:
             "equals fixed_tree.commit; a guard observed red and green on one "
             "commit is not the two trees the Evidence clause names",
         ))
-    report = record["unfixed_parent"]["report"]
-    if (record["verdict"]["status"] == GUARDED
-            and report["assertion_failures"] == 0 and report["errors"] == 0):
+    if record["verdict"]["status"] != GUARDED:
+        return findings
+    parent = record["unfixed_parent"]["report"]
+    if parent["assertion_failures"] == 0 and parent["errors"] == 0:
         findings.append(Finding(
             "F012", "verdict.status",
             "is guarded while unfixed_parent.report records 0 assertion failures "
             "and 0 errors; the Refuses clause names a guard that never failed "
             "without the fix",
+        ))
+    if parent["errors"] > 0:
+        findings.append(Finding(
+            "F013", "verdict.status",
+            f"is guarded while unfixed_parent.report records {parent['errors']} "
+            f"errors; a report carrying an error classifies as inconclusive, and "
+            f"the Boundary does not turn an inconclusive comparison into a guard",
+        ))
+    fixed = record["fixed_tree"]["report"]
+    if fixed["assertion_failures"] > 0 or fixed["errors"] > 0:
+        findings.append(Finding(
+            "F014", "verdict.status",
+            f"is guarded while fixed_tree.report records "
+            f"{fixed['assertion_failures']} assertion failures and "
+            f"{fixed['errors']} errors; the Evidence clause requires the guard "
+            f"to pass on the fixed tree",
         ))
     return findings
 
