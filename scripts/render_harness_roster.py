@@ -10,7 +10,7 @@ decision record names: the roster block in `README.md`, the harness table in
 `scripts/build_contributor_guide.py` draws into
 `docs/pdf/how-to-help-shoggoth.pdf`.
 
-Three properties are load-bearing, and each has a case in
+Three properties define the contract, and each has a case in
 `tests/test_harness_manifest.py` that fails without it.
 
 **The surfaces are derived, never authored.** Every harness name, class and
@@ -328,10 +328,10 @@ def refuse_unrecorded_shape(document):
     `recorded` was added for, and `20260904` passes the calendar and fails the
     pattern, which is this. Both gates are kept.
 
-    An unpatterned `recorded.host` defeated the harness page's drift check.
-    `pdf_label` is the one PDF expectation carrying no bounding guard, on the
-    reading that its tail is a fixed-width date so no differently built label
-    could contain it. That reading holds only while the host carries no comma.
+    Before observation metadata left the surfaces, an unpatterned
+    `recorded.host` defeated the harness page's drift check. The label then had
+    no bounding guard because its tail was a fixed-width date, which was safe
+    only while the host carried no comma.
     Driven on a real page built from host `darwin, 2026-09-04 extra` on
     `2026-09-05`: a manifest recording host `darwin` on `2026-09-04` renders a
     label that is a strict prefix of the drawn one, `pdf_drift` returns `[]`,

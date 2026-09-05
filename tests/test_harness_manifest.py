@@ -793,7 +793,7 @@ class SubprocessTests(unittest.TestCase):
     def test_a_version_cut_in_half_by_the_output_bound_is_never_recorded(self):
         # The bound on how much client output is read can land inside the token
         # itself, and half of a version is not the version the client
-        # reported. `1.234` recorded for a client that said `1.23456789` is the
+        # reported. `1.234` recorded when the client output was `1.23456789` is the
         # same defect as a token scraped out of a failure: a `client_version`
         # nobody reported, under a schema description that calls it exact.
         cap = probe_harnesses.MAX_CLIENT_OUTPUT_CHARS
@@ -1820,7 +1820,7 @@ class RenderTests(unittest.TestCase):
                 document = landed()
                 document["recorded"]["date"] = bad
                 # The shape check the probe applies still passes it, which is
-                # what makes this refusal load-bearing rather than redundant.
+                # what makes this refusal necessary rather than redundant.
                 self.assertTrue(probe_harnesses.DATE_PATTERN.match(bad))
                 self.assertRaisesRefusal(
                     {"date": bad}, "is not a calendar date"
@@ -2917,7 +2917,7 @@ class DriftTests(unittest.TestCase):
                     self.assertIn(str(target), completed.stderr)
 
     def test_a_missing_manifest_reddens_the_declared_check(self):
-        # The source going absent is the failure mode a check that only ever
+        # The source going absent is the condition a check that only ever
         # compared surfaces to each other would report as clean.
         with tempfile.TemporaryDirectory() as directory:
             staged = self.stage(directory)
