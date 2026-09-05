@@ -74,8 +74,9 @@ fi
 # any repository it finds nothing at all and the rev-parse branch below refuses
 # with git's own line. Inside one it finds the enclosing repository -- its
 # configuration, its object store and its record, for a commit into a different
-# repository entirely -- so the prefix check below refuses that before any
-# record is located. The bypass token recovers from both.
+# repository entirely. Below its root the prefix check refuses that; at its root
+# the prefix is empty and the index check after it refuses instead. Both refuse
+# before any record is located, and the bypass token recovers from all three.
 #
 # The index git exports is kept, and must be. Git runs this hook for one
 # particular commit and names that commit's index in GIT_INDEX_FILE -- `git
@@ -85,7 +86,8 @@ fi
 # a tree that is not the tree being committed. GIT_PREFIX stays with it. What
 # the regression in tests/test_commit_gate.py holds is the other half: pointed
 # at another repository's index, the gate reads it and leaves its staged state
-# alone.
+# alone. Kept is not trusted: the index check below refuses one that is not in
+# the git directory discovery answers.
 unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE \
     GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
@@ -134,6 +136,54 @@ if ! git_dir="$(gate_git rev-parse --git-dir 2>/dev/null)"; then
     [ -n "$cause" ] || cause='nothing on standard error'
     printf 'pre-commit: refused, git rev-parse --git-dir failed, so the green record cannot be located; git said: %s; %s\n' "$cause" "$fix" >&2
     exit 1
+fi
+
+# The index git names is the one inherited value this gate keeps, so it is the
+# one an inherited environment can still aim elsewhere. Git names the index for
+# the commit in hand and puts it in the git directory discovery answers:
+# measured on git 2.50.1, `.git/index` for a plain commit, a commit from a
+# subdirectory and `commit --amend`, the absolute `.git/index.lock` for `commit
+# -a` from a subdirectory, and an absolute index under
+# `<common>/worktrees/<name>` for a linked worktree nested inside its own main
+# checkout and for a subdirectory of that worktree. A commit reached through a
+# symlinked path answers the same. The two agree in all seven.
+#
+# They differ where a second git directory's work tree is this repository's own
+# root. Git runs the hook from that root, so the prefix above is empty and the
+# check before this one never fires, while GIT_INDEX_FILE still names the other
+# repository's index. Measured on the same git: the enclosing repository's
+# `core.fsmonitor` ran during this gate's own `git write-tree`, and its
+# `LAST_GREEN` naming the staged tree admitted a commit into a repository it
+# does not hold and that held no record of its own. Refused here, before a
+# record is located and before an index is read.
+#
+# Both sides are resolved with `pwd -P`, because either can be relative -- git
+# answers `.git` for both in a plain checkout -- and because a path reached
+# through a symlink would otherwise compare unequal to the same directory
+# reached directly. A side that will not resolve is refused rather than assumed
+# equal. The value is inherited, so it is stripped and bounded for the reason
+# the stale-record path gives, at 256 characters rather than 64 because it is a
+# path and the shorter bound cuts one mid-directory.
+#
+# Unset, or set and empty, is not this cause. Git reads the index of the
+# repository discovery answers in both, which is the repository this gate
+# compares against, so the gate proceeds; that is the hand-run case, measured
+# on git 2.50.1 for both values, and it is deliberate. The trade is a
+# commit whose index git placed outside the git directory: no shape measured
+# above does that, one built by hand is refused, and the bypass token admits it.
+if [ -n "${GIT_INDEX_FILE:-}" ]; then
+    case "$GIT_INDEX_FILE" in
+        */*) index_dir="${GIT_INDEX_FILE%/*}" ;;
+        *) index_dir='.' ;;
+    esac
+    [ -n "$index_dir" ] || index_dir='/'
+    index_home="$(cd -- "$index_dir" 2>/dev/null && pwd -P)" || index_home=''
+    git_home="$(cd -- "$git_dir" 2>/dev/null && pwd -P)" || git_home=''
+    if [ -z "$index_home" ] || [ -z "$git_home" ] || [ "$index_home" != "$git_home" ]; then
+        shown_index="$(printf '%s' "$GIT_INDEX_FILE" | tr -d '[:cntrl:]' | cut -c1-256)"
+        printf 'pre-commit: refused, GIT_INDEX_FILE names %s, which is not in the git directory git rev-parse --git-dir answers, so the green record read here would be another repository'"'"'s; %s\n' "$shown_index" "$fix" >&2
+        exit 1
+    fi
 fi
 
 # --git-dir, not --git-common-dir: a linked worktree keeps its own record, so

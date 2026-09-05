@@ -766,9 +766,14 @@ class StagedTreeTests(unittest.TestCase):
 
         Driven directly rather than through `git commit`, because git will not
         reach the hook once its own index is unreadable.
+
+        The unreadable index sits in the repository's own git directory. An
+        index anywhere else is refused earlier, on the cause
+        `test_the_hook_refuses_a_work_tree_at_the_enclosing_repositorys_root`
+        holds, and this case is about the state after that one passes.
         """
         with gate_repository() as root:
-            broken = root.parent / "not-an-index"
+            broken = root / ".git" / "not-an-index"
             broken.write_text("this is not an index\n", encoding="utf-8")
             attempted = subprocess.run(
                 [str(root / ".githooks" / "pre-commit")],
@@ -1253,6 +1258,120 @@ class HookIndexMutationTests(unittest.TestCase):
             self.assertEqual(
                 staged_state(outer), before,
                 "the gate changed the staged state of the enclosing repository",
+            )
+
+    def test_the_hook_refuses_a_work_tree_at_the_enclosing_repositorys_root(self):
+        """S3-R4-01: the same crossing, where the prefix cannot see it.
+
+        Point a second git directory's work tree at the enclosing repository's
+        own root and git runs the hook from that root, so
+        `git rev-parse --show-prefix` answers empty and the control the case
+        above holds never fires. Everything after that is the same: discovery
+        answers the enclosing repository, its `core.fsmonitor` runs during the
+        hook's own `git write-tree`, and its `LAST_GREEN` naming the staged
+        tree admitted a commit into a repository it does not hold and that
+        holds no record of its own. Where the index lives is the only thing
+        that separates the two, so that is what the gate reads here.
+
+        The empty prefix is asserted rather than assumed: a fixture answering
+        anything else would refuse on the control above and prove nothing about
+        this one. The enclosing repository answering for the staged tree is
+        asserted for the reason the case above gives.
+        """
+        with gate_repository() as outer:
+            separate = outer.parent / "separate"
+            separate.mkdir()
+            git(separate, "init", "-q", "-b", "main", ".")
+            aimed = ("--git-dir", str(separate / ".git"), "--work-tree", str(outer))
+            # The ordinary activation, in the repository being committed to:
+            # the tracked gate in the work tree is the hook git runs.
+            git(outer, *aimed, *ACTIVATION)
+            git(outer, *aimed, "add", "-A")
+            staged = git(outer, *aimed, "write-tree").stdout.strip()
+
+            rebuilt = git(outer, "write-tree").stdout.strip()
+            self.assertEqual(
+                rebuilt, staged,
+                "the enclosing repository cannot answer for the staged tree, "
+                "so this fixture would refuse for want of an object rather "
+                "than on the record crossing under test",
+            )
+            record_path(outer).write_text(f"{staged}\n", encoding="utf-8")
+            self.assertEqual(
+                git(outer, "rev-parse", "--show-prefix").stdout.strip(), "",
+                "the work tree is not at the enclosing repository's own root, "
+                "so the prefix control would refuse this fixture",
+            )
+
+            script, marker = fsmonitor_script(outer.parent)
+            repository_override(outer, script)
+            before = staged_state(outer)
+            self.assertFalse(
+                marker.exists(), "the fixture itself started the monitor"
+            )
+
+            refused = git(outer, *aimed, "commit", "-qm", "coincident", check=False)
+
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "the enclosing repository's green record admitted a commit "
+                "into a repository it does not hold",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "GIT_INDEX_FILE", named[0],
+                f"the refusal does not name the index cause: {named[0]}",
+            )
+            self.assertFalse(
+                marker.exists(),
+                "the enclosing repository's configuration chose a process the "
+                "gate never named",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of the enclosing repository",
+            )
+            self.assertNotEqual(
+                git(separate, "rev-parse", "--verify", "-q", "HEAD",
+                    check=False).returncode, 0,
+                "the repository being committed to took the commit",
+            )
+
+    def test_an_ordinary_gated_commit_from_a_subdirectory_is_still_admitted(self):
+        """Neither control refuses the shape it is not aimed at.
+
+        Git runs a hook from the root of the working tree, so a commit from a
+        subdirectory answers an empty prefix and an index in the git directory
+        discovery answers. Both controls stay silent and the recorded green
+        admits the commit.
+        """
+        with gate_repository() as root:
+            (root / "sub").mkdir()
+            (root / "sub" / "b.txt").write_text("two\n", encoding="utf-8")
+            git(root, "add", "-A")
+            recorded = greenlight(root)
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed on a green fixture: {recorded.stderr}",
+            )
+            staged = git(root, "write-tree").stdout.strip()
+            self.assertEqual(
+                record_path(root).read_text(encoding="utf-8").strip(), staged,
+                "greenlight recorded something other than the staged tree",
+            )
+
+            admitted = commit(root / "sub", "from a subdirectory")
+
+            self.assertEqual(
+                admitted.returncode, 0,
+                f"the gate refused an ordinary commit from a subdirectory: "
+                f"{admitted.stderr}",
+            )
+            self.assertEqual(
+                refusals(admitted), [],
+                f"the gate refused a shape neither control is aimed at: "
+                f"{admitted.stderr!r}",
             )
 
     def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
