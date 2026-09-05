@@ -61,6 +61,13 @@ DECLARED_INPUTS_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 # disagreed with the reader it protects would refuse the wrong files.
 FENCE = re.compile(r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>.*)$")
 HEADER_BULLET = re.compile(r"^- [^:]+: .+$")
+# The four fields the canonical frontier line digests, in that order.
+FRONTIER_FIELDS = (
+    "Frontier status",
+    "Frontier revision",
+    "Current frontier",
+    "Next Fiat job",
+)
 
 
 def field(text, name):
@@ -679,6 +686,32 @@ class DeclaredInputsSpecimenTests(unittest.TestCase):
         self.assertEqual(declared_inputs_defects(text), [])
         self.assertEqual(unfenced_field(text, "Frontier status"), "mature")
         self.assertEqual(history_rows(text), history_rows(kronos_ledger()))
+
+    def test_a_carried_block_moves_neither_reader_nor_the_digest(self):
+        """The claim VERSIONING.md makes, measured on a ledger that carries one.
+
+        The case above proves the 27 ledgers that carry no block keep their
+        digests, which is a weaker thing: a block absent from every one of
+        them cannot move anything. This drives the same four fields through
+        both readers on a ledger that does carry a block.
+        """
+        text = specimen("well-formed-block.md", "after-header-bullets")
+        for name in FRONTIER_FIELDS:
+            with self.subTest(field=name):
+                self.assertEqual(field(text, name), unfenced_field(text, name))
+                self.assertEqual(field(text, name), field(kronos_ledger(), name))
+        canonical = "|".join(field(text, name) for name in FRONTIER_FIELDS) + "\n"
+        self.assertEqual(
+            hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+            history_rows(text)[-1]["digest"],
+        )
+
+    def test_a_second_declared_inputs_block_is_refused(self):
+        defects = declared_inputs_defects(
+            specimen("duplicate-block.md", "after-header-bullets")
+        )
+        self.assertEqual(len(defects), 1, defects)
+        self.assertIn("V002", defects[0])
 
     def test_a_block_above_the_header_bullets_is_refused(self):
         defects = declared_inputs_defects(
