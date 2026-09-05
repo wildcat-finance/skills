@@ -688,5 +688,38 @@ class CommandTests(unittest.TestCase):
             self.assertNotIn(banned, source)
 
 
+class HorosCensusCurrencyTests(unittest.TestCase):
+    """The committed Horos census describes the tree the ledgers ship with.
+
+    The step permits the generated Horos files only when the deterministic scan
+    changes them. `horos.py check .` and the root boundary guard re-derive
+    `.horos/boundary.json` alone, so a commit that adds files and refreshes the
+    boundary can leave `.horos/census.json` describing the previous tree with
+    every gate green. Step 2, round 1 did exactly that. This is the guard.
+    """
+
+    def test_the_committed_census_matches_a_fresh_scan(self):
+        sys.path.insert(0, str(ROOT / "plugins" / "horos" / "skills" / "horos" / "scripts"))
+        import horos  # noqa: E402  (locates horos.py)
+
+        committed = json.loads(
+            (ROOT / horos.CENSUS_RELPATH).read_text(encoding="utf-8")
+        )
+        boundary = horos.load_boundary(str(ROOT))
+        fresh = horos.census_document(
+            horos.scan_tree(
+                str(ROOT),
+                census=True,
+                include_untracked=boundary.get("universe") == "tracked+untracked",
+            )
+        )
+        self.assertEqual(
+            committed,
+            json.loads(horos.render(fresh)),
+            "regenerate with: python3 plugins/horos/skills/horos/scripts/horos.py"
+            " scan . --census --write",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
