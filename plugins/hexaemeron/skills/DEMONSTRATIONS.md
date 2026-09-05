@@ -185,7 +185,7 @@ cannot silently change the boundary it names.
 - `D071` -- a registered public demonstration has no ledger or is not `real-data`, or a named directory is not governed.
 - `D072` -- a command names a program other than `python3`, gives the interpreter no work, or its program file is absent or cannot start.
 - `D073` -- the running interpreter is not the version `.python-version` pins, or no pin can be read.
-- `D074` -- a child opened or resolved a socket, removed the armed network marker, or was given an interpreter option word whose letters turn the socket hook off, including a bundle such as `-Sc`, or the record allowlists a network this run does not admit.
+- `D074` -- a child opened or resolved a socket, by any handle on the socket type and not only through the replaced names, or removed, replaced, truncated or chmodded the armed network marker, or was given an interpreter option word whose letters turn the socket hook off, including a bundle such as `-Sc`, or the record allowlists a network this run does not admit.
 - `D075` -- a command's exit status differs from its declared `expect_exit`.
 - `D076` -- a command passed its timeout and its process group was killed.
 - `D077` -- a command wrote past the output cap and was truncated.
@@ -195,7 +195,7 @@ cannot silently change the boundary it names.
 - `D081` -- the report's parent is no longer confined below the output root, or the report could not be published atomically; no partial object was left under its name.
 - `D082` -- the public set passed its aggregate ceiling.
 - `D083` -- the private work root could not be created or prepared.
-- `D084` -- a registered public demonstration runs a program no source declares, reaches its program through `-c`, `-m`, standard input or a `{work}` path rather than a committed file, or the program's bytes differ from the digest its source declared, either before the record runs or in the moment the command runs; or a command puts an option word outside the closed interpreter grammar where its program belongs.
+- `D084` -- a registered public demonstration runs a program no source declares, checked both when the record loads and again before the command runs, or reaches its program through `-c`, `-m`, standard input or a `{work}` path rather than a committed file, or the program's bytes differ from the digest its source declared, either before the record runs or in the moment the command runs; or a command puts an option word outside the closed interpreter grammar where its program belongs.
 - `D085` -- a command left a process holding its pipes after its process group was killed, so something it started is outside the runner's teardown.
 <!-- refusal-catalogue:end -->
 
@@ -244,17 +244,31 @@ expands to a private `0700` directory beneath a fresh temporary root that is
 removed when the run ends; every other brace is passed literally. The child
 sees an allowlisted environment (`PATH`, `HOME`, `TMPDIR`, `LANG`, `LC_ALL`,
 `LC_CTYPE`) plus a `PYTHONPATH` naming only the runner's site hook, so
-credential and Git keys are stripped by never being copied. The hook replaces
-the socket constructors and resolvers in the Python child with a function that
-records the attempt in a marker file and raises; a child that opens or resolves
-a socket is refused even when it swallows the exception and exits 0. The marker
-is armed as an empty file before each command and its identity is pinned, so a
-child that unlinks or replaces the marker to hide the attempt is refused for
-that removal. `-S`, `-E` and `-I` would leave the child outside the hook
+credential and Git keys are stripped by never being copied. The hook denies the
+network in two places. It registers a CPython audit hook that records the
+attempt in a marker file and raises on every `socket.` audit event, which fires
+inside the socket constructor and the name resolvers themselves; and it
+replaces the socket constructors and resolvers in the `socket` and `_socket`
+modules, which is what gives an ordinary attempt its plain message. The audit
+hook is the control and the replacement is the message, because rebinding a
+name binds one name: the type `socket.socket` displaced stays reachable from
+ordinary Python through `socket.socket.__mro__` and through
+`object.__subclasses__()`, and constructing it built a live kernel socket with
+nothing recorded and nothing raised. The interpreter offers no way to remove a
+registered audit hook, and the recorder it calls is a closure rather than a
+module attribute, so a child that reassigns a name in the hook module changes
+nothing about the hook already registered. A child that opens or resolves a
+socket is refused even when it swallows the exception and exits 0. The marker
+is armed as an empty file before each command and its identity is pinned over
+device, inode, size, modification time and change time, so a child that
+unlinks, replaces, truncates or chmods the marker to hide the attempt is
+refused for that change.
+`-S`, `-E` and `-I` would leave the child outside the hook
 entirely, by skipping `site` or ignoring `PYTHONPATH`, and are refused with
 `D074`. This is a process-level denial inside one Python process, not a kernel
 sandbox. Two routes stay outside what the hook can see: a child that reaches
-the kernel's socket call directly, through `ctypes` or another extension, and a
+the kernel's socket call directly, through `ctypes` or another extension, which
+raises no audit event, and a
 child that starts a further process without the hook's `PYTHONPATH`, which gets
 an unhooked interpreter. A run establishes that no denied Python socket call
 went unrecorded; it never establishes that no network call was made. No capture
@@ -311,8 +325,15 @@ and `-X`, and a closing `--` are walked past to the program they precede, so an
 option word cannot carry a committed file past the declaration gate or the
 digest re-read. An option word the grammar cannot place is refused with `D084`.
 The digest is read again immediately before each command runs, not once per
-record, so a record carrying several commands binds each program to the moment
-that command executes.
+record, so a record carrying several commands binds each program to the read
+that precedes that command rather than to the record's first command. What that
+read cannot reach is the child's own resolution: the program is reached by
+pathname, so bytes replaced between the read and the child's `execvp` execute
+undigested while the entry still reads `verified`, and the run is then refused
+only if an observation fails. Closing that window needs the child to execute the
+descriptor the read holds, which changes what the program sees as its own path.
+It is a fourth route outside what this runner establishes, beside the two the
+network paragraph names and the one the teardown paragraph names.
 
 The runner emits `demonstration.selected` with the record count,
 `demonstration.started` per command, `demonstration.verified` or

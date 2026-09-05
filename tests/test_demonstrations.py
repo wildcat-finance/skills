@@ -1353,6 +1353,92 @@ class DeclaredProgramTests(unittest.TestCase):
             with self.subTest(argv=argv):
                 self.assertIsNone(demonstrations._command_program(argv))
 
+    def test_an_undeclared_public_program_is_refused_before_it_runs(self):
+        # `check_record` refuses an undeclared program at load, and the second
+        # layer read the program's form and not its provenance: an undeclared
+        # committed file reached execution with its entry reading `found`, so
+        # `verify_command_program` returned without comparing anything. The two
+        # layers apply the same rule or the second one is not the same rule.
+        skill, record = self._public()
+        program = self._program(record["commands"][0]["argv"])
+        record["sources"] = [s for s in record["sources"] if s.get("path") != program]
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            demonstrations.preflight_record(ROOT, skill, record)
+        self.assertIn("D084", str(caught.exception))
+
+    def test_the_contract_states_the_residual_digest_window(self):
+        # The re-read narrows the window to one read; it does not close it,
+        # because the child reaches its program by pathname. Bytes swapped
+        # between the read and `execvp` execute while the entry still reads
+        # `verified`, so the contract may not say the read binds the program
+        # to the moment the command executes.
+        text = " ".join(POLICY.read_text(encoding="utf-8").split())
+        self.assertNotIn(
+            "binds each program to the moment that command executes", text
+        )
+        for clause in (
+            "the program is reached by pathname",
+            "execute undigested while the entry still reads `verified`",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, text)
+
+
+class SocketHookCompletenessTests(RunnerHarness):
+    """The denial holds against every handle on the socket type."""
+
+    def test_a_socket_reached_without_the_replaced_name_is_denied(self):
+        # Replacing `socket.socket` binds one name. The type it displaced is
+        # still reachable from ordinary Python -- `object.__subclasses__()`
+        # hands it back -- and constructing it built a live kernel socket,
+        # bound it to loopback and carried bytes over a connection while
+        # `network_attempt` stayed false and nothing was refused. No `ctypes`,
+        # no extension of its own and no second process: the route the
+        # contract said it could not see was reachable from the hooked child.
+        code, payload, _events_seen, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "with __import__('contextlib').suppress(Exception):"
+                " import socket, sys;"
+                " print('raw-socket-attempted');"
+                " sys.stdout.flush();"
+                " raw = [c for c in object.__subclasses__()"
+                " if c.__module__ == '_socket' and c.__name__ == 'socket'][0];"
+                " s = raw(socket.AF_INET, socket.SOCK_STREAM);"
+                " s.bind(('127.0.0.1', 0));"
+                " s.close()",
+            ],
+            ['run: line "raw-socket-attempted"'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D074")
+        self.assertTrue(entry["repetitions"][0]["commands"][0]["network_attempt"])
+
+    def test_the_hook_recorder_cannot_be_rebound_by_the_child(self):
+        # `_deny` looked its recorder up in the hook module's namespace, so a
+        # child that assigned `sitecustomize._record = lambda: None` opened a
+        # socket, was denied, exited 0 and was recorded as having attempted
+        # nothing. The recorder the registered audit hook calls is a closure,
+        # and no interpreter API removes a hook once it is registered.
+        code, payload, _events_seen, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "with __import__('contextlib').suppress(Exception):"
+                " import socket, sitecustomize, sys;"
+                " sitecustomize._record = lambda: None;"
+                " sitecustomize._deny = lambda *a, **k: None;"
+                " print('rebound');"
+                " sys.stdout.flush();"
+                " socket.socket()",
+            ],
+            ['run: line "rebound"'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D074")
+        self.assertTrue(entry["repetitions"][0]["commands"][0]["network_attempt"])
+
 
 class RunnerSelectionTests(RunnerHarness):
     """Only a checked record or the closed public set can be selected."""

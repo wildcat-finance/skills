@@ -1345,31 +1345,68 @@ def publish_report(target: Path, payload: dict, output_root: Path) -> str:
     return hashlib.sha256(body).hexdigest()
 
 
+# The audit events the hook denies. `socket.__new__` fires inside the socket
+# constructor itself, whichever name reached it, so it covers the type as well
+# as the module attribute; the resolver events cover name lookup.
+HOOK_AUDIT_PREFIX = "socket."
+
+
 def _hook_source(marker: Path) -> str:
+    """Return the `sitecustomize.py` one demonstration child loads.
+
+    Rebinding `socket.socket` binds one name, and the type it displaced stays
+    reachable from ordinary Python: `socket.socket.__mro__[2]` and
+    `[c for c in object.__subclasses__() if c.__module__ == '_socket']` both
+    hand back `_socket.socket`, which constructs a live kernel socket with
+    nothing recorded and nothing raised. A CPython audit hook fires inside the
+    constructor instead of at a name, so no handle on the type avoids it, and
+    the interpreter exposes no way to remove a registered hook.
+
+    The recorder is a closure local rather than a module global for the same
+    reason: `_deny` looked `_record` up in this module's namespace, so a child
+    that assigned `sitecustomize._record = lambda: None` opened a socket, was
+    denied, exited 0 and was recorded as having attempted nothing. Every handle
+    the denial needs is now bound by value and the names are deleted, so
+    nothing the hook uses is left standing in the module for a child to
+    reassign.
+    """
+
     return (
         '"""Deny sockets in one demonstration child; written by demonstrations.py."""\n'
         "import os\n"
+        "import sys\n"
         "import socket\n"
         "import _socket\n"
         f"MARKER = {str(marker)!r}\n"
+        f"AUDIT_PREFIX = {HOOK_AUDIT_PREFIX!r}\n"
         "\n"
-        "def _record():\n"
-        "    try:\n"
-        "        fd = os.open(MARKER, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)\n"
+        "def _install(marker, prefix, base):\n"
+        "    width = len(prefix)\n"
+        "    def record():\n"
         "        try:\n"
-        "            os.write(fd, b'socket\\n')\n"
-        "        finally:\n"
-        "            os.close(fd)\n"
-        "    except OSError:\n"
-        "        pass\n"
+        "            fd = os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)\n"
+        "            try:\n"
+        "                os.write(fd, b'socket\\n')\n"
+        "            finally:\n"
+        "                os.close(fd)\n"
+        "        except OSError:\n"
+        "            pass\n"
+        "    def deny(*args, **kwargs):\n"
+        "        record()\n"
+        "        raise PermissionError('demonstration network policy: sockets are denied')\n"
+        "    def audit(event, args):\n"
+        "        if event[:width] == prefix:\n"
+        "            record()\n"
+        "            raise PermissionError(\n"
+        "                'demonstration network policy: sockets are denied (' + event + ')'\n"
+        "            )\n"
+        "    class DeniedSocket(base):\n"
+        "        def __init__(self, *args, **kwargs):\n"
+        "            deny()\n"
+        "    sys.addaudithook(audit)\n"
+        "    return deny, DeniedSocket\n"
         "\n"
-        "def _deny(*args, **kwargs):\n"
-        "    _record()\n"
-        "    raise PermissionError('demonstration network policy: sockets are denied')\n"
-        "\n"
-        "class _DeniedSocket(socket.socket):\n"
-        "    def __init__(self, *args, **kwargs):\n"
-        "        _deny()\n"
+        "_deny, _DeniedSocket = _install(MARKER, AUDIT_PREFIX, socket.socket)\n"
         "\n"
         "socket.socket = _DeniedSocket\n"
         "socket.SocketType = _DeniedSocket\n"
@@ -1380,6 +1417,10 @@ def _hook_source(marker: Path) -> str:
         "    setattr(socket, _name, _deny)\n"
         "    if hasattr(_socket, _name):\n"
         "        setattr(_socket, _name, _deny)\n"
+        "# Every handle the denial needs is bound by value: the resolvers hold the\n"
+        "# closure and `DeniedSocket.__init__` closes over it. Nothing is left in\n"
+        "# this module for a child to reassign into the path of a denial.\n"
+        "del _install, _deny, _name\n"
     )
 
 
@@ -1673,13 +1714,25 @@ def preflight_record(
         # the path that actually executes. `-m` and `-c` reach committed files
         # through the repository root this runner uses as its working
         # directory, so neither is a program a registered public demonstration
-        # may run.
-        if record.get("claim_id") in PUBLIC_SET and kind != "file":
+        # may run. The declaration half belongs here too: without it this
+        # second layer refused the program's form and not its provenance, so an
+        # undeclared committed file reached execution with its entry reading
+        # `found` and `verify_command_program` returning without a comparison.
+        # Nothing reaches this without `check_record`, which refuses first;
+        # the two layers now apply the same rule rather than half of it.
+        public = record.get("claim_id") in PUBLIC_SET
+        if public and kind != "file":
             reached = word if word is not None else "no program"
             _refuse(
                 "D084",
                 f"{where} commands[{index}] reaches its program through {reached!r}; "
                 "a registered public demonstration runs a committed file a source declares",
+            )
+        if public and word not in declared_digests:
+            _refuse(
+                "D084",
+                f"{where} commands[{index}] runs {word!r}, which no source declares; "
+                "a registered public demonstration digests the program it runs",
             )
         program = word if kind == "file" else None
         if program is not None:
@@ -1735,6 +1788,16 @@ def verify_command_program(root: Path, entry: dict | None, *, where: str) -> Non
     have already had their turn with, so "verified before execution" named the
     record's execution rather than this command's. Reading again here is what
     makes the digest describe the bytes this command is about to run.
+
+    What it does not do is close the window. The child reaches its program by
+    pathname, so a writer that replaces the file between this read and the
+    child's `execvp` runs undigested bytes while the entry still reads
+    `verified`: a probe that swapped the bytes inside exactly that window ran
+    the substituted program, and the run was refused by `D079` for the
+    observation that then failed rather than by any digest check. Closing it
+    needs the child to execute the descriptor this read holds, which changes
+    what the program sees as its own path. The residual window is stated in
+    `DEMONSTRATIONS.md` beside the other boundaries this runner does not hold.
     """
 
     if entry is None or entry["evidence"] != "verified":
