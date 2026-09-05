@@ -2,9 +2,12 @@
 
 from pathlib import Path
 from unittest import mock
+import hashlib
 import io
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -12,6 +15,8 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills" / "horos" / "scripts"))  # noqa: E402  (locates horos.py)
 
 import horos  # noqa: E402
+
+GIT = shutil.which("git")
 
 
 def write(root, relpath, content):
@@ -212,6 +217,72 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(stdout.getvalue(), horos.render(self.document()))
         parsed = json.loads(stdout.getvalue())
         self.assertEqual(parsed["schema"], horos.BOUNDARY_SCHEMA)
+
+
+def git(root, *args):
+    subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
+        capture_output=True,
+        check=True,
+        env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+             "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"},
+    )
+
+
+class ContentAddressedStoreTests(unittest.TestCase):
+    """A store object's entry rests on its bytes, so tampering is drift and
+    an object that cannot be read is never claimed."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = self._tmp.name
+        self.addCleanup(self._tmp.cleanup)
+
+    def store(self, payload):
+        """Write payload under a sharded sha256 store and return its path."""
+        digest = hashlib.sha256(payload).hexdigest()
+        relpath = f"objects/sha256/{digest[:2]}/{digest}"
+        write(self.root, relpath, payload)
+        return relpath
+
+    def check(self):
+        out = io.StringIO()
+        code = horos.check_tree(self.root, out=out)
+        return code, out.getvalue()
+
+    @unittest.skipIf(GIT is None, "git unavailable")
+    def test_a_tampered_store_object_is_named_as_drift(self):
+        git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
+        write(self.root, "src/app.py", "x = 1\n")
+        relpath = self.store(b"the bytes the name promises\n")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-q", "-m", "seed")
+        horos.write_boundary(self.root, horos.boundary_document(horos.scan_tree(self.root)))
+        code, output = self.check()
+        self.assertEqual((code, output.strip()), (0, "boundary matches the tree"))
+
+        # Same name, same shard, same store, same length: only the bytes
+        # no longer agree, so nothing but the digest can name the drift.
+        write(self.root, relpath, b"the bytes the name PROMISES\n")
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn(
+            f"drift: {relpath}: in the boundary but no longer evidenced by the tree",
+            output,
+        )
+
+    def test_an_unreadable_store_object_is_skipped_never_classified(self):
+        if os.geteuid() == 0:
+            self.skipTest("root reads a mode-000 file, so the unreadable case cannot be built")
+        relpath = self.store(b"an object nobody may read\n")
+        path = os.path.join(self.root, relpath)
+        os.chmod(path, 0)
+        self.addCleanup(os.chmod, path, 0o644)
+        result = horos.scan_tree(self.root)
+        self.assertEqual(result["counts"]["files_skipped_unreadable"], 1)
+        self.assertEqual(result["entries"], [])
+        self.assertEqual(result["candidates"], [])
 
 
 if __name__ == "__main__":
