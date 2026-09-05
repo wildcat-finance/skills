@@ -373,6 +373,21 @@ class ParentDerivation(Harness):
         self.assertRefused(
             self.emit(result=result), "F008", "unfixed_parent.commit")
 
+    def test_a_ref_that_is_not_the_drafted_repair_is_refused(self):
+        """Otherwise the parent belongs to some other commit than the repair."""
+        unrelated = self.fixture.commit("unrelated", {"src/other.py": "# later\n"})
+        out = "records/mismatch.json"
+        self.assertRefused(
+            self.emit(result=result_for(self.fixture, ref=unrelated), out=out),
+            "F010", "unfixed_parent.commit")
+        self.assertFalse((self.fixture.path / out).exists())
+
+    def test_a_ref_beginning_with_a_dash_is_refused(self):
+        """A ref beginning with a dash is an option, not a name."""
+        self.assertRefused(
+            self.emit(result=result_for(self.fixture, ref="--since=2020-01-01")),
+            "F006", "result.ref")
+
 
 class OutputBoundary(Harness):
     def test_an_absolute_output_path_is_refused(self):
@@ -411,11 +426,19 @@ class StagedWrite(Harness):
     def test_an_interrupted_emit_leaves_no_file_the_checker_accepts(self):
         out = "records/fixed-and-guarded.json"
         with mock.patch.object(emitter.os, "replace", side_effect=OSError("killed")):
-            with self.assertRaises(OSError):
-                self.emit(out=out)
+            self.assertRefused(self.emit(out=out), "F009", "--out")
         self.assertFalse((self.fixture.path / out).exists())
         self.assertEqual(
             sorted(p.name for p in (self.fixture.path / "records").iterdir()), [])
+
+    def test_a_destination_that_cannot_be_written_names_its_code(self):
+        """An unattended round reads a code and a field, never a traceback."""
+        out = "records/fixed-and-guarded.json"
+        with mock.patch.object(
+            emitter.tempfile, "mkstemp", side_effect=PermissionError("read-only"),
+        ):
+            self.assertRefused(self.emit(out=out), "F009", "--out")
+        self.assertFalse((self.fixture.path / out).exists())
 
     def test_the_record_is_staged_in_the_destination_directory(self):
         seen = []

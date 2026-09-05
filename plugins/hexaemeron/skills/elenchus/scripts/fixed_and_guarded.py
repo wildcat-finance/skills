@@ -18,7 +18,9 @@ Codes:
   F006  the result is not one closed elenchus.py result carrying a report
   F007  the guard names a test absent from the repair's changed test files
   F008  the parent commit could not be re-derived from the result's ref
-  F009  the output path is not a free symlink-free relative worktree descendant
+  F009  the output path is not a free symlink-free relative worktree descendant,
+        or the record could not be written there
+  F010  the result's ref is not the commit the draft names as the repair
 
 Exit 0 written or clean, 1 refused, 2 bad invocation.  Every refusal names its
 code and its field on stderr and writes nothing.  The record is staged in the
@@ -428,8 +430,13 @@ def result_findings(result) -> list[Finding]:
             "must be one closed elenchus.py result object; an unknown key is refused",
         )]
     findings: list[Finding] = []
-    if not _text(result["ref"], maximum=MAX_PATH_BYTES):
-        findings.append(Finding("F006", "result.ref", "must name the commit carrying the fix"))
+    # A ref beginning with a dash is an option rather than a name, and this one
+    # becomes an argument to `git rev-parse`; refuse it before it gets there.
+    if not _text(result["ref"], maximum=MAX_PATH_BYTES) or result["ref"].startswith("-"):
+        findings.append(Finding(
+            "F006", "result.ref",
+            "must name the commit carrying the fix, and must not begin with a dash",
+        ))
     findings.extend(
         Finding("F006", finding.field, finding.message)
         for finding in _text_findings(result["detail"], "result.detail")
@@ -480,10 +487,19 @@ def git(repo: Path, *arguments: str) -> str | None:
     return run.stdout if run.returncode == 0 else None
 
 
-def parent_of(repo: Path, ref: str) -> str | None:
-    """The parent `elenchus.py` compared against, re-derived the same way."""
-    out = git(repo, "rev-parse", f"{ref}^")
-    return out.strip() if out is not None else None
+def commit_and_parent(repo: Path, ref: str) -> tuple[str, str] | None:
+    """The commit the result names, and the parent it was compared against.
+
+    Both come from one read, because the record is only coherent when the
+    parent belongs to the commit the draft calls the repair.
+    """
+    out = git(repo, "rev-parse", ref, f"{ref}^")
+    if out is None:
+        return None
+    resolved = out.split()
+    if len(resolved) != 2 or any(COMMIT.fullmatch(one) is None for one in resolved):
+        return None
+    return resolved[0], resolved[1]
 
 
 def tracked(repo: Path, relative: str) -> bool:
@@ -603,11 +619,19 @@ def emit(repo: Path, draft_path: Path, result_path: Path, out: str) -> tuple[lis
             f"files, so the Boundary's named guard is not the one that was compared",
         )], None
 
-    parent = parent_of(repo, result["ref"])
-    if parent is None or COMMIT.fullmatch(parent) is None:
+    resolved = commit_and_parent(repo, result["ref"])
+    if resolved is None:
         return [Finding(
             "F008", "unfixed_parent.commit",
             f"git rev-parse {result['ref']}^ named no parent commit in {repo}",
+        )], None
+    fixed, parent = resolved
+    if fixed != draft["repair"]["commit"]:
+        return [Finding(
+            "F010", "unfixed_parent.commit",
+            f"{result['ref']} resolves to {fixed}, which is not the "
+            f"{draft['repair']['commit']} the draft names as the repair, so the "
+            f"derived parent is not the repair's parent",
         )], None
 
     record = compose(draft, result, parent)
@@ -618,7 +642,14 @@ def emit(repo: Path, draft_path: Path, result_path: Path, out: str) -> tuple[lis
     target, refusal = prepare_output_path(repo, out)
     if refusal is not None:
         return [refusal], None
-    write_staged(target, record)
+    try:
+        write_staged(target, record)
+    except OSError:
+        return [Finding(
+            "F009", "--out",
+            "could not be written; the staged file was removed, so no partial "
+            "record was left behind",
+        )], None
     return [], target
 
 
