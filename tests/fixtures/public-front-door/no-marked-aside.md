@@ -19,7 +19,7 @@ route as well as the controlled one.
 
 ## WHAT CAN IT DO?
 
-Two members rebuild something held, offline, from preserved bytes.
+The members below rebuild something held, offline, from preserved bytes.
 
 ### LANTERN REBUILDS ITS HELD SPECIMEN
 

@@ -228,16 +228,36 @@ def substitute(body: str, root: Path, records: dict[str, dict]) -> str:
     return PLACEHOLDER_RE.sub(value, body)
 
 
-def specimen_codes(name: str) -> list[str]:
-    """Plant the specimen tree, install one specimen README, and check it."""
+def body_codes(body: str) -> list[str]:
+    """Plant the specimen tree, install this front door, and check it."""
 
-    body = (SPECIMENS / f"{name}.md").read_text(encoding="utf-8")
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
         records = plant(root)
         write(root / front_door.FRONT_DOOR, substitute(body, root, records))
         findings, _ = front_door.check(root)
     return [finding.code for finding in findings]
+
+
+def specimen_codes(name: str) -> list[str]:
+    """Plant the specimen tree, install one specimen README, and check it."""
+
+    return body_codes((SPECIMENS / f"{name}.md").read_text(encoding="utf-8"))
+
+
+def broken(old: str, new: str, *, count: int = 1) -> str:
+    """`clean.md` with one substitution, refusing a silent no-op.
+
+    The cases below carry their break inline rather than as another specimen
+    file. A specimen is an input the checker reads; these are guards for rules
+    the checker did not have, and keeping each one inside this module is what
+    lets it be replayed against the commit's parent on its own.
+    """
+
+    body = (SPECIMENS / "clean.md").read_text(encoding="utf-8")
+    if body.count(old) != count:
+        raise AssertionError(f"{old!r} appears {body.count(old)} times, not {count}")
+    return body.replace(old, new, count)
 
 
 class EntryParentGuardTests(unittest.TestCase):
@@ -297,6 +317,163 @@ class SpecimenTests(unittest.TestCase):
         """A sweep over an empty set passes while checking nothing."""
         self.assertTrue(front_door.MAINTAINED_DOCUMENTS)
         self.assertIn(front_door.FRONT_DOOR, front_door.MAINTAINED_DOCUMENTS)
+
+
+@unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
+class AuditRoundOneTests(unittest.TestCase):
+    """One case per rule the first audit round found the checker did not have.
+
+    Each builds its own front door from `clean.md`, so each fails on the commit
+    before the fix without needing a new file to travel with it.
+    """
+
+    def test_a_heading_only_inside_a_fence_is_not_a_heading(self):
+        """Structure came from the fenced text, so code could stand in for it."""
+        codes = body_codes(
+            broken(
+                "## SO, YOU WANT TO BUILD GOD?",
+                "```text\n## SO, YOU WANT TO BUILD GOD?\n```",
+            )
+        )
+        self.assertIn("FD04", codes)
+
+    def test_a_shell_comment_inside_a_fence_is_not_a_sentence_case_heading(self):
+        """The same blindness refused legitimate content in the other direction."""
+        codes = body_codes(
+            broken(
+                "Run `python3 scripts/demonstrations.py run --record "
+                "{{directory:lantern}} --report tmp/demo/lantern.json`",
+                "```bash\n# rebuild the held specimen\ntrue\n```\nRun `python3 "
+                "scripts/demonstrations.py run --record {{directory:lantern}} "
+                "--report tmp/demo/lantern.json`",
+            )
+        )
+        self.assertNotIn("FD11", codes)
+
+    def test_two_cards_may_not_bind_one_record(self):
+        """Set membership answered a different question from the contract's."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "### LANTERN REBUILDS ITS HELD SPECIMEN, AGAIN\n\n"
+                '<!-- front-door:demo skill="lantern" claim="{{claim:lantern}}" '
+                'digest="{{digest:lantern}}" -->\n'
+                "Run `python3 scripts/demonstrations.py run --record "
+                "{{directory:lantern}} --report tmp/demo/lantern-two.json`\n"
+                "over the preserved `{{source:lantern}}` and it reports "
+                "`{{observed:lantern}}`.\n{{nonclaim:lantern}}\n\n"
+                "## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD21", codes)
+
+    def test_a_marker_key_must_name_the_quantity_its_prose_names(self):
+        """The number was right for the key and wrong for every reader."""
+        codes = body_codes(
+            broken(
+                '<!-- front-door:count key="governed" -->{{count:governed}} '
+                "governed skills in",
+                '<!-- front-door:count key="plugins" -->{{count:plugins}} '
+                "governed skills in",
+            )
+        )
+        self.assertIn("FD29", codes)
+
+    def test_a_count_claim_inside_an_all_caps_heading_is_read(self):
+        """Every heading must be all caps, so a lower-case grammar saw none."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "## THE 99 GOVERNED SKILLS\n\nText.\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD28", codes)
+
+    def test_a_count_claim_written_in_words_is_read(self):
+        """A spelled-out number asserted a derived quantity and escaped."""
+        codes = body_codes(
+            broken(
+                "A synthetic front door for a synthetic tree. It holds",
+                "A synthetic front door holding thirty governed skills. It holds",
+            )
+        )
+        self.assertIn("FD28", codes)
+
+    def test_a_bare_topology_noun_carrying_a_number_is_read(self):
+        """`domains` and `phases` were qualifiers with no noun to qualify."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "There are 42 domains here.\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD28", codes)
+
+    def test_a_generated_region_that_is_never_closed_is_refused(self):
+        """Deleting one marker exempted every heading below it."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "<!-- contributors:start -->\n\n## What a result means",
+            )
+        )
+        self.assertIn("FD30", codes)
+        self.assertIn("FD11", codes)
+
+    def test_a_generated_region_may_not_reach_a_governed_heading(self):
+        """Closing it and widening it did the same thing more quietly."""
+        codes = body_codes(
+            broken(
+                "# THE SPECIMEN COLLECTIVE",
+                "<!-- contributors:start -->\n\n# THE SPECIMEN COLLECTIVE",
+            ).replace(
+                "## THE REST OF THE COLLECTIVE",
+                "<!-- contributors:end -->\n\n## The rest of the collective",
+                1,
+            )
+        )
+        self.assertIn("FD30", codes)
+        self.assertIn("FD11", codes)
+
+    def test_a_heading_with_no_letter_in_it_is_not_all_caps(self):
+        """`## 2026` held no lower case because it held no case at all."""
+        codes = body_codes(
+            broken("## WHAT A RESULT MEANS", "## 2026\n\nText.\n\n## WHAT A RESULT MEANS")
+        )
+        self.assertIn("FD11", codes)
+
+    def test_a_reference_style_image_is_an_image(self):
+        """A second portrait reached the root through a definition."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "![Lantern][lantern-art]\n\n"
+                "[lantern-art]: ./plugins/lantern/art.png\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD12", codes)
+
+    def test_a_single_quoted_html_image_is_an_image(self):
+        """The attribute pattern read one quoting style of two."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "<img src='./plugins/lantern/art.png' width='200'>\n\n"
+                "## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD12", codes)
+
+    def test_a_reference_style_link_counts_towards_unique_targets(self):
+        """A route linked twice, once by reference, read as linked once."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "See [the catalogue][fp].\n\n[fp]: ./FUTUREPROOFING.md\n\n"
+                "## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD07", codes)
 
 
 @unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")

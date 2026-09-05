@@ -48,8 +48,8 @@ the prose.
 
 ## WHAT CAN IT DO?
 
-Four members rebuild something real, offline, from records preserved in this
-repository. Each card binds its skill, its claim and the digest of the
+The members below rebuild something real, offline, from records preserved in
+this repository. Each card binds its skill, its claim and the digest of the
 demonstration ledger beside that skill, so downgrading, editing or removing the
 record fails the check rather than quietly leaving the claim standing. Each
 command writes a report to a path that must not already exist.

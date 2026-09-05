@@ -22,7 +22,7 @@ Written by the thing it describes. Read the evidence, not the prose.
 
 ## WHAT CAN IT DO?
 
-Two members rebuild something held, offline, from preserved bytes.
+The members below rebuild something held, offline, from preserved bytes.
 
 ### LANTERN REBUILDS ITS HELD SPECIMEN
 
