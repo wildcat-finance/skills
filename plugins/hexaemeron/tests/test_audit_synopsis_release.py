@@ -1,4 +1,4 @@
-"""Keep issue 429's checked-in release evidence reproducible."""
+"""Keep the audit-synopsis release evidence reproducible."""
 
 import hashlib
 from pathlib import Path
@@ -19,7 +19,7 @@ PLUGIN_SUITE_JOBS = (
     (".github/workflows/lazarus.yml", "tests"),
     (".github/workflows/pandects.yml", "catalogue"),
 )
-ISSUE_429_RUNBOOK = (
+AUDIT_SYNOPSIS_RUNBOOK = (
     REPO_ROOT
     / "plugins"
     / "hexaemeron"
@@ -27,8 +27,8 @@ ISSUE_429_RUNBOOK = (
     / "audit-record-schema-timestamp-synopsis"
     / "runbook.md"
 )
-ISSUE_429_PROOF = ISSUE_429_RUNBOOK.with_name("proof.md")
-ISSUE_429_ELENCHUS_COMMAND = (
+AUDIT_SYNOPSIS_PROOF = AUDIT_SYNOPSIS_RUNBOOK.with_name("proof.md")
+AUDIT_SYNOPSIS_ELENCHUS_COMMAND = (
     "npx --yes --package=node@26.6.0 -- python3.12 "
     "plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}"
 )
@@ -45,7 +45,7 @@ def workflow_job(path, job):
     return match.group(0)
 
 
-class Issue429ReleaseTests(unittest.TestCase):
+class AuditSynopsisReleaseTests(unittest.TestCase):
     def test_root_suite_jobs_need_no_repository_history(self):
         for relative, job in ROOT_SUITE_JOBS:
             with self.subTest(path=relative, job=job):
@@ -61,16 +61,16 @@ class Issue429ReleaseTests(unittest.TestCase):
                 self.assertNotIn("fetch-depth: 0", body)
 
     def test_runbook_exposes_the_elenchus_report_argument(self):
-        runbook = ISSUE_429_RUNBOOK.read_text(encoding="utf-8")
+        runbook = AUDIT_SYNOPSIS_RUNBOOK.read_text(encoding="utf-8")
         self.assertEqual(runbook.count("--elenchus-report {report}"), 4)
-        self.assertEqual(runbook.count(ISSUE_429_ELENCHUS_COMMAND), 4)
+        self.assertEqual(runbook.count(AUDIT_SYNOPSIS_ELENCHUS_COMMAND), 4)
         self.assertEqual(
-            shlex.split(ISSUE_429_ELENCHUS_COMMAND).count("{report}"), 1
+            shlex.split(AUDIT_SYNOPSIS_ELENCHUS_COMMAND).count("{report}"), 1
         )
 
     def test_proof_binds_the_current_runbook_and_corrected_gate(self):
-        runbook_digest = hashlib.sha256(ISSUE_429_RUNBOOK.read_bytes()).hexdigest()
-        proof = ISSUE_429_PROOF.read_text(encoding="utf-8")
+        runbook_digest = hashlib.sha256(AUDIT_SYNOPSIS_RUNBOOK.read_bytes()).hexdigest()
+        proof = AUDIT_SYNOPSIS_PROOF.read_text(encoding="utf-8")
         current_binding = (
             "| release runbook, "
             "`plugins/hexaemeron/docs/audit-record-schema-timestamp-synopsis/"

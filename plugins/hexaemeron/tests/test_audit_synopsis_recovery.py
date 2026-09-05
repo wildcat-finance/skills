@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Permanent composition guards for the issue 429 recovery."""
+"""Permanent composition guards for the audit-synopsis recovery."""
 
 from collections import Counter
 import hashlib
@@ -130,7 +130,7 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-class Issue429RecoveryTests(unittest.TestCase):
+class AuditSynopsisRecoveryTests(unittest.TestCase):
     def composition_commit(self):
         matches = []
         for line in git("rev-list", "--parents", "HEAD", text=True).splitlines():
@@ -312,7 +312,7 @@ class Issue429RecoveryTests(unittest.TestCase):
 
 
 if PROOF_MODE:
-    class Issue429DisposableProofTests(unittest.TestCase):
+    class AuditSynopsisDisposableProofTests(unittest.TestCase):
         """Replay the release boundary with the checked-in runtime only."""
 
         OUTPUT_BYTES_MAX = 2 * 1024 * 1024
@@ -432,7 +432,7 @@ if PROOF_MODE:
         ):
             heading_schema = heading_schema or schema
             if heading_schema == "fiat-audit-round/v1":
-                heading = f"## issue 429 proof, step 1, round 1 -- {timestamp}"
+                heading = f"## audit synopsis proof, step 1, round 1 -- {timestamp}"
             else:
                 heading = f"## Step 1, round 1 -- {timestamp}"
             covered = covered or "; ".join(
@@ -481,7 +481,9 @@ if PROOF_MODE:
             controller_verified = []
             local_valid = hosted_valid = trailer_valid = reachable = 0
 
-            with tempfile.TemporaryDirectory(prefix="fiat-429-release-proof-") as raw:
+            with tempfile.TemporaryDirectory(
+                prefix="audit-synopsis-release-proof-"
+            ) as raw:
                 temporary_root = Path(raw)
                 repo = temporary_root / "repo"
                 self.run_bounded(
@@ -501,7 +503,7 @@ if PROOF_MODE:
                 )
 
                 worktree, step_branch = self.bootstrap_run(
-                    repo, "main", "issue 429 proof"
+                    repo, "main", "audit synopsis proof"
                 )
                 unsigned_message = (
                     "unsigned refusal fixture\n\n"
@@ -919,7 +921,7 @@ if PROOF_MODE:
                         self.assertEqual(row["v1"], 0)
 
                 specification = importlib.util.spec_from_file_location(
-                    "issue_429_checked_generator", GENERATOR
+                    "audit_synopsis_checked_generator", GENERATOR
                 )
                 renderer = importlib.util.module_from_spec(specification)
                 specification.loader.exec_module(renderer)
@@ -965,7 +967,7 @@ if PROOF_MODE:
                     cwd=repo,
                 )
                 trailer_worktree, trailer_branch = self.bootstrap_run(
-                    repo, "trailer-base", "issue 429 trailer proof"
+                    repo, "trailer-base", "audit synopsis trailer proof"
                 )
                 self.run_bounded(
                     ["git", "branch", trailer_branch, TRAILER_FIXTURE], cwd=repo
