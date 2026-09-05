@@ -1670,10 +1670,11 @@ ACTIVATION_COMMAND = "git " + " ".join(ACTIVATION)
 # process sets. Nothing here is inferred from the tree, because a faithful copy
 # of a checkout looks exactly like one:
 #
-#   * `GITHUB_ACTIONS` and `CI` name a hosted runner. No evidence of a
-#     contributor's local hook reaches a server, so the hosted half of this
-#     decision holds the tracked bytes alone -- that the directory exists and
-#     its pre-commit is executable.
+#   * `GITHUB_ACTIONS` names a hosted runner. Every workflow under
+#     `.github/workflows/` runs on one, so this one variable covers the whole
+#     hosted half. No evidence of a contributor's local hook reaches a server,
+#     so that half holds the tracked bytes alone -- that the directory exists
+#     and its pre-commit is executable.
 #   * `WILDCAT_CHECK_CONTAINMENT` is set by `scripts/run_checks.py` for every
 #     check it starts, however many sessions deep. It runs the root suite from
 #     a disposable snapshot under `tmp/check-runner` that carries a git
@@ -1681,10 +1682,17 @@ ACTIVATION_COMMAND = "git " + " ".join(ACTIVATION)
 #     configuration rather than the checkout's, and the snapshot is deleted
 #     when the run ends.
 #
+# `CI` is deliberately not on that list (S4-R1-01). GitHub Actions sets it
+# alongside `GITHUB_ACTIONS`, so it admits no execution this repository has,
+# and it is the one name an unrelated local tool sets by convention: a
+# contributor whose shell exports it would get a silent skip in exactly the
+# unactivated checkout this case exists to report on. An execution that is
+# genuinely nobody's checkout says so with the marker above.
+#
 # A contributor's clone carries none of them, which is why the case below
 # still fires there. The draft record says the same in prose, under "Hosted
 # execution cannot see whether a contributor activated the gate locally".
-NOBODY_COMMITS_HERE = ("GITHUB_ACTIONS", "CI", "WILDCAT_CHECK_CONTAINMENT")
+NOBODY_COMMITS_HERE = ("GITHUB_ACTIONS", "WILDCAT_CHECK_CONTAINMENT")
 
 # Values that say the variable is set and off. Anything else non-empty counts.
 DECLARED_OFF = frozenset({"0", "false", "no", "off"})

@@ -119,17 +119,27 @@ name the bypass token. The activation half is visible locally, in the suite run
 that must precede any commit under the discipline.
 
 **The fourth case is skipped where something says nobody commits from this
-tree,** and the skip reason names what said it. Two things do. `GITHUB_ACTIONS`
-or `CI` names a hosted runner: `repo.yml` runs the root suite on every pull
-request, and a case asserting local activation there would report on the
+tree,** and the skip reason names what said it. Two variables do.
+`GITHUB_ACTIONS` names a hosted runner: `repo.yml` runs the root suite on every
+pull request, and a case asserting local activation there would report on the
 runner's own checkout while turning a required check red for every change in
-the repository. `WILDCAT_CHECK_CONTAINMENT` is set by `scripts/run_checks.py`
-for every check it starts, and that runner executes the root suite from a
-disposable snapshot under `tmp/check-runner` carrying a git directory of its
-own, so `git config` there reads the snapshot's configuration rather than the
-checkout's. Both are declarations by whoever started the process. Nothing is
-inferred from the tree, because a faithful copy of a checkout looks exactly
-like one, and a contributor's clone carries neither variable.
+the repository. Every workflow in this repository runs on GitHub Actions, so
+that one name covers the hosted half. `WILDCAT_CHECK_CONTAINMENT` is set by
+`scripts/run_checks.py` for every check it starts, and that runner executes the
+root suite from a disposable snapshot under `tmp/check-runner` carrying a git
+directory of its own, so `git config` there reads the snapshot's configuration
+rather than the checkout's. Both are declarations by whoever started the
+process. Nothing is inferred from the tree, because a faithful copy of a
+checkout looks exactly like one, and a contributor's clone carries neither
+variable.
+
+`CI` is deliberately not among them. GitHub Actions sets it alongside
+`GITHUB_ACTIONS`, so admitting it exempts no execution this repository has,
+while it is the one name unrelated local tooling sets by convention. A
+contributor whose shell exported it would run the root suite in an unactivated
+clone, watch it pass, and never learn the gate was off, which is the one thing
+this assertion exists to prevent. The exemption is held to the narrowest pair
+that keeps the required check green.
 
 A contributor who never runs the suite gets no green record, so their first
 commit is refused if the gate is on, and passes silently if it is off. This
