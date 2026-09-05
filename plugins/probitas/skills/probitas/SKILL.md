@@ -5,11 +5,12 @@ description: >
   market: what they borrowed across lending venues, whether they gave it back,
   and what could not be established. Use when someone names an entity and the
   wallet addresses it has declared and asks for diligence, borrowing history,
-  repayment record, delinquency history, or an underwriting writeup. Do not use
-  for questions about a single market's own numbers, and never to work out
-  which individual controls an address.
+  repayment record, delinquency history, an underwriting writeup, re-diligence,
+  or what changed between two Probitas evidence runs. Do not use for questions
+  about a single market's own numbers, and never to work out which individual
+  controls an address.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 <p align="center">
@@ -58,7 +59,8 @@ skill.
 decide whether their word is worth anything. Give this the addresses they
 declared and it comes back with what they borrowed elsewhere, whether they gave
 it back, and a list of the venues nobody could check, so the thin parts of the
-record are visible rather than absent.
+record are visible rather than absent. On a repeat review, compare the two
+evidence files instead of rebuilding that change account by hand.
 
 **Finance.** Exposure to a name that also borrows in three other places. The
 dossier states each position's venue, the amounts as exact on-chain integers,
@@ -73,7 +75,7 @@ arithmetic rather than by your reading it closely.
 
 ## The sequence
 
-Four commands, in this order. Do not skip the fourth.
+Four commands produce an initial dossier. Do not skip `verify`.
 
 ```bash
 python3 scripts/probitas.py venues
@@ -165,6 +167,37 @@ gates 2 and 5 remain unchecked because the Probitas predicate is deliberately
 unregistered. The statement does not prove who produced it. Sign it downstream
 with cosign when publisher identity is required.
 
+### Compare repeat runs
+
+```bash
+python3 scripts/probitas.py diff prior-evidence.json current-evidence.json \
+  --out borrower-change-report.md
+
+python3 scripts/probitas.py diff prior-evidence.json current-evidence.json \
+  --json --out borrower-change.json
+```
+
+`prior` and `current` are roles the operator assigns. `diff` reads both files
+once, binds their exact bytes by SHA-256, requires schema 2, checks that the
+entity and address-to-provenance map match, regenerates a dossier from each,
+and requires all five gates to pass. It then reports coverage rows added,
+removed or changed; gaps opened, closed, reworded or still open; and complete
+sourced records newly present, no longer reproduced, revised or refreshed only
+in observation time. Findings against inferred addresses remain in a final,
+separate section.
+
+The command is offline. Exit 0 means it wrote a valid report, including one
+with no changes. Exit 1 means an input failed a dossier gate. Exit 2 means an
+input was malformed, unsafe or non-comparable, or an input or output file could
+not be read or written. An existing report is replaced atomically only after
+the comparison succeeds.
+
+The evidence schema does not prove collection order. A newly present record
+may be a backfill or wider coverage rather than new activity. A record no
+longer reproduced may be a source regression rather than a reversed event. A
+closed gap means only that the current evidence no longer reports it. Unchanged
+records are omitted, so the comparison does not replace the current dossier.
+
 ## Your part, and its limit
 
 Write the narrative sections from the evidence file and nothing else. The
@@ -215,6 +248,9 @@ See [the gates](references/gates.md) for what each one does mechanically, and
   addresses. Nothing is inferred from off-chain association.
 - **No unsourced assertion.** A claim without a citation is dropped, not
   softened into a hedge.
+- **No invented chronology.** A comparison reports differences between two
+  operator-designated files. It does not establish when or why they arose, that
+  a missing record was reversed, or that an absent gap proves a clean history.
 - **No verdict from Wildcat.** The lender reaches their own conclusion. Wildcat
   Labs does not vet borrowers, and a dossier that arrives with our judgement
   attached would make us the underwriter we chose not to be.
@@ -280,4 +316,16 @@ dossier pass.
 - Consequence: 1
 - Refuses: Emitting after any gate fails, naming stdout or either input as the output, exceeding Ariadne's bounded-input limit, or treating a missing statement or unchecked signature as authority.
 - Recovery: Repair the failed dossier or evidence, choose a distinct file output, rerun all five gates and retain only the successful replacement.
+- Exceptions: none
+
+### probitas-evidence-diff
+
+- Promise: A successful `diff` emits one deterministic comparison of two gate-checkable schema 2 evidence files for the same entity and exact address-to-provenance map, while keeping coverage, gaps, on-record findings and inferred-address findings separate.
+- Evidence: Both input byte streams read once, their SHA-256 digests and byte counts, run metadata, the matching subject, ten passed gate results, complete sourced change records and the emitted Markdown or canonical JSON bytes.
+- Evidence classes: recorded, checked, recomputed
+- Boundary: `prior` and `current` are operator-designated roles, not proof of chronology or causation. Newly present does not establish new activity, no longer reproduced does not establish reversal or debt resolution, and a closed gap does not establish clean or complete history. Unchanged records are omitted, so the comparison does not replace the current dossier. It does not identify a person, create a score, approve underwriting or issue a Wildcat verdict.
+- Authorises: Hand-off of the comparison for a human re-diligence review with both input identities, sources, coverage changes and remaining gaps visible.
+- Consequence: 1
+- Refuses: Malformed, oversized, excessively nested, over-cardinality or duplicate-key JSON; a schema other than the integer 2; a failed input dossier gate; entity, address or provenance drift; malformed or mismatched record sources; ambiguous record pairing presented as a revision; output that aliases either input; or partial replacement after failure.
+- Recovery: Repair or recollect the named input, retain the previous report, and rerun `diff` over two matching gate-checkable evidence files.
 - Exceptions: none

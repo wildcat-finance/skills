@@ -1,7 +1,7 @@
 {
   "name": "probitas",
-  "version": "0.2.0",
-  "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
+  "version": "0.2.1",
+  "description": "Sourced counterparty dossiers and repeat-run comparisons.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -20,12 +20,12 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Probitas",
-    "shortDescription": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-    "longDescription": "Probitas takes an entity name and addresses the counterparty declared, then builds a sourced dossier of borrowing, repayment, and what could not be established across supported venues. A deterministic collector writes the evidence; a gate checker requires every narrative figure and assertion to trace to it and keeps unchecked venues visible. It does not discover hidden addresses, identify a legal person, score the borrower, set terms, or make the decision. Morpho Midnight secondary-market borrow exits remain unattributable and its curation data remains uncollected.",
+    "shortDescription": "Sourced counterparty dossiers and repeat-run comparisons.",
+    "longDescription": "Probitas takes an entity name and addresses the counterparty declared, then builds a sourced dossier of borrowing, repayment, and what could not be established across supported venues. It can compare two gate-checkable evidence files for the same subject without claiming that their differences prove chronology. A deterministic collector writes the evidence; a gate checker requires every narrative figure and assertion to trace to it and keeps unchecked venues visible. It does not discover hidden addresses, identify a legal person, score the borrower, set terms, or make the decision. Morpho Midnight secondary-market borrow exits remain unattributable and its curation data remains uncollected.",
     "developerName": "Wildcat Labs",
     "category": "Research",
     "capabilities": [],
-    "defaultPrompt": "Use $probitas to build a sourced dossier on \"<entity>\" from the addresses they declared."
+    "defaultPrompt": "Use $probitas to build a sourced dossier from declared addresses or compare two Probitas evidence files for the same entity."
   },
   "license": "Apache-2.0"
 }

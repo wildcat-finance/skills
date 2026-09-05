@@ -31,12 +31,13 @@
  "RS-30": "janus",
  "RS-31": "sapheneia",
  "RS-32": "brevitas",
- "RS-33": "refuse:ambiguous",
+ "RS-33": "elenchus",
  "RS-34": "phylax",
  "RS-35": "protasis",
  "RS-36": "refuse:uncovered",
  "RS-37": "synkrisis",
- "RS-38": "homologia",
+ "RS-38": "refuse:uncovered",
  "RS-39": "anamnesis",
- "RS-40": "dokimasia"
+ "RS-40": "dokimasia",
+ "RS-41": "probitas"
 }

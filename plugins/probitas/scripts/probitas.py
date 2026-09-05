@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """probitas -- a sourced counterparty dossier for undercollateralised lending.
 
-Four subcommands:
+Five subcommands:
 
     venues    list every venue in the registry and whether it can be checked
     collect   run the adapters over the declared addresses, write evidence.json
     render    turn an evidence file into the dossier a lender reads
     verify    check a dossier and its evidence against the five gates
+    diff      compare two gate-checkable evidence files for the same subject
 
 Exit codes: 0 success, 1 a gate was breached, 2 usage or validation error.
 """
@@ -38,7 +39,7 @@ from probitas_lib.evidence import (  # noqa: E402
     Gap,
     Record,
 )
-from probitas_lib import gates, render, statement  # noqa: E402
+from probitas_lib import delta, gates, render, statement  # noqa: E402
 
 ADAPTERS = {
     "euler": euler.adapter,
@@ -305,6 +306,35 @@ def cmd_verify(args):
     return 0
 
 
+def cmd_diff(args):
+    """Write a source-preserving report over operator-designated evidence sides."""
+    try:
+        if delta.output_aliases_input(args.out, args.prior, args.current):
+            raise delta.DeltaError(
+                "change-report output must not replace either evidence input"
+            )
+        prior_bytes = delta.read_evidence(args.prior, "prior")
+        current_bytes = delta.read_evidence(args.current, "current")
+        comparison = delta.compare(
+            prior_bytes,
+            current_bytes,
+            prior_name="prior",
+            current_name="current",
+        )
+        body = delta.to_json(comparison) if args.json else delta.render_markdown(comparison)
+        if args.out == "-":
+            sys.stdout.write(body)
+        else:
+            delta.write_output(args.out, body)
+    except delta.DeltaGateError as error:
+        print(f"probitas: {error}", file=sys.stderr)
+        return 1
+    except (OSError, ValueError) as error:
+        print(f"probitas: {error}", file=sys.stderr)
+        return 2
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="probitas",
@@ -375,6 +405,24 @@ def build_parser():
         help="write an unsigned Ariadne-readable statement after all gates pass",
     )
     verify.set_defaults(func=cmd_verify)
+
+    diff = sub.add_parser(
+        "diff",
+        help="compare prior and current evidence for the same subject",
+    )
+    diff.add_argument("prior", help="operator-designated prior evidence file")
+    diff.add_argument("current", help="operator-designated current evidence file")
+    diff.add_argument(
+        "--json",
+        action="store_true",
+        help="write the canonical JSON comparison instead of Markdown",
+    )
+    diff.add_argument(
+        "--out",
+        default="borrower-change-report.md",
+        help="output path, or - for stdout",
+    )
+    diff.set_defaults(func=cmd_diff)
 
     return parser
 
