@@ -2098,7 +2098,8 @@ class ShippedCopyTests(unittest.TestCase):
 # reports commands, and a command reported without its exit code is a claim
 # again, which is the thing this step exists to replace. So every command the
 # record names in its own prose has to appear in the transcript table with a
-# code beside it.
+# code beside it -- every command the recogniser below admits, which is a
+# closed set of leading words rather than every command there is.
 
 DEMONSTRATION = SHIPPED / "demonstration.md"
 
@@ -2120,7 +2121,17 @@ CONDITION_HEADING = "### Acceptance condition {number}, {name}"
 # why it is named exactly; `.githooks/pre-commit` and the document paths beside
 # it are files rather than commands, and a prefix list leaves them out where
 # "anything holding a slash" would not.
-COMMAND_PREFIXES = ("git ", "python3 ", "FIAT_SKIP_PRECOMMIT=1 ")
+#
+# S5-R1-02: the list is closed, so a command the record names under any other
+# leading word is invisible to the case below and can be reported with no exit
+# code at all. The record already carries one, the timing driver
+# `metron_commit_overhead.py`, whose exit its measurement section gives in
+# prose rather than as a transcript row. `ls ` is here because the transcript
+# already uses it, at the row that answers acceptance condition 1; measured, a
+# prose mention of `ls -la docs` with no row left the case green before it was
+# added, while `git status` and another `python3 -m unittest` each turned it
+# red.
+COMMAND_PREFIXES = ("git ", "python3 ", "FIAT_SKIP_PRECOMMIT=1 ", "ls ")
 COMMAND_EXACT = (".githooks/greenlight",)
 
 # Output quoted from the run goes in a fenced block, and nothing in a fenced
