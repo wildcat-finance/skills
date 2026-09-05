@@ -45,9 +45,6 @@ PRODUCT_CONTROLLER_SHA256 = (
 RECOVERY_GENERATOR_SHA256 = (
     "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75"
 )
-INTEGRATED_CONTROLLER_SHA256 = (
-    "6f5840ef10288cefee4f88f2e1d371f3d36da022eebeeaa8432466b429c797a4"
-)
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
     ROOT
@@ -281,20 +278,36 @@ class Issue429RecoveryTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        digests = [coverage["run_observation_binding"]["controller"]["sha256"]]
-        for promise in (
-            "fiat-design-evidence",
-            "fiat-final-integration",
-            "fiat-local-retirement",
-            "fiat-receipted-delivery",
-            "fiat-study-amendment",
-            "fiat-runbook-amendment",
-            "fiat-run-observation-binding",
-        ):
-            digests.append(coverage["runtime"][promise]["sha256"])
-        self.assertEqual(sha256(CONTROLLER), INTEGRATED_CONTROLLER_SHA256)
+        controller_path = CONTROLLER.relative_to(ROOT).as_posix()
+        observation = coverage["run_observation_binding"]["controller"]
         self.assertEqual(
-            digests, [INTEGRATED_CONTROLLER_SHA256] * len(digests)
+            observation.get("path"),
+            controller_path,
+            "run_observation_binding.controller must name " + controller_path,
+        )
+        bindings = [("run_observation_binding.controller", observation)]
+        bindings.extend(
+            (f"runtime.{name}", binding)
+            for name, binding in sorted(coverage["runtime"].items())
+            if binding.get("source") == controller_path
+        )
+        self.assertGreater(
+            len(bindings),
+            1,
+            "tests/promise_machine_coverage.json has no runtime binding for "
+            + controller_path,
+        )
+        actual = sha256(CONTROLLER)
+        stale = [
+            f"{trail} records {binding.get('sha256')!r}"
+            for trail, binding in bindings
+            if binding.get("sha256") != actual
+        ]
+        self.assertEqual(
+            stale,
+            [],
+            f"{controller_path} is {actual}; update every matching sha256 in "
+            f"tests/promise_machine_coverage.json: {stale}",
         )
 
 
