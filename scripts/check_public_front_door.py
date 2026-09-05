@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the root README against the front-door contract.
+"""Check the maintained public surface against the front-door contract.
 
 The root README kept drifting because nothing could tell a reader it was
 wrong. Its counts were typed once and aged; its capability claims outran what
@@ -8,7 +8,23 @@ below three hundred lines of catalogue. This module settles the mechanical
 part of that contract: order, budgets, markers, and agreement between a public
 claim and the evidence behind it.
 
-Three kinds of rule run here.
+The same drift lives on every other maintained page, so the sweep covers a
+named set rather than one file. The set is partly fixed and partly derived:
+the root and `docs/` pages are named here, and one landing `README.md` per
+discovered plugin comes from the topology reader, because a hand-typed list of
+eighteen would go stale the day a nineteenth plugin lands. A named document
+that is absent is a refusal and never a skip.
+
+Each document carries the rules that apply to it. `README.md` alone carries
+the front-door rules, since order, budgets and demonstration cards are
+questions about a front door. Every maintained page carries the heading,
+count and member-status rules. Two do not carry the heading rule:
+`PROMISE_MACHINE.md`, whose section headings and promise ids `promise_machine`
+pins by exact bytes, and `.agents/skills/promise-machine/SKILL.md`, which is a
+normative agent contract. Restyling either would churn an operational contract
+to satisfy a house style, which the study that ordered this sweep refuses.
+
+Five kinds of rule run here.
 
 **Structure.** The collective portrait precedes the title, the introduction
 stays inside its word budget, the contribution heading and the external
@@ -28,18 +44,39 @@ runnable command, one named preserved source, one concrete observed result and
 the record's own non-claim. A marker with no record fails; a record with no
 marker fails. Absence never passes.
 
-**Counts.** Every count claim carries a `front-door:count` marker naming the
-derived quantity it asserts, and the number is compared with what
+**Counts.** Every current count claim carries a `front-door:count` marker
+naming the derived quantity it asserts, and the number is compared with what
 `shoggoth_topology` derives from both marketplace manifests and tree discovery
 together. A number in front of a topology noun with no marker in front of it is
 itself a refusal, because that is exactly how the stale literals got in. This
 module holds no count of its own to compare against.
 
+**History.** A figure describing a dated measurement is not a claim about now,
+so it is not derivable and must not be rewritten to agree with today's tree.
+`INSTALL.md` records what two host installs did on one dated capture, and
+those figures are evidence. A `front-door:historical` marker names the capture
+and pins the figure's exact bytes, so the claim satisfies the marking rule
+without ever being compared with the tree, and rewriting the figure fails
+because the prose no longer says what the marker pinned. The two markers do
+opposite jobs on purpose: a count marker binds a number to something recomputed
+every run, and a historical marker binds one to something that already
+happened.
+
+**Member status.** A sentence saying what a member's current version does or
+does not do is a claim about that member's ledger. It carries a
+`front-door:status` marker naming the skill and the exact `EVOLUTION.md`
+version it was written against, and the claim is refused once that ledger moves
+on. This is how "the version implements source admission" and "its compile path
+has not shipped" both survived years past the releases that falsified them: the
+sentences were true when written and nothing noticed the ledger advancing.
+
 What it does not do: it never grades free-form voice, which belongs to
-Imprimatur, Vulgate, Brevitas and human review. It reads the repository's own
-Markdown and demonstration records as bounded regular files through no-follow
-descriptors, starts no subprocess, opens no socket, and writes nothing. It
-imports the record-reading half of `demonstrations` and never its runner.
+Imprimatur, Vulgate, Brevitas and human review. It does not decide whether a
+member-status sentence is true, only whether it still describes the version its
+own marker names. It reads the repository's own Markdown, ledgers and
+demonstration records as bounded regular files through no-follow descriptors,
+starts no subprocess, opens no socket, and writes nothing. It imports the
+record-reading half of `demonstrations` and never its runner.
 
 Word counts are taken over the rendered text: every HTML comment is blanked to
 spaces of the same length before counting, so a marker costs a reader nothing
@@ -74,13 +111,53 @@ from shoggoth_topology import (  # noqa: E402
 )
 
 
-# The named documents this checker sweeps. A document in this tuple that is
-# absent is a refusal, never a skip: a sweep that quietly finds nothing is the
-# failure mode this set exists to prevent.
-MAINTAINED_DOCUMENTS = ("README.md",)
-
 FRONT_DOOR = "README.md"
 MAX_DOCUMENT_BYTES = 262_144
+LEDGER_NAME = "EVOLUTION.md"
+PLUGIN_LANDING = "README.md"
+
+# The rule groups a maintained document can carry.
+FRONT_DOOR_RULE = "front-door"
+HEADING_RULE = "headings"
+COUNT_RULE = "counts"
+STATUS_RULE = "status"
+
+# A public entry page a reader starts from. Everything the house style governs
+# applies to it.
+ENTRY_RULES = frozenset({HEADING_RULE, COUNT_RULE, STATUS_RULE})
+# A normative contract read for its claims rather than restyled. Its headings
+# are identifiers another checker pins by exact bytes, so a case rule here
+# would break `promise_machine.py` rather than improve anything a reader sees.
+CONTRACT_RULES = frozenset({COUNT_RULE, STATUS_RULE})
+
+
+@dataclass(frozen=True)
+class Maintained:
+    """One swept document and the rule groups that apply to it."""
+
+    relative: str
+    rules: frozenset[str]
+
+    def carries(self, rule: str) -> bool:
+        return rule in self.rules
+
+
+# The named documents this checker sweeps. A document in this tuple that is
+# absent is a refusal, never a skip: a sweep that quietly finds nothing is the
+# failure mode this set exists to prevent. One landing page per discovered
+# plugin joins them in `maintained_documents`, because a hand-typed list of
+# eighteen is exactly the literal this whole contract exists to remove.
+MAINTAINED_DOCUMENTS = (
+    Maintained(FRONT_DOOR, ENTRY_RULES | {FRONT_DOOR_RULE}),
+    Maintained("INSTALL.md", ENTRY_RULES),
+    Maintained("FUTUREPROOFING.md", ENTRY_RULES),
+    Maintained("SHOGGOTH.md", ENTRY_RULES),
+    Maintained("PROMISE_MACHINE.md", CONTRACT_RULES),
+    Maintained("docs/how-to-help-shoggoth.md", ENTRY_RULES),
+    Maintained("docs/fiat-in-plain-english.md", ENTRY_RULES),
+    Maintained("docs/the-promise-machine-explained-properly.md", ENTRY_RULES),
+    Maintained(".agents/skills/promise-machine/SKILL.md", CONTRACT_RULES),
+)
 
 # Budgets. Each is a contract limit measured by this checker rather than a
 # performance claim, so they live here beside the rule that reads them.
@@ -109,8 +186,19 @@ CHIRP = "Ask the Atlas for a number. Pick your harness. Finish what you start."
 # other than the one the generator itself writes, which is the third entry
 # here. Naming only a few protected headings left every other one exemptible,
 # and a second opening marker widened the span the first one opened.
+#
+# `marketplace-context` is the same arrangement on every plugin landing page:
+# its bytes are written from the skill's own ledger and checked against it by
+# `tests/test_marketplace_prose.py`. A count or a status sentence inside it is
+# the ledger's, so the rules below read past it rather than asking an author to
+# mark prose they do not own.
 GENERATED_REGIONS = (
     ("<!-- contributors:start -->", "<!-- contributors:end -->", "## Thanks"),
+    (
+        "<!-- marketplace-context:start -->",
+        "<!-- marketplace-context:end -->",
+        "## In one line",
+    ),
 )
 
 # Which derived quantity each count key names. The values come from the
@@ -119,6 +207,7 @@ GENERATED_REGIONS = (
 COUNT_KEYS = {
     "plugins": "plugins",
     "governed": "governed",
+    "members": "governed",
     "domain": "canonical",
     "phase": "phase",
 }
@@ -130,6 +219,7 @@ COUNT_KEYS = {
 COUNT_NOUNS = {
     "plugins": "plugin",
     "governed": "governed",
+    "members": "member",
     "domain": "domain",
     "phase": "phase",
 }
@@ -205,6 +295,17 @@ NUMBER_WORDS = {
     "eighty": 80, "ninety": 90,
 }
 NUMBER_WORD_RE = "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
+# `one` parses as a number and is almost never used as one. English reaches for
+# it as a determiner -- "one skill can have separate operations", "install one
+# or more named plugins" -- and no population this checker derives has ever
+# been one. Demanding a marker on every such sentence would put derivation
+# markers over prose that asserts nothing about the tree, which teaches authors
+# that the marker means nothing. The digit is still read, so "there is 1 domain
+# here" remains a refusal and the spelled form of a real claim, from two
+# upwards, is still caught.
+CLAIM_WORD_RE = "|".join(
+    sorted((word for word in NUMBER_WORDS if word != "one"), key=len, reverse=True)
+)
 # The case-insensitive flag is not decoration. Every ATX heading on this page
 # must be all caps, so a case-sensitive lower-case grammar could never read a
 # count claim inside one: the two rules together exempted every heading.
@@ -214,12 +315,40 @@ NUMBER_WORD_RE = "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
 # assorted plugins" was one word away from being a stale literal nothing read.
 # Reading too much is the safe direction here: a sentence caught by mistake is
 # reworded or marked, and a sentence missed is a number that ages in public.
+# The lookbehind is what a version and a path cost. `Compound v3 Phase 0` and
+# `plugins/lazarus` after a `v3` both put a digit in front of a topology noun
+# without asserting anything, and a dotted release like `0.1.1 while the skill`
+# does it again. Requiring the number to open a token leaves every real claim
+# and drops all three.
+#
+# Two intervening words, not three. Three reaches across a verb into the next
+# noun phrase: "the four workers isolate bulky phases" is a claim about
+# workers, and reading it as a claim about phases reports a number nobody
+# wrote. Two still covers every adjective stack the maintained set uses,
+# including "25 governed first-party skills" and "42 assorted plugins".
 COUNT_CLAIM_RE = re.compile(
-    r"(?P<number>\d[\d,]*|(?:" + NUMBER_WORD_RE + r")(?:-(?:" + NUMBER_WORD_RE + r"))?)\s+"
-    r"(?:[A-Za-z][A-Za-z-]*\s+){0,3}"
+    r"(?<![A-Za-z0-9.])"
+    r"(?P<number>\d[\d,]*|(?:" + CLAIM_WORD_RE + r")(?:-(?:" + CLAIM_WORD_RE + r"))?)\s+"
+    r"(?:[A-Za-z][A-Za-z-]*\s+){0,2}"
     r"(?:plugins?|skills?|members?|agents?|domains?|phases?)\b",
     re.IGNORECASE,
 )
+# A sentence about what one member's current version does or does not do. Both
+# halves matter: the positive form goes stale the same way the negative one
+# does, and the anamnesis page proved it by saying what v0.1.0 implemented for
+# three releases after v3.1.0 shipped the rest.
+STATUS_CLAIM_RE = re.compile(
+    r"(?i)(?:this version"
+    r"|ha(?:s|ve) not (?:yet )?shipped"
+    r"|ha(?:s|ve) yet to ship"
+    r"|do(?:es)? not ship"
+    r"|(?:is|are) not (?:implemented|built)"
+    r"|ha(?:s|ve) not landed)"
+)
+# The `- Current version:` row every governed ledger opens with. The value is
+# read from the ledger rather than declared here, so a release moves the whole
+# set of status claims at once.
+LEDGER_VERSION_RE = re.compile(r"(?m)^- Current version: `(?P<version>[^`\n]+)`\s*$")
 
 # One stable name per refusal condition, so a case can assert on the reason
 # rather than on a message. The prefix is deliberately not `Dnnn`: that
@@ -256,6 +385,9 @@ REFUSALS = {
     "FD28": "every count claim is marked",
     "FD29": "count marker agrees with the quantity its prose names",
     "FD30": "generated region is closed and governs no heading",
+    "FD31": "historical figure still says what its marker pinned",
+    "FD32": "every member-status claim is bound to a ledger",
+    "FD33": "bound member status matches the ledger's current version",
 }
 
 
@@ -303,6 +435,32 @@ def read_document(root: Path, relative: str) -> str:
         return payload.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise FrontDoorError(f"{relative} is not UTF-8: {exc}") from exc
+
+
+def maintained_documents(topology) -> tuple[Maintained, ...]:
+    """The whole swept set: the named documents plus one page per plugin.
+
+    Discovery supplies the second half. A tuple of eighteen landing pages typed
+    into this module would pass on the day a nineteenth plugin arrived with no
+    page at all, which is the same failure the count rules exist to stop.
+    """
+
+    return MAINTAINED_DOCUMENTS + tuple(
+        Maintained(f"plugins/{plugin}/{PLUGIN_LANDING}", ENTRY_RULES)
+        for plugin in topology.plugins
+    )
+
+
+def ledger_version(root: Path, directory: str) -> str:
+    """The version one governed skill's own ledger currently records."""
+
+    text = read_document(root, f"{directory}/{LEDGER_NAME}")
+    match = LEDGER_VERSION_RE.search(text)
+    if match is None:
+        raise FrontDoorError(
+            f"{directory}/{LEDGER_NAME} declares no current version row"
+        )
+    return match.group("version")
 
 
 def rendered(text: str) -> str:
@@ -565,13 +723,36 @@ def emit_event(event: str, **fields: object) -> None:
     print(json.dumps({"event": event, **fields}, sort_keys=True, separators=(",", ":")))
 
 
-def check_structure(text: str, display: str, findings: list[Finding]) -> None:
-    """Order, budgets, headings, links and images on the front door."""
+def check_headings(
+    where: str, text: str, display: str, findings: list[Finding]
+) -> None:
+    """The house all-caps style, over one maintained page.
+
+    The generated regions are the one exemption, and it is not one an author
+    grants: `generated_spans` refuses a region that is unclosed or that reaches
+    a heading its owner does not write, and a refused region is not applied.
+    """
 
     outline = unfenced(display)
     spans, refused = generated_spans(text)
     for reason in refused:
-        _finding(findings, "FD30", reason)
+        _finding(findings, "FD30", f"{where}: {reason}")
+    for offset, _, heading in headings(outline):
+        if inside(spans, offset):
+            continue
+        # A heading with no letter in it is upper case only because there is
+        # nothing to lower, so `## 2026` used to satisfy the house style by
+        # holding none of it.
+        if heading != heading.upper() or not any(
+            character.isalpha() for character in heading
+        ):
+            _finding(findings, "FD11", f"{where}: heading {heading!r} is not all caps")
+
+
+def check_structure(text: str, display: str, findings: list[Finding]) -> None:
+    """Order, budgets, links and images on the front door."""
+
+    outline = unfenced(display)
     title = next(
         (
             match.start()
@@ -677,17 +858,6 @@ def check_structure(text: str, display: str, findings: list[Finding]) -> None:
             )
         seen.setdefault(target, offset)
 
-    for offset, _, heading in headings(outline):
-        if inside(spans, offset):
-            continue
-        # A heading with no letter in it is upper case only because there is
-        # nothing to lower, so `## 2026` used to satisfy the house style by
-        # holding none of it.
-        if heading != heading.upper() or not any(
-            character.isalpha() for character in heading
-        ):
-            _finding(findings, "FD11", f"heading {heading!r} is not all caps")
-
     boundary = max(
         offset for offset in (contribution, demonstration, 0) if offset is not None
     )
@@ -752,23 +922,72 @@ def check_asides(text: str, display: str, findings: list[Finding]) -> None:
     )
 
 
-def check_counts(text: str, display: str, counts: dict[str, int], findings: list[Finding]) -> None:
-    """Every count claim names a derived quantity and agrees with it."""
+def claim_after(display: str, marker: Marker) -> tuple[re.Match | None, int]:
+    """The count claim a marker sits immediately in front of, and its offset."""
 
+    tail = display[marker.end:]
+    offset = marker.end + (len(tail) - len(tail.lstrip()))
+    return COUNT_CLAIM_RE.match(tail.lstrip()), offset
+
+
+def check_counts(
+    where: str,
+    text: str,
+    display: str,
+    counts: dict[str, int],
+    findings: list[Finding],
+) -> None:
+    """Every current count claim names a derived quantity and agrees with it."""
+
+    spans, _ = generated_spans(text)
     marked: set[int] = set()
+
+    for marker in markers(text):
+        if marker.kind != "historical":
+            continue
+        claim, offset = claim_after(display, marker)
+        missing = sorted({"captured", "figure"} - set(marker.attributes))
+        if missing:
+            _finding(
+                findings,
+                "FD31",
+                f"{where}: the historical marker at word "
+                f"{word_index(display, marker.start)} is missing {missing}",
+            )
+            continue
+        if claim is None:
+            _finding(
+                findings,
+                "FD31",
+                f"{where}: the historical marker at word "
+                f"{word_index(display, marker.start)} is not followed by a figure",
+            )
+            continue
+        marked.add(offset)
+        figure = marker.attributes["figure"]
+        # Byte-for-byte, and deliberately so. A dated measurement is evidence
+        # about one past install, and the only useful question a checker can
+        # ask of it is whether the prose still says what was measured.
+        if claim.group("number") != figure:
+            _finding(
+                findings,
+                "FD31",
+                f"{where}: the {marker.attributes['captured']} capture pinned "
+                f"{figure!r} and the prose now says {claim.group('number')!r}; a "
+                "historical figure is evidence, not a number to bring up to date",
+            )
+
     for marker in markers(text):
         if marker.kind != "count":
             continue
         key = marker.attributes.get("key", "")
-        tail = display[marker.end:]
-        claim = COUNT_CLAIM_RE.match(tail.lstrip())
-        offset = marker.end + (len(tail) - len(tail.lstrip()))
+        claim, offset = claim_after(display, marker)
         if claim is None:
             _finding(
                 findings,
                 "FD27",
-                f"the count marker {key!r} at word {word_index(display, marker.start)}"
-                " is not followed by a count claim",
+                f"{where}: the count marker {key!r} at word "
+                f"{word_index(display, marker.start)} is not followed by a count claim",
             )
             continue
         marked.add(offset)
@@ -776,7 +995,7 @@ def check_counts(text: str, display: str, counts: dict[str, int], findings: list
             _finding(
                 findings,
                 "FD27",
-                f"count key {key!r} names no derived quantity; "
+                f"{where}: count key {key!r} names no derived quantity; "
                 f"declared keys are {sorted(COUNT_KEYS)}",
             )
             continue
@@ -787,8 +1006,8 @@ def check_counts(text: str, display: str, counts: dict[str, int], findings: list
             _finding(
                 findings,
                 "FD29",
-                f"the count marker {key!r} sits over {claim.group(0)!r}, which "
-                f"names no {COUNT_NOUNS[key]!r} quantity",
+                f"{where}: the count marker {key!r} sits over {claim.group(0)!r}, "
+                f"which names no {COUNT_NOUNS[key]!r} quantity",
             )
             continue
         derived = counts[COUNT_KEYS[key]]
@@ -797,18 +1016,96 @@ def check_counts(text: str, display: str, counts: dict[str, int], findings: list
             _finding(
                 findings,
                 "FD26",
-                f"the prose claims {claimed} for {key!r}; both manifests and "
-                f"tree discovery derive {derived}",
+                f"{where}: the prose claims {claimed} for {key!r}; both manifests "
+                f"and tree discovery derive {derived}",
             )
 
     for claim in COUNT_CLAIM_RE.finditer(display):
-        if claim.start() in marked:
+        if claim.start() in marked or inside(spans, claim.start()):
             continue
         _finding(
             findings,
             "FD28",
-            f"the count claim {claim.group(0)!r} at word "
-            f"{word_index(display, claim.start())} carries no front-door:count marker",
+            f"{where}: the count claim {claim.group(0)!r} at word "
+            f"{word_index(display, claim.start())} carries no front-door:count "
+            "or front-door:historical marker",
+        )
+
+
+def check_status(
+    where: str,
+    text: str,
+    display: str,
+    versions: dict[str, str],
+    findings: list[Finding],
+) -> None:
+    """Every member-status claim names the ledger version it describes.
+
+    The claim's region runs from its marker to the end of the paragraph, which
+    is where a reader stops reading one statement about a member and starts the
+    next. Anchoring on the marker's own line instead would have refused
+    "Its compile path has not shipped", which is the second half of a sentence
+    that opens somewhere else.
+    """
+
+    spans, _ = generated_spans(text)
+    covered: set[int] = set()
+
+    for marker in markers(text):
+        if marker.kind != "status":
+            continue
+        missing = sorted({"skill", "version"} - set(marker.attributes))
+        if missing:
+            _finding(
+                findings,
+                "FD32",
+                f"{where}: the status marker at word "
+                f"{word_index(display, marker.start)} is missing {missing}",
+            )
+            continue
+        end = display.find("\n\n", marker.end)
+        region = (marker.end, len(display) if end < 0 else end)
+        claims = [
+            claim.start()
+            for claim in STATUS_CLAIM_RE.finditer(display[region[0]: region[1]])
+        ]
+        if not claims:
+            _finding(
+                findings,
+                "FD32",
+                f"{where}: the status marker at word "
+                f"{word_index(display, marker.start)} governs no member-status claim",
+            )
+            continue
+        covered.update(region[0] + start for start in claims)
+        skill = marker.attributes["skill"]
+        declared = marker.attributes["version"]
+        current = versions.get(skill)
+        if current is None:
+            _finding(
+                findings,
+                "FD32",
+                f"{where}: the status marker binds skill {skill!r}, which is not "
+                "a governed skill",
+            )
+            continue
+        if declared != current:
+            _finding(
+                findings,
+                "FD33",
+                f"{where}: the prose describes {declared}; {skill}'s ledger now "
+                f"records {current}, so the claim is about a release that has "
+                "been superseded",
+            )
+
+    for claim in STATUS_CLAIM_RE.finditer(display):
+        if claim.start() in covered or inside(spans, claim.start()):
+            continue
+        _finding(
+            findings,
+            "FD32",
+            f"{where}: the member-status claim {claim.group(0)!r} at word "
+            f"{word_index(display, claim.start())} carries no front-door:status marker",
         )
 
 
@@ -1003,27 +1300,44 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
     """Run every rule against the repository rooted at `root`."""
 
     findings: list[Finding] = []
-    for relative in MAINTAINED_DOCUMENTS:
+    topology = discover_topology(root)
+    documents = maintained_documents(topology)
+
+    sources: dict[str, str] = {}
+    for item in documents:
         try:
-            read_document(root, relative)
+            sources[item.relative] = read_document(root, item.relative)
         except FrontDoorError as exc:
             _finding(findings, "FD01", str(exc))
+    # A rule read against a set that is already incomplete reports on whatever
+    # happened to be there, and a reader cannot tell that from a clean sweep.
     if findings:
         return findings, []
 
-    text = read_document(root, FRONT_DOOR)
-    display = rendered(text)
-    topology = discover_topology(root)
-    records = demonstrations.load_records(root)
     by_skill = {
         directory.rsplit("/", 1)[-1]: directory for directory in topology.governed
     }
+    versions = {
+        skill: ledger_version(root, directory) for skill, directory in by_skill.items()
+    }
+    counts = topology.counts()
 
-    check_structure(text, display, findings)
-    check_asides(text, display, findings)
-    check_counts(text, display, topology.counts(), findings)
-    check_roster(display, topology.governed, findings)
-    events = check_cards(text, display, records, by_skill, findings)
+    events: list[dict] = []
+    for item in documents:
+        text = sources[item.relative]
+        display = rendered(text)
+        if item.carries(HEADING_RULE):
+            check_headings(item.relative, text, display, findings)
+        if item.carries(COUNT_RULE):
+            check_counts(item.relative, text, display, counts, findings)
+        if item.carries(STATUS_RULE):
+            check_status(item.relative, text, display, versions, findings)
+        if item.carries(FRONT_DOOR_RULE):
+            records = demonstrations.load_records(root)
+            check_structure(text, display, findings)
+            check_asides(text, display, findings)
+            check_roster(display, topology.governed, findings)
+            events = check_cards(text, display, records, by_skill, findings)
     return findings, events
 
 
@@ -1031,7 +1345,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Check the root README against the front-door contract."
+        description="Check the maintained public surface against its contract."
     )
     parser.add_argument(
         "--root", type=Path, default=Path("."), help="repository root to read"
@@ -1039,6 +1353,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        topology = discover_topology(args.root)
+        swept = len(maintained_documents(topology))
         findings, events = check(args.root)
     except (FrontDoorError, TopologyError, demonstrations.DemonstrationError) as exc:
         print(f"check_public_front_door.py: {exc}", file=sys.stderr)
@@ -1050,13 +1366,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(str(finding), file=sys.stderr)
     if findings:
         print(
-            f"front door: {len(findings)} finding(s) against {FRONT_DOOR}",
+            f"maintained surface: {len(findings)} finding(s) across "
+            f"{swept} document(s)",
             file=sys.stderr,
         )
         return 1
     print(
-        f"front door: {FRONT_DOOR} holds its contract with "
-        f"{len(events)} checked card(s)"
+        f"maintained surface: {swept} document(s) hold the contract, with "
+        f"{len(events)} checked card(s) on {FRONT_DOOR}"
     )
     return 0
 
