@@ -45,3 +45,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: round 2 rechecked the complete risk register after `efeaa952a3d446bd591f788280b335f426b76e62`. The success message and verdict now share one calendar snapshot, and the two-date regression would fail if a second read returned. The 1,337-test repository suite, refreshed Elenchus report, 32-check delta plan, and Phylax, Ephoros, and Hypomnema lints are green. No further source-bound lead warrants another round.
+
+## Step 3, round 1 -- 2026-09-05T17:29:44Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: metadata-content-coupling=reviewed; stale-manifest=reviewed; no-op-pdf-build=reviewed; manifest-validation=reviewed; roster-drift=reviewed; check-graph=reviewed; clock-boundary=reviewed; generated-surface-atomicity=reviewed
+
+Not checked: the waived Pashov Solidity suite, because this step changes no Solidity; a new live harness probe, which the demonstration explicitly does not claim; freshness after the recorded 5 September 2026 observation; behavior outside signed commits `f8c00a9ad753cbc5a40f2d4460b9d5324c3bd2bf` and `98d686797e87615ab627a1a1e86ce814d77721b3`
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the demonstration uses fixed local commands and temporary copies, publishes no physical host path or credential, and binds its claims to the code commit and local calendar date it observed. Its three recorded hashes still match the committed README, guide, and PDF. Metadata-only write mode names no written path; the staged 31-day date leaves content green and freshness red; the harness rename reddens both Markdown regions and the PDF expectation. The first committed run exposed the expected Horos tracked-file count change, and `98d686797e87615ab627a1a1e86ce814d77721b3` refreshed that exact count before the implementation receipt. The refreshed Elenchus report records 1,337 of 1,337 tests passed, and the exact delta plan passed all 32 selected checks. No audit fix was required.
