@@ -18,6 +18,8 @@ the run cannot drift back into the collision it is avoiding.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -1812,6 +1814,192 @@ class ActivationTests(unittest.TestCase):
         complaint = activation_complaint(configured_hooks_path())
         if complaint is not None:
             self.fail(complaint)
+
+
+# --- the copy a reader actually gets ---------------------------------------
+#
+# The run's own study, runbook, design record and reports live under
+# `.hexaemeron/`, which is self-ignored and never reaches the repository. What
+# survives is the copy under `docs/commit-gate/`, and a copy is worth having
+# only while it says what its source says. It did not: step 1 shipped the study
+# and eight amendments later it still carried step 1's bytes, so the shipped
+# budget clause was one the study itself had since withdrawn.
+#
+# These cases hold the refresh. Every one of them reads `docs/commit-gate/`
+# and nothing else, so they run in a clone that has no controller state, which
+# is the only place the staleness they catch can be noticed.
+
+SHIPPED = REPOSITORY_ROOT / "docs" / "commit-gate"
+SHIPPED_STUDY = SHIPPED / "study.md"
+SHIPPED_RUNBOOK = SHIPPED / "runbook.md"
+SHIPPED_RECORD = SHIPPED / "design-evidence.json"
+SHIPPED_REPORTS = SHIPPED / "reports"
+
+# The counts at this step's entry, as literals. Recomputing them from
+# `.hexaemeron/` would agree with a stale copy by construction, because the
+# comparison would read the source the copy is supposed to be carrying; and it
+# would be unrunnable in the clone where the staleness matters.
+STUDY_AMENDMENTS = 8
+RUNBOOK_AMENDMENTS = 12
+
+AMENDMENT_HEADING = re.compile(r"^### Amendment --", re.MULTILINE)
+CONTROLLER_REFERENCE = re.compile(r"\.hexaemeron/[A-Za-z0-9_./-]*")
+SHIPPED_PREFIX = "docs/commit-gate/"
+REPORT_PREFIX = "reports/"
+
+
+def amendment_count(path: Path) -> int:
+    return len(AMENDMENT_HEADING.findall(path.read_text(encoding="utf-8")))
+
+
+def mapping_targets(reference: str) -> list[str]:
+    """Every shipped path a mapping for this reference could name.
+
+    A line naming `docs/commit-gate/reports/` maps everything under it, so the
+    directory prefixes count as well as the full path. The prefixes stop at
+    segment boundaries, which is why `design/` is not satisfied by a line
+    naming `design-evidence.json`. A bare `.hexaemeron/` is mapped by the
+    shipped directory itself and by nothing narrower.
+    """
+    tail = reference[len(".hexaemeron/"):]
+    if not tail:
+        return [""]
+    targets = [tail]
+    parts = [part for part in tail.split("/") if part]
+    for stop in range(len(parts) - 1, 0, -1):
+        targets.append("/".join(parts[:stop]) + "/")
+    return targets
+
+
+def says_it_is_not_shipped(text: str, reference: str) -> bool:
+    """Does the file say, at the reference itself, that it did not travel?
+
+    One reference in the study is the evaluator that wrote the reports, and it
+    is genuinely absent from the repository rather than moved into it. Saying
+    so is the honest mapping for that case, and it has to be said where the
+    reader meets the path rather than somewhere else in the file.
+    """
+    return re.search(re.escape(reference) + r"`?\s+is not shipped", text) is not None
+
+
+class ShippedCopyTests(unittest.TestCase):
+    """The shipped artefacts, held against what the run recorded in them."""
+
+    def test_the_shipped_study_carries_every_amendment(self):
+        found = amendment_count(SHIPPED_STUDY)
+        self.assertEqual(
+            found, STUDY_AMENDMENTS,
+            f"{SHIPPED_STUDY} carries {found} amendments where this step "
+            f"shipped {STUDY_AMENDMENTS}. Either the copy is behind its "
+            "source, or it was refreshed without moving the literal here; "
+            "both leave a reader holding a document the run has corrected.",
+        )
+
+    def test_the_shipped_runbook_carries_every_amendment(self):
+        found = amendment_count(SHIPPED_RUNBOOK)
+        self.assertEqual(
+            found, RUNBOOK_AMENDMENTS,
+            f"{SHIPPED_RUNBOOK} carries {found} amendments where this step "
+            f"shipped {RUNBOOK_AMENDMENTS}; the copy is behind its source, or "
+            "the literal here was not moved with it.",
+        )
+
+    def test_every_controller_path_in_the_study_is_mapped_into_the_tree(self):
+        """`.hexaemeron/` resolves to nothing for a reader holding the clone.
+
+        The study is append-only once receipted, so the references cannot be
+        rewritten where they stand. What it carries instead is a mapping, and
+        the mapping only helps while it covers every path the study sends a
+        reader to.
+        """
+        text = SHIPPED_STUDY.read_text(encoding="utf-8")
+        references = sorted(set(CONTROLLER_REFERENCE.findall(text)))
+        self.assertTrue(
+            references,
+            f"{SHIPPED_STUDY} names no `.hexaemeron/` path at all, so this "
+            "case would pass on any file; the study it copies names five",
+        )
+        unmapped = []
+        for reference in references:
+            mapped = any(
+                SHIPPED_PREFIX + target in text
+                for target in mapping_targets(reference)
+            )
+            if mapped or says_it_is_not_shipped(text, reference):
+                continue
+            unmapped.append(reference)
+        self.assertEqual(
+            unmapped, [],
+            "the shipped study sends a reader to a directory the repository "
+            "does not carry, and nothing in the same file says where those "
+            f"artefacts went or that they did not travel: {unmapped}",
+        )
+
+    def test_every_report_the_shipped_record_cites_resolves_beside_it(self):
+        """The record is only evidence while the reports it names are here.
+
+        A row that has been resolved names its report and that report's
+        digest. Those are checked. A row the controller has not resolved names
+        a path and no digest, and is checked only for still being pending, so
+        the day it is resolved this case starts holding it too.
+        """
+        rows = json.loads(SHIPPED_RECORD.read_text(encoding="utf-8"))["results"]
+        cited = [row for row in rows if isinstance(row.get("report"), dict)]
+        self.assertTrue(
+            cited,
+            f"{SHIPPED_RECORD} cites no report with a digest, so this case "
+            "would pass on an empty record",
+        )
+        wrong = []
+        for row in cited:
+            report = row["report"]
+            path = report["path"]
+            named = f"{row['candidate']}/{row['criterion']}"
+            if not path.startswith(REPORT_PREFIX) or ".." in path.split("/"):
+                wrong.append(f"{named}: {path} is not under {REPORT_PREFIX}")
+                continue
+            target = SHIPPED / path
+            if not target.is_file():
+                wrong.append(f"{named}: {path} is missing")
+                continue
+            digest = hashlib.sha256(target.read_bytes()).hexdigest()
+            if digest != report["sha256"]:
+                wrong.append(
+                    f"{named}: {path} is {digest}, record names "
+                    f"{report['sha256']}"
+                )
+        self.assertEqual(
+            wrong, [],
+            "the shipped design record cites evidence the shipped tree does "
+            f"not carry at the bytes the record names: {wrong}",
+        )
+
+        undigested = [row for row in rows if not isinstance(row.get("report"), dict)]
+        premature = [
+            f"{row['candidate']}/{row['criterion']}: {row.get('state')}"
+            for row in undigested
+            if row.get("state") != "pending"
+            or not isinstance(row.get("report"), str)
+        ]
+        self.assertEqual(
+            premature, [],
+            "a row the record treats as settled carries no report digest, so "
+            f"the case above skipped evidence it should be holding: {premature}",
+        )
+
+        named = {row["report"]["path"] for row in cited}
+        named.update(row["report"] for row in undigested)
+        orphans = sorted(
+            f"{REPORT_PREFIX}{path.name}"
+            for path in SHIPPED_REPORTS.iterdir()
+            if f"{REPORT_PREFIX}{path.name}" not in named
+        )
+        self.assertEqual(
+            orphans, [],
+            f"{SHIPPED_REPORTS} carries evidence the record does not cite, "
+            f"which is what a copy refreshed from a stale source looks like: "
+            f"{orphans}",
+        )
 
 
 if __name__ == "__main__":
