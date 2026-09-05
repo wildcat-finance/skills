@@ -118,7 +118,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.51.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.52.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -126,21 +126,28 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.51.1")
+        self.assertEqual(latest["version"], "fiat-v5.52.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#1085", latest["evidence"])
-        self.assertIn("skills#1110", latest["evidence"])
-        self.assertIn("retarget", latest["change"])
-        self.assertIn("into` field named the run branch", latest["change"])
+        self.assertIn("skills#890", latest["evidence"])
+        self.assertIn("done runbook", latest["change"])
+        self.assertIn("exactly match", latest["change"])
+        self.assertIn("without a traceback", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
-        # The row this one displaced keeps its own coverage rather than losing
-        # it to the move: a generation that stops being newest is still a
-        # generation the frontier had to survive.
+        # Generations displaced from newest keep their own coverage: each is
+        # still a transition the held frontier had to survive.
+        retarget = by_version["fiat-v5.51.1"]
+        self.assertEqual(retarget["axis"], "generation")
+        self.assertEqual(retarget["revision"], "state-shape-validation")
+        self.assertIn("skills#1085", retarget["evidence"])
+        self.assertIn("skills#1110", retarget["evidence"])
+        self.assertIn("retarget", retarget["change"])
+        self.assertIn("into` field named the run branch", retarget["change"])
+        self.assertIn("held target stay unchanged", retarget["change"])
         decision_assignment = by_version["fiat-v5.50.1"]
         self.assertEqual(decision_assignment["axis"], "generation")
         self.assertEqual(decision_assignment["revision"], "state-shape-validation")

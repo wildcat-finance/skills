@@ -1,6 +1,6 @@
 {
   "name": "hexaemeron",
-  "version": "1.6.23",
+  "version": "1.6.24",
   "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
   "author": {
     "name": "Wildcat Labs",
