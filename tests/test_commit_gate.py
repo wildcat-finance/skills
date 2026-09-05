@@ -1168,6 +1168,93 @@ class HookIndexMutationTests(unittest.TestCase):
                 "a green appeared in the repository GIT_DIR selected",
             )
 
+    def test_the_hook_refuses_a_work_tree_inside_an_enclosing_repository(self):
+        """S3-R2-01: an enclosing repository's green must not admit this commit.
+
+        A work tree with no `.git` of its own, driven through `--git-dir` and
+        `--work-tree`, leaves discovery nothing to find where the hook stands,
+        so it climbs. Outside any repository it finds nothing and the refusal
+        carries git's own line, which `RefusalLineTests` holds. Inside one it
+        finds the enclosing repository, and every answer after that is that
+        repository's: its `core.fsmonitor` ran during the hook's own `git
+        write-tree`, its object store answered that command, and its
+        `LAST_GREEN` naming the staged tree admitted a commit into a repository
+        it does not hold. `git rev-parse --show-prefix` is what tells the two
+        cases apart -- empty at the root of the work tree git ran the hook
+        from, `inner/tree/` here -- and it is read before any record is located.
+
+        The nested work tree holds bytes the enclosing repository already has,
+        so `git write-tree` run from there can rebuild the staged tree. That is
+        asserted rather than assumed below, because an enclosing repository
+        missing one blob refuses the commit for want of an object instead, and
+        a fixture that refused for that reason would pass without the control.
+        """
+        with gate_repository() as outer:
+            separate = outer / "inner" / "repository"
+            tree = outer / "inner" / "tree"
+            separate.mkdir(parents=True)
+            tree.mkdir(parents=True)
+            git(separate, "init", "-q", "-b", "main", ".")
+            git(separate, *ACTIVATION)
+            hooks = tree / ".githooks"
+            hooks.mkdir()
+            for source in (HOOK, GREENLIGHT):
+                target = hooks / source.name
+                target.write_bytes(source.read_bytes())
+                target.chmod(0o755)
+            (tree / "a.txt").write_text("one\n", encoding="utf-8")
+
+            aimed = ("--git-dir", str(separate / ".git"), "--work-tree", str(tree))
+            git(tree, *aimed, "add", "-A")
+            staged = git(tree, *aimed, "write-tree").stdout.strip()
+            rebuilt = git(
+                outer, "write-tree",
+                env=clean_environment(
+                    {"GIT_INDEX_FILE": str(separate / ".git" / "index")}
+                ),
+            ).stdout.strip()
+            self.assertEqual(
+                rebuilt, staged,
+                "the enclosing repository cannot answer for the nested staged "
+                "tree, so this fixture would refuse for want of an object "
+                "rather than on the record crossing under test",
+            )
+            record_path(outer).write_text(f"{staged}\n", encoding="utf-8")
+
+            script, marker = fsmonitor_script(outer.parent)
+            repository_override(outer, script)
+            before = staged_state(outer)
+            self.assertFalse(
+                marker.exists(), "the fixture itself started the monitor"
+            )
+
+            refused = git(tree, *aimed, "commit", "-qm", "nested", check=False)
+
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "the enclosing repository's green record admitted a commit "
+                "into a repository it does not hold",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "--show-prefix", named[0],
+                f"the refusal does not name the prefix cause: {named[0]}",
+            )
+            self.assertIn(
+                "inner/tree/", named[0],
+                f"the refusal does not carry the prefix git answered: {named[0]}",
+            )
+            self.assertFalse(
+                marker.exists(),
+                "the enclosing repository's configuration chose a process the "
+                "gate never named",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of the enclosing repository",
+            )
+
     def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
         """`git rev-parse --git-dir`, not `--git-common-dir`.
 
