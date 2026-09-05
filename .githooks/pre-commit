@@ -176,10 +176,14 @@ fi
 # the stale-record path gives, at 256 characters rather than 64 because it is a
 # path and the shorter bound cuts one mid-directory.
 #
-# Unset, or set and empty, is not this cause. Git reads the index of the
-# repository discovery answers in both, which is the repository this gate
-# compares against, so the gate proceeds; that is the hand-run case, measured
-# on git 2.50.1 for both values, and it is deliberate. The trade is a
+# Unset, or set and empty, is not this cause: the check is skipped and the gate
+# proceeds, which is the hand-run case and is deliberate. What git reads then
+# differs between the two, measured on git 2.50.1. Unset, it reads the index of
+# the repository discovery answers, which is the repository this gate compares
+# against. Set and empty, it reads no index at all -- `write-tree` answers the
+# empty tree 4b825dc6 and `ls-files` nothing -- so the comparison below sees a
+# tree no record of a populated repository names, and refuses. Neither value
+# admits a tree the record does not name. The trade is a
 # commit whose index git placed outside the git directory: no shape measured
 # above does that, one built by hand is refused, and the bypass token admits it.
 if [ -n "${GIT_INDEX_FILE:-}" ]; then
