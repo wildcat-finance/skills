@@ -1653,5 +1653,156 @@ class HookIndexMutationTests(unittest.TestCase):
             )
 
 
+# --- is the gate on in this checkout? --------------------------------------
+#
+# Git cannot install a hook on clone, so the gate cannot arrive by itself. It
+# can only announce that it is missing, and the root suite is the only thing
+# that runs in a fresh clone early enough to do the announcing.
+
+# The activation as a contributor types it. `ACTIVATION` above is the same
+# command as arguments; assembling this one from it means a rename in either
+# place cannot leave the two disagreeing.
+ACTIVATION_COMMAND = "git " + " ".join(ACTIVATION)
+
+# Hosted runners, by variables the runner sets rather than by anything the
+# repository can be asked. No evidence of a contributor's local hook reaches a
+# server, so the hosted half of this decision holds the tracked bytes alone --
+# that the directory exists and its pre-commit is executable -- and leaves
+# activation to a checkout somebody actually commits from. The draft record
+# says the same thing in prose, under "Hosted execution cannot see whether a
+# contributor activated the gate locally".
+HOSTED_RUNNER_VARIABLES = ("GITHUB_ACTIONS", "CI")
+
+# Values a runner uses to say the variable is set and off. Anything else that
+# is non-empty counts as hosted.
+NOT_HOSTED = frozenset({"0", "false", "no", "off"})
+
+
+def hosted_runner() -> str | None:
+    """The variable naming this process a hosted runner, or None."""
+    for name in HOSTED_RUNNER_VARIABLES:
+        value = os.environ.get(name, "").strip()
+        if value and value.lower() not in NOT_HOSTED:
+            return name
+    return None
+
+
+def activation_complaint(configured: str | None) -> str | None:
+    """What is wrong with this `core.hooksPath`, or None when nothing is.
+
+    Separate from the case that reads the checkout, so the wording can be
+    driven both ways without a fixture and without making a real checkout
+    wrong to do it. Git runs a hook from the top of the working tree, so a
+    relative value resolves against the repository root rather than against
+    whatever directory the suite was started from.
+    """
+    remedy = (
+        f"Turn it on with `{ACTIVATION_COMMAND}`, run from the top of this "
+        f"working tree. {HOOK.name} and {GREENLIGHT.name} are tracked in "
+        f"{GITHOOKS.name}/, {HOOKS_README.name} says what each one does, and "
+        f"{BYPASS_TOKEN}=1 admits a commit you mean to make without a "
+        "recorded green."
+    )
+    if configured is None or not configured.strip():
+        return (
+            "the commit gate is not activated in this checkout: core.hooksPath "
+            "is unset, so git runs no tracked hook and a commit of a tree no "
+            f"suite has passed on is admitted silently. {remedy}"
+        )
+    value = configured.strip()
+    resolved = Path(value)
+    if not resolved.is_absolute():
+        resolved = REPOSITORY_ROOT / resolved
+    try:
+        elsewhere = resolved.resolve() != GITHOOKS.resolve()
+    except OSError:
+        elsewhere = True
+    if not elsewhere:
+        return None
+    return (
+        "the commit gate is not activated in this checkout: core.hooksPath is "
+        f"{value!r}, which resolves to {resolved} rather than to the tracked "
+        f"{GITHOOKS}, so git runs some other directory's hooks. {remedy}"
+    )
+
+
+def configured_hooks_path() -> str | None:
+    """This checkout's own `core.hooksPath`, or None where it is unset."""
+    read = git(REPOSITORY_ROOT, "config", "--get", "core.hooksPath", check=False)
+    if read.returncode != 0:
+        return None
+    return read.stdout.strip()
+
+
+class ActivationTests(unittest.TestCase):
+    """The gate works only once somebody turns it on, so say when it is off."""
+
+    def test_an_unset_hooks_path_is_refused_and_names_the_activation(self):
+        complaint = activation_complaint(None)
+        self.assertIsNotNone(complaint, "an unset core.hooksPath was accepted")
+        self.assertIn(
+            ACTIVATION_COMMAND, complaint,
+            "the complaint does not name the one command that fixes it, so a "
+            f"reader has to go and find it: {complaint}",
+        )
+
+    def test_a_hooks_path_naming_another_directory_is_refused_the_same_way(self):
+        """Set-but-wrong is the case a contributor reaches by mistake."""
+        elsewhere = (
+            ".git/hooks",
+            "/dev/null",
+            str(REPOSITORY_ROOT / "tmp"),
+            # An absolute path at another worktree's copy: it resolves, and it
+            # is still not this checkout's tracked directory.
+            str(REPOSITORY_ROOT.parent / "other" / ".githooks"),
+        )
+        for value in elsewhere:
+            with self.subTest(value=value):
+                complaint = activation_complaint(value)
+                self.assertIsNotNone(
+                    complaint, f"core.hooksPath={value} was accepted"
+                )
+                self.assertIn(
+                    ACTIVATION_COMMAND, complaint,
+                    f"the complaint does not name the activation: {complaint}",
+                )
+
+    def test_the_tracked_directory_holds_an_executable_pre_commit(self):
+        """Activation points somewhere; this is what has to be there.
+
+        It is also the half a hosted runner can see, which is why it carries
+        no exemption while the case below does.
+        """
+        self.assertTrue(
+            HOOK.is_file(),
+            f"{HOOK} is missing, so the activation points at nothing",
+        )
+        self.assertTrue(
+            os.access(HOOK, os.X_OK),
+            f"{HOOK} is not executable, and git skips a hook it cannot run "
+            "without saying so",
+        )
+
+    def test_this_checkout_has_the_gate_activated(self):
+        """The one case that reads the shipped checkout rather than a fixture.
+
+        Every other case here settles wording or tracked bytes, which hold
+        wherever the suite runs. This one reports on the checkout it is
+        running in, so it is the case that fails in a clone nobody has
+        activated -- and the only place that failure can be raised, because
+        nothing else in a fresh clone runs before the first commit.
+        """
+        hosted = hosted_runner()
+        if hosted is not None:
+            self.skipTest(
+                f"{hosted} names this a hosted runner, and no evidence of a "
+                "contributor's local activation reaches a server; the tracked "
+                "bytes are what the hosted half of this decision holds"
+            )
+        complaint = activation_complaint(configured_hooks_path())
+        if complaint is not None:
+            self.fail(complaint)
+
+
 if __name__ == "__main__":
     unittest.main()

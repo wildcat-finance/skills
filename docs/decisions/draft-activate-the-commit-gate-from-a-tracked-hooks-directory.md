@@ -104,12 +104,24 @@ finding S1-R1-01 on the check runner: a record that supplies its own expected
 value verifies against itself. Read it as a note to the committer, not as
 evidence to a reviewer.
 
+**The visibility assertion is `tests.test_commit_gate.ActivationTests`.** Three
+of its four cases settle wording and tracked bytes and hold wherever the suite
+runs. The fourth reads the checkout's own `core.hooksPath` and fails when it is
+unset or names another directory, with `git config core.hooksPath .githooks` in
+the failure. Nothing else in a fresh clone runs before the first commit, so the
+root suite is where the absence has to be said.
+
 **Hosted execution cannot see whether a contributor activated the gate
 locally,** because no evidence of a local hook reaches the server. The CI half
 of this decision therefore holds only the tracked bytes: that the hooks
 directory exists, that its scripts are tracked and executable, and that they
 name the bypass token. The activation half is visible locally, in the suite run
-that must precede any commit under the discipline.
+that must precede any commit under the discipline. The fourth case is therefore
+skipped where the environment names a hosted runner, and says so in the skip
+reason. `repo.yml` runs the root suite on every pull request, and a case
+asserting local activation there would report on the runner's own checkout,
+which nobody commits from, while turning a required check red for every change
+in the repository.
 
 A contributor who never runs the suite gets no green record, so their first
 commit is refused if the gate is on, and passes silently if it is off. This

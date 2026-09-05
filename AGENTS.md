@@ -314,6 +314,25 @@ Validate every changed skill directory against the Agent Skills frontmatter
 rules. Keep `SKILL.md` names equal to their parent directory names and keep
 descriptions precise enough to select the skill without reading its body.
 
+### Commit gate
+
+The gate is tracked in `.githooks/` and does nothing until a clone turns it
+on. Git cannot install a hook on clone, so this command is the whole of the
+activation. Run it once per clone from the top of a working tree; the value
+stays relative, so every linked worktree resolves it to its own tracked copy:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`.githooks/greenlight` runs the suite and, on exit zero alone, records the
+staged tree it passed on. `.githooks/pre-commit` then refuses any commit whose
+staged tree is not the one that record names. The root suite fails in a
+checkout where `core.hooksPath` is unset or points anywhere else, and names
+the command above in the failure; that assertion is how a fresh clone finds
+out the gate is off. `FIAT_SKIP_PRECOMMIT=1` admits one commit without a
+recorded green.
+
 ## Reading boundary
 
 Before reading this repository broadly, consult `.horos/boundary.json`.
