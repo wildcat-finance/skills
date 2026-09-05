@@ -246,3 +246,10 @@ Complete replacement Files: `docs/ledger-declared-inputs-study.md`, `docs/ledger
 **Why.** `hypomnema.py:929` refuses a stable decision reference in prose whose slug is malformed, and `hypomnema.py:933` refuses one whose slug has no record. Amendment prose here quotes a real assignment trailer whose slug was consumed when that draft was numbered, and names the reference prefix itself while explaining the substitution; both are refused in a committed document and neither can be edited out of the receipted bytes, which append. A rule replaces the line count the previous exit named, because stating the count invited another amendment that added another token.
 **Steps touched.** Step 1's exit.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: `tests/test_evolution_contract.py` is extended with one accepting case per governed ledger as it stands today, one accepting case for a well-formed block, and one refusing case per named specimen, each asserting the specimen's own refusal message. Expected new cases: 6 refusing, 2 accepting. Elenchus runner contract: command `python3 tests/run_tests.py --elenchus-report {report}`, format `elenchus.unittest.v1`, report file `.hexaemeron/elenchus/step-2.json`.
+**Why.** Audit round 1 finding S2-R1-06. This step's tests live in the repository's own `tests/` tree, and `plugins/hexaemeron/tests/run_tests.py` roots discovery at its own parent directory with no argument that moves it, so the runner the step named could never execute either guard; round 1 observed both red by mutation instead. `tests/run_tests.py` is the repository's root Elenchus runner, emits the same `elenchus.unittest.v1` schema, and is itself covered by `tests/test_root_elenchus_runner.py`. Steps 3 and 4 keep the Hexaemeron runner, because their tests do sit under `plugins/hexaemeron/tests/`.
+**Steps touched.** Step 2's tests.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
