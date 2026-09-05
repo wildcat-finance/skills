@@ -48,8 +48,8 @@ and character offsets stay aligned with the source bytes.
 Headings are read from a second view with fenced code blanked the same way. A
 line beginning with `#` inside a fence is a shell comment, not a section, and a
 section heading quoted inside a fence is an example rather than the heading it
-imitates. Everything else still reads the fence, because the command a card
-displays lives in one.
+imitates. Everything else still reads the fence, because the `COMMAND_RE` a
+card must display sits inside one.
 
 Exit 0 when the contract holds, 1 when a rule reports, 2 when an input cannot
 be read at all.
@@ -298,7 +298,7 @@ def unfenced(display: str) -> str:
     is not a section, and a heading quoted inside a fence is an example of one;
     reading either as structure let a front door satisfy its order contract
     with text that renders as code. Every other rule keeps the fenced view,
-    because the command a card must display lives in a fence.
+    because the `COMMAND_RE` a card must display sits inside a fence.
     """
 
     def blank(match: re.Match) -> str:
