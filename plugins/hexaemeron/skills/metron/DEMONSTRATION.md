@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `metron-demo-v0.1.0` | baseline | `measure-a-real-regression` | `12abf64cec6e108883b76b837362833517e6ea14b8a57fe9f2522d3dde6574f0` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `metron-demo-v0.1.0` | baseline | `measure-a-real-regression` | `12abf64cec6e108883b76b837362833517e6ea14b8a57fe9f2522d3dde6574f0` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

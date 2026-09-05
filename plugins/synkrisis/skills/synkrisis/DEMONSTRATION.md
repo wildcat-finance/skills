@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `synkrisis-demo-v0.1.0` | baseline | `cohort-over-preserved-runs` | `584c67f7a75e0e812b9ad172e546f60196115acffe08836099abbcfa1633c4ce` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `synkrisis-demo-v0.1.0` | baseline | `cohort-over-preserved-runs` | `584c67f7a75e0e812b9ad172e546f60196115acffe08836099abbcfa1633c4ce` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

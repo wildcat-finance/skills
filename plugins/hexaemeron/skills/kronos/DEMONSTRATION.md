@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `kronos-demo-v0.1.0` | baseline | `ranking-over-recorded-passes` | `e20ad39e4642589901a592ea224ce869aedd97973c5754a9cd588b4ab9d8af99` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `kronos-demo-v0.1.0` | baseline | `ranking-over-recorded-passes` | `e20ad39e4642589901a592ea224ce869aedd97973c5754a9cd588b4ab9d8af99` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

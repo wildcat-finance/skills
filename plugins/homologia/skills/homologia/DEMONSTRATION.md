@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `homologia-demo-v0.1.0` | baseline | `mirror-a-deployed-computation` | `d6c3d9ec7e9bb6dcf8f8416e74f40de0e30ff0482533610820a008bb7ae2a0e5` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `homologia-demo-v0.1.0` | baseline | `mirror-a-deployed-computation` | `d6c3d9ec7e9bb6dcf8f8416e74f40de0e30ff0482533610820a008bb7ae2a0e5` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

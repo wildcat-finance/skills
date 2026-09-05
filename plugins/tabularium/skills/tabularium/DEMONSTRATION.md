@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `tabularium-demo-v0.1.0` | baseline | `canonical-compound-v3-events` | `e3e0e7c08f95dfeafb8ed02d69737ec6fe01ef2ae81245372d540aa97ae2069a` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |
+| `tabularium-demo-v0.1.0` | baseline | `canonical-compound-v3-events` | `e3e0e7c08f95dfeafb8ed02d69737ec6fe01ef2ae81245372d540aa97ae2069a` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |

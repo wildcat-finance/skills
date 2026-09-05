@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `protasis-demo-v0.1.0` | baseline | `design-lock-from-a-shipped-run` | `9b9cb8e31f3b7b47023380fd2b7aa13fa539a7bea41cdba079426918819993ae` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `protasis-demo-v0.1.0` | baseline | `design-lock-from-a-shipped-run` | `9b9cb8e31f3b7b47023380fd2b7aa13fa539a7bea41cdba079426918819993ae` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

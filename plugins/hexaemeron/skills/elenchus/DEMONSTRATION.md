@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `elenchus-demo-v0.1.0` | baseline | `guard-a-preserved-failure` | `a0af41cec8e317a97aa5f82ef08b7303495fee12e7731e064595e03215c1bde7` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `elenchus-demo-v0.1.0` | baseline | `guard-a-preserved-failure` | `a0af41cec8e317a97aa5f82ef08b7303495fee12e7731e064595e03215c1bde7` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

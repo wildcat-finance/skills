@@ -39,4 +39,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `vulgate-demo-v0.1.0` | baseline | `an-executable-demonstration` | `57bd3f262fcd04cf2639013b0d070a9755bc443d29ded72305d92f1cd7389c2f` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `absent` is decided by the material inputs above, not by the prose. |
+| `vulgate-demo-v0.1.0` | baseline | `an-executable-demonstration` | `57bd3f262fcd04cf2639013b0d070a9755bc443d29ded72305d92f1cd7389c2f` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `absent` is decided by the material inputs above, not by the prose. |

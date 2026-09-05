@@ -59,4 +59,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `pandects-demo-v0.1.0` | baseline | `laws-over-a-deployed-market` | `1a79abe5a57ced1b8954c2ebac2503958da24fbb051cbd67de37316122193ae3` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `pandects-demo-v0.1.0` | baseline | `laws-over-a-deployed-market` | `1a79abe5a57ced1b8954c2ebac2503958da24fbb051cbd67de37316122193ae3` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

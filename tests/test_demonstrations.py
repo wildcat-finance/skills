@@ -30,7 +30,6 @@ except ModuleNotFoundError as error:  # the Elenchus parent has no Step 2 checke
 
 FIXTURES = ROOT / "tests" / "fixtures" / "demonstrations"
 POLICY = ROOT / "plugins" / "hexaemeron" / "skills" / "DEMONSTRATIONS.md"
-ENTRY_COMMIT = "7b16284f95c63e723718a0708008db1243fa7480"
 REFUSAL_SPECIMENS = (
     "duplicate-job.md",
     "duplicate-key.md",
@@ -141,17 +140,33 @@ class LiveLedgerTests(unittest.TestCase):
             self.assertIn("-demo-v", demo_version)
             self.assertNotIn(demo_version, evolution, skill.directory)
 
-    def test_every_evolution_ledger_is_byte_identical_to_the_entry_tree(self):
-        for skill in self.skills:
-            relative = f"{skill.directory}/EVOLUTION.md"
-            entry = subprocess.run(
-                ["git", "show", f"{ENTRY_COMMIT}:{relative}"],
-                cwd=ROOT,
-                capture_output=True,
-                check=True,
-                timeout=120,
-            ).stdout
-            self.assertEqual((ROOT / relative).read_bytes(), entry, relative)
+    def test_every_evolution_ledger_is_byte_identical_across_the_demo_lane(self):
+        # The entry tree is the tree these commands start from. Pinning a
+        # commit id here instead would freeze every behaviour ledger against
+        # one historical tree and fail the root suite on the next legitimate
+        # EVOLUTION.md advance anywhere in the repository.
+        ledgers = {
+            skill.directory: (ROOT / skill.directory / "EVOLUTION.md").read_bytes()
+            for skill in self.skills
+        }
+        self.assertTrue(ledgers)
+        for argv in (
+            ["check", "--root", "."],
+            ["frontier", "--root", ".", "--lane", "demo", "--dry-run"],
+        ):
+            proc = subprocess.run(
+                [sys.executable, "scripts/demonstrations.py", *argv],
+                cwd=ROOT, capture_output=True, text=True, timeout=300,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+        for directory, entry in ledgers.items():
+            self.assertEqual(
+                (ROOT / directory / "EVOLUTION.md").read_bytes(), entry, directory
+            )
+
+    def test_no_live_tree_assertion_pins_a_commit_id(self):
+        source = pathlib.Path(__file__).read_text(encoding="utf-8")
+        self.assertNotRegex(source, r"\b[0-9a-f]{40}\b")
 
     def test_the_ranking_is_deterministic_and_gap_first(self):
         ranked = demonstrations.rank_demo_frontier(self.records)
@@ -192,6 +207,22 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(len(policy_codes), len(set(policy_codes)))
         self.assertEqual(len(policy_codes), len(demonstrations.REFUSALS))
         self.assertEqual(set(policy_codes), set(demonstrations.REFUSALS))
+
+    def test_every_ledger_cites_the_decision_record_by_stable_identity(self):
+        # A numbered `docs/decisions/ADR-NNN-<slug>.md` path dangles the moment
+        # the integration composition assigns the record its final number; the
+        # `adr/<slug>` identity survives that assignment.
+        identity = "`adr/govern-real-data-demonstrations-separately`"
+        documents = [POLICY] + [
+            ROOT / skill.directory / demonstrations.LEDGER_NAME
+            for skill in demonstrations.governed_skills(ROOT)
+        ]
+        self.assertGreater(len(documents), 1)
+        for document in documents:
+            text = document.read_text(encoding="utf-8")
+            with self.subTest(document=str(document.relative_to(ROOT))):
+                self.assertIn(identity, text)
+                self.assertNotRegex(text, r"ADR-[0-9]{3}")
 
     def test_the_schema_itself_refuses_an_unknown_key(self):
         record = fixture_record("unknown-key.md")

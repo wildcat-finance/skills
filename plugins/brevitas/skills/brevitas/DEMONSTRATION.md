@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `brevitas-demo-v0.1.0` | baseline | `corpus-from-shipped-prose` | `8e0d96b600634737063d530322aa2bd2333ce72727c6e6ed0cb74e35a6585e1b` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `brevitas-demo-v0.1.0` | baseline | `corpus-from-shipped-prose` | `8e0d96b600634737063d530322aa2bd2333ce72727c6e6ed0cb74e35a6585e1b` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

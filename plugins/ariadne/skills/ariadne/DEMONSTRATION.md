@@ -60,4 +60,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `ariadne-demo-v0.1.0` | baseline | `attest-a-preserved-release` | `1fac0ef4395a2891b715385217898220d271f0ae40aec7069c77ee081427a5d7` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `ariadne-demo-v0.1.0` | baseline | `attest-a-preserved-release` | `1fac0ef4395a2891b715385217898220d271f0ae40aec7069c77ee081427a5d7` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

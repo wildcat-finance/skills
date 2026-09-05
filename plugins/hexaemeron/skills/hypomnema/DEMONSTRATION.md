@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `hypomnema-demo-v0.1.0` | baseline | `records-from-a-shipped-decision` | `a77ced7aa42e862429f1a96a9dc2933a4385764151c0817e2ab5cc263f120979` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `hypomnema-demo-v0.1.0` | baseline | `records-from-a-shipped-decision` | `a77ced7aa42e862429f1a96a9dc2933a4385764151c0817e2ab5cc263f120979` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

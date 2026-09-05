@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `janus-demo-v0.1.0` | baseline | `conformance-over-a-deployed-hook` | `b0119a20d30fc34d9c38db5f73f7e88923582b0f40eddc5aa75b49ef2960f082` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `janus-demo-v0.1.0` | baseline | `conformance-over-a-deployed-hook` | `b0119a20d30fc34d9c38db5f73f7e88923582b0f40eddc5aa75b49ef2960f082` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

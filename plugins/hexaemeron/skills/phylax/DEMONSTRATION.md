@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `phylax-demo-v0.1.0` | baseline | `boundaries-from-a-shipped-surface` | `7117a04cafee1c2871140396f8af7ff9694c7757ca6aabf366acb76f3b549383` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `phylax-demo-v0.1.0` | baseline | `boundaries-from-a-shipped-surface` | `7117a04cafee1c2871140396f8af7ff9694c7757ca6aabf366acb76f3b549383` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

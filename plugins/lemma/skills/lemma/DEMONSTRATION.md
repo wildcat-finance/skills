@@ -58,4 +58,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `lemma-demo-v0.1.0` | baseline | `chunks-from-a-shipped-corpus` | `44b1934d0b2e75ecd0326ca9fb552f414afd7a87862cb3727cb1cc141e3c0549` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `lemma-demo-v0.1.0` | baseline | `chunks-from-a-shipped-corpus` | `44b1934d0b2e75ecd0326ca9fb552f414afd7a87862cb3727cb1cc141e3c0549` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `fiat-demo-v0.1.0` | baseline | `replay-a-preserved-run` | `fc4e742709eb564873abb6aacd7048bb5c09b0f9a4d0f3b5a62ae40574986955` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `fiat-demo-v0.1.0` | baseline | `replay-a-preserved-run` | `fc4e742709eb564873abb6aacd7048bb5c09b0f9a4d0f3b5a62ae40574986955` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

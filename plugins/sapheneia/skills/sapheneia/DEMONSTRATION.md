@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `sapheneia-demo-v0.1.0` | baseline | `shape-a-published-record` | `7d43abb98c7e0000cb93be6c48fd87bae59e19ba3994c64fcc98b58a230132a3` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `sapheneia-demo-v0.1.0` | baseline | `shape-a-published-record` | `7d43abb98c7e0000cb93be6c48fd87bae59e19ba3994c64fcc98b58a230132a3` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

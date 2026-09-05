@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `ephoros-demo-v0.1.0` | baseline | `signals-from-a-running-step` | `4bc9af7ed4daa6f066ced6728fe4e465131d1e6875e35772221ddfa98c77d6b1` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `ephoros-demo-v0.1.0` | baseline | `signals-from-a-running-step` | `4bc9af7ed4daa6f066ced6728fe4e465131d1e6875e35772221ddfa98c77d6b1` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

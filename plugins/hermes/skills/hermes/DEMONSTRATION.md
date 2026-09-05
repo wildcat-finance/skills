@@ -60,4 +60,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `hermes-demo-v0.1.0` | baseline | `savings-from-a-real-contract` | `984e32e19939a5bd1bdbb2e5f9cd837b87c2c067a8066b6a9c88c2afe97dea40` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `hermes-demo-v0.1.0` | baseline | `savings-from-a-real-contract` | `984e32e19939a5bd1bdbb2e5f9cd837b87c2c067a8066b6a9c88c2afe97dea40` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |

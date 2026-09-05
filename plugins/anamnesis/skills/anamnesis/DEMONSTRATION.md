@@ -61,4 +61,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `anamnesis-demo-v0.1.0` | baseline | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `real-data` is decided by the material inputs above, not by the prose. |
+| `anamnesis-demo-v0.1.0` | baseline | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `real-data` is decided by the material inputs above, not by the prose. |

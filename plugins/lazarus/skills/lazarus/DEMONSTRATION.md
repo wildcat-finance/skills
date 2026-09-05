@@ -59,4 +59,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `lazarus-demo-v0.1.0` | baseline | `second-preserved-market` | `5bb3e7a9c13e32a0e93534aed0316c6dd1ff617ef5b86b7b23f14c4c3c4490a8` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `real-data` is decided by the material inputs above, not by the prose. |
+| `lazarus-demo-v0.1.0` | baseline | `second-preserved-market` | `5bb3e7a9c13e32a0e93534aed0316c6dd1ff617ef5b86b7b23f14c4c3c4490a8` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `real-data` is decided by the material inputs above, not by the prose. |

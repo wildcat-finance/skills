@@ -70,4 +70,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `berean-demo-v0.1.0` | baseline | `replace-the-model-answer-records` | `f85cd906ca7a3de69891703de54cc6710c1b223d3960ebaeca627808fb457543` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |
+| `berean-demo-v0.1.0` | baseline | `replace-the-model-answer-records` | `f85cd906ca7a3de69891703de54cc6710c1b223d3960ebaeca627808fb457543` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |

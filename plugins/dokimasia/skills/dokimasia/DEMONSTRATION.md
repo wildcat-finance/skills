@@ -72,4 +72,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `dokimasia-demo-v0.1.0` | baseline | `rebuild-from-preserved-primary-inputs` | `cf452282ed53f21054beab6fb964cc8393057c690fea51b19be0c76e9630ac53` | `docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` | The demonstration lane starts here. Status `real-data` describes the preserved production-run records; the non-claim keeps the absent primary inputs visible. |
+| `dokimasia-demo-v0.1.0` | baseline | `rebuild-from-preserved-primary-inputs` | `cf452282ed53f21054beab6fb964cc8393057c690fea51b19be0c76e9630ac53` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `real-data` describes the preserved production-run records; the non-claim keeps the absent primary inputs visible. |

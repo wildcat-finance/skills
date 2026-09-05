@@ -211,4 +211,4 @@ one issue can satisfy both a behaviour and a demo acceptance set, the ledgers
 point at that one issue rather than filing a second.
 
 The separate-lane decision, the co-delivery rule, and the issue-reuse rule are
-recorded in [ADR-076](../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md).
+recorded in `adr/govern-real-data-demonstrations-separately`.

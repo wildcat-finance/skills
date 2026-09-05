@@ -60,4 +60,4 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `imprimatur-demo-v0.1.0` | baseline | `corpus-from-published-prose` | `a88a10b15c8af17e60e58b796f5bf836b626e90e43b4eb51f1b4b15054b616b1` | [ADR-076](../../../../docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md) | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+| `imprimatur-demo-v0.1.0` | baseline | `corpus-from-published-prose` | `a88a10b15c8af17e60e58b796f5bf836b626e90e43b4eb51f1b4b15054b616b1` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
