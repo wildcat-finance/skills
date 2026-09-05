@@ -16,7 +16,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
   "status": "real-data",
   "claim_id": "anamnesis-corpus-demo",
   "claim": "The pilot audit specimen admits, curates and projects offline from preserved producer bytes.",
-  "non_claim": "It does not establish that any finding is real or that any remediation is correct.",
+  "non_claim": "It does not establish that the corpus is complete, that any finding is real, or that any remediation is correct.",
   "network": {
     "policy": "denied"
   },
@@ -43,8 +43,10 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     }
   ],
   "observations": [
-    "The command exits 0 in about 0.1 seconds with no network.",
-    "Its last reported line is: 5. baseline, not a threshold: 0.01s wall clock, peak resident 30392320 bytes. No budget is declared for either, so neither gates."
+    "run: line \"1. two fresh builds agree on 079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56 across 7 components\"",
+    "run: line \"2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\"",
+    "run: line \"3. Elenchus analogues for severity high: 2; verdict None\"",
+    "run: line \"4. Synkrisis cohort cohort:079ed18d172d6031: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
   ],
   "frontier": {
     "version": "anamnesis-demo-v0.1.0",

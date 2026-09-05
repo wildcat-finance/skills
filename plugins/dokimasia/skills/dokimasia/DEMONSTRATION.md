@@ -16,7 +16,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
   "status": "real-data",
   "claim_id": "dokimasia-wildcat-app-v2-scrutiny",
   "claim": "The committed wildcat-app-v2 coverage record, scrutiny record, and rendered report agree on the examined real application and workbook evidence.",
-  "non_claim": "The pinned application checkout and workbook bytes are not preserved here, so this does not regenerate the scrutiny from its primary inputs or state that any route or workbook case passed.",
+  "non_claim": "The pinned application checkout and workbook bytes are not preserved here, so this does not regenerate the scrutiny from its primary inputs or state that any route or workbook case passed; the rendered report leaves 59 of 261 scoped items without a disposition.",
   "network": {
     "policy": "denied"
   },
@@ -54,8 +54,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     }
   ],
   "observations": [
-    "The command exits 0 with no network.",
-    "The command reports that the committed evidence regenerates, while the report itself says 59 of 261 scoped items have no disposition and makes no pass claim."
+    "check: line \"dokimasia demonstrate: check clean; a scrutiny is deterministic, each moved identity names its own cause, an unexplained move is reported, and the committed evidence regenerates\""
   ],
   "frontier": {
     "version": "dokimasia-demo-v0.1.0",
