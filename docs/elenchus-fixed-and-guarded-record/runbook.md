@@ -209,3 +209,13 @@ reverses no decision.
 **Steps touched.** Step 3.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Tests: `plugins/hexaemeron/tests/test_elenchus_fixed_and_guarded.py` is new and covers the closed key set, each refusal path named in the exit, the staged rename under an interrupted write, and one accepted record. Existing decision-record, documentation, Horos-boundary and root checks stay green, and `test_elenchus_checker.py` is not edited. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-1.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, rebound to the current study digest after the 2026-09-05 study amendment adding section 11's ninth and tenth refusals changed the digest every runbook amendment records. The defect and the replacement are unchanged; only the binding is new.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

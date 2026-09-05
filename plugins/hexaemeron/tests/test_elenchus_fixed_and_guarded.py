@@ -399,8 +399,54 @@ class RecordRelations(Harness):
                 self.assertRefused(
                     self.invoke(["--check", str(path)]), "F014", "verdict.status")
 
+    def test_a_record_whose_fixed_tree_is_not_the_repair_is_refused(self):
+        """The fixed tree is the tree the repair produced, and no other.
+
+        This one reaches the emit path as well: the emitter took
+        `fixed_tree.commit` straight from the draft and bound it to nothing,
+        so a genuine producer could write a record asserting its guard passed
+        on a tree unrelated to the fix, and exit zero doing it.
+        """
+        unrelated = self.fixture.commit("unrelated", {"src/other.py": "# later\n"})
+        with self.subTest(path="emit"):
+            draft = draft_for(self.fixture)
+            draft["fixed_tree"]["commit"] = unrelated
+            out = "records/wrong-fixed-tree.json"
+            self.assertRefused(
+                self.emit(draft=draft, out=out), "F015", "fixed_tree.commit")
+            self.assertFalse((self.fixture.path / out).exists())
+        with self.subTest(path="check"):
+            record = self.accepted_record(out="records/genuine.json")
+            record["fixed_tree"]["commit"] = unrelated
+            path = self.fixture.inputs / "wrong-fixed-tree.json"
+            path.write_text(json.dumps(record), encoding="utf-8")
+            self.assertRefused(
+                self.invoke(["--check", str(path)]), "F015", "fixed_tree.commit")
+
+    def test_a_record_whose_guard_is_absent_from_the_repairs_files_is_refused(self):
+        """A guard the repair did not touch is not the Boundary's named guard.
+
+        F007 settles this on the emit path against the result's changed test
+        files.  `--check` has no result beside the record, so the record's own
+        account of those files, `repair.files`, is what decides it there.
+        """
+        with self.subTest(path="check"):
+            record = self.accepted_record()
+            record["repair"]["files"] = ["src/widget.py"]
+            path = self.fixture.inputs / "guard-outside-the-repair.json"
+            path.write_text(json.dumps(record), encoding="utf-8")
+            self.assertRefused(
+                self.invoke(["--check", str(path)]), "F016", "guard.file")
+        with self.subTest(path="emit"):
+            draft = draft_for(self.fixture)
+            draft["repair"]["files"] = ["src/widget.py"]
+            out = "records/guard-outside-the-repair.json"
+            self.assertRefused(
+                self.emit(draft=draft, out=out), "F016", "guard.file")
+            self.assertFalse((self.fixture.path / out).exists())
+
     def test_a_record_whose_two_trees_differ_and_whose_parent_failed_is_accepted(self):
-        """The four above must not refuse the record the emitter actually writes."""
+        """The six above must not refuse the record the emitter actually writes."""
         record = self.accepted_record()
         self.assertNotEqual(
             record["unfixed_parent"]["commit"], record["fixed_tree"]["commit"])
@@ -410,6 +456,9 @@ class RecordRelations(Harness):
         self.assertEqual(
             record["fixed_tree"]["report"]["assertion_failures"]
             + record["fixed_tree"]["report"]["errors"], 0)
+        self.assertEqual(
+            record["fixed_tree"]["commit"], record["repair"]["commit"])
+        self.assertIn(record["guard"]["file"], record["repair"]["files"])
         path = self.fixture.inputs / "genuine.json"
         path.write_text(json.dumps(record), encoding="utf-8")
         code, out, err = self.invoke(["--check", str(path)])
@@ -426,7 +475,7 @@ class RecordRelations(Harness):
         code, _out, err = self.invoke(["--check", str(path)])
         self.assertEqual(code, 1, err)
         self.assertIn("F002", err)
-        for code in ("F011", "F012", "F013", "F014"):
+        for code in ("F011", "F012", "F013", "F014", "F015", "F016"):
             self.assertNotIn(code, err)
 
 

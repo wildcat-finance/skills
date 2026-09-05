@@ -26,6 +26,8 @@ Codes:
   F012  the verdict is guarded while the parent's own report never failed
   F013  the verdict is guarded while the parent's own report records an error
   F014  the verdict is guarded while the fixed tree's own report still fails
+  F015  the fixed tree is not the commit the record names as the repair
+  F016  the guard names a file absent from the repair's own changed files
 
 Exit 0 written or clean, 1 refused, 2 bad invocation.  Every refusal names its
 code and its field on stderr and writes nothing.  The record is staged in the
@@ -397,6 +399,21 @@ def _relation_findings(record) -> list[Finding]:
             "F011", "unfixed_parent.commit",
             "equals fixed_tree.commit; a guard observed red and green on one "
             "commit is not the two trees the Evidence clause names",
+        ))
+    if record["fixed_tree"]["commit"] != record["repair"]["commit"]:
+        findings.append(Finding(
+            "F015", "fixed_tree.commit",
+            f"is {record['fixed_tree']['commit']}, which is not the "
+            f"{record['repair']['commit']} the record names as the repair; the "
+            f"fixed tree the Evidence clause requires is the tree the repair "
+            f"produced and no other",
+        ))
+    if record["guard"]["file"] not in record["repair"]["files"]:
+        findings.append(Finding(
+            "F016", "guard.file",
+            f"{record['guard']['file']} is absent from repair.files; the "
+            f"Boundary covers the named guard, and a guard the repair did not "
+            f"touch is not that guard",
         ))
     if record["verdict"]["status"] != GUARDED:
         return findings

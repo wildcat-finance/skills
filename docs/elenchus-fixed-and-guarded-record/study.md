@@ -686,3 +686,13 @@ record. Claim a command ran when it did not.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Section 11's closed enumeration gains its ninth and tenth members, under the rule the amendment above states. A record is refused when `fixed_tree.commit` is not the commit `repair.commit` names, because the fixed tree the Evidence clause requires is the tree the repair produced and no other, and this refusal applies on the emit path as well as under `--check`. A record is refused when `guard.file` is absent from `repair.files`, because the Boundary clause covers the named guard and a guard the repair did not touch is not that guard; this is the `--check` counterpart of the emit-path rule already enumerated, decided from the two fields the record carries rather than from the repository. Both are decided only from carried fields and read nothing outside the record. The enumeration stays closed at ten members.
+
+**Why.** Warden findings S1-R4-02 and S1-R4-03 in round 4 of step 1. S1-R4-02 is the first of this step's findings that a genuine producer can reach: the emitter itself wrote a record naming an unrelated commit as the fixed tree and exited zero, so the defect is not confined to validating a hand-written record. S1-R4-03 is the same class as the guard rule already enumerated, which the emit path checks against the repository and `--check` did not check at all, leaving a record that arrives without its producer unguarded on the one field the Boundary clause turns on.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
