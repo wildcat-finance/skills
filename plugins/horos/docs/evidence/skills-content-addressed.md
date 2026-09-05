@@ -178,3 +178,49 @@ honest because the bytes the counts describe did not move.
 <!-- content_addressed:entries 78 -->
 <!-- content_addressed:bytes 7850052 -->
 <!-- content_addressed:store_hash_ms 5 -->
+
+## Demonstration at the run head
+
+The study's demo path, run in order from the repository root at run head
+43b516f6 on 2026-09-05, with
+`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false`
+exported for every `unittest` command. The root suite is shown twice: once
+in a clean detached snapshot of the head, which is the exit, and once inside
+the Fiat run worktree, where two `test_agent_instruction_corpus` tests are red
+because the #1098 prover reads the run's own `.hexaemeron/design-evidence.json`
+(audit finding S1-R1-02, accepted, carried to integration).
+
+```text
+$ python3 plugins/horos/skills/horos/scripts/horos.py check .
+boundary matches the tree
+exit 0
+
+$ python3 -m unittest discover -s plugins/horos/tests -t plugins/horos
+Ran 239 tests in 5.784s
+OK
+
+$ printf x >> plugins/horos/examples/fixture/store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82
+
+$ python3 plugins/horos/skills/horos/scripts/horos.py check plugins/horos/examples/fixture
+drift: .horos/boundary.json#counts: field changed: {'bytes_binary': 17, 'bytes_content_addressed': 94, 'bytes_generated': 190, 'bytes_lockfile': 54, 'bytes_vendored': 94, 'files_skipped_unreadable': 0, 'files_walked': 15} -> {'files_walked': 15, 'files_skipped_unreadable': 0, 'bytes_generated': 190, 'bytes_binary': 17, 'bytes_vendored': 94, 'bytes_content_addressed': 49, 'bytes_lockfile': 54}
+drift: store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82: in the boundary but no longer evidenced by the tree
+2 path(s) drifted
+exit 1
+
+$ git checkout -- plugins/horos/examples/fixture/store
+(tree clean after restore)
+
+$ python3 -m unittest discover -s tests   # clean detached snapshot of 43b516f6
+Ran 1207 tests in 95.942s
+OK
+
+$ python3 -m unittest discover -s tests   # inside the run worktree
+FAIL: test_a_candidate_outside_the_design_record_is_refused (test_agent_instruction_corpus.AgentInstructionCorpusTests.test_a_candidate_outside_the_design_record_is_refused)
+FAIL: test_prover_selftest_exits_zero_and_writes_a_closed_report (test_agent_instruction_corpus.AgentInstructionCorpusTests.test_prover_selftest_exits_zero_and_writes_a_closed_report)
+Ran 1207 tests in 102.193s
+FAILED (failures=2)
+
+$ python3 -m unittest tests.test_marketplace_prose
+Ran 23 tests in 0.260s
+OK
+```
