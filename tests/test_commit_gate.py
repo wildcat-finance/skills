@@ -2044,6 +2044,41 @@ class ShippedCopyTests(unittest.TestCase):
             f"{orphans}",
         )
 
+        # A row can go missing by moving rather than by being deleted, and only
+        # the second was caught. Deleting the selected candidate's undigested
+        # row orphans the report it named, which the check above reports;
+        # re-attributing that same row to another candidate leaves everything
+        # above green, because the selected candidate then has no undigested
+        # row and the pending check passes over an empty set, while the report
+        # stays cited by the row that moved and so is no orphan (S4-R3-01).
+        #
+        # What holds it is the column rather than the row. The record declares
+        # the criteria it judges candidates on, and the shipped copy exists to
+        # carry the evidence for the one candidate the run selected, so that
+        # candidate's column is one row per declared criterion and no more.
+        # This survives the controller resolving a pending cell, which turns a
+        # row's report from a path into a path and a digest and moves no row.
+        # It is not the whole matrix, which is Protasis's to judge; it is the
+        # one column this copy is evidence about.
+        declared = [criterion["id"] for criterion in record["criteria"]]
+        self.assertTrue(
+            declared,
+            f"{SHIPPED_RECORD} declares no criteria, so this case would pass "
+            "on a record that judges the selected design against nothing",
+        )
+        held = [row["criterion"] for row in rows if row["candidate"] == selected]
+        gaps = sorted(
+            f"{criterion}: {held.count(criterion)} rows"
+            for criterion in set(declared)
+            if held.count(criterion) != 1
+        )
+        self.assertEqual(
+            gaps, [],
+            f"the shipped record does not carry exactly one row per declared "
+            f"criterion for {selected}, the design the run selected, so a row "
+            f"this copy is evidence about has been dropped or moved: {gaps}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
