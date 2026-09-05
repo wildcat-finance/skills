@@ -114,6 +114,15 @@ The `no map support` half of the job text is what this delivery answers; the
 committed `.horos/census.json` is stale against all of it and is regenerated
 once, in the reconcile step, not here.
 
+That regeneration has now happened, in the same commit as this paragraph.
+The committed `.horos/census.json` records `.md` at 901 files, 15,931,591
+bytes and a 16.6% share of the tree's walked bytes, of which 1,485 are
+boundary bytes (the generated `CONTRIBUTORS.md`). Net of those, Markdown is
+35.9% of the repository's readable bytes and still its largest readable
+filetype. The `no boundary bytes` half of the held job's figure is answered
+by the same row: the one entry the boundary holds for this filetype is a
+generated file, not prose an agent needs to read.
+
 ## Machine-readable capture lines
 
 The consistency test parses these against the committed results document.
