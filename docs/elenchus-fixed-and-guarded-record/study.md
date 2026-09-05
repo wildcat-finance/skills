@@ -656,3 +656,13 @@ committed release under `plugins/anamnesis/specimens/`.
 reproduction output. Edit `plugins/lazarus/` or any vendored Pashov skill.
 Delete or weaken a failing test to make a suite pass. Edit an existing audit
 record. Claim a command ran when it did not.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Two sentences described the shipped emitter incorrectly. Section 9's closing sentence "No network is reached, no subprocess is started, and no dependency is added" is replaced by: no network is reached and no dependency is added, and the emitter starts two fixed-argv `git` subprocesses in emit mode, `git rev-parse <ref>^` to derive the parent and `git ls-files --error-unmatch` to refuse a tracked destination, with no shell, no interpolated value and neither call reached by `--check`. The field table's `verdict` row, "one of the four states, and the runner contract that produced it", is replaced by: one of the four states and the runner-report account that produced it, both taken from the `elenchus.py --format json` result without translation. The nine-field set, its derivation and every boundary the record carries are unchanged.
+
+**Why.** Warden findings S1-R1-01 and S1-R1-05 in round 1 of step 1. The study's own field table requires the `git rev-parse` call and section 9's third boundary requires the `git ls-files` call, so the closing sentence contradicted the document that contains it. The `elenchus.py --format json` result prints `ref`, `tests`, `status`, `detail` and `report`, and carries no runner contract; taking one would have moved the field out of the column the table assigns it to, or widened the operator draft past its stated key set. The emitter follows the study's substance in both cases, so the wording is what was wrong.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

@@ -52,7 +52,7 @@ comparison reached, which are `guard` and `verdict`.
 | `minimal_case` | the reduced case, or `null` where none was useful | the draft |
 | `repair` | the commit that repaired the mechanism, and the files it touched | the draft |
 | `guard` | the regression test's file, and the test name inside it | the draft, with the file checked against the result's changed test files |
-| `unfixed_parent` | the parent commit, and its normalised report counts | `git rev-parse <ref>^`, and the result's report |
+| `unfixed_parent` | the parent commit, and its normalised report counts | one `git rev-parse <ref>^{commit} <ref>^`, and the result's report |
 | `fixed_tree` | the fixed commit, and its normalised report counts | the draft |
 | `suites` | each suite command and its exit code | the draft |
 | `verdict` | one of the four Elenchus states, and the runner-report account that produced it | the result's `status` and `detail`, untranslated |
@@ -61,8 +61,11 @@ comparison reached, which are `guard` and `verdict`.
 draft and an `elenchus.py --format json` result, and nothing else. The parent
 commit is the single derivation: `elenchus.py` resolves it and compares against
 it but prints `ref` rather than the parent, so the emitter re-derives it with
-the same `git rev-parse <ref>^` call. Printing it from `elenchus.py` instead
-would change the file this delivery is committed to leaving alone.
+one `git rev-parse <ref>^{commit} <ref>^`. That read returns the ref's own
+commit beside the parent, and the first of the two is what binds the pair to
+the commit the draft calls the repair; without it a parent belonging to some
+other commit reaches the record. Printing the parent from `elenchus.py`
+instead would change the file this delivery is committed to leaving alone.
 
 **The reproduction output is stored as a SHA-256 and a byte count, never as
 bytes.** A stack trace can carry a credential, and a field that holds no bytes

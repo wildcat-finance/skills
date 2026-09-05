@@ -388,6 +388,26 @@ class ParentDerivation(Harness):
             self.emit(result=result_for(self.fixture, ref="--since=2020-01-01")),
             "F006", "result.ref")
 
+    def test_an_annotated_tag_naming_the_repair_is_accepted(self):
+        """`git rev-parse <tag>` names the tag object, not the commit.
+
+        `elenchus.py` takes any ref and echoes it into its result unresolved,
+        and its own `diff-tree` and `<ref>^` reads peel a tag for themselves.
+        Comparing the unpeeled object against the drafted repair refused a
+        record whose parent was correct all along.
+        """
+        self.fixture.run("tag", "-a", "the-repair", "-m", "the repair",
+                         self.fixture.repair)
+        out = "records/annotated-tag.json"
+        code, _stdout, err = self.emit(
+            result=result_for(self.fixture, ref="the-repair"), out=out)
+        self.assertEqual(code, 0, err)
+        record = json.loads(
+            (self.fixture.path / out).read_text(encoding="utf-8"))
+        self.assertEqual(record["unfixed_parent"]["commit"], self.fixture.base)
+        self.assertNotEqual(
+            record["unfixed_parent"]["commit"], record["fixed_tree"]["commit"])
+
 
 class OutputBoundary(Harness):
     def test_an_absolute_output_path_is_refused(self):

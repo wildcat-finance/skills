@@ -5,7 +5,8 @@ An `elenchus-fixed-and-guarded/v1` record holds the nine evidence fields the
 `elenchus-fixed-and-guarded` Promise names and nothing else.  Seven come from
 an operator-written draft, `unfixed_parent` and `verdict` from an
 `elenchus.py --format json` result, and the parent commit from one
-`git rev-parse <ref>^`, the call `elenchus.py` already makes for itself.
+`git rev-parse <ref>^{commit} <ref>^`, which returns the commit the result
+names beside its parent so both can be bound to the drafted repair.
 
 Codes:
 
@@ -491,9 +492,13 @@ def commit_and_parent(repo: Path, ref: str) -> tuple[str, str] | None:
     """The commit the result names, and the parent it was compared against.
 
     Both come from one read, because the record is only coherent when the
-    parent belongs to the commit the draft calls the repair.
+    parent belongs to the commit the draft calls the repair.  The first
+    argument peels, because `elenchus.py` takes any ref and echoes it
+    unresolved: an annotated tag resolves to its own object rather than to
+    the commit it names, and comparing that object against the drafted
+    repair would refuse a record whose parent is perfectly good.
     """
-    out = git(repo, "rev-parse", ref, f"{ref}^")
+    out = git(repo, "rev-parse", f"{ref}^{{commit}}", f"{ref}^")
     if out is None:
         return None
     resolved = out.split()
@@ -623,7 +628,8 @@ def emit(repo: Path, draft_path: Path, result_path: Path, out: str) -> tuple[lis
     if resolved is None:
         return [Finding(
             "F008", "unfixed_parent.commit",
-            f"git rev-parse {result['ref']}^ named no parent commit in {repo}",
+            f"git rev-parse {result['ref']}^{{commit}} {result['ref']}^ named "
+            f"no commit and parent in {repo}",
         )], None
     fixed, parent = resolved
     if fixed != draft["repair"]["commit"]:
