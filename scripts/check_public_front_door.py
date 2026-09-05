@@ -29,8 +29,8 @@ Five kinds of rule run here.
 **Structure.** The collective portrait precedes the title, the introduction
 stays inside its word budget, the contribution heading and the external
 contributor route begin inside the opening word boundary, the whole file stays
-inside its budget, no link target appears twice, every heading is all caps, the
-only image is the collective portrait, and the retained chirp plus one further
+inside its budget, no link target appears twice, the only image is the
+collective portrait, and the retained chirp plus one further
 marked aside appear before the first technical section. The first Promise
 Machine contract link and the first catalogue link follow both the contribution
 and the demonstration sections, and the complete governed roster is not
@@ -66,9 +66,10 @@ happened.
 does not do is a claim about that member's ledger. It carries a
 `front-door:status` marker naming the skill and the exact `EVOLUTION.md`
 version it was written against, and the claim is refused once that ledger moves
-on. This is how "the version implements source admission" and "its compile path
-has not shipped" both survived years past the releases that falsified them: the
-sentences were true when written and nothing noticed the ledger advancing.
+on. This is how "the version implements source admission" outlived three
+anamnesis releases and "its compile path has not shipped" outlived the dokimasia
+release that shipped it: both sentences were true when written, and nothing was
+watching the ledger move underneath them.
 
 What it does not do: it never grades free-form voice, which belongs to
 Imprimatur, Vulgate, Brevitas and human review. It does not decide whether a
@@ -143,8 +144,9 @@ class Maintained:
 
 
 # The named documents this checker sweeps. A document in this tuple that is
-# absent is a refusal, never a skip: a sweep that quietly finds nothing is the
-# failure mode this set exists to prevent. One landing page per discovered
+# absent is a refusal, never a skip: a sweep that reads whatever it finds
+# reports nothing when `SHOGGOTH.md` is gone, and a reader cannot tell that
+# result from a clean one. One landing page per discovered
 # plugin joins them in `maintained_documents`, because a hand-typed list of
 # eighteen is exactly the literal this whole contract exists to remove.
 MAINTAINED_DOCUMENTS = (

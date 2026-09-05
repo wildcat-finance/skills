@@ -20,8 +20,8 @@ placeholders in a specimen are substituted from that planted tree, so a
 specimen carries the shape of a page rather than a frozen copy of one skill's
 evidence.
 
-Nothing here executes a demonstration. The invariant CI job checks this
-repository out and installs nothing, so a case that ran a demonstration whose
+Nothing here executes a demonstration. The `.github/workflows/repo.yml` job
+checks this repository out and installs nothing, so a case that ran one whose
 program imports a third-party package would pass on a developer's machine and
 redden the branch. The checker reads files and computes; so does this suite,
 and both stay inside the standard library.
