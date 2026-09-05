@@ -1843,12 +1843,19 @@ SHIPPED_RUNBOOK = SHIPPED / "runbook.md"
 SHIPPED_RECORD = SHIPPED / "design-evidence.json"
 SHIPPED_REPORTS = SHIPPED / "reports"
 
-# The counts at this step's entry, as literals. Recomputing them from
-# `.hexaemeron/` would agree with a stale copy by construction, because the
-# comparison would read the source the copy is supposed to be carrying; and it
-# would be unrunnable in the clone where the staleness matters.
-STUDY_AMENDMENTS = 8
-RUNBOOK_AMENDMENTS = 12
+# The counts in the bytes this step ships, as literals. They are not the counts
+# at the step's entry any more: a study amendment corrected the report count in
+# the mapping paragraph (S4-R1-05), the runbook re-issue that rebound this
+# step's contract to the corrected study added a block of its own, and the
+# copies were refreshed again with both literals moving with them.
+#
+# Recomputing them from `.hexaemeron/` would agree with a stale copy by
+# construction, because the comparison would read the source the copy is
+# supposed to be carrying; and it would be unrunnable in the clone where the
+# staleness matters, since `.hexaemeron/.gitignore` is `*` and nothing under
+# that directory is tracked.
+STUDY_AMENDMENTS = 9
+RUNBOOK_AMENDMENTS = 13
 
 AMENDMENT_HEADING = re.compile(r"^### Amendment --", re.MULTILINE)
 CONTROLLER_REFERENCE = re.compile(r"\.hexaemeron/[A-Za-z0-9_./-]*")

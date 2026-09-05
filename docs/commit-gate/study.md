@@ -597,3 +597,13 @@ root suite before it closes, and adds rather than rewrites.
 **Steps touched.** Step 3, and Step 4 through the shipped copy.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** The amendment of 2026-09-04 that maps this document's `.hexaemeron/` references into the shipped tree calls the reports it points at "the forty reports", twice, at lines 523 and 525. The directory holds forty-one. Read both as forty-one.
+
+**Why.** Audit finding S4-R1-05, low, from step 4 round 1. Step 4's own refresh added the forty-first report, `hooks-path-plus-visibility-index-mutation-regression.json`, so the step that ships the mapping paragraph is the step that made its count wrong. The number sits in the paragraph a reader uses to resolve a `.hexaemeron/` citation into the shipped tree, which is the citation most likely to be followed. The count cannot be corrected where it stands, because a study is append-only once receipted and because step 4's Exit holds the shipped copy to differing from this source in five link targets and nothing else, so editing the copy alone would break the clause the step is audited against. This block corrects the count in the source, and the shipped copy is refreshed to carry it in the same step.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
