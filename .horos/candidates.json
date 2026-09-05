@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16680676,
+    "bytes_blob": 16760416,
     "bytes_generated": 98
   },
   "entries": [
@@ -308,7 +308,14 @@
       "path": "audit/rounds/fiat-dokimasia-proposed-dispositions.synopsis.md"
     },
     {
-      "bytes": 62122,
+      "bytes": 70628,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 68580",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.md"
+    },
+    {
+      "bytes": 71234,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
