@@ -953,6 +953,33 @@ class AuditRoundTwoTests(unittest.TestCase):
         )
         self.assertIn("FD11", codes)
 
+    def test_a_broken_region_is_refused_on_a_page_with_no_heading_rule(self):
+        """The refusal used to belong to whichever rule happened to run.
+
+        `generated_spans` was computed inside each rule and only the heading
+        rule reported its refusals, so a page carrying counts but not headings
+        could open a region and never close it and be told nothing. The claims
+        below stayed checked, because a refused region is never applied, but
+        FD30 was a declared refusal two swept pages could not report. The
+        router contract is exactly such a page.
+        """
+        router = ".agents/skills/promise-machine/SKILL.md"
+        item = next(
+            entry
+            for entry in front_door.MAINTAINED_DOCUMENTS
+            if entry.relative == router
+        )
+        self.assertFalse(item.carries(front_door.HEADING_RULE))
+        codes = document_codes(
+            {
+                router: COMPANIONS[router]
+                + "\n<!-- marketplace-context:start -->\n\n"
+                "The distribution exposes 99 governed skills.\n"
+            }
+        )
+        self.assertIn("FD30", codes)
+        self.assertIn("FD28", codes)
+
     def test_a_symlinked_specimen_is_refused_rather_than_followed(self):
         """The suite reads a specimen the way the checker reads a document."""
         with tempfile.TemporaryDirectory() as raw:

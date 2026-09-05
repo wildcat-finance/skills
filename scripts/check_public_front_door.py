@@ -723,20 +723,39 @@ def emit_event(event: str, **fields: object) -> None:
     print(json.dumps({"event": event, **fields}, sort_keys=True, separators=(",", ":")))
 
 
+def check_regions(
+    where: str, text: str, findings: list[Finding]
+) -> list[tuple[int, int]]:
+    """The ranges another generator owns on one page, checked once.
+
+    Every set-wide rule reads past a generated region, so every set-wide rule
+    depends on this being sound. Computing it inside each rule left the refusal
+    reported by whichever rule happened to run: a page carrying counts but not
+    headings could open a region and never close it, and every count and status
+    claim below would be exempt with nothing said. It is decided here, once per
+    page, and the spans are handed to the rules that read them.
+    """
+
+    spans, refused = generated_spans(text)
+    for reason in refused:
+        _finding(findings, "FD30", f"{where}: {reason}")
+    return spans
+
+
 def check_headings(
-    where: str, text: str, display: str, findings: list[Finding]
+    where: str,
+    display: str,
+    spans: Sequence[tuple[int, int]],
+    findings: list[Finding],
 ) -> None:
     """The house all-caps style, over one maintained page.
 
     The generated regions are the one exemption, and it is not one an author
-    grants: `generated_spans` refuses a region that is unclosed or that reaches
-    a heading its owner does not write, and a refused region is not applied.
+    grants: `check_regions` refuses a region that is unclosed or that reaches a
+    heading its owner does not write, and a refused region is not applied.
     """
 
     outline = unfenced(display)
-    spans, refused = generated_spans(text)
-    for reason in refused:
-        _finding(findings, "FD30", f"{where}: {reason}")
     for offset, _, heading in headings(outline):
         if inside(spans, offset):
             continue
@@ -935,11 +954,11 @@ def check_counts(
     text: str,
     display: str,
     counts: dict[str, int],
+    spans: Sequence[tuple[int, int]],
     findings: list[Finding],
 ) -> None:
     """Every current count claim names a derived quantity and agrees with it."""
 
-    spans, _ = generated_spans(text)
     marked: set[int] = set()
 
     for marker in markers(text):
@@ -1037,6 +1056,7 @@ def check_status(
     text: str,
     display: str,
     versions: dict[str, str],
+    spans: Sequence[tuple[int, int]],
     findings: list[Finding],
 ) -> None:
     """Every member-status claim names the ledger version it describes.
@@ -1046,9 +1066,13 @@ def check_status(
     next. Anchoring on the marker's own line instead would have refused
     "Its compile path has not shipped", which is the second half of a sentence
     that opens somewhere else.
+
+    Like the count rules, this reads the fenced view. A status sentence inside
+    a code block is read as one, which is the safe direction: a fenced example
+    caught by mistake is reworded or marked, and one missed is a member status
+    that ages in public.
     """
 
-    spans, _ = generated_spans(text)
     covered: set[int] = set()
 
     for marker in markers(text):
@@ -1326,12 +1350,13 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
     for item in documents:
         text = sources[item.relative]
         display = rendered(text)
+        spans = check_regions(item.relative, text, findings)
         if item.carries(HEADING_RULE):
-            check_headings(item.relative, text, display, findings)
+            check_headings(item.relative, display, spans, findings)
         if item.carries(COUNT_RULE):
-            check_counts(item.relative, text, display, counts, findings)
+            check_counts(item.relative, text, display, counts, spans, findings)
         if item.carries(STATUS_RULE):
-            check_status(item.relative, text, display, versions, findings)
+            check_status(item.relative, text, display, versions, spans, findings)
         if item.carries(FRONT_DOOR_RULE):
             records = demonstrations.load_records(root)
             check_structure(text, display, findings)
