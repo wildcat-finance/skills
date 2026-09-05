@@ -7,9 +7,9 @@
 
 Horos records which repository paths an agent may usually leave unread, with the evidence for every exclusion and deterministic maps for what remains.
 
-**Current frontier.** The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
+**Current frontier.** The v9.2.3 reopening's third and last job is done: map reads Markdown through a per-language extractor, held against markdown-it-py over all 900 tracked Markdown files of this repository with 9,527 of 9,527 headings and 1,130 of 1,130 fenced code blocks matched, zero misses, zero extras and zero crashes. Every filetype above 1% of this tree's readable bytes is now mapped or is a data format with no declarations to outline, so the frontier closes mature.
 
-**Next Fiat job.** Use /hexaemeron:fiat to ship the content-addressed object rule whose evidence is the digest a file's own bytes produce. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** None -- mature.
 <!-- marketplace-context:end -->
 
 ## Start here
@@ -20,8 +20,9 @@ boundary still matches the tree. It can also produce outline maps for several
 programming languages.
 
 The boundary is advisory, fail-open, and disabled during every security
-review. The content-addressed-object rule still owes its frontier run, and
-Markdown has no outline extractor yet.
+review. A content-addressed object store is bound by the digest of each
+file's own bytes, and Markdown is outlined by headings and fenced code
+blocks alongside the five programming languages.
 
 ## Place in the collective
 
@@ -66,14 +67,16 @@ is committed at [docs/study.md](./docs/study.md).
 - a filetype census at `.horos/census.json` from the same walk, so
   walk-worthiness and the next extractor are decided from a recorded
   breakdown;
-- skeleton maps for Python, TypeScript, Go, C++ and Solidity through a
-  per-language extractor folder, so a large file can be oriented in without
-  being read; the outliners quote declarations verbatim, confess what they
-  did not understand, and are held against independent parsers over live
-  repositories (2,237 of 2,239 TypeScript declarations over 866 files;
-  21,648 of 21,648 Go declarations over 1,421 files; 7,013 of 7,013 C++
-  declarations at declared altitudes over 842 files; 2,329 of 2,329
-  Solidity declarations over the 151 files of v2-protocol itself);
+- skeleton maps for Python, TypeScript, Go, C++, Solidity and Markdown
+  through a per-language extractor folder, so a large file can be oriented
+  in without being read; the outliners quote declarations verbatim, confess
+  what they did not understand, and are held against independent parsers
+  over live repositories (2,237 of 2,239 TypeScript declarations over 866
+  files; 21,648 of 21,648 Go declarations over 1,421 files; 7,013 of 7,013
+  C++ declarations at declared altitudes over 842 files; 2,329 of 2,329
+  Solidity declarations over the 151 files of v2-protocol itself; 9,527 of
+  9,527 Markdown headings and 1,130 of 1,130 fenced code blocks over the
+  900 tracked Markdown files of this repository);
 - a shipped example at [examples/](./examples/) whose committed boundary a
   fresh scan reproduces byte for byte; and
 - one binding rule: no boundary applies during security review.

@@ -22,6 +22,8 @@ BUNDLE_6 = EVIDENCE / "solidity-outline.md"
 RESULTS_6 = EVIDENCE / "solidity-outline.results.json"
 BUNDLE_7 = EVIDENCE / "v2-protocol-outline.md"
 RESULTS_7 = EVIDENCE / "v2-protocol-outline.results.json"
+BUNDLE_9 = EVIDENCE / "skills-markdown-outline.md"
+RESULTS_9 = EVIDENCE / "skills-markdown-outline.results.json"
 BUNDLE_8 = EVIDENCE / "three-repository-marking.md"
 MARKING_V2P = EVIDENCE / "v2-protocol.boundary.json"
 MARKING_APP = EVIDENCE / "wildcat-app-v2.boundary.v2.json"
@@ -229,6 +231,39 @@ class SecondCaptureTests(unittest.TestCase):
         self.assertEqual(totals["oracle_unparsed"], 0)
         self.assertEqual(totals["matched"], totals["oracle"])
 
+    def test_the_markdown_outline_bundle_matches_its_committed_results(self):
+        lines = capture_lines(BUNDLE_9, "mdoutline")
+        totals = json.loads(RESULTS_9.read_text(encoding="utf-8"))["totals"]
+        for key in (
+            "files",
+            "bytes",
+            "crashes",
+            "oracle",
+            "matched",
+            "missed",
+            "missed_confessed",
+            "extra",
+            "fence_oracle",
+            "fence_matched",
+            "fence_missed",
+            "fence_missed_confessed",
+            "fence_extra",
+            "regions",
+            "files_with_regions",
+        ):
+            self.assertEqual(int(lines[key]), totals[key], key)
+        self.assertRegex(lines["commit"], r"^[0-9a-f]{40}$")
+
+    def test_the_markdown_outline_acceptance_holds(self):
+        totals = json.loads(RESULTS_9.read_text(encoding="utf-8"))["totals"]
+        self.assertEqual(totals["crashes"], 0)
+        self.assertEqual(totals["missed"], 0)
+        self.assertEqual(totals["extra"], 0)
+        self.assertEqual(totals["fence_missed"], 0)
+        self.assertEqual(totals["fence_extra"], 0)
+        self.assertEqual(totals["matched"], totals["oracle"])
+        self.assertEqual(totals["fence_matched"], totals["fence_oracle"])
+
     def test_the_marking_bundle_matches_the_committed_boundaries(self):
         lines = capture_lines(BUNDLE_8, "marking")
         for prefix, path in (
@@ -260,6 +295,62 @@ class SecondCaptureTests(unittest.TestCase):
         )
         share = 100 * int(second["classified_bytes"]) / int(second["total_bytes"])
         self.assertAlmostEqual(share, 83.3, places=1)
+
+
+class OutlineResultsShapeTests(unittest.TestCase):
+    """Every outline results document stays summable after the clean rows leave.
+
+    A differential's evidence is its totals and its exceptions. Carrying a row
+    for each file the outliner read exactly as the oracle did put 33,000 lines
+    of matches and zeroes in the tree that no check read, so those files are
+    recorded by count under `clean` instead. That only stays honest while the
+    totals are still the sum of what the document holds, which is what these
+    cases check; see skills#1259.
+    """
+
+    RESULTS = (RESULTS_3, RESULTS_5, RESULTS_6, RESULTS_7, RESULTS_9)
+    SUMMED = (
+        "matched", "missed", "missed_confessed", "extra", "oracle", "ours", "regions",
+        "fence_matched", "fence_missed", "fence_missed_confessed", "fence_extra",
+        "fence_oracle", "fence_ours",
+    )
+
+    def test_every_results_document_carries_the_trimmed_shape(self):
+        for path in self.RESULTS:
+            with self.subTest(results=path.name):
+                document = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(
+                    sorted(document), ["clean", "files", "note", "totals"]
+                )
+                for name, value in document["clean"].items():
+                    if isinstance(value, list):
+                        self.assertEqual(len(value), 2, name)
+                        self.assertTrue(all(isinstance(n, int) for n in value), name)
+                    else:
+                        self.assertIsInstance(value, int, name)
+                self.assertEqual(set(document["clean"]) & set(document["files"]), set())
+
+    def test_the_totals_are_the_sum_of_the_rows_and_the_clean_counts(self):
+        for path in self.RESULTS:
+            with self.subTest(results=path.name):
+                document = json.loads(path.read_text(encoding="utf-8"))
+                totals = document["totals"]
+                summed = {key: 0 for key in self.SUMMED}
+                for row in document["files"].values():
+                    for key in self.SUMMED:
+                        summed[key] += row.get(key, 0)
+                for value in document["clean"].values():
+                    heads, fences = value if isinstance(value, list) else (value, 0)
+                    for key in ("matched", "ours", "oracle"):
+                        summed[key] += heads
+                    for key in ("fence_matched", "fence_ours", "fence_oracle"):
+                        summed[key] += fences
+                for key, total in totals.items():
+                    if key in summed:
+                        self.assertEqual(summed[key], total, f"{path.name}:{key}")
+                self.assertEqual(
+                    len(document["files"]) + len(document["clean"]), totals["files"]
+                )
 
 
 if __name__ == "__main__":

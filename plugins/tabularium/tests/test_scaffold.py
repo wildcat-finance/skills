@@ -68,8 +68,8 @@ class TabulariumPackagingTests(unittest.TestCase):
             "docs/compound-v3-preservation.md",
             "docs/release-policy.md",
             "audit/AUDIT.md",
-            "examples/goldfinch-v0/README.md",
-            "examples/goldfinch-v0/DATA-DICTIONARY.md",
+            "examples/aave-v4-v0/README.md",
+            "examples/aave-v4-v0/DATA-DICTIONARY.md",
         ):
             self.assertTrue((PLUGIN_ROOT / relative).is_file(), relative)
 

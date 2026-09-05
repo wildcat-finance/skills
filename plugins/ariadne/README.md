@@ -179,11 +179,11 @@ python3 scripts/ariadne.py capture-state-fixture --fixture <dir> --name <fixture
   --first-capture-reason <why there is nothing earlier> --out fixture.json
 
 python3 scripts/ariadne.py capture-grounded-agent \
-  --release ../berean/examples/goldfinch-demo-v0/release \
-  --name goldfinch-demo-v0 \
+  --release ../berean/examples/aave-v4-demo-v0/release \
+  --name aave-v4-demo-v0 \
   --producer-tool berean --producer-version 0.2.0 \
   --producer-command python3 \
-  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
+  --producer-command plugins/berean/examples/aave-v4-demo-v0/rebuild.py \
   --first-capture-reason 'first Ariadne capture of this Berean release' \
   --output grounded-agent.intoto.json
 
@@ -203,7 +203,7 @@ exiting 1 when one breaks. Exit codes are 0 for success, 1 for a breached gate,
 field by field, the conformance set, and the capture flags.
 
 The fixed release at
-`plugins/lazarus/examples/goldfinch-v1-release` demonstrates the
+`plugins/lazarus/examples/aave-v4-v1-release` demonstrates the
 state-fixture/v2 hand-off. Its statement records the fixture's
 `receipts_root` and two `receipt_trie_proved` relations, explicitly skips local
 receipt-trie re-verification, and leaves transaction-hash attribution in the

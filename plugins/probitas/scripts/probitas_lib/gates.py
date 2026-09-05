@@ -38,6 +38,7 @@ RUBRIC = re.compile(r"\brubric\b", re.IGNORECASE)
 
 # "no rating", "without a score", "never graded": a denial, not a verdict.
 NEGATED = re.compile(r"\b(no|not|never|without|neither|nor)\b[^.]{0,30}$", re.IGNORECASE)
+SEARCH_CHUNK = 256
 
 
 class Gate:
@@ -71,6 +72,20 @@ def body(dossier, blocks, heading):
     return dossier[span[0] : span[1]] if span else None
 
 
+def first_present(haystacks, needles):
+    """Find one literal needle without rescanning each document once per row."""
+    ordered = sorted(set(needle for needle in needles if needle))
+    for offset in range(0, len(ordered), SEARCH_CHUNK):
+        pattern = re.compile(
+            "|".join(re.escape(value) for value in ordered[offset : offset + SEARCH_CHUNK])
+        )
+        for haystack in haystacks:
+            match = pattern.search(haystack)
+            if match is not None:
+                return match.group(0)
+    return None
+
+
 def gate_1_provenance(dossier, payload, blocks):
     """Declared, linked and inferred never blur into one another."""
     tiers = {a["address"]: a["provenance"] for a in payload["subject"]["addresses"]}
@@ -90,51 +105,56 @@ def gate_1_provenance(dossier, payload, blocks):
         )
 
     lowered = dossier.lower()
-    for address in inferred:
-        for match in re.finditer(re.escape(address), lowered):
-            if not span[0] <= match.start() < span[1]:
-                return Gate(
-                    1,
-                    "provenance",
-                    False,
-                    f"inferred address {address} appears outside its own section",
-                )
+    outside = (lowered[: span[0]], lowered[span[1] :])
+    misplaced = first_present(outside, inferred)
+    if misplaced is not None:
+        return Gate(
+            1,
+            "provenance",
+            False,
+            f"inferred address {misplaced} appears outside its own section",
+        )
 
     inferred_body = dossier[span[0] : span[1]].lower()
-    for address in on_record:
-        if address in inferred_body:
-            return Gate(
-                1,
-                "provenance",
-                False,
-                f"declared address {address} appears in the inferred section",
-            )
+    misplaced = first_present((inferred_body,), on_record)
+    if misplaced is not None:
+        return Gate(
+            1,
+            "provenance",
+            False,
+            f"declared address {misplaced} appears in the inferred section",
+        )
 
     # An address is not the only thing that leaks. A row moved out of the
     # inferred section takes its citation with it and reads as part of the
     # record, so each finding's source has to stay where its tier put it.
     tier_of = {a["address"]: a["provenance"] for a in payload["subject"]["addresses"]}
+    inferred_citations = set()
+    on_record_citations = set()
     for record in payload["records"]:
         citation = formatting.short(record["source"]).lower()
         belongs_inferred = tier_of.get(record["address"]) == "inferred"
-        for match in re.finditer(re.escape(citation), lowered):
-            inside = span[0] <= match.start() < span[1]
-            if belongs_inferred and not inside:
-                return Gate(
-                    1,
-                    "provenance",
-                    False,
-                    f"a finding against an inferred address ({citation}) "
-                    "appears outside its own section",
-                )
-            if not belongs_inferred and inside:
-                return Gate(
-                    1,
-                    "provenance",
-                    False,
-                    f"a finding on the record ({citation}) appears in the "
-                    "inferred section",
-                )
+        target = inferred_citations if belongs_inferred else on_record_citations
+        target.add(citation)
+
+    misplaced = first_present(outside, inferred_citations)
+    if misplaced is not None:
+        return Gate(
+            1,
+            "provenance",
+            False,
+            f"a finding against an inferred address ({misplaced}) "
+            "appears outside its own section",
+        )
+    misplaced = first_present((inferred_body,), on_record_citations)
+    if misplaced is not None:
+        return Gate(
+            1,
+            "provenance",
+            False,
+            f"a finding on the record ({misplaced}) appears in the "
+            "inferred section",
+        )
 
     return Gate(
         1,

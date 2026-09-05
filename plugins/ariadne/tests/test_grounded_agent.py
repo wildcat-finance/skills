@@ -38,7 +38,7 @@ def predicate():
     body = {
         "release": {
             "format": agent.BEREAN_FORMAT,
-            "release_version": "goldfinch-demo-v0",
+            "release_version": "aave-v4-demo-v0",
             "release_digest": "0" * 64,
             "document": component("release.json", "Berean release document"),
         },
@@ -56,7 +56,7 @@ def predicate():
             "reads": {
                 "component": component("reads.jsonl", "block-bound reads"),
                 "chain_id": 1,
-                "block_number": 13097494,
+                "block_number": 25870892,
                 "block_hash": "0x" + hex_digest("block"),
                 "source": "copied preserved RPC records; evidence classes unchanged",
             },
@@ -105,7 +105,7 @@ def predicate():
         "comparison": {
             "baseline": None,
             "current": {
-                "name": "goldfinch-demo-v0",
+                "name": "aave-v4-demo-v0",
                 "release_digest": "0" * 64,
             },
             "first_capture_reason": "first Ariadne capture of this release",
@@ -892,7 +892,7 @@ class GateTwoAndFiveTests(unittest.TestCase):
         self.assertTrue(numbered(5, first).passed)
         later = predicate()
         later["comparison"]["baseline"] = {
-            "name": "goldfinch-demo-v-minus-one",
+            "name": "aave-v4-demo-v-minus-one",
             "release_digest": hex_digest("baseline release"),
         }
         later["comparison"]["first_capture_reason"] = None

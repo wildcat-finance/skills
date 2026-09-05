@@ -90,7 +90,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "sapheneia" / "skills" / "sapheneia" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "sapheneia-v0.2.0")
+        self.assertEqual(field(ledger, "Current version"), "sapheneia-v0.3.0")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "cross-model-corpus")
         self.assertEqual(
@@ -101,20 +101,24 @@ class EvolutionContractTests(unittest.TestCase):
             field(ledger, "Next Fiat job"),
             "Build and publish a held cross-model corpus covering debugging, explanation, destructive-action and long-running task turns, then reconcile the ten rules against its results. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose.",
         )
-        latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "sapheneia-v0.2.0")
+        rows = history_rows(ledger)
+        latest = rows[-1]
+        self.assertEqual(latest["version"], "sapheneia-v0.3.0")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "cross-model-corpus")
         self.assertEqual(
             latest["digest"],
             "06034ab3a9291b328ab65bef2436652833ac137dcb5726dee911a08fa632df87",
         )
+        self.assertIn("ADR-074", latest["evidence"])
+        self.assertIn("every piece of prose the agent writes", latest["change"])
+        self.assertIn("Next Fiat job stay unchanged", latest["change"])
 
     def test_fiat_state_shape_frontier_holds_the_task_identity_successor(self):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.49.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.52.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,19 +126,45 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.49.1")
+        self.assertEqual(latest["version"], "fiat-v5.52.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#1021", latest["evidence"])
-        self.assertIn("ADR-068", latest["evidence"])
-        self.assertIn("early_merge", latest["change"])
-        self.assertIn("reachable from the run branch", latest["change"])
-        self.assertIn("replacement pull request", latest["change"])
+        self.assertIn("skills#890", latest["evidence"])
+        self.assertIn("done runbook", latest["change"])
+        self.assertIn("exactly match", latest["change"])
+        self.assertIn("without a traceback", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
+        # Generations displaced from newest keep their own coverage: each is
+        # still a transition the held frontier had to survive.
+        retarget = by_version["fiat-v5.51.1"]
+        self.assertEqual(retarget["axis"], "generation")
+        self.assertEqual(retarget["revision"], "state-shape-validation")
+        self.assertIn("skills#1085", retarget["evidence"])
+        self.assertIn("skills#1110", retarget["evidence"])
+        self.assertIn("retarget", retarget["change"])
+        self.assertIn("into` field named the run branch", retarget["change"])
+        self.assertIn("held target stay unchanged", retarget["change"])
+        decision_assignment = by_version["fiat-v5.50.1"]
+        self.assertEqual(decision_assignment["axis"], "generation")
+        self.assertEqual(decision_assignment["revision"], "state-shape-validation")
+        self.assertIn("skills#888", decision_assignment["evidence"])
+        self.assertIn("decision-assignment", decision_assignment["change"])
+        self.assertIn("Hypomnema", decision_assignment["change"])
+        self.assertIn("without assigning numbers", decision_assignment["change"])
+        self.assertIn("held target stay unchanged", decision_assignment["change"])
+        early_merge = by_version["fiat-v5.49.1"]
+        self.assertEqual(early_merge["axis"], "generation")
+        self.assertEqual(early_merge["revision"], "state-shape-validation")
+        self.assertIn("skills#1021", early_merge["evidence"])
+        self.assertIn("ADR-068", early_merge["evidence"])
+        self.assertIn("early_merge", early_merge["change"])
+        self.assertIn("reachable from the run branch", early_merge["change"])
+        self.assertIn("replacement pull request", early_merge["change"])
+        self.assertIn("held target stay unchanged", early_merge["change"])
         repo_suite = by_version["fiat-v5.48.1"]
         self.assertEqual(repo_suite["axis"], "generation")
         self.assertEqual(repo_suite["revision"], "state-shape-validation")

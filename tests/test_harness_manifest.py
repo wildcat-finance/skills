@@ -376,7 +376,7 @@ LEAKING_CLIENT_OUTPUT = (
 # The case that feeds this to the probe is the evidence that no real one gets
 # through, so the fixture has to look like the thing it stands in for.
 # phylax: allow a fabricated token this file exists to prove the sweep catches
-LEAKED_SECRET = "ghp_wxyz1234567890abcdefghijklmnopqrstuv"
+FABRICATED_CREDENTIAL = "ghp_wxyz1234567890abcdefghijklmnopqrstuv"
 
 
 def observation(**overrides):
@@ -911,7 +911,7 @@ class CredentialTests(unittest.TestCase):
                 root / "harness-classification.json", document, recorder
             )
             text = target.read_text(encoding="utf-8")
-            self.assertNotIn(LEAKED_SECRET, text)
+            self.assertNotIn(FABRICATED_CREDENTIAL, text)
             self.assertNotIn("someone@example.org", text)
             self.assertEqual(probe_harnesses.credential_findings(text), [])
             # The useful half survived: the allowlist kept the version and
@@ -923,7 +923,7 @@ class CredentialTests(unittest.TestCase):
             root = Path(directory)
             recorder, _document = self.run_leaking_probe(root)
             lines = recorder.lines()
-            self.assertNotIn(LEAKED_SECRET, lines)
+            self.assertNotIn(FABRICATED_CREDENTIAL, lines)
             self.assertNotIn("someone@example.org", lines)
             self.assertEqual(probe_harnesses.credential_findings(lines), [])
             written = probe_harnesses.write_log(root / "probe.log", recorder)
@@ -1005,7 +1005,7 @@ class CredentialTests(unittest.TestCase):
             probe_harnesses.write_manifest(target, good)
             before = target.read_bytes()
             planted = manifest(
-                entry("Cursor", launcher_contract=f"bearer: {LEAKED_SECRET}")
+                entry("Cursor", launcher_contract=f"bearer: {FABRICATED_CREDENTIAL}")
             )
             with self.assertRaises(probe_harnesses.CredentialLeak):
                 probe_harnesses.write_manifest(target, planted)
@@ -1015,7 +1015,7 @@ class CredentialTests(unittest.TestCase):
             self.assertEqual(list(root.glob(f"{probe_harnesses.TEMPORARY_PREFIX}*")), [])
             with self.assertRaises(probe_harnesses.CredentialLeak):
                 probe_harnesses.Recorder("00000000").record(
-                    "harness_probe_done", result=f"bearer: {LEAKED_SECRET}"
+                    "harness_probe_done", result=f"bearer: {FABRICATED_CREDENTIAL}"
                 )
 
 
@@ -1596,7 +1596,7 @@ class RenderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             staged = self.stage(directory)
             document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
-            document["harnesses"][0]["blocker"] = f"bearer: {LEAKED_SECRET}"
+            document["harnesses"][0]["blocker"] = f"bearer: {FABRICATED_CREDENTIAL}"
             staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
             before = {key: path.read_bytes() for key, path in staged.items()}
             with self.assertRaises(render_harness_roster.RenderError) as refused:
@@ -1625,7 +1625,7 @@ class RenderTests(unittest.TestCase):
             staged = self.stage(directory)
             document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
             document["recorded"]["base_ref"] = "0" * 40
-            document["harnesses"][0]["blocker"] = f"bearer: {LEAKED_SECRET}"
+            document["harnesses"][0]["blocker"] = f"bearer: {FABRICATED_CREDENTIAL}"
             staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
             # The precondition that makes this a real hole: the README body
             # does move, so the old order wrote it before it refused.
@@ -2503,7 +2503,7 @@ class RenderTests(unittest.TestCase):
         # had the same reach: a wrong-typed `blocker` or `client_version`
         # holding a token printed it to stderr through `main`, and so did a
         # `recorded.host` too long for `HOST_PATTERN`.
-        planted = LEAKED_SECRET
+        planted = FABRICATED_CREDENTIAL
         self.assertEqual(probe_harnesses.credential_findings(planted), ["token"])
         for field, value in (
             ("blocker", ["Absent.", planted]),

@@ -30,7 +30,7 @@ Hexaemeron manifests and marketplace entries; generated portable-runtime
 copies; `plugins/hexaemeron/tests/{test_hexctl_checkpoint.py,test_issue_429_recovery.py,test_hexctl_generator_aggregates.py}` and the issue-710 fixture;
 `plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py` and its root currency
 guard; Synkrisis benchmark code, skill records and memory-unit tests; Lazarus
-Goldfinch and workflow-scaffold tests;
+Aave v4 and workflow-scaffold tests;
 version-bound primer sources and PDFs if required by the existing propagation
 contract; `.horos/boundary.json` if its deterministic scan changes.
 

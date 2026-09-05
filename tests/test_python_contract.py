@@ -31,6 +31,7 @@ LAZARUS = ROOT / "plugins" / "lazarus"
 REQUIRED_MINOR = "==3.14.*"
 EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
+    "adr-assignments.yml",
     "contributors.yml",
     "dead-code.yml",
     "identity.yml",
@@ -41,7 +42,11 @@ PYTHON_WORKFLOWS = {
     "repo.yml",
     "synkrisis.yml",
 }
-PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml", "identity.yml"}
+PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {
+    "adr-assignments.yml",
+    "contributors.yml",
+    "identity.yml",
+}
 # Required gates carry no path filter, so they have no filter to inspect.
 UNFILTERED_GATES = {"plugins.yml", "repo.yml"}
 PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - UNFILTERED_GATES

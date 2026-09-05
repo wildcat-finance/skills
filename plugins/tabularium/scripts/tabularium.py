@@ -26,9 +26,9 @@ def make_parser():
     )
     build_parser.add_argument(
         "--adapter",
-        choices=("goldfinch", "euler-v1", "euler-v2"),
-        default="goldfinch",
-        help="source adapter (default: goldfinch)",
+        choices=("aave-v4", "euler-v1", "euler-v2"),
+        default="aave-v4",
+        help="source adapter (default: aave-v4)",
     )
     build_parser.add_argument("--source", required=True, help="preserved source JSON")
     build_parser.add_argument(

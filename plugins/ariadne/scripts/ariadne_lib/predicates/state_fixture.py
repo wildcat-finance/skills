@@ -29,8 +29,8 @@ and refuses a canonical-chain claim, because nothing in either tool establishes
 that the pinned block is on the canonical chain.
 
 Numbers are integers here. A Lazarus manifest writes a block number as the hex
-quantity string `"0xc7da16"`, which is the right thing on the wire and the wrong
-thing to compare: `"0xc7da16" < "0x2"` is true, because that orders text. The
+quantity string `"0x18ac22c"`, which is the right thing on the wire and the wrong
+thing to compare: `"0x18ac22c" < "0x2"` is true, because that orders text. The
 capture path converts, and a statement carrying the wire form is refused rather
 than ordered as a string. The same choice applies to the chain id, which the
 Solidity release predicate already carries as an integer.

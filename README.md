@@ -61,7 +61,7 @@ to those exact document bytes and chain reads, while Ariadne can bind a
 promoted release to its record.
 
 The mechanism works today. The checked-in Berean release is still a
-demonstration built from a small corpus and preserved Goldfinch reads; there is
+demonstration built from a small corpus and preserved Aave v4 reads; there is
 not yet a live Wildcat reference assistant.
 
 ### Compare repeated agent runs

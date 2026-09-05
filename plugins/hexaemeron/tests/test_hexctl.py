@@ -119,6 +119,51 @@ class TestLifecycle(HexctlCase):
         self.assertEqual(out["step"], 1)
         self.assertEqual(out["title"], "Scaffold")
 
+    def test_runbook_refuses_title_case_mismatch_before_receipt(self):
+        self.init()
+        study = self.write("study.md")
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self.write(
+            "runbook.md",
+            "## Step 1: scope the integration bound\n\n"
+            "**Goal.** Scope the integration bound.\n",
+        )
+        steps = self.write("steps.json", '["Scope the integration bound"]')
+        root = os.path.join(self.target, ".hexaemeron")
+        before = tuple(
+            Path(os.path.join(root, name)).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+        refused = self.run_ctl(
+            "done",
+            "runbook",
+            "--artifact",
+            runbook,
+            "--steps-file",
+            steps,
+            expect=2,
+        )
+
+        self.assertIn("exactly match steps-file", refused.stderr)
+        self.assertEqual(
+            tuple(
+                Path(os.path.join(root, name)).read_bytes()
+                for name in ("state.json", "ledger.jsonl")
+            ),
+            before,
+        )
+
+        self.write(
+            "runbook.md",
+            "## Step 1: Scope the integration bound\n\n"
+            "**Goal.** Scope the integration bound.\n",
+        )
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        self.assertEqual(self.next_json()["do"], "implement")
+
 
 class TestDesignEvidenceLifecycle(HexctlCase):
     def controller_bytes(self):
@@ -548,10 +593,11 @@ class TestDelegationPackets(HexctlCase):
                 "## Step 1: Core\n\nA.\n\n## Step 1: Core\n\nB.\n",
             )
             steps = other.write("steps.json", '["Core"]')
-            other.run_ctl("done", "runbook", "--artifact", runbook,
-                          "--steps-file", steps)
-            proc = other.run_ctl("next", expect=2)
-            self.assertIn("ambiguous runbook step", proc.stderr)
+            proc = other.run_ctl(
+                "done", "runbook", "--artifact", runbook,
+                "--steps-file", steps, expect=2,
+            )
+            self.assertIn("exactly match steps-file", proc.stderr)
         finally:
             other.tearDown()
 
@@ -3775,12 +3821,42 @@ class TestFuzzRegressions(HexctlCase):
         study = self.write("study.md")
         self.run_ctl("done", "study", "--artifact", study,
                      "--skills", "hexaemeron:imprimatur")
-        runbook = self.write("runbook.md")
-        sf = self.write("s.json", json.dumps(["\u001b[31mEVIL\u001b[0m step"]))
+        title = "\u001b[31mEVIL\u001b[0m step"
+        runbook = self.write("runbook.md", f"## Step 1: {title}\n")
+        sf = self.write("s.json", json.dumps([title]))
         self.run_ctl("done", "runbook", "--artifact", runbook,
                      "--steps-file", sf)
         proc = self.run_ctl("status")
         self.assertNotIn("\x1b", proc.stdout)
+
+    def test_oversized_runbook_step_number_refuses_without_traceback(self):
+        self.init()
+        study = self.write("study.md")
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self.write(
+            "runbook.md", f"## Step {'9' * 5000}: Core\n"
+        )
+        steps = self.write("steps.json", '["Core"]')
+        root = os.path.join(self.target, ".hexaemeron")
+        before = tuple(
+            Path(os.path.join(root, name)).read_bytes()
+            for name in ("state.json", "ledger.jsonl")
+        )
+
+        refused = self.run_ctl(
+            "done", "runbook", "--artifact", runbook,
+            "--steps-file", steps, expect=2,
+        )
+
+        self.assertIn("Step number is too long", refused.stderr)
+        self.assertNotIn("Traceback", refused.stderr)
+        self.assertEqual(
+            tuple(
+                Path(os.path.join(root, name)).read_bytes()
+                for name in ("state.json", "ledger.jsonl")
+            ),
+            before,
+        )
 
 
 class StateContainerValidationTests(HexctlCase):

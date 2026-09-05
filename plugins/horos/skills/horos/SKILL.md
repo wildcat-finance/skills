@@ -1,8 +1,8 @@
 ---
 name: horos
-description: Emit and verify an evidence-backed reading boundary over a repository. Classify token sinks (generated files, vendored trees, lockfiles, minified bundles, single-line blobs), write the deterministic boundary agents consult before reading, and print Python skeleton maps for oriented reading. Use when a user names Horos or asks to cut the reading cost of a repository without rewriting its code. Never apply a boundary during security review.
+description: Emit and verify an evidence-backed reading boundary over a repository. Classify token sinks (generated files, vendored trees, lockfiles, minified bundles, single-line blobs), write the deterministic boundary agents consult before reading, and print skeleton maps of Python, TypeScript, Go, C++, Solidity and Markdown for oriented reading. Use when a user names Horos or asks to cut the reading cost of a repository without rewriting its code. Never apply a boundary during security review.
 metadata:
-  version: "10.3.3"
+  version: "12.3.3"
 ---
 
 <p align="center">
@@ -27,7 +27,7 @@ A Synkrisis finding may suggest a Horos review when validated observations
 repeat. The finding does not write or widen a reading boundary; Horos still
 checks the repository evidence before changing one.
 
-**Current frontier.** The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
+**Current frontier.** The v9.2.3 reopening's third and last job is done: map reads Markdown through a per-language extractor, held against markdown-it-py over all 900 tracked Markdown files of this repository with 9,527 of 9,527 headings and 1,130 of 1,130 fenced code blocks matched, zero misses, zero extras and zero crashes. Every filetype above 1% of this tree's readable bytes is now mapped or is a data format with no declarations to outline, so the frontier closes mature.
 
 ## The verbs
 
@@ -100,13 +100,15 @@ whole. Extractors live one folder per language under
 [scripts/languages/](./scripts/languages/) and a suffix registry dispatches
 between them; an unregistered suffix is refused naming the supported list.
 Python (`.py`) parses through the standard library's own ast. TypeScript
-(`.ts`, `.tsx`), Go (`.go`), C++ (`.cpp`, `.h`, `.hpp`, `.cc`, `.cxx`) and
-Solidity (`.sol`) are lexed, never parsed: declarations are quoted as
-verbatim source slices (grouped Go declarations one line per member, C++
-template prefixes and Solidity inheritance lists and attribute chains
-riding along), and every region the recognisers do not understand is
-confessed by count and line range instead of guessed at. No path imports or
-executes what it reads.
+(`.ts`, `.tsx`), Go (`.go`), C++ (`.cpp`, `.h`, `.hpp`, `.cc`, `.cxx`),
+Solidity (`.sol`) and Markdown (`.md`) are lexed, never parsed:
+declarations are quoted as verbatim source slices (grouped Go declarations
+one line per member, C++ template prefixes and Solidity inheritance lists
+and attribute chains riding along; a Markdown declaration is a heading or a
+fenced code block, read by CommonMark's block rules and never its inline
+ones), and every region the recognisers do not understand is confessed by
+count and line range instead of guessed at. No path imports or executes
+what it reads.
 
 The TypeScript extractor exists by revision of a recorded refusal. Parsing
 TypeScript or taking a parser dependency was refused on 2026-08-18 and
@@ -129,6 +131,13 @@ The Solidity extractor was held against tree-sitter's Solidity grammar over
 all 151 files of v2-protocol: 2,329 of 2,329 declarations matched with zero
 confessions and every file oracle-parsed, recorded at
 [../../docs/evidence/v2-protocol-outline.md](../../docs/evidence/v2-protocol-outline.md).
+The Markdown extractor was held against markdown-it-py in its CommonMark
+preset over all 900 tracked `.md` files of this repository: 9,527 of 9,527
+headings and 1,130 of 1,130 fenced code blocks matched at declared
+altitudes, zero misses, zero extras and zero crashes, recorded at
+[../../docs/evidence/skills-markdown-outline.md](../../docs/evidence/skills-markdown-outline.md).
+Front matter is named by line range and outlined inside on neither side, and
+a fence that never closes is confessed rather than invented.
 
 ## The discipline
 
@@ -149,8 +158,9 @@ confessions and every file oracle-parsed, recorded at
    it lists is evidenced; what it omits is merely unproven. Evidence comes
    in two grades: only hard evidence (an exact lockfile name, a Git
    attribute, a binary signature, a generated marker, sourcemap structure,
-   a corroborated directory) reaches `boundary.json` and binds; candidates
-   (a name, a convention or geometry alone) live in
+   a corroborated directory, the digest of a file's own bytes) reaches
+   `boundary.json` and binds; candidates (a name, a convention or geometry
+   alone) live in
    `.horos/candidates.json` as an advisory report a maintainer can promote
    to a repository-specific rule. Scans of git repositories cover tracked
    files by default, so local build products never contaminate a committed
@@ -163,6 +173,15 @@ confessions and every file oracle-parsed, recorded at
    belong to another checkout's index, never to this one's.
    Where git cannot answer at all, the fail-open position stands and the entry
    is kept.
+   The content-addressed rule is the one rule whose evidence a repository
+   cannot write: it reads a whole file, chunked, and only for a path already
+   shaped as `blobs/<algorithm>/<digest>` or
+   `objects/<algorithm>/<shard>/<digest>` under sha1, sha256, sha384 or
+   sha512. It runs before the other rules because a matching digest is
+   evidence no other reading can overturn, and it refuses git's own object
+   store, uppercase or wrong-width names and deeper shards; the comments
+   above `CONTENT_ADDRESSED_ALGORITHMS` in
+   [scripts/horos.py](./scripts/horos.py) carry the reasons.
 5. When writing a boundary into a repository other agents will work in, add
    the adoption stanza that `scan --write` prints to that repository's
    AGENTS.md or CLAUDE.md. Agent harnesses load those files at session

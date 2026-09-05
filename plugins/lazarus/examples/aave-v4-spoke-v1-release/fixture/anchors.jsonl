@@ -1,0 +1,1 @@
+{"method":"eth_getBlockByNumber","observed_at":"2026-09-02T14:50:18.580622Z","params":["0x18ac22c",false],"returned":{"chain_id":"0x1","hash":"0x11e9be2ff9ff6a04319af0b04c24b95f3f1117c2df79f44f94d208857d01af07","number":"0x18ac22c"},"schema_version":1,"source_id":"crosscheck-a"}

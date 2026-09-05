@@ -12,13 +12,13 @@ capture, reaches no network, and does not turn one version into the other.
 
 ```bash
 python3 scripts/ariadne.py capture-state-fixture \
-  --fixture ../lazarus/examples/goldfinch-v0 \
-  --name goldfinch-v0 \
+  --fixture ../lazarus/examples/aave-v4-spoke-v0 \
+  --name aave-v4-spoke-v0 \
   --capture-tool lazarus \
   --capture-command python3 \
   --capture-command scripts/lazarus.py \
   --capture-command verify \
-  --capture-command examples/goldfinch-v0 \
+  --capture-command examples/aave-v4-spoke-v0 \
   --first-capture-reason 'first preservation release of this fixture' \
   --out fixture.json
 
@@ -61,7 +61,7 @@ in the message. Version 2 also refuses a declared component total above 2 GiB be
 walking the fixture or reading a component.
 
 **The pin.** The chain id and the block number arrive as hex quantity strings, which
-is right on the wire and wrong to compare: `"0xc7da16" < "0x2"` is true, because that
+is right on the wire and wrong to compare: `"0x18ac22c" < "0x2"` is true, because that
 orders text. They become integers here, and a leading zero is refused because two
 spellings of one number would give two statements for one fixture.
 

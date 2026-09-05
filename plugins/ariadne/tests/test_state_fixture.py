@@ -42,7 +42,7 @@ def predicate(**overrides):
     out = {
         "chain": {
             "chain_id": 1,
-            "block_number": 13097494,
+            "block_number": 25870892,
             "block_hash": BLOCK_HASH,
             "state_root": STATE_ROOT,
         },
@@ -151,7 +151,7 @@ class GateTwoTests(unittest.TestCase):
     def test_a_complete_pin_and_capture_record_passes(self):
         found = gate(2, predicate())
         self.assertTrue(found.passed, found.detail)
-        self.assertIn("chain 1 block 13097494", found.detail)
+        self.assertIn("chain 1 block 25870892", found.detail)
         self.assertIn("lazarus 0.1.0", found.detail)
 
     def test_each_pin_field_absent_fails(self):
@@ -164,9 +164,9 @@ class GateTwoTests(unittest.TestCase):
                 self.assertIn(field, found.detail)
 
     def test_a_hex_block_number_fails(self):
-        """The wire form. `"0xc7da16" < "0x2"` is true, because that orders text."""
+        """The wire form. `"0x18ac22c" < "0x2"` is true, because that orders text."""
         body = predicate()
-        body["chain"]["block_number"] = "0xc7da16"
+        body["chain"]["block_number"] = "0x18ac22c"
         found = gate(2, body)
         self.assertFalse(found.passed)
         self.assertIn("whole number", found.detail)
@@ -493,7 +493,7 @@ class EvidenceTests(unittest.TestCase):
 
     def test_a_chain_block_that_is_not_an_object_does_not_raise(self):
         body = predicate()
-        body["chain"] = "block 13097494"
+        body["chain"] = "block 25870892"
         found = named("evidence", body)
         self.assertFalse(found.passed)
 
@@ -561,13 +561,13 @@ class GateFiveTests(unittest.TestCase):
     def test_a_comparison_naming_both_sides_passes(self):
         body = predicate()
         body["deltas"] = {
-            "baseline": {"name": "goldfinch-v0", "digest": ELSEWHERE},
-            "current": {"name": "goldfinch-v1", "digest": PROOFS},
+            "baseline": {"name": "aave-v4-spoke-v0", "digest": ELSEWHERE},
+            "current": {"name": "aave-v4-v1", "digest": PROOFS},
             "components": {"added": ["traces.jsonl"], "removed": [], "changed": []},
         }
         found = gate(5, body)
         self.assertTrue(found.passed, found.detail)
-        self.assertIn("goldfinch-v1 against goldfinch-v0", found.detail)
+        self.assertIn("aave-v4-v1 against aave-v4-spoke-v0", found.detail)
 
     def test_an_unnamed_current_side_on_a_null_baseline_fails(self):
         """The branch step 1 of this run closed on the Solidity predicate. This
@@ -596,7 +596,7 @@ class GateFiveTests(unittest.TestCase):
 
     def test_a_current_side_outside_the_statement_fails(self):
         body = predicate()
-        body["deltas"]["current"] = {"name": "goldfinch-v1", "digest": ELSEWHERE}
+        body["deltas"]["current"] = {"name": "aave-v4-v1", "digest": ELSEWHERE}
         found = gate(5, body)
         self.assertFalse(found.passed)
         self.assertIn("not a subject of this statement", found.detail)
@@ -611,8 +611,8 @@ class GateFiveTests(unittest.TestCase):
     def test_a_changed_entry_naming_one_side_fails(self):
         body = predicate()
         body["deltas"] = {
-            "baseline": {"name": "goldfinch-v0", "digest": ELSEWHERE},
-            "current": {"name": "goldfinch-v1", "digest": PROOFS},
+            "baseline": {"name": "aave-v4-spoke-v0", "digest": ELSEWHERE},
+            "current": {"name": "aave-v4-v1", "digest": PROOFS},
             "components": {"changed": [{"baseline": "rpc.jsonl"}]},
         }
         found = gate(5, body)
@@ -685,7 +685,7 @@ class SchemaAgreementTests(unittest.TestCase):
         "replay reaching a network": lambda p: p["replay"].update(
             reaches_network=True
         ),
-        "a hex block number": lambda p: p["chain"].update(block_number="0xc7da16"),
+        "a hex block number": lambda p: p["chain"].update(block_number="0x18ac22c"),
         "a boolean count": lambda p: p["evidence"].update(proof_backed=True),
         "an uppercased block hash": lambda p: p["chain"].update(
             block_hash="0x" + "A" * 64

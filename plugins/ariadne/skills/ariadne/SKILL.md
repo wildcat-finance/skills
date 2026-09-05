@@ -79,26 +79,26 @@ python3 scripts/ariadne.py capture solidity-release \
   --repository <url> --commit <40-hex> --out release.json
 
 python3 scripts/ariadne.py capture-dataset \
-  --release <dir> --name goldfinch-credit-events-v2 \
+  --release <dir> --name aave-v4-credit-events-v2 \
   --coverage-dimension block --coverage-start 11370000 --coverage-end 15000000 \
   --gap 'start=12000000,end=12000100,reason=<why this range is not described>' \
   --producer-tool tabularium --producer-version 0.3.0 \
   --producer-command python3 --producer-command scripts/tabularium.py \
-  --previous <dir> --previous-name goldfinch-credit-events-v1 --out release.json
+  --previous <dir> --previous-name aave-v4-credit-events-v1 --out release.json
 
 python3 scripts/ariadne.py capture-state-fixture \
-  --fixture <dir> --name goldfinch-v0 \
+  --fixture <dir> --name aave-v4-spoke-v0 \
   --capture-tool lazarus \
   --capture-command python3 --capture-command scripts/lazarus.py \
   --first-capture-reason '<why there is no earlier capture of this block>' \
   --out fixture.json
 
 python3 scripts/ariadne.py capture-grounded-agent \
-  --release ../berean/examples/goldfinch-demo-v0/release \
-  --name goldfinch-demo-v0 \
+  --release ../berean/examples/aave-v4-demo-v0/release \
+  --name aave-v4-demo-v0 \
   --producer-tool berean --producer-version 0.2.0 \
   --producer-command python3 \
-  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
+  --producer-command plugins/berean/examples/aave-v4-demo-v0/rebuild.py \
   --first-capture-reason '<why there is no earlier capture>' \
   --output grounded-agent.intoto.json
 

@@ -37,7 +37,7 @@ if args.alexandria_index:
 ```
 
 `--fixtures` and `--alexandria-index` also sit in a mutually exclusive argparse
-group. So archive-backed Goldfinch and Clearpool history can never share an
+group. So archive-backed Aave v4 and Clearpool history can never share an
 evidence file with live or fixture-backed Wildcat, Morpho Blue, Euler v1 and
 Euler v2 findings. A counterparty who borrowed on a wound-down venue and on a
 live one has two dossiers and no single one, which is not the record a lender
@@ -89,7 +89,7 @@ Read in this repository, at `2b1c5cc`:
   `unchecked_coverage` already separates `unconfigured` from `unimplemented`,
   which is the distinction the merged "nobody checked" row has to keep.
 - `plugins/alexandria/scripts/alexandria_lib/probitas.py`. `translate` emits
-  records and coverage only for `SUPPORTED_VENUES = {"clearpool", "goldfinch"}`
+  records and coverage only for `SUPPORTED_VENUES = {"clearpool", "aave-v4"}`
   and already puts release, capture and row identities in each record's values
   and the release ids in the coverage note's prose.
 - `plugins/alexandria/examples/credit-history-v0/`. `demo.py` runs Probitas
@@ -192,7 +192,7 @@ Non-goals, each with its reason:
   Carried forward.
 - **No new venue coverage.** Morpho Midnight is the held frontier job and
   belongs to #390.
-- **No change to what `translate` supports.** Goldfinch and Clearpool stay the
+- **No change to what `translate` supports.** Aave v4 and Clearpool stay the
   archive venues.
 
 ## 4. Design options

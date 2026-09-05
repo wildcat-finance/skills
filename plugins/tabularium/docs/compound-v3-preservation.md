@@ -223,7 +223,7 @@ verification memory.
 ## Canonical mapping
 
 Compound III needs a new canonical event schema version. V1 is fixed to the
-Goldfinch hosted-indexer entity, while v2 is already published for Euler and
+Aave v4 hosted-indexer entity, while v2 is already published for Euler and
 cannot be widened in place. Phase 1 therefore adds schema v3, or the next
 available version if another release lands first.
 

@@ -1695,7 +1695,8 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
                                 "PM071",
                                 "drift",
                                 binding_path,
-                                f"runtime binding source digest is {actual}; inventory records {digest}",
+                                f"runtime binding source {source!r} digest is {actual}; "
+                                f"inventory records {digest}",
                                 "review the changed result surface and update its field map and digest together",
                                 promise_id=promise_id,
                             )

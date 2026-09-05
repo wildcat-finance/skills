@@ -5,7 +5,7 @@
 <!-- marketplace-context:start -->
 ## In one line
 
-Probitas builds a sourced dossier of borrowing and repayment across lending venues from addresses the counterparty declared, without identifying a person or issuing a Wildcat verdict.
+Probitas builds and compares sourced records of borrowing and repayment across lending venues from addresses the counterparty declared, without identifying a person or issuing a Wildcat verdict.
 
 **Current frontier.** Morpho Midnight fixed-maturity coverage now ships API-scoped on Base; secondary-market borrow exits stay refused as unattributable and Morpho curation remains uncollected.
 
@@ -17,7 +17,8 @@ Probitas builds a sourced dossier of borrowing and repayment across lending venu
 Use Probitas when a person considering a counterparty needs a sourced account
 of borrowing and repayment across supported venues. Supply the entity name and
 addresses the subject declared; the result keeps venue coverage, citations,
-figures, and unknowns visible beside the narrative.
+figures, and unknowns visible beside the narrative. Supply two Probitas
+evidence files for the same subject to get a checked account of what differs.
 
 It does not discover hidden addresses, identify a legal person, score a
 borrower, set terms, or make an underwriting decision. Morpho Midnight
@@ -76,12 +77,12 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 
 ## What it ships
 
-- the executable [`probitas.py`](./scripts/probitas.py) collector, renderer and gate checker, standard library only;
+- the executable [`probitas.py`](./scripts/probitas.py) collector, renderer, evidence comparison and gate checker, standard library only;
 - adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, an archive route over verified Alexandria releases for Goldfinch and Clearpool, and ten further venues carried as named gaps rather than silence;
 - eleven synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
 - a [committed example dossier](./docs/example-dossier.md) that the tests regenerate and compare, so it cannot drift;
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
-- 437 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
+- a 509-test suite and a historical [audit log](./audit/AUDIT.md) recording earlier rounds, including fixes that were wrong the first time.
 
 ## Day to day
 
@@ -116,6 +117,35 @@ can't drift from what the tool actually does.
 
 Drop `--fixtures` to run against the live venues instead of a synthetic
 borrower.
+
+### Compare two evidence runs
+
+```bash
+python3 scripts/probitas.py diff prior-evidence.json current-evidence.json \
+  --out borrower-change-report.md
+
+python3 scripts/probitas.py diff prior-evidence.json current-evidence.json \
+  --json --out borrower-change.json
+```
+
+The operator assigns the `prior` and `current` roles. The command reaches no
+network, reads each file once, binds its exact bytes by SHA-256, regenerates its
+dossier and requires all five gates to pass. The entity and complete
+address-to-provenance map must match. The output keeps coverage changes, opened,
+closed, reworded and still-open gaps, sourced record differences and
+inferred-address findings separate.
+
+Exit 0 includes the no-change case. Exit 1 means one input failed a dossier
+gate. Exit 2 means an input was malformed, unsafe or non-comparable, or an
+input or output file could not be read or written. A failed run leaves any
+existing output unchanged.
+
+This is a file comparison, not a clock. A newly present record may be a
+backfill or wider coverage, and one no longer reproduced may reflect a source
+regression. A closed gap says only that the current evidence no longer reports
+it. None of those states proves chronology, causation, complete history, a
+score or a lending decision. Unchanged records are omitted, so the comparison
+does not replace the current dossier.
 
 ### Two routes, and how to ask for them
 
@@ -242,6 +272,11 @@ No score, in this version. The specification leaves the question open and leans
 toward evidence without a rating, because a rating invites people to lean on it
 harder than the data can bear. Gate 5 is implemented anyway, so whoever adds a
 rubric later finds the check already standing.
+
+No chronology from a diff. `prior` and `current` are operator-designated file
+roles because schema 2 does not establish collection order. The report names
+what differs without calling it new borrower activity, a reversed event or a
+clean history.
 
 ## Venues
 
