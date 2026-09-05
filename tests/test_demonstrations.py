@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -1234,6 +1235,163 @@ class HorosCensusCurrencyTests(unittest.TestCase):
             "regenerate with: python3 plugins/horos/skills/horos/scripts/horos.py"
             " scan . --census --write",
         )
+
+
+@unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")
+class RunnerExecutionBoundaryTests(RunnerHarness):
+    """The execution boundary is the pinned interpreter under a live hook."""
+
+    def test_a_program_other_than_the_pinned_interpreter_is_refused(self):
+        code, payload, _events_seen, _target = self.run_argv(
+            ["sh", "-c", "echo shell-ran"], ['run: line "shell-ran"'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D072")
+        self.assertEqual(entry["repetitions"], [])
+
+    def test_an_interpreter_option_that_turns_the_hook_off_is_refused(self):
+        options = ("-S", "-E", "-I")
+        # Named here rather than read from the module so an unfixed tree fails
+        # this by assertion instead of erroring on a constant it does not have.
+        self.assertEqual(
+            getattr(demonstrations, "HOOK_DISABLING_OPTIONS", None), options
+        )
+        for option in options:
+            with self.subTest(option=option):
+                record = check(fixture_record("valid-ledger.md"))
+                record["commands"] = [{
+                    "id": "run",
+                    "argv": ["python3", option, "-c", "import socket; socket.socket()"],
+                    "expect_exit": 0,
+                }]
+                record["observations"] = ['run: line "unreachable"']
+                code, payload, _events_seen, _target = self.run_records(
+                    [(SPECIMEN, check(record))], report=f"report{option}.json",
+                )
+                self.assertEqual(code, 2)
+                entry = payload["demonstrations"][0]
+                self.assertEqual(entry["refusal"]["code"], "D074")
+                self.assertEqual(entry["repetitions"], [])
+
+    def test_an_interpreter_given_no_work_is_refused(self):
+        code, payload, _events_seen, _target = self.run_argv(
+            ["python3"], ['run: line "unreachable"'],
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["demonstrations"][0]["refusal"]["code"], "D072")
+
+    def test_a_child_that_erases_the_network_marker_is_still_refused(self):
+        code, payload, _events_seen, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "import atexit, os, socket;"
+                " atexit.register(lambda: os.unlink(os.path.join("
+                "os.path.dirname(os.environ['PYTHONPATH']), 'network-attempt')));"
+                " socket.socket()",
+            ],
+            ['run: line "erased"'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D074")
+        self.assertTrue(entry["repetitions"][0]["commands"][0]["network_attempt"])
+
+    def test_a_grandchild_does_not_outlive_a_command_that_exits_zero(self):
+        sentinel = self.out / "grandchild-survived"
+        code, payload, _events_seen, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "import os, sys, time;"
+                " child = os.fork() == 0;"
+                f" (time.sleep(6), open({str(sentinel)!r}, 'w').write('alive'),"
+                " os._exit(0)) if child else"
+                " (print('parent-done'), sys.stdout.flush(), os._exit(0))",
+            ],
+            ['run: line "parent-done"'],
+        )
+        self.assertEqual(code, 0, payload["demonstrations"][0]["refusal"])
+        command = payload["demonstrations"][0]["repetitions"][0]["commands"][0]
+        # Without the teardown the reader threads block on the pipe the
+        # grandchild still holds, so the recorded duration becomes its lifetime
+        # and the grandchild outlives the run that started it.
+        self.assertLess(command["duration_ms"], 4000)
+        time.sleep(8)
+        self.assertFalse(sentinel.exists())
+
+
+@unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")
+class ReportPublicationBoundaryTests(unittest.TestCase):
+    """Publication is bound to the directory containment actually proved."""
+
+    def setUp(self):
+        self.stack = contextlib.ExitStack()
+        self.addCleanup(self.stack.close)
+        self.root = pathlib.Path(
+            self.stack.enter_context(tempfile.TemporaryDirectory())
+        ).resolve()
+        self.outside = pathlib.Path(
+            self.stack.enter_context(tempfile.TemporaryDirectory())
+        ).resolve()
+
+    def test_a_parent_swapped_after_resolution_refuses_rather_than_escaping(self):
+        (self.root / "reports").mkdir()
+        target = demonstrations.resolve_report_target(
+            str(self.root / "reports" / "r.json"), self.root
+        )
+        os.rename(self.root / "reports", self.root / "reports-real")
+        os.symlink(self.outside, self.root / "reports")
+        # A tree whose publisher takes no output root raises rather than
+        # refusing; naming the outcome keeps that an assertion, not an error.
+        try:
+            demonstrations.publish_report(target, {"probe": True}, self.root)
+        except demonstrations.RunRefusal as refusal:
+            outcome = refusal.code
+        except Exception as exc:  # noqa: BLE001
+            outcome = type(exc).__name__
+        else:
+            outcome = "published"
+        self.assertEqual(outcome, "D081")
+        self.assertFalse((self.outside / "r.json").exists())
+
+    def test_a_report_still_publishes_through_a_confined_parent(self):
+        target = demonstrations.resolve_report_target(
+            str(self.root / "a" / "b" / "r.json"), self.root
+        )
+        try:
+            digest = demonstrations.publish_report(target, {"probe": True}, self.root)
+        except Exception as exc:  # noqa: BLE001
+            self.fail(f"a confined report was not published: {exc!r}")
+        self.assertTrue(target.exists())
+        self.assertEqual(digest, hashlib.sha256(target.read_bytes()).hexdigest())
+        self.assertEqual(
+            [name for name in os.listdir(target.parent) if ".partial-" in name], []
+        )
+
+
+@unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")
+class RunnerRefusalEventTests(unittest.TestCase):
+    """A run that fails its checks is visible in the event stream."""
+
+    def test_a_ledger_refusal_during_a_run_emits_a_refused_event(self):
+        with tempfile.TemporaryDirectory() as name:
+            out = pathlib.Path(name)
+            (out / ".python-version").write_text(
+                platform.python_version() + "\n", encoding="utf-8"
+            )
+            args = demonstrations.build_parser().parse_args([
+                "run", "--root", str(out), "--public-set",
+                "--report", str(out / "r.json"), "--output-root", str(out),
+            ])
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                with self.assertRaises(Exception):
+                    demonstrations.command_run(args)
+        events = _events(output.getvalue())
+        refused = [event for event in events if event["event"] == "demonstration.refused"]
+        self.assertEqual(len(refused), 1, events)
+        self.assertTrue(refused[0]["correlation_id"])
+        self.assertTrue(refused[0]["code"])
 
 
 if __name__ == "__main__":

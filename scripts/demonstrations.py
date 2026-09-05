@@ -77,6 +77,11 @@ NETWORK_MARKER = "network-attempt"
 # keep current: a credential or Git key is stripped by never being copied.
 CHILD_ENVIRONMENT_KEYS = ("PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE")
 PYTHON_LAUNCHER = "python3"
+# Interpreter options that would leave the child outside the socket denial.
+# `-S` and `-I` skip `site`, so `sitecustomize` never runs; `-E` and `-I`
+# ignore `PYTHONPATH`, so the hook directory is never on the path. Each one
+# turns the denial off while the report still reads `python-site-hook`.
+HOOK_DISABLING_OPTIONS = ("-S", "-E", "-I")
 OBSERVATION_RE = re.compile(
     r"^(?P<command>[a-z][a-z0-9-]{0,63}): (?P<kind>line|json) (?P<rest>.+)$"
 )
@@ -1126,49 +1131,91 @@ def resolve_report_target(report: str, output_root: Path) -> Path:
     raise AssertionError("unreachable")
 
 
-def publish_report(target: Path, payload: dict) -> str:
+def _open_report_parent(output_root: Path, target: Path) -> int:
+    """Open the report's parent through a no-follow walk from the output root.
+
+    ``resolve_report_target`` proves containment against the path as it stood
+    then; the run that follows takes seconds to minutes, and every byte written
+    afterwards travels the path again by name. Walking down from the output
+    root with each component opened without following a symlink is what binds
+    the write to the directory that was actually checked, so a component
+    replaced in that window refuses instead of publishing outside the root.
+    """
+
+    try:
+        # `resolve_report_target` hands back a fully resolved path, so the root
+        # is resolved the same way before the two are compared.
+        root = output_root.resolve(strict=True)
+    except (OSError, RuntimeError, ValueError) as exc:
+        _refuse("D081", f"output root cannot be resolved: {exc}")
+    try:
+        parts = target.relative_to(root).parts[:-1]
+    except ValueError:
+        _refuse("D081", f"report {target} is not below the output root {root}")
+    for depth in range(len(parts) + 1):
+        try:
+            fd = _open_confined_directory(root, parts[:depth])
+        except TopologyError as exc:
+            _refuse("D081", f"report parent is not confined below the output root: {exc}")
+        if depth == len(parts):
+            return fd
+        try:
+            os.mkdir(parts[depth], dir_fd=fd, mode=0o755)
+        except FileExistsError:
+            pass
+        except OSError as exc:
+            os.close(fd)
+            _refuse("D081", f"report parent cannot be created: {exc}")
+        os.close(fd)
+    raise AssertionError("unreachable")
+
+
+def publish_report(target: Path, payload: dict, output_root: Path) -> str:
     """Write the report beside its target and link it in without replacing.
 
     The body lands in a sibling ``.partial`` file first. ``os.link`` then
     publishes it under the final name and fails on an existing entry, so the
     target is either the complete object or absent; the partial is unlinked on
     every path, and a partial that survives an unlink failure keeps its
-    visible ``.partial`` suffix.
+    visible ``.partial`` suffix. Both operations run against the parent
+    descriptor ``_open_report_parent`` proved, never against the pathname.
     """
 
     body = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    parent = target.parent
-    try:
-        parent.mkdir(parents=True, exist_ok=True)
-    except OSError as exc:
-        _refuse("D081", f"report parent cannot be created: {exc}")
-    partial = parent / f".{target.name}.partial-{secrets.token_hex(8)}"
+    parent_fd = _open_report_parent(output_root, target)
+    partial = f".{target.name}.partial-{secrets.token_hex(8)}"
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
     fd = -1
     try:
-        fd = os.open(partial, flags, 0o600)
-        remaining = memoryview(body)
-        while remaining:
-            written = os.write(fd, remaining)
-            if written <= 0:
-                raise OSError("report write made no progress")
-            remaining = remaining[written:]
-        os.fsync(fd)
-        os.close(fd)
-        fd = -1
-        os.link(partial, target)
-    except OSError as exc:
-        if fd >= 0:
-            os.close(fd)
         try:
-            os.unlink(partial)
+            fd = os.open(partial, flags, 0o600, dir_fd=parent_fd)
+            remaining = memoryview(body)
+            while remaining:
+                written = os.write(fd, remaining)
+                if written <= 0:
+                    raise OSError("report write made no progress")
+                remaining = remaining[written:]
+            os.fsync(fd)
+            os.close(fd)
+            fd = -1
+            # link() never follows the final component of its destination, so
+            # an entry already standing there fails with EEXIST rather than
+            # being replaced or followed out of the directory.
+            os.link(partial, target.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        except OSError as exc:
+            if fd >= 0:
+                os.close(fd)
+            try:
+                os.unlink(partial, dir_fd=parent_fd)
+            except OSError:
+                pass
+            _refuse("D081", f"report {target} was not published: {exc}")
+        try:
+            os.unlink(partial, dir_fd=parent_fd)
         except OSError:
             pass
-        _refuse("D081", f"report {target} was not published: {exc}")
-    try:
-        os.unlink(partial)
-    except OSError:
-        pass
+    finally:
+        os.close(parent_fd)
     return hashlib.sha256(body).hexdigest()
 
 
@@ -1221,6 +1268,7 @@ class WorkRoot:
         self.work = self.path / "work"
         self.hook = self.path / HOOK_DIRECTORY
         self.marker = self.path / NETWORK_MARKER
+        self.marker_identity: tuple | None = None
         try:
             self.work.mkdir(mode=0o700)
             self.hook.mkdir(mode=0o700)
@@ -1232,18 +1280,44 @@ class WorkRoot:
             _refuse("D083", f"private work root cannot be prepared: {exc}")
 
     def network_attempted(self) -> bool:
+        """Read the armed marker, treating its removal as the attempt it hides.
+
+        The child runs as this user and knows the marker's directory, so it can
+        unlink the evidence after the hook writes it. An armed marker that is
+        gone, or that is a different file from the one that was armed, is
+        therefore read as an attempt rather than as silence.
+        """
+
         try:
-            return self.marker.lstat().st_size > 0
+            observed = self.marker.lstat()
         except FileNotFoundError:
-            return False
+            return self.marker_identity is not None
         except OSError:
             return True
+        if self.marker_identity is not None:
+            if _file_identity(observed) != self.marker_identity:
+                return True
+        return observed.st_size > 0
 
-    def clear_marker(self) -> None:
+    def arm_marker(self) -> None:
+        """Replace the marker with a fresh empty file and pin its identity."""
+
+        self.marker_identity = None
         try:
             self.marker.unlink()
         except FileNotFoundError:
             pass
+        except OSError:
+            return
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            fd = os.open(self.marker, flags, 0o600)
+        except OSError:
+            return
+        try:
+            self.marker_identity = _file_identity(os.fstat(fd))
+        finally:
+            os.close(fd)
 
     def environment(self) -> dict[str, str]:
         env = {
@@ -1311,7 +1385,7 @@ def execute_command(
 ) -> CommandOutcome:
     """Run one argv without a shell, bounded by time and output, in its own group."""
 
-    work.clear_marker()
+    work.arm_marker()
     started = time.monotonic_ns()
     try:
         proc = subprocess.Popen(
@@ -1347,6 +1421,12 @@ def execute_command(
             _kill_group(proc)
             proc.wait()
     finally:
+        # Tear the group down on every path, not only on a timeout or an
+        # overflow. A command that exits 0 after forking leaves the grandchild
+        # holding the pipes: it outlives the run that started it, and the
+        # duration this returns becomes the grandchild's lifetime rather than
+        # the command's, which is the number the report records.
+        _kill_group(proc)
         # The group is down, so nothing legitimate holds the pipes; close them
         # so an escaped writer cannot keep a reader thread alive.
         for reader in readers:
@@ -1407,19 +1487,36 @@ def preflight_record(root: Path, skill: GovernedSkill, record: dict) -> list[Obs
     command_ids = {command["id"] for command in record["commands"]}
     for index, command in enumerate(record["commands"]):
         argv = command["argv"]
-        if argv[0] == PYTHON_LAUNCHER and len(argv) > 1 and not argv[1].startswith("-"):
-            program = argv[1]
-            if WORK_TOKEN not in program:
-                try:
-                    _read_regular_file(
-                        root, program, maximum=MAX_SOURCE_BYTES,
-                        label=f"{where} commands[{index}] program",
-                    )
-                except TopologyError as exc:
-                    _refuse(
-                        "D072",
-                        f"{where} commands[{index}] program {program!r} is absent: {exc}",
-                    )
+        # The execution boundary is the pinned interpreter, not whatever the
+        # record names first. Anything else is resolved through PATH and runs
+        # outside every control this runner claims: a shell interprets the rest
+        # of the argv, and no non-Python child ever loads the socket hook.
+        if argv[0] != PYTHON_LAUNCHER:
+            _refuse(
+                "D072",
+                f"{where} commands[{index}] runs {argv[0]!r}; only {PYTHON_LAUNCHER} is admitted",
+            )
+        if len(argv) < 2:
+            _refuse("D072", f"{where} commands[{index}] gives the interpreter no work")
+        disabling = [word for word in argv[1:] if word in HOOK_DISABLING_OPTIONS]
+        if disabling:
+            _refuse(
+                "D074",
+                f"{where} commands[{index}] passes {disabling[0]!r}, which turns off "
+                "the site hook that denies sockets",
+            )
+        program = argv[1]
+        if not program.startswith("-") and WORK_TOKEN not in program:
+            try:
+                _read_regular_file(
+                    root, program, maximum=MAX_SOURCE_BYTES,
+                    label=f"{where} commands[{index}] program",
+                )
+            except TopologyError as exc:
+                _refuse(
+                    "D072",
+                    f"{where} commands[{index}] program {program!r} is absent: {exc}",
+                )
     observations = []
     for index, text in enumerate(record["observations"]):
         observation = parse_observation(text, where=f"{where} observations[{index}]")
@@ -1707,7 +1804,7 @@ def run_demonstrations(
         "demonstrations": demonstrations,
         "refusals": refusals,
     }
-    digest = publish_report(target, payload)
+    digest = publish_report(target, payload, output_root)
     _emit_event(
         "demonstration.report",
         correlation_id=correlation_id,
@@ -1743,6 +1840,18 @@ def command_run(args: argparse.Namespace) -> int:
             code=exc.code,
             correlation_id=correlation_id,
             message=exc.message,
+        )
+        raise
+    except (DemonstrationError, TopologyError) as exc:
+        # A ledger, schema or topology refusal reached during a run ends the
+        # run as much as a RunRefusal does. Without this the correlation id is
+        # minted, the operator sees no event at all, and the only trace of a
+        # failed run is a line of stderr prose.
+        _emit_event(
+            "demonstration.refused",
+            code=getattr(exc, "code", None) or str(exc).split(" ", 1)[0],
+            correlation_id=correlation_id,
+            message=str(exc),
         )
         raise
     print(f"demonstrations {payload['status']}: {payload['selection']['count']} record(s), "

@@ -183,16 +183,16 @@ cannot silently change the boundary it names.
 - `D060` -- the committed schema is unreadable, open, malformed, or does not validate the record.
 - `D070` -- a run's selection resolves to zero executable records.
 - `D071` -- a registered public demonstration has no ledger or is not `real-data`, or a named directory is not governed.
-- `D072` -- a command's program file is absent or cannot start.
+- `D072` -- a command names a program other than `python3`, gives the interpreter no work, or its program file is absent or cannot start.
 - `D073` -- the running interpreter is not the version `.python-version` pins, or no pin can be read.
-- `D074` -- a child opened or resolved a socket, or the record allowlists a network this run does not admit.
+- `D074` -- a child opened or resolved a socket, removed the armed network marker, or was given an interpreter option that turns the socket hook off, or the record allowlists a network this run does not admit.
 - `D075` -- a command's exit status differs from its declared `expect_exit`.
 - `D076` -- a command passed its timeout and its process group was killed.
 - `D077` -- a command wrote past the output cap and was truncated.
 - `D078` -- an observation is prose, names an unknown command, or is outside the checkable grammar.
 - `D079` -- a checkable observation did not hold against the command's stdout.
 - `D080` -- the report path traverses, resolves outside the output root, or already exists.
-- `D081` -- the report could not be published atomically; no partial object was left under its name.
+- `D081` -- the report's parent is no longer confined below the output root, or the report could not be published atomically; no partial object was left under its name.
 - `D082` -- the public set passed its aggregate ceiling.
 - `D083` -- the private work root could not be created or prepared.
 <!-- refusal-catalogue:end -->
@@ -233,23 +233,34 @@ selected record's observations. A file source is recorded in the report as
 verified; a chain anchor is recorded as declared, because the runner has no
 chain and proves nothing about one.
 
-Each command's argv runs without a shell. `python3` in the first position is
-replaced by the running, pinned interpreter. The only substitution inside an
-argv element is the reserved `{work}` token, which expands to a private `0700`
-directory beneath a fresh temporary root that is removed when the run ends;
-every other brace is passed literally. The child sees an allowlisted
-environment (`PATH`, `HOME`, `TMPDIR`, `LANG`, `LC_ALL`, `LC_CTYPE`) plus a
-`PYTHONPATH` naming only the runner's site hook, so credential and Git keys
-are stripped by never being copied. The hook replaces the socket constructors
-and resolvers in every Python child with a function that records the attempt
-and raises; a child that opens or resolves a socket is refused even when it
-swallows the exception and exits 0. This is a process-level denial inside
-Python, not a kernel sandbox, and no capture exception is declared: a record
-that allowlists a network is refused.
+Each command's argv runs without a shell, and `python3` is the only program a
+record may name: anything else would be resolved through `PATH` and would run
+outside every control described here, so it is refused with `D072` before the
+run starts. The named interpreter is replaced by the running, pinned one. The
+only substitution inside an argv element is the reserved `{work}` token, which
+expands to a private `0700` directory beneath a fresh temporary root that is
+removed when the run ends; every other brace is passed literally. The child
+sees an allowlisted environment (`PATH`, `HOME`, `TMPDIR`, `LANG`, `LC_ALL`,
+`LC_CTYPE`) plus a `PYTHONPATH` naming only the runner's site hook, so
+credential and Git keys are stripped by never being copied. The hook replaces
+the socket constructors and resolvers in the Python child with a function that
+records the attempt in a marker file and raises; a child that opens or resolves
+a socket is refused even when it swallows the exception and exits 0. The marker
+is armed as an empty file before each command and its identity is pinned, so a
+child that unlinks or replaces the marker to hide the attempt is refused for
+that removal. `-S`, `-E` and `-I` would leave the child outside the hook
+entirely, by skipping `site` or ignoring `PYTHONPATH`, and are refused with
+`D074`. This is a process-level denial inside Python, not a kernel sandbox: a
+child that reaches the kernel's socket call directly, through `ctypes` or
+another extension, is outside what the hook can see. No capture exception is
+declared, so a record that allowlists a network is refused.
 
 Each command is bounded by its record's `timeout_seconds`, further clipped by
 the public set's aggregate ceiling of 600,000 milliseconds. A command that
-passes its budget is killed with its whole process group. Stdout and stderr
+passes its budget is killed with its whole process group, and the group is torn
+down on every path, so a command that exits 0 after forking leaves nothing
+behind it and its recorded duration is its own rather than a grandchild's.
+Stdout and stderr
 are each capped at one mebibyte; a command that writes past the cap is
 truncated and refused. Exit status, observations, durations, output digests
 and bounded output tails are recorded per command and per repetition;
@@ -259,7 +270,12 @@ be recorded without claiming an improvement.
 The run publishes one `shoggoth-demonstration-report/v1` object to the report
 path: the body lands in a sibling `.partial` file and is linked in under the
 final name without replacing anything, so the target is either complete or
-absent. The report repeats each record's claim, non-claim, record digest and
+absent. Publication does not travel the pathname again. The report's parent is
+reopened by walking down from the output root with each component opened
+without following a symlink, and both the partial write and the link run
+against that descriptor, so a component swapped during the run refuses with
+`D081` instead of publishing outside the root. The report repeats each record's
+claim, non-claim, record digest and
 sources, and its `status` is `verified` only when every selected record
 verified; the process exits 0 in that case and 2 otherwise. A report is
 evidence of one run on one machine and promotes nothing a record's non-claim
@@ -268,7 +284,9 @@ withholds.
 The runner emits `demonstration.selected` with the record count,
 `demonstration.started` per command, `demonstration.verified` or
 `demonstration.refused` per record, and `demonstration.report` with the
-published digest, all carrying one correlation id.
+published digest, all carrying one correlation id. A ledger, schema or topology
+refusal reached during a run emits `demonstration.refused` under that same
+correlation id, so no failed run is visible only as stderr prose.
 
 ## What the checker establishes
 
