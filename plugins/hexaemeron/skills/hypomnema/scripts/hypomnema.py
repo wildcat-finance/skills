@@ -12,7 +12,7 @@ though the reason exists and was checked. This settles the part a parser can.
   H006  a source comment citing a record that does not exist
   H007  an alert runbook missing one of its three required answers
   H008  an explicit study design bridge that does not bind one selected design
-        to one established standing-record home
+        to one established numbered ADR, numberless draft, or skill-ledger home
   H009  a stable decision identity is malformed, misplaced, or duplicated
   H010  a stable decision reference names no draft or final record
 
@@ -502,6 +502,33 @@ def check_design_bridge(
         RECORD_NAME.fullmatch(record_relative.name) is not None
         and "decisions" in record_relative.parts[:-1]
     )
+    is_draft = (
+        len(record_relative.parts) == 4
+        and record_relative.parts[:3] == ("docs", "decisions", "drafts")
+        and record_relative.suffix == ".md"
+    )
+    if is_draft:
+        try:
+            record_lines = record_data.decode("utf-8").splitlines()
+        except UnicodeDecodeError:
+            return [Finding(
+                root / study_relative,
+                record_line,
+                "H008",
+                f"draft record `{record}` is not UTF-8 text",
+            )]
+        draft_findings = (
+            _stable_record_findings(record_relative, record_lines)
+            + _record_findings(record_relative, record_lines)
+        )
+        if draft_findings:
+            return [Finding(
+                root / study_relative,
+                record_line,
+                "H008",
+                f"draft record `{record}` is malformed: "
+                f"{draft_findings[0].message}",
+            )]
     is_ledger = record_relative.name == "EVOLUTION.md"
     if is_ledger:
         skill_relative = record_relative.parent / "SKILL.md"
@@ -522,12 +549,12 @@ def check_design_bridge(
                 f"record `{record}` is not a governed skill ledger"
                 + (f": {skill_error}" if skill_error else ""),
             )]
-    if not is_adr and not is_ledger:
+    if not is_adr and not is_draft and not is_ledger:
         return [Finding(
             root / study_relative,
             record_line,
             "H008",
-            f"record `{record}` is outside an established ADR or governed-skill-ledger home",
+            f"record `{record}` is outside an established ADR, numberless draft, or governed-skill-ledger home",
         )]
     return []
 
