@@ -239,9 +239,14 @@ reference definitions cannot supply one. The only authoritative assignment is
 a visible full line of the form
 ``Known-failure assignment: `kf-453-N` -> Step S`` outside fences. Raw HTML,
 comments, and malformed HTML-like bytes outside one-line code spans refuse at
-this machine-record boundary. Markdown image openers, and multiline or
-unmatched inline-code delimiters, also refuse. Fenced examples use column-zero
-fences; nested or indented fence candidates refuse. At most 128 findings, 4,096
+the runbook boundary. Every square-bracket byte outside a complete one-line
+code span or fenced block also refuses there. The study keeps its separate
+surface rules. Its inventory discovery tolerates unmatched inline-backtick runs
+in ordinary prose, but never uses them to mask bytes. It processes or refuses
+each column-zero fence candidate before that tolerance. Raw HTML, image openers,
+indented fences, bad fence information, unclosed fences, and anything other
+than one isolated inventory block still refuse. Fenced examples use column-zero
+fences. Nested or indented fence candidates refuse. At most 128 findings, 4,096
 aggregate guard paths, 1,024 bytes per path, 4,096 bytes per source reference,
 failure statement, or command, and 16 command arguments are checked. Paths are
 root-relative portable paths without shell metacharacters or Unicode
@@ -530,6 +535,27 @@ clause. The other three amendment fields remain `Why`, `Steps touched` and
 the mechanical check establishes its shape and source bytes, not that the new
 criterion is correct or its command will pass.
 
+For machine-checked assignment authority, `What changed` is the first nonblank,
+unfenced record after its amendment heading. Its first replacement header
+begins that value. Each later header begins a column-zero paragraph after a
+blank separator. Fenced and inline-code examples are not headers. A
+replacement-like fragment at any other location refuses as ambiguous.
+
+Known-failure assignment records outside every structurally valid complete
+replacement `Exit` clause remain ordinary active authority and stay outside
+generation comparison. Records inside those clauses form source-ordered
+generations. Each generation first passes exact-line, assignment-only-block,
+unique-id, and real-Step checks. Leading empty generations are allowed. The
+first non-empty id-to-Step map locks assignment authority. Every later Exit
+generation, including an empty one, must equal that map; pair order does not
+matter. The lock cannot reset or fall back. Empty, partial, extra, or reassigned
+post-lock generations refuse. A later replacement of another field creates no
+generation. The final Exit generation is combined with the ordinary records,
+while matching earlier generations remain readable history. Step headings come
+only from the baseline before the first real amendment. Malformed amendment or
+replacement boundaries, repeated clauses, and post-amendment Step headings
+refuse before any generation can suppress a record.
+
 The shared amendment scanner checks every real study or runbook amendment's
 calendar date, four ordered non-empty fields, and final-section placement.
 Fenced examples are not amendments. Runbook mode additionally checks the
@@ -636,12 +662,12 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 ### protasis-known-failure-inventory
 
 - Promise: A clean inventory result establishes that one closed `protasis-known-failure-inventory/v1` object matches an independent exact id set, current source and synopsis bytes, portable guard paths, structurally bound commands, admitted reports, and real consuming runbook steps, or carries one digest-bound no-known-findings claim.
-- Evidence: The exact study and runbook bytes, caller or runbook expected ids, source and synopsis paths and SHA-256 values, finding fields and assignments, parsed argv, path and count caps, stable K000 to K012 result, and focused hostile cases.
+- Evidence: The exact study and runbook bytes, caller or effective runbook expected ids, source and synopsis paths and SHA-256 values, finding fields and assignments, parsed argv, path and count caps, locked replacement-Exit map, stable K000 to K012 result, and focused hostile cases.
 - Evidence classes: checked
 - Boundary: This result establishes bounded structure and byte currency. A `source_ref` prefix selects a checked source view, but its locator text is opaque and does not prove that a cited line, range, or statement supports the failure. The result does not discover unknown failures, judge Surveyor's completeness, execute a guard, classify Elenchus output, write a receipt, or authorise a product edit by itself.
 - Authorises: Carrying the exact checked inventory into runbook derivation and the later Fiat inoculation boundary without inferring an omitted entry or an empty success.
 - Consequence: 1
-- Refuses: An absent, duplicated, open, malformed, non-finite, oversized, stale, unsafe, unassigned, command-drifted, id-mismatched, or unbound empty inventory.
+- Refuses: An absent, duplicated, open, malformed, non-finite, oversized, stale, unsafe, unassigned, command-drifted, id-mismatched, bracket-bearing runbook, replacement-ambiguous, post-lock generation-drifted, or unbound empty inventory.
 - Recovery: Repair the named K000 to K012 cause in the study, runbook, expected-id set, or source view, then rerun the complete read-only check.
 - Exceptions: none
 

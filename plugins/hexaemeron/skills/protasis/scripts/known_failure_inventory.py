@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from bisect import bisect_right
+import datetime
 import hashlib
 import json
 import os
@@ -43,6 +44,7 @@ ADMITTED_REPORT_FORMATS = frozenset(
 )
 
 FENCE = re.compile(r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>[^\r\n]*)$")
+MALFORMED_COLUMN_ZERO_FENCE = re.compile(r"^(?:`{3,}|~{3,})")
 INDENTED_FENCE = re.compile(r"^ {1,3}(?:`{3,}|~{3,})")
 STEP = re.compile(
     r"^##[ \t]+Step[ \t]+(?P<number>[1-9][0-9]{0,5})[ \t]*:[^\r\n]*$"
@@ -54,6 +56,23 @@ KNOWN_FAILURE_ASSIGNMENT = re.compile(
     r"-> Step (?P<number>[1-9][0-9]{0,5})$"
 )
 ASSIGNMENT_LIKE = re.compile(r"^Known-failure assignment:")
+AMENDMENT_HEADING = re.compile(
+    r"^###[ \t]+Amendment[ \t]+--[ \t]+(?P<date>\d{4}-\d{2}-\d{2})[ \t]*$"
+)
+AMENDMENT_LIKE = re.compile(r"^#{1,3}[ \t]+Amendment(?:[ \t]|$)")
+AMENDMENT_FIELD_NAMES = ("What changed", "Why", "Steps touched", "Still holding")
+AMENDMENT_FIELD = re.compile(
+    r"^\*\*(?P<name>What changed|Why|Steps touched|Still holding)\.\*\*"
+    r"(?:[ \t]*(?P<value>.*))?$"
+)
+ANY_AMENDMENT_FIELD = re.compile(r"^\*\*[^*\r\n]+\.\*\*(?:[ \t]*.*)?$")
+REPLACEMENT_FIELDS = "Goal|Entry|Exit|Files|Tests|Disciplines"
+COMPLETE_REPLACEMENT_HEADER = re.compile(
+    rf"^Complete[ \t]+replacement[ \t]+(?P<field>{REPLACEMENT_FIELDS}):"
+)
+COMPLETE_REPLACEMENT_LIKE = re.compile(
+    r"Complete[ \t\r\n]+replacement(?:[ \t\r\n]+|$)"
+)
 BACKTICK_RUN = re.compile(r"`+")
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -307,7 +326,12 @@ def _uncovered_token(
         cursor = index + len(token)
 
 
-def _markdown_surface(text: str) -> tuple[str | None, str | None]:
+def _markdown_surface(
+    text: str,
+    *,
+    tolerate_unmatched_ticks: bool = False,
+    reject_links: bool = False,
+) -> tuple[str | None, str | None]:
     """Admit a record surface only when HTML cannot hide machine records.
 
     Fenced code and complete one-line code spans are visible examples. Any
@@ -333,14 +357,18 @@ def _markdown_surface(text: str) -> tuple[str | None, str | None]:
                     open_mark = None
                     open_length = 0
             continue
+        if MALFORMED_COLUMN_ZERO_FENCE.match(line) and fence is None:
+            return None, "malformed column-zero fence candidate"
         if fence is not None:
             sequence = fence.group("mark")
             open_mark = sequence[0]
             open_length = len(sequence)
             continue
         spans, unmatched_ticks = _inline_code_state(line)
-        if unmatched_ticks:
+        if unmatched_ticks and not tolerate_unmatched_ticks:
             return None, "multiline or unmatched inline code is unsupported"
+        if reject_links and "[" in line and _uncovered_token(line, "[", spans):
+            return None, "square-bracket syntax is unsupported at the runbook boundary"
         if "<" in line and _uncovered_token(line, "<", spans):
             return None, "raw HTML is unsupported at this machine-record boundary"
         if "![" in line and _uncovered_token(line, "![", spans):
@@ -427,7 +455,9 @@ def _inventory_block(text: str) -> tuple[str | None, int, str | None]:
     wanted = False
     wanted_line = 1
     body: list[str] = []
-    surface, surface_error = _markdown_surface(text)
+    surface, surface_error = _markdown_surface(
+        text, tolerate_unmatched_ticks=True
+    )
     if surface_error is not None or surface is None:
         return None, 1, surface_error or "study surface is unavailable"
     physical_lines = list(_markdown_physical_lines(surface))
@@ -628,44 +658,230 @@ def _commands_agree(
     return True, green_valid
 
 
+def _runbook_fence_mask(lines: list[str]) -> tuple[list[bool] | None, str | None]:
+    """Mark complete column-zero fenced blocks without re-splitting text."""
+    fenced = [False] * len(lines)
+    open_mark: str | None = None
+    open_length = 0
+    for index, line in enumerate(lines):
+        fence = _markdown_fence(line)
+        if open_mark is None:
+            if fence is None:
+                continue
+            sequence = fence.group("mark")
+            open_mark = sequence[0]
+            open_length = len(sequence)
+            fenced[index] = True
+            continue
+        fenced[index] = True
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        if (
+            sequence[0] == open_mark
+            and len(sequence) >= open_length
+            and not fence.group("info").strip(" \t")
+        ):
+            open_mark = None
+            open_length = 0
+    if open_mark is not None:
+        return None, "runbook contains an unclosed fence"
+    return fenced, None
+
+
+def _amendment_exit_scopes(
+    lines: list[str], fenced: list[bool]
+) -> tuple[int, dict[int, int], int | None, str | None]:
+    """Return the baseline end and source-ordered Exit generation per line.
+
+    Only complete Exit clauses inside structurally closed four-field runbook
+    amendments are versioned. Everything else remains ordinary authority.
+    """
+    amendment_starts: list[int] = []
+    for index, line in enumerate(lines):
+        if fenced[index]:
+            continue
+        amendment = AMENDMENT_HEADING.fullmatch(line)
+        if amendment is not None:
+            try:
+                datetime.date.fromisoformat(amendment.group("date"))
+            except ValueError:
+                return len(lines), {}, None, "runbook amendment date is invalid"
+            amendment_starts.append(index)
+            continue
+        if AMENDMENT_LIKE.match(line):
+            return len(lines), {}, None, "runbook amendment heading is malformed"
+
+    baseline_end = amendment_starts[0] if amendment_starts else len(lines)
+    if amendment_starts:
+        for index in range(baseline_end, len(lines)):
+            if fenced[index]:
+                continue
+            if STEP.fullmatch(lines[index]) is not None or STEP_LIKE.match(lines[index]):
+                return baseline_end, {}, None, "runbook Step heading follows an amendment"
+
+    line_generations: dict[int, int] = {}
+    generation = 0
+    for position, start in enumerate(amendment_starts):
+        end = (
+            amendment_starts[position + 1]
+            if position + 1 < len(amendment_starts)
+            else len(lines)
+        )
+        fields: list[tuple[str, int, re.Match[str]]] = []
+        for index in range(start + 1, end):
+            if fenced[index]:
+                continue
+            line = lines[index]
+            if re.match(r"^#{1,3}(?:[ \t]|$)", line):
+                return baseline_end, {}, None, "runbook amendment is not a final section"
+            field = AMENDMENT_FIELD.fullmatch(line)
+            if field is not None:
+                fields.append((field.group("name"), index, field))
+                continue
+            if ANY_AMENDMENT_FIELD.fullmatch(line) is not None:
+                return baseline_end, {}, None, "runbook amendment field is unknown"
+        if [name for name, _index, _match in fields] != list(AMENDMENT_FIELD_NAMES):
+            return baseline_end, {}, None, "runbook amendment fields are missing, repeated, or reordered"
+        first_record = next(
+            (
+                index
+                for index in range(start + 1, end)
+                if not fenced[index] and lines[index].strip(" \t")
+            ),
+            None,
+        )
+        if first_record != fields[0][1]:
+            return baseline_end, {}, None, "What changed is not the first amendment record"
+
+        for field_position, (_name, field_line, field_match) in enumerate(fields):
+            field_end = (
+                fields[field_position + 1][1]
+                if field_position + 1 < len(fields)
+                else end
+            )
+            pieces = [field_match.group("value") or ""]
+            pieces.extend(lines[field_line + 1 : field_end])
+            if not "\n".join(pieces).strip(" \t\r\n"):
+                return baseline_end, {}, None, "runbook amendment field is empty"
+
+        _name, what_line, what_match = fields[0]
+        why_line = fields[1][1]
+        components: list[tuple[int, int, int]] = []
+        what_parts = [what_match.group("value") or ""]
+        what_parts.extend(lines[what_line + 1 : why_line])
+        structure_parts: list[str] = []
+        cursor = 0
+        for offset, part in enumerate(what_parts):
+            physical_line = what_line if offset == 0 else what_line + offset
+            components.append((physical_line, cursor, cursor + len(part)))
+            if fenced[physical_line]:
+                structure_parts.append("\x00" * len(part))
+            else:
+                visible = list(part)
+                for span_start, span_end in _inline_code_spans(part):
+                    visible[span_start:span_end] = "\x00" * (
+                        span_end - span_start
+                    )
+                structure_parts.append("".join(visible))
+            cursor += len(part)
+            if offset + 1 < len(what_parts):
+                cursor += 1
+        what_changed = "\n".join(what_parts)
+        replacement_surface = "\n".join(structure_parts)
+        clauses: list[tuple[str, int, int]] = []
+        for offset, (_physical_line, component_start, _component_end) in enumerate(
+            components
+        ):
+            header = COMPLETE_REPLACEMENT_HEADER.match(structure_parts[offset])
+            isolated = offset == 0 or not what_parts[offset - 1].strip(" \t")
+            if header is not None and isolated:
+                clauses.append(
+                    (
+                        header.group("field"),
+                        component_start,
+                        component_start + header.end(),
+                    )
+                )
+        clause_starts = {clause_start for _field, clause_start, _end in clauses}
+        if (
+            not clauses
+            or clauses[0][1] != 0
+            or any(
+                candidate.start() not in clause_starts
+                for candidate in COMPLETE_REPLACEMENT_LIKE.finditer(
+                    replacement_surface
+                )
+            )
+        ):
+            return baseline_end, {}, None, "What changed has malformed replacement authority"
+
+        clause_fields = [field for field, _start, _end in clauses]
+        if len(set(clause_fields)) != len(clause_fields):
+            return baseline_end, {}, None, "complete replacement fields repeat"
+        for clause_position, (field, _clause_start, value_start) in enumerate(
+            clauses
+        ):
+            value_end = (
+                clauses[clause_position + 1][1]
+                if clause_position + 1 < len(clauses)
+                else len(what_changed)
+            )
+            if not what_changed[value_start:value_end].strip(" \t\r\n"):
+                return baseline_end, {}, None, "complete replacement field is empty"
+            if field != "Exit":
+                continue
+            generation += 1
+            for physical_line, component_start, component_end in components:
+                if component_end > value_start and component_start < value_end:
+                    line_generations[physical_line] = generation
+
+    return baseline_end, line_generations, generation or None, None
+
+
 def _runbook_contract(
     text: str,
 ) -> tuple[dict[int, set[str]] | None, set[str], str | None]:
     """Return top-level Steps and exact visible known-failure assignments."""
-    step_ids: dict[int, set[str]] = {}
-    open_mark: str | None = None
-    open_length = 0
-    assigned_ids: set[str] = set()
-    assignments: list[tuple[str, int]] = []
-    block_has_assignment = False
-    block_has_other = False
-    surface, surface_error = _markdown_surface(text)
+    surface, surface_error = _markdown_surface(text, reject_links=True)
     if surface_error is not None or surface is None:
         return None, set(), surface_error or "runbook surface is unavailable"
-    for physical in _markdown_physical_lines(surface):
-        line = physical.rstrip("\r\n")
-        if open_mark is not None:
-            fence = _markdown_fence(line)
-            if fence is not None:
-                sequence = fence.group("mark")
-                if (
-                    sequence[0] == open_mark
-                    and len(sequence) >= open_length
-                    and not fence.group("info").strip(" \t")
-                ):
-                    open_mark = None
-                    open_length = 0
-            continue
+    lines = [physical.rstrip("\r\n") for physical in _markdown_physical_lines(surface)]
+    fenced, fence_error = _runbook_fence_mask(lines)
+    if fence_error is not None or fenced is None:
+        return None, set(), fence_error or "runbook fence state is unavailable"
+    baseline_end, line_generations, final_generation, amendment_error = (
+        _amendment_exit_scopes(lines, fenced)
+    )
+    if amendment_error is not None:
+        return None, set(), amendment_error
 
-        fence = _markdown_fence(line)
-        if fence is not None:
-            sequence = fence.group("mark")
-            open_mark = sequence[0]
-            open_length = len(sequence)
+    step_ids: dict[int, set[str]] = {}
+    for index in range(baseline_end):
+        if fenced[index]:
+            continue
+        line = lines[index]
+        step = STEP.fullmatch(line)
+        if step is not None:
+            number = int(step.group("number"))
+            if number in step_ids:
+                return None, set(), "runbook steps are absent or duplicated"
+            step_ids[number] = set()
+            continue
+        if STEP_LIKE.match(line):
+            return None, set(), "runbook contains a malformed Step heading"
+    if not step_ids:
+        return None, set(), "runbook steps are absent or duplicated"
+
+    assignments: list[tuple[str, int, int]] = []
+    scope_maps: dict[int, dict[str, int]] = {}
+    block_has_assignment = False
+    block_has_other = False
+    for index, line in enumerate(lines):
+        if fenced[index]:
             block_has_assignment = False
             block_has_other = False
             continue
-
         if re.fullmatch(r"[ \t]*", line) is not None:
             block_has_assignment = False
             block_has_other = False
@@ -676,36 +892,44 @@ def _runbook_contract(
         block_has_other = block_has_other or assignment is None
         if block_has_assignment and block_has_other:
             return None, set(), "a known-failure assignment shares a prose block"
-
-        step = STEP.fullmatch(line)
-        if step is not None:
-            number = int(step.group("number"))
-            if number in step_ids:
-                return None, set(), "runbook steps are absent or duplicated"
-            step_ids[number] = set()
-            continue
-        if STEP_LIKE.match(line):
-            return None, set(), "runbook contains a malformed Step heading"
         if assignment is not None:
             finding_id = assignment.group("id")
             declared_step = int(assignment.group("number"))
-            if finding_id in assigned_ids:
+            scope = line_generations.get(index, 0)
+            scope_map = scope_maps.setdefault(scope, {})
+            if finding_id in scope_map:
                 return None, set(), "a known-failure assignment is misplaced or duplicated"
-            assignments.append((finding_id, declared_step))
-            assigned_ids.add(finding_id)
+            scope_map[finding_id] = declared_step
+            assignments.append((finding_id, declared_step, scope))
             continue
         if ASSIGNMENT_LIKE.match(line):
             return None, set(), "runbook contains a malformed known-failure assignment"
 
-    if open_mark is not None:
-        return None, set(), "runbook contains an unclosed fence"
-    if not step_ids:
-        return None, set(), "runbook steps are absent or duplicated"
-    for finding_id, declared_step in assignments:
+    for _finding_id, declared_step, _scope in assignments:
         if declared_step not in step_ids:
             return None, set(), "a known-failure assignment names no real Step"
+
+    locked_map: dict[str, int] | None = None
+    if final_generation is not None:
+        for generation in range(1, final_generation + 1):
+            generation_map = scope_maps.get(generation, {})
+            if locked_map is None:
+                if generation_map:
+                    locked_map = dict(generation_map)
+                continue
+            if generation_map != locked_map:
+                return None, set(), "an Exit generation changes locked assignment authority"
+
+    active_map = dict(scope_maps.get(0, {}))
+    if final_generation is not None:
+        for finding_id, declared_step in scope_maps.get(final_generation, {}).items():
+            if finding_id in active_map:
+                return None, set(), "a known-failure assignment is misplaced or duplicated"
+            active_map[finding_id] = declared_step
+    active_ids = set(active_map)
+    for finding_id, declared_step in active_map.items():
         step_ids[declared_step].add(finding_id)
-    return step_ids, assigned_ids, None
+    return step_ids, active_ids, None
 
 
 def _expected_id_contract(

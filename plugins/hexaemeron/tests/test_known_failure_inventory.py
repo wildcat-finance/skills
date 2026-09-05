@@ -63,6 +63,43 @@ NO_FINDINGS_RUNBOOK = """# No-known-findings runbook
 ## Step 1: Record the explicit claim
 """
 
+STEP_ONLY_RUNBOOK = """# Known-failure inoculation runbook
+
+## Step 1: Define the inventory
+
+## Step 2: Open the inoculation phase
+
+## Step 3: Retain the guard evidence
+
+## Step 4: Prove recovery and final green
+"""
+
+ASSIGNMENT_BLOCK = """Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4"""
+
+
+def runbook_amendment(what_changed: str) -> str:
+    return (
+        "\n### Amendment -- 2026-09-05\n\n"
+        f"**What changed.** {what_changed.rstrip()}\n\n"
+        "**Why.** The checked source changed.\n\n"
+        "**Steps touched.** Step 1's Exit.\n\n"
+        "**Still holding.** Steps 2 through 4 still hold.\n"
+    )
+
+
+def exit_replacement(assignments: str = ASSIGNMENT_BLOCK) -> str:
+    return (
+        "Complete replacement Exit: The effective assignment set follows.\n\n"
+        f"{assignments}\n\n"
+        "The remaining exit checks still apply."
+    )
+
 
 def load_checker(test: unittest.TestCase):
     """Load after asserting so the unfixed parent is a guard, not an error."""
@@ -258,6 +295,38 @@ class KnownFailureInventoryTests(unittest.TestCase):
             "# Study\n\n```bad`info\n" + study_text(body) + "\n"
         )
         self.assertIn("K001", self._codes(study=bad_backtick_info))
+
+    def test_study_prose_tick_tolerance_never_masks_inventory_structure(self):
+        body = encoded(inventory_object())
+        inventory_fence = "```known-failure-inventory\n" + body + "\n```\n"
+        prose = "# Study\n\nA `Complete replacement\nExit:` value.\n\n"
+        for ending in ("\n", "\r\n", "\r"):
+            source = (prose + inventory_fence).replace("\n", ending)
+            with self.subTest(ending=repr(ending)):
+                self.assertEqual([], self._codes(study=source))
+
+        adjacent = "# Study\n\nAn open `tick\n" + inventory_fence
+        self.assertIn("K001", self._codes(study=adjacent))
+
+        separated = "# Study\n\nAn open `tick\n\n" + inventory_fence
+        self.assertEqual([], self._codes(study=separated))
+        self.assertIn(
+            "K001",
+            self._codes(study=separated + "\n" + inventory_fence),
+        )
+
+        malformed_info = (
+            "# Study\n\n```known-failure-inventory`bad\n"
+            + body
+            + "\n```\n"
+        )
+        self.assertIn("K001", self._codes(study=malformed_info))
+
+        strict, strict_error = self.checker._markdown_surface(
+            "A `Complete replacement\nExit:` value."
+        )
+        self.assertIsNone(strict)
+        self.assertIsNotNone(strict_error)
 
     def test_duplicate_keys_malformed_json_and_excessive_depth_refuse(self):
         valid = encoded(inventory_object())
@@ -620,6 +689,326 @@ class KnownFailureInventoryTests(unittest.TestCase):
         )
         self.assertIn("K010", self._codes(runbook=wrong_declared_step))
 
+    def test_only_the_final_complete_exit_generation_is_active(self):
+        first = runbook_amendment(exit_replacement())
+        files_only = runbook_amendment(
+            "Complete replacement Files: Preserve the declared product paths."
+        )
+        final = runbook_amendment(exit_replacement())
+        runbook = STEP_ONLY_RUNBOOK + first + files_only + final
+        for ending in ("\n", "\r\n", "\r"):
+            candidate = runbook.replace("\n", ending)
+            with self.subTest(ending=repr(ending)):
+                steps, assigned, error = self.checker._runbook_contract(candidate)
+                self.assertIsNone(error)
+                self.assertEqual(EXPECTED_IDS, assigned)
+                self.assertEqual(
+                    {
+                        1: {"kf-453-01"},
+                        2: {"kf-453-02"},
+                        3: {"kf-453-03", "kf-453-04", "kf-453-05"},
+                        4: {"kf-453-06", "kf-453-07"},
+                    },
+                    steps,
+                )
+                self.assertEqual([], self._codes(runbook=candidate))
+
+        compact_files_amendment = (
+            "\n### Amendment -- 2026-09-05\n"
+            "**What changed.** Complete replacement Files: Keep them.\n"
+            "**Why.** The file set changed.\n"
+            "**Steps touched.** Step 1's Files.\n"
+            "**Still holding.** Steps 2 through 4 still hold.\n"
+        )
+        self.assertEqual(
+            [], self._codes(runbook=RUNBOOK + compact_files_amendment)
+        )
+
+    def test_receipted_empty_then_locked_exit_generation_history_is_clean(self):
+        runbook = COMMITTED_RUNBOOK.read_text(encoding="utf-8")
+
+        lines = [
+            physical.rstrip("\r\n")
+            for physical in self.checker._markdown_physical_lines(runbook)
+        ]
+        fenced, fence_error = self.checker._runbook_fence_mask(lines)
+        self.assertIsNone(fence_error)
+        self.assertIsNotNone(fenced)
+        _baseline, generations, final_generation, amendment_error = (
+            self.checker._amendment_exit_scopes(lines, fenced)
+        )
+        self.assertIsNone(amendment_error)
+        self.assertEqual(8, final_generation)
+        self.assertEqual(
+            [0, 0, 7, 7, 7, 7, 7, 7],
+            [
+                sum(
+                    self.checker.KNOWN_FAILURE_ASSIGNMENT.fullmatch(lines[index])
+                    is not None
+                    for index, scoped_generation in generations.items()
+                    if scoped_generation == generation
+                )
+                for generation in range(1, 9)
+            ],
+        )
+        steps, assigned, error = self.checker._runbook_contract(runbook)
+        self.assertIsNone(error)
+        self.assertEqual(EXPECTED_IDS, assigned)
+        self.assertEqual(
+            {
+                1: {"kf-453-01"},
+                2: {"kf-453-02"},
+                3: {"kf-453-03", "kf-453-04", "kf-453-05"},
+                4: {"kf-453-06", "kf-453-07"},
+                5: set(),
+            },
+            steps,
+        )
+        self.assertEqual([], self._codes(runbook=runbook))
+
+    def test_final_exit_generation_never_falls_back(self):
+        complete = runbook_amendment(exit_replacement())
+        empty = runbook_amendment(
+            "Complete replacement Exit: No assignment records are carried."
+        )
+        _steps, assigned, error = self.checker._runbook_contract(
+            STEP_ONLY_RUNBOOK + complete + empty
+        )
+        self.assertIsNotNone(error)
+        self.assertEqual(set(), assigned)
+        self.assertIn(
+            "K010",
+            self._codes(runbook=STEP_ONLY_RUNBOOK + complete + empty),
+        )
+
+        incomplete_block = "\n".join(ASSIGNMENT_BLOCK.splitlines()[:-1])
+        incomplete = runbook_amendment(exit_replacement(incomplete_block))
+        _steps, assigned, error = self.checker._runbook_contract(
+            STEP_ONLY_RUNBOOK + complete + incomplete
+        )
+        self.assertIsNotNone(error)
+        self.assertEqual(set(), assigned)
+        self.assertIn(
+            "K010",
+            self._codes(runbook=STEP_ONLY_RUNBOOK + complete + incomplete),
+        )
+
+    def test_locked_exit_generation_map_refuses_drift_but_not_reordering(self):
+        complete = runbook_amendment(exit_replacement())
+        partial = "\n".join(ASSIGNMENT_BLOCK.splitlines()[:-1])
+        extra = (
+            ASSIGNMENT_BLOCK
+            + "\nKnown-failure assignment: `kf-extra` -> Step 1"
+        )
+        reassigned = ASSIGNMENT_BLOCK.replace(
+            "Known-failure assignment: `kf-453-01` -> Step 1",
+            "Known-failure assignment: `kf-453-01` -> Step 2",
+        )
+        hostile_successors = (
+            "",
+            partial,
+            extra,
+            reassigned,
+        )
+        for successor in hostile_successors:
+            if successor:
+                replacement = exit_replacement(successor)
+            else:
+                replacement = "Complete replacement Exit: No assignments."
+            candidate = (
+                STEP_ONLY_RUNBOOK
+                + complete
+                + runbook_amendment(replacement)
+            )
+            with self.subTest(successor=successor[-80:]):
+                _steps, assigned, error = self.checker._runbook_contract(candidate)
+                self.assertIsNotNone(error)
+                self.assertEqual(set(), assigned)
+                self.assertIn("K010", self._codes(runbook=candidate))
+
+        reordered = "\n".join(reversed(ASSIGNMENT_BLOCK.splitlines()))
+        candidate = (
+            STEP_ONLY_RUNBOOK
+            + complete
+            + runbook_amendment(exit_replacement(reordered))
+        )
+        steps, assigned, error = self.checker._runbook_contract(candidate)
+        self.assertIsNone(error)
+        self.assertEqual(EXPECTED_IDS, assigned)
+        self.assertEqual(
+            {
+                1: {"kf-453-01"},
+                2: {"kf-453-02"},
+                3: {"kf-453-03", "kf-453-04", "kf-453-05"},
+                4: {"kf-453-06", "kf-453-07"},
+            },
+            steps,
+        )
+        self.assertEqual([], self._codes(runbook=candidate))
+
+    def test_records_outside_exit_generations_remain_active_and_fail_closed(self):
+        final = runbook_amendment(exit_replacement())
+        ordinary_extra = (
+            STEP_ONLY_RUNBOOK
+            + "\nKnown-failure assignment: `kf-extra` -> Step 1\n"
+            + final
+        )
+        _steps, assigned, error = self.checker._runbook_contract(ordinary_extra)
+        self.assertIsNone(error)
+        self.assertEqual(EXPECTED_IDS | {"kf-extra"}, assigned)
+        self.assertIn("K006", self._codes(runbook=ordinary_extra))
+
+        files_record = runbook_amendment(
+            "Complete replacement Files: Keep these files.\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "No other file changes apply."
+        )
+        self.assertIn(
+            "K006",
+            self._codes(runbook=STEP_ONLY_RUNBOOK + final + files_record),
+        )
+
+        fenced_exit_decoy = runbook_amendment(
+            "Complete replacement Files: Keep these files.\n\n"
+            "```text\n"
+            "Complete replacement Exit: This is only an example.\n"
+            "```\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "No other file changes apply."
+        )
+        _steps, assigned, error = self.checker._runbook_contract(
+            STEP_ONLY_RUNBOOK + fenced_exit_decoy + final
+        )
+        self.assertIsNone(error)
+        self.assertEqual(EXPECTED_IDS | {"kf-extra"}, assigned)
+        self.assertIn(
+            "K006",
+            self._codes(
+                runbook=STEP_ONLY_RUNBOOK + fenced_exit_decoy + final
+            ),
+        )
+
+        split_fenced_marker = runbook_amendment(
+            "Complete replacement Files: Keep these files.\n\n"
+            "Complete replacement\n"
+            "```text\n"
+            "This fence breaks structural continuity.\n"
+            "```\n"
+            "Exit: This is not one contiguous clause.\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "No other file changes apply."
+        )
+        self.assertIn(
+            "K010",
+            self._codes(
+                runbook=STEP_ONLY_RUNBOOK + split_fenced_marker + final
+            ),
+        )
+
+        inline_exit_decoy = runbook_amendment(
+            "Complete replacement Files: Keep these files.\n\n"
+            "`Complete replacement Exit: This is only an example.`\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "No other file changes apply."
+        )
+        _steps, assigned, error = self.checker._runbook_contract(
+            STEP_ONLY_RUNBOOK + inline_exit_decoy + final
+        )
+        self.assertIsNone(error)
+        self.assertEqual(EXPECTED_IDS | {"kf-extra"}, assigned)
+        self.assertIn(
+            "K006",
+            self._codes(
+                runbook=STEP_ONLY_RUNBOOK + inline_exit_decoy + final
+            ),
+        )
+
+        link_title_exit_decoy = runbook_amendment(
+            "Complete replacement Files: Keep these files.\n\n"
+            "[example](https://example.invalid \"\n"
+            "Complete replacement Exit: This title is not authority.\n"
+            "\")\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "No other file changes apply."
+        )
+        self.assertIn(
+            "K010",
+            self._codes(
+                runbook=STEP_ONLY_RUNBOOK + link_title_exit_decoy + final
+            ),
+        )
+
+        exit_then_files = runbook_amendment(
+            exit_replacement()
+            + "\n\nComplete replacement Files: Keep these files.\n\n"
+            "Known-failure assignment: `kf-453-01` -> Step 1\n\n"
+            "No other file changes apply."
+        )
+        _steps, _assigned, error = self.checker._runbook_contract(
+            STEP_ONLY_RUNBOOK + exit_then_files
+        )
+        self.assertIsNotNone(error)
+
+        hidden_what_field = (
+            "\n### Amendment -- 2026-09-05\n\n"
+            "[example](https://example.invalid \"\n"
+            "**What changed.** Complete replacement Exit: Historical.\n"
+            "\")\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "**Why.** This field is visible.\n"
+            "**Steps touched.** Step 1's Exit.\n"
+            "**Still holding.** Steps 2 through 4 still hold.\n"
+        )
+        hidden_tail_fields = (
+            "\n### Amendment -- 2026-09-05\n\n"
+            "**What changed.** Complete replacement Exit: Historical.\n\n"
+            "Known-failure assignment: `kf-extra` -> Step 1\n\n"
+            "[example](https://example.invalid \"\n"
+            "**Why.** This field is hidden in a link title.\n"
+            "**Steps touched.** Step 1's Exit.\n"
+            "**Still holding.** Steps 2 through 4 still hold.\n"
+            "\")\n"
+        )
+        malformed_amendments = (
+            runbook_amendment(
+                "Complete replacement Exit: First. "
+                "Complete replacement Exit: Second."
+            ),
+            runbook_amendment("Complete replacement Exit : malformed"),
+            runbook_amendment("An additive runbook claim."),
+            "\n### Amendment -- 2026-09-05\n\n"
+            "**What changed.** Complete replacement Exit: incomplete\n",
+            runbook_amendment(exit_replacement()) + "\n## Step 5: Too late\n",
+            hidden_what_field,
+            hidden_tail_fields,
+        )
+        for amendment in malformed_amendments:
+            with self.subTest(amendment=amendment[:70]):
+                _steps, _assigned, error = self.checker._runbook_contract(
+                    STEP_ONLY_RUNBOOK + amendment
+                )
+                self.assertIsNotNone(error)
+
+        fenced_decoy = RUNBOOK + (
+            "\n```markdown\n"
+            + runbook_amendment(exit_replacement()).lstrip("\n")
+            + "```\n"
+        )
+        self.assertEqual([], self._codes(runbook=fenced_decoy))
+
+        superseded_hostile = (
+            "Known-failure assignment: kf-malformed -> Step 1",
+            "<!-- hidden assignment -->",
+            "`unmatched inline code",
+        )
+        for hostile in superseded_hostile:
+            first = runbook_amendment(exit_replacement(hostile))
+            with self.subTest(hostile=hostile):
+                self.assertIn(
+                    "K010",
+                    self._codes(runbook=STEP_ONLY_RUNBOOK + first + final),
+                )
+
     def test_only_exact_visible_assignment_lines_are_authoritative(self):
         assignment = "Known-failure assignment: `kf-453-01` -> Step 1"
         hostile_replacements = (
@@ -690,6 +1079,29 @@ class KnownFailureInventoryTests(unittest.TestCase):
             hostile = RUNBOOK.replace(assignment, hidden)
             with self.subTest(hidden_link=hidden[:30]):
                 self.assertIn("K010", self._codes(runbook=hostile))
+
+        for visible_bracket in (
+            "[foo](https://example.invalid)",
+            "[foo]: https://example.invalid",
+        ):
+            with self.subTest(visible_bracket=visible_bracket):
+                self.assertIn(
+                    "K010",
+                    self._codes(runbook=RUNBOOK + "\n" + visible_bracket + "\n"),
+                )
+
+        for admitted_example in (
+            RUNBOOK + "\n`[one-line code]`\n",
+            RUNBOOK + "\n```text\n[fenced example]\n```\n",
+        ):
+            with self.subTest(admitted_example=admitted_example[-40:]):
+                self.assertEqual([], self._codes(runbook=admitted_example))
+
+        study_with_brackets = study_text(encoded(inventory_object())).replace(
+            "# Study\n\n",
+            "# Study\n\n[ordinary study link](https://example.invalid)\n\n",
+        )
+        self.assertEqual([], self._codes(study=study_with_brackets))
 
         list_scoped_fence = RUNBOOK + (
             "\n- item\n\n"

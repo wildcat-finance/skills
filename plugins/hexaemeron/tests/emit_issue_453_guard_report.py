@@ -22,13 +22,13 @@ from tests.emit_run_observation_report import (  # noqa: E402
 
 CASES = {
     "kf-453-01": (
-        "plugins.hexaemeron.tests.test_issue_453_known_failure_inventory."
+        "plugins.hexaemeron.tests.test_known_failure_inventory."
         "KnownFailureInventoryTests."
         "test_kf_453_01_closed_inventory_is_source_bound"
     ),
 }
 REQUIRED_SURFACE = (
-    Path("plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py"),
+    Path("plugins/hexaemeron/tests/test_known_failure_inventory.py"),
     Path("plugins/hexaemeron/tests/emit_issue_453_guard_report.py"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/inventory.json"),
 )

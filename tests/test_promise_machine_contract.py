@@ -689,7 +689,11 @@ class PromiseStructureTests(unittest.TestCase):
             },
             "metron": {"metron-budget-verdict", "metron-change-decision"},
             "phylax": {"phylax-mechanical-gate", "phylax-boundary-review"},
-            "protasis": {"protasis-study-readiness", "protasis-runbook-readiness"},
+            "protasis": {
+                "protasis-known-failure-inventory",
+                "protasis-study-readiness",
+                "protasis-runbook-readiness",
+            },
             "vulgate": {"vulgate-register-rewrite"},
         }
         for skill, promise_ids in expected.items():

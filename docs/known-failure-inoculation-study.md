@@ -328,3 +328,138 @@ After product changes, the same per-id commands run on the final step tree and m
 3. Retaining exact report bytes and binding them to Elenchus classification belongs in `plugins/hexaemeron/skills/elenchus/SKILL.md`, its runner tests, and the Elenchus evolution row. Fiat’s receipt schema cites rather than duplicates that classification contract.
 
 Changing any of those after the study receipt requires an appended study amendment before code. Changing the selected candidate has no current design-amendment transition, so it requires a fresh run rather than an in-place edit of `.hexaemeron/design-evidence.json`.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Known-failure assignment records are one versioned complete
+set within runbook Exit authority. Generation zero is the visible baseline
+before the first real amendment. Every structurally valid `Complete replacement
+Exit:` value replaces the whole set, and the final such value alone is
+authoritative even when it contains no records. An amendment that replaces
+only another field preserves the current Exit generation. Superseded Exit
+records remain readable history but are not counted. The checker derives
+amendment, field, and clause spans outside fences; takes Step headings only
+from the baseline; refuses assignment-like lines in non-Exit amendment fields,
+ambiguous or malformed amendment and replacement boundaries, repeated Exit
+clauses, and post-amendment Step headings; then applies the existing exact-line,
+assignment-only-block, uniqueness, and step-correlation checks only to the
+effective generation. Every later Exit replacement must therefore restate the
+whole assignment set. The maintained focused module is renamed from the
+issue-numbered guard path to
+`plugins.hexaemeron.tests.test_known_failure_inventory` after the signed guard
+proof, while the historical guard object and report remain unchanged.
+
+**Why.** The receipted runbook now contains two sequential full Exit
+replacements with the same seven records. Treating append-only history as one
+simultaneous document-global set returns K010 and makes a valid replacement
+amendment impossible. Selecting the last complete Exit generation preserves
+the evidence history without allowing an older, partial, or conflicting set to
+authorize implementation. The clean detached root suite separately proved
+that the maintained issue-numbered module name violates the repository naming
+gate.
+
+**Steps touched.** Step 1's Exit and Files.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Narrow the assignment projection from the preceding
+amendment. Ordinary exact or assignment-like records outside a structurally
+valid runbook `Complete replacement Exit:` clause remain active under the
+existing document-global fail-closed rules; an amendment cannot hide a stray
+record in Files, Why, Steps touched, or Still holding. Only records inside
+replacement-Exit clauses are versioned. The effective set is every ordinary
+record plus the records in the final valid replacement-Exit clause. Earlier
+replacement-Exit records remain readable history and are not counted. A later
+amendment that replaces only another field preserves the current Exit clause,
+and an empty or incomplete final Exit clause never falls back to an earlier
+one. The existing duplicate, malformed, missing, extra, and wrong-step checks
+apply to that projected set. This supersedes only the preceding amendment's
+statement that a replacement Exit erases generation-zero baseline records;
+its parser-boundary, test-module, evidence-history, and broken-exit statements
+continue to hold.
+
+**Why.** Independent hostile-case review showed that suppressing every record
+outside the final Exit value would weaken the established machine boundary by
+letting an amendment hide an extra or conflicting baseline or prose record.
+Versioning only the repeated full-field clauses fixes the observed append-only
+collision while preserving all earlier refusal cases.
+
+**Steps touched.** Step 1's Exit.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** The study inventory projection tolerates unmatched
+inline-backtick runs in ordinary prose, including a span whose matching
+delimiter appears on a later physical line. It never uses those spans to mask
+bytes or machine records. Before applying that prose tolerance, the checker
+processes or refuses every column-zero fence candidate; it continues to refuse
+raw HTML, image openers, indented fences, malformed fence information, mixed
+fence kinds, bad blank isolation, unclosed inventory fences, and anything
+other than exactly one inventory block. An adjacent apparent inventory fence
+after an open tick therefore fails isolation, while a blank-separated fence is
+a real block and participates in exact-one cardinality. The runbook assignment
+projection retains its strict single-physical-line inline-code policy, so no
+multiline or unmatched span can hide an assignment. This study-only surface
+rule joins the effective-Exit projection from the preceding amendment; neither
+changes the seven findings, their source bindings, or the selected design.
+
+**Why.** The exact receipted study contains one valid CommonMark code span split
+across lines 336 and 337. The shared strict surface returns K001 before reading
+the unchanged inventory, even though the span contains no fence, HTML, image,
+or machine record. A study-only prose tolerance consumes those historical
+bytes without weakening the stricter runbook boundary or the inventory block
+rules.
+
+**Steps touched.** Step 1's Exit.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Tighten the runbook assignment projection at both its source
+surface and its append-only history boundary. On the runbook only, the checker
+refuses every `[` byte outside a complete single-physical-line inline code span
+or a complete fenced block. A link, image, reference label, or multiline title
+therefore cannot supply a hidden amendment heading, field, replacement clause,
+or assignment. The study surface keeps its existing rules. `What changed` must
+also be the first nonblank, unfenced record after its amendment heading.
+
+Within each complete replacement Exit generation, the checker first applies
+the existing exact assignment syntax, unique-id, and real-Step checks, then
+derives the set of finding-id-to-Step pairs. Empty Exit generations may precede
+the inventory. The first nonempty map locks assignment authority. Every later
+Exit generation, including an empty one, must carry the same map; source order
+governs, and the lock cannot reset or fall back. Pair order does not matter.
+An empty, partial, extra, or reassigned post-lock generation refuses. A
+non-Exit amendment neither creates nor changes a generation. Ordinary exact or
+assignment-like records outside replacement Exit clauses remain active under
+the document-global checks and stay outside the generation-map comparison.
+These rules join the preceding effective-Exit and study-surface amendments;
+the seven findings, source bindings, selected design, and maintained test name
+do not change.
+
+**Why.** Independent hostile-input review placed visible replacement-Exit
+authority and an extra assignment before three apparent amendment fields
+inside a multiline link title. The parser treated those raw field lines as an
+amendment boundary and a later Exit as authoritative, so the extra assignment
+disappeared from the effective set. Requiring a link-free runbook machine
+surface removes that hidden-field path. The immutable generation map also
+refuses any later scope confusion that would erase, add, or reassign known
+failure authority, while accepting the receipted history: its first two Exit
+generations are empty and its remaining five carry the same seven pairs.
+
+**Steps touched.** Step 1's Exit.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.

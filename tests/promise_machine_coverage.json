@@ -1602,27 +1602,27 @@
     },
     "protasis-inventory-m": {
       "claim": "An inventory with a missing required field is refused instead of treated as complete.",
-      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
       "selector": "test_top_level_shape_and_schema_are_closed"
     },
     "protasis-inventory-o": {
       "claim": "An empty finding list remains unavailable as readiness without a digest-bound no-known-findings claim.",
-      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
       "selector": "test_empty_inventory_requires_the_closed_digest_bound_claim"
     },
     "protasis-inventory-p": {
       "claim": "The committed study inventory equals its fixture and the exact seven-id checker command accepts current sources and runbook steps.",
-      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
       "selector": "test_committed_study_fixture_and_exact_checker_command_have_parity"
     },
     "protasis-inventory-r": {
       "claim": "Unreadable and oversized inputs refuse with one bounded code and remain repairable by replacing the named input and rerunning.",
-      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
       "selector": "test_unreadable_or_oversized_inputs_refuse"
     },
     "protasis-inventory-s": {
       "claim": "Changed source or synopsis digests cannot inherit an earlier inventory result.",
-      "path": "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
       "selector": "test_source_and_view_digest_drift_refuse_separately"
     },
     "protasis-m": {

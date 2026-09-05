@@ -903,3 +903,659 @@ guard path, command, or step allocation.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Exit: The
+`protasis-known-failure-inventory/v1` object is parsed from one bounded, stable
+study. The parser requires every source/view path and SHA-256, every finding
+field, one assignment to a real unfenced runbook step, one closed reporter argv
+with one exact `{report}` argument, an admitted report format, portable guard
+and report paths, and either a non-empty finding set or a digest-bound
+no-known-findings claim. Duplicate keys, omitted or extra ids, stale views or
+sources, unsafe paths, bad caps, command substitution, and unassigned entries
+refuse with no state or ledger write. The accepted seven-entry inventory is
+bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+`docs/known-failure-inoculation-study.md` and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md` are byte-identical
+to the current receipted artefacts. The numberless ADR draft records the chosen
+cross-cutting phase and evidence boundary before the study ships. Protasis
+receives one provisional candidate generation row whose prior frontier fields
+remain unchanged; exact label resolution belongs to the post-stack gate. The
+toolchain, CI, licences, and dependencies remain unchanged.
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact Step 1 commit. The live controller worktree carries a root
+`.hexaemeron/design-evidence.json` inspected by two corpus tests and is not a
+clean root-suite input. Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+The study and runbook are completeness-oriented specification artefacts, so
+the recorded Brevitas applicability boundary excludes them; their complete
+inventory block and glossary remain intact. The evolution ledger is a fixed
+single-table version register whose required Hypomnema pragma interrupts its
+table, so it is not engineering prose and is excluded from that prose budget.
+Imprimatur and Hypomnema still check all five exact shipped documents. The
+Hypomnema command names the four tracked `.agents` inputs explicitly so it
+checks their authored links without traversing the ignored generated portable
+runtime.
+
+Complete replacement Files: Rename
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py` to
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` after preserving the
+signed guard proof at its historical path. Create
+`docs/known-failure-inoculation-study.md`,
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`,
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json`, and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Change
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/protasis/EVOLUTION.md`,
+`tests/test_evolution_contract.py`,
+`tests/test_promise_machine_contract.py`, and
+`tests/promise_machine_coverage.json`. Generate the ignored local verification
+payload at `.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`
+with the repository script, but do not stage or describe it as a release file.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` when the repository-owned scan changes them; the clean
+exact-commit suite at `dfd380b83bd459a862184272ba91fb241fba5568` proves the
+count drift, so this step must refresh the records. Warden alone appends
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md` and its
+sibling `.synopsis.md`.
+
+**Why.** The first signed product commit reached the required clean detached
+root-suite boundary and exposed four integration failures that the dirty
+controller worktree could not classify. Two are the conditionally declared
+Horos count drift. The new promise heading also requires the root contract
+population test to name it, and the repository naming gate refuses a maintained
+test module named for issue 453. Renaming that module after the historical
+guard proof preserves the signed failing object while making the maintained
+surface behavioural. Updating the focused command and hard-coded promise
+population closes the two contract failures without changing the inventory,
+guard verdict, parser behaviour, or selected design.
+
+**Steps touched.** Step 1's Exit and Files fields.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Exit: The
+`protasis-known-failure-inventory/v1` object is parsed from one bounded, stable
+study. The parser requires every source/view path and SHA-256, every finding
+field, one assignment to a real unfenced runbook step, one closed reporter argv
+with one exact `{report}` argument, an admitted report format, portable guard
+and report paths, and either a non-empty finding set or a digest-bound
+no-known-findings claim. Duplicate keys, omitted or extra ids, stale views or
+sources, unsafe paths, bad caps, command substitution, and unassigned entries
+refuse with no state or ledger write.
+
+Assignment authority is derived from the checked runbook bytes alone. Its
+generation zero is the visible baseline before the first real amendment.
+Every structurally valid full Exit field supplied by a real amendment replaces
+the whole generation; the final such value alone is authoritative even when
+empty, while amendments replacing only other fields preserve it. Superseded
+Exit records remain readable history but are not counted. Step headings come
+only from the baseline. Assignment-like lines in non-Exit amendment scopes,
+ambiguous or malformed amendment and replacement boundaries, repeated Exit
+clauses, and post-amendment Step headings refuse. The existing exact-line,
+assignment-only-block, uniqueness, and step-correlation rules apply only to
+the effective generation, so every later full Exit replacement must restate
+the whole set. The accepted seven-entry inventory is bound by these exact
+visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+`docs/known-failure-inoculation-study.md` and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md` are byte-identical
+to the current receipted artefacts. The numberless ADR draft records the chosen
+cross-cutting phase and evidence boundary before the study ships. Protasis
+receives one provisional candidate generation row whose prior frontier fields
+remain unchanged; exact label resolution belongs to the post-stack gate. The
+toolchain, CI, licences, and dependencies remain unchanged.
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact Step 1 commit. The live controller worktree carries a root
+`.hexaemeron/design-evidence.json` inspected by two corpus tests and is not a
+clean root-suite input. Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+The study and runbook are completeness-oriented specification artefacts, so
+the recorded Brevitas applicability boundary excludes them; their complete
+inventory block and glossary remain intact. The evolution ledger is a fixed
+single-table version register whose required Hypomnema pragma interrupts its
+table, so it is not engineering prose and is excluded from that prose budget.
+Imprimatur and Hypomnema still check all five exact shipped documents. The
+Hypomnema command names the four tracked `.agents` inputs explicitly so it
+checks their authored links without traversing the ignored generated portable
+runtime.
+
+Complete replacement Files: Rename
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py` to
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` after preserving the
+signed guard proof at its historical path. Create
+`docs/known-failure-inoculation-study.md`,
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`,
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json`, and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Change
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/protasis/EVOLUTION.md`,
+`tests/test_evolution_contract.py`,
+`tests/test_promise_machine_contract.py`, and
+`tests/promise_machine_coverage.json`. Generate the ignored local verification
+payload at `.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`
+with the repository script, but do not stage or describe it as a release file.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` when the repository-owned scan changes them; the clean
+exact-commit suite at `dfd380b83bd459a862184272ba91fb241fba5568` proves the
+count drift, so this step must refresh the records. Warden alone appends
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md` and its
+sibling `.synopsis.md`.
+
+**Why.** The receipted study amendment
+`f73bf693a00fd08c643c34cf9cd81f9d9215bd19f2e644cffe0ca0fefd30d25b`
+marks Step 1's exit broken after the exact committed parity check proved that
+document-global counting treats two valid sequential full Exit replacements
+as duplicate live authority. Selecting the final effective Exit generation
+keeps every append-only historical byte while preventing an older, partial,
+or conflicting record set from authorising implementation. It also preserves
+the root-suite repairs already proved necessary: the behavioural test-module
+name, the complete root promise population, and regenerated Horos counts.
+
+**Steps touched.** Step 1's Exit and Files fields.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Exit: The
+`protasis-known-failure-inventory/v1` object is parsed from one bounded, stable
+study. The parser requires every source/view path and SHA-256, every finding
+field, one assignment to a real unfenced runbook step, one closed reporter argv
+with one exact `{report}` argument, an admitted report format, portable guard
+and report paths, and either a non-empty finding set or a digest-bound
+no-known-findings claim. Duplicate keys, omitted or extra ids, stale views or
+sources, unsafe paths, bad caps, command substitution, and unassigned entries
+refuse with no state or ledger write.
+
+Assignment authority is derived from the checked runbook bytes alone.
+Ordinary exact or assignment-like records outside every structurally valid
+full Exit replacement clause remain active under the document-global
+fail-closed rules. Only records inside those clauses are versioned. Their
+source-ordered values form generations, and only the final valid clause's
+records are added to the ordinary set; an empty or incomplete final clause
+never falls back to an earlier one. Amendments replacing only other fields
+preserve that generation, while superseded Exit records remain readable
+history but are not counted. Step headings come only from the baseline.
+Ambiguous or malformed amendment and replacement boundaries, repeated Exit
+clauses, and post-amendment Step headings refuse. The existing exact-line,
+assignment-only-block, uniqueness, and step-correlation rules apply to the
+projected effective set, so every later full Exit replacement must restate
+the whole set. The accepted seven-entry inventory is bound by these exact
+visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+`docs/known-failure-inoculation-study.md` and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md` are byte-identical
+to the current receipted artefacts. The numberless ADR draft records the chosen
+cross-cutting phase and evidence boundary before the study ships. Protasis
+receives one provisional candidate generation row whose prior frontier fields
+remain unchanged; exact label resolution belongs to the post-stack gate. The
+toolchain, CI, licences, and dependencies remain unchanged.
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact Step 1 commit. The live controller worktree carries a root
+`.hexaemeron/design-evidence.json` inspected by two corpus tests and is not a
+clean root-suite input. Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+The study and runbook are completeness-oriented specification artefacts, so
+the recorded Brevitas applicability boundary excludes them; their complete
+inventory block and glossary remain intact. The evolution ledger is a fixed
+single-table version register whose required Hypomnema pragma interrupts its
+table, so it is not engineering prose and is excluded from that prose budget.
+Imprimatur and Hypomnema still check all five exact shipped documents. The
+Hypomnema command names the four tracked `.agents` inputs explicitly so it
+checks their authored links without traversing the ignored generated portable
+runtime.
+
+Complete replacement Files: Rename
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py` to
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` after preserving the
+signed guard proof at its historical path. Create
+`docs/known-failure-inoculation-study.md`,
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`,
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json`, and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Change
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/protasis/EVOLUTION.md`,
+`tests/test_evolution_contract.py`,
+`tests/test_promise_machine_contract.py`, and
+`tests/promise_machine_coverage.json`. Generate the ignored local verification
+payload at `.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`
+with the repository script, but do not stage or describe it as a release file.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` when the repository-owned scan changes them; the clean
+exact-commit suite at `dfd380b83bd459a862184272ba91fb241fba5568` proves the
+count drift, so this step must refresh the records. Warden alone appends
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md` and its
+sibling `.synopsis.md`.
+
+**Why.** The receipted study refinement
+`3f4312cfbfa88cd639d5b445928b9d1d4c82945b8b32672a634291f2bc6230f8`
+keeps ordinary baseline and stray amendment records active instead of letting
+a replacement hide them. Versioning only records inside full Exit clauses
+still resolves the exact append-only collision proved by the sequential
+receipted runbooks, but preserves every earlier refusal case outside that
+narrow repeated-field scope. The behavioural module rename, complete root
+promise population, regenerated Horos counts, and all other Step 1 claims
+remain unchanged.
+
+**Steps touched.** Step 1's Exit and Files fields.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Exit: The
+`protasis-known-failure-inventory/v1` object is parsed from one bounded, stable
+study. The parser requires every source/view path and SHA-256, every finding
+field, one assignment to a real unfenced runbook step, one closed reporter argv
+with one exact `{report}` argument, an admitted report format, portable guard
+and report paths, and either a non-empty finding set or a digest-bound
+no-known-findings claim. Duplicate keys, omitted or extra ids, stale views or
+sources, unsafe paths, bad caps, command substitution, and unassigned entries
+refuse with no state or ledger write.
+
+Assignment authority is derived from the checked runbook bytes alone.
+Ordinary exact or assignment-like records outside every structurally valid
+full Exit replacement clause remain active under the document-global
+fail-closed rules. Only records inside those clauses are versioned. Their
+source-ordered values form generations, and only the final valid clause's
+records are added to the ordinary set; an empty or incomplete final clause
+never falls back to an earlier one. Amendments replacing only other fields
+preserve that generation, while superseded Exit records remain readable
+history but are not counted. Step headings come only from the baseline.
+Ambiguous or malformed amendment and replacement boundaries, repeated Exit
+clauses, and post-amendment Step headings refuse. The existing exact-line,
+assignment-only-block, uniqueness, and step-correlation rules apply to the
+projected effective set, so every later full Exit replacement must restate
+the whole set.
+
+Study inventory discovery alone tolerates unmatched inline-backtick runs in
+ordinary prose, including a delimiter whose match appears on a later physical
+line; it never masks those bytes. It first processes or refuses every
+column-zero fence candidate and retains the raw-HTML, image, indented-fence,
+fence-kind, closure, blank-isolation, and exact-one-block checks. An adjacent
+apparent inventory fence after an open tick therefore fails isolation, while
+a blank-separated fence is counted as a real block. The runbook assignment
+surface keeps the strict single-physical-line inline-code rule.
+
+The accepted seven-entry inventory is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+`docs/known-failure-inoculation-study.md` and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md` are byte-identical
+to the current receipted artefacts. The numberless ADR draft records the chosen
+cross-cutting phase and evidence boundary before the study ships. Protasis
+receives one provisional candidate generation row whose prior frontier fields
+remain unchanged; exact label resolution belongs to the post-stack gate. The
+toolchain, CI, licences, and dependencies remain unchanged.
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact Step 1 commit. The live controller worktree carries a root
+`.hexaemeron/design-evidence.json` inspected by two corpus tests and is not a
+clean root-suite input. Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+The study and runbook are completeness-oriented specification artefacts, so
+the recorded Brevitas applicability boundary excludes them; their complete
+inventory block and glossary remain intact. The evolution ledger is a fixed
+single-table version register whose required Hypomnema pragma interrupts its
+table, so it is not engineering prose and is excluded from that prose budget.
+Imprimatur and Hypomnema still check all five exact shipped documents. The
+Hypomnema command names the four tracked `.agents` inputs explicitly so it
+checks their authored links without traversing the ignored generated portable
+runtime.
+
+**Why.** The receipted study amendment
+`4cfd15fdb155fb30151a18f50e17cadab525d9bb52fb2a38ac2c231ff07ec77c`
+marks Step 1's exit broken because the strict runbook surface was also applied
+to ordinary study prose. The exact study contains one valid CommonMark code
+span across two physical lines and no hidden machine syntax. The study-only
+tolerance consumes those receipted bytes while fence precedence and inventory
+cardinality keep a second or concealed block from authorising the parser. The
+effective-Exit projection and every other Step 1 claim remain unchanged.
+
+**Steps touched.** Step 1's Exit field only.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Exit: The
+`protasis-known-failure-inventory/v1` object is parsed from one bounded, stable
+study. The parser requires every source/view path and SHA-256, every finding
+field, one assignment to a real unfenced runbook step, one closed reporter argv
+with one exact `{report}` argument, an admitted report format, portable guard
+and report paths, and either a non-empty finding set or a digest-bound
+no-known-findings claim. Duplicate keys, omitted or extra ids, stale views or
+sources, unsafe paths, bad caps, command substitution, and unassigned entries
+refuse with no state or ledger write.
+
+Assignment authority is derived from the checked runbook bytes alone. Its
+machine surface refuses every `[` byte outside a complete one-physical-line
+inline code span or a complete fenced block, while the study surface retains
+its separate rules. `What changed` is the first nonblank, unfenced record after
+each amendment heading. Link, image, reference-label, and multiline-title
+syntax therefore cannot donate a hidden heading, field, clause, or assignment.
+Step headings come only from the baseline. Ambiguous or malformed amendment
+and replacement boundaries, repeated Exit clauses, and post-amendment Step
+headings refuse.
+
+Ordinary exact or assignment-like records outside every valid full Exit clause
+remain active under the document-global fail-closed rules and stay outside the
+generation comparison. Only records inside Exit clauses are versioned. Each
+generation first passes the exact-line, assignment-only-block, unique-id, and
+real-Step checks and yields a set of finding-id-to-Step pairs. Leading empty
+generations are permitted. The first nonempty map locks assignment authority;
+every later Exit generation, including an empty one, must carry the same map.
+Source order governs, pair order does not, and the lock cannot reset or fall
+back. Empty, partial, extra, and reassigned post-lock generations refuse.
+Amendments replacing only other fields preserve the current Exit generation.
+Superseded matching Exit records remain readable history but are not counted
+in the effective set. The final generation's records are joined to the ordinary
+set, so every later full Exit replacement must restate the same whole map.
+
+Study inventory discovery alone tolerates unmatched inline-backtick runs in
+ordinary prose, including a delimiter whose match appears on a later physical
+line; it never masks those bytes. It first processes or refuses every
+column-zero fence candidate and retains the raw-HTML, image, indented-fence,
+fence-kind, closure, blank-isolation, and exact-one-block checks. An adjacent
+apparent inventory fence after an open tick therefore fails isolation, while a
+blank-separated fence is counted as a real block. The remaining runbook inline
+code policy stays single-physical-line and fail closed.
+
+The accepted seven-entry inventory is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+`docs/known-failure-inoculation-study.md` and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md` are byte-identical
+to the current receipted artefacts. The numberless ADR draft records the chosen
+cross-cutting phase and evidence boundary before the study ships. Protasis
+receives one provisional candidate generation row whose prior frontier fields
+remain unchanged; exact label resolution belongs to the post-stack gate. The
+toolchain, CI, licences, and dependencies remain unchanged.
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact Step 1 commit. The live controller worktree carries a root
+`.hexaemeron/design-evidence.json` inspected by two corpus tests and is not a
+clean root-suite input. Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+The study and runbook are completeness-oriented specification artefacts, so
+the recorded Brevitas applicability boundary excludes them; their complete
+inventory block and glossary remain intact. The evolution ledger is a fixed
+single-table version register whose required Hypomnema pragma interrupts its
+table, so it is not engineering prose and is excluded from that prose budget.
+Imprimatur and Hypomnema still check all five exact shipped documents. The
+Hypomnema command names the four tracked `.agents` inputs explicitly so it
+checks their authored links without traversing the ignored generated portable
+runtime.
+
+**Why.** The receipted study amendment
+`bce7995f4f4e8c4fb81b4276f1469fdb296552fc8b1c1d05eee97fef5fbc3f57`
+marks Step 1's exit broken after hostile-input review showed that a multiline
+link title could supply three raw field markers and suppress an extra
+assignment when a later Exit existed. The runbook has no square-bracket bytes,
+so the source-surface rule preserves its current content. Its first two Exit
+generations contain no assignments and its next five carry the same seven
+pairs, so the map lock preserves every receipted assignment while refusing the
+demonstrated suppression case and any empty, partial, extra, or reassigned
+successor.
+
+**Steps touched.** Step 1's Exit field only.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Files: Rename
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py` to
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` after preserving the
+signed guard proof at its historical path. Create
+`docs/known-failure-inoculation-study.md`,
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`,
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json`, and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Change
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/protasis/EVOLUTION.md`,
+`tests/test_evolution_contract.py`,
+`tests/test_promise_machine_contract.py`, and
+`tests/promise_machine_coverage.json`. Generate the ignored local verification
+payload at `.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`
+with the repository script, but do not stage or describe it as a release file.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` when the repository-owned scan changes them; the clean
+exact-commit suite at `dfd380b83bd459a862184272ba91fb241fba5568` proves the
+count drift, so this step must refresh the records. Warden alone appends
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md` and its
+sibling `.synopsis.md`.
+
+**Why.** The preceding Exit amendment correctly added one matching generation
+to the append-only runbook, but its explanation described only the prior
+prefix. The resulting receipted runbook has eight Exit generations: the first
+two are empty and the remaining six carry the same seven finding-id-to-Step
+pairs. This non-Exit amendment corrects that count without creating another
+Exit generation. The source-surface rule, immutable map, Step 1 file set, and
+every other exit claim remain unchanged.
+
+**Steps touched.** Step 1's Files field only.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Files: Rename
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py` to
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` after preserving the
+signed guard proof at its historical path. Create
+`docs/known-failure-inoculation-study.md`,
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`,
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json`, and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Change
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/protasis/EVOLUTION.md`,
+`tests/test_evolution_contract.py`,
+`tests/test_promise_machine_contract.py`, and
+`tests/promise_machine_coverage.json`. Generate the ignored local verification
+payload at `.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`
+with the repository script, but do not stage or describe it as a release file.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` when the repository-owned scan changes them; the clean
+exact-commit suite at `dfd380b83bd459a862184272ba91fb241fba5568` proves the
+count drift, so this step must refresh the records. Warden alone appends
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md` and its
+sibling `.synopsis.md`.
+
+**Why.** The Exit amendment before the count clarification says the runbook has
+no square-bracket bytes. Its own admitted inline-code example contains one such
+byte. The supported statement is that the exact runbook has no uncovered
+square-bracket bytes: its only one is inside a complete one-line code span, and
+the exact checker accepts it under the receipted rule. This clarification does
+not add an Exit generation or change the eight-generation distribution,
+locked assignment map, source-surface behavior, file set, or any other Step 1
+claim.
+
+**Steps touched.** Step 1's Files field only.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
