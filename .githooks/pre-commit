@@ -100,18 +100,27 @@ fix='run .githooks/greenlight on the staged tree, or commit with FIAT_SKIP_PRECO
 # Git runs a hook from the root of the working tree (githooks(5)), so an empty
 # prefix is the ordinary case, and a commit from a subdirectory is not the
 # exception: git runs the hook from the root and reports the subdirectory in
-# GIT_PREFIX, leaving `--show-prefix` empty. A non-empty answer means discovery
-# climbed out of the work tree this gate was started in and into a repository
-# enclosing it, and every answer after this one would then be that repository's:
-# its configuration on the command that reads an index, its object store behind
-# `git write-tree`, and its green record admitting a commit into a different
-# repository. Refused here, before a record is located and before an index is
-# read. A failure instead of an answer is not this cause: the rev-parse branch
-# below owns it and carries git's own line. The prefix is directory names, so it
-# is stripped and bounded for the reason the stale-record path gives.
+# GIT_PREFIX, leaving `--show-prefix` empty. Measured on git 2.50.1 for a plain
+# commit, a commit from a subdirectory, `commit -a` from a subdirectory, and
+# both of those in a linked worktree: every one answers empty and is admitted.
+#
+# A non-empty answer says the working tree git found does not have its root
+# here, and two things reach that. Discovery climbing out of a work tree with no
+# `.git` of its own into a repository enclosing it, where every answer after
+# this one would be the enclosing repository's -- its configuration on the
+# command that reads an index, its object store behind `git write-tree`, and its
+# green record admitting a commit into a different repository. Or this script
+# started by hand from a subdirectory, which git never does. The line below
+# names what git answered and what this gate then did, and claims neither cause
+# over the other, because from here they are the same answer.
+#
+# Refused before a record is located and before an index is read. A failure
+# instead of an answer is not this cause: the rev-parse branch below owns it and
+# carries git's own line. The prefix is directory names, so it is stripped and
+# bounded for the reason the stale-record path gives.
 if prefix="$(gate_git rev-parse --show-prefix 2>/dev/null)" && [ -n "$prefix" ]; then
     shown_prefix="$(printf '%s' "$prefix" | tr -d '[:cntrl:]' | cut -c1-64)"
-    printf 'pre-commit: refused, git rev-parse --show-prefix answered %s, so this work tree sits inside another repository and the green record found from here would be that one'"'"'s; %s\n' "$shown_prefix" "$fix" >&2
+    printf 'pre-commit: refused, git rev-parse --show-prefix answered %s, so this is not the root of the working tree git found and no green record is read from here; %s\n' "$shown_prefix" "$fix" >&2
     exit 1
 fi
 
