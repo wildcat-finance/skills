@@ -1953,12 +1953,16 @@ class ShippedCopyTests(unittest.TestCase):
     def test_every_report_the_shipped_record_cites_resolves_beside_it(self):
         """The record is only evidence while the reports it names are here.
 
-        A row that has been resolved names its report and that report's
-        digest. Both are checked. A row the controller has not resolved names a
-        path and no digest, so there are no bytes to compare against; it is
-        checked for still being pending, and, where it belongs to the selected
-        candidate, for naming a report that is actually here. The day it is
-        resolved the digest comparison starts holding it too.
+        A row settled at design lock names its report and that report's
+        digest, and both are checked. A row left pending names a path and no
+        digest, so there are no bytes to compare against; it is checked for
+        still being pending, and, where it belongs to the selected candidate,
+        for naming a report that is actually here.
+
+        The record is fixed from design lock onwards, so a pending row keeps
+        the bytes it was written with for the life of the run. What satisfies
+        its criterion is the named report existing at that path, which is why
+        the check below reads the path rather than waiting for a digest.
         """
         record = json.loads(SHIPPED_RECORD.read_text(encoding="utf-8"))
         rows = record["results"]
@@ -2008,10 +2012,12 @@ class ShippedCopyTests(unittest.TestCase):
 
         # A pending row still cites a path, and for the candidate the run
         # selected that citation is one this step is expected to satisfy: its
-        # criterion blocks this step, and the report is written here before the
-        # controller resolves the cell. Checking only the digested rows left
-        # the one artefact the refresh adds outside every assertion in this
-        # case, so the case passed on the tree that was missing it (S4-R1-02).
+        # criterion blocks this step, and writing the report here is the whole
+        # of satisfying it. Nothing rewrites the row afterwards, so this check
+        # is the only thing holding the path it names. Checking only the
+        # digested rows left the one artefact the refresh adds outside every
+        # assertion in this case, so it passed on the tree missing it
+        # (S4-R1-02).
         # The other candidates' rows name reports that were never produced,
         # because only the selected design is built, so they stay unchecked.
         absent = sorted(
@@ -2056,10 +2062,10 @@ class ShippedCopyTests(unittest.TestCase):
         # the criteria it judges candidates on, and the shipped copy exists to
         # carry the evidence for the one candidate the run selected, so that
         # candidate's column is one row per declared criterion and no more.
-        # This survives the controller resolving a pending cell, which turns a
-        # row's report from a path into a path and a digest and moves no row.
-        # It is not the whole matrix, which is Protasis's to judge; it is the
-        # one column this copy is evidence about.
+        # It counts rows rather than reading them, so it holds a row naming a
+        # bare path exactly as it holds one carrying a digest. It is not the
+        # whole matrix, which is Protasis's to judge; it is the one column
+        # this copy is evidence about.
         declared = [criterion["id"] for criterion in record["criteria"]]
         self.assertTrue(
             declared,
