@@ -888,6 +888,34 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                 "a refused candidate still wrote a design report",
             )
 
+    def test_an_unrelated_fiat_design_record_keeps_the_closed_fallback(self):
+        """Another live Fiat run cannot replace this prover's candidate set."""
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            record = root / self.prover.DESIGN_EVIDENCE
+            record.parent.mkdir(parents=True)
+            record.write_text(
+                json.dumps({"candidates": [{"id": "unrelated-design"}]}),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                self.prover.FALLBACK_CANDIDATES,
+                self.prover.candidate_choices(root),
+            )
+
+    def test_the_exact_prover_candidate_set_may_come_from_design_evidence(self):
+        """The boundary distinguishes an owned record from every unrelated one."""
+        expected = tuple(reversed(self.prover.FALLBACK_CANDIDATES))
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            record = root / self.prover.DESIGN_EVIDENCE
+            record.parent.mkdir(parents=True)
+            record.write_text(
+                json.dumps({"candidates": [{"id": value} for value in expected]}),
+                encoding="utf-8",
+            )
+            self.assertEqual(expected, self.prover.candidate_choices(root))
+
     def test_the_projection_covers_every_path_the_prover_binds(self):
         """Inverted from step 2's `..._covers_only_the_source_quarter_...`.
 
