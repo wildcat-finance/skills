@@ -143,3 +143,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: issue 1228 carried unchanged; in a clean detached snapshot of `6e636ba363148388d240ace3fede250a96f829dd` the root suite is `Ran 1233 tests`, `OK`. Evidence: the three lints from plugin root `hexaemeron/1.6.22` each printed `clean` at exit 0; horos suite `Ran 260 tests`, `OK`; `tests.test_evolution_contract` and `tests.test_marketplace_prose` `OK` together; `agent_instruction.py check` accepted with zero refused lines; `promise_machine.py coverage` `clean: promises=97 coverage_rows=97 coverage_selected=97`; `horos.py check .` prints `boundary matches the tree` at exit 0. Every unittest command carried `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false`. The bounded Sapheneia pass preserved the heading, the four schema fields, all fourteen risk ids and dispositions, every named unchecked item, the exact zero-finding row and every count and quoted string without changing a claim.
+
+## Step 5, round 1 -- 2026-09-05T09:17:29Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: fence-shadowed-heading=not-applicable; html-hidden-heading=not-applicable; setext-under-lazy-line=not-applicable; container-prefix=not-applicable; front-matter-phantom=not-applicable; unterminated-fence=not-applicable; hostile-input=not-applicable; declared-altitudes=reviewed; boundary-regeneration=reviewed; census-regeneration=not-applicable; fixture-repin=not-applicable; prose-reconciliation=not-applicable; ledger-row=not-applicable; no-execution=not-applicable
+
+Not checked: CI (`.github/workflows/repo.yml` and `tests/check-map-v1.json` neither read nor run). X-Ray, solidity-auditor and fizz: not run, the `security_suite` receipt is a waiver. The extractor rules, the corpus differential, the ledger and the fixture chain were not re-checked: the step's diff is one appended section of `plugins/horos/docs/evidence/skills-markdown-outline.md` and `.horos/candidates.json`, and no rule, record or bound file moved. This round ran inline by the controller.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the committed transcript was compared line by line with the controller's own run at `cc90531c` and matches byte for byte, including both outlines, the 260-test horos line, `boundary matches the tree`, the accepted instruction-manifest summary and the 1233-test snapshot line. Issue 1228 carried unchanged. Evidence: the three lints from plugin root `hexaemeron/1.6.22` each printed `clean` at exit 0; horos suite `Ran 260 tests`, `OK`; `horos.py check .` prints `boundary matches the tree` at exit 0; every unittest command carried `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false`. The bounded Sapheneia pass preserved the heading, the four schema fields, all fourteen risk ids and dispositions, every named unchecked item, the exact zero-finding row and every count and quoted string without changing a claim.
