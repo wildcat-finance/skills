@@ -463,3 +463,119 @@ generations are empty and its remaining five carry the same seven pairs.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Bind the selected `receipted-inoculation` design to its
+existing cross-cutting decision record through this single closed bridge:
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | receipted-inoculation
+record | adr/require-inoculation-before-implementation
+```
+
+Hypomnema study mode admits three record forms. Existing portable paths to a
+numbered ADR or governed skill ledger retain their current meaning. The stable
+form is exactly `adr/<slug>`, where the slug is lowercase ASCII kebab-case and
+at most 96 bytes. It resolves only the canonical draft
+`docs/decisions/drafts/<slug>.md` and canonical numbered final records named
+`docs/decisions/ADR-NNN-<slug>.md`, where `NNN` is exactly three ASCII digits.
+The resolver examines that fixed bounded candidate set, follows no symlink,
+accepts only an ordinary stable file below the repository root, and requires
+exactly one match. Zero matches, a draft and final together, more than one
+numbered final, a malformed or oversized slug, a non-canonical placement, an
+unsafe path component, a special file, an oversized file, or a changed read
+refuses as H008. The ordinary-walk H009 contract remains unchanged.
+
+A direct path to `docs/decisions/drafts/<slug>.md` remains refused as a bridge
+record. Such a path disappears when integration assigns the number. The stable
+identity instead survives the existing allocator unchanged before and after
+that rename. The existing numbered-ADR and governed-ledger forms remain
+accepted, and `decision_assignments.py` retains its current plan, apply, and
+replay contract.
+
+Step 1 changes Hypomnema's checker, focused tests, skill contract, and
+evolution ledger, then refreshes the committed study and runbook copies.
+Hypomnema's skill metadata becomes `5.8.0`; its ledger current version and one
+new history row use the literal `hypomnema-v5.8.0` with axis `generation`.
+The frontier status remains `open`, the frontier revision remains
+`duplicate-home-discovery`, and the frontier digest remains
+`74714f68f73e5a2f4394b7f40d55b77055336c76a1665884e279a8325bb9eed3`.
+The current frontier and held Next Fiat job remain byte-identical. The row
+records only stable design-bridge resolution and does not claim that
+repository-wide semantic duplicate-home discovery is complete.
+
+Brevitas adds the explicit `fiat-audit-record` value to its existing `--mode`
+interface. It starts from report-mode behaviour but suppresses only B010 and
+B011. Every other Brevitas rule remains active, including B002 through B007,
+B009, B020 through B027, and B030 when a source is supplied. Auto, answer, and
+ordinary report modes retain their current behaviour. This adds no subcommand
+and no B012 rule.
+
+The `fiat-audit-record` mode is used only after
+`audit_synopsis.py --check .` has accepted the exact audit tree. Brevitas does
+not parse a `fiat-audit-round/v1` or `fiat-audit-round/v2` record, establish its
+schema, compare its finding count with the controller argument, establish risk
+coverage, or establish a receipt. The synopsis checker and `hexctl audit-round`
+retain those authorities. The explicit mode only prevents the schema-owned
+single H2 record heading and findings table from being rejected by generic
+minimum-section and minimum-table-size budgets. It requires no dummy heading,
+dummy finding row, or deletion of the audit record from the shipped-prose
+gate.
+
+Brevitas's skill metadata becomes `0.4.0`; its ledger current version and one
+new history row use the literal `brevitas-v0.4.0` with axis `generation`.
+The frontier status remains `open`, the frontier revision remains
+`held-engineering-corpus`, and the frontier digest remains
+`dcff4f6b1397570468dedb18a1ebaa5f45377272bcd2f71cd69ad6818eeb0b62`.
+The current frontier and held Next Fiat job remain byte-identical. The history
+row cites issue 453 and the committed study and runbook rather than the
+separately owned audit file. The Brevitas plugin package remains `0.2.2`; its
+manifests, marketplace records, held corpus, version-propagation test, and
+check map remain unchanged.
+
+The runbook's existing three-row `version-relations` block remains
+byte-identical. Hypomnema and Brevitas are intentionally omitted and therefore
+use the two literal generations above, as Protasis permits for omitted targets.
+No concrete version token is added for any relation-declared target. Fiat's
+`done resolve-versions` receipt continues to cover only those three declared
+targets. If the integration base moves in a way that consumes or changes
+either literal next generation, integration revalidation must correct that
+ledger row and matching metadata before composition; the three-target receipt
+must not be described as covering either literal.
+
+The newly confirmed H008 defect and Brevitas Fiat-audit-record defect are
+Warden findings, not additional entries in the immutable
+`protasis-known-failure-inventory/v1` object. Their regressions follow Warden
+and Elenchus without changing the seven finding ids, their source digests,
+their assignments, or their reporter commands.
+
+**Why.** The receipted study omitted the machine-readable design bridge even
+though item 12 selected a durable ADR home. That omission is a defect in this
+study. A direct numbered path cannot repair it because integration owns the
+number, and a direct draft path would dangle after assignment. Pointing at a
+governed `EVOLUTION.md` would put a cross-cutting decision in the wrong home
+while the ADR already holds it, and append-only history would leave that wrong
+home in force after integration.
+
+Hypomnema also has a product defect. Its current authoring contract requires
+new ADRs to retain one `adr/<slug>` identity from draft through integration,
+but H008 accepts only a concrete numbered ADR path or a governed ledger path.
+The stable selector closes that internal contradiction without changing the
+allocator, admitting arbitrary draft paths, weakening established record
+homes, or rewriting any existing receipt.
+
+The exact Fiat audit record cannot satisfy Brevitas's generic B010 and B011
+minimums without padding a host-owned record with false structure. Removing
+the audit source from Brevitas would instead breach the repository's
+shipped-prose rule. An explicit mode, preceded by the existing authoritative
+synopsis check and suppressing only those two generic budgets, preserves the
+record bytes and every remaining prose check without duplicating Fiat's schema
+inside Brevitas.
+
+**Steps touched.** Step 1's Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.

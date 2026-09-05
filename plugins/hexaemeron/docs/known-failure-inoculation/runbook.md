@@ -1559,3 +1559,374 @@ claim.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Exit: The
+`protasis-known-failure-inventory/v1` object is parsed from one bounded, stable
+study. The parser requires every source/view path and SHA-256, every finding
+field, one assignment to a real unfenced runbook step, one closed reporter argv
+with one exact `{report}` argument, an admitted report format, portable guard
+and report paths, and either a non-empty finding set or a digest-bound
+no-known-findings claim. Duplicate keys, omitted or extra ids, stale views or
+sources, unsafe paths, bad caps, command substitution, and unassigned entries
+refuse with no state or ledger write.
+
+Assignment authority is derived from the checked runbook bytes alone. Its
+machine surface refuses every `[` byte outside a complete one-physical-line
+inline code span or a complete fenced block, while the study surface retains
+its separate rules. `What changed` is the first nonblank, unfenced record after
+each amendment heading. Link, image, reference-label, and multiline-title
+syntax therefore cannot donate a hidden heading, field, clause, or assignment.
+Step headings come only from the baseline. Ambiguous or malformed amendment
+and replacement boundaries, repeated Exit clauses, and post-amendment Step
+headings refuse.
+
+Ordinary exact or assignment-like records outside every valid full Exit clause
+remain active under the document-global fail-closed rules and stay outside the
+generation comparison. Only records inside Exit clauses are versioned. Each
+generation first passes the exact-line, assignment-only-block, unique-id, and
+real-Step checks and yields a set of finding-id-to-Step pairs. Leading empty
+generations are permitted. The first nonempty map locks assignment authority;
+every later Exit generation, including an empty one, must carry the same map.
+Source order governs, pair order does not, and the lock cannot reset or fall
+back. Empty, partial, extra, and reassigned post-lock generations refuse.
+Amendments replacing only other fields preserve the current Exit generation.
+Superseded matching Exit records remain readable history but are not counted
+in the effective set. The final generation's records are joined to the ordinary
+set, so every later full Exit replacement must restate the same whole map.
+
+Study inventory discovery alone tolerates unmatched inline-backtick runs in
+ordinary prose, including a delimiter whose match appears on a later physical
+line; it never masks those bytes. It first processes or refuses every
+column-zero fence candidate and retains the raw-HTML, image, indented-fence,
+fence-kind, closure, blank-isolation, and exact-one-block checks. An adjacent
+apparent inventory fence after an open tick therefore fails isolation, while a
+blank-separated fence is counted as a real block. The remaining runbook inline
+code policy stays single-physical-line and fail closed.
+
+The study carries exactly one `hypomnema-design-bridge/v1` block. Its decision
+is `receipted-inoculation` and its record is the stable identity
+`adr/require-inoculation-before-implementation`. Hypomnema study mode continues
+to accept an existing portable path to a numbered ADR or governed skill
+ledger. It additionally accepts exactly `adr/<slug>`, with a lowercase ASCII
+kebab-case slug no longer than 96 bytes, and resolves it only against
+`docs/decisions/drafts/<slug>.md` and the fixed three-digit
+`docs/decisions/ADR-NNN-<slug>.md` namespace.
+
+The stable selector admits exactly one bounded, ordinary, no-follow, stably
+read record. A missing identity, a draft and final together, multiple numbered
+finals, malformed or oversized slug, non-canonical placement, symlink, special
+file, oversized record, unsafe component, or changed read refuses as H008.
+The ordinary walk's H009 result remains unchanged. A direct draft path is not
+an admitted bridge record. The same stable selector therefore survives
+integration's existing draft-to-numbered transformation without an append-only
+study rewrite. The allocator and its plan, apply, and replay contracts remain
+unchanged.
+
+The accepted seven-entry inventory is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+`docs/known-failure-inoculation-study.md` and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md` are byte-identical
+to the current receipted artefacts. The numberless ADR draft records the chosen
+cross-cutting phase and evidence boundary before integration assigns its
+number. Protasis receives one provisional candidate generation row whose prior
+frontier fields remain unchanged; exact label resolution belongs to the
+post-stack gate.
+
+Hypomnema's skill metadata is `5.8.0`. Its ledger current version and one new
+history row are the literal `hypomnema-v5.8.0`, the row's axis is `generation`,
+its frontier status is `open`, its frontier revision is
+`duplicate-home-discovery`, and its frontier SHA-256 is
+`74714f68f73e5a2f4394b7f40d55b77055336c76a1665884e279a8325bb9eed3`.
+The held frontier text and Next Fiat job remain byte-identical. This closes
+only the stable design-bridge resolution gap and does not claim semantic
+duplicate-home discovery.
+
+Brevitas adds the explicit `fiat-audit-record` value to its existing `--mode`
+interface. It applies report-mode behaviour while suppressing only B010 and
+B011. Every other Brevitas rule remains active. Auto, answer, and ordinary
+report modes are unchanged, and no subcommand or B012 rule is added.
+
+A Fiat-audit-record invocation is admissible only after
+`audit_synopsis.py --check .` has accepted the exact audit tree. Brevitas does
+not parse or establish a Fiat audit schema, finding count, risk inventory,
+controller transition, synopsis, or receipt. The synopsis checker and
+`hexctl audit-round` retain those authorities. The explicit mode establishes
+only that the remaining applicable prose budgets pass without padding the
+schema-owned H2 heading or findings table.
+
+Brevitas's skill metadata is `0.4.0`. Its ledger current version and one new
+history row are the literal `brevitas-v0.4.0`, the row's axis is `generation`,
+its frontier status is `open`, its frontier revision is
+`held-engineering-corpus`, and its frontier SHA-256 is
+`dcff4f6b1397570468dedb18a1ebaa5f45377272bcd2f71cd69ad6818eeb0b62`.
+The held frontier text and Next Fiat job remain byte-identical. Its evidence
+names issue 453 and the committed study and runbook, not the separately owned
+audit file. The Brevitas plugin package stays `0.2.2`; its manifests,
+marketplaces, held corpus, version-propagation test, and check map remain
+unchanged.
+
+The existing three-row `version-relations` block stays byte-identical and gains
+neither Hypomnema nor Brevitas. No concrete token for a relation-declared
+target appears. The two intentional literal targets use the omission Protasis
+permits for a partial relation list. Fiat's post-stack version-resolution
+receipt continues to establish only the three declared relations. A base
+movement that consumes or changes either literal next generation requires
+separate integration revalidation and correction of its ledger row and
+matching metadata before composition. The toolchain, CI, licences, and
+dependencies remain unchanged.
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact signed Step 1 product fix. The live controller worktree carries the
+root `.hexaemeron/design-evidence.json` inspected by two corpus tests and is not
+a clean root-suite input. The two `cmp` commands and the explicit Hypomnema
+study-mode command run in the managed controller worktree because they consume
+the receipted artefacts and untracked design evidence. The audit synopsis,
+Imprimatur audit input, and Fiat-audit-record Brevitas command run on the audit
+branch after Warden has appended and regenerated the round-2 record and
+synopsis. Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 -m unittest plugins.hexaemeron.tests.test_hypomnema_checker.DesignBridge -v
+python3 -m unittest plugins.hexaemeron.tests.test_hypomnema_decision_assignments -v
+python3 -m unittest discover -s plugins/brevitas/tests -t plugins/brevitas
+python3 plugins/brevitas/skills/brevitas/scripts/run_evals.py
+python3 plugins/brevitas/tests/run_tests.py .elenchus/fiat-453-step-1-brevitas-green.json
+python3 -m unittest tests.test_evolution_contract tests.test_promise_machine_contract -v
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py --study .hexaemeron/study.md --design-evidence .hexaemeron/design-evidence.json --repo-root .
+python3 scripts/portable_promise_machine.py sync
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+python3 scripts/promise_machine.py check
+python3 scripts/promise_machine.py coverage --check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md plugins/hexaemeron/skills/hypomnema/SKILL.md plugins/hexaemeron/skills/hypomnema/EVOLUTION.md plugins/brevitas/skills/brevitas/SKILL.md plugins/brevitas/skills/brevitas/EVOLUTION.md plugins/brevitas/README.md plugins/brevitas/AGENTS.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/hypomnema/SKILL.md plugins/brevitas/skills/brevitas/SKILL.md plugins/brevitas/README.md plugins/brevitas/AGENTS.md docs/decisions/drafts/require-inoculation-before-implementation.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --mode fiat-audit-record
+git diff --check
+```
+
+The study and runbook are completeness-oriented specification artefacts, so
+the recorded Brevitas applicability boundary excludes them; their complete
+inventory block, design bridge, and glossary remain intact. The three changed
+evolution ledgers are governed version registers and remain outside the
+engineering-prose budget. Imprimatur and Hypomnema still inspect every exact
+shipped document named by the commands. The ordinary Hypomnema command names
+the four tracked `.agents` inputs explicitly so it checks their authored links
+without traversing the ignored generated portable runtime. The audit source is
+not removed from Brevitas; it uses the explicit mode only after the authoritative
+synopsis check succeeds.
+
+Complete replacement Files: Rename
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py` to
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` after preserving the
+signed guard proof at its historical path. Create
+`docs/known-failure-inoculation-study.md`,
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`,
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json`, and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Change
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/protasis/EVOLUTION.md`,
+`plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py`,
+`plugins/hexaemeron/tests/test_hypomnema_checker.py`,
+`plugins/hexaemeron/skills/hypomnema/SKILL.md`,
+`plugins/hexaemeron/skills/hypomnema/EVOLUTION.md`,
+`plugins/brevitas/skills/brevitas/scripts/brevitas.py`,
+`plugins/brevitas/tests/test_brevitas.py`,
+`plugins/brevitas/skills/brevitas/SKILL.md`,
+`plugins/brevitas/skills/brevitas/EVOLUTION.md`,
+`plugins/brevitas/README.md`,
+`plugins/brevitas/AGENTS.md`,
+`tests/test_evolution_contract.py`,
+`tests/test_promise_machine_contract.py`, and
+`tests/promise_machine_coverage.json`.
+
+Do not change
+`plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py`,
+`plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py`,
+`plugins/brevitas/skills/brevitas/scripts/held_corpus.py`,
+`tests/test_version_propagation.py`,
+`tests/check-map-v1.json`, any plugin manifest, or any marketplace record.
+Generate the ignored local verification payload at
+`.agents/skills/promise-machine/runtime/` and its `MANIFEST.json` with the
+repository script, but do not stage or describe it as a release file.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` only when the repository-owned scan changes them.
+
+The signed product, specification, and test fix is one commit on the Step 1
+branch whose sole parent is
+`3253af2a873028d87111237bd3638905626956d4`. It contains no audit source or
+synopsis. Warden alone owns
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md` and
+`audit/rounds/fiat-453-inject-known-failure-guards-before-productio.synopsis.md`
+on the audit branch. The audit branch first receives the signed product fix by
+a signed no-fast-forward merge whose first parent is
+`0d58501d` and whose second parent is the product fix. Warden then appends the
+round-2 source and regenerated synopsis in a later signed audit-branch commit.
+
+Complete replacement Tests: Before changing the parser, make a signed
+guard-only commit whose sole parent is the packet's `branch_from` and whose
+changed paths are exactly the three `kf-453-01` guard paths in the study.
+Replace `<signed-guard-commit>` with that object and run:
+
+```bash
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-guard-commit> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/issue-453-kf-453-01.json --require-guard --format json
+```
+
+Stop unless it reports `guarded`; retain the command, commit, exit, and bounded
+JSON outside Git. On the fixed tree run
+`python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report .elenchus/issue-453-kf-453-01-green.json`
+and require a positive, complete, non-skipped, error-free, assertion-free
+report. The focused inventory module covers accepted input and every omission,
+duplication, shape, source-drift, assignment, path, command, report-format, and
+cap refusal; its final case count is recorded rather than guessed here.
+
+The H008 repair adds regression methods to
+`plugins/hexaemeron/tests/test_hypomnema_checker.py`. They use only the
+pre-existing public and test-helper surface, so overlaying that changed test
+file on parent `3253af2a873028d87111237bd3638905626956d4` produces assertion
+failures rather than import or infrastructure errors. The cases prove a unique
+draft selector, the same selector after assignment to a unique numbered final,
+a dangling selector, malformed and oversized slugs, a direct draft path,
+draft-plus-final duplication, multiple numbered finals, non-canonical
+near-matches, and symlinked, special, oversized, and unstable matched records.
+The existing concrete numbered ADR, governed ledger, selection-envelope,
+bounded-input, allocator, and ordinary-walk cases remain unchanged.
+
+The Brevitas repair adds focused cases to
+`plugins/brevitas/tests/test_brevitas.py` through the pre-existing `lint_text`
+entrypoint. The parent overlay fails by assertion, not import or runner error.
+The cases show that explicit `fiat-audit-record` suppresses only B010 and B011
+for zero-, one-, and two-finding audit shapes, while B024, B027, B030, and every
+other applicable rule remain active. Auto, answer, and report modes do not
+select the exemption; the existing small-table and two-section cases remain
+red. A parser-level case proves the CLI accepts the explicit value while
+turning any parent `SystemExit` into an assertion failure. No test asks
+Brevitas to validate the Fiat schema. Add
+`test_brevitas_fiat_audit_record_mode_keeps_held_frontier` to
+`tests/test_evolution_contract.py`, and update the existing
+`brevitas-structure-check` coverage selectors without adding another promise.
+
+Let `<signed-product-fix>` be the single signed Step 1 product,
+specification, and test commit whose sole parent is
+`3253af2a873028d87111237bd3638905626956d4`. It contains both regression test
+files and no audit file. Run both source-bound guards:
+
+```bash
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-product-fix> --test-command "python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}" --report-format unittest-json-v1 --report-file .elenchus/fiat-453-step-1-h008.json --require-guard --format json
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-product-fix> --test-command "python3 plugins/brevitas/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/fiat-453-step-1-brevitas.json --require-guard --format json
+```
+
+Stop unless both results are exactly `guarded`. Elenchus overlays changed test
+bytes on the exact parent and does not need the audit source in the product
+commit. Retain both commands, the signed commit, exits, and bounded reports
+outside Git. On the fixed product tree, the focused Hypomnema class, unchanged
+allocator module, complete Brevitas suite and evaluations, explicit
+current-study command, evolution contract, Promise Machine coverage check, and
+both repository suites must pass.
+
+Merge `<signed-product-fix>` into the audit branch with a signed
+no-fast-forward merge whose parents are, in order, `0d58501d` and
+`<signed-product-fix>`. Warden then appends the round-2 audit record and
+regenerates its synopsis in a separate signed audit-branch commit. Run
+`audit_synopsis.py --check .` before the exact `--mode fiat-audit-record`
+Brevitas invocation. The controller audit-round receipt names
+`<signed-product-fix>` as `--fixes-commit`; it does not substitute the merge
+commit or the later audit-record commit.
+
+H008 and the Brevitas defect are not added to the seven-entry inventory and do
+not alter the existing `kf-453-01` proof. Warden's exact audit runner remains
+command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, and file
+`.elenchus/fiat-453-step-1-audit.json`. Rerun every complete Exit command after
+each audit fix.
+
+Complete replacement Disciplines: phylax: the study, JSON object, source views,
+paths, commands, and files cross parser and filesystem boundaries, so type,
+size, containment, stability, and duplicate checks apply before use. The
+stable bridge examines only its canonical bounded draft and three-digit final
+slots, follows no path symlink, admits one ordinary stable record, and refuses
+zero or multiple matches before treating the design as recorded. The
+Fiat-audit-record mode consumes no schema authority: the exact audit tree must
+first pass the existing bounded synopsis checker. ephoros: stable refusal
+codes, ids, counts, paths, and digests answer which inventory item failed
+without printing source content; H008 additionally distinguishes malformed
+identity, absent identity, duplicate identity, unsafe placement, and failed
+stable read without promoting record contents. metron: none, this step makes no
+performance claim; inventory caps and the fixed stable-identity candidate set
+are correctness controls. elenchus: `kf-453-01` must fail by assertion on its
+exact parent and finish green after the inventory parser lands; the H008 and
+Brevitas regressions must each fail by assertion on the exact Step 1 product
+parent and pass on the same signed product fix. hypomnema: the inventory
+authority, assignment rule, and empty-set rule live in the Protasis contract,
+its provisional candidate row, and the committed study and runbook; the
+selected cross-cutting decision has the single durable identity
+`adr/require-inoculation-before-implementation`, integration owns its number,
+and the literal `hypomnema-v5.8.0` generation records only stable bridge
+resolution while preserving the held frontier. brevitas: explicit
+`fiat-audit-record` mode suppresses only B010 and B011 after the authoritative
+synopsis check; all other budgets and evidence precedence remain active,
+ordinary modes receive no exemption, Brevitas makes no Fiat-schema claim, and
+the literal `brevitas-v0.4.0` generation preserves the held corpus frontier.
+
+**Why.** The current study has no design bridge, which is a study defect, while
+the current H008 implementation cannot consume the stable ADR identity its own
+version 5.7 authoring and integration contract requires, which is a product
+defect. The paired amendments and guarded product repair close both without
+rewriting an earlier receipt, assigning an ADR number early, accepting a path
+that will dangle, or duplicating the decision in a governed ledger.
+
+The exact Fiat audit record is valid host-owned prose but fails Brevitas B010
+and B011 solely because its schema permits one H2 record and one findings row.
+Padding it would falsify the record, while deleting it from the lint would
+weaken the repository gate. The explicit mode and mandatory prior synopsis
+check preserve both authorities: Fiat validates the record, and Brevitas
+applies every compatible prose budget without reimplementing Fiat's parser.
+
+The existing runbook prefix has eight replacement-Exit generations: its first
+two are empty and its remaining six carry the same seven pairs. This full Exit
+replacement creates the ninth generation, with the first two still empty and
+the remaining seven carrying the identical locked map. It changes no finding,
+assignment, source digest, reporter, step topology, relation-declared target,
+toolchain, CI file, licence, dependency, package manifest, marketplace,
+allocator, or held corpus.
+
+The product repair and audit evidence remain separate signed objects. The
+Step 1 fix is based directly on
+`3253af2a873028d87111237bd3638905626956d4` and contains no audit bytes. The
+audit branch preserves `0d58501d` as the first parent of its signed merge,
+Warden alone appends round 2 afterwards, and the controller receipts the
+product fix rather than either audit-branch commit.
+
+**Steps touched.** Step 1's Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
