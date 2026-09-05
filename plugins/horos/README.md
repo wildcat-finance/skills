@@ -7,9 +7,9 @@
 
 Horos records which repository paths an agent may usually leave unread, with the evidence for every exclusion and deterministic maps for what remains.
 
-**Current frontier.** The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
+**Current frontier.** The v9.2.3 reopening's second job is done: the content-addressed object rule ships with four guard tests, documentation and an evidence bundle, binding 78 files and 7,850,052 bytes of this repository's object stores by the digest of each file's own bytes. One held job remains, the Markdown outline extractor, with maturity expected after it.
 
-**Next Fiat job.** Use /hexaemeron:fiat to ship the content-addressed object rule whose evidence is the digest a file's own bytes produce. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to ship the Markdown outline extractor the census names at 1.83 MB across 261 files with no boundary bytes and no map support. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## Start here
@@ -20,8 +20,8 @@ boundary still matches the tree. It can also produce outline maps for several
 programming languages.
 
 The boundary is advisory, fail-open, and disabled during every security
-review. The content-addressed-object rule still owes its frontier run, and
-Markdown has no outline extractor yet.
+review. A content-addressed object store is bound by the digest of each
+file's own bytes, and Markdown has no outline extractor yet.
 
 ## Place in the collective
 
