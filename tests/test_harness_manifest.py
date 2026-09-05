@@ -1773,8 +1773,17 @@ class RenderTests(unittest.TestCase):
                     with self.assertRaises(render_harness_roster.RenderError):
                         render(document)
         # A real date still renders, so the guard refuses the calendar and not
-        # the field.
-        self.assertIn("2026-09-04", render_harness_roster.pdf_label(landed()))
+        # the field. The control reads the landed date rather than pinning a
+        # literal: `recorded.date` moves on every re-probe, and a pinned one
+        # made this positive control the single case that a demonstration run
+        # of the documented four commands could not pass. Parsing it first
+        # keeps the control load-bearing, because `assertIn` alone would be
+        # vacuous on an empty date.
+        recorded_date = landed()["recorded"]["date"]
+        self.assertEqual(
+            datetime.date.fromisoformat(recorded_date).isoformat(), recorded_date
+        )
+        self.assertIn(recorded_date, render_harness_roster.pdf_label(landed()))
 
     def test_the_readme_states_how_many_clients_answered(self):
         # S3-R1-03. The sentence used to claim the probe "read every client
