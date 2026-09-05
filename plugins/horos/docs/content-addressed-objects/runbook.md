@@ -234,3 +234,80 @@ format `elenchus.py --report-format` accepts; the root runner emits the
 **Steps touched.** Step 4.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Goal: Add the four guard tests the
+draft lacks, without changing the rule's binding condition, and document the
+rule in the example. The skill text moves to step 3, which owns every edit to
+`plugins/horos/skills/horos/SKILL.md`. Complete replacement Files:
+`plugins/horos/tests/run_tests.py` (new; the plugin-level suite runner that
+emits the `elenchus.unittest.v1` report, on the pattern of
+`plugins/brevitas/tests/run_tests.py`), `plugins/horos/tests/test_boundary.py`
+(tamper and unreadable-object tests; a new
+`plugins/horos/tests/test_content_addressed.py` instead if the boundary module
+proves the wrong home), `plugins/horos/tests/test_classify.py`
+(`ContentAddressedTests`), `plugins/horos/examples/README.md`, and
+`.horos/boundary.json` where the new tracked file moves the walk counts.
+**Why.** Building step 2 showed that `plugins/horos/skills/horos/SKILL.md` is
+bound by whole-file digest in `tests/fixtures/agent-instruction-v1/manifest.json`
+(fixture `horos-boundary-check`, reviewed span bytes 11183 to 12201), so any
+edit to it reddens 29 root-suite tests until the fixture chain is re-pinned.
+Step 3 must edit the same file for the version and the marketplace-context
+block, so one re-pin in step 3 replaces two.
+**Steps touched.** Step 2.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Files:
+`plugins/horos/docs/evidence/skills-content-addressed.md`,
+`plugins/horos/skills/horos/EVOLUTION.md`,
+`plugins/horos/skills/horos/SKILL.md` (frontmatter version, the
+marketplace-context block, the digest joining the hard-evidence list in rule 4,
+and one short paragraph on what the rule reads, why it runs first and what it
+refuses, citing the comments in `horos.py`; the reviewed span at bytes 11183
+to 12201 of the pre-edit file, the `### horos-boundary-check` promise, stays
+byte for byte), whichever of `plugins/horos/README.md`,
+`plugins/horos/AGENTS.md` and the root marketplace descriptors the cold-read
+finds trailing the tree, and the fixture chain that binds SKILL.md:
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json`,
+`tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`,
+`tests/fixtures/agent-instruction-v1/evidence/parity.json` and
+`tests/promise_machine_coverage.json`. Complete replacement Exit: All of:
+`plugins/horos/docs/evidence/skills-content-addressed.md` committed, carrying
+the store inventory from `.horos/boundary.json` (entries, bytes, the three
+store roots), the `store-hash-ms` figure re-measured at this step by
+`python3 .hexaemeron/design-reports/resolve.py harden-record store-hash-ms`
+and at or under 250 ms, the drift demonstration from step 2, and the three
+refused candidates with their measured values;
+`plugins/horos/skills/horos/EVOLUTION.md` carrying exactly one new history
+row, axis evolution, version `horos-v11.3.3`, frontier revision
+`markdown-outline-extractor`, whose held next job is the Markdown outline
+extractor exactly as the `horos-v9.2.3` epoch row names it, with maturity
+expected after it; `plugins/horos/skills/horos/SKILL.md` frontmatter at
+`version: "11.3.3"`; the fixture chain re-pinned so that
+`python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json`
+prints a `run.summary` with outcome `accepted` and no refused record,
+`python3 scripts/promise_machine.py coverage` prints `clean`, the manifest's
+`span_sha256` for `horos-boundary-check` is unchanged, and the re-pin carries
+the recorded token counts and parity responses unchanged and says so in the
+run's audit record; `<sign-off> python3 -m unittest tests.test_marketplace_prose`
+green; `python3 <imprimatur.py> <file>` exit 0 for every prose file this step
+touches; `python3 plugins/horos/skills/horos/scripts/horos.py check .` exit 0;
+and both suites green: `<sign-off> python3 -m unittest discover -s tests` and
+`<sign-off> python3 -m unittest discover -s plugins/horos/tests -t plugins/horos`.
+**Why.** `plugins/horos/skills/horos/SKILL.md` is bound by whole-file digest
+in the agent-instruction fixture manifest, and its reviewed span's offsets
+enter the corpus digest, so an edit before the span stales both evidence
+records. Step 3 already owes the version and marketplace edits to that file,
+so it takes the rule paragraph from step 2 and the one re-pin the run needs.
+The carried re-pin is the procedure the repository used on 2026-09-04, and it
+is honest because the reviewed bytes do not move.
+**Steps touched.** Step 3.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.
