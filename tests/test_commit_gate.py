@@ -1947,11 +1947,15 @@ class ShippedCopyTests(unittest.TestCase):
         """The record is only evidence while the reports it names are here.
 
         A row that has been resolved names its report and that report's
-        digest. Those are checked. A row the controller has not resolved names
-        a path and no digest, and is checked only for still being pending, so
-        the day it is resolved this case starts holding it too.
+        digest. Both are checked. A row the controller has not resolved names a
+        path and no digest, so there are no bytes to compare against; it is
+        checked for still being pending, and, where it belongs to the selected
+        candidate, for naming a report that is actually here. The day it is
+        resolved the digest comparison starts holding it too.
         """
-        rows = json.loads(SHIPPED_RECORD.read_text(encoding="utf-8"))["results"]
+        record = json.loads(SHIPPED_RECORD.read_text(encoding="utf-8"))
+        rows = record["results"]
+        selected = record["selection"]["candidate"]
         cited = [row for row in rows if isinstance(row.get("report"), dict)]
         self.assertTrue(
             cited,
@@ -1993,6 +1997,30 @@ class ShippedCopyTests(unittest.TestCase):
             premature, [],
             "a row the record treats as settled carries no report digest, so "
             f"the case above skipped evidence it should be holding: {premature}",
+        )
+
+        # A pending row still cites a path, and for the candidate the run
+        # selected that citation is one this step is expected to satisfy: its
+        # criterion blocks this step, and the report is written here before the
+        # controller resolves the cell. Checking only the digested rows left
+        # the one artefact the refresh adds outside every assertion in this
+        # case, so the case passed on the tree that was missing it (S4-R1-02).
+        # The other candidates' rows name reports that were never produced,
+        # because only the selected design is built, so they stay unchecked.
+        absent = sorted(
+            f"{row['candidate']}/{row['criterion']}: {row['report']}"
+            for row in undigested
+            if row["candidate"] == selected
+            and (
+                not row["report"].startswith(REPORT_PREFIX)
+                or ".." in row["report"].split("/")
+                or not (SHIPPED / row["report"]).is_file()
+            )
+        )
+        self.assertEqual(
+            absent, [],
+            "the shipped record sends a reader to evidence for the selected "
+            f"design that the shipped tree does not carry: {absent}",
         )
 
         named = {row["report"]["path"] for row in cited}
