@@ -1,6 +1,6 @@
 ![Berean](./assets/characters/berean.png)
 
-# Berean
+# BEREAN
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Berean pins the corpus, chain reads, recorded answers and evaluation needed to c
 **Next Fiat job.** Use /hexaemeron:fiat to ship the first berean release grounded in captured Wildcat documentation and Wildcat market reads, replacing the demonstration corpus in the reference deployment. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Berean when a protocol assistant must be checked against exact documents
 and chain readings rather than judged from a plausible answer. It pins the
@@ -23,7 +23,7 @@ The machinery ships, but the reference release is still a demonstration using
 a frozen corpus and preserved Goldfinch reads. There is no live Wildcat
 reference release and no Ariadne statement binds a Berean release yet.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Lemma can prepare source-linked chunks for a corpus, and Lazarus can preserve
 the historical chain evidence a test or recorded answer needs. Berean owns
@@ -62,7 +62,7 @@ Three rules hold a release together:
    the evaluation corpus, thresholds and results that allowed it, and
    rollback is a new record naming the restored release.
 
-## How it works
+## HOW IT WORKS
 
 `build-corpus` pins a document tree: one entry per file with its byte count
 and sha256, and a corpus digest over the sorted listing. `check-citation`
@@ -81,7 +81,7 @@ demonstration corpus and preserved Goldfinch mainnet reads at block
 13097494, entirely offline. Its `reads.jsonl` is the Lazarus goldfinch
 fixture's records copied byte for byte, held by a drift test.
 
-## What it ships
+## WHAT IT SHIPS
 
 - Five versioned JSON schemas: corpus manifest, answer record, eval case,
   release manifest and promotion record, each with a closed field table.
@@ -96,7 +96,7 @@ fixture's records copied byte for byte, held by a drift test.
 - Design records in [`docs/`](./docs), including the Commons specification
   the plugin was built from.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** Your support agent quotes the docs and reads contract state.
 Pin the docs tree with `build-corpus`, record the reads it may use, and ship
@@ -114,7 +114,7 @@ version and a block can be handed to a counterparty with its evidence
 attached. The promotion chain says which release produced it and what
 evaluation that release passed.
 
-## Run it
+## RUN IT
 
 ```text
 python3 scripts/berean.py verify-release examples/goldfinch-demo-v0/release
@@ -126,13 +126,13 @@ Run Berean with the exact interpreter in the suite
 [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). It
 has no other dependency, and no command reaches the network.
 
-## Tests
+## TESTS
 
 ```bash
 python3 -m unittest discover -s plugins/berean/tests -t plugins/berean
 ```
 
-## Reading further
+## READING FURTHER
 
 - [`skills/berean/SKILL.md`](./skills/berean/SKILL.md), the canonical
   instructions and the release gates.
@@ -148,6 +148,6 @@ python3 -m unittest discover -s plugins/berean/tests -t plugins/berean
 - [`docs/study.md`](./docs/study.md) and [`docs/runbook.md`](./docs/runbook.md),
   the delivery record.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

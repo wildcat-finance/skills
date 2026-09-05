@@ -20,8 +20,12 @@ import shoggoth_topology  # noqa: E402
 
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 CATALOGUE = ROOT / "FUTUREPROOFING.md"
-ROSTER_START = "## Shared law and controlled delivery"
-ROSTER_END = "## Research programmes worth contributing to"
+# Every heading on the maintained public surface takes the all-caps house
+# style, which `scripts/check_public_front_door.py` now enforces over the whole
+# swept set rather than over the root README alone. The delimiters below are
+# section names on that surface, so they moved with it.
+ROSTER_START = "## SHARED LAW AND CONTROLLED DELIVERY"
+ROSTER_END = "## RESEARCH PROGRAMMES WORTH CONTRIBUTING TO"
 
 
 def catalogue_roster():
@@ -337,7 +341,7 @@ class MarketplaceProseTests(unittest.TestCase):
 
         for worker in ("Surveyor", "Mason", "Warden", "Scribe"):
             with self.subTest(worker=worker):
-                self.assertIn(f"### {worker}", roster)
+                self.assertIn(f"### {worker.upper()}", roster)
 
         for upstream in (
             "X-Ray",
@@ -371,8 +375,8 @@ class MarketplaceProseTests(unittest.TestCase):
         readme = s_readme = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
         flat = " ".join(readme.split())
         root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertNotIn("## Publish", root_readme)
-        self.assertIn("## Publish", readme)
+        self.assertNotIn("## PUBLISH", root_readme)
+        self.assertIn("## PUBLISH", readme)
         # Both routes, named.
         self.assertIn("claude plugin marketplace update wildcat-labs", readme)
         self.assertIn("Organization settings > Plugins", readme)
@@ -391,13 +395,13 @@ class MarketplaceProseTests(unittest.TestCase):
 
     def test_the_publish_section_sits_under_its_own_heading(self):
         readme = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
-        install = readme.index("## Install")
-        publish = readme.index("## Publish")
+        install = readme.index("## INSTALL")
+        publish = readme.index("## PUBLISH")
         self.assertLess(install, publish)
-        self.assertLess(readme.index("### Local agents"), publish)
+        self.assertLess(readme.index("### LOCAL AGENTS"), publish)
         root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertNotIn("## Install", root_readme)
-        self.assertNotIn("## Publish", root_readme)
+        self.assertNotIn("## INSTALL", root_readme)
+        self.assertNotIn("## PUBLISH", root_readme)
 
     def test_plugin_landing_readmes_publish_unique_rolling_fiat_jobs(self):
         landings = plugin_landing_readmes()

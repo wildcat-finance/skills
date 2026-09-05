@@ -1,10 +1,11 @@
-# How to help build the Shoggoth
+# HOW TO HELP BUILD THE SHOGGOTH
 
 ![One external contributor carries a bounded issue packet towards the Shoggoth.](assets/shoggoth-contributor-cover.png)
 
-You do not need to learn all 25 members, run a long controller session, or wait
-for someone to assign you a grand project. The useful starting point is one
-real gap you can make smaller and prove.
+You do not need to learn all <!-- front-door:count key="members" -->27 members,
+run a long controller session, or wait for someone to assign you a grand
+project. The useful starting point is one real gap you can make smaller and
+prove.
 
 This guide offers two routes:
 
@@ -14,9 +15,14 @@ This guide offers two routes:
 Both routes produce ordinary repository contributions under your human
 identity. Neither gives an agent extra authority.
 
-## Ways to contribute
+There is a printable field-guide version of this page at
+[`pdf/how-to-help-shoggoth.pdf`](pdf/how-to-help-shoggoth.pdf), drawn by
+`scripts/build_contributor_guide.py`. It summarises the routes below. This page
+is the one that stays current.
 
-### Try one operation on real work
+## WAYS TO CONTRIBUTE
+
+### TRY ONE OPERATION ON REAL WORK
 
 Pick the skill closest to a problem you already have. Run its documented
 operation against a repository, dataset, historical block, or draft you are
@@ -27,7 +33,7 @@ Real use is especially valuable where the project currently has only
 constructed examples: Synkrisis cohorts, a Berean reference release, a second
 Janus host, or held tasks for the prose and interaction skills.
 
-### Add one missing specimen or adapter
+### ADD ONE MISSING SPECIMEN OR ADAPTER
 
 A small specimen can be more valuable than a broad feature. Examples include:
 
@@ -42,7 +48,7 @@ Read the member's README, `AGENTS.md`, canonical `SKILL.md`, and current
 `EVOLUTION.md` before choosing the exact shape. Historical studies and audits
 explain earlier decisions but are not the current contract.
 
-### Improve the front door
+### IMPROVE THE FRONT DOOR
 
 Documentation, examples, diagrams, error messages, and contribution paths are
 part of the product. A good prose change makes a real operation easier to
@@ -50,7 +56,7 @@ select or run without changing its promise. Preserve commands, facts, caveats,
 identifiers, and refusal conditions; run the repository's prose checks on the
 complete candidate.
 
-### Implement one recorded frontier
+### IMPLEMENT ONE RECORDED FRONTIER
 
 Every governed skill has an evolution ledger with its current frontier and one
 accepted next job. A strong frontier contribution includes the implementation,
@@ -61,7 +67,7 @@ repository owns.
 Do not widen the skill because a neighbouring need appeared. Record the
 handoff to the sibling that owns it.
 
-### Review promises and recovery paths
+### REVIEW PROMISES AND RECOVERY PATHS
 
 You can help without writing code by checking whether a proposed operation
 answers these questions:
@@ -76,7 +82,7 @@ answers these questions:
 Ambiguity at these boundaries becomes much more expensive after a capability
 ships.
 
-## Before editing
+## BEFORE EDITING
 
 1. Read the root `AGENTS.md` and the `AGENTS.md` inside the plugin you will
    change.
@@ -94,7 +100,7 @@ For a normal focused contribution, follow the plugin's checks and the root
 checked runner. You do not have to use Fiat unless the task or issue requires
 the controlled delivery loop.
 
-## The Atlas and Fiat route
+## THE ATLAS AND FIAT ROUTE
 
 Use this route when you want the project to choose an unblocked issue and guide
 the whole delivery.
@@ -108,7 +114,7 @@ Use one allocation route once. Each button or API request performs a fresh
 random selection, so opening several routes can allocate several different
 jobs.
 
-### Checked bootstrap routes
+### CHECKED BOOTSTRAP ROUTES
 
 [![OpenAI - ChatGPT web bootstrap](https://img.shields.io/badge/OpenAI-ChatGPT_web_bootstrap-10A37F?style=for-the-badge)](https://shoggoth-wave-atlas.functi0nzer0.chatgpt.site/go/chatgpt)
 [![Anthropic - Claude web bootstrap](https://img.shields.io/badge/Anthropic-Claude_web_bootstrap-D97757?style=for-the-badge)](https://shoggoth-wave-atlas.functi0nzer0.chatgpt.site/go/claude)
@@ -123,7 +129,7 @@ Before `hexctl init`, move the exact prompt to the local coding harness you will
 keep open for the run. Confirm that it can work in the repository, use your
 signing identity, and publish through your account.
 
-### Local harnesses
+### LOCAL HARNESSES
 
 | Harness | Supported route | Checked limit |
 | --- | --- | --- |
@@ -142,7 +148,7 @@ Before Fiat starts, confirm that the issue is still open and does not already
 have an active owner, issue-number branch, pull request, or merged delivery. An
 open issue alone is not proof that the work remains outstanding.
 
-### The hand-off in thirty seconds
+### THE HAND-OFF IN THIRTY SECONDS
 
 1. Ask the Atlas for one job.
 2. Read the issue number, URL, and complete prompt from that response.
@@ -158,7 +164,7 @@ open issue alone is not proof that the work remains outstanding.
 8. Send the result through the normal GitHub pull-request and maintainer-review
    path.
 
-## What Fiat does
+## WHAT FIAT DOES
 
 Fiat keeps the delivery in this order:
 
@@ -181,7 +187,7 @@ The four worker roles are deliberately bounded:
 Only Fiat accepts their results and advances the controller. Read
 [`fiat-in-plain-english.md`](./fiat-in-plain-english.md) for the full walkthrough.
 
-## Identity and authorship
+## IDENTITY AND AUTHORSHIP
 
 You are the external contributor, not Shoggoth. Keep your own Git author,
 valid signing identity, and GitHub account. Fiat adds required Shoggoth
@@ -206,7 +212,7 @@ The cloud-link behaviour has not been observed as proved, so Fiat still reads
 the pull-request body back and refuses forbidden lines. Other harnesses may
 need the lines removed before the receipt.
 
-## Checkpoints and interruption
+## CHECKPOINTS AND INTERRUPTION
 
 After each accepted step, Fiat writes a verified archive to its fixed local
 checkpoint store before continuing. A later local agent can resume from that
@@ -226,7 +232,7 @@ run.
 The current transport is the local filesystem. It is not a remote continuation
 service and it does not support casual movement between machines.
 
-## Completion and maintainer review
+## COMPLETION AND MAINTAINER REVIEW
 
 A complete run has reached the controller's stated endpoint. The required
 implementation and checks are complete, the changes have been committed and
@@ -242,7 +248,7 @@ Name it in the pull-request body and leave closure to the maintainer who merges
 the delivery. Otherwise an open but already delivered issue can return to the
 Atlas pool.
 
-## When something goes wrong
+## WHEN SOMETHING GOES WRONG
 
 - If Atlas returns no job, stop. Do not invent an issue or choose a Wave.
 - If the issue is already owned or delivered, request one new allocation before
@@ -257,7 +263,7 @@ Atlas pool.
 - When handing over a completed checkpoint, pass its path and digests. The new
   local agent verifies it before continuing.
 
-## The manual Atlas route
+## THE MANUAL ATLAS ROUTE
 
 Use this only when a checked bootstrap is unavailable:
 
@@ -272,7 +278,7 @@ Use this only when a checked bootstrap is unavailable:
 This does not turn a file-reading agent into a tested one-click launcher or
 change the checkpoint boundary.
 
-## Credit for merged work
+## CREDIT FOR MERGED WORK
 
 Fiat records whether your human authorship reached the base. For every commit
 it pushes, it records the GitHub account matched to the commit and a digest of

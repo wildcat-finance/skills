@@ -1,6 +1,6 @@
 ![Horos](./assets/characters/horos.png)
 
-# Horos
+# HOROS
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Horos records which repository paths an agent may usually leave unread, with the
 **Next Fiat job.** Use /hexaemeron:fiat to ship the content-addressed object rule whose evidence is the digest a file's own bytes produce. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Horos before broad reading of a large repository. It records which files
 are proven token sinks, why they can usually stay unread, and whether that
@@ -23,7 +23,7 @@ The boundary is advisory, fail-open, and disabled during every security
 review. The content-addressed-object rule still owes its frontier run, and
 Markdown has no outline extractor yet.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Horos runs before broad repository reading and reduces the files every later
 specialist has to inspect. Its boundary is advisory outside the exact evidence
@@ -36,7 +36,7 @@ A Synkrisis finding suggests a Horos review when an observation repeats.
 Synkrisis produces both the cohort and the finding, and the suggestion does
 not change a repository's reading boundary by itself.
 
-## Why it exists
+## WHY IT EXISTS
 
 An agent working in a repository spends most of its reading budget on files
 that return nothing: build output committed to the tree, vendored
@@ -48,7 +48,7 @@ rewriting at up to 12 points of task completion. Not reading the sinks at all
 is the mechanism that wins, and Horos makes it checkable. The full argument
 is committed at [docs/study.md](./docs/study.md).
 
-## What it ships
+## WHAT IT SHIPS
 
 - a standard-library scanner that classifies token sinks and quotes the
   evidence line that earned each entry;
@@ -81,7 +81,7 @@ is committed at [docs/study.md](./docs/study.md).
 The build trail is the runbook at [docs/runbook.md](./docs/runbook.md), one
 reviewed step per verb.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** An agent is pointed at a frontend repository where two thirds
 of the readable bytes are a checked-in Storybook build, a lockfile and a data
@@ -89,7 +89,7 @@ file on one line. The committed boundary sends the reading budget to `src/`
 instead, `check` catches the day the boundary goes stale, and a skeleton map
 orients the agent in a thousand-line module without opening it whole.
 
-## Adopting a boundary in any repository
+## ADOPTING A BOUNDARY IN ANY REPOSITORY
 
 The boundary binds agents that carry this skill; everyone else's agents
 learn it from the adopting repository's own instructions file. `scan
@@ -100,7 +100,7 @@ security review. Harnesses load those files at session start, so one paste
 makes the boundary effective for any instruction-following agent, with no
 install.
 
-## Where it is honest about limits
+## WHERE IT IS HONEST ABOUT LIMITS
 
 Classification is fail-open. A file Horos cannot evidence stays readable, so
 Horos misses sinks a person would catch, and its report says what it skipped.

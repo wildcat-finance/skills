@@ -1,6 +1,6 @@
 ![Probitas](./assets/characters/probitas.png)
 
-# Probitas
+# PROBITAS
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Probitas builds a sourced dossier of borrowing and repayment across lending venu
 **Next Fiat job.** Use /hexaemeron:fiat to establish account-attributed debt units for a Morpho Midnight `exit_borrow_secondary` event so a secondary-market close reconciles into the debt ledger instead of refusing the collection. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Probitas when a person considering a counterparty needs a sourced account
 of borrowing and repayment across supported venues. Supply the entity name and
@@ -24,7 +24,7 @@ borrower, set terms, or make an underwriting decision. Morpho Midnight
 secondary-market borrow exits remain unattributable and its curation data has
 not been collected.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Alexandria preserves venue captures and Tabularium turns supported records into
 rebuildable credit events. Probitas consumes that evidence, keeps venue gaps and
@@ -58,7 +58,7 @@ not to be. So this runs on the lender's own machine, against a borrower they're
 considering, and they reach their own conclusion. We hand over the instrument
 and not the verdict.
 
-## How it works
+## HOW IT WORKS
 
 Undercollateralised lending is the reason to want one: nothing stands between a lender and a total loss except a judgement about the borrower, and that judgement usually gets assembled by hand from whatever the person asking happens to remember. The tool is not limited to that case. Most on-chain borrowing is collateralised and it still tells you plenty, because a liquidation says a price moved, a bad debt says somebody was not made whole, and a missed maturity says what it says anywhere.
 
@@ -70,11 +70,11 @@ Five gates decide whether a dossier is honest enough to hand to a lender:
 2. Every venue in the registry gets a coverage row, and a venue that was queried says over what block range. Silence about a venue would read as a clean record.
 3. Every assertion carries a citation, and every figure in the document traces back to a record.
 4. What could not be established gets its own section, ahead of anything that reads like a conclusion.
-5. No score without a rubric printed beside it. This version emits none.
+5. No score without a rubric printed beside it. <!-- front-door:status skill="probitas" version="probitas-v1.3.0" -->This version emits none.
 
 Gate 3 is the one that does the work. It rebuilds, from the evidence alone, every number and hash a truthful dossier could carry, then fails the document on any figure that is not in that set. An invented transaction hash, an amount rounded in the retelling, a market that was never there: each fails the run rather than shipping in it.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the executable [`probitas.py`](./scripts/probitas.py) collector, renderer and gate checker, standard library only;
 - adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, an archive route over verified Alexandria releases for Goldfinch and Clearpool, and ten further venues carried as named gaps rather than silence;
@@ -83,7 +83,7 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
 - 437 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
 
-## Day to day
+## DAY TO DAY
 
 **Business development.** A counterparty asks for a market and someone has to decide whether their word is worth anything. Give this the addresses they declared and it comes back with what they borrowed elsewhere, whether they gave it back, and a list of the venues nobody could check, so the thin parts of the record are visible rather than absent.
 
@@ -91,7 +91,7 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 
 **Security and audit.** A document arrives asserting things about a counterparty and you have to decide whether to believe it. Run `verify` against the evidence file it came with: every figure in the document has to trace back to a record with a transaction hash, and one that does not fails the check by arithmetic rather than by your reading it closely.
 
-## Run it
+## RUN IT
 
 From this directory, `plugins/probitas`:
 
@@ -117,7 +117,7 @@ can't drift from what the tool actually does.
 Drop `--fixtures` to run against the live venues instead of a synthetic
 borrower.
 
-### Two routes, and how to ask for them
+### TWO ROUTES, AND HOW TO ASK FOR THEM
 
 `collect` gathers from two routes. The adapter route queries the venues that
 ship an adapter, backed either by the network or by a fixture directory. The
@@ -161,7 +161,7 @@ that failed still leaves one. The archive route keeps the original Goldfinch or
 Clearpool venue and the Alexandria release, capture, component and row
 identities on every record.
 
-### Options
+### OPTIONS
 
 - `--entity`: The counterparty's name. Required.
 - `--address`: An address they declared. Repeatable and required.
@@ -173,7 +173,7 @@ identities on every record.
 - `--timeout`: Seconds per request, default 30.
 - `--out`: Where to write, or `-` for stdout.
 
-### The fixtures
+### THE FIXTURES
 
 Eleven of them, covering all five shipped venues and the cases worth being sure
 about.
@@ -200,7 +200,7 @@ collateral scales separate.
 `demo` combines a Wildcat default with Morpho bad debt, and is what the
 quickstart above runs.
 
-## How it works
+## HOW IT WORKS
 
 Two halves, doing different jobs.
 
@@ -218,7 +218,7 @@ proportion of what comes back will be citation-shaped and hollow, and nothing
 inside the model will notice. [The five gates](skills/probitas/references/gates.md)
 covers what each check does about that.
 
-## The gates
+## THE GATES
 
 1. **Address provenance.** Every address is declared by the counterparty or
    provably linked on chain. Inferred addresses get their own section.
@@ -231,19 +231,20 @@ covers what each check does about that.
 5. **No score without a rubric.** If a rating is ever emitted, the rubric
    prints beside it and the inputs to each component are shown.
 
-## What it never does
+## WHAT IT NEVER DOES
 
 No personal data. No social handles, no employment history, no working out
 which individual controls an address. A dossier that starts profiling people is
 a different product and a worse one, and that line sits in the tool rather than
 in whoever is operating it at two in the morning.
 
+<!-- front-door:status skill="probitas" version="probitas-v1.3.0" -->
 No score, in this version. The specification leaves the question open and leans
 toward evidence without a rating, because a rating invites people to lean on it
 harder than the data can bear. Gate 5 is implemented anyway, so whoever adds a
 rubric later finds the check already standing.
 
-## Venues
+## VENUES
 
 Fifteen in the registry, five with adapters. The other ten appear in every
 coverage table saying nobody checked, which is gate 2 working rather than an
@@ -294,7 +295,7 @@ default.
 [Adding a venue](docs/adding-a-venue.md) says what each gap actually is and
 what closing one takes. It assumes no knowledge of Wildcat.
 
-## Tests
+## TESTS
 
 From the repository root:
 
@@ -308,7 +309,7 @@ implementation uses only the standard library: no install step, lockfile, or
 dependency tree. Someone deciding whether to trust a counterparty should not
 first have to decide whether to trust forty transitive packages.
 
-## Reading further
+## READING FURTHER
 
 - [`docs/adding-a-venue.md`](docs/adding-a-venue.md) -- every gap, what blocks
   it, and how to close one.
@@ -322,6 +323,6 @@ first have to decide whether to trust forty transitive packages.
 - [`audit/AUDIT.md`](audit/AUDIT.md) -- every audit round, including the
   findings that were wrong the first time.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).
