@@ -59,8 +59,8 @@ front matter, generated inventories, and vendored documentation trees.
 
 ## The corpus outline time, re-measured
 
-Outlining all 900 corpus files in one process takes 170 ms, the median of
-three runs (167, 173, 170), against the study's budget of 1,000 ms in
+Outlining all 900 corpus files in one process takes 216 ms, the median of
+three runs (215, 216, 214), against the study's budget of 1,000 ms in
 section 10. The measurement is the method of
 `.hexaemeron/design-reports/resolve.py corpus-outline-ms` copied exactly:
 every corpus file read and decoded once up front, then three passes calling
@@ -72,7 +72,10 @@ from the shipped module; the copy substitutes
 `languages/markdown/markdown.py` for the candidate and changes nothing
 else. The study measured 319 ms on the candidate over the 895-file corpus
 of the starting ref; the shipped module is the same construction with the
-bounded scanning step 2 added.
+bounded scanning step 2 added. Re-running the same method against that
+candidate on the machine that produced the figure above gives 332 ms, so
+the two readings stand on comparable ground and the shipped module is the
+faster of the pair.
 
 ## The refused candidates
 
