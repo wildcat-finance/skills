@@ -1,7 +1,7 @@
 # Horos runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Horos.** Horos records evidence-backed reading exclusions and deterministic skeleton maps for ordinary repository work. It does not chunk source, measure runtime cost, or narrow any security review. **Current frontier:** The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
+> **Marketplace context: Horos.** Horos records evidence-backed reading exclusions and deterministic skeleton maps for ordinary repository work. It does not chunk source, measure runtime cost, or narrow any security review. **Current frontier:** The v9.2.3 reopening's second job is done: the content-addressed object rule ships with four guard tests, documentation and an evidence bundle, binding 78 files and 7,850,052 bytes of this repository's object stores by the digest of each file's own bytes. One held job remains, the Markdown outline extractor, with maturity expected after it.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
