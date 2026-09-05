@@ -143,3 +143,70 @@ The consistency test parses these against the committed results document.
 <!-- mdoutline:fence_extra 0 -->
 <!-- mdoutline:regions 576 -->
 <!-- mdoutline:files_with_regions 190 -->
+
+## Demonstration at the run head
+
+The study's demo path, run in order from the repository root at run head
+cc90531c on 2026-09-05, with
+`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false`
+exported for every `unittest` command. The root suite runs in a clean detached
+snapshot of that head, which is the exit; inside the Fiat run worktree it is
+red on two `test_agent_instruction_corpus` tests, because the prover of
+skills#1098 reads whichever `.hexaemeron/design-evidence.json` sits at the
+repository root and this run's record occupies that path (skills#1228).
+
+```text
+$ python3 plugins/horos/skills/horos/scripts/horos.py map plugins/horos/examples/fixture-md/GUIDE.md
+module: Market guide
+front matter: lines 1-4
+# Market guide  (line 6)
+    ## Opening a market  (line 12)
+        ``` bash  (lines 16-19)
+        ### Parameters  (line 21)
+            ``` solidity  (lines 26-28)
+        ### Quoted note  (line 32)
+    Closing a market  (setext h2)  (line 36)
+    ## Appendix  (line 45)
+declarations: 8
+unparsed: 1 region(s): lines 39-41
+exit 0
+
+$ python3 plugins/horos/skills/horos/scripts/horos.py map plugins/horos/skills/horos/SKILL.md
+module: Horos
+front matter: lines 1-6
+# Horos  (line 12)
+    ## Where this sits  (line 17)
+    ## The verbs  (line 32)
+        ``` bash  (lines 37-39)
+        ``` bash  (lines 47-49)
+        ``` text  (lines 61-68)
+        ``` bash  (lines 82-84)
+        ``` bash  (lines 94-96)
+    ## The discipline  (line 142)
+    ## The one rule that outranks the rest  (line 191)
+    ## The shipped example  (line 199)
+    ## Promise Machine contract  (line 205)
+        ### horos-boundary-scan  (line 207)
+        ### horos-boundary-check  (line 219)
+        ### horos-census  (line 231)
+        ### horos-skeleton-map  (line 243)
+declarations: 16
+unparsed: 1 region(s): lines 8-10
+exit 0
+
+$ python3 -m unittest discover -s plugins/horos/tests -t plugins/horos
+Ran 260 tests in 9.250s
+OK
+
+$ python3 plugins/horos/skills/horos/scripts/horos.py check .
+boundary matches the tree
+exit 0
+
+$ python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json
+{"code": "WAI-OK", "event": "run.summary", "outcome": "accepted", "passed": 20, "refused": 0, "failed": 0}
+exit 0
+
+$ python3 -m unittest discover -s tests   # clean detached snapshot of the run head
+Ran 1233 tests in 159.500s
+OK
+```
