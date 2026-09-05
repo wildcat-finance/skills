@@ -777,7 +777,10 @@ def staged_state(root: Path) -> bytes:
     index alone is blind to a file written into the outer repository's working
     tree, and a command the gate starts by accident can write one.
     `--no-optional-locks` keeps this measurement from refreshing the index it
-    is measuring.
+    is measuring, and `core.fsmonitor` is off for it because one case below
+    configures a monitor that records having run in the repository measured:
+    `ls-files`, `diff --cached` and `status` each start it otherwise, and a run
+    the measurement caused would read as one the gate caused.
 
     Not the index file's own bytes. `git write-tree` does persist a cache tree
     into an index that lacks one, so those bytes can move while nothing staged
@@ -786,11 +789,14 @@ def staged_state(root: Path) -> bytes:
     left out, because asserting them would pin where write-tree happened to
     persist rather than the staged state the incident class is about.
     """
-    entries = git(root, "ls-files", "--stage").stdout
-    cached = git(root, "diff", "--cached", "--name-status", "--").stdout
-    head = git(root, "rev-parse", "HEAD").stdout
-    worktree = git(root, "--no-optional-locks", "status", "--porcelain").stdout
-    refs = git(root, "for-each-ref").stdout
+    def measure(*arguments: str) -> str:
+        return git(root, "-c", "core.fsmonitor=false", *arguments).stdout
+
+    entries = measure("ls-files", "--stage")
+    cached = measure("diff", "--cached", "--name-status", "--")
+    head = measure("rev-parse", "HEAD")
+    worktree = measure("--no-optional-locks", "status", "--porcelain")
+    refs = measure("for-each-ref")
     return "\0".join((entries, cached, head, worktree, refs)).encode("utf-8")
 
 
@@ -820,6 +826,26 @@ def config_file_override(directory: Path, command: Path) -> Path:
     path = directory / "gitconfig"
     path.write_text(f"[core]\n\tfsmonitor = {command}\n", encoding="utf-8")
     return path
+
+
+def repository_override(repository: Path, command: Path) -> None:
+    """The same `core.fsmonitor`, in a repository's own configuration.
+
+    `GIT_DIR` carries no value in-band and names no file; it selects a
+    repository, and git then reads that repository's configuration.
+    """
+    git(repository, "config", "core.fsmonitor", str(command))
+
+
+def selected_by(repository: Path) -> dict[str, str]:
+    """The repository selector a caller leaves behind.
+
+    Git sets it itself only for a commit in a linked worktree, naming that
+    worktree's own git directory; a hook, `git bisect run` or a rebase `exec`
+    line leaves a caller's behind, and the gate is an executable file any of
+    them can start.
+    """
+    return {"GIT_DIR": str(repository / ".git")}
 
 
 def fsmonitor_script(directory: Path) -> tuple[Path, Path]:
@@ -855,7 +881,9 @@ class HookIndexMutationTests(unittest.TestCase):
     the caller's one-shot configuration the same way. The incident the issue
     cites is what happens when a process inherits the first pair and stages
     against it: 1487 deletions in a repository nobody was working in, recorded
-    at `tests/test_boundary_currency.py:57-73`.
+    at `tests/test_boundary_currency.py:57-73`. The configuration-file
+    selectors and `GIT_DIR` reach the same configuration one and two
+    indirections out, and the cases below drive every route.
 
     The guard for that helper lives in the file whose helper caused it, and
     acceptance condition 5 refuses a guard that lives only there. These cases
@@ -1027,6 +1055,84 @@ class HookIndexMutationTests(unittest.TestCase):
     def test_greenlight_reads_no_configuration_a_file_selector_could_redirect(self):
         """The recording half, down the same three."""
         self._no_file_selector_redirects(GREENLIGHT_NAME)
+
+    def test_the_hook_reads_no_configuration_a_repository_selector_could_redirect(self):
+        """S3-R1-02: an inherited `GIT_DIR` must not choose whose configuration runs.
+
+        With the variable left in place, the other repository's own
+        `core.fsmonitor` ran during this hook's `git write-tree`. The hook
+        drops the repository selectors and keeps the index git names, so the
+        command must not run and the repository selected must be untouched.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            script, marker = fsmonitor_script(here.parent)
+            repository_override(outer, script)
+            before = staged_state(outer)
+
+            attempted = run_gate(HOOK_NAME, here, polluted_at(outer, selected_by(outer)))
+
+            self.assertFalse(
+                marker.exists(),
+                "an inherited GIT_DIR made the gate read another repository's "
+                "configuration and start the process it names",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of the repository an "
+                "inherited GIT_DIR selected",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "the gate wrote a green into the repository GIT_DIR selected",
+            )
+            self.assertEqual(len(refusals(attempted)), 1, f"{attempted.stderr!r}")
+
+    def test_the_hook_gates_the_repository_it_runs_from_under_an_inherited_git_dir(self):
+        """S3-R1-02, the other half: dropping `GIT_DIR` must not lose the gate.
+
+        Under the same inherited selector the hook still admits the tree its
+        own record names and refuses any other, in the repository git ran it
+        from. `run_gate` stands in for git: the index git would name for the
+        commit in hand, and the selector a caller left behind.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            green = git(here, "write-tree").stdout.strip()
+            record_path(here).write_text(f"{green}\n", encoding="utf-8")
+            inherited = clean_environment({
+                "GIT_INDEX_FILE": str(here / ".git" / "index"),
+                "GIT_PREFIX": "",
+                **selected_by(outer),
+            })
+
+            admitted = run_gate(HOOK_NAME, here, inherited)
+            self.assertEqual(
+                admitted.returncode, 0,
+                "under an inherited GIT_DIR the gate refused the tree its own "
+                f"record names: {admitted.stderr}",
+            )
+
+            (here / "c.txt").write_text("three\n", encoding="utf-8")
+            git(here, "add", "-A")
+            refused = run_gate(HOOK_NAME, here, inherited)
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "under an inherited GIT_DIR the gate admitted a tree its "
+                "record does not name",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                green, named[0],
+                f"the refusal did not name the recorded tree: {named[0]}",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "a green appeared in the repository GIT_DIR selected",
+            )
 
     def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
         """`git rev-parse --git-dir`, not `--git-common-dir`.

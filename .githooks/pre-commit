@@ -48,14 +48,38 @@ fi
 # --git-dir` then fails here, which refuses the commit and names the cause,
 # which is the direction this gate is meant to fail.
 #
-# The index git exports is left alone too, and must be. Git runs this hook for
-# one particular commit and names that commit's index in GIT_INDEX_FILE --
-# `git commit -a` builds a temporary one -- so a hook that reached for
-# `$GIT_DIR/index` instead would check a tree that is not the tree being
-# committed. What the regression in tests/test_commit_gate.py holds is the
-# other half: pointed at another repository's index, the gate reads it and
-# leaves its staged state alone.
-unset GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
+# Which repository "the repository's own config" means is the last thing an
+# inherited variable can move. GIT_DIR reaches this hook two ways. Git sets it
+# itself for a commit in a linked worktree, naming that worktree's own git
+# directory, and not for a commit in a plain checkout; a caller can leave it
+# behind in either -- a hook, `git bisect run`, a rebase `exec` line -- and
+# both scripts here are executable files any of them can start. Inherited from
+# a caller, every git call below reads that repository's configuration, and
+# its `core.fsmonitor` ran during this hook's own `git write-tree`, measured
+# on git 2.50.1. So the six variables that select a repository are dropped:
+# GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR, GIT_OBJECT_DIRECTORY,
+# GIT_ALTERNATE_OBJECT_DIRECTORIES and GIT_NAMESPACE. Nothing here changes
+# directory afterwards, on purpose: git runs a hook from the root of the
+# working tree (githooks(5)), so discovery from where this script stands finds
+# the repository being committed to -- through the `.git` file in a linked
+# worktree, which names the directory git had set -- and the record and
+# configuration it reads are that repository's. The trade is a work tree with
+# no `.git` of its own, driven through `--git-dir`, `--work-tree` or those
+# variables: discovery finds nothing there, the commit
+# is refused, and the bypass token recovers.
+#
+# The index git exports is kept, and must be. Git runs this hook for one
+# particular commit and names that commit's index in GIT_INDEX_FILE -- `git
+# commit -a` builds a temporary one, and a plain commit names `.git/index`
+# relative to the working tree, which is the other reason not to change
+# directory -- so a hook that reached for `$GIT_DIR/index` instead would check
+# a tree that is not the tree being committed. GIT_PREFIX stays with it. What
+# the regression in tests/test_commit_gate.py holds is the other half: pointed
+# at another repository's index, the gate reads it and leaves its staged state
+# alone.
+unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
+    GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE \
+    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
 
 # Every git call this gate makes goes through here, and nothing else does.
 gate_git() {
