@@ -105,9 +105,13 @@ CHIRP = "Ask the Atlas for a number. Pick your harness. Finish what you start."
 # named and excluded here instead of being silently tolerated.
 #
 # An exclusion an author can widen is not an exclusion. The region must be
-# closed, and it must not reach any heading this contract governs, or moving
-# one marker would exempt the whole document from the heading rule.
-GENERATED_REGIONS = (("<!-- contributors:start -->", "<!-- contributors:end -->"),)
+# closed, must carry exactly one pair of markers, and may cover no heading
+# other than the one the generator itself writes, which is the third entry
+# here. Naming only a few protected headings left every other one exemptible,
+# and a second opening marker widened the span the first one opened.
+GENERATED_REGIONS = (
+    ("<!-- contributors:start -->", "<!-- contributors:end -->", "## Thanks"),
+)
 
 # Which derived quantity each count key names. The values come from the
 # topology reader, which already refuses when the two manifests and the tree
@@ -145,16 +149,27 @@ COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 # row is part of the match so that scanning resumes after it: leaving it
 # unconsumed makes the next fence's opening row the previous one's closing row,
 # which masks the prose between two fences and unmasks the fences themselves.
+# Either delimiter may carry up to three leading spaces, as the renderer
+# allows. Requiring column zero produced that same inverted mask from an
+# indented closing row, and refused a heading inside an indented block.
 FENCE_RE = re.compile(
-    r"(?ms)^(?P<open>(?P<mark>`{3,}|~{3,})[^\n]*\n)"
+    r"(?ms)^(?P<open>[ ]{0,3}(?P<mark>`{3,}|~{3,})[^\n]*\n)"
     r"(?P<body>.*?)"
-    r"(?P<close>^(?P=mark)[^\n]*(?:\n|\Z)|\Z)"
+    r"(?P<close>^[ ]{0,3}(?P=mark)[^\n]*(?:\n|\Z)|\Z)"
 )
 HEADING_RE = re.compile(r"(?m)^(?P<hashes>#{1,6})\s+(?P<text>.+?)\s*$")
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\((?P<target>[^)\s]+)[^)]*\)")
 MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*\]\((?P<target>[^)\s]+)[^)]*\)")
-HTML_HREF_RE = re.compile(r"""<a\s[^>]*href=(?P<q>["'])(?P<target>[^"']+)(?P=q)""")
-HTML_IMAGE_RE = re.compile(r"""<img\s[^>]*src=(?P<q>["'])(?P<target>[^"']+)(?P=q)""")
+HTML_HREF_RE = re.compile(
+    r"""<a\s[^>]*?href\s*=\s*"""
+    r"""(?:(?P<q>["'])(?P<quoted>[^"']+)(?P=q)|(?P<bare>[^\s"'>]+))""",
+    re.IGNORECASE,
+)
+HTML_IMAGE_RE = re.compile(
+    r"""<img\s[^>]*?src\s*=\s*"""
+    r"""(?:(?P<q>["'])(?P<quoted>[^"']+)(?P=q)|(?P<bare>[^\s"'>]+))""",
+    re.IGNORECASE,
+)
 # Reference style. A definition names a target once and every use points at the
 # label, so a checker that reads only inline targets sees neither the second
 # route nor the second image.
@@ -164,6 +179,10 @@ REFERENCE_DEFINITION_RE = re.compile(
 REFERENCE_USE_RE = re.compile(
     r"(?P<bang>!?)\[(?P<text>[^\]]*)\]\[(?P<label>[^\]]*)\]"
 )
+# The shortcut form carries no second bracket pair at all: `![alt]` and `[text]`
+# resolve through a definition of that same name. It renders exactly as the
+# other two do, so a reader sees the image or the route either way.
+REFERENCE_SHORTCUT_RE = re.compile(r"(?P<bang>!?)\[(?P<label>[^\]\[]+)\](?![\[(:])")
 # The command a card displays, wherever it is displayed. A fenced block is one
 # a reader can copy and a code span is one they can read mid-sentence, and both
 # are the same command: the delimiter is presentation, so the rule is about the
@@ -189,10 +208,16 @@ NUMBER_WORD_RE = "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
 # The case-insensitive flag is not decoration. Every ATX heading on this page
 # must be all caps, so a case-sensitive lower-case grammar could never read a
 # count claim inside one: the two rules together exempted every heading.
+#
+# The words between the number and the noun are free text rather than a closed
+# list. A list can only hold the adjectives somebody thought of, and "42
+# assorted plugins" was one word away from being a stale literal nothing read.
+# Reading too much is the safe direction here: a sentence caught by mistake is
+# reworded or marked, and a sentence missed is a number that ages in public.
 COUNT_CLAIM_RE = re.compile(
     r"(?P<number>\d[\d,]*|(?:" + NUMBER_WORD_RE + r")(?:-(?:" + NUMBER_WORD_RE + r"))?)\s+"
-    r"(?:(?:governed|first-party|domain|phase|upstream|unchanged|vendored)\s+){0,3}"
-    r"(?:plugins?|skills?|members?|agents?|domains|phases)\b",
+    r"(?:[A-Za-z][A-Za-z-]*\s+){0,3}"
+    r"(?:plugins?|skills?|members?|agents?|domains?|phases?)\b",
     re.IGNORECASE,
 )
 
@@ -356,29 +381,41 @@ def generated_spans(text: str) -> tuple[list[tuple[int, int]], list[str]]:
     so both are refused and neither is applied.
     """
 
+    # A marker written inside a fenced block is a quoted example, not a region
+    # boundary, so the markers are located in the fence-blanked view.
+    outline = unfenced(text)
     spans: list[tuple[int, int]] = []
     refusals: list[str] = []
-    for opening, closing in GENERATED_REGIONS:
-        start = text.find(opening)
+    for opening, closing, owned in GENERATED_REGIONS:
+        start = outline.find(opening)
         if start < 0:
             continue
-        end = text.find(closing, start)
+        for marker in (opening, closing):
+            if outline.count(marker) > 1:
+                refusals.append(
+                    f"{marker} appears {outline.count(marker)} times; a region "
+                    "with more than one boundary is not one region"
+                )
+        end = outline.find(closing, start)
         if end < 0:
             refusals.append(f"the {opening} region is never closed by {closing}")
             continue
+        if outline.count(opening) > 1 or outline.count(closing) > 1:
+            continue
         span = (start, end + len(closing))
-        region = text[span[0]: span[1]]
+        region = outline[span[0]: span[1]]
+        # The exclusion exists for the headings the generator writes. Every
+        # other heading inside the region is an exemption the author granted
+        # themselves, which is the whole failure this rule refuses.
         reached = [
             match.group(0).strip()
             for match in HEADING_RE.finditer(region)
-            if len(match.group("hashes")) == 1
-            or match.group(0).strip()
-            in (CONTRIBUTION_HEADING, DEMONSTRATION_HEADING)
+            if match.group(0).strip() != owned
         ]
         if reached:
             refusals.append(
-                f"the {opening} region reaches {reached[0]!r}, which this "
-                "contract governs"
+                f"the {opening} region reaches {reached[0]!r}; it may cover no "
+                f"heading other than {owned!r}"
             )
             continue
         spans.append(span)
@@ -414,6 +451,12 @@ def headings(display: str) -> list[tuple[int, int, str]]:
     ]
 
 
+def html_target(match: re.Match) -> str:
+    """The target of one HTML attribute, quoted either way or not at all."""
+
+    return match.group("quoted") or match.group("bare")
+
+
 def reference_definitions(display: str) -> dict[str, str]:
     """Every `[label]: target` definition, keyed the way Markdown folds them."""
 
@@ -434,11 +477,19 @@ def reference_uses(display: str, *, images: bool) -> list[tuple[int, str]]:
 
     definitions = reference_definitions(display)
     found = []
+    seen: set[int] = set()
     for match in REFERENCE_USE_RE.finditer(display):
         if bool(match.group("bang")) != images:
             continue
+        seen.update(range(match.start(), match.end()))
         label = (match.group("label") or match.group("text")).strip().lower()
         target = definitions.get(label)
+        if target is not None:
+            found.append((match.start(), target))
+    for match in REFERENCE_SHORTCUT_RE.finditer(display):
+        if bool(match.group("bang")) != images or match.start() in seen:
+            continue
+        target = definitions.get(match.group("label").strip().lower())
         if target is not None:
             found.append((match.start(), target))
     return found
@@ -450,8 +501,7 @@ def link_targets(display: str) -> list[tuple[int, str]]:
         for match in MARKDOWN_LINK_RE.finditer(display)
     ]
     found += [
-        (match.start(), match.group("target"))
-        for match in HTML_HREF_RE.finditer(display)
+        (match.start(), html_target(match)) for match in HTML_HREF_RE.finditer(display)
     ]
     found += reference_uses(display, images=False)
     return sorted(found)
@@ -463,8 +513,7 @@ def image_targets(display: str) -> list[tuple[int, str]]:
         for match in MARKDOWN_IMAGE_RE.finditer(display)
     ]
     found += [
-        (match.start(), match.group("target"))
-        for match in HTML_IMAGE_RE.finditer(display)
+        (match.start(), html_target(match)) for match in HTML_IMAGE_RE.finditer(display)
     ]
     found += reference_uses(display, images=True)
     return sorted(found)

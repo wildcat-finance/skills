@@ -49,6 +49,8 @@ except ModuleNotFoundError as error:  # the Elenchus parent has no Step 4 checke
 
 
 SPECIMENS = ROOT / "tests" / "fixtures" / "public-front-door"
+SPECIMENS_RELATIVE = "tests/fixtures/public-front-door"
+SPECIMEN_BYTES = 262_144
 HEADER_RE = re.compile(
     r'<!--\s*front-door-specimen:\s*expect="(?P<expect>[A-Za-z0-9]+)"'
     r'\s+reason="(?P<reason>[^"]+)"\s*-->'
@@ -239,10 +241,29 @@ def body_codes(body: str) -> list[str]:
     return [finding.code for finding in findings]
 
 
+def read_no_follow(root: Path, relative: str) -> str:
+    """Read one document the way the checker reads one, refusing a symlink.
+
+    `Path.read_text()` follows a link where the checker's no-follow descriptor
+    walk refuses one, so a link planted among the specimens would have been
+    read here and refused there, and the suite would have been the more
+    trusting of the two. Both sides now read through the same reader.
+    """
+
+    payload = demonstrations._read_regular_file(
+        root, relative, maximum=SPECIMEN_BYTES, label=relative
+    )
+    return payload.decode("utf-8")
+
+
+def read_specimen(name: str) -> str:
+    return read_no_follow(ROOT, f"{SPECIMENS_RELATIVE}/{name}.md")
+
+
 def specimen_codes(name: str) -> list[str]:
     """Plant the specimen tree, install one specimen README, and check it."""
 
-    return body_codes((SPECIMENS / f"{name}.md").read_text(encoding="utf-8"))
+    return body_codes(read_specimen(name))
 
 
 def broken(old: str, new: str, *, count: int = 1) -> str:
@@ -254,22 +275,134 @@ def broken(old: str, new: str, *, count: int = 1) -> str:
     lets it be replayed against the commit's parent on its own.
     """
 
-    body = (SPECIMENS / "clean.md").read_text(encoding="utf-8")
+    body = read_specimen("clean")
     if body.count(old) != count:
         raise AssertionError(f"{old!r} appears {body.count(old)} times, not {count}")
     return body.replace(old, new, count)
+
+
+FILLER = ("word " * 160).strip()
+
+# One document per declared refusal, each provoking that refusal and nothing
+# about the others. Counting a code's occurrences in the checker's source said
+# only that somebody typed it twice; a regression that stopped a rule reaching
+# its `_finding` call left that count untouched. These run the rule instead.
+PROVOCATIONS = {
+    # FD01 needs no front door at all, so it is the one entry with no body.
+    "FD01": None,
+    "FD02": lambda: broken(
+        '  <img src="./assets/characters/shoggoth.png" width="1200"'
+        ' alt="The Shoggoth collective">\n',
+        "",
+    ),
+    "FD03": lambda: broken(
+        "A synthetic front door for a synthetic tree. It holds",
+        FILLER + "\nA synthetic front door for a synthetic tree. It holds",
+    ),
+    "FD04": lambda: broken(
+        "## SO, YOU WANT TO BUILD GOD?", "## SO, YOU WANT TO BUILD"
+    ),
+    "FD05": lambda: broken(
+        "Start at [how to help](./docs/how-to-help-shoggoth.md), which offers a"
+        " small\nroute as well as the controlled one.",
+        "Start somewhere else.",
+    ),
+    "FD06": lambda: broken(
+        "## WHAT A RESULT MEANS", " ".join([FILLER] * 9) + "\n\n## WHAT A RESULT MEANS"
+    ),
+    "FD07": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        "See [again](./FUTUREPROOFING.md).\n\n## WHAT A RESULT MEANS",
+    ),
+    "FD08": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        "See [quarry](./plugins/quarry).\n\n## WHAT A RESULT MEANS",
+    ),
+    "FD09": lambda: broken(
+        "The [Promise Machine contract](./PROMISE_MACHINE.md) is the shared law"
+        " between",
+        "The shared law between",
+    ),
+    "FD10": lambda: broken(
+        "[The catalogue](./FUTUREPROOFING.md) lists every member, including the",
+        "The catalogue lists every member, including the",
+    ),
+    "FD11": lambda: broken("## WHAT A RESULT MEANS", "## What a result means"),
+    "FD12": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        "![x](./plugins/lantern/art.png)\n\n## WHAT A RESULT MEANS",
+    ),
+    "FD13": lambda: broken(
+        "Ask the Atlas for a number. Pick your harness. Finish what you start.",
+        "Ask the Atlas.",
+    ),
+    "FD14": lambda: broken("<!-- front-door:aside -->\n", ""),
+    "FD15": lambda: broken("## WHAT CAN IT DO?", "## WHAT CAN IT DO"),
+    "FD16": lambda: broken(' digest="{{digest:lantern}}" -->', " -->"),
+    "FD17": lambda: broken('skill="lantern" claim=', 'skill="nowhere" claim='),
+    "FD18": lambda: broken('claim="{{claim:lantern}}"', 'claim="not-the-claim"'),
+    "FD19": lambda: broken('digest="{{digest:lantern}}"', 'digest="' + "0" * 64 + '"'),
+    "FD20": lambda: broken(
+        'skill="thicket" claim="{{claim:thicket}}" digest="{{digest:thicket}}"',
+        'skill="quarry" claim="{{claim:quarry}}" digest="{{digest:quarry}}"',
+    ),
+    "FD21": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        "### LANTERN, AGAIN\n\n"
+        '<!-- front-door:demo skill="lantern" claim="{{claim:lantern}}"'
+        ' digest="{{digest:lantern}}" -->\n'
+        "Run `python3 scripts/demonstrations.py run --record"
+        " {{directory:lantern}} --report tmp/demo/l2.json`\n"
+        "over the preserved `{{source:lantern}}` and it reports"
+        " `{{observed:lantern}}`.\n{{nonclaim:lantern}}\n\n"
+        "## WHAT A RESULT MEANS",
+    ),
+    "FD22": lambda: broken(
+        "Run `python3 scripts/demonstrations.py run --record"
+        " {{directory:lantern}} --report tmp/demo/lantern.json`",
+        "Run it.",
+    ),
+    "FD23": lambda: broken(
+        "over the preserved `{{source:lantern}}` and it reports",
+        "over the preserved `nothing` and it reports",
+    ),
+    "FD24": lambda: broken(
+        "and it reports `{{observed:lantern}}`.", "and it reports `nothing`."
+    ),
+    "FD25": lambda: broken("{{nonclaim:lantern}}\n", ""),
+    "FD26": lambda: broken(
+        '<!-- front-door:count key="domain" -->{{count:domain}} domain agents',
+        '<!-- front-door:count key="domain" -->99 domain agents',
+    ),
+    "FD27": lambda: broken(
+        '<!-- front-door:count key="domain" -->',
+        '<!-- front-door:count key="bogus" -->',
+    ),
+    "FD28": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        "There are 42 plugins here.\n\n## WHAT A RESULT MEANS",
+    ),
+    "FD29": lambda: broken(
+        '<!-- front-door:count key="governed" -->{{count:governed}} governed'
+        " skills in",
+        '<!-- front-door:count key="plugins" -->{{count:plugins}} governed'
+        " skills in",
+    ),
+    "FD30": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        "<!-- contributors:start -->\n\n## WHAT A RESULT MEANS",
+    ),
+}
 
 
 class EntryParentGuardTests(unittest.TestCase):
     """Each specimen is red before the checker it guards exists."""
 
     def test_every_specimen_declares_what_it_breaks(self):
-        found = sorted(path.name for path in SPECIMENS.glob("*.md"))
+        found = sorted(path.stem for path in SPECIMENS.glob("*.md"))
         self.assertTrue(found, SPECIMENS)
         for name in found:
-            header = HEADER_RE.search(
-                (SPECIMENS / name).read_text(encoding="utf-8")
-            )
+            header = HEADER_RE.search(read_specimen(name))
             with self.subTest(specimen=name):
                 self.assertIsNotNone(header, "specimen declares no expectation")
                 self.assertIsNotNone(
@@ -286,7 +419,7 @@ class SpecimenTests(unittest.TestCase):
 
     def specimens(self):
         for path in sorted(SPECIMENS.glob("*.md")):
-            header = HEADER_RE.search(path.read_text(encoding="utf-8"))
+            header = HEADER_RE.search(read_specimen(path.stem))
             yield path.stem, header.group("expect")
 
     def test_the_clean_specimen_holds_the_whole_contract(self):
@@ -477,6 +610,147 @@ class AuditRoundOneTests(unittest.TestCase):
 
 
 @unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
+class AuditRoundTwoTests(unittest.TestCase):
+    """One case per rule the second audit round found the checker did not have.
+
+    Round one closed eight holes. These are the spellings its fixes did not
+    reach: a fence delimiter indented the way CommonMark permits, a count claim
+    with an adjective the closed qualifier list never learned, the shortcut
+    reference form and the unquoted and upper-case HTML attribute, and a
+    generated region widened around a heading the earlier rule did not name.
+    """
+
+    def test_an_indented_closing_fence_closes_the_fence(self):
+        """The renderer closes there and the checker did not, so it blanked on."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "```text\nexample\n  ```\n## Sentence case below an indented"
+                " closer\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD11", codes)
+
+    def test_an_indented_opening_fence_opens_a_fence(self):
+        """The other direction of the same blindness refuses fenced content."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "   ```text\n## Sentence case inside an indented fence\n   ```\n\n"
+                "## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertNotIn("FD11", codes)
+
+    def test_a_count_claim_with_an_unlisted_qualifier_is_read(self):
+        """One adjective the closed list never learned hid the whole claim."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "There are 42 assorted plugins here.\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD28", codes)
+
+    def test_a_singular_topology_noun_carrying_a_number_is_read(self):
+        """`domains` and `phases` were read in the plural only."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "There is 1 domain here.\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD28", codes)
+
+    def test_a_shortcut_reference_image_is_an_image(self):
+        """`![label]` renders the image that `![alt][label]` renders."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "![lantern-art]\n\n[lantern-art]: ./plugins/lantern/art.png\n\n"
+                "## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD12", codes)
+
+    def test_a_shortcut_reference_link_counts_towards_unique_targets(self):
+        """So does the link form of it."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "See [fp].\n\n[fp]: ./FUTUREPROOFING.md\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD07", codes)
+
+    def test_an_unquoted_html_attribute_is_read(self):
+        """HTML does not require the quotes the pattern required."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                "<img src=./plugins/lantern/art.png>\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD12", codes)
+
+    def test_an_upper_case_html_tag_is_read(self):
+        """HTML tag and attribute names are case-insensitive."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                '<A HREF="./FUTUREPROOFING.md">again</A>\n\n## WHAT A RESULT MEANS',
+            )
+        )
+        self.assertIn("FD07", codes)
+
+    def test_a_generated_region_may_cover_no_other_heading(self):
+        """Naming three headings left every other one exemptible."""
+        codes = body_codes(
+            broken(
+                "## THE REST OF THE COLLECTIVE",
+                "<!-- contributors:start -->\n\n## The rest of the collective\n\n"
+                "<!-- contributors:end -->",
+            )
+        )
+        self.assertIn("FD30", codes)
+        self.assertIn("FD11", codes)
+
+    def test_a_second_region_boundary_is_not_a_region(self):
+        """A repeated opening marker widened the span the first one opened."""
+        codes = body_codes(
+            broken(
+                "## THE REST OF THE COLLECTIVE",
+                "<!-- contributors:start -->\n\n<!-- contributors:start -->\n\n"
+                "## The rest of the collective\n\n<!-- contributors:end -->",
+            )
+        )
+        self.assertIn("FD30", codes)
+        self.assertIn("FD11", codes)
+
+    def test_a_region_marker_inside_a_fence_opens_no_region(self):
+        """A marker shown as an example is not a boundary."""
+        codes = body_codes(
+            broken(
+                "## THE REST OF THE COLLECTIVE",
+                "```text\n<!-- contributors:start -->\n```\n\n"
+                "## The rest of the collective\n\n<!-- contributors:end -->",
+            )
+        )
+        self.assertIn("FD11", codes)
+
+    def test_a_symlinked_specimen_is_refused_rather_than_followed(self):
+        """The suite reads a specimen the way the checker reads a document."""
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "fixtures").mkdir()
+            (root / "outside.md").write_text("planted\n", encoding="utf-8")
+            (root / "fixtures" / "linked.md").symlink_to(root / "outside.md")
+            with self.assertRaises(Exception) as caught:
+                read_no_follow(root, "fixtures/linked.md")
+        self.assertNotIsInstance(caught.exception, AssertionError)
+
+
+@unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
 class LiveFrontDoorTests(unittest.TestCase):
     """Agreement against the delivered tree, with no literal in sight."""
 
@@ -528,7 +802,8 @@ class LiveFrontDoorTests(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertIsNotNone(claim)
                 self.assertEqual(
-                    int(claim.group("number")), counts[front_door.COUNT_KEYS[key]]
+                    front_door.claim_number(claim.group("number")),
+                    counts[front_door.COUNT_KEYS[key]],
                 )
         self.assertEqual(claims, len(front_door.COUNT_KEYS))
 
@@ -639,13 +914,22 @@ class CheckerBoundaryTests(unittest.TestCase):
             with self.subTest(call=target):
                 self.assertNotIn(target, called)
 
+    def test_every_declared_refusal_has_a_document_that_provokes_it(self):
+        self.assertEqual(sorted(PROVOCATIONS), sorted(front_door.REFUSALS))
+
     def test_every_declared_refusal_is_reachable_from_the_checker(self):
-        source = (
-            ROOT / "scripts" / "check_public_front_door.py"
-        ).read_text(encoding="utf-8")
-        for code in front_door.REFUSALS:
+        for code, build in PROVOCATIONS.items():
             with self.subTest(code=code):
-                self.assertGreaterEqual(source.count(f'"{code}"'), 2)
+                if build is None:
+                    with tempfile.TemporaryDirectory() as raw:
+                        root = Path(raw)
+                        plant(root)
+                        reported = [
+                            finding.code for finding in front_door.check(root)[0]
+                        ]
+                else:
+                    reported = body_codes(build())
+                self.assertIn(code, reported)
 
     def test_the_refusal_prefix_stays_out_of_the_demonstration_namespace(self):
         """`Dnnn` belongs to the demonstration catalogue, which a parity test counts."""
