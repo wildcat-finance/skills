@@ -14,7 +14,8 @@ insufficient evidence blocks that dependent transition while leaving recovery
 available.
 
 Probitas contains one Agent Skill. Select `probitas` to build a sourced dossier
-on what a counterparty did across on-chain lending venues, then read
+on what a counterparty did across on-chain lending venues or to compare two
+Probitas evidence files for the same subject, then read
 `skills/probitas/SKILL.md` in full.
 
 `skills/probitas/SKILL.md` is the only canonical instruction document. Do not
@@ -67,9 +68,13 @@ reaches. Combined with `--fixtures` or `--live` it adds the archive route
 beside the adapter route, and every coverage row then names which of the two
 produced it. A venue no requested route reached is reported as a gap.
 
-`collect`, `render` and `verify` write only where `--out` and
-`--statement-out` point. Nothing else in the plugin writes outside its own
-directory.
+`diff` reaches no network. It reads two caller-named evidence files once each
+and checks both generated dossiers before writing a comparison.
+
+`collect`, `render`, `verify` and `diff` write only where `--out` and
+`--statement-out` point. A successful `diff` replaces its caller-named output
+atomically, and that output must not alias either input. Nothing else in the
+plugin writes outside its own directory.
 
 ## What this skill must refuse
 

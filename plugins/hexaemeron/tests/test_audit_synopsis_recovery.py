@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Permanent composition guards for the issue 429 recovery."""
+"""Permanent composition guards for the audit-synopsis recovery."""
 
 from collections import Counter
 import hashlib
@@ -44,9 +44,6 @@ PRODUCT_CONTROLLER_SHA256 = (
 )
 RECOVERY_GENERATOR_SHA256 = (
     "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75"
-)
-INTEGRATED_CONTROLLER_SHA256 = (
-    "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1"
 )
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
@@ -133,7 +130,7 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-class Issue429RecoveryTests(unittest.TestCase):
+class AuditSynopsisRecoveryTests(unittest.TestCase):
     def composition_commit(self):
         matches = []
         for line in git("rev-list", "--parents", "HEAD", text=True).splitlines():
@@ -281,25 +278,41 @@ class Issue429RecoveryTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        digests = [coverage["run_observation_binding"]["controller"]["sha256"]]
-        for promise in (
-            "fiat-design-evidence",
-            "fiat-final-integration",
-            "fiat-local-retirement",
-            "fiat-receipted-delivery",
-            "fiat-study-amendment",
-            "fiat-runbook-amendment",
-            "fiat-run-observation-binding",
-        ):
-            digests.append(coverage["runtime"][promise]["sha256"])
-        self.assertEqual(sha256(CONTROLLER), INTEGRATED_CONTROLLER_SHA256)
+        controller_path = CONTROLLER.relative_to(ROOT).as_posix()
+        observation = coverage["run_observation_binding"]["controller"]
         self.assertEqual(
-            digests, [INTEGRATED_CONTROLLER_SHA256] * len(digests)
+            observation.get("path"),
+            controller_path,
+            "run_observation_binding.controller must name " + controller_path,
+        )
+        bindings = [("run_observation_binding.controller", observation)]
+        bindings.extend(
+            (f"runtime.{name}", binding)
+            for name, binding in sorted(coverage["runtime"].items())
+            if binding.get("source") == controller_path
+        )
+        self.assertGreater(
+            len(bindings),
+            1,
+            "tests/promise_machine_coverage.json has no runtime binding for "
+            + controller_path,
+        )
+        actual = sha256(CONTROLLER)
+        stale = [
+            f"{trail} records {binding.get('sha256')!r}"
+            for trail, binding in bindings
+            if binding.get("sha256") != actual
+        ]
+        self.assertEqual(
+            stale,
+            [],
+            f"{controller_path} is {actual}; update every matching sha256 in "
+            f"tests/promise_machine_coverage.json: {stale}",
         )
 
 
 if PROOF_MODE:
-    class Issue429DisposableProofTests(unittest.TestCase):
+    class AuditSynopsisDisposableProofTests(unittest.TestCase):
         """Replay the release boundary with the checked-in runtime only."""
 
         OUTPUT_BYTES_MAX = 2 * 1024 * 1024
@@ -419,7 +432,7 @@ if PROOF_MODE:
         ):
             heading_schema = heading_schema or schema
             if heading_schema == "fiat-audit-round/v1":
-                heading = f"## issue 429 proof, step 1, round 1 -- {timestamp}"
+                heading = f"## audit synopsis proof, step 1, round 1 -- {timestamp}"
             else:
                 heading = f"## Step 1, round 1 -- {timestamp}"
             covered = covered or "; ".join(
@@ -468,7 +481,9 @@ if PROOF_MODE:
             controller_verified = []
             local_valid = hosted_valid = trailer_valid = reachable = 0
 
-            with tempfile.TemporaryDirectory(prefix="fiat-429-release-proof-") as raw:
+            with tempfile.TemporaryDirectory(
+                prefix="audit-synopsis-release-proof-"
+            ) as raw:
                 temporary_root = Path(raw)
                 repo = temporary_root / "repo"
                 self.run_bounded(
@@ -488,7 +503,7 @@ if PROOF_MODE:
                 )
 
                 worktree, step_branch = self.bootstrap_run(
-                    repo, "main", "issue 429 proof"
+                    repo, "main", "audit synopsis proof"
                 )
                 unsigned_message = (
                     "unsigned refusal fixture\n\n"
@@ -906,7 +921,7 @@ if PROOF_MODE:
                         self.assertEqual(row["v1"], 0)
 
                 specification = importlib.util.spec_from_file_location(
-                    "issue_429_checked_generator", GENERATOR
+                    "audit_synopsis_checked_generator", GENERATOR
                 )
                 renderer = importlib.util.module_from_spec(specification)
                 specification.loader.exec_module(renderer)
@@ -952,7 +967,7 @@ if PROOF_MODE:
                     cwd=repo,
                 )
                 trailer_worktree, trailer_branch = self.bootstrap_run(
-                    repo, "trailer-base", "issue 429 trailer proof"
+                    repo, "trailer-base", "audit synopsis trailer proof"
                 )
                 self.run_bounded(
                     ["git", "branch", trailer_branch, TRAILER_FIXTURE], cwd=repo

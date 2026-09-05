@@ -8,7 +8,7 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "77f9592cc57e7f665fa447bba5c80a8fce7cc57bfcc5f0bdf2c8cf9c76443826"
+      "sha256": "608ca6c0309c97250b59f53ebea3c5fc8b009d4c7e7537b1578cc210566eb828"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
@@ -35,11 +35,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "b0fce6ac75e1f09cb9e163b7ddf14c2c8a5104b390578ad515bcfa725b79c07e"
+        "sha256": "f63c5b360576fe066d3065b3951406b13caa9d59a9772167bde25c80aa65b248"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "f42fc0aaa3236bff0cbc6e8d4c0e6775f5b36a58c4a64eccc12ed0f3ab11bbbe"
+        "sha256": "689c4320f28365860db0e8a2cf5c55b0440f6cf7aec0066428cf4c4440c4267a"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -51,7 +51,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "3d9c7926f50716f0ad4957690a8f9528868dd7dd80b602ca3eecdea6e5da88f5"
+        "sha256": "7c26e83fbb4321ab910496ab20e548c464c44533665b026bfa7aa24939b58e41"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -1525,6 +1525,31 @@
       "path": "plugins/hexaemeron/tests/test_phylax_checker.py",
       "selector": "test_a_bare_pragma_without_a_reason_does_not_suppress"
     },
+    "probitas-diff-m": {
+      "claim": "An input that cannot pass its generated dossier gates is refused without a partial comparison artifact.",
+      "path": "plugins/probitas/tests/test_cli.py",
+      "selector": "test_a_gate_breach_exits_one_without_partial_output"
+    },
+    "probitas-diff-o": {
+      "claim": "Operator-designated prior and current roles remain explicitly unavailable as proof of chronology.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_direction_is_operator_designated_not_a_chronological_claim"
+    },
+    "probitas-diff-p": {
+      "claim": "Two gate-checkable inputs produce deterministic Markdown and JSON comparison artifacts.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_json_and_markdown_are_deterministic_and_retain_full_sources"
+    },
+    "probitas-diff-r": {
+      "claim": "Repairing the failed input permits a complete rerun while the old report survives the failed attempt.",
+      "path": "plugins/probitas/tests/test_cli.py",
+      "selector": "test_repairing_the_input_and_rerunning_replaces_the_old_report"
+    },
+    "probitas-diff-s": {
+      "claim": "A different entity, address set or provenance tier is refused as a subject mismatch.",
+      "path": "plugins/probitas/tests/test_delta.py",
+      "selector": "test_entity_address_set_and_tier_must_match_exactly"
+    },
     "probitas-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/probitas/tests/test_evidence.py",
@@ -2031,7 +2056,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "06d44e9dd6c03a53f5c9a6ba5ae2e954772015786f7a6a8cf341eae5970217e3"
+        "sha256": "6f1ee314708b7873dafb7f93296de85a6811f67df1ba51c3f988ff31e4a14c86"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -2063,10 +2088,11 @@
         "test_every_declared_pair_has_at_least_one_contested_case",
         "test_every_expected_canonical_name_is_a_real_canonical_skill",
         "test_every_router_row_is_named_by_at_least_one_case",
+        "test_probitas_evidence_comparison_is_not_synkrisis_run_comparison",
         "test_the_corpus_declares_the_supported_schema",
         "test_the_recorded_run_block_is_complete_and_names_its_failures"
       ],
-      "sha256": "e0cebf8aaa3efd0fcc2a205f994550f6a454dc1bf14eec7be94388910628dea1"
+      "sha256": "bf65aba2c13d8200a6109ae510e324c674d854c28eab578211858715dbc36f42"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },
@@ -3109,6 +3135,22 @@
     },
     {
       "cases": {
+        "M": "probitas-diff-m",
+        "O": "probitas-diff-o",
+        "P": "probitas-diff-p",
+        "R": "probitas-diff-r",
+        "S": "probitas-diff-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "probitas-evidence-diff",
+      "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "probitas-statement-m",
         "O": "probitas-statement-o",
         "P": "probitas-statement-p",
@@ -3886,7 +3928,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1"
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4236,7 +4278,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-design-evidence": {
@@ -4250,7 +4292,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -4264,7 +4306,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work, disposed of row by row in the run pull request's `carryover` block, and any unrun external check"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4278,7 +4320,7 @@
         "transition": "local archive, checkpoint-store preservation, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -4292,7 +4334,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4306,7 +4348,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -4320,7 +4362,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -4334,7 +4376,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -4348,7 +4390,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -4480,13 +4522,13 @@
     "kronos-fiat-dispatch": {
       "bindings": {
         "evidence_classes": "selection record joined to the canonical Evidence classes field",
-        "evidence_references": "ledgers, recomputed scores and append-only scoreboard",
+        "evidence_references": "ledgers, recomputed scores, append-only scoreboard, terminal Fiat state and an exit-0 fleet report before any post-iteration rescan",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "eligible candidate set, mode and score inputs",
+        "scope": "eligible candidate set, mode, score inputs and the post-iteration controller-currency boundary",
         "subject": "selected plugin, skill and held job hash",
-        "transition": "explicit Fiat dispatch joined to the canonical Authorises field",
-        "unknowns": "excluded, mature, parked and unevidenced candidates"
+        "transition": "explicit initial Fiat dispatch or exit-0-gated post-iteration dispatch joined to the canonical Authorises field",
+        "unknowns": "excluded, mature, parked and unevidenced candidates, plus fleet currency after the named report"
       },
       "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
       "source": "plugins/hexaemeron/skills/kronos/scripts/kronos.py"
@@ -4600,7 +4642,7 @@
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "9ada5e0cca35f8482796acbc24d3c1d93e6633ec5ca40c68d810610db5d75837",
+      "sha256": "22a1a386efb7391cc664b8f811f6e59949bf804c781fcca75cf7faf3bd967f37",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {
@@ -4656,7 +4698,7 @@
         "transition": "verified decision assignment receipt carried to active sync and final integration joined to the canonical Authorises field",
         "unknowns": "decision-text correctness, publication, external merge enforcement and number reservation"
       },
-      "sha256": "6ab044d4a15e3bf44d5fe41f4644e87fa2419d6fb7761aae2b8fd6030b022ba1",
+      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hypomnema-decision-assignment": {

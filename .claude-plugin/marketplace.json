@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.22",
+      "version": "1.6.24",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -161,8 +161,8 @@
       "name": "probitas",
       "displayName": "Probitas",
       "source": "./plugins/probitas",
-      "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-      "version": "0.2.0",
+      "description": "Sourced counterparty dossiers and repeat-run comparisons.",
+      "version": "0.2.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

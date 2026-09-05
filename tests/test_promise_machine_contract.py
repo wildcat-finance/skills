@@ -616,6 +616,7 @@ class PromiseStructureTests(unittest.TestCase):
             },
             "plugins/probitas/skills/probitas/SKILL.md": {
                 "probitas-evidence-collection",
+                "probitas-evidence-diff",
                 "probitas-dossier-rendering",
                 "probitas-dossier-verification",
                 "probitas-statement-emission",
@@ -1347,7 +1348,11 @@ class PromiseCoverageTests(unittest.TestCase):
             )
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
-        self.assertIn("PM071", [item["code"] for item in report["findings"]])
+        drift = [
+            item for item in report["findings"] if item["code"] == "PM071"
+        ]
+        self.assertEqual(len(drift), 1)
+        self.assertIn("tests/evidence.py", drift[0]["message"])
 
     def test_runtime_binding_source_read_is_bounded(self):
         with tempfile.TemporaryDirectory() as directory:

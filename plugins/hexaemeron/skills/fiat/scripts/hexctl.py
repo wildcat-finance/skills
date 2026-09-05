@@ -447,6 +447,8 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.48.1",
         "fiat-v5.49.1",
         "fiat-v5.50.1",
+        "fiat-v5.51.1",
+        "fiat-v5.52.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -6486,6 +6488,12 @@ def done_runbook(args, state: dict) -> None:
             die("each step must be a string or an object with a 'title'")
     if any(not title.strip() for title in titles):
         die("step titles must be non-empty")
+    expected_topology = list(enumerate(titles, 1))
+    if _runbook_topology(artifact_text) != expected_topology:
+        die(
+            "runbook Step headings must exactly match steps-file titles, "
+            "numbers, and order; edit the runbook or steps file, then retry"
+        )
     if design_evidence_required(state):
         design_transition = _prepare_design_transition(args.dir, state, "step:1")
     state["steps"] = [
@@ -10515,6 +10523,7 @@ def receipted_version_relations(
 STEP_HEADING_RE = re.compile(
     r"^##\s+Step\s+(?P<number>\d+)\s*:\s*(?P<title>.*?)\s*$"
 )
+STEP_NUMBER_DIGITS_MAX = 128
 MARKDOWN_FENCE_RE = re.compile(
     r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<remainder>.*)$"
 )
@@ -10765,7 +10774,13 @@ def _runbook_topology(text: str) -> list[tuple[int, str]]:
         if match:
             if amendment_started:
                 die("runbook amendment cannot append a replacement Step heading")
-            topology.append((int(match.group("number")), match.group("title")))
+            number = match.group("number")
+            if len(number) > STEP_NUMBER_DIGITS_MAX:
+                die(
+                    "runbook Step number is too long "
+                    f"(maximum {STEP_NUMBER_DIGITS_MAX} digits)"
+                )
+            topology.append((int(number), match.group("title")))
     return topology
 
 
