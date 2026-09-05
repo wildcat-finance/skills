@@ -13,9 +13,12 @@ git config core.hooksPath .githooks
 Run that once per clone. The value is relative, so every linked worktree of the
 clone resolves it against its own top level and runs its own tracked copy.
 
-In a checkout where `core.hooksPath` is unset, the root suite is meant to fail
-and name this command. That assertion arrives with step 4 of the run behind this
-directory. Until it lands, an unactivated checkout stays silent.
+In a checkout where `core.hooksPath` is unset, or set to any directory other
+than this one, the root suite fails and the failure names this command.
+`ActivationTests` in `tests/test_commit_gate.py` carries that assertion. It
+skips only where `GITHUB_ACTIONS` or `WILDCAT_CHECK_CONTAINMENT` says the
+execution is nobody's checkout, so an unactivated clone reports it on the
+first suite run rather than after the first unchecked commit.
 
 ## Skip it for one commit
 

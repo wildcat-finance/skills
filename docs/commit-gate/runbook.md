@@ -416,3 +416,13 @@ what was actually observed, so it names its gaps.
 **Steps touched.** Step 4.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-05
+
+**What changed.** Complete replacement Files: `docs/commit-gate/demonstration.md`, `docs/commit-gate/runbook.md`, `.githooks/README.md`, `.horos/boundary.json`. One addition to the Exit, leaving every existing clause as it stands: `.githooks/README.md` no longer says the visibility assertion is still to come. Its paragraph on an unactivated checkout describes what the shipped assertion does, rather than promising it with a future step, and the demonstration record's first acceptance condition is the observed run that shows it.
+
+**Why.** Audit finding S4-R1-03, low, raised in step 4 round 1 and re-confirmed in rounds 3 and 4. `.githooks/README.md:16-18` says "That assertion arrives with step 4 of the run behind this directory. Until it lands, an unactivated checkout stays silent." Both sentences became false at commit 0cf49808, which is step 4's own first commit, and round 4 measured the opposite in a fresh clone at 21fb29ad: four cases, one failure, its message carrying the literal activation command. Step 4 could not correct it, because the file is untouched by that step's whole diff and sits outside its eight-path Files list, so the finding closed that phase open and named. It belongs here rather than in a step of its own: this step's subject is what a contributor meets on a clone that has never seen the gate, and that README is the first thing such a reader opens after being sent to the directory. The demonstration this step records drives the same assertion from a fresh clone, so the correction and the evidence for it land together.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
