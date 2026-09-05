@@ -426,3 +426,13 @@ what was actually observed, so it names its gaps.
 **Steps touched.** Step 5.
 
 **Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Exit: `docs/commit-gate/demonstration.md` records one run of the demo path against a clone of the run branch made into a fresh directory: the root suite refused before activation and the transcript shows the activation command in its output; the activation command was run once; `.githooks/greenlight` recorded a green; a commit of that tree succeeded; a file was then edited and the next commit was refused; and `FIAT_SKIP_PRECOMMIT=1` let that same commit through. Each of the five acceptance conditions is answered with the exact command and its exit code, and anything the run could not establish is named. Proved by `python3 -m unittest tests.test_commit_gate -v` at exit zero and `python3 scripts/run_checks.py --full` at exit zero on the committed tree. Additionally, `.githooks/README.md` no longer says the visibility assertion is still to come: its paragraph on an unactivated checkout describes what the shipped assertion does, rather than promising it with a future step, and the demonstration record's second acceptance condition is the observed run that shows it. Complete replacement Files: `docs/commit-gate/demonstration.md`, `docs/commit-gate/runbook.md`, `.githooks/README.md`, `.horos/boundary.json`.
+
+**Why.** Audit finding S5-R1-04, low, from step 5 round 1. The amendment of 2026-09-05 ended its Exit addition "the demonstration record's first acceptance condition is the observed run that shows it", and the study fixes the numbering at `docs/commit-gate/study.md:61-62`: condition 1 is "where the gate lives", proved by the decision record, and condition 2 is "survives a clone and absence is visible", proved by a fresh clone with no activation failing the root suite with a message naming the one activation command. The second is the condition the README paragraph describes; the first is a different subject. As numbered, the clause asked the step to satisfy something the study assigns elsewhere, and the step satisfies its substance at condition 2, which the round measured in its own independent reproduction. The shipped runbook copy is byte-identical to this source, so no byte on the step branch can carry the correction. The baseline Exit is restated unchanged above so the replacement is complete rather than a fragment.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.

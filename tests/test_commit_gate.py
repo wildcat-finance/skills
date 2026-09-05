@@ -1844,10 +1844,11 @@ SHIPPED_RECORD = SHIPPED / "design-evidence.json"
 SHIPPED_REPORTS = SHIPPED / "reports"
 
 # The counts in the bytes this step ships, as literals. The runbook count is
-# not the count at this step's entry any more: the amendment carrying audit
-# finding S4-R1-03 into step 5 added a block of its own, and the copy was
-# refreshed onto it. The study count stands where step 4 left it, its source
-# unchanged since.
+# not the count at this step's entry any more, and has moved twice inside the
+# step: the amendment carrying audit finding S4-R1-03 into step 5 added a
+# block, and the one correcting this step's Exit for S5-R1-04 added another.
+# The copy was refreshed onto each. The study count stands where step 4 left
+# it, its source unchanged since.
 #
 # Recomputing them from `.hexaemeron/` would agree with a stale copy by
 # construction, because the comparison would read the source the copy is
@@ -1855,7 +1856,7 @@ SHIPPED_REPORTS = SHIPPED / "reports"
 # staleness matters, since `.hexaemeron/.gitignore` is `*` and nothing under
 # that directory is tracked.
 STUDY_AMENDMENTS = 9
-RUNBOOK_AMENDMENTS = 14
+RUNBOOK_AMENDMENTS = 15
 
 AMENDMENT_HEADING = re.compile(r"^### Amendment --", re.MULTILINE)
 CONTROLLER_REFERENCE = re.compile(r"\.hexaemeron/[A-Za-z0-9_./-]*")
