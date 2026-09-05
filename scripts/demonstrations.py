@@ -105,21 +105,61 @@ def _disables_socket_hook(word: str) -> str | None:
     return None
 
 
-def _command_program(argv: list[str]) -> str | None:
-    """Return the repository-relative file program one argv runs, or None.
+# Which argv word is the program is decided by CPython's option grammar, not
+# by position. Reading `argv[1]` alone saw a program in `python3 prog.py` and
+# nothing at all in `python3 -u prog.py`, so one benign flag carried a
+# committed file past the declaration gate and past the pre-execution digest
+# re-read. These four constants are the closed grammar the walk needs; a word
+# it cannot place is refused rather than guessed at.
+FLAG_ONLY_OPTION_LETTERS = frozenset("bBdhOPqRstuvVx")
+OPTIONS_TAKING_ARGUMENT = frozenset(("-W", "-X", "--check-hash-based-pycs"))
+PROGRAM_CARRYING_OPTIONS = frozenset(("-c", "-m"))
+STDIN_PROGRAM = "-"
+END_OF_OPTIONS = "--"
 
-    An interpreter option such as `-c` or `-m` carries its work in the option
-    rather than in a file, and a `{work}` path names something the run itself
-    builds inside the private root. Neither is a committed file, so neither is
-    a source a record can declare or a digest this checker can bind.
+
+def classify_program(argv: list[str]) -> tuple[str, str | None]:
+    """Say what one argv puts where the interpreter's program belongs.
+
+    ``("file", path)`` names a committed file a source can declare and a
+    digest can bind. ``("uncommitted", word)`` covers `-c`, `-m`, stdin and a
+    `{work}` path, none of which is a committed file. ``("absent", None)``
+    means the interpreter was given no work, and ``("unrecognised", word)``
+    means an option word outside this closed grammar, which is refused rather
+    than walked past.
     """
 
-    if len(argv) < 2:
-        return None
-    program = argv[1]
-    if program.startswith("-") or WORK_TOKEN in program:
-        return None
-    return program
+    index = 1
+    while index < len(argv):
+        word = argv[index]
+        if word == END_OF_OPTIONS:
+            index += 1
+            break
+        if word == STDIN_PROGRAM:
+            return "uncommitted", word
+        if not word.startswith("-"):
+            break
+        if word in PROGRAM_CARRYING_OPTIONS:
+            return "uncommitted", word
+        if word in OPTIONS_TAKING_ARGUMENT:
+            index += 2
+            continue
+        if word.startswith("--") or not set(word[1:]) <= FLAG_ONLY_OPTION_LETTERS:
+            return "unrecognised", word
+        index += 1
+    if index >= len(argv):
+        return "absent", None
+    program = argv[index]
+    if WORK_TOKEN in program:
+        return "uncommitted", program
+    return "file", program
+
+
+def _command_program(argv: list[str]) -> str | None:
+    """Return the repository-relative file program one argv runs, or None."""
+
+    kind, value = classify_program(argv)
+    return value if kind == "file" else None
 OBSERVATION_RE = re.compile(
     r"^(?P<command>[a-z][a-z0-9-]{0,63}): (?P<kind>line|json) (?P<rest>.+)$"
 )
@@ -217,6 +257,7 @@ REFUSALS = {
     "D082": "aggregate public-set ceiling",
     "D083": "private work root boundary",
     "D084": "declared command program",
+    "D085": "process group escape",
 }
 
 
@@ -895,7 +936,14 @@ def check_record(
             if isinstance(source, dict) and isinstance(source.get("path"), str)
         }
         for index, command in enumerate(commands):
-            program = _command_program(command["argv"])
+            kind, word = classify_program(command["argv"])
+            if kind == "unrecognised":
+                _fail(
+                    "D084",
+                    f"{where} commands[{index}] puts {word!r} where its program belongs; "
+                    "the digest binding cannot place that option word",
+                )
+            program = word if kind == "file" else None
             if program is not None and program not in declared:
                 _fail(
                     "D084",
@@ -1042,6 +1090,7 @@ class CommandOutcome:
     stderr_truncated: bool
     timed_out: bool
     network_attempt: bool
+    escaped_group: bool
 
 
 class RunRefusal(DemonstrationError):
@@ -1467,6 +1516,8 @@ def execute_command(
         reader.start()
     deadline = started + timeout_ms * 1_000_000
     timed_out = False
+    finished_ns: int | None = None
+    escaped_group = False
     try:
         while proc.poll() is None:
             if out_over.is_set() or err_over.is_set():
@@ -1482,23 +1533,31 @@ def execute_command(
         except subprocess.TimeoutExpired:
             _kill_group(proc)
             proc.wait()
+        finished_ns = time.monotonic_ns()
     finally:
+        # The command ends when its own process is reaped. Everything below is
+        # teardown, and timing it as part of the command made a grandchild's
+        # grip on the pipes the number the report recorded.
+        if finished_ns is None:
+            finished_ns = time.monotonic_ns()
         # Tear the group down on every path, not only on a timeout or an
         # overflow. A command that exits 0 after forking leaves the grandchild
-        # holding the pipes: it outlives the run that started it, and the
-        # duration this returns becomes the grandchild's lifetime rather than
-        # the command's, which is the number the report records.
+        # holding the pipes and outliving the run that started it.
         _kill_group(proc)
-        # The group is down, so nothing legitimate holds the pipes; close them
-        # so an escaped writer cannot keep a reader thread alive.
+        # The group is down, so nothing inside it holds the pipes. A reader
+        # still blocked after the join is therefore held by a process that
+        # left the group -- `setsid` in a grandchild is enough -- which is
+        # outside the teardown this runner performs and is refused rather than
+        # recorded as a clean command.
         for reader in readers:
             reader.join(timeout=TEARDOWN_SECONDS)
+        escaped_group = any(reader.is_alive() for reader in readers)
         for stream in (proc.stdout, proc.stderr):
             try:
                 stream.close()
             except OSError:
                 pass
-    duration_ms = (time.monotonic_ns() - started) // 1_000_000
+    duration_ms = (finished_ns - started) // 1_000_000
     return CommandOutcome(
         exit_code=proc.returncode,
         duration_ms=duration_ms,
@@ -1508,6 +1567,7 @@ def execute_command(
         stderr_truncated=err_over.is_set(),
         timed_out=timed_out,
         network_attempt=work.network_attempted(),
+        escaped_group=escaped_group,
     )
 
 
@@ -1585,7 +1645,16 @@ def preflight_record(
                 f"{where} commands[{index}] passes {word!r}, whose {letter!r} turns off "
                 "the site hook that denies sockets",
             )
-        program = _command_program(argv)
+        kind, word = classify_program(argv)
+        if kind == "absent":
+            _refuse("D072", f"{where} commands[{index}] gives the interpreter no work")
+        if kind == "unrecognised":
+            _refuse(
+                "D084",
+                f"{where} commands[{index}] puts {word!r} where its program belongs; "
+                "the digest binding cannot place that option word",
+            )
+        program = word if kind == "file" else None
         if program is not None:
             try:
                 payload = _read_regular_file(
@@ -1698,6 +1767,7 @@ class Runner:
             "truncated": outcome.stdout_truncated or outcome.stderr_truncated,
             "timed_out": outcome.timed_out,
             "network_attempt": outcome.network_attempt,
+            "escaped_group": outcome.escaped_group,
             "children_max_rss_bytes": _children_max_rss_bytes(),
         }
         refusal = None
@@ -1712,6 +1782,12 @@ class Runner:
             refusal = (
                 "D077",
                 f"{where} wrote past the {MAX_OUTPUT_BYTES}-byte output cap; output truncated",
+            )
+        elif outcome.escaped_group:
+            refusal = (
+                "D085",
+                f"{where} left a process holding its pipes after its process group was "
+                "killed, so something it started is outside this runner's teardown",
             )
         elif outcome.exit_code != command["expect_exit"]:
             refusal = (

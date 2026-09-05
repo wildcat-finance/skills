@@ -1224,12 +1224,57 @@ class DeclaredProgramTests(unittest.TestCase):
             [entry["evidence"] for entry in programs.values()], ["found"]
         )
 
+    def test_an_option_word_cannot_carry_a_program_past_the_digest_binding(self):
+        # `python3 -u prog.py` runs the same committed file as `python3
+        # prog.py`. Reading argv[1] alone saw a program in the second and
+        # nothing in the first, so one benign flag carried the file past both
+        # the declaration gate and the pre-execution digest re-read.
+        self.assertTrue(hasattr(demonstrations, "classify_program"))
+        for argv in (
+            ["python3", "-u", "scripts/demonstrations.py"],
+            ["python3", "-OO", "scripts/demonstrations.py"],
+            ["python3", "-x", "scripts/demonstrations.py", "--help"],
+            ["python3", "-X", "importtime", "scripts/demonstrations.py"],
+            ["python3", "-W", "ignore", "scripts/demonstrations.py"],
+            ["python3", "--", "scripts/demonstrations.py"],
+        ):
+            with self.subTest(argv=argv):
+                self.assertEqual(
+                    demonstrations._command_program(argv), "scripts/demonstrations.py"
+                )
+
+    def test_a_public_program_hidden_behind_an_option_is_still_refused(self):
+        skill, record = self._public()
+        argv = list(record["commands"][0]["argv"])
+        program = self._program(argv)
+        record["commands"][0]["argv"] = [argv[0], "-u"] + argv[1:]
+        record["sources"] = [s for s in record["sources"] if s.get("path") != program]
+        with self.assertRaises(demonstrations.DemonstrationError) as caught:
+            demonstrations.check_record(ROOT, skill, record)
+        self.assertIn("D084", str(caught.exception))
+
+    def test_an_option_word_the_grammar_cannot_place_is_refused(self):
+        # An ambiguous bundle is refused rather than walked past, because
+        # guessing which word is the program is how the binding was lost.
+        for word in ("-uc", "-Xutf8", "-um", "--frozen-modules"):
+            with self.subTest(word=word):
+                record = check(fixture_record("valid-ledger.md"))
+                record["commands"] = [
+                    {"id": "run", "argv": ["python3", word, "print(1)"],
+                     "expect_exit": 0}
+                ]
+                record["observations"] = ['run: line "1"']
+                with self.assertRaises(demonstrations.DemonstrationError) as caught:
+                    demonstrations.preflight_record(ROOT, SPECIMEN, record)
+                self.assertIn("D084", str(caught.exception))
+
     def test_an_option_or_work_path_program_carries_no_entry(self):
         self.assertTrue(hasattr(demonstrations, "_command_program"))
         for argv in (
             ["python3", "-c", "print(1)"],
             ["python3", "-m", "json.tool", "--help"],
             ["python3", "{work}/built.py"],
+            ["python3", "-"],
         ):
             with self.subTest(argv=argv):
                 self.assertIsNone(demonstrations._command_program(argv))
@@ -1473,6 +1518,32 @@ class RunnerExecutionBoundaryTests(RunnerHarness):
         self.assertLess(command["duration_ms"], 4000)
         time.sleep(8)
         self.assertFalse(sentinel.exists())
+
+    def test_a_grandchild_that_leaves_the_process_group_is_refused(self):
+        # A process group teardown cannot reach a grandchild that called
+        # `setsid`. It survives the run and holds the command's pipes, which
+        # is both a boundary the runner claims and the number `metron` reads.
+        # The grip on the pipes is the evidence, so the command is refused
+        # rather than recorded as a clean exit with an inflated duration.
+        code, payload, _events_seen, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "import os, sys, time;"
+                " child = os.fork() == 0;"
+                " (os.setsid(), time.sleep(30), os._exit(0)) if child else"
+                " (print('parent-done'), sys.stdout.flush(), os._exit(0))",
+            ],
+            ['run: line "parent-done"'],
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        refusal = entry["refusal"]
+        self.assertEqual(refusal["code"] if refusal else None, "D085")
+        command = entry["repetitions"][0]["commands"][0]
+        self.assertTrue(command.get("escaped_group"))
+        # The command's own process was reaped at once; the teardown wait for
+        # the escaped holder is not the command's duration.
+        self.assertLess(command["duration_ms"], 4000)
 
 
 @unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")

@@ -195,7 +195,8 @@ cannot silently change the boundary it names.
 - `D081` -- the report's parent is no longer confined below the output root, or the report could not be published atomically; no partial object was left under its name.
 - `D082` -- the public set passed its aggregate ceiling.
 - `D083` -- the private work root could not be created or prepared.
-- `D084` -- a registered public demonstration runs a program no source declares, or the program's bytes differ from the digest its source declared.
+- `D084` -- a registered public demonstration runs a program no source declares, the program's bytes differ from the digest its source declared, or a command puts an option word outside the closed interpreter grammar where its program belongs.
+- `D085` -- a command left a process holding its pipes after its process group was killed, so something it started is outside the runner's teardown.
 <!-- refusal-catalogue:end -->
 
 ## Observations are checkable, not prose
@@ -251,17 +252,23 @@ is armed as an empty file before each command and its identity is pinned, so a
 child that unlinks or replaces the marker to hide the attempt is refused for
 that removal. `-S`, `-E` and `-I` would leave the child outside the hook
 entirely, by skipping `site` or ignoring `PYTHONPATH`, and are refused with
-`D074`. This is a process-level denial inside Python, not a kernel sandbox: a
-child that reaches the kernel's socket call directly, through `ctypes` or
-another extension, is outside what the hook can see. No capture exception is
-declared, so a record that allowlists a network is refused.
+`D074`. This is a process-level denial inside one Python process, not a kernel
+sandbox. Two routes stay outside what the hook can see: a child that reaches
+the kernel's socket call directly, through `ctypes` or another extension, and a
+child that starts a further process without the hook's `PYTHONPATH`, which gets
+an unhooked interpreter. A run establishes that no denied Python socket call
+went unrecorded; it never establishes that no network call was made. No capture
+exception is declared, so a record that allowlists a network is refused.
 
 Each command is bounded by its record's `timeout_seconds`, further clipped by
 the public set's aggregate ceiling of 600,000 milliseconds. A command that
 passes its budget is killed with its whole process group, and the group is torn
 down on every path, so a command that exits 0 after forking leaves nothing
-behind it and its recorded duration is its own rather than a grandchild's.
-Stdout and stderr
+behind it. The recorded duration ends when the command's own process is reaped,
+so teardown is never charged to it. A grandchild that leaves the group, by
+calling `setsid` or equivalent, is beyond a process-group teardown: it is
+detected by the grip it keeps on the command's pipes and refused with `D085`,
+not silently allowed to survive. Stdout and stderr
 are each capped at one mebibyte; a command that writes past the cap is
 truncated and refused. Exit status, observations, durations, output digests
 and bounded output tails are recorded per command and per repetition;
@@ -289,8 +296,13 @@ before execution like every other input and its entry reads `verified`. Any
 other record's program is proved to exist and not digested, and its entry
 reads `found`. The distinction is the point: `verified` names bytes checked
 against a declared digest, `found` names a file that was there. A program
-reached through `-c`, `-m` or a `{work}` path is not a committed file, so it
-carries no entry and no digest at all.
+reached through `-c`, `-m`, standard input or a `{work}` path is not a
+committed file, so it carries no entry and no digest at all. Which word is the
+program is read from a closed interpreter grammar rather than from position:
+flag bundles such as `-u` and `-OO`, the argument-taking `-W` and `-X`, and a
+closing `--` are walked past to the program they precede, so an option word
+cannot carry a committed file past the declaration gate or the digest re-read.
+An option word the grammar cannot place is refused with `D084`.
 
 The runner emits `demonstration.selected` with the record count,
 `demonstration.started` per command, `demonstration.verified` or
