@@ -14,7 +14,7 @@ declared rule; it does not quietly skip.
 The other four classes hold ``scripts/probe_harnesses.py``. The schema fixes
 the roster's vocabulary and refuses an unknown name, and its own description
 says so, but it will admit an earned class on an entry that never ran a client.
-ADR-077 puts that enforcement in the probe's classifier, and these are the cases
+ADR-078 puts that enforcement in the probe's classifier, and these are the cases
 that hold it there.
 
 ``ClassifierTests`` sweeps the input matrix for a shape that reaches an earned
@@ -30,17 +30,25 @@ directions: a partial selection of the class cannot report a failure nothing
 observed, and a case that failed cannot report success. The second direction is
 the dangerous one, because ``subTest`` swallows a failure and lets the rest of
 the case run, including the statement where it flags itself passed.
+
+The last two classes hold the surfaces rather than the probe. ``DriftTests``
+holds the drift check as a declared check in ``tests/check-map-v1.json``, so
+that a correct check nobody runs is a failure here; every case runs the argv the
+map declares. ``AtlasClaimTests`` holds the guide's claim about the Atlas
+repository against one recorded read of it, and reaches no network.
 """
 
 from __future__ import annotations
 
 import contextlib
+import datetime
 import importlib.util
 import itertools
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -85,7 +93,7 @@ DERIVED_FIELDS = ("version_read",)
 
 REQUIRED_ENTRY_FIELDS = OBSERVATION_FIELDS + DERIVED_FIELDS
 
-# ADR-077 names these two optional in as many words, so the schema may not
+# ADR-078 names these two optional in as many words, so the schema may not
 # quietly start requiring them. A tightening here is a decision the record
 # owns, not an audit fix.
 OPTIONAL_ENTRY_FIELDS = ("testable_here", "probe")
@@ -229,7 +237,7 @@ class SchemaTests(unittest.TestCase):
         self.assert_valid(document)
 
     def test_every_declared_field_is_either_required_or_named_optional(self):
-        # ADR-077 enumerates this entry and states which two fields are
+        # ADR-078 enumerates this entry and states which two fields are
         # optional, so the schema and the record can be read against each
         # other. A field added to `properties` without landing in `required`
         # or in the optional pair is the drift that put a required
@@ -239,7 +247,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(
             declared - required,
             set(OPTIONAL_ENTRY_FIELDS),
-            "a declared field is neither required nor one ADR-077 calls optional",
+            "a declared field is neither required nor one ADR-078 calls optional",
         )
         self.assertEqual(
             required,
@@ -261,7 +269,7 @@ class SchemaTests(unittest.TestCase):
                 self.assert_refused(manifest(record))
 
     def test_the_fields_adr_076_calls_optional_stay_optional(self):
-        # ADR-077 enumerates the entry and calls `testable_here` and `probe`
+        # ADR-078 enumerates the entry and calls `testable_here` and `probe`
         # optional in as many words. Requiring either would put the schema at
         # odds with the record that pins it, so the omission has to keep
         # validating even though the generator always writes `testable_here`.
@@ -1599,6 +1607,40 @@ class RenderTests(unittest.TestCase):
                 with self.subTest(surface=key):
                     self.assertEqual(path.read_bytes(), before[key])
 
+    def test_a_credential_refuses_before_any_surface_is_written(self):
+        # S3-R2-02. The sweep used to run as each surface's turn came round,
+        # so the refusal was only as early as the surface carrying the token.
+        # A blocker reaches the guide body and no other, and a blocker is
+        # where captured client output lands, so a token there refused after
+        # the README had already been rewritten.
+        #
+        # The case above cannot catch that. It plants the token in a blocker
+        # and changes nothing else, so the README it renders is byte-identical
+        # to the staged one and goes unwritten whichever order the sweep runs
+        # in; its "nothing was written" assertion is vacuous for the README.
+        # This one moves the README body too, which is what a real re-render
+        # does, and no token reaches disk either way -- what is at stake is
+        # one surface regenerated against two left stale.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
+            document["recorded"]["base_ref"] = "0" * 40
+            document["harnesses"][0]["blocker"] = f"bearer: {LEAKED_SECRET}"
+            staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
+            # The precondition that makes this a real hole: the README body
+            # does move, so the old order wrote it before it refused.
+            self.assertNotIn(
+                render_harness_roster.readme_block(document),
+                staged["readme"].read_text(encoding="utf-8"),
+            )
+            before = {key: path.read_bytes() for key, path in staged.items()}
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.write(**staged)
+            self.assertIn("token", str(refused.exception))
+            for key, path in staged.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(path.read_bytes(), before[key])
+
     def test_an_operator_path_the_renderer_rejects_exits_one(self):
         with open(os.devnull, "w", encoding="utf-8") as sink:
             with contextlib.redirect_stderr(sink):
@@ -1620,6 +1662,1315 @@ class RenderTests(unittest.TestCase):
                 self.assertIn(record["name"], shown)
                 # And the guide carries the exact reason, not a summary of it.
                 self.assertIn(record["blocker"], guide)
+
+    def test_a_page_showing_a_longer_roster_than_the_manifest_is_drift(self):
+        # S3-R1-02. The PDF half of `check` compares by containment, and the
+        # roster line is names joined by a separator, so dropping the FIRST or
+        # LAST name leaves the shorter line contained in the page's longer one.
+        # Both ends are driven here; the tail case is the one the committed
+        # page actually admitted before the delimiter guard existed.
+        document = landed()
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        self.assertEqual(render_harness_roster.pdf_drift(document, shown), [])
+        manual = render_harness_roster.names_in_class(
+            document, render_harness_roster.MANUAL_ROUTE
+        )
+        self.assertGreater(len(manual), 2, manual)
+        for dropped in (manual[0], manual[-1]):
+            with self.subTest(dropped=dropped):
+                trimmed = json.loads(json.dumps(document))
+                trimmed["harnesses"] = [
+                    record for record in trimmed["harnesses"]
+                    if record["name"] != dropped
+                ]
+                shorter = render_harness_roster.pdf_roster_line(trimmed)
+                # The precondition that makes this a real hole rather than a
+                # hypothetical one: the shorter line IS still contained.
+                self.assertIn(render_harness_roster._normalise(shorter), shown)
+                self.assertEqual(
+                    len(render_harness_roster.pdf_drift(trimmed, shown)), 1
+                )
+
+    def test_a_manifest_rendering_an_empty_roster_line_is_drift(self):
+        # An empty expectation is contained in every page ever written, so
+        # containment alone would report a clean check against a page that says
+        # nothing at all. Reachable whenever no harness holds `manual route`.
+        document = landed()
+        for record in document["harnesses"]:
+            record["classification"] = render_harness_roster.UNSUPPORTED
+        self.assertEqual(render_harness_roster.pdf_roster_line(document), "")
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        drift = render_harness_roster.pdf_drift(document, shown)
+        self.assertTrue(any("empty string" in line for line in drift), drift)
+
+    def test_a_page_showing_an_unsupported_list_the_manifest_dropped_is_drift(self):
+        # S3-R2-01, the containment hole S3-R1-02 closed on the roster line,
+        # one field over. The unsupported clause is optional, so dropping the
+        # LAST unsupported harness removes it rather than shortening it, and
+        # the manifest's detail becomes a strict prefix of the page's. Nothing
+        # else moves -- an unsupported entry is in neither the roster line nor
+        # the label -- so every other expectation still matched and the whole
+        # check exited 0 on a page still advertising the harness that left.
+        document = landed()
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        self.assertEqual(render_harness_roster.pdf_drift(document, shown), [])
+        unsupported = render_harness_roster.names_in_class(
+            document, render_harness_roster.UNSUPPORTED
+        )
+        self.assertEqual(len(unsupported), 1, unsupported)
+        trimmed = json.loads(json.dumps(document))
+        trimmed["harnesses"] = [
+            record for record in trimmed["harnesses"]
+            if record["classification"] != render_harness_roster.UNSUPPORTED
+        ]
+        # The precondition that makes this a hole rather than a hypothetical:
+        # every expectation IS still contained, and the other two are byte
+        # for byte what they were.
+        for expected in render_harness_roster.pdf_expectations(trimmed):
+            with self.subTest(expected=expected):
+                self.assertIn(render_harness_roster._normalise(expected), shown)
+        self.assertEqual(
+            render_harness_roster.pdf_roster_line(trimmed),
+            render_harness_roster.pdf_roster_line(document),
+        )
+        self.assertEqual(
+            render_harness_roster.pdf_label(trimmed),
+            render_harness_roster.pdf_label(document),
+        )
+        self.assertEqual(len(render_harness_roster.pdf_drift(trimmed, shown)), 1)
+        # Dropping one of several was already caught, because the list is
+        # comma-separated and full-stopped: `Unsupported: A.` is not a prefix
+        # of `Unsupported: A, B.`. Only the fall to zero hid, which is why the
+        # case above drops the only one there is.
+        two = json.loads(json.dumps(document))
+        two["harnesses"][0]["classification"] = render_harness_roster.UNSUPPORTED
+        one = json.loads(json.dumps(two))
+        one["harnesses"] = [
+            record for record in one["harnesses"] if record["name"] != unsupported[0]
+        ]
+        self.assertNotIn(
+            render_harness_roster.pdf_detail(one),
+            render_harness_roster.pdf_detail(two),
+        )
+
+    def test_a_recorded_date_that_is_not_a_calendar_date_is_refused(self):
+        # S3-R1-04, handed here by step 2's round 4. `manifest_document`
+        # matches the shape and nothing more, so an operator `--date` of
+        # `2026-13-45` reaches a written manifest. This is the last gate before
+        # that string is published in three surfaces at once.
+        for bad in ("2026-13-45", "2026-02-31", "0000-00-00"):
+            with self.subTest(date=bad):
+                document = landed()
+                document["recorded"]["date"] = bad
+                # The shape check the probe applies still passes it, which is
+                # what makes this refusal load-bearing rather than redundant.
+                self.assertTrue(probe_harnesses.DATE_PATTERN.match(bad))
+                for render in (
+                    render_harness_roster.readme_block,
+                    render_harness_roster.guide_block,
+                    render_harness_roster.pdf_label,
+                ):
+                    with self.assertRaises(render_harness_roster.RenderError):
+                        render(document)
+        # A real date still renders, so the guard refuses the calendar and not
+        # the field.
+        self.assertIn("2026-09-04", render_harness_roster.pdf_label(landed()))
+
+    def test_the_readme_states_how_many_clients_answered(self):
+        # S3-R1-03. The sentence used to claim the probe "read every client
+        # below"; no client was read on this host. The count is derived from
+        # `version_read`, so it cannot drift from the manifest.
+        document = landed()
+        self.assertFalse(any(record["version_read"] for record in document["harnesses"]))
+        block = render_harness_roster.readme_block(document)
+        self.assertIn("no client answered there", block)
+        self.assertNotIn("read every client", block)
+        answered = json.loads(json.dumps(document))
+        answered["harnesses"][0]["version_read"] = True
+        answered["harnesses"][0]["client_version"] = "1.2.3"
+        self.assertIn(
+            f"1 of the {len(answered['harnesses'])} clients answered there",
+            render_harness_roster.readme_block(answered),
+        )
+
+    def test_neither_surface_names_a_roster_harness_outside_the_markers(self):
+        # The provenance comment published in both files makes this claim, so
+        # something has to hold it. Codex and Claude Code are named outside the
+        # markers on purpose and are not in the roster; the comment now says
+        # exactly that rather than claiming no harness name appears at all.
+        names = [record["name"] for record in landed()["harnesses"]]
+        self.assertNotIn("Codex", names)
+        self.assertNotIn("Claude Code", names)
+        for label, path in (("README", README_PATH), ("guide", GUIDE_PATH)):
+            text = path.read_text(encoding="utf-8")
+            head, _, tail = render_harness_roster.split_surface(text, path)
+            outside = head + tail
+            for name in names:
+                with self.subTest(surface=label, harness=name):
+                    self.assertNotIn(name, outside)
+
+    def test_a_class_these_surfaces_do_not_publish_is_refused(self):
+        # S3-R3-01. `names_in_class` is asked for `manual route` and for
+        # `unsupported` and for nothing else, so a harness holding either
+        # earned class reaches the guide table, which walks every entry, and
+        # reaches neither the README's bullets nor the harness page at all.
+        # The precondition is asserted below rather than assumed: the row is
+        # genuinely absent from two of the three surfaces, which is why the
+        # renderer refuses the document instead of publishing a short roster.
+        for earned in EARNED_CLASSIFICATIONS:
+            with self.subTest(classification=earned):
+                document = landed()
+                document["harnesses"][-2]["classification"] = earned
+                document["harnesses"][-2]["client_present"] = True
+                document["harnesses"][-2]["client_version"] = "3.1.4"
+                document["harnesses"][-2]["version_read"] = True
+                document["harnesses"][-2]["auth_configured"] = True
+                document["harnesses"][-2]["blocker"] = None
+                name = document["harnesses"][-2]["name"]
+                # The hole itself. The guide shows the row; the other two do not.
+                self.assertIn(name, render_harness_roster.guide_block(document))
+                self.assertNotIn(name, render_harness_roster.readme_block(document))
+                self.assertNotIn(
+                    name, " ".join(render_harness_roster.pdf_expectations(document))
+                )
+                # And four hand-written claims would go on standing over it.
+                self.assertIn(
+                    "No local harness holds a checked one-click Atlas launcher",
+                    render_harness_roster.readme_block(document),
+                )
+                self.assertTrue(
+                    render_harness_roster.pdf_label(document).startswith("Manual only")
+                )
+                self.assertIn(
+                    "No checked Atlas launcher here",
+                    render_harness_roster.pdf_detail(document),
+                )
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    staged["manifest"].write_text(
+                        json.dumps(document, indent=2), encoding="utf-8"
+                    )
+                    with self.assertRaises(render_harness_roster.RenderError) as refused:
+                        render_harness_roster.load_manifest(staged["manifest"])
+                    self.assertIn(name, str(refused.exception))
+                    self.assertIn(earned, str(refused.exception))
+                    # Both commands answer the same way rather than one of them
+                    # publishing what the other refuses.
+                    with open(os.devnull, "w", encoding="utf-8") as sink:
+                        with contextlib.redirect_stderr(sink):
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--check", "--manifest", str(staged["manifest"])]
+                                ),
+                                1,
+                            )
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--manifest", str(staged["manifest"])]
+                                ),
+                                1,
+                            )
+
+    def test_the_two_published_classes_still_render(self):
+        # The other half of the guard, so a refusal that swallowed everything
+        # would fail here rather than read as a pass above.
+        document = landed()
+        self.assertEqual(
+            render_harness_roster.PUBLISHED_CLASSIFICATIONS,
+            (render_harness_roster.MANUAL_ROUTE, render_harness_roster.UNSUPPORTED),
+        )
+        for published in render_harness_roster.PUBLISHED_CLASSIFICATIONS:
+            with self.subTest(classification=published):
+                every = json.loads(json.dumps(document))
+                for record in every["harnesses"]:
+                    record["classification"] = published
+                self.assertIsNone(
+                    render_harness_roster.refuse_unpublished_class(every)
+                )
+        # The precondition that makes the guard above worth having: the schema's
+        # vocabulary is wider than what these surfaces publish. If a later change
+        # teaches them to publish all four, this goes red and the refusal should
+        # go with it.
+        self.assertNotEqual(
+            set(CLASSIFICATIONS),
+            set(render_harness_roster.PUBLISHED_CLASSIFICATIONS),
+        )
+
+    def test_the_pdf_builder_is_given_the_manifest_the_renderer_was_told_to_use(self):
+        # S3-R3-02. `build_pdf` used to pass only `--output`, so the builder
+        # called `load_manifest()` with no argument and read the repository's
+        # own document: `--write --manifest X` rendered the two Markdown
+        # surfaces from X and the page from `docs/harness-classification.json`,
+        # exited 0, and left drift the next `--check --manifest X` reported.
+        # `true` stands in for the builder, so the argv is read without paying
+        # for a PDF and without patching the process-wide `subprocess.run`.
+        stand_in = shutil.which("true")
+        if stand_in is None:
+            self.skipTest("no `true` on PATH to stand in for the builder")
+        with_manifest = render_harness_roster.build_pdf(
+            python=stand_in, builder="builder", target="out.pdf", manifest="other.json"
+        )
+        without = render_harness_roster.build_pdf(
+            python=stand_in, builder="builder", target="out.pdf"
+        )
+        self.assertEqual(with_manifest[-2:], ["--manifest", "other.json"])
+        self.assertNotIn("--manifest", without)
+        # The argv stays a fixed list of strings with no shell, as the probe's
+        # own `probe-subprocess` rule requires of every command this tree spawns.
+        for argv in (with_manifest, without):
+            with self.subTest(argv=argv):
+                self.assertIsInstance(argv, list)
+                self.assertTrue(all(isinstance(item, str) for item in argv))
+        # And the builder accepts the option the renderer now sends it.
+        builder = (ROOT / "scripts/build_contributor_guide.py").read_text(encoding="utf-8")
+        self.assertIn('parser.add_argument("--manifest"', builder)
+        self.assertIn("draw_harness_page(pdf, manifest_path)", builder)
+        self.assertIn("render.load_manifest(manifest_path)", builder)
+
+    def test_the_required_field_tuples_are_the_schema_s_own(self):
+        # S3-R4-01..03 are all one omission: `read_manifest` checks the schema
+        # id and a non-empty roster, and nothing else the schema declares. The
+        # renderer restates the required names so it can refuse rather than
+        # raise, and this binds that restatement to the document, so a schema
+        # that gains or renames a required field goes red here rather than
+        # reaching a surface.
+        schema = load_schema()
+        self.assertEqual(
+            sorted(render_harness_roster.REQUIRED_HARNESS_FIELDS),
+            sorted(schema["$defs"]["harness"]["required"]),
+        )
+        self.assertEqual(
+            sorted(render_harness_roster.REQUIRED_RECORDED_FIELDS),
+            sorted(schema["$defs"]["recorded"]["required"]),
+        )
+        # The patterns are read off the probe rather than restated, so there is
+        # one source of truth for them and it is the writer's.
+        self.assertEqual(
+            schema["$defs"]["recorded"]["properties"]["date"]["pattern"],
+            probe_harnesses.DATE_PATTERN.pattern,
+        )
+
+    def test_a_recorded_block_the_probe_would_not_write_is_refused(self):
+        # S3-R4-02. `recorded` parses the date with `datetime.date.fromisoformat`,
+        # which since Python 3.11 is not a `YYYY-MM-DD` gate: it accepts the
+        # basic and week forms below, all of them the same day as `2026-09-04`
+        # and all of them refused by the schema's own pattern. Nothing else
+        # checked the shape, because `read_manifest` does not, so each one
+        # rendered the README sentence, the guide footer, both provenance
+        # comments and the PDF label.
+        for date in ("20260904", "2026-W36-5", "2026W365"):
+            with self.subTest(date=date):
+                # The reachability, asserted rather than assumed.
+                self.assertEqual(
+                    datetime.date.fromisoformat(date), datetime.date(2026, 9, 4)
+                )
+                self.assertIsNone(probe_harnesses.DATE_PATTERN.match(date))
+                self.assertRaisesRefusal(
+                    {"date": date}, "is not YYYY-MM-DD"
+                )
+        # The other two fields the probe patterns on the way out, and which no
+        # reader checked on the way in.
+        self.assertRaisesRefusal({"host": "not a host name"}, "platform name")
+        self.assertRaisesRefusal({"base_ref": "nope"}, "40 hex characters")
+        self.assertRaisesRefusal({"date": None}, "is not YYYY-MM-DD")
+        # Shape and calendar are different properties, neither implies the
+        # other, and both gates are kept. They fire at different points, which
+        # is worth pinning rather than leaving to be rediscovered: the shape is
+        # refused by `load_manifest`, while S3-R1-04's calendar check lives in
+        # `recorded` and fires when a surface is derived. Both still precede
+        # every write, because `write` loads before it renders and renders
+        # before it writes.
+        calendar = landed()
+        calendar["recorded"]["date"] = "2026-13-45"
+        self.assertIsNotNone(probe_harnesses.DATE_PATTERN.match("2026-13-45"))
+        self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(calendar))
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.readme_block(calendar)
+        self.assertIn("is not a calendar date", str(refused.exception))
+        # And the landed document still renders, so the guard refuses documents
+        # rather than everything.
+        self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(landed()))
+
+    def assertRaisesRefusal(self, recorded, expected):
+        """One `recorded` override, refused by name through `load_manifest`."""
+        document = landed()
+        document["recorded"].update(recorded)
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "harness-classification.json"
+            target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.load_manifest(target)
+            self.assertIn(expected, str(refused.exception))
+
+    def test_a_host_carrying_a_comma_cannot_hide_a_stale_label(self):
+        # S3-R4-01, the fourth instance of the containment shape rounds 1 and 2
+        # closed on the roster line and the detail. `pdf_label` carries no
+        # bounding guard, on the reading that its tail is a fixed-width date so
+        # no differently built label can contain it. That reading holds only
+        # while the host carries no comma: with one, a shorter host and an
+        # earlier date render a label that is a strict prefix of the drawn one.
+        drawn = landed()
+        drawn["recorded"]["host"] = "darwin, 2026-09-04 extra"
+        drawn["recorded"]["date"] = "2026-09-05"
+        stale = landed()
+        stale["recorded"]["host"] = "darwin"
+        stale["recorded"]["date"] = "2026-09-04"
+        shown = render_harness_roster._normalise(
+            " ".join(render_harness_roster.pdf_expectations(drawn))
+        )
+        # The hole itself: every expectation of the stale manifest is contained
+        # in a page drawn from another host on another day, and the check is
+        # silent. Driven against a real built page in the round that found it.
+        self.assertIn(
+            render_harness_roster._normalise(
+                render_harness_roster.pdf_label(stale).upper()
+            ),
+            shown,
+        )
+        self.assertEqual(render_harness_roster.pdf_drift(stale, shown), [])
+        # It is unreachable because the host that opens it is refused, which is
+        # why no fourth bounding guard sits beside `_bounded` and `_terminal`.
+        self.assertIsNone(probe_harnesses.HOST_PATTERN.match(drawn["recorded"]["host"]))
+        with self.assertRaises(render_harness_roster.RenderError):
+            render_harness_roster.refuse_unrecorded_shape(drawn)
+
+    def test_a_manifest_missing_a_required_field_is_refused_rather_than_raised(self):
+        # S3-R4-03. `refuse_unpublished_class` reads `entry["classification"]`
+        # and `recorded` reads `block["date"]`, while `main` catches
+        # `RenderError` and `OSError` and neither of those, so one dropped field
+        # printed a traceback carrying this worktree's absolute path -- through
+        # `draw_harness_page` too, which catches `RenderError` precisely to
+        # avoid that.
+        drops = [
+            (field, lambda document, field=field: document["harnesses"][-1].pop(field))
+            for field in render_harness_roster.REQUIRED_HARNESS_FIELDS
+        ] + [
+            (field, lambda document, field=field: document["recorded"].pop(field))
+            for field in render_harness_roster.REQUIRED_RECORDED_FIELDS
+        ]
+        for field, drop in drops:
+            with self.subTest(field=field):
+                document = landed()
+                drop(document)
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "harness-classification.json"
+                    target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+                    with self.assertRaises(render_harness_roster.RenderError) as refused:
+                        render_harness_roster.load_manifest(target)
+                    self.assertIn(field, str(refused.exception))
+                    with open(os.devnull, "w", encoding="utf-8") as sink:
+                        with contextlib.redirect_stderr(sink):
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--check", "--manifest", str(target)]
+                                ),
+                                1,
+                            )
+
+    def test_the_harness_field_types_are_the_schema_s_own(self):
+        # S3-R5-02. `REQUIRED_HARNESS_FIELDS` bound presence to the schema and
+        # left type unbound, so this binds the other half the same way. A
+        # schema that retypes a field goes red here rather than reaching a
+        # surface as a `TypeError`.
+        schema = load_schema()
+        harness = schema["$defs"]["harness"]["properties"]
+        json_to_python = {"string": str, "boolean": bool, "null": type(None)}
+
+        def declared(node):
+            while "$ref" in node:
+                node = schema["$defs"][node["$ref"].rsplit("/", 1)[-1]]
+            if "enum" in node and "type" not in node:
+                # Every member of the classification enum is a string.
+                self.assertTrue(all(isinstance(one, str) for one in node["enum"]))
+                return {str}
+            kind = node["type"]
+            names = [kind] if isinstance(kind, str) else kind
+            return {json_to_python[one] for one in names}
+
+        self.assertEqual(
+            sorted(render_harness_roster.HARNESS_FIELD_TYPES),
+            sorted(render_harness_roster.REQUIRED_HARNESS_FIELDS),
+        )
+        for field, allowed in render_harness_roster.HARNESS_FIELD_TYPES.items():
+            with self.subTest(field=field):
+                self.assertEqual(set(allowed), declared(harness[field]))
+
+    def test_a_harness_field_of_the_wrong_type_is_refused_rather_than_raised(self):
+        # S3-R5-02. Presence was checked without type, and two fields raise
+        # where they are used rather than where they are read: a non-string
+        # `name` reaches `str.join` in `readme_block` and `pdf_roster_line`.
+        # Measured before this guard: one integer name printed a fourteen-line
+        # traceback naming the worktree's absolute path four times, against the
+        # one-line refusal the same manifest gets when the field is absent.
+        wrong = {
+            "name": 7,
+            "classification": 7,
+            "client_present": "false",
+            "client_version": 7,
+            "version_read": "yes",
+            "auth_configured": 1,
+            "launcher_contract": 7,
+            "blocker": 7,
+        }
+        self.assertEqual(
+            sorted(wrong), sorted(render_harness_roster.REQUIRED_HARNESS_FIELDS)
+        )
+        for field, value in wrong.items():
+            with self.subTest(field=field):
+                document = landed()
+                document["harnesses"][0][field] = value
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "harness-classification.json"
+                    target.write_text(json.dumps(document, indent=2), encoding="utf-8")
+                    with self.assertRaises(render_harness_roster.RenderError) as refused:
+                        render_harness_roster.load_manifest(target)
+                    self.assertIn(field, str(refused.exception))
+                    with open(os.devnull, "w", encoding="utf-8") as sink:
+                        with contextlib.redirect_stderr(sink):
+                            self.assertEqual(
+                                render_harness_roster.main(
+                                    ["--check", "--manifest", str(target)]
+                                ),
+                                1,
+                            )
+        # `1` is not a boolean and `True` is not a string, which is the
+        # direction that matters: `isinstance(True, int)` is true in Python, so
+        # a boolean field declared `int` would have admitted `1`.
+        self.assertFalse(isinstance(1, bool))
+        self.assertTrue(isinstance(True, int))
+        # The reachability, asserted rather than assumed: without the guard the
+        # join is what raises, and it is a `TypeError`, which `main` does not
+        # catch any more than it caught the `KeyError` S3-R4-03 closed.
+        forged = landed()
+        forged["harnesses"][0]["name"] = 7
+        with self.assertRaises(TypeError):
+            ", ".join(
+                render_harness_roster.names_in_class(
+                    forged, forged["harnesses"][0]["classification"]
+                )
+            )
+
+    def test_a_recorded_field_with_a_trailing_newline_is_refused(self):
+        # S3-R5-04. The three `recorded` patterns all end in `$`, which in
+        # Python matches at the end of the string *or* just before a trailing
+        # newline, and they were applied with `re.match`. Host and base_ref
+        # reached every surface that way; only the date escaped, because
+        # `recorded` parses it a second time.
+        for field, pattern in (
+            ("host", probe_harnesses.HOST_PATTERN),
+            ("date", probe_harnesses.DATE_PATTERN),
+            ("base_ref", probe_harnesses.BASE_REF_PATTERN),
+        ):
+            with self.subTest(field=field):
+                value = landed()["recorded"][field] + "\n"
+                # The hole itself: the pattern admits it one way and not the
+                # other, which is the whole of this finding.
+                self.assertIsNotNone(pattern.match(value))
+                self.assertIsNone(pattern.fullmatch(value))
+                self.assertRaisesRefusal({field: value}, "is not")
+        # The date's second gate stands on its own and is what saved it before
+        # this guard; host and base_ref never had one.
+        with self.assertRaises(ValueError):
+            datetime.date.fromisoformat("2026-09-04\n")
+        self.assertEqual(
+            datetime.date.fromisoformat("2026-09-04"), datetime.date(2026, 9, 4)
+        )
+
+    def test_a_name_carrying_the_label_stem_cannot_forge_the_page_label(self):
+        # S3-R5-01, the fifth instance of the containment shape. `pdf_label`
+        # carries no bounding guard because S3-R4-01 argued one is unnecessary
+        # while the host holds no comma. That argument assumes the page draws
+        # `MANUAL ONLY - PROBED` exactly once, justified by no manifest-supplied
+        # string being drawn uppercased -- but a name only has to arrive
+        # already uppercase. `pdf_roster_line` draws names verbatim.
+        forged = render_harness_roster.PDF_LABEL_STEM.upper() + "H1, 2026-09-04"
+        drawn, stale = landed(), landed()
+        drawn["recorded"].update(host="h2", date="2026-09-04")
+        stale["recorded"].update(host="h1", date="2026-09-04")
+        for document in (drawn, stale):
+            for entry in document["harnesses"]:
+                if entry["classification"] == render_harness_roster.MANUAL_ROUTE:
+                    entry["name"] = forged
+                    break
+        shown = render_harness_roster._normalise(
+            " ".join(render_harness_roster.pdf_expectations(drawn))
+        )
+        # The hole: the stale manifest's label is present in a page built from
+        # another host, because a harness name spells it out. Driven against
+        # two real built pages in the round that found it, where `--check`
+        # exited 0 printing `three surfaces match 2 recorded harnesses`.
+        self.assertEqual(
+            render_harness_roster._normalise(
+                render_harness_roster.pdf_label(stale).upper()
+            ),
+            forged,
+        )
+        self.assertIn(forged, shown)
+        self.assertEqual(render_harness_roster.pdf_drift(stale, shown), [])
+        # It is unreachable because the name that opens it is refused, which is
+        # why no fourth bounding guard sits beside `_bounded` and `_terminal`.
+        for document in (drawn, stale):
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.refuse_unrecorded_shape(document)
+            self.assertIn("structure", str(refused.exception))
+        # The two facts the argument rests on, pinned rather than restated:
+        # `label` is the only thing that uppercases, and the roster line does
+        # not go through it.
+        builder = (ROOT / "scripts/build_contributor_guide.py").read_text(encoding="utf-8")
+        self.assertIn("c.drawString(x, y, text.upper())", builder)
+        self.assertIn("label(c, render.pdf_label(manifest)", builder)
+        self.assertIn("render.pdf_roster_line(manifest),", builder)
+
+    def test_a_name_carrying_a_region_marker_cannot_close_the_region(self):
+        # S3-R5-03. The same unconstrained `name`, against the two Markdown
+        # surfaces: a name carrying END_MARKER closes the region it is being
+        # written into. Measured before this guard: `--write` exited 0
+        # reporting three surfaces written, the README came back with one begin
+        # and two end markers and the guide with one and three, and every later
+        # `--write` and `--check` refused -- including one from the committed
+        # manifest, so the renderer could not repair what it had written.
+        for token in (
+            render_harness_roster.BEGIN_MARKER,
+            render_harness_roster.END_MARKER,
+            render_harness_roster.ROSTER_SEPARATOR,
+            "|",
+            "\n",
+        ):
+            with self.subTest(token=token):
+                document = landed()
+                document["harnesses"][0]["name"] = f"Cursor {token} tail"
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # An empty name is refused too: the schema's `nonEmptyString` is a
+        # length as well as a type, and the roster line would otherwise render
+        # two separators with nothing between them.
+        with self.assertRaises(render_harness_roster.RenderError):
+            render_harness_roster.refuse_forged_name("")
+        # And the landed roster still passes, so the guard refuses names rather
+        # than all of them.
+        for entry in landed()["harnesses"]:
+            self.assertIsNone(render_harness_roster.refuse_forged_name(entry["name"]))
+
+    def test_every_manifest_string_a_surface_publishes_is_guarded(self):
+        # S3-R6-01. The guard named one field, so the fields beside it stayed
+        # open with the same consequence. This derives the coverage instead of
+        # listing it: it drives a sentinel through every string-typed harness
+        # field the schema *requires* and asserts that the fields whose
+        # sentinel reaches a surface are exactly the ones
+        # `PUBLISHED_TEXT_FIELDS` guards. A later change that publishes
+        # `launcher_contract`, or any new required string field, goes red here
+        # rather than shipping an unguarded string to three surfaces. S3-R7-05
+        # records that the walk is `HARNESS_FIELD_TYPES`, which is the required
+        # eight, and drives the optional strings under `probe` beside it.
+        sentinel = "ZQXSENTINELXQZ"
+
+        def published(document):
+            return "\n".join((
+                render_harness_roster.readme_block(document),
+                render_harness_roster.guide_block(document),
+                " ".join(render_harness_roster.pdf_expectations(document)),
+            ))
+
+        reaching = set()
+        for field, allowed in render_harness_roster.HARNESS_FIELD_TYPES.items():
+            if str not in allowed:
+                continue
+            document = landed()
+            entry = document["harnesses"][0]
+            if field == "client_version":
+                # The one field a surface reads only when another says to.
+                entry["client_present"] = True
+                entry["version_read"] = True
+            entry[field] = sentinel
+            if sentinel in published(document):
+                reaching.add(field)
+        # `classification` reaches the guide table and is closed by the schema's
+        # enum and `refuse_unpublished_class`, not by a token set.
+        self.assertIn("classification", reaching)
+        self.assertEqual(
+            reaching - {"classification"},
+            set(render_harness_roster.PUBLISHED_TEXT_FIELDS),
+        )
+        # `launcher_contract` is a `nonEmptyString` with no pattern too, and is
+        # unguarded here because it is published nowhere.
+        self.assertNotIn("launcher_contract", reaching)
+
+    def test_a_published_free_text_field_cannot_forge_a_surface(self):
+        # S3-R6-01, driven. A `blocker` carrying END_MARKER closed the guide's
+        # region exactly as a name did: `--write` exited 0 printing `rendered 6
+        # harnesses into three surfaces`, the guide came back with 1 begin and
+        # 2 end markers, and every later `--check` and `--write` refused,
+        # including one from the committed manifest. A schema-valid
+        # `client_version` of `1.0 | forged | yes | no |` gave its table row
+        # eight cells against a five-column header.
+        for field, value in (
+            ("blocker", f"Absent. {render_harness_roster.END_MARKER}"),
+            ("blocker", f"Absent. {render_harness_roster.BEGIN_MARKER}"),
+            ("blocker", "one\ntwo"),
+            ("client_version", "1.0 | forged | yes | no |"),
+        ):
+            with self.subTest(field=field, value=value):
+                document = landed()
+                document["harnesses"][0][field] = value
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # The schema gives all three `minLength: 1`, which the type map cannot
+        # carry, so an empty string is refused and `null` is not: an empty
+        # `blocker` would render `nothing blocked it.`, which `null` means.
+        for field in ("name", "client_version", "blocker"):
+            with self.subTest(field=field, value=""):
+                document = landed()
+                document["harnesses"][0][field] = ""
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn(f"empty {field}", str(refused.exception))
+        for field in ("client_version", "blocker"):
+            with self.subTest(field=field, value=None):
+                document = landed()
+                document["harnesses"][0][field] = None
+                document["harnesses"][0]["version_read"] = False
+                self.assertIsNone(
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                )
+        # This guard runs before `refuse_leak` sweeps anything, and a blocker
+        # is where captured client output lands, so the refusal names the
+        # field and never echoes its value. A first draft echoed `value!r` and
+        # printed a planted token to stderr.
+        token = "ghp_" + "a" * 36
+        document = landed()
+        document["harnesses"][0]["blocker"] = f"Absent.\n{token}"
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(document)
+        self.assertIn("blocker carries", str(refused.exception))
+        self.assertNotIn(token, str(refused.exception))
+
+    def test_a_structural_token_is_refused_in_the_form_a_comparison_sees(self):
+        # S3-R6-02. The forbidden tokens were the forms a manifest writes, and
+        # every comparison here runs over `_normalise`d text. `ROSTER_SEPARATOR`
+        # is written `'  /  '` and reaches the page as `' / '`, so a name
+        # carrying the collapsed form was admitted and then indistinguishable
+        # from the separator. Driven against the committed page: merging two
+        # harnesses into one named `Gemini CLI / Windsurf` renders a roster line
+        # that normalises byte-identically to the five-name line the page draws,
+        # and `--check` exited 0 printing `three surfaces match 5 recorded
+        # harnesses` against a page built from a manifest recording six.
+        collapsed = render_harness_roster._normalise
+        merged, split = landed(), landed()
+        keep = [one for one in merged["harnesses"] if one["name"] != "Windsurf"]
+        for one in keep:
+            if one["name"] == "Gemini CLI":
+                one["name"] = "Gemini CLI / Windsurf"
+        merged["harnesses"] = keep
+        self.assertEqual(
+            collapsed(render_harness_roster.pdf_roster_line(merged)),
+            collapsed(render_harness_roster.pdf_roster_line(split)),
+        )
+        self.assertNotEqual(len(merged["harnesses"]), len(split["harnesses"]))
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(merged)
+        self.assertIn("structure", str(refused.exception))
+        # The guard's alphabet is tied to the comparison's: these are the exact
+        # strings `_bounded` and `_terminal` rebuild to bound a match, so a
+        # change to either rebuild goes red here.
+        for token in (
+            render_harness_roster.ROSTER_SEPARATOR,
+            render_harness_roster.UNSUPPORTED_CLAUSE,
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    f" {collapsed(token)} ", render_harness_roster.NAME_FORBIDDEN
+                )
+                for form in render_harness_roster._comparison_forms(token):
+                    document = landed()
+                    document["harnesses"][0]["name"] = f"Cursor{form}tail"
+                    with self.assertRaises(render_harness_roster.RenderError):
+                        render_harness_roster.refuse_unrecorded_shape(document)
+        # A bare separator character is not structure and stays admitted.
+        self.assertIsNone(render_harness_roster.refuse_forged_name("a/b"))
+
+    def test_a_name_the_page_builder_reads_as_markup_is_refused(self):
+        # S3-R6-03. The page draws names through `reportlab`'s paragraph
+        # parser, which reads `<` as a tag and `&` as an entity, so the drawn
+        # text is not the string the manifest renders and the page can never
+        # match it. Measured through real built pages: `Cline <font
+        # color="#ff0000">EXTRA</font>` drew as `Cline EXTRA`, so `--write`
+        # exited 0 and the `--check` after it exited 1 on every run; `AT&T
+        # route` drew as `AT &T; route`; and `Cline <notatag` failed the build
+        # after both Markdown surfaces were already rewritten, reporting only
+        # `the guide builder exited 1:  para`.
+        for name in (
+            'Cline <font color="#ff0000">EXTRA</font>',
+            "Cline <notatag",
+            "AT&T route",
+            "Cline &amp; Co",
+        ):
+            with self.subTest(name=name):
+                document = landed()
+                document["harnesses"][0]["name"] = name
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # `>` was measured and left admitted: `a > b` draws as `a > b` and
+        # `--check` exits 0, so refusing it would cost a name for nothing.
+        self.assertIsNone(render_harness_roster.refuse_forged_name("a > b"))
+        # Neither character is refused in the two fields the page never draws.
+        for field in ("client_version", "blocker"):
+            with self.subTest(field=field):
+                self.assertNotIn(
+                    "<", render_harness_roster.PUBLISHED_TEXT_FIELDS[field]
+                )
+                self.assertNotIn(
+                    "&", render_harness_roster.PUBLISHED_TEXT_FIELDS[field]
+                )
+
+    def merged(self, separator):
+        """`Gemini CLI` and `Windsurf` folded into one name joined by it."""
+        document = landed()
+        keep = [one for one in document["harnesses"] if one["name"] != "Windsurf"]
+        for one in keep:
+            if one["name"] == "Gemini CLI":
+                one["name"] = f"Gemini CLI{separator}Windsurf"
+        document["harnesses"] = keep
+        return document
+
+    def test_a_structural_token_is_refused_in_every_whitespace_it_collapses_from(self):
+        # S3-R7-01. S3-R6-02's fix derived the collapsed form of each *token*
+        # and left the *value* raw, so it closed the space spelling of the
+        # separator and no other. `_normalise` collapses every run of
+        # whitespace, so a tab, a non-breaking space, an em space or a form
+        # feed between the same two names reaches the page's text as ` / ` just
+        # as two spaces do. Driven against the committed six-harness page: each
+        # merge below renders a five-name roster line that normalises
+        # byte-identically to the one the page draws, and `pdf_drift` returned
+        # `[]` before this guard.
+        shown = render_harness_roster.harness_page_text(PDF_PATH)
+        committed = render_harness_roster._normalise(
+            render_harness_roster.pdf_roster_line(landed())
+        )
+        for separator in ("\t/\t", "\xa0/\xa0", " \t/ ", " / ", "\x0c/\x0c"):
+            with self.subTest(separator=separator):
+                document = self.merged(separator)
+                # The collision itself, asserted rather than assumed.
+                self.assertEqual(
+                    render_harness_roster._normalise(
+                        render_harness_roster.pdf_roster_line(document)
+                    ),
+                    committed,
+                )
+                self.assertNotEqual(
+                    len(document["harnesses"]), len(landed()["harnesses"])
+                )
+                self.assertEqual(render_harness_roster.pdf_drift(document, shown), [])
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("structure", str(refused.exception))
+        # The control separates the collision from a broken check: an ordinary
+        # rename of the same entry is reported against the same page.
+        renamed = landed()
+        for one in renamed["harnesses"]:
+            if one["name"] == "Windsurf":
+                one["name"] = "Windsurf X"
+        self.assertNotEqual(render_harness_roster.pdf_drift(renamed, shown), [])
+        # The raw form is still checked, because `_normalise` *removes* the two
+        # tokens the Markdown surfaces care about most.
+        for token in ("\n", "\r"):
+            with self.subTest(token=token):
+                self.assertEqual(render_harness_roster._normalise(f"a{token}b"), "a b")
+                document = landed()
+                document["harnesses"][0]["name"] = f"Cursor{token}tail"
+                with self.assertRaises(render_harness_roster.RenderError):
+                    render_harness_roster.refuse_unrecorded_shape(document)
+        # And a name carrying ordinary inner whitespace is still a name.
+        self.assertIsNone(render_harness_roster.refuse_forged_name("Gemini CLI"))
+        self.assertIsNone(render_harness_roster.refuse_forged_name("a/b"))
+
+    def test_a_refusal_above_the_sweep_never_echoes_a_credential(self):
+        # S3-R7-02. `refuse_forged_field` names the field and never the value,
+        # because it runs inside `load_manifest` and therefore before
+        # `refuse_leak` sweeps anything, and a `blocker` is where captured
+        # client output lands. The two refusals above it kept `{value!r}` and
+        # had the same reach: a wrong-typed `blocker` or `client_version`
+        # holding a token printed it to stderr through `main`, and so did a
+        # `recorded.host` too long for `HOST_PATTERN`.
+        planted = LEAKED_SECRET
+        self.assertEqual(probe_harnesses.credential_findings(planted), ["token"])
+        for field, value in (
+            ("blocker", ["Absent.", planted]),
+            ("client_version", {"stdout": planted}),
+            ("launcher_contract", [planted]),
+        ):
+            with self.subTest(field=field):
+                document = landed()
+                document["harnesses"][0][field] = value
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                message = str(refused.exception)
+                self.assertIn(field, message)
+                self.assertIn("is not", message)
+                self.assertNotIn(planted, message)
+        # The `recorded` patterns, the same way. A token shaped like a host
+        # passes `HOST_PATTERN` and reaches `refuse_leak`; one that does not is
+        # refused here, which is why the shape stands in for the value.
+        for field, value in (
+            ("host", planted[:64] + "!"),
+            ("base_ref", planted),
+            ("date", planted),
+        ):
+            with self.subTest(recorded=field):
+                document = landed()
+                document["recorded"][field] = value
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertNotIn(planted, str(refused.exception))
+                self.assertIn("shape", str(refused.exception))
+        # An operator's ordinary mistake still reads back verbatim, which is
+        # what the echo was for.
+        document = landed()
+        document["recorded"]["date"] = "20260904"
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(document)
+        self.assertIn("is not YYYY-MM-DD", str(refused.exception))
+        self.assertIn("20260904", str(refused.exception))
+        # And a wrong type is named by its type, which is what the message is
+        # about and costs it nothing.
+        document = landed()
+        document["harnesses"][0]["client_present"] = "false"
+        with self.assertRaises(render_harness_roster.RenderError) as refused:
+            render_harness_roster.refuse_unrecorded_shape(document)
+        self.assertIn("is not bool: 'false'", str(refused.exception))
+
+    def test_the_version_a_surface_publishes_agrees_with_its_own_flags(self):
+        # S3-R7-03. Every guard before this one checks a field on its own. The
+        # schema does not: three `allOf` conditionals bind `client_version` to
+        # `client_present` and to `version_read`, none was read here, and
+        # `_version` returns `client_version` unexamined whenever `version_read`
+        # is true. Each state below is schema-invalid and each was admitted:
+        # `version_read` true with a null version published Python's `None` in
+        # the guide table's Version cell, and with the sentinel it published
+        # `unread` there, both against a README reading `1 of the 6 clients
+        # answered there`.
+        schema = load_schema()
+        conditionals = schema["$defs"]["harness"]["allOf"]
+        self.assertEqual(len(conditionals), 3)
+        # The sentinel is the schema's own, read off the probe rather than
+        # restated here or in the renderer.
+        self.assertEqual(
+            probe_harnesses.UNREAD_VERSION,
+            conditionals[1]["then"]["properties"]["client_version"]["not"]["const"],
+        )
+        check = validator()
+        for label, patch, published in (
+            ("read a version it does not hold", {"version_read": True, "client_version": None}, "None"),
+            ("read the sentinel", {"version_read": True, "client_version": "unread"}, "unread"),
+            ("hides a version it read", {"version_read": False, "client_version": "1.2.3"}, None),
+            ("present with no version", {"client_present": True, "client_version": None, "version_read": False}, None),
+        ):
+            with self.subTest(state=label):
+                document = landed()
+                document["harnesses"][0].update(patch)
+                if check is not None:
+                    self.assertNotEqual(list(check.iter_errors(document)), [])
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn("GitHub Copilot", str(refused.exception))
+                self.assertNotIn("1.2.3", str(refused.exception))
+                if published is not None:
+                    # The consequence, asserted rather than described: the cell
+                    # the refusal prevents.
+                    row = [
+                        line
+                        for line in render_harness_roster.guide_block(document).splitlines()
+                        if line.startswith("| GitHub Copilot |")
+                    ]
+                    self.assertEqual(len(row), 1)
+                    self.assertIn(f"| {published} |", row[0])
+                    self.assertIn(
+                        "1 of the 6 clients answered there",
+                        render_harness_roster.readme_block(document),
+                    )
+        # The landed document, and the two states the schema does admit.
+        self.assertIsNone(render_harness_roster.refuse_unrecorded_shape(landed()))
+        for patch in (
+            {"client_present": True, "client_version": "unread", "version_read": False},
+            {"client_present": True, "client_version": "1.2.3", "version_read": True},
+        ):
+            with self.subTest(admitted=patch["client_version"]):
+                document = landed()
+                document["harnesses"][0].update(patch)
+                self.assertIsNone(
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                )
+
+    def test_a_builder_that_refuses_leaves_every_surface_where_it_found_it(self):
+        # S3-R7-04. The PDF was built last, and the builder is the one surface
+        # whose failure the manifest can reach: `para` refuses text that
+        # overflows the roster card, and that box is far below the schema's
+        # `maxLength` of 4096. Measured with `reportlab` 5.0.1, replacing
+        # `Cursor`: 27 characters still draw and 28 do not, and at the
+        # committed name lengths the card draws 7 manual-route names and fails
+        # at 8 against the 5 the roster carries. Each failure left `README.md`
+        # and the guide rewritten and the PDF byte-identical, and no manifest
+        # then checked clean.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            document = json.loads(staged["manifest"].read_text(encoding="utf-8"))
+            for one in document["harnesses"]:
+                if one["name"] == "Cursor":
+                    one["name"] = "C" * 28
+            staged["manifest"].write_text(json.dumps(document, indent=2), encoding="utf-8")
+            # The precondition that makes this a real hole: both Markdown
+            # bodies move, so the old order wrote them before the build failed.
+            for key, render in (
+                ("readme", render_harness_roster.readme_block),
+                ("guide", render_harness_roster.guide_block),
+            ):
+                self.assertNotIn(
+                    render(document), staged[key].read_text(encoding="utf-8")
+                )
+            # The name is admitted: the bound belongs to the builder's box, not
+            # to the schema, which allows 4096.
+            self.assertIsNone(render_harness_roster.refuse_forged_name("C" * 28))
+            self.assertEqual(
+                load_schema()["$defs"]["nonEmptyString"]["maxLength"], 4096
+            )
+            before = {key: path.read_bytes() for key, path in staged.items()}
+            with self.assertRaises(render_harness_roster.RenderError) as refused:
+                render_harness_roster.write(**staged)
+            self.assertIn("the guide builder exited", str(refused.exception))
+            for key, path in staged.items():
+                with self.subTest(surface=key):
+                    self.assertEqual(path.read_bytes(), before[key])
+
+    def test_the_schema_binding_reads_the_lengths_and_the_nested_strings(self):
+        # S3-R7-05. `test_the_harness_field_types_are_the_schema_s_own` reads
+        # `type` and `enum` and no length keyword, so the `minLength: 1` all
+        # three published strings carry was enforced by hand in
+        # `refuse_forged_field` and bound to nothing. And the sentinel walk in
+        # `test_every_manifest_string_a_surface_publishes_is_guarded` iterates
+        # `HARNESS_FIELD_TYPES`, which is the schema's *required* eight, so the
+        # strings under `probe` were outside a claim that read `every
+        # string-typed harness field`.
+        schema = load_schema()
+        harness = schema["$defs"]["harness"]["properties"]
+
+        def length(node):
+            while "$ref" in node:
+                node = schema["$defs"][node["$ref"].rsplit("/", 1)[-1]]
+            return node.get("minLength")
+
+        for field in render_harness_roster.PUBLISHED_TEXT_FIELDS:
+            with self.subTest(field=field):
+                self.assertEqual(length(harness[field]), 1)
+                # The renderer refuses at exactly that length rather than near
+                # it: the empty string is refused and one character is not.
+                document = landed()
+                document["harnesses"][0][field] = ""
+                with self.assertRaises(render_harness_roster.RenderError) as refused:
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                self.assertIn(f"empty {field}", str(refused.exception))
+                document = landed()
+                document["harnesses"][0][field] = "x"
+                if field == "client_version":
+                    document["harnesses"][0]["client_present"] = True
+                    document["harnesses"][0]["version_read"] = True
+                self.assertIsNone(
+                    render_harness_roster.refuse_unrecorded_shape(document)
+                )
+        # The nested strings, driven the same way the required ones are. None
+        # reaches a surface, which is what makes the coverage claim true rather
+        # than narrow.
+        sentinel = "ZQXNESTEDXQZ"
+        document = landed()
+        entry = document["harnesses"][0]
+        entry["probe"] = {"command": [sentinel], "result": sentinel}
+        self.assertEqual(length(schema["$defs"]["probe"]["properties"]["result"]), 1)
+        published = "\n".join((
+            render_harness_roster.readme_block(document),
+            render_harness_roster.guide_block(document),
+            " ".join(render_harness_roster.pdf_expectations(document)),
+        ))
+        self.assertNotIn(sentinel, published)
+        # `maxLength` is declared and is not the operative bound: the builder's
+        # box refuses far sooner, which is S3-R7-04's subject.
+        self.assertEqual(schema["$defs"]["nonEmptyString"]["maxLength"], 4096)
+        self.assertIsNone(render_harness_roster.refuse_forged_name("C" * 4096))
+
+
+CHECK_MAP_PATH = ROOT / "tests/check-map-v1.json"
+CHECK_ID = "harness-roster-check"
+
+
+def check_map():
+    return json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
+
+
+class DriftTests(unittest.TestCase):
+    """The drift check, held as a declared check rather than as a script.
+
+    ``RenderTests`` holds ``render_harness_roster.check`` as a function: given a
+    manifest and three surfaces, it returns the right drift lines. That says
+    nothing about whether anybody runs it. A renderer whose check mode is
+    correct and unreached leaves the published roster free to rot, which is the
+    on-call question this step exists to answer: is what the README, the guide
+    and the PDF say still what the manifest says?
+
+    So every case here goes through the check map, not through an argv written
+    out by hand. The map is the execution authority: ``run_checks.py`` builds
+    its plan from it, and a case that reproduced the command instead would pass
+    on a repository where the declaration had been deleted. Each case reads the
+    declared argv, runs that, and reads the exit status.
+    """
+
+    def setUp(self):
+        self.graph = check_map()
+        self.check = self.graph["checks"].get(CHECK_ID)
+        if self.check is None:
+            self.fail(f"{CHECK_MAP_PATH} declares no check {CHECK_ID!r}")
+
+    def run_declared(self, extra=()):
+        """The declared check, with `extra` naming the surfaces to read.
+
+        The declared ``python3`` is replaced by the interpreter running these
+        cases. The map names an interpreter by PATH, and on a host where that
+        is not this one these cases would otherwise report on a build the rest
+        of the suite never touched. What that leaves uncovered is the PATH
+        lookup itself; ``run_checks.py`` runs the argv verbatim, so the full
+        run is where that half is exercised.
+        """
+        completed = subprocess.run(
+            [sys.executable if a == "python3" else a for a in self.check["argv"]]
+            + list(extra),
+            cwd=ROOT / self.check.get("cwd", "."),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+            stdin=subprocess.DEVNULL,
+        )
+        return completed
+
+    def stage(self, directory):
+        """Copies of the four files, as the paths the declared check takes."""
+        root = Path(directory)
+        (root / "docs" / "pdf").mkdir(parents=True)
+        staged = {
+            "--manifest": root / "docs/harness-classification.json",
+            "--readme": root / "README.md",
+            "--guide": root / "docs/how-to-help-shoggoth.md",
+            "--pdf": root / "docs/pdf/how-to-help-shoggoth.pdf",
+        }
+        for option, source in (
+            ("--manifest", MANIFEST_PATH),
+            ("--readme", README_PATH),
+            ("--guide", GUIDE_PATH),
+            ("--pdf", PDF_PATH),
+        ):
+            staged[option].write_bytes(source.read_bytes())
+        return staged
+
+    @staticmethod
+    def options(staged):
+        return [str(part) for option, path in staged.items() for part in (option, path)]
+
+    def test_the_check_mode_is_reachable_from_the_repository_suite(self):
+        # Declared, owned by a scope, and green on the committed tree. The scope
+        # is what makes it run: `run_checks.py` reaches a check through the
+        # scope that lists it, and a check no scope lists is refused as
+        # unreachable rather than run.
+        self.assertEqual(self.check["kind"], "command")
+        self.assertEqual(
+            self.check["argv"], ["python3", "scripts/render_harness_roster.py", "--check"]
+        )
+        self.assertTrue((ROOT / self.check["script"]).exists(), self.check["script"])
+        owning = sorted(
+            scope for scope, body in self.graph["scopes"].items()
+            if CHECK_ID in body["checks"]
+        )
+        self.assertTrue(owning, f"no scope lists {CHECK_ID}")
+        completed = self.run_declared()
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("three surfaces match", completed.stdout)
+
+    def test_a_changed_surface_reddens_the_declared_check(self):
+        # One character, inside the generated region, in a name the manifest
+        # supplied. This is the same edit the step's demonstration makes by
+        # hand; running it here means the demonstration is not the only place
+        # the binding is ever exercised.
+        for surface in ("--readme", "--guide"):
+            with self.subTest(surface=surface):
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    target = staged[surface]
+                    text = target.read_text(encoding="utf-8")
+                    edited = text.replace("Windsurf", "Windsurg", 1)
+                    self.assertNotEqual(edited, text)
+                    target.write_text(edited, encoding="utf-8")
+                    completed = self.run_declared(extra=self.options(staged))
+                    self.assertEqual(completed.returncode, 1, completed.stdout)
+                    self.assertIn(str(target), completed.stderr)
+
+    def test_a_missing_manifest_reddens_the_declared_check(self):
+        # The source going absent is the failure mode a check that only ever
+        # compared surfaces to each other would report as clean.
+        with tempfile.TemporaryDirectory() as directory:
+            staged = self.stage(directory)
+            staged["--manifest"].unlink()
+            completed = self.run_declared(extra=self.options(staged))
+            self.assertEqual(completed.returncode, 1, completed.stdout)
+            self.assertIn("render_harness_roster:", completed.stderr)
+
+    def test_a_recorded_run_the_surfaces_do_not_carry_reddens_the_check(self):
+        # `recorded` is the staleness signal: host, date and base ref. It is not
+        # a harness name, so none of the roster comparisons touch it, and a
+        # manifest re-recorded on another host or another day against surfaces
+        # nobody regenerated is exactly the drift a reader cannot see. Each
+        # field is driven separately, because they reach the surfaces by
+        # different routes: host and date reach all three, and the base ref
+        # reaches the two Markdown regions alone.
+        for field, replacement in (
+            ("host", "linux-x86_64"),
+            ("date", "2026-09-05"),
+            ("base_ref", "0" * 40),
+        ):
+            with self.subTest(field=field):
+                with tempfile.TemporaryDirectory() as directory:
+                    staged = self.stage(directory)
+                    document = json.loads(
+                        staged["--manifest"].read_text(encoding="utf-8")
+                    )
+                    self.assertNotEqual(document["recorded"][field], replacement)
+                    document["recorded"][field] = replacement
+                    staged["--manifest"].write_text(
+                        json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                    )
+                    completed = self.run_declared(extra=self.options(staged))
+                    self.assertEqual(completed.returncode, 1, completed.stdout)
+
+
+EVIDENCE_PATH = ROOT / "tests/atlas-route-test-evidence.json"
+
+# The sentence the guide makes about the two bootstrap routes, and the sentence
+# that limits it. Both are held here as exact bytes because neither sits inside
+# a generated region: the roster markers open at the harness table, well below
+# these, so `render_harness_roster --check` never reads them and nothing else
+# would notice either one being edited away.
+ATLAS_CLAIM = "The ChatGPT and Claude routes are covered by the Atlas launcher tests."
+ATLAS_LIMIT = (
+    "That is a bootstrap, not evidence that the browser chat can edit a local "
+    "checkout, sign commits, restore a checkpoint, or publish through your "
+    "GitHub account."
+)
+
+
+class AtlasClaimTests(unittest.TestCase):
+    """The guide's claim about another repository, held to what was read there.
+
+    The claim is not about this tree, so no run here can settle it: the Atlas
+    repository is where the answer lives. It was read once, over the GitHub API
+    at a named commit, and that read is recorded in
+    ``tests/atlas-route-test-evidence.json``. These cases hold the guide against
+    that record. They open no socket, and a host with no network runs them
+    unchanged.
+
+    That boundary is the point rather than a convenience. A case that fetched
+    the repository would make the suite fail when GitHub is unreachable, when a
+    rate limit is hit, or when somebody force-pushes the branch the commit sits
+    on, and none of those is the guide being wrong. The trade is that the record
+    goes stale silently: it is true of ``commit`` and says nothing about the
+    Atlas repository today. Refreshing it means re-reading that commit, or
+    pinning a newer one, and the file says so.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.evidence = json.loads(EVIDENCE_PATH.read_text(encoding="utf-8"))
+        cls.raw_guide = GUIDE_PATH.read_text(encoding="utf-8")
+        # Both surfaces are hard-wrapped Markdown, so every sentence held here
+        # spans two or three source lines. Matching the wrapped bytes would tie
+        # these cases to one particular reflow: a paragraph rewrapped by an
+        # editor is the same claim, and this would report it as the claim being
+        # deleted. Collapsing runs of whitespace compares the sentence instead.
+        cls.guide = " ".join(cls.raw_guide.split())
+        cls.readme = " ".join(README_PATH.read_text(encoding="utf-8").split())
+
+    def test_the_guides_coverage_claim_agrees_with_the_pinned_atlas_read(self):
+        evidence = self.evidence
+        self.assertEqual(evidence["schema"], "atlas-route-test-evidence/v1")
+        self.assertEqual(
+            evidence["commit"], "ce866e3d7e8b489fcb8b70c608f7af72d9b7a673"
+        )
+        route = evidence["route_test"]
+        conclusion = evidence["conclusion"]
+        # The claim is only as good as the read behind it, so the read is
+        # checked for the two things that make it a coverage claim at all: a
+        # test file exists, and it exercises both routes the guide links.
+        self.assertTrue(conclusion["route_test_present"])
+        self.assertEqual(
+            len(evidence["test_files"]), conclusion["test_file_count"]
+        )
+        self.assertIn(
+            route["path"].removeprefix("tests/"),
+            [item["name"] for item in evidence["test_files"]],
+        )
+        self.assertEqual(route["providers"], ["chatgpt", "claude"])
+        self.assertEqual(route["asserts"]["status"], 307)
+        self.assertEqual(route["asserts"]["cache_control"], "no-store")
+        self.assertEqual(
+            route["asserts"]["destination_origin"],
+            {"chatgpt": "https://chatgpt.com", "claude": "https://claude.ai"},
+        )
+        # Every route the guide links has to be one the read covers. Reading the
+        # links out of the guide rather than listing them here is what keeps
+        # this honest: a third bootstrap button added tomorrow fails this case
+        # until somebody reads the Atlas repository again.
+        linked = sorted(set(re.findall(r"/go/([a-z0-9-]+)", self.raw_guide)))
+        self.assertEqual(
+            sorted(f"/go/{name}" for name in linked), sorted(conclusion["covered_routes"])
+        )
+        self.assertEqual(linked, route["providers"])
+        self.assertIn(ATLAS_CLAIM, self.guide)
+
+    def test_the_sentence_limiting_the_claim_survives(self):
+        # The claim and its limit travel together or the claim misleads. A
+        # reader who takes "covered by the Atlas launcher tests" on its own has
+        # been told a redirect is tested and may hear that the chat behind it is
+        # a working harness. The limit is what says otherwise, so it is held to
+        # its position as well as its presence.
+        self.assertIn(ATLAS_LIMIT, self.guide)
+        self.assertLess(
+            self.guide.index(ATLAS_CLAIM),
+            self.guide.index(ATLAS_LIMIT),
+            "the limiting sentence has to follow the claim it limits",
+        )
+        for capability in (
+            "edit a local checkout",
+            "sign commits",
+            "restore a checkpoint",
+            "publish through your GitHub account",
+        ):
+            with self.subTest(capability=capability):
+                self.assertIn(capability, ATLAS_LIMIT)
+        # The recorded read says the same thing from the other side: it states
+        # what a passing route test does not establish. If that note were
+        # dropped the record would read as broader evidence than it is.
+        self.assertIn("bootstrap", self.evidence["conclusion"]["not_established"])
+
+    def test_neither_surface_claims_a_checked_one_click_local_launcher(self):
+        # The bootstrap routes are web routes. No local harness has a launcher
+        # anybody checked, and both surfaces say so: the README inside its
+        # generated region, from `client_present` and `auth_configured` the
+        # probe recorded, and the guide in the hand-written paragraph above its
+        # table. Neither may drift into advertising one.
+        self.assertIn(
+            "No local harness holds a checked one-click Atlas launcher.", self.readme
+        )
+        self.assertIn("Neither has a one-click Atlas launcher", self.guide)
+        # No harness the probe recorded earned a class that would imply one.
+        for record in landed()["harnesses"]:
+            with self.subTest(harness=record["name"]):
+                self.assertNotIn(record["classification"], EARNED_CLASSIFICATIONS)
 
 
 if __name__ == "__main__":

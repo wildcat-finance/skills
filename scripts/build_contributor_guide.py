@@ -13,6 +13,12 @@ and its detail all come from scripts/render_harness_roster.py, which derives
 them from docs/harness-classification.json. No harness name appears anywhere in
 this file, which is what stops the PDF and the two Markdown surfaces disagreeing
 about a roster nobody re-probed.
+
+The reportlab version is load-bearing for the committed file rather than only
+for this run. .horos/boundary.json records the PDF's exact byte count, and two
+boundary cases go red when it moves, so the same page built under a different
+reportlab is a change the whole tree sees. The version that built a file is
+readable from its /Producer string, and this builder prints it on every run.
 """
 
 from __future__ import annotations
@@ -22,6 +28,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import reportlab
 from reportlab import rl_config
 from reportlab.lib.colors import Color, HexColor, white
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -348,7 +355,7 @@ def draw_contribution_page(c: canvas.Canvas) -> None:
     c.showPage()
 
 
-def draw_harness_page(c: canvas.Canvas) -> None:
+def draw_harness_page(c: canvas.Canvas, manifest_path: Path | None = None) -> None:
     page_heading(
         c,
         "The Atlas and Fiat route",
@@ -410,12 +417,15 @@ def draw_harness_page(c: canvas.Canvas) -> None:
     para(c, "Wildcat plugin marketplace package.<br/>Open the repo, install, paste the Atlas prompt.", 573, 160, 201, 46, size=9.5)
     c.linkURL(INSTALL_CLAUDE, (420, 142, 798, 224), relative=0, thickness=0)
 
-    # Every string in this card is derived from docs/harness-classification.json.
+    # Every string in this card is derived from a harness-classification/v1
+    # manifest: `docs/harness-classification.json` by default, or the one the
+    # renderer passed on the argv, so `render_harness_roster.py --manifest X`
+    # draws this page from X rather than from the repository's own document.
     # `para` refuses text that overflows its box, so a roster that outgrows the
     # card fails the build rather than shipping a page with a name cut off it.
     render = roster()
     try:
-        manifest = render.load_manifest()
+        manifest = render.load_manifest(manifest_path)
     except render.RenderError as error:
         # One line naming what the page could not be drawn from. A traceback
         # here would say the same thing and carry an absolute path out with it.
@@ -557,7 +567,7 @@ def draw_trouble_page(c: canvas.Canvas) -> None:
     c.showPage()
 
 
-def build(output: Path) -> None:
+def build(output: Path, manifest_path: Path | None = None) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     pdf = canvas.Canvas(
         str(output),
@@ -571,7 +581,7 @@ def build(output: Path) -> None:
     pdf.setCreator("scripts/build_contributor_guide.py")
     draw_cover(pdf)
     draw_contribution_page(pdf)
-    draw_harness_page(pdf)
+    draw_harness_page(pdf, manifest_path)
     draw_fiat_page(pdf)
     draw_trouble_page(pdf)
     pdf.save()
@@ -580,10 +590,23 @@ def build(output: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    # Omitted, the harness page reads docs/harness-classification.json, which is
+    # what every default build does and what the committed bytes were built
+    # from. The renderer supplies it so that one `--manifest` reaches all three
+    # surfaces rather than two.
+    parser.add_argument("--manifest", type=Path, default=None)
     args = parser.parse_args()
-    build(args.output.resolve())
+    build(
+        args.output.resolve(),
+        None if args.manifest is None else args.manifest.resolve(),
+    )
     size = args.output.resolve().stat().st_size
-    print(f"wrote {args.output.resolve()} ({size} bytes)")
+    # The reportlab version decides these bytes, and the byte count is recorded
+    # in .horos/boundary.json, so a rebuild under a different version turns two
+    # boundary cases red. Nothing else in the tree said which version produced
+    # the committed file; this line does, and the PDF's own /Producer string
+    # carries the same fact inside the artefact.
+    print(f"wrote {args.output.resolve()} ({size} bytes, reportlab {reportlab.Version})")
     return 0
 
 

@@ -1,0 +1,46 @@
+{
+  "schema": "atlas-route-test-evidence/v1",
+  "description": "One read of the Atlas repository at a pinned commit, recorded so the guide's claim about the ChatGPT and Claude bootstrap routes can be checked offline. The claim this supports is the sentence in docs/how-to-help-shoggoth.md that says those two routes are covered by the Atlas launcher tests. Nothing here is generated; it is a transcript of the read named under `read`, and re-reading it is the way to refresh it.",
+  "read": {
+    "date": "2026-09-05",
+    "how": "gh api repos/wildcat-finance/shoggoth-wave-atlas/contents/tests?ref=<commit> and .../contents/tests/rendered-html.test.mjs?ref=<commit>",
+    "network": "read once, here; no test reads the network"
+  },
+  "repository": "wildcat-finance/shoggoth-wave-atlas",
+  "commit": "ce866e3d7e8b489fcb8b70c608f7af72d9b7a673",
+  "commit_date": "2026-09-02T03:35:22Z",
+  "test_files": [
+    {"name": "atlas-issues-transform.test.mjs", "size": 1233, "blob": "cb5ed86a84b26c9b76578dcbd9c90f7744252757"},
+    {"name": "deployment-verification.test.mjs", "size": 4154, "blob": "47ab716be9cadff97c6ce0fa1847f281e22d6a97"},
+    {"name": "rendered-html.test.mjs", "size": 5075, "blob": "a87b5fe7cb30f7be93499780a5429c12d11abbfa"},
+    {"name": "snapshot-validation.test.mjs", "size": 7618, "blob": "7d4da76d6ad1db85e820928487b1a4977664d39c"},
+    {"name": "waves-fallback.test.mjs", "size": 3893, "blob": "c3ddc0cd275704dfc53e5b5d6e5768eb7cc32336"},
+    {"name": "waves-transform.test.mjs", "size": 6572, "blob": "bbff966cc515723c83b754966d6bdec9b3e5a3f8"}
+  ],
+  "route_test": {
+    "path": "tests/rendered-html.test.mjs",
+    "file_sha256": "4dd6c8e55eb728c70dfcc3605775d5760ed882922975bea476a4fb061f6baa0c",
+    "file_lines": 114,
+    "block_first_line": 99,
+    "block_last_line": 114,
+    "block_sha256": "fde7877ff915b8f207b9b05c094938b34808a40c8d67b47d6b10fe191ca3d387",
+    "cited_as": "lines 98 to 114 in the 2026-09-05 runbook amendment, which counts the blank line above the block",
+    "test_name_template": "${provider} redirect carries the API-selected issue and prompt",
+    "providers": ["chatgpt", "claude"],
+    "route_template": "/go/{provider}",
+    "asserts": {
+      "status": 307,
+      "cache_control": "no-store",
+      "destination_origin": {"chatgpt": "https://chatgpt.com", "claude": "https://claude.ai"},
+      "prompt_source": "/api/job?all=true",
+      "prompt_parameter": "q"
+    }
+  },
+  "conclusion": {
+    "route_test_present": true,
+    "test_file_count": 6,
+    "covered_routes": ["/go/chatgpt", "/go/claude"],
+    "claim_supported": "Both bootstrap routes carry a test at this commit, so the guide sentence saying the ChatGPT and Claude routes are covered by the Atlas launcher tests is true as written.",
+    "not_established": "A passing route test says the redirect is built correctly. It says nothing about what the browser chat behind the redirect can do, which is why the guide's next sentence limits the claim to a bootstrap."
+  }
+}
