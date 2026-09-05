@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import re
+import sys
 import tempfile
 import unittest
 
@@ -13,7 +14,20 @@ from repo_contract import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))  # noqa: E402  (locates shoggoth_topology.py)
+
+import shoggoth_topology  # noqa: E402
+
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
+CATALOGUE = ROOT / "FUTUREPROOFING.md"
+ROSTER_START = "## Shared law and controlled delivery"
+ROSTER_END = "## Research programmes worth contributing to"
+
+
+def catalogue_roster():
+    """The catalogue's member entries, without its framing sections."""
+    text = CATALOGUE.read_text(encoding="utf-8")
+    return text.split(ROSTER_START, 1)[1].split(ROSTER_END, 1)[0]
 def discovered_plugins():
     """The universe is what ships, not what a list here remembers.
 
@@ -175,16 +189,24 @@ def plugin_marketplace_surfaces(plugin_root, root):
 
 class MarketplaceProseTests(unittest.TestCase):
     def test_wildcat_labs_identity_contains_the_promise_machine_architecture(self):
+        """The front door's shape, with no count literal anywhere in it.
+
+        This case used to pin `26 members: 17 domain agents and 9 phase agents`
+        while `test_root_readme_names_the_complete_collective`, in this same
+        file, globbed the live tree and pinned 27. Both were green. Every
+        topology claim in `README.md` is now derived and checked by
+        `scripts/check_public_front_door.py` against both marketplace
+        manifests and tree discovery, so no number belongs here.
+        """
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertTrue(readme.startswith('<p align="center">\n'))
         self.assertLess(
             readme.index("./assets/characters/shoggoth.png"),
-            readme.index("# The Shoggoth"),
+            readme.index("# THE SHOGGOTH"),
         )
-        self.assertIn("## What can it do today?", readme)
-        self.assertIn("## How the collective works", readme)
+        self.assertIn("## SO, YOU WANT TO BUILD GOD?", readme)
+        self.assertIn("## WHAT CAN IT DO?", readme)
         self.assertIn("[Promise Machine contract](./PROMISE_MACHINE.md)", readme)
-        self.assertIn("26 members: 17 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
         self.assertIn("Wildcat Labs Skills", marketplace["description"])
@@ -277,37 +299,45 @@ class MarketplaceProseTests(unittest.TestCase):
             self.assertIn("issue", text.lower())
             self.assertIn("comment", text.lower())
 
-    def test_root_readme_maps_every_plugin(self):
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("## Meet the collective", readme)
-        self.assertNotIn("## Current status", readme)
+    def test_the_catalogue_maps_every_plugin(self):
+        """The roster lives in the catalogue, not on the front door.
+
+        `README.md` used to inline all 27 governed skills, which pushed the
+        invitation to contribute below three hundred lines and made the front
+        door the thing a reader had to finish before finding anything.
+        `FUTUREPROOFING.md` is the one complete technical catalogue, and this
+        case follows the assertion there rather than deleting it.
+        """
+        catalogue = (ROOT / "FUTUREPROOFING.md").read_text(encoding="utf-8")
         for name in PLUGINS:
             with self.subTest(plugin=name):
-                self.assertIn("[", readme)
-                self.assertIn("./plugins/%s" % name, readme)
+                self.assertIn("./plugins/%s" % name, catalogue)
 
-    def test_root_readme_names_the_complete_collective(self):
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        roster = readme.split("## Meet the collective", 1)[1].split(
-            "## Try it", 1
-        )[0]
+    def test_the_catalogue_names_the_complete_collective(self):
+        """Every governed skill, worker role and upstream skill is listed.
 
-        governed = sorted(
-            skill
+        The count is an agreement, never a literal. Discovery over the tree and
+        the topology reader that both marketplace manifests feed must return
+        the same governed set, and every member of that set must be linked from
+        the roster. A new plugin landing moves both sides together.
+        """
+        roster = catalogue_roster()
+
+        discovered = {
+            skill.parent.relative_to(ROOT).as_posix()
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
-        )
-        self.assertEqual(len(governed), 27)
-        for skill in governed:
-            plugin = skill.parents[2]
-            target = skill.parent if plugin.name == "hexaemeron" else plugin
-            relative = target.relative_to(ROOT).as_posix()
-            with self.subTest(skill=skill.parent.name):
+        }
+        self.assertEqual(discovered, set(shoggoth_topology.read(ROOT).governed))
+        for directory in sorted(discovered):
+            plugin, skill = directory.split("/")[1], directory.split("/")[3]
+            relative = directory if plugin == "hexaemeron" else f"plugins/{plugin}"
+            with self.subTest(skill=skill):
                 self.assertIn(f"(./{relative})", roster)
 
         for worker in ("Surveyor", "Mason", "Warden", "Scribe"):
             with self.subTest(worker=worker):
-                self.assertIn(f"**{worker}**", roster)
+                self.assertIn(f"### {worker}", roster)
 
         for upstream in (
             "X-Ray",
