@@ -14,7 +14,7 @@ declared rule; it does not quietly skip.
 The other four classes hold ``scripts/probe_harnesses.py``. The schema fixes
 the roster's vocabulary and refuses an unknown name, and its own description
 says so, but it will admit an earned class on an entry that never ran a client.
-ADR-078 puts that enforcement in the probe's classifier, and these are the cases
+ADR-079 puts that enforcement in the probe's classifier, and these are the cases
 that hold it there.
 
 ``ClassifierTests`` sweeps the input matrix for a shape that reaches an earned
@@ -93,7 +93,7 @@ DERIVED_FIELDS = ("version_read",)
 
 REQUIRED_ENTRY_FIELDS = OBSERVATION_FIELDS + DERIVED_FIELDS
 
-# ADR-078 names these two optional in as many words, so the schema may not
+# ADR-079 names these two optional in as many words, so the schema may not
 # quietly start requiring them. A tightening here is a decision the record
 # owns, not an audit fix.
 OPTIONAL_ENTRY_FIELDS = ("testable_here", "probe")
@@ -237,7 +237,7 @@ class SchemaTests(unittest.TestCase):
         self.assert_valid(document)
 
     def test_every_declared_field_is_either_required_or_named_optional(self):
-        # ADR-078 enumerates this entry and states which two fields are
+        # ADR-079 enumerates this entry and states which two fields are
         # optional, so the schema and the record can be read against each
         # other. A field added to `properties` without landing in `required`
         # or in the optional pair is the drift that put a required
@@ -247,7 +247,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(
             declared - required,
             set(OPTIONAL_ENTRY_FIELDS),
-            "a declared field is neither required nor one ADR-078 calls optional",
+            "a declared field is neither required nor one ADR-079 calls optional",
         )
         self.assertEqual(
             required,
@@ -269,7 +269,7 @@ class SchemaTests(unittest.TestCase):
                 self.assert_refused(manifest(record))
 
     def test_the_fields_adr_076_calls_optional_stay_optional(self):
-        # ADR-078 enumerates the entry and calls `testable_here` and `probe`
+        # ADR-079 enumerates the entry and calls `testable_here` and `probe`
         # optional in as many words. Requiring either would put the schema at
         # odds with the record that pins it, so the omission has to keep
         # validating even though the generator always writes `testable_here`.
