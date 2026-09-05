@@ -696,3 +696,13 @@ record. Claim a command ran when it did not.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Section 11's closed enumeration gains its eleventh member, under the rule stated above. A record is refused when `verdict.status` is `guarded` while its `fixed_tree.report` records zero executed tests, because the Boundary clause names a zero-test comparison explicitly and `elenchus.py` classifies a report recording no executed tests as `inconclusive`. The refusal applies on the emit path as well as under `--check`, and is decided from the two fields the record already carries. The parent side needs no counterpart: a parent report recording zero executed tests forces both its counters to zero and is already refused. The enumeration stays closed at eleven members.
+
+**Why.** Warden finding S1-R5-02 in round 5 of step 1. The emitter wrote a record at exit zero whose fixed tree recorded no tests executed, and the tenth member refused only counters above zero, so nothing read the executed count at all. This is the same class as the ninth member and reaches the same producer: a draft with a complete report and every counter zero emitted cleanly, which is precisely the zero-test comparison the Promise refuses to call a guard. Round 5 weighed eight candidate members and declined seven, each with its reason recorded, so this is the enumeration converging rather than growing.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

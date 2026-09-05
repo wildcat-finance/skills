@@ -28,6 +28,7 @@ Codes:
   F014  the verdict is guarded while the fixed tree's own report still fails
   F015  the fixed tree is not the commit the record names as the repair
   F016  the guard names a file absent from the repair's own changed files
+  F017  the verdict is guarded while the fixed tree executed no tests
 
 Exit 0 written or clean, 1 refused, 2 bad invocation.  Every refusal names its
 code and its field on stderr and writes nothing.  The record is staged in the
@@ -440,6 +441,14 @@ def _relation_findings(record) -> list[Finding]:
             f"{fixed['assertion_failures']} assertion failures and "
             f"{fixed['errors']} errors; the Evidence clause requires the guard "
             f"to pass on the fixed tree",
+        ))
+    if fixed["executed"] == 0:
+        findings.append(Finding(
+            "F017", "verdict.status",
+            "is guarded while fixed_tree.report records 0 executed tests; a "
+            "report recording no executed tests classifies as inconclusive, "
+            "and the Boundary does not turn a zero-test comparison into a "
+            "guard",
         ))
     return findings
 

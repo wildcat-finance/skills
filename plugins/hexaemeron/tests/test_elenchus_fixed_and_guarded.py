@@ -445,8 +445,65 @@ class RecordRelations(Harness):
                 self.emit(draft=draft, out=out), "F016", "guard.file")
             self.assertFalse((self.fixture.path / out).exists())
 
+    def test_a_guarded_record_whose_fixed_tree_executed_no_tests_is_refused(self):
+        """A comparison that ran no test is not a guard, on either path.
+
+        F014 reads only counters above zero, so nothing read the executed
+        count at all.  `classify` calls a report recording no executed tests
+        `inconclusive`, and the Boundary names a zero-test comparison
+        explicitly.  Like F015 this reaches emission, because `fixed_tree`
+        is the operator's own rerun the emitter never checks.
+        """
+        empty = {
+            "complete": True, "executed": 0, "assertion_failures": 0,
+            "errors": 0, "skipped": 0,
+        }
+        with self.subTest(path="emit"):
+            draft = draft_for(self.fixture)
+            draft["fixed_tree"]["report"] = dict(empty)
+            out = "records/no-tests-executed.json"
+            self.assertRefused(
+                self.emit(draft=draft, out=out), "F017", "verdict.status")
+            self.assertFalse((self.fixture.path / out).exists())
+        with self.subTest(path="check"):
+            record = self.accepted_record(out="records/genuine-executed.json")
+            record["fixed_tree"]["report"] = dict(empty)
+            path = self.fixture.inputs / "no-tests-executed.json"
+            path.write_text(json.dumps(record), encoding="utf-8")
+            self.assertRefused(
+                self.invoke(["--check", str(path)]), "F017", "verdict.status")
+
+    def test_a_parent_report_executing_no_tests_needs_no_eleventh_counterpart(self):
+        """The parent side is already closed, checked rather than assumed.
+
+        `executed` 0 forces both parent counters to 0, because the count rule
+        refuses outcomes above `executed`; F012 then settles the record.  A
+        parent claiming a failure it never executed is refused earlier still.
+        """
+        with self.subTest(shape="zero counters"):
+            record = self.accepted_record()
+            record["unfixed_parent"]["report"] = {
+                "complete": True, "executed": 0, "assertion_failures": 0,
+                "errors": 0, "skipped": 0,
+            }
+            path = self.fixture.inputs / "parent-executed-none.json"
+            path.write_text(json.dumps(record), encoding="utf-8")
+            self.assertRefused(
+                self.invoke(["--check", str(path)]), "F012", "verdict.status")
+        with self.subTest(shape="a failure it never executed"):
+            record = self.accepted_record(out="records/parent-impossible.json")
+            record["unfixed_parent"]["report"] = {
+                "complete": True, "executed": 0, "assertion_failures": 1,
+                "errors": 0, "skipped": 0,
+            }
+            path = self.fixture.inputs / "parent-impossible.json"
+            path.write_text(json.dumps(record), encoding="utf-8")
+            self.assertRefused(
+                self.invoke(["--check", str(path)]),
+                "F002", "unfixed_parent.report")
+
     def test_a_record_whose_two_trees_differ_and_whose_parent_failed_is_accepted(self):
-        """The six above must not refuse the record the emitter actually writes."""
+        """The seven above must not refuse the record the emitter actually writes."""
         record = self.accepted_record()
         self.assertNotEqual(
             record["unfixed_parent"]["commit"], record["fixed_tree"]["commit"])
@@ -456,6 +513,7 @@ class RecordRelations(Harness):
         self.assertEqual(
             record["fixed_tree"]["report"]["assertion_failures"]
             + record["fixed_tree"]["report"]["errors"], 0)
+        self.assertGreater(record["fixed_tree"]["report"]["executed"], 0)
         self.assertEqual(
             record["fixed_tree"]["commit"], record["repair"]["commit"])
         self.assertIn(record["guard"]["file"], record["repair"]["files"])
@@ -475,7 +533,7 @@ class RecordRelations(Harness):
         code, _out, err = self.invoke(["--check", str(path)])
         self.assertEqual(code, 1, err)
         self.assertIn("F002", err)
-        for code in ("F011", "F012", "F013", "F014", "F015", "F016"):
+        for code in ("F011", "F012", "F013", "F014", "F015", "F016", "F017"):
             self.assertNotIn(code, err)
 
 
