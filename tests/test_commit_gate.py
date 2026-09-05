@@ -1374,6 +1374,111 @@ class HookIndexMutationTests(unittest.TestCase):
                 f"{admitted.stderr!r}",
             )
 
+    def test_the_hook_reads_no_configuration_where_it_reaches_write_tree(self):
+        """S3-R5-01: the five configuration routes, where write-tree runs.
+
+        `git write-tree` is the command an inherited `core.fsmonitor` becomes
+        observable on, and the two anchoring controls refuse before it. Every
+        configuration case above aims `GIT_INDEX_FILE` at an outer repository,
+        which the amended Exit requires of them and the index control now
+        refuses, so those five routes stop short of the command they were
+        written to hold. Here the index is this repository's own and the prefix
+        is empty, so both controls stay silent and the gate reaches its own
+        `git write-tree` with the override still in the environment.
+
+        Each route is driven twice, once where the record names the staged tree
+        and once where it names another, so the answer is the gate's own
+        comparison rather than an anchoring refusal or anything the override
+        chose. The two in-band forms are driven separately: `GIT_CONFIG_COUNT`
+        is what makes the indexed pairs live, and dropping only one of the two
+        would leave the other route open.
+        """
+        with gate_repository() as here:
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            green = git(here, "write-tree").stdout.strip()
+            other = git(here, "rev-parse", "HEAD^{tree}").stdout.strip()
+            self.assertNotEqual(
+                green, other,
+                "the fixture staged nothing, so the refusing half of each "
+                "route would hold nothing",
+            )
+            record = record_path(here)
+
+            script, marker = fsmonitor_script(here.parent)
+            config = config_file_override(here.parent, script)
+            home = here.parent / "home"
+            home.mkdir()
+            (home / ".gitconfig").write_bytes(config.read_bytes())
+            self.assertFalse(
+                marker.exists(), "the fixture itself started the monitor"
+            )
+
+            in_band = config_override(script)
+            routes = (
+                {"GIT_CONFIG_PARAMETERS": in_band["GIT_CONFIG_PARAMETERS"]},
+                {
+                    "GIT_CONFIG_COUNT": in_band["GIT_CONFIG_COUNT"],
+                    "GIT_CONFIG_KEY_0": in_band["GIT_CONFIG_KEY_0"],
+                    "GIT_CONFIG_VALUE_0": in_band["GIT_CONFIG_VALUE_0"],
+                },
+                {"GIT_CONFIG_GLOBAL": str(config)},
+                {"GIT_CONFIG_SYSTEM": str(config)},
+                {"HOME": str(home)},
+            )
+
+            for route in routes:
+                # The index git names for an ordinary commit, and the prefix it
+                # answers from the root of the working tree: the shape both
+                # anchoring controls admit.
+                environment = clean_environment({
+                    "GIT_INDEX_FILE": str(here / ".git" / "index"),
+                    "GIT_PREFIX": "",
+                    **route,
+                })
+
+                record.write_text(f"{green}\n", encoding="utf-8")
+                admitted = run_gate(HOOK_NAME, here, environment)
+
+                self.assertEqual(
+                    admitted.returncode, 0,
+                    f"the gate refused the tree its own record names, so it "
+                    f"never reached write-tree under {route}: "
+                    f"{admitted.stderr}",
+                )
+                self.assertEqual(
+                    refusals(admitted), [],
+                    f"the gate refused a shape both anchoring controls admit "
+                    f"under {route}: {admitted.stderr!r}",
+                )
+                self.assertFalse(
+                    marker.exists(),
+                    f"an inherited configuration override made the gate start "
+                    f"a process nothing in the gate names, via {route}",
+                )
+
+                record.write_text(f"{other}\n", encoding="utf-8")
+                refused = run_gate(HOOK_NAME, here, environment)
+
+                self.assertNotEqual(
+                    refused.returncode, 0,
+                    f"the gate admitted a tree its record does not name under "
+                    f"{route}",
+                )
+                named = refusals(refused)
+                self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+                self.assertIn(
+                    other, named[0],
+                    f"the refusal did not name the recorded tree, so the "
+                    f"commit was not decided on the gate's own comparison "
+                    f"under {route}: {named[0]}",
+                )
+                self.assertFalse(
+                    marker.exists(),
+                    f"an inherited configuration override made the gate start "
+                    f"a process nothing in the gate names, via {route}",
+                )
+
     def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
         """`git rev-parse --git-dir`, not `--git-common-dir`.
 
