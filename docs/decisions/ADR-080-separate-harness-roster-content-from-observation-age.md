@@ -1,4 +1,4 @@
-# Decision: Separate harness roster content from observation age
+# ADR-080: Separate harness roster content from observation age
 
 Stable identity: `adr/separate-harness-roster-content-from-observation-age`.
 
