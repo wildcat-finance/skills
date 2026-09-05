@@ -1225,8 +1225,10 @@ def main(argv=None):
     )
     checker = subparsers.add_parser("check", help="verify the committed boundary")
     checker.add_argument("root", help="directory to check")
-    mapper = subparsers.add_parser("map", help="print a Python file's skeleton")
-    mapper.add_argument("file", help="Python file to map")
+    mapper = subparsers.add_parser(
+        "map", help=f"print a file's skeleton; supports {languages.supported()}"
+    )
+    mapper.add_argument("file", help=f"file to map ({languages.supported()})")
     args = parser.parse_args(argv)
 
     if args.command == "map":
