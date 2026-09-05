@@ -88,9 +88,20 @@ fi
 # at another repository's index, the gate reads it and leaves its staged state
 # alone. Kept is not trusted: the index check below refuses one that is not in
 # the git directory discovery answers.
+#
+# CDPATH is not git's and moves that index check all the same. `cd` searches it
+# for an operand whose first component is neither `.` nor `..`, and `.git` is
+# what git answers for both sides of the check in a plain checkout. Measured on
+# git 2.50.1 with CDPATH naming a directory that holds a `.git`: `commit -a` and
+# `commit -a --amend`, the two shapes whose GIT_INDEX_FILE git makes absolute,
+# were refused on the index cause with that index inside the git directory all
+# along. It opens nothing, because `cd` prints the directory CDPATH found and a
+# two-line answer never equals a one-line one, so the crossing at either depth
+# stays refused. It is dropped for the false refusal.
 unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE \
-    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
+    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+    CDPATH
 
 # Every git call this gate makes goes through here, and nothing else does.
 gate_git() {

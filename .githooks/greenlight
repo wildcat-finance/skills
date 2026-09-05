@@ -50,10 +50,20 @@ set -eu
 # to this script's own git calls through `gate_git` below, because the suite
 # this script runs is not the gate and must keep running in the contributor's
 # own configuration.
+#
+# The anchor below is where this script is, which the paragraph above calls the
+# one thing the environment cannot move. CDPATH moves what `cd` does with it:
+# `cd "$here/.."` has `.githooks` as its first component, so `cd` searches
+# CDPATH for it. Measured on git 2.50.1 with CDPATH naming another clone's root,
+# this script ran that clone's suite and wrote that clone's tree into that
+# clone's record, printing `.git/LAST_GREEN` as though it were this one's.
+# Dropped outright rather than scoped to `gate_git` like the two above, because
+# the `cd` it moves is this script's own; the suite then runs without it too.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
     GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX \
-    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT
+    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+    CDPATH
 
 gate_git() {
     GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git "$@"
