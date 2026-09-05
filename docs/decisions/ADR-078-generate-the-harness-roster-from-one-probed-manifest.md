@@ -1,4 +1,4 @@
-# ADR-077: Generate the harness roster from one probed manifest
+# ADR-078: Generate the harness roster from one probed manifest
 
 ## Status
 
@@ -158,7 +158,7 @@ a silent edit to either.
 ## Numbering, and the stale pointers this leaves behind
 
 This record was written as ADR-074, which was free when the run checked, and it
-collided twice. Pull request 1181 merged
+collided three times. Pull request 1181 merged
 `ADR-074-shape-every-written-record-through-sapheneia.md` into `main`
 fifty-five minutes later, at 2026-09-04T01:40:30Z against this record's own
 commit at 00:45:16Z. `tests/test_decision_records.py` compares numbers against
@@ -167,12 +167,21 @@ ADR-075 was already claimed by open pull request 1185, so the record took 076.
 That number collided too. `main` acquired a different
 `ADR-076-digest-neutral-measured-corpus.md` in `530efcec` at
 2026-09-04T11:07:49+01:00, which is not an ancestor of this branch, and the same
-gate went red at two failures. The record then took 077, which was free on this
-branch and on `origin/main`, whose numbered records run 074, 075 and 076. Ten occurrences moved with it: this file's heading, one full path in the
-schema description, three in the probe and five in the test module. Nothing
-reserves 077 either, so it is rechecked before this step is pushed. Issue 888 is
-rebuilding ADR numbering to assign at merge rather than at authoring, which is
-the general answer to the race; renumbering twice by hand is the local one.
+gate went red at two failures. The record then took 077, and lost that one as well.
+`main` acquired `ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md` in
+`b0b21874` at 2026-09-05T00:23:03+01:00, after this step's audit had closed, and
+the gate went red a third time. The record now takes 078, which is free on this
+branch and on `origin/main`, whose numbered records run 074 to 077. Thirteen
+occurrences moved with it: this file's heading, one full path in the schema
+description, three in the probe, three in the renderer and five in the test
+module. Nothing reserves 078 either, so it is rechecked before this step is
+pushed.
+
+The record that took 077 is the one implementing assign-at-merge. Issue 888 is
+rebuilding ADR numbering to assign a number at merge rather than at authoring,
+which is the general answer to this race, and its own delivery won the third
+round of it. Renumbering three times by hand is the local answer until that
+lands.
 
 The renumbers left pointers behind that no amendment can reach. Between the
 first two events the run's study gained a `hypomnema-design-bridge/v1` block
