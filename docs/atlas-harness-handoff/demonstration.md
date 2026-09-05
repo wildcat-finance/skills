@@ -250,9 +250,10 @@ On the committed tree:
 - `python3 scripts/render_harness_roster.py --check` — exit 0,
   `three surfaces match 6 recorded harnesses`
 - `python3 -m unittest tests.test_harness_manifest -v` — exit 0, 95 tests, OK
-- `python3 scripts/run_checks.py --full` — 28 of 29 checks pass. The one red is
-  `root-suite`, and it is red on two cases that belong to a decision record this
-  step did not write. Both are the ADR-078 collision described below.
+- `python3 scripts/run_checks.py --full` — exit 0, 29 of 29 checks pass. It read
+  28 of 29 when this document was written at `bc0d8b12`: `root-suite` was red on
+  two cases carrying the ADR-078 collision described below, which `311c0a89`
+  then cleared.
 
 `.horos/boundary.json` needed one refresh, and not for the reason the PDF
 suggested. The boundary records the PDF by byte count, and the rebuilt page is
@@ -261,16 +262,16 @@ document to the tree is what moved the `counts` block, so the boundary was
 regenerated with
 `python3 plugins/horos/skills/horos/scripts/horos.py scan . --write`.
 
-## One red that is not this step's
+## The red this step then cleared
 
 `tests/test_decision_records.py` compares this branch's decision-record numbers
-against the default branch, and
+against the default branch. At `bc0d8b12`,
 `docs/decisions/ADR-078-generate-the-harness-roster-from-one-probed-manifest.md`
-now collides with `ADR-078-echo-fiat-required-as-a-filer-set-label.md` on main.
-Two cases fail on it: the collision case itself, and
+collided with `ADR-078-echo-fiat-required-as-a-filer-set-label.md` on main, and
+two cases failed on it: the collision case itself, and
 `test_the_pinned_decision_record_tests_pass`, which runs the first one.
 
-This is neither new work nor a regression from this step:
+The collision was neither new work nor a regression from this step:
 
 - The record was added at `183179ca`, step 3's audit head, and its message
   already reads "renumber the roster record to ADR-078 after a third collision".
@@ -280,7 +281,13 @@ This is neither new work nor a regression from this step:
   that green run and this one. The comparison reads the local ref and does not
   fetch, so the collision appeared when main moved, not when this step committed.
 
-The remedy is to re-pick the number immediately before pushing, because any
-number chosen earlier can collide again while the branch waits. That is a
-push-time action, and this step does not renumber another step's record to
-satisfy its own gate.
+`311c0a89` moved the record to ADR-079, checked free against `origin/main`,
+whose numbered records run 074 to 078, and against every open pull request head.
+Thirteen occurrences moved across five files, and no audit record references the
+number. At that commit `tests.test_decision_records` is 5 of 5 at exit 0 and
+`run_checks.py --full` is 29 of 29 at exit 0.
+
+That was the fourth collision on this record, and three of the four landed while
+the branch was waiting, so any number chosen now can collide again. The number is
+rechecked immediately before the run is merged rather than only before this step
+is pushed. ADR-079's own Numbering section states all four.
