@@ -158,7 +158,7 @@ class CheckedInReleaseTests(unittest.TestCase):
         for prose in (plugin, skill):
             self.assertIn("goldfinch-v0", prose)
         self.assertIn("[Tabularium](./plugins/tabularium)", catalogue)
-        entry = catalogue.split("### Tabularium", 1)[1].split("\n### ", 1)[0]
+        entry = catalogue.split("### TABULARIUM", 1)[1].split("\n### ", 1)[0]
         today, _, missing = " ".join(entry.split()).partition("**Missing.**")
         self.assertIn("supported preserved venue records", today)
         self.assertIn("Compound Phase 1", missing)
