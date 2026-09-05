@@ -1439,6 +1439,39 @@ class SocketHookCompletenessTests(RunnerHarness):
         self.assertEqual(entry["refusal"]["code"], "D074")
         self.assertTrue(entry["repetitions"][0]["commands"][0]["network_attempt"])
 
+    def test_a_denied_socket_is_recorded_even_when_descriptors_are_exhausted(self):
+        # `record` wrote the marker with `os.open`, which needs a free
+        # descriptor. A child that exhausts its descriptor table before it
+        # trips the hook made that open fail; the failure was suppressed, so a
+        # denied socket recorded nothing while the hook still raised, and the
+        # run reported `network_attempt` false with no refusal -- against the
+        # contract's "a child that opens or resolves a socket is refused even
+        # when it swallows the exception and exits 0". The installer now opens
+        # the marker descriptor once, before the child runs, and the write
+        # reuses it, so no free slot is needed and the denied attempt is
+        # recorded whatever the child did to its own descriptor table.
+        code, payload, _events_seen, _target = self.run_argv(
+            [
+                "python3", "-c",
+                "with __import__('contextlib').suppress(BaseException):"
+                " import sys, os, resource, socket;"
+                " print('exhausted');"
+                " sys.stdout.flush();"
+                " resource.setrlimit(resource.RLIMIT_NOFILE,"
+                " (12, resource.getrlimit(resource.RLIMIT_NOFILE)[1]));"
+                " held = [];"
+                " exec('\\nwhile True:\\n try:\\n  held.append(os.open(os.devnull, os.O_RDONLY))"
+                "\\n except OSError:\\n  break');"
+                " exec('\\ntry:\\n socket.socket()\\nexcept PermissionError:\\n pass')",
+            ],
+            ['run: line "exhausted"'],
+            timeout_seconds=25,
+        )
+        self.assertEqual(code, 2)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D074")
+        self.assertTrue(entry["repetitions"][0]["commands"][0]["network_attempt"])
+
 
 class RunnerSelectionTests(RunnerHarness):
     """Only a checked record or the closed public set can be selected."""
