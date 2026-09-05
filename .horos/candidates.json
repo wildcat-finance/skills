@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 17672334,
+    "bytes_blob": 17674420,
     "bytes_generated": 98
   },
   "entries": [
@@ -343,7 +343,7 @@
       "path": "audit/rounds/fiat-ship-the-content-addressed-object-rule-whose-evi.synopsis.md"
     },
     {
-      "bytes": 51146,
+      "bytes": 53232,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
