@@ -37,6 +37,19 @@ SELECTOR_LOWER = "0xa9059cbb"
 SELECTOR_UPPER = "0xDEADBEEF"
 
 
+def fiat_audit_record(rows: int = 1) -> str:
+    body = [
+        "# Fiat audit record",
+        "",
+        "## S1-R2",
+        "",
+        "| id | severity | summary |",
+        "|---|---|---|",
+    ]
+    body.extend(f"| S1-R2-{index:02d} | high | defect |" for index in range(1, rows + 1))
+    return "\n".join(body) + "\n"
+
+
 class BrevitasTests(unittest.TestCase):
     def codes(self, text: str, **kwargs) -> set[str]:
         return {issue.code for issue in brevitas.lint_text(text, **kwargs)}
@@ -99,6 +112,69 @@ class BrevitasTests(unittest.TestCase):
     def test_two_sections(self) -> None:
         text = "# Title\n## One\nx\n## Two\ny\n"
         self.assertIn("B010", self.codes(text, mode="report"))
+
+    def test_fiat_audit_record_suppresses_only_small_schema_structure(self) -> None:
+        for rows in (0, 1, 2):
+            with self.subTest(rows=rows):
+                ordinary = self.codes(fiat_audit_record(rows), mode="report")
+                specialised = self.codes(
+                    fiat_audit_record(rows), mode="fiat-audit-record"
+                )
+                self.assertTrue({"B010", "B011"}.issubset(ordinary))
+                self.assertEqual(ordinary - {"B010", "B011"}, specialised)
+
+    def test_ordinary_modes_do_not_select_the_fiat_audit_exemption(self) -> None:
+        source = fiat_audit_record()
+        for mode in ("auto", "answer", "report"):
+            with self.subTest(mode=mode):
+                codes = self.codes(source, mode=mode)
+                self.assertIn("B010", codes)
+                self.assertIn("B011", codes)
+
+    def test_fiat_audit_record_retains_non_schema_rules(self) -> None:
+        cases = {
+            "B002": VALID_FINDING + "Evidence: extra.\n",
+            "B003": "[High] Claim.\n",
+            "B004": '<!-- brevitas: evidence-exception reason="orphan" -->\n',
+            "B005": '<!-- brevitas: evidence-exception reason="short" -->\n' + VALID_FINDING,
+            "B006": "```text\n" + "\n".join("x" for _ in range(41)) + "\n```\n",
+            "B007": "```text\nunclosed\n",
+            "B009": (
+                '<!-- brevitas: evidence-exception reason="ordered evidence" -->\n'
+                + VALID_FINDING
+                + "Connective prose remains.\n"
+            ),
+            "B020": "You asked me to inspect this.\n",
+            "B021": "Here are the issues:\n- defect\n",
+            "B022": "I will now inspect this.\n",
+            "B023": "**Impact:** Value.\n",
+            "B024": "Notably, this is asserted.\n",
+            "B025": "- defect\nIn summary, unsafe.\n",
+            "B026": "Finding.\nLet me know if you want more.\n",
+            "B027": "This may possibly fail.\n",
+        }
+        for code, source in cases.items():
+            with self.subTest(code=code):
+                self.assertIn(code, self.codes(source, mode="fiat-audit-record"))
+
+        source = "At `src/Foo.sol:42`, 17 calls reach the boundary."
+        self.assertIn(
+            "B030",
+            self.codes(
+                "Evidence omitted.\n",
+                mode="fiat-audit-record",
+                source_text=source,
+            ),
+        )
+
+    def test_parser_accepts_the_explicit_fiat_audit_record_mode(self) -> None:
+        try:
+            parsed = brevitas.build_parser().parse_args(
+                ["--mode", "fiat-audit-record"]
+            )
+        except SystemExit as error:
+            self.fail(f"parser rejected fiat-audit-record with exit {error.code}")
+        self.assertEqual("fiat-audit-record", parsed.mode)
 
     def test_direct_answer_limit(self) -> None:
         text = "\n".join(f"line {index}" for index in range(7))
