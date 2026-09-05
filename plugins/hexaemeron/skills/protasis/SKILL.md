@@ -5,14 +5,15 @@ description: >-
   written: stated assumptions, testable success criteria, a chosen design with
   its trade named, the five discipline questions answered before any build, and
   steps that are discrete, green at both ends, sized for the audit loop and
-  explicit about the gates they incur. Use when a topic is about to enter the
-  study or runbook phase, when a requirement arrives vague or bundles several
-  capabilities, or when deciding whether a runbook is ready to build from. Do
+  explicit about the gates they incur, including a source-bound known-failure
+  inventory when audit history names one. Use when a topic is about to enter
+  the study or runbook phase, when a requirement arrives vague or bundles
+  several capabilities, or when deciding whether a runbook is ready to build from. Do
   not use it to run the controller or write a receipt, which belong to fiat,
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "5.10.0"
+  version: "5.11.0"
 ---
 
 <p align="center">
@@ -37,7 +38,7 @@ discipline questions Protasis requires; Protasis cites their contracts rather
 than copying them. A decision made after the study belongs to Hypomnema's
 recording rules.
 
-Synkrisis may suggest a next owner from repeated validated run observations.
+Synkrisis proposes a next owner from a validated series of run observations.
 That finding still needs a scoped proposition before it can become a study,
 runbook, or framework change.
 
@@ -45,10 +46,11 @@ Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
 **Current state.** Protasis checks the fixed mechanical shape of study and
-runbook prose, and separately checks one closed candidate-by-criterion design
-record at the transition where each item of evidence becomes due.
+runbook prose, one source-bound known-failure inventory, and one closed
+candidate-by-criterion design record at the transition where each item of
+evidence becomes due.
 
-## Refuse these five
+## Refuse these six
 
 1. No study, no runbook. A runbook derived from conversation instead of a
    written study is not a runbook.
@@ -60,6 +62,8 @@ record at the transition where each item of evidence becomes due.
    content they support.
 5. No checked design record, no design lock. A preferred construction in prose
    does not authorise implementation.
+6. No closed known-failure inventory, no production edit. Missing, stale, or
+   unassigned entries cannot be repaired by treating an empty list as clean.
 
 Report a refusal in three parts: what is missing, where you looked, and the one
 action that clears it. Say plainly that the phase is blocked rather than
@@ -204,6 +208,59 @@ be told apart from not having looked.
 
 Cite those five contracts, never restate them. Each owns its own rules and each
 evolves on its own ledger, so a copy here is stale the moment it is written.
+
+### Known-failure inventory
+
+When audit history names failures that implementation must guard before product
+work starts, the study carries exactly one fenced
+`known-failure-inventory` JSON object under schema
+`protasis-known-failure-inventory/v1`. Each `source_views` entry names a
+portable synopsis path and the SHA-256 of both that view and the authoritative
+source named by its header. Each finding has one unique id, a source reference
+whose prefix names a checked view, bounded non-empty locator text, a failure
+statement, closed guard-path set, structural test command, report format and
+path, exact expected verdict `guarded`, fixed-tree command, and one consuming
+runbook step. The locator text is recorded but not interpreted as a line or
+claim proof. The inventory fence is column-zero and blank-line isolated.
+
+The test command is a bounded six-argument invocation: `python3`, one declared
+Python reporter path, `--case`, the finding id, `--report`, and exactly one
+argv equal to `{report}`. Its fixed-tree counterpart differs only in the report
+argument. Each report and derived green path is unique under `.elenchus/`.
+Filesystem-backed uniqueness uses Unicode NFC plus case folding for portable
+alias detection.
+Admitted report formats are `unittest-json-v1`, `forge-junit-v1`, and
+`node-test-json-v1`. The caller supplies an independent expected-id set, or the
+checker uses ids in visible assignment records; each record names a real
+positive, column-zero runbook Step, and the inventory's consuming Steps must
+match. Each assignment belongs to a contiguous nonblank block containing
+assignment lines only, so adjacent prose, image labels, link titles, and
+reference definitions cannot supply one. The only authoritative assignment is
+a visible full line of the form
+``Known-failure assignment: `kf-453-N` -> Step S`` outside fences. Raw HTML,
+comments, and malformed HTML-like bytes outside one-line code spans refuse at
+the runbook boundary. Every square-bracket byte outside a complete one-line
+code span or fenced block also refuses there. The study keeps its separate
+surface rules. Its inventory discovery tolerates unmatched inline-backtick runs
+in ordinary prose, but never uses them to mask bytes. It processes or refuses
+each column-zero fence candidate before that tolerance. Raw HTML, image openers,
+indented fences, bad fence information, unclosed fences, and anything other
+than one isolated inventory block still refuse. Fenced examples use column-zero
+fences. Nested or indented fence candidates refuse. At most 128 findings, 4,096
+aggregate guard paths, 1,024 bytes per path, 4,096 bytes per source reference,
+failure statement, or command, and 16 command arguments are checked. Paths are
+root-relative portable paths without shell metacharacters or Unicode
+whitespace. The checker opens source paths through no-follow, nonblocking
+directory handles. It rereads the study, runbook, views, and sources together
+before returning success.
+
+A non-empty finding set requires `no_known_findings: null`. An empty set needs
+a non-null claim that repeats every checked source id and both digests, names
+one real consuming step, and carries the exact Surveyor assertion
+`no-known-findings`. An empty array alone never establishes readiness. The
+checker reports K000 through K012 and writes no controller state or ledger.
+It establishes structure and current bytes, not that Surveyor found every
+failure or that any guard has run.
 
 ### Design evidence and progressive gates
 
@@ -408,6 +465,7 @@ check over each artefact and require exit 0:
 ```bash
 python3 "$PLUGIN_ROOT/skills/protasis/scripts/protasis.py" --study <study>
 python3 "$PLUGIN_ROOT/skills/protasis/scripts/protasis.py" <runbook>
+python3 "$PLUGIN_ROOT/skills/protasis/scripts/known_failure_inventory.py" <study> <runbook> --repository <root> --expected-id <id> [--expected-id <id> ...]
 python3 "$PLUGIN_ROOT/skills/protasis/scripts/design_evidence.py" <record> --transition <design-lock|step:N|integration>
 ```
 
@@ -426,9 +484,9 @@ shape and complete replacement clauses below. It reports P006 when a present
 version-relations block is open, misplaced, duplicated, oversized or malformed,
 or when a declared target is also pinned to a concrete token outside that
 block. P007 checks a present design-lock block's position, closed rows, schema,
-digest and selected-candidate shape. Codes P000 to P007 and S000 to
-S008 are stable interfaces other
-tools cite. Deliberate exceptions state a reason:
+digest and selected-candidate shape. Codes P000 to P007, S000 to S008, and
+K000 to K012 are stable interfaces other tools cite. Deliberate exceptions
+state a reason:
 `<!-- protasis: allow <why> -->` on the heading line or the line above it.
 Presence and shape are all the parser settles; whether an answer is any good
 stays with the reviewer and the rest of this contract.
@@ -476,6 +534,27 @@ clause. The other three amendment fields remain `Why`, `Steps touched` and
 `Still holding`, in that order. Replacement prose is still an operator claim:
 the mechanical check establishes its shape and source bytes, not that the new
 criterion is correct or its command will pass.
+
+For machine-checked assignment authority, `What changed` is the first nonblank,
+unfenced record after its amendment heading. Its first replacement header
+begins that value. Each later header begins a column-zero paragraph after a
+blank separator. Fenced and inline-code examples are not headers. A
+replacement-like fragment at any other location refuses as ambiguous.
+
+Known-failure assignment records outside every structurally valid complete
+replacement `Exit` clause remain ordinary active authority and stay outside
+generation comparison. Records inside those clauses form source-ordered
+generations. Each generation first passes exact-line, assignment-only-block,
+unique-id, and real-Step checks. Leading empty generations are allowed. The
+first non-empty id-to-Step map locks assignment authority. Every later Exit
+generation, including an empty one, must equal that map; pair order does not
+matter. The lock cannot reset or fall back. Empty, partial, extra, or reassigned
+post-lock generations refuse. A later replacement of another field creates no
+generation. The final Exit generation is combined with the ordinary records,
+while matching earlier generations remain readable history. Step headings come
+only from the baseline before the first real amendment. Malformed amendment or
+replacement boundaries, repeated clauses, and post-amendment Step headings
+refuse before any generation can suppress a record.
 
 The shared amendment scanner checks every real study or runbook amendment's
 calendar date, four ordered non-empty fields, and final-section placement.
@@ -554,6 +633,8 @@ count is not a report.
       mechanically computed frontier under its declared rule.
 - [ ] The runbook's design-lock block matches the record digest and selected
       candidate before Step 1.
+- [ ] When known failures exist, the inventory checker exits zero against the
+      independent expected-id set, exact runbook, and current source views.
 - [ ] Always, ask-first and never each carry concrete entries.
 - [ ] Each step carries goal, entry, exit, files, tests and disciplines.
 - [ ] Every discipline a step names carries the reason it applies.
@@ -578,6 +659,18 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 
 ## Promise Machine contract
 
+### protasis-known-failure-inventory
+
+- Promise: A clean inventory result establishes that one closed `protasis-known-failure-inventory/v1` object matches an independent exact id set, current source and synopsis bytes, portable guard paths, structurally bound commands, admitted reports, and real consuming runbook steps, or carries one digest-bound no-known-findings claim.
+- Evidence: The exact study and runbook bytes, caller or effective runbook expected ids, source and synopsis paths and SHA-256 values, finding fields and assignments, parsed argv, path and count caps, locked replacement-Exit map, stable K000 to K012 result, and focused hostile cases.
+- Evidence classes: checked
+- Boundary: This result establishes bounded structure and byte currency. A `source_ref` prefix selects a checked source view, but its locator text is opaque and does not prove that a cited line, range, or statement supports the failure. The result does not discover unknown failures, judge Surveyor's completeness, execute a guard, classify Elenchus output, write a receipt, or authorise a product edit by itself.
+- Authorises: Carrying the exact checked inventory into runbook derivation and the later Fiat inoculation boundary without inferring an omitted entry or an empty success.
+- Consequence: 1
+- Refuses: An absent, duplicated, open, malformed, non-finite, oversized, stale, unsafe, unassigned, command-drifted, id-mismatched, bracket-bearing runbook, replacement-ambiguous, post-lock generation-drifted, or unbound empty inventory.
+- Recovery: Repair the named K000 to K012 cause in the study, runbook, expected-id set, or source view, then rerun the complete read-only check.
+- Exceptions: none
+
 ### protasis-study-readiness
 
 - Promise: A study accepted by Protasis states the problem, assumptions, current state, boundaries, failure and recovery model, affected versions and success criteria, and locks one candidate through a complete checked `protasis-design-evidence/v1` matrix without predicting evidence that is not yet available.
@@ -592,12 +685,12 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 
 ### protasis-runbook-readiness
 
-- Promise: A runbook accepted by Protasis binds the exact selected design and decomposes the study into ordered steps whose entry, modules, exit commands, files, tests and discipline effects are discrete and provable, and any optional governed-skill version relation has one closed source without a competing concrete target token.
-- Evidence: The accepted study, design-evidence digest and selected candidate, exact runbook and matching design-lock block, `protasis.py` structural result, per-step commands and files, dependency order, optional version-relations block, version boundary and completed pre-receipt checklist.
+- Promise: A runbook accepted by Protasis binds the exact selected design and decomposes the study into ordered steps whose entry, modules, exit commands, files, tests and discipline effects are discrete and provable, and any optional governed-skill version relation has one closed source without a competing concrete target token. When the study carries a known-failure inventory, Fiat must join this result to the clean `protasis-known-failure-inventory` result before product work.
+- Evidence: The accepted study, design-evidence digest and selected candidate, exact runbook and matching design-lock block, `protasis.py` structural result, per-step commands and files, dependency order, optional version-relations block, version boundary, completed pre-receipt checklist and, when present, the clean known-failure inventory result.
 - Evidence classes: checked, inferred, recorded
-- Boundary: Runbook readiness establishes buildable specification content, the design lock, and the lexical shape of a declared version relation. It does not establish correct implementation, later conformance evidence, command success, relation suitability, a selected version or integration base, audit closure or delivery completion.
-- Authorises: Starting implementation at the first step while using the study and runbook as the change-control boundary.
+- Boundary: Runbook readiness establishes buildable specification content, the design lock, and the lexical shape of a declared version relation. It does not establish correct implementation, later conformance evidence, command success, relation suitability, a selected version or integration base, audit closure or delivery completion. When an inventory is present, runbook readiness alone never authorises a product edit.
+- Authorises: Entering controller-governed runbook execution at the first step and, when an inventory is present, its required inoculation gate.
 - Consequence: 1
-- Refuses: A missing or mismatched design lock, a step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design, receipt language with no evidence command, or a malformed, ambiguous or concretely contradicted version relation.
+- Refuses: A missing or mismatched design lock, a step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design, receipt language with no evidence command, an applicable inventory without a clean joined result, or a malformed, ambiguous or concretely contradicted version relation.
 - Recovery: Split or reorder the failing step, supply its exact evidence and rerun both the mechanical check and the full content review.
 - Exceptions: none

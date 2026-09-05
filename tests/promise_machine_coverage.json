@@ -641,10 +641,10 @@
       "selector": "test_source_subject_mismatch_is_refused"
     },
     "brevitas-structure-m": {
-      "claim": "An over-budget finding is refused.",
+      "claim": "Ordinary modes do not select the Fiat audit-record exemption.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_over_budget_finding"
+      "selector": "test_ordinary_modes_do_not_select_the_fiat_audit_exemption"
     },
     "brevitas-structure-o": {
       "claim": "A structurally clean draft does not establish factual accuracy.",
@@ -653,22 +653,22 @@
       "selector": "test_clean_structure_does_not_establish_factual_accuracy"
     },
     "brevitas-structure-p": {
-      "claim": "A valid finding satisfies the mechanical structure budget.",
+      "claim": "The explicit Fiat audit-record mode suppresses only the two schema-owned cardinalities.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_valid_finding"
+      "selector": "test_fiat_audit_record_suppresses_only_small_schema_structure"
     },
     "brevitas-structure-r": {
-      "claim": "Removing the excess connective line clears the same structure check.",
+      "claim": "The parser admits the exact explicit Fiat audit-record mode.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_over_budget_finding_recovers_after_compression"
+      "selector": "test_parser_accepts_the_explicit_fiat_audit_record_mode"
     },
     "brevitas-structure-s": {
-      "claim": "A report whose structure disagrees with the selected mode is refused.",
+      "claim": "The Fiat audit-record mode retains every non-schema structural rule.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_two_sections"
+      "selector": "test_fiat_audit_record_retains_non_schema_rules"
     },
     "chunk-markdown-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -1599,6 +1599,31 @@
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
       "path": "plugins/probitas/tests/test_statement.py",
       "selector": "test_stale_case_changes_only_the_mutated_input_digest"
+    },
+    "protasis-inventory-m": {
+      "claim": "An inventory with a missing required field is refused instead of treated as complete.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_top_level_shape_and_schema_are_closed"
+    },
+    "protasis-inventory-o": {
+      "claim": "An empty finding list remains unavailable as readiness without a digest-bound no-known-findings claim.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_empty_inventory_requires_the_closed_digest_bound_claim"
+    },
+    "protasis-inventory-p": {
+      "claim": "The committed study inventory equals its fixture and the exact seven-id checker command accepts current sources and runbook steps.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_committed_study_fixture_and_exact_checker_command_have_parity"
+    },
+    "protasis-inventory-r": {
+      "claim": "Unreadable and oversized inputs refuse with one bounded code and remain repairable by replacing the named input and rerunning.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_unreadable_or_oversized_inputs_refuse"
+    },
+    "protasis-inventory-s": {
+      "claim": "Changed source or synopsis digests cannot inherit an earlier inventory result.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_source_and_view_digest_drift_refuse_separately"
     },
     "protasis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -3167,6 +3192,22 @@
     },
     {
       "cases": {
+        "M": "protasis-inventory-m",
+        "O": "protasis-inventory-o",
+        "P": "protasis-inventory-p",
+        "R": "protasis-inventory-r",
+        "S": "protasis-inventory-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "protasis-known-failure-inventory",
+      "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "protasis-m",
         "O": "protasis-o",
         "P": "protasis-p",
@@ -4502,7 +4543,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "3798b07566de7fce244a1ac78dd1d7ca4ce1bf4fb65263143f1bc1a59a73dac6",
+      "sha256": "916bca70d4f3f7d672e680599d0bc27a52b8e89b97b831c607dcb4ad247ebe53",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
