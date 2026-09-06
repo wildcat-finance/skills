@@ -17,7 +17,7 @@ Codes:
   F004  the verdict is not guarded
   F005  the draft is not one closed draft object
   F006  the result is not one closed elenchus.py result carrying a report
-  F007  the guard names a test absent from the repair's changed test files
+  F007  guard.file is absent from the repair's changed test files
   F008  the parent commit could not be re-derived from the result's ref
   F009  the output path is not a free symlink-free relative worktree descendant,
         or the record could not be written there
@@ -29,6 +29,15 @@ Codes:
   F015  the fixed tree is not the commit the record names as the repair
   F016  the guard names a file absent from the repair's own changed files
   F017  the verdict is guarded while the fixed tree executed no tests
+  F018  a segment of guard.test does not occur as a whole word in guard.file
+        at the repair commit, or that blob cannot be read within the input cap
+  F019  repair.files omits a changed test file the comparison used
+
+Two rule families.  `F007`, `F010`, `F018` and `F019` are emit-path rules:
+each is decided against the result or the repository, evidence the emitter
+holds only while it emits, so `--check` never runs any of them and a record
+carries no trace of them.  The rest are carried-field rules a record settles
+on its own, which is what `--check` decides and what `clean` means.
 
 Exit 0 written or clean, 1 refused, 2 bad invocation.  Every refusal names its
 code and its field on stderr and writes nothing.  The record is staged in the
@@ -496,7 +505,7 @@ def draft_findings(draft) -> list[Finding]:
 
 
 def result_findings(result) -> list[Finding]:
-    """The `elenchus.py --format json` half, read for four values only."""
+    """The `elenchus.py --format json` half, read for five values only."""
     if (
         not isinstance(result, dict)
         or not set(RESULT_REQUIRED) <= set(result)
@@ -585,6 +594,68 @@ def commit_and_parent(repo: Path, ref: str) -> tuple[str, str] | None:
 
 def tracked(repo: Path, relative: str) -> bool:
     return git(repo, "ls-files", "--error-unmatch", "--", relative) is not None
+
+
+def guard_blob(repo: Path, commit: str, relative: str) -> bytes | None:
+    """The bytes of `relative` at `commit`, or None when they cannot be bound.
+
+    Two fixed-argv reads with no shell.  The object name is a full
+    hexadecimal commit, a colon and a path that passed `_relative_path`, so
+    it never begins with a dash.  `git cat-file -s` runs first and bounds the
+    read: a blob over `MAX_INPUT_BYTES` is refused before `git cat-file blob`
+    is started, and an object that is absent or not a blob fails either read.
+    The bytes are returned for searching and are never decoded, executed or
+    printed.
+    """
+    if COMMIT.fullmatch(commit) is None or not _relative_path(relative):
+        return None
+    name = f"{commit}:{relative}"
+    try:
+        sized = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "-s", name],
+            capture_output=True, check=False,
+        )
+    except OSError:
+        return None
+    if sized.returncode != 0:
+        return None
+    try:
+        size = int(sized.stdout.decode("ascii").strip())
+    except (UnicodeDecodeError, ValueError):
+        return None
+    if size < 0 or size > MAX_INPUT_BYTES:
+        return None
+    try:
+        read = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "blob", name],
+            capture_output=True, check=False,
+        )
+    except OSError:
+        return None
+    if read.returncode != 0 or len(read.stdout) > MAX_INPUT_BYTES:
+        return None
+    return read.stdout
+
+
+def unbound_segment(name: str, blob: bytes) -> str | None:
+    """The first `[.:]`-split segment of `name` absent from `blob`, or None.
+
+    "Names the test inside that file" means whole-word occurrence: each
+    segment must appear in the bytes with no identifier character on either
+    side, `(?<![A-Za-z0-9_])segment(?![A-Za-z0-9_])`.  A name that occurs only
+    in a comment passes; a module-qualified name whose module segments do not
+    occur in the file is refused, and the operator drops the prefix.  This is
+    not a parsed definition, so one rule covers every runner format
+    `elenchus.py` accepts instead of binding Python alone.
+    """
+    for segment in re.split(r"[.:]", name):
+        pattern = (
+            rb"(?<![A-Za-z0-9_])" + re.escape(segment.encode("ascii"))
+            + rb"(?![A-Za-z0-9_])"
+        )
+        if re.search(pattern, blob) is None:
+            return segment
+    return None
 
 
 def prepare_output_path(repo: Path, raw: str) -> tuple[Path | None, Finding | None]:
@@ -699,27 +770,56 @@ def emit(repo: Path, draft_path: Path, result_path: Path, out: str) -> tuple[lis
             f"{draft['guard']['file']} is absent from the repair's changed test "
             f"files, so the Boundary's named guard is not the one that was compared",
         )], None
+    # F019 is decided here, from the same two inputs as F007, and held rather
+    # than returned: `repair.files` is also what F016 reads against
+    # `guard.file` once the record is composed, so a draft failing both names
+    # both, and the held refusal still stops the emit before any write.
+    held: list[Finding] = []
+    omitted = [name for name in result["tests"] if name not in draft["repair"]["files"]]
+    if omitted:
+        held.append(Finding(
+            "F019", "repair.files",
+            f"omits {', '.join(omitted)} from result.tests; every changed test "
+            f"file the comparison used must be one the repair declares",
+        ))
 
     resolved = commit_and_parent(repo, result["ref"])
     if resolved is None:
-        return [Finding(
+        return [*held, Finding(
             "F008", "unfixed_parent.commit",
             f"git rev-parse {result['ref']}^{{commit}} {result['ref']}^ named "
             f"no commit and parent in {repo}",
         )], None
     fixed, parent = resolved
     if fixed != draft["repair"]["commit"]:
-        return [Finding(
+        return [*held, Finding(
             "F010", "unfixed_parent.commit",
             f"{result['ref']} resolves to {fixed}, which is not the "
             f"{draft['repair']['commit']} the draft names as the repair, so the "
             f"derived parent is not the repair's parent",
         )], None
+    guard_file, guard_test = draft["guard"]["file"], draft["guard"]["test"]
+    blob = guard_blob(repo, fixed, guard_file)
+    if blob is None:
+        return [*held, Finding(
+            "F018", "guard.test",
+            f"cannot be bound: {guard_file} at {fixed} is not one blob of at "
+            f"most {MAX_INPUT_BYTES} bytes, so {guard_test} names no test "
+            f"inside that file",
+        )], None
+    absent = unbound_segment(guard_test, blob)
+    if absent is not None:
+        return [*held, Finding(
+            "F018", "guard.test",
+            f"{absent} does not occur in {guard_file} at {fixed}; the "
+            f"Boundary's named guard is a test that file holds, and a name it "
+            f"never contains is not that guard",
+        )], None
 
     record = compose(draft, result, parent)
     composed = record_findings(record)
-    if composed:
-        return composed, None
+    if held or composed:
+        return [*held, *composed], None
 
     target, refusal = prepare_output_path(repo, out)
     if refusal is not None:

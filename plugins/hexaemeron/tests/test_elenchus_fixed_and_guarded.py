@@ -152,6 +152,15 @@ class Fixture:
             "repair the mechanism",
             {GUARD_FILE: "# the guard\n", "src/widget.py": "# the fix\n"},
         )
+        # F018 binds `guard.test` to the guard file's blob at the repair commit
+        # and not to the worktree copy, so the repair is amended to commit the
+        # regression test itself while the worktree keeps the two-word body
+        # the write-boundary cases read back.
+        (self.path / GUARD_FILE).write_text(REGRESSION_TEST, encoding="utf-8")
+        self.run("add", "-A")
+        self.run("-c", "commit.gpgsign=false", "commit", "--quiet", "--amend", "--no-edit")
+        self.repair = self.run("rev-parse", "HEAD").strip()
+        (self.path / GUARD_FILE).write_text("# the guard\n", encoding="utf-8")
         self.inputs = self.path / "inputs"
         self.inputs.mkdir()
 
@@ -462,6 +471,102 @@ class GuardBinding(Harness):
         record = self.accepted_record()
         self.assertEqual(record["guard"], {"file": GUARD_FILE, "test": GUARD_TEST})
 
+    def test_a_guard_test_absent_from_the_guard_file_at_the_repair_is_refused(self):
+        """Step 3 round 2 of the #1275 run emitted this draft at exit 0.
+
+        F018 reads the guard file's blob at the repair commit, so the refusal
+        names the first absent segment, the file and the commit, and it runs
+        before the output path is prepared, so no directory is created.
+        """
+        draft = draft_for(self.fixture)
+        draft["guard"]["test"] = "NoSuchClass.test_this_test_does_not_exist_anywhere"
+        out = "records/guard-test-absent.json"
+        outcome = self.emit(draft=draft, out=out)
+        self.assertRefused(outcome, "F018", "guard.test")
+        _code, _stdout, err = outcome
+        self.assertIn("NoSuchClass does not occur", err)
+        self.assertIn(GUARD_FILE, err)
+        self.assertIn(self.fixture.repair, err)
+        self.assertFalse((self.fixture.path / out).exists())
+        self.assertFalse((self.fixture.path / "records").exists())
+
+    def test_a_module_qualified_name_whose_module_segments_are_absent_is_refused(self):
+        """The operator drops the prefix; the file never spells its own module."""
+        draft = draft_for(self.fixture)
+        draft["guard"]["test"] = f"tests.test_widget.{GUARD_TEST}"
+        out = "records/module-qualified.json"
+        outcome = self.emit(draft=draft, out=out)
+        self.assertRefused(outcome, "F018", "guard.test")
+        self.assertIn("tests does not occur", outcome[2])
+        self.assertFalse((self.fixture.path / out).exists())
+
+    def test_a_name_whose_every_segment_occurs_as_a_whole_word_emits(self):
+        for index, name in enumerate((
+            GUARD_TEST,
+            "test_negative_width_is_refused",
+            "WidgetRegression:test_negative_width_is_refused",
+        )):
+            with self.subTest(name=name):
+                draft = draft_for(self.fixture)
+                draft["guard"]["test"] = name
+                out = f"records/whole-word-{index}.json"
+                code, _stdout, err = self.emit(draft=draft, out=out)
+                self.assertEqual(code, 0, err)
+                record = json.loads(
+                    (self.fixture.path / out).read_text(encoding="utf-8"))
+                self.assertEqual(record["guard"]["test"], name)
+
+    def test_a_segment_occurring_only_inside_a_longer_identifier_is_refused(self):
+        """Whole-word occurrence: a prefix of the real test name is not the name."""
+        draft = draft_for(self.fixture)
+        draft["guard"]["test"] = "WidgetRegression.test_negative_width"
+        out = "records/prefix-only.json"
+        outcome = self.emit(draft=draft, out=out)
+        self.assertRefused(outcome, "F018", "guard.test")
+        self.assertIn("test_negative_width does not occur", outcome[2])
+        self.assertFalse((self.fixture.path / out).exists())
+
+    def test_a_guard_file_blob_over_the_input_cap_is_refused(self):
+        """`git cat-file -s` bounds the read before `git cat-file blob` runs."""
+        big = REGRESSION_TEST + "# " + "x" * emitter.MAX_INPUT_BYTES + "\n"
+        repair = self.fixture.commit("a guard too large to bind", {GUARD_FILE: big})
+        draft = draft_for(self.fixture)
+        draft["repair"]["commit"] = repair
+        draft["fixed_tree"]["commit"] = repair
+        result = result_for(self.fixture, ref=repair)
+        out = "records/oversized-guard.json"
+        argv_seen = []
+        original = emitter.subprocess.run
+
+        def observe(argv, **kwargs):
+            argv_seen.append(list(argv))
+            return original(argv, **kwargs)
+
+        with mock.patch.object(emitter.subprocess, "run", observe):
+            outcome = self.emit(draft=draft, result=result, out=out)
+        self.assertRefused(outcome, "F018", "guard.test")
+        self.assertIn(str(emitter.MAX_INPUT_BYTES), outcome[2])
+        self.assertFalse((self.fixture.path / out).exists())
+        cat_file = [argv[argv.index("cat-file") + 1] for argv in argv_seen if "cat-file" in argv]
+        self.assertEqual(cat_file, ["-s"])
+
+    def test_a_guard_file_absent_or_not_a_blob_at_the_repair_is_refused(self):
+        """A path the result names is not thereby a blob the emitter can bind."""
+        for shape, guard_file in (
+            ("absent from the commit", "tests/test_missing.py"),
+            ("a directory", "tests"),
+        ):
+            with self.subTest(shape=shape):
+                draft = draft_for(self.fixture)
+                draft["guard"]["file"] = guard_file
+                draft["repair"]["files"] = ["src/widget.py", guard_file]
+                result = result_for(self.fixture, tests=[guard_file])
+                out = f"records/{guard_file.replace('/', '-')}.json"
+                outcome = self.emit(draft=draft, result=result, out=out)
+                self.assertRefused(outcome, "F018", "guard.test")
+                self.assertIn(guard_file, outcome[2])
+                self.assertFalse((self.fixture.path / out).exists())
+
 
 class Verdicts(Harness):
     def test_each_state_other_than_guarded_is_refused_at_emission(self):
@@ -661,6 +766,53 @@ class RecordRelations(Harness):
         self.assertIn("F002", err)
         for code in ("F011", "F012", "F013", "F014", "F015", "F016", "F017"):
             self.assertNotIn(code, err)
+
+    def test_a_repair_omitting_a_changed_test_file_is_refused_at_emit(self):
+        """Step 1 round 6 of the #1275 run, S1-R6-02, emitted this draft at exit 0.
+
+        F019 reads `result["tests"]` against `repair.files` directly after
+        F007, names every missing path, and runs before the output path is
+        prepared, so no directory is created.
+        """
+        result = result_for(
+            self.fixture,
+            tests=[GUARD_FILE, "tests/test_other.py", "tests/test_third.py"],
+        )
+        out = "records/repair-files-short.json"
+        outcome = self.emit(result=result, out=out)
+        self.assertRefused(outcome, "F019", "repair.files")
+        _code, _stdout, err = outcome
+        self.assertIn("tests/test_other.py", err)
+        self.assertIn("tests/test_third.py", err)
+        self.assertNotIn(GUARD_FILE, err)
+        self.assertFalse((self.fixture.path / out).exists())
+        self.assertFalse((self.fixture.path / "records").exists())
+
+    def test_check_still_accepts_an_unbound_guard_test_and_a_short_repair_files(self):
+        """The stated boundary, not a defect: `--check` runs no emit-path rule.
+
+        F018 needs the guard file's blob and F019 needs `result["tests"]`,
+        and a record carries neither, so `clean` excludes both by
+        construction.  A record whose `guard.test` no file holds and whose
+        `repair.files` omits a test file the comparison used reads `clean`,
+        exactly as it did before the two rules existed.
+        """
+        result = result_for(self.fixture, tests=[GUARD_FILE, "tests/test_other.py"])
+        draft = draft_for(self.fixture)
+        draft["repair"]["files"] = ["src/widget.py", GUARD_FILE, "tests/test_other.py"]
+        out = "records/genuine-two-tests.json"
+        code, _stdout, err = self.emit(draft=draft, result=result, out=out)
+        self.assertEqual(code, 0, err)
+        record = json.loads((self.fixture.path / out).read_text(encoding="utf-8"))
+        record["guard"]["test"] = "NoSuchClass.test_this_test_does_not_exist_anywhere"
+        record["repair"]["files"] = ["src/widget.py", GUARD_FILE]
+        path = self.fixture.inputs / "unbound-but-clean.json"
+        path.write_text(json.dumps(record), encoding="utf-8")
+        code, stdout, err = self.invoke(["--check", str(path)])
+        self.assertEqual(code, 0, err)
+        self.assertIn("clean", stdout)
+        self.assertNotIn("F018", err)
+        self.assertNotIn("F019", err)
 
 
 class ParentDerivation(Harness):
