@@ -66,11 +66,16 @@
     "evidence_classes": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 16,
+      "maxItems": 3,
       "uniqueItems": true,
       "items": {
-        "$ref": "#/$defs/name"
-      }
+        "enum": [
+          "boundary-blocks",
+          "logs",
+          "traces"
+        ]
+      },
+      "description": "The evidence classes this plan collects, a non-empty subset of the three the collector can request, in the order it requests them. The collector issues no request and opens no journal for a class the plan omits; the release names an omitted class as a coverage gap with its reason. The collector refuses a plan that omits boundary-blocks, because every shard is checkpointed by its boundary block's hash."
     },
     "finality": {
       "$ref": "#/$defs/finality"
@@ -163,10 +168,12 @@
               ]
             },
             "block_number": {
-              "$ref": "#/$defs/block"
+              "$ref": "#/$defs/block",
+              "description": "The boundary block the plan pins. The collector reads this block by number before any shard and refuses unless its hash equals block_hash. Under finalized or safe it then reads that tag and refuses unless the tag's number is at or above this one, so the plan stays valid while the tag advances and fails only when the boundary block leaves the chain. The interval's end must not be above this block."
             },
             "block_hash": {
-              "$ref": "#/$defs/hash"
+              "$ref": "#/$defs/hash",
+              "description": "The hash the boundary block carried when the plan was written. A provider reporting another hash for the same number is a boundary that left the chain, and the collector refuses by name with an error receipt."
             }
           }
         },
@@ -188,10 +195,12 @@
               "minimum": 1
             },
             "block_number": {
-              "$ref": "#/$defs/block"
+              "$ref": "#/$defs/block",
+              "description": "The boundary block the plan pins. The collector reads this block by number before any shard and refuses unless its hash equals block_hash. Under finalized or safe it then reads that tag and refuses unless the tag's number is at or above this one, so the plan stays valid while the tag advances and fails only when the boundary block leaves the chain. The interval's end must not be above this block."
             },
             "block_hash": {
-              "$ref": "#/$defs/hash"
+              "$ref": "#/$defs/hash",
+              "description": "The hash the boundary block carried when the plan was written. A provider reporting another hash for the same number is a boundary that left the chain, and the collector refuses by name with an error receipt."
             }
           }
         }

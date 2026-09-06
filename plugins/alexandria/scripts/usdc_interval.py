@@ -8,9 +8,9 @@ exercised offline against a fixture provider and no test opens a socket.
 
 The loop is the one `docs/compound-v3-harvest.md` specifies. It binds the end
 boundary under a named finality policy before it asks for a shard, walks the
-plan in bounded shards, checkpoints only after the bytes are fsynced, and
-rewinds to the last remembered boundary that still matches when a hash has
-changed under it.
+plan in bounded shards requesting only the evidence classes the plan declares,
+checkpoints only after the bytes are fsynced, and rewinds to the last
+remembered boundary that still matches when a hash has changed under it.
 """
 
 from __future__ import annotations
@@ -66,6 +66,29 @@ RELEASE_NAME = "usdc-interval-v0"
 
 FINALITY_TAGS = {"finalized": "finalized", "safe": "safe"}
 TIMESTAMP_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+PLUGIN_MANIFEST = Path(__file__).resolve().parent.parent / ".claude-plugin" / "plugin.json"
+
+
+def package_version(manifest=PLUGIN_MANIFEST) -> str:
+    """The delivery package version, read from the plugin manifest and nowhere else."""
+    document = load_bytes(
+        read_regular(Path(manifest), "plugin manifest", MAX_CONTROL_BYTES), "plugin manifest"
+    )
+    version = document.get("version") if isinstance(document, dict) else None
+    if not isinstance(version, str) or VERSION_RE.fullmatch(version) is None:
+        raise AlexandriaError("the plugin manifest carries no package version")
+    return version
+
+
+# The headers every request carries, fixed at import. Two of the five providers
+# the study probed answer HTTP 403 to Python's default User-Agent. The value is
+# built from the package version and from nothing in the environment, so no
+# header can carry a credential and a provider that requires one is out of
+# scope.
+PACKAGE_VERSION = package_version()
+USER_AGENT = f"alexandria-usdc-interval/{PACKAGE_VERSION}"
+REQUEST_HEADERS = {"Content-Type": "application/json", "User-Agent": USER_AGENT}
 
 
 class TransportError(AlexandriaError):
@@ -96,7 +119,7 @@ class HttpsTransport:
         message = urllib.request.Request(
             self._endpoint,
             data=payload,
-            headers={"Content-Type": "application/json"},
+            headers=dict(REQUEST_HEADERS),
             method="POST",
         )
         try:
@@ -118,14 +141,33 @@ def request_identifier(shard: int, name: str) -> int:
 
 
 def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
+    """The requests one shard makes: one per declared class, in the plan's order."""
     proxy = plan["proxy"]
     start = hex(shard["start"])
     end = hex(shard["end"])
-    return [
-        ("boundary-blocks", "eth_getBlockByNumber", [end, False]),
-        ("logs", "eth_getLogs", [{"address": proxy, "fromBlock": start, "toBlock": end}]),
-        ("traces", "trace_filter", [{"fromBlock": start, "toAddress": [proxy], "toBlock": end}]),
-    ]
+    requests = {
+        "boundary-blocks": ("eth_getBlockByNumber", [end, False]),
+        "logs": ("eth_getLogs", [{"address": proxy, "fromBlock": start, "toBlock": end}]),
+        "traces": ("trace_filter", [{"fromBlock": start, "toAddress": [proxy], "toBlock": end}]),
+    }
+    return [(name, *requests[name]) for name in plan["evidence_classes"]]
+
+
+def declared_classes(plan) -> tuple:
+    """The plan's evidence classes, which must include the shard boundary class.
+
+    Every shard is checkpointed and rewound by its boundary block's hash, and
+    every release names that hash, so a plan that omits `boundary-blocks` is one
+    this collector cannot walk; it refuses by name rather than reading a class
+    the plan did not declare.
+    """
+    classes = tuple(plan["evidence_classes"])
+    if "boundary-blocks" not in classes:
+        raise AlexandriaError(
+            "the plan must declare the boundary-blocks evidence class; every shard "
+            "is bound by its boundary block"
+        )
+    return classes
 
 
 class Collector:
@@ -135,6 +177,7 @@ class Collector:
         validate_plan(plan)
         self.plan = plan
         self.digest = plan_digest(plan)
+        self.classes = declared_classes(plan)
         self.transport = transport
         self.provider = plan["provider"]
         self.staging = Staging(staging_root, plan)
@@ -249,38 +292,66 @@ class Collector:
 
     # -- the loop ---------------------------------------------------------
 
-    def bind_finality(self) -> dict:
-        """Read the boundary the plan's named policy points at, before any shard."""
-        policy = self.plan["finality"]["policy"]
-        if policy == "confirmations":
-            tag = hex(_number(self.plan["finality"]["block_number"]))
-        else:
-            tag = FINALITY_TAGS[policy]
-        payload = request_bytes(0, "eth_getBlockByNumber", [tag, False])
+    def _finality_header(self, block, label: str) -> dict:
+        """One bounded header read on the finality path, with its own receipt on refusal."""
+        payload = request_bytes(0, "eth_getBlockByNumber", [block, False])
         self._spend(len(payload))
         try:
-            data = self.transport.request(payload, f"finality boundary under {policy}")
+            data = self.transport.request(payload, label)
         except AlexandriaError:
             self.record_error(-1, "finality", "transport")
             raise
         self._spend(len(data))
-        envelope = load_raw_json(
-            data, "finality boundary", max_bytes=MAX_RAW_COMPONENT_BYTES,
-            max_nodes=MAX_RESPONSE_NODES, preserve_integers=True,
-        )
+        try:
+            envelope = load_raw_json(
+                data, label, max_bytes=MAX_RAW_COMPONENT_BYTES,
+                max_nodes=MAX_RESPONSE_NODES, preserve_integers=True,
+            )
+        except AlexandriaError:
+            self.record_error(-1, "finality", "malformed-response")
+            raise
         header = envelope.get("result") if isinstance(envelope, dict) else None
         if not isinstance(header, dict):
             self.record_error(-1, "finality", "no-result")
-            raise AlexandriaError("the finality boundary response carries no header")
+            raise AlexandriaError(f"the {label} response carries no header")
+        return header
+
+    def bind_finality(self) -> dict:
+        """Bind the plan's boundary block before any shard, surviving a moved tag.
+
+        The plan's boundary block is read by number and its hash must equal the
+        plan's: that is the claim the release makes. Under `finalized` or
+        `safe`, the tag is then read and its number must be at or above the
+        boundary. The tag itself moves every epoch, so a plan written before
+        the run, or resumed after a pause, stays valid for as long as its
+        boundary block stays on the chain, which is what the policy promises.
+        A boundary that left the chain refuses by name with a receipt.
+        """
         declared = self.plan["finality"]
+        policy = declared["policy"]
+        number = _number(declared["block_number"])
+        header = self._finality_header(hex(number), f"finality boundary block {number}")
         if header.get("hash") != declared["block_hash"]:
+            self.record_error(-1, "finality", "boundary-hash-mismatch", number)
             raise AlexandriaError(
-                f"the {policy} boundary the provider reports does not match the plan"
+                f"block {number} does not match the plan's {policy} boundary hash; "
+                "the boundary block is no longer on the chain the plan was written against"
             )
-        if _hex(header.get("number"), "finality boundary number") != _number(declared["block_number"]):
+        if _hex(header.get("number"), "finality boundary number") != number:
+            self.record_error(-1, "finality", "boundary-number-mismatch", number)
             raise AlexandriaError(
-                f"the {policy} boundary block number does not match the plan"
+                f"the header returned for block {number} carries another block number"
             )
+        if policy in FINALITY_TAGS:
+            tag = FINALITY_TAGS[policy]
+            current = self._finality_header(tag, f"finality boundary under {policy}")
+            current_number = _hex(current.get("number"), f"{policy} tag block number")
+            if current_number < number:
+                self.record_error(-1, "finality", "boundary-not-yet-final", current_number)
+                raise AlexandriaError(
+                    f"the {policy} tag stands at block {current_number}, below the plan's "
+                    f"boundary block {number}"
+                )
         return header
 
     def _boundary_hash(self, shard_index: int) -> str:
@@ -331,7 +402,7 @@ class Collector:
         self.bind_finality()
         start = self._settle_start()
         shards = self.plan["shards"]
-        counts = {name: 0 for name in EVIDENCE_CLASSES}
+        counts = {name: 0 for name in self.classes}
         for index in range(start, len(shards)):
             shard = shards[index]
             boundary = None
@@ -374,6 +445,7 @@ class Reconciler:
         if any(character in provider_class for character in ("://", "@")):
             raise AlexandriaError("the second provider class must not carry an endpoint")
         self.provider_class = provider_class
+        self.classes = declared_classes(plan)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
         directory = self.root / RECONCILIATION_DIRECTORY
@@ -388,7 +460,7 @@ class Reconciler:
     def _staged(self) -> dict:
         """The primary's responses, keyed by shard and class."""
         staged = {}
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             for entry in self.staging.entries(name):
                 envelope = load_bytes(
                     entry["response"].encode(), f"staged {name} response",
@@ -458,7 +530,7 @@ class Reconciler:
             )
         staged = self._staged()
         for index in range(len(shards)):
-            for name in EVIDENCE_CLASSES:
+            for name in self.classes:
                 if (index, name) not in staged:
                     raise AlexandriaError(
                         f"shard {index} has no staged {name} response to reconcile"
@@ -472,22 +544,19 @@ class Reconciler:
         for shard in shards:
             index = shard["index"]
             boundary = staged[(index, "boundary-blocks")]
-            logs = staged[(index, "logs")]
-            traces = staged[(index, "traces")]
-            counts[index] = {
-                "boundary-blocks": 1,
-                "logs": len(logs) if isinstance(logs, list) else 0,
-                "traces": len(traces) if isinstance(traces, list) else 0,
-            }
+            logs = staged.get((index, "logs"))
+            counts[index] = self._counts(index, staged)
             status = "complete"
             try:
                 second_boundary, boundary_bytes = self._second(
                     index, "boundary-blocks", "eth_getBlockByNumber", [hex(shard["end"]), False]
                 )
-                second_logs, logs_bytes = self._second(
-                    index, "logs", "eth_getLogs",
-                    [{"address": self.plan["proxy"], "fromBlock": hex(shard["start"]), "toBlock": hex(shard["end"])}],
-                )
+                second_logs, logs_bytes = None, b""
+                if "logs" in self.classes:
+                    second_logs, logs_bytes = self._second(
+                        index, "logs", "eth_getLogs",
+                        [{"address": self.plan["proxy"], "fromBlock": hex(shard["start"]), "toBlock": hex(shard["end"])}],
+                    )
             except AlexandriaError:
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
@@ -543,13 +612,17 @@ class Reconciler:
         }
         return self._write(shards, counts, statuses, record, staged)
 
+    def _counts(self, index: int, staged) -> dict:
+        """One record count per declared class, derived from the staged bytes."""
+        counts = {}
+        for name in self.classes:
+            result = staged[(index, name)]
+            counts[name] = len(result) if isinstance(result, list) else 1
+        return counts
+
     def _unreconciled(self, shards, counts, staged, compared=0, matched=0, disputed=None) -> dict:
         for shard in shards:
-            counts.setdefault(shard["index"], {
-                "boundary-blocks": 1,
-                "logs": len(staged[(shard["index"], "logs")]),
-                "traces": len(staged[(shard["index"], "traces")]),
-            })
+            counts.setdefault(shard["index"], self._counts(shard["index"], staged))
         record = {
             "compared": compared,
             "disputed": list(disputed or []),
@@ -572,7 +645,7 @@ class Reconciler:
             }
             for shard in shards
         ]
-        validate_shard_coverage(table, shards)
+        validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         document = {
             "format": "alexandria-interval-reconciliation/v1",
@@ -597,6 +670,7 @@ class Builder:
     def __init__(self, plan, staging_root, epochs, registry, *, created_at) -> None:
         validate_plan(plan)
         self.plan = plan
+        self.classes = declared_classes(plan)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
         validate_epochs(
@@ -627,7 +701,7 @@ class Builder:
         if document["plan_sha256"] != plan_digest(self.plan):
             raise AlexandriaError("the reconciliation record belongs to a different plan")
         validate_reconciliation(document["reconciliation"])
-        validate_shard_coverage(document["shards"], self.plan["shards"])
+        validate_shard_coverage(document["shards"], self.plan["shards"], self.classes)
         return document
 
     def _errors(self) -> list:
@@ -673,7 +747,7 @@ class Builder:
             "reconciliation": reconciliation,
             "registry": self.registry,
         }
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             documents[name] = self._journal(name)
 
         parent = output.absolute().parent
@@ -948,17 +1022,18 @@ def check_interval(release_root: Path) -> dict:
         "manifest",
     )
     documents = {}
-    for name in (
-        "boundary-blocks", "epoch-table", "error-receipts", "interval-plan",
-        "logs", "reconciliation", "registry", "traces",
-    ):
+    plan = load_bytes(
+        _component(release_root, manifest, "interval-plan"), "component interval-plan",
+        max_bytes=MAX_RAW_COMPONENT_BYTES,
+    )
+    validate_plan(plan)
+    classes = declared_classes(plan)
+    for name in ("epoch-table", "error-receipts", "reconciliation", "registry", *classes):
         documents[name] = load_bytes(
             _component(release_root, manifest, name), f"component {name}",
             max_bytes=MAX_RAW_COMPONENT_BYTES,
         )
 
-    plan = documents["interval-plan"]
-    validate_plan(plan)
     interval = plan["interval"]
     start = int(interval["start"])
     end = int(interval["end"])
@@ -974,7 +1049,7 @@ def check_interval(release_root: Path) -> dict:
             raise AlexandriaError("an epoch does not belong to the plan's market")
 
     shards = receipt["shards"]
-    validate_shard_coverage(shards, plan["shards"])
+    validate_shard_coverage(shards, plan["shards"], classes)
     expected = start
     for shard in shards:
         if shard["start"] != expected:
@@ -1012,7 +1087,7 @@ def check_interval(release_root: Path) -> dict:
     if reconciliation["plan_sha256"] != plan_digest(plan):
         raise AlexandriaError("the reconciliation record belongs to a different plan")
     validate_reconciliation(reconciliation["reconciliation"])
-    validate_shard_coverage(reconciliation["shards"], plan["shards"])
+    validate_shard_coverage(reconciliation["shards"], plan["shards"], classes)
     if [shard["status"] for shard in reconciliation["shards"]] != [
         shard["status"] for shard in shards
     ]:
@@ -1023,7 +1098,7 @@ def check_interval(release_root: Path) -> dict:
     }
     captures = {capture["id"]: capture for capture in manifest["captures"]}
     derived = {shard["index"]: {} for shard in plan["shards"]}
-    for name in EVIDENCE_CLASSES:
+    for name in classes:
         journal = documents[name]
         if journal["format"] != JOURNAL_FORMAT or journal["class"] != name:
             raise AlexandriaError(f"the {name} component is not its own journal")

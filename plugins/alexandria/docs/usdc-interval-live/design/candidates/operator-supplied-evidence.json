@@ -1,0 +1,11 @@
+{
+  "id": "operator-supplied-evidence",
+  "summary": "The shipped shape: the operator reads the first block, the slots and the runtime code out of band and hands build an epoch table plus a code file; the release preserves the code bytes but no journal binds them to a request the collector made.",
+  "start_hash_from_collector_read": false,
+  "code_read_journaled": false,
+  "code_rechecked_offline": true,
+  "reachable_provider_pair": true,
+  "resume_safe_after_kill": false,
+  "network_commands": ["collect", "reconcile"],
+  "new_release_components": ["implementation-code"]
+}

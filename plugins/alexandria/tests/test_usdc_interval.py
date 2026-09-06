@@ -2,13 +2,16 @@
 
 from copy import deepcopy
 import hashlib
+import io
 import json
+import os
 from pathlib import Path
 import socket
 import sys
 import tempfile
 import unittest
 from unittest import mock
+import urllib.request
 
 
 PLUGIN = Path(__file__).resolve().parents[1]
@@ -49,18 +52,24 @@ def fixture():
 class FixtureTransport:
     """Answers from preserved chain state, never from a socket."""
 
-    def __init__(self, state, *, reorg_from=None, faults=None):
+    def __init__(self, state, *, reorg_from=None, faults=None, finalized_number=None):
         self.state = state
         self.reorg_from = reorg_from
         self.faults = dict(faults or {})
         self.calls = []
+        # Where the provider's `finalized` and `safe` tags stand. None means
+        # the plan's own boundary; a live tag moves past it every epoch.
+        self.finalized_number = finalized_number
 
     def _hash(self, number):
         """A finalized boundary does not reorg, so the fixture never moves it."""
         final = int(self.state["plan"]["finality"]["block_number"])
         if self.reorg_from is not None and self.reorg_from <= number < final:
             return "0x" + f"{number:064x}"
-        return self.state["blocks"][str(number)]
+        known = self.state["blocks"].get(str(number))
+        if known is not None:
+            return known
+        return "0x" + hashlib.sha256(f"usdc-interval-block:{number}".encode()).hexdigest()
 
     def transactions(self, number):
         """A deterministic, ordered transaction list for one block."""
@@ -86,7 +95,9 @@ class FixtureTransport:
         if method == "eth_getBlockByNumber":
             tag = envelope["params"][0]
             if tag in ("finalized", "safe"):
-                number = int(self.state["plan"]["finality"]["block_number"])
+                number = self.finalized_number
+                if number is None:
+                    number = int(self.state["plan"]["finality"]["block_number"])
             else:
                 number = int(tag, 16)
             result = {
@@ -291,7 +302,8 @@ class ResponseRefusalTests(CollectorTestCase):
             self.collect(transport=transport)
         body = (self.root / "receipts" / "errors.jsonl").read_text()
         for secret in ("https://", "rpc.example.invalid", "SECRET-KEY", "hunter2",
-                       "Content-Type", "Authorization"):
+                       "Content-Type", "Authorization", "User-Agent",
+                       usdc_interval.USER_AGENT):
             self.assertNotIn(secret, body)
         self.assertEqual(self.receipts()[-1]["code"], "transport")
 
@@ -1064,6 +1076,264 @@ class BoundsTests(CollectorTestCase):
         handler = usdc_interval._NoRedirect()
         with self.assertRaisesRegex(TransportError, "redirected"):
             handler.redirect_request(None, None, 302, "Found", {}, "https://elsewhere.invalid")
+
+
+class FinalityRebindTests(CollectorTestCase):
+    """The conformance evidence for `finality-rebinds-after-tag-advance`.
+
+    The `finalized` tag moves every epoch. A plan pins the boundary block it
+    was written against, so the bind reads that block by number and compares
+    its hash, then requires the tag to stand at or above it. The
+    `finality-tag-drift` guard: against a collector that compares the tag's
+    hash with the plan's, every case in this class that advances the tag fails.
+    """
+
+    def boundary(self):
+        return int(self.plan["finality"]["block_number"])
+
+    def finality_reads(self, transport):
+        return [label for method, label in transport.calls if label.startswith("finality")]
+
+    def test_a_finalized_tag_past_the_plan_boundary_still_binds(self):
+        transport = FixtureTransport(self.state, finalized_number=self.boundary() + 4_096)
+        collector, summary = self.collect(transport=transport)
+        self.assertEqual(summary["collected_shards"], 5)
+        self.assertEqual(self.receipts(), [])
+        self.assertEqual(
+            self.finality_reads(transport),
+            [f"finality boundary block {self.boundary()}", "finality boundary under finalized"],
+        )
+        self.assertEqual(collector.plan["finality"]["block_number"], str(self.boundary()))
+
+    def test_a_resume_after_the_tag_advanced_continues_from_the_checkpoint(self):
+        with self.assertRaises(_Killed):
+            Collector(
+                self.plan, self.root,
+                KillingTransport(self.state, kill_at="shard 3 logs"),
+            ).collect()
+        transport = FixtureTransport(self.state, finalized_number=self.boundary() + 65_536)
+        _collector, summary = self.collect(transport=transport)
+        self.assertEqual(summary["resumed_from"], 3)
+        self.assertEqual(summary["collected_shards"], 2)
+        self.assertEqual(self.receipts(), [])
+
+    def test_the_safe_policy_rebinds_the_same_way(self):
+        plan = deepcopy(self.plan)
+        plan["finality"]["policy"] = "safe"
+        transport = FixtureTransport(self.state, finalized_number=self.boundary() + 1)
+        _collector, summary = self.collect(transport=transport, plan=plan)
+        self.assertEqual(summary["collected_shards"], 5)
+        self.assertIn("finality boundary under safe", self.finality_reads(transport))
+
+    def test_a_boundary_block_with_another_hash_refuses_with_a_receipt(self):
+        boundary = self.boundary()
+
+        def moved(envelope):
+            return canonical_bytes({
+                "id": envelope["id"], "jsonrpc": "2.0",
+                "result": {"hash": "0x" + "ee" * 32, "number": hex(boundary), "transactions": []},
+            })
+
+        transport = FixtureTransport(
+            self.state, faults={f"finality boundary block {boundary}": moved},
+        )
+        with self.assertRaisesRegex(AlexandriaError, f"block {boundary} does not match the plan"):
+            self.collect(transport=transport)
+        receipt = self.receipts()[-1]
+        self.assertEqual(
+            (receipt["code"], receipt["class"], receipt["shard"], receipt["status"]),
+            ("boundary-hash-mismatch", "boundary", -1, boundary),
+        )
+        self.assertIsNone(receipt["unresolved"])
+        self.assertEqual(len(transport.calls), 1)
+        self.assertEqual(journals(self.root), {})
+
+    def test_a_finalized_number_below_the_boundary_refuses_with_a_receipt(self):
+        boundary = self.boundary()
+        transport = FixtureTransport(self.state, finalized_number=boundary - 1)
+        with self.assertRaisesRegex(AlexandriaError, f"block {boundary - 1}, below the plan"):
+            self.collect(transport=transport)
+        receipt = self.receipts()[-1]
+        self.assertEqual(
+            (receipt["code"], receipt["class"], receipt["shard"], receipt["status"]),
+            ("boundary-not-yet-final", "boundary", -1, boundary - 1),
+        )
+        self.assertEqual(len(transport.calls), 2)
+        self.assertEqual(journals(self.root), {})
+
+    def test_a_confirmations_policy_reads_the_boundary_by_number_only(self):
+        plan = deepcopy(self.plan)
+        plan["finality"] = {
+            "block_hash": plan["finality"]["block_hash"],
+            "block_number": plan["finality"]["block_number"],
+            "confirmations": 64,
+            "policy": "confirmations",
+        }
+        transport = FixtureTransport(self.state, finalized_number=0)
+        self.collect(transport=transport, plan=plan)
+        self.assertEqual(self.finality_reads(transport), [f"finality boundary block {self.boundary()}"])
+
+    def test_a_refusal_is_one_sanitised_line_and_no_traceback(self):
+        boundary = self.boundary()
+        transport = FixtureTransport(self.state, finalized_number=boundary - 1)
+        plan_path = self.root / "plan.json"
+        plan_path.write_bytes(canonical_bytes(self.plan))
+        staging = self.root / "staging"
+        stderr = io.StringIO()
+        with mock.patch.object(
+            HttpsTransport, "from_environment", classmethod(lambda cls, timeout, environ=None: transport),
+        ), mock.patch.object(sys, "stderr", stderr):
+            exit_code = usdc_interval.main(
+                ["collect", "--plan", str(plan_path), "--staging", str(staging)]
+            )
+        self.assertEqual(exit_code, 1)
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].startswith("usdc-interval: "), lines[0])
+        self.assertIn(f"boundary block {boundary}", lines[0])
+        self.assertNotIn("Traceback", stderr.getvalue())
+        self.assertEqual(self.receipts(staging)[-1]["code"], "boundary-not-yet-final")
+
+    def test_the_rebind_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_a_finalized_tag_past_the_plan_boundary_still_binds()
+
+
+class DeclaredClassTests(CollectorTestCase):
+    """A plan declares which classes it collects; an omitted one is never asked for."""
+
+    def declared(self, classes):
+        plan = deepcopy(self.plan)
+        plan["evidence_classes"] = list(classes)
+        return plan
+
+    def test_collect_journals_only_the_declared_classes_and_asks_for_no_other(self):
+        transport = FixtureTransport(self.state)
+        _collector, summary = self.collect(
+            transport=transport, plan=self.declared(["boundary-blocks", "logs"])
+        )
+        self.assertEqual(summary["record_counts"], {"boundary-blocks": 5, "logs": 15})
+        self.assertEqual(sorted(journals(self.root)), ["boundary-blocks", "logs"])
+        self.assertFalse((self.root / "journals" / "traces.jsonl").exists())
+        self.assertNotIn("trace_filter", {method for method, _label in transport.calls})
+        checkpoint = json.loads((self.root / "checkpoint.json").read_text())
+        self.assertEqual(set(checkpoint["offsets"]), {"boundary-blocks", "logs"})
+
+    def test_the_plan_order_is_the_request_order(self):
+        transport = FixtureTransport(self.state)
+        self.collect(transport=transport, plan=self.declared(["logs", "boundary-blocks"]))
+        shard_zero = [label for _method, label in transport.calls if label.startswith("shard 0 ")]
+        self.assertEqual(shard_zero, ["shard 0 logs", "shard 0 boundary-blocks"])
+        # Request ids come from the fixed class table, not the plan's order, so
+        # two plans naming the same classes ask for byte-identical requests.
+        self.assertEqual(
+            (request_identifier(0, "boundary-blocks"), request_identifier(0, "logs")), (1, 2)
+        )
+
+    def test_a_plan_omitting_boundary_blocks_refuses_by_name(self):
+        with self.assertRaisesRegex(AlexandriaError, "must declare the boundary-blocks"):
+            Collector(self.declared(["logs"]), self.root, FixtureTransport(self.state))
+
+    def test_a_two_class_tree_reconciles_builds_and_checks_offline(self):
+        plan = self.declared(["boundary-blocks", "logs"])
+        staging = self.scratch("staging")
+        Collector(plan, staging, FixtureTransport(self.state)).collect()
+        document = Reconciler(
+            plan, staging, FixtureTransport(self.state), "second archive endpoint, class only",
+        ).reconcile()
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+        self.assertEqual(
+            document["shards"][0]["record_counts"], {"boundary-blocks": 1, "logs": 3}
+        )
+        checks = IntervalCheckTests("test_a_release_over_a_clean_interval_verifies_offline")
+        checks.state = self.state
+        release_id = Builder(
+            plan, staging, checks.epoch_table(plan), registry(), created_at=CREATED_AT,
+        ).build(self.root / "release")
+        summary = check_interval(self.root / "release")
+        self.assertEqual(summary["release_id"], release_id)
+        manifest = json.loads((self.root / "release" / "manifest.json").read_text())
+        self.assertNotIn("traces", {component["name"] for component in manifest["components"]})
+
+    def test_declared_classes_open_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_collect_journals_only_the_declared_classes_and_asks_for_no_other()
+
+
+class RequestHeaderTests(unittest.TestCase):
+    """The transport sends two constant headers, neither read from the environment."""
+
+    DECOYS = {
+        "USER_AGENT": "decoy-agent/9.9",
+        "HTTP_USER_AGENT": "decoy-agent/9.9",
+        "ALEXANDRIA_USER_AGENT": "decoy-agent/9.9",
+        "ALEXANDRIA_COMPOUND_RPC_URL": ENDPOINT,
+    }
+
+    class _Response:
+        status = 200
+
+        def __init__(self, body):
+            self._body = body
+
+        def read(self, limit):
+            return self._body[:limit]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exception):
+            return False
+
+    def sent(self, payload):
+        captured = []
+
+        def capture(_opener, request, timeout=None):
+            captured.append((request, timeout))
+            return self._Response(b'{"id": 0, "jsonrpc": "2.0", "result": null}')
+
+        with mock.patch.dict(os.environ, self.DECOYS), mock.patch.object(
+            urllib.request.OpenerDirector, "open", capture,
+        ), mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            transport = HttpsTransport.from_environment(25)
+            body = transport.request(payload, "shard 0 logs")
+        self.assertEqual(len(captured), 1)
+        return captured[0][0], captured[0][1], body
+
+    def test_the_headers_are_exactly_content_type_and_the_constant_user_agent(self):
+        manifest = json.loads(
+            (PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+        )
+        request, timeout, _body = self.sent(b'{"id": 0}')
+        self.assertEqual(
+            dict(request.header_items()),
+            {
+                "Content-type": "application/json",
+                "User-agent": f"alexandria-usdc-interval/{manifest['version']}",
+            },
+        )
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.data, b'{"id": 0}')
+        self.assertEqual(timeout, 25)
+        self.assertEqual(usdc_interval.PACKAGE_VERSION, manifest["version"])
+
+    def test_no_header_value_comes_from_the_environment(self):
+        request, _timeout, _body = self.sent(b"{}")
+        for _name, value in request.header_items():
+            self.assertNotIn("decoy", value)
+            self.assertNotIn("fixture.invalid", value)
+        self.assertEqual(usdc_interval.USER_AGENT, "alexandria-usdc-interval/" + usdc_interval.PACKAGE_VERSION)
+
+    def test_the_version_is_read_from_the_manifest_at_import_and_refused_when_absent(self):
+        with tempfile.TemporaryDirectory() as name:
+            missing = Path(name) / "plugin.json"
+            with self.assertRaisesRegex(AlexandriaError, "plugin manifest"):
+                usdc_interval.package_version(missing)
+            missing.write_text('{"name": "alexandria", "version": "not-a-version"}')
+            with self.assertRaisesRegex(AlexandriaError, "no package version"):
+                usdc_interval.package_version(missing)
+            missing.write_text('{"name": "alexandria", "version": "7.8.9"}')
+            self.assertEqual(usdc_interval.package_version(missing), "7.8.9")
 
 
 if __name__ == "__main__":

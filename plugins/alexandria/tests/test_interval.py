@@ -32,6 +32,7 @@ from alexandria_lib.interval import (  # noqa: E402
     plan_shards,
     resolve_root,
     validate_checkpoint,
+    validate_evidence_classes,
     validate_plan,
 )
 
@@ -164,11 +165,39 @@ class PlanValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(AlexandriaError, "lowercase address"):
             validate_plan(plan(proxy=PROXY.upper()))
 
-    def test_reordered_evidence_classes_refuse(self):
-        value = plan()
-        value["evidence_classes"] = list(reversed(EVIDENCE_CLASSES))
-        with self.assertRaisesRegex(AlexandriaError, "evidence classes"):
-            validate_plan(value)
+    def test_a_plan_declares_any_non_empty_subset_of_the_classes_in_either_order(self):
+        subsets = (
+            ["boundary-blocks"], ["logs"], ["traces"],
+            ["boundary-blocks", "logs"], ["logs", "boundary-blocks"],
+            ["boundary-blocks", "traces"], ["traces", "logs"],
+            list(EVIDENCE_CLASSES), list(reversed(EVIDENCE_CLASSES)),
+        )
+        for classes in subsets:
+            with self.subTest(classes=classes):
+                validate_plan(plan(evidence_classes=list(classes)))
+                self.assertEqual(validate_evidence_classes(list(classes)), tuple(classes))
+
+    def test_an_empty_class_list_refuses_naming_the_classes(self):
+        with self.assertRaisesRegex(
+            AlexandriaError, "at least one of boundary-blocks, logs, traces"
+        ):
+            validate_plan(plan(evidence_classes=[]))
+
+    def test_a_duplicated_class_refuses_naming_the_class(self):
+        with self.assertRaisesRegex(AlexandriaError, "'logs' is declared twice"):
+            validate_plan(plan(evidence_classes=["logs", "logs"]))
+        with self.assertRaisesRegex(AlexandriaError, "'boundary-blocks' is declared twice"):
+            validate_plan(plan(evidence_classes=["boundary-blocks", "logs", "boundary-blocks"]))
+
+    def test_an_unknown_class_refuses_naming_the_class(self):
+        with self.assertRaisesRegex(AlexandriaError, "'receipts' is not one of boundary-blocks"):
+            validate_plan(plan(evidence_classes=["boundary-blocks", "receipts"]))
+        with self.assertRaisesRegex(AlexandriaError, "is not a name"):
+            validate_plan(plan(evidence_classes=["logs", 3]))
+        with self.assertRaisesRegex(AlexandriaError, "not one of"):
+            validate_plan(plan(evidence_classes=["boundary-blocks", "x" * 200]))
+        with self.assertRaisesRegex(AlexandriaError, "at least one of"):
+            validate_plan(plan(evidence_classes="logs"))
 
 
 class CheckpointValidationTests(unittest.TestCase):
@@ -422,6 +451,23 @@ class StagingTests(unittest.TestCase):
                 staging.record(999, "logs", b"{}", b"{}")
             with self.assertRaisesRegex(AlexandriaError, "outside the plan"):
                 staging.commit(999, 1000, HASH)
+
+    def test_a_class_the_plan_omits_has_no_journal_and_no_offset(self):
+        declared = plan(evidence_classes=["boundary-blocks", "logs"])
+        with Staging(self.root, declared) as staging:
+            staging.resume()
+            staging.record(0, "boundary-blocks", b"{}", b"{}")
+            staging.record(0, "logs", b"{}", b"{}")
+            with self.assertRaisesRegex(AlexandriaError, "'traces' is not declared by the plan"):
+                staging.record(0, "traces", b"{}", b"{}")
+            checkpoint = staging.commit(0, 1024, HASH)
+        self.assertEqual(set(checkpoint["offsets"]), {"boundary-blocks", "logs"})
+        self.assertFalse((self.root / "journals" / "traces.jsonl").exists())
+        with Staging(self.root, declared) as staging:
+            state = staging.resume()
+        self.assertEqual(state["next_shard"], 1)
+        with self.assertRaisesRegex(AlexandriaError, "every evidence class the plan declares"):
+            validate_checkpoint(checkpoint, plan_digest(declared), 4, ("boundary-blocks", "logs", "traces"))
 
     def test_an_unknown_evidence_class_refuses(self):
         with Staging(self.root, self.plan) as staging:
