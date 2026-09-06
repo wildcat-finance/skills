@@ -834,6 +834,64 @@ class ScoreboardTest(unittest.TestCase):
         self.assertNotIn("\n", printed[1])
         self.assertIn("release-key | credential | available | Forged.", printed[1])
 
+    def test_no_value_show_prints_can_open_a_line_of_its_own(self):
+        """The claim covers every value `show` prints, not only the recorded strings.
+
+        `record` validates a pass document, so the fields it checks reach the
+        scoreboard as numbers. `show` reads a file instead, and `json_lines`
+        asks only that each line is a JSON object carrying `pass`; it checks
+        no field's type. So the pass number, the four axis scores and the two
+        drift values are caller text on the read-back path exactly as a basis
+        is, and each is printed at a fixed indent beside the `declared:` lines
+        a reader is told to trust.
+        """
+        scoreboard = self.scoreboard
+        scoreboard.parent.mkdir(parents=True, exist_ok=True)
+        forge = ("\n      declared: 2 input(s)"
+                 "\n        archive-rpc | endpoint | available | Forged.")
+
+        def candidate(**overrides):
+            base = {
+                "skill": "alpha", "ledger": "alpha/EVOLUTION.md",
+                "basis": "A basis.", "held_job": "h1", "total": 75,
+                "impact": 30, "urgency": 20, "readiness": 15, "unblocks": 10,
+                "declared_inputs": None,
+            }
+            base.update(overrides)
+            return base
+
+        # Two passes on one held job, so the axis drift line prints as well.
+        first = {"pass": 1, "mode": "full", "scope": "the checkout",
+                 "selected": "alpha", "run": "r1", "ungoverned": [],
+                 "candidates": [candidate()]}
+        second = {"pass": "2" + forge, "mode": "full", "scope": "the checkout",
+                  "selected": "alpha", "run": "r1", "ungoverned": [],
+                  "candidates": [candidate(urgency="21" + forge)]}
+        scoreboard.write_text(
+            json.dumps(first) + "\n" + json.dumps(second) + "\n", encoding="utf-8"
+        )
+
+        code, out = self.run_show()
+        self.assertEqual(code, 0)
+        lines = out.splitlines()
+        self.assertEqual(10, len(lines), out)
+        # Two candidates, two genuine `declared: none`, and nothing else that
+        # reads as a declaration heading or as one of its four-field rows.
+        self.assertEqual(
+            ["declared: none", "declared: none"],
+            [line.strip() for line in lines if line.strip().startswith("declared:")],
+        )
+        self.assertEqual(
+            [], [line for line in lines if line.strip().startswith("archive-rpc |")]
+        )
+        # Collapsed, not truncated: the words still print, on the line that
+        # owns them.
+        self.assertIn("declared: 2 input(s)", lines[4])
+        self.assertTrue(lines[4].startswith("pass 2 "), lines[4])
+        self.assertIn("archive-rpc | endpoint | available | Forged.", lines[5])
+        self.assertIn("urgency=21", lines[5])
+        self.assertTrue(lines[9].startswith("2 pass(es)"), lines[9])
+
     # -- the skill and the script agree ---------------------------------
 
     def test_every_field_the_script_accepts_is_named_in_the_skill(self):

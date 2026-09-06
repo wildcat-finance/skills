@@ -56,11 +56,15 @@ an object when the ledger declared and null when it did not, and its digest
 covers the rows rather than the block's bytes, so `show` can mark a declaration
 that moved under a held job that did not. `show` prints each candidate's
 declared rows beside its scores, and `declared: none` where the recorded line
-carries no declaration. Every recorded string it prints is collapsed to one
-line first, so a scope, skill, basis, run or row a caller wrote cannot open a
-line of its own and spell a `declared:` heading no ledger carried. A
-declaration is a claim its ledger's owner makes. Nothing here checks that a
-declared input exists.
+carries no declaration. Every recorded value it prints is collapsed to one line
+first -- the pass number, mode, scope and run note, each candidate's skill,
+basis, axis scores and declared rows, an ungoverned name, and both drift
+lines' values -- so nothing a caller wrote can open a line of its own and
+spell a `declared:` heading no ledger carried. `total` is the exception, and
+it fails closed instead: `show` orders on it before printing, so a value that
+is not a number ends the command rather than reaching the line. A declaration
+is a claim its ledger's owner makes. Nothing here checks that a declared input
+exists.
 
 What this does not do. It records a judgement; it does not make one. An axis
 score is a number the ranking agent supplies, and a basis is prose nobody
@@ -1037,7 +1041,7 @@ def show(args: argparse.Namespace) -> int:
     for entry in passes:
         note = "rank-only" if entry.get("rank_only") else (entry.get("run") or "no run recorded")
         print(
-            f"pass {entry['pass']}  {one_line(entry['mode'])}  "
+            f"pass {one_line(entry['pass'])}  {one_line(entry['mode'])}  "
             f"{one_line(entry['scope'])}  ({one_line(note)})"
         )
         for candidate in sorted(entry["candidates"], key=lambda c: -c["total"]):
@@ -1050,16 +1054,22 @@ def show(args: argparse.Namespace) -> int:
                 mark = "P"
             else:
                 mark = " "
-            axes = " ".join(f"{name}={candidate[name]}" for name, _ in AXES)
+            axes = " ".join(f"{name}={one_line(candidate[name])}" for name, _ in AXES)
             print(f"  {mark} {candidate['total']:3d}  {one_line(candidate['skill']):<24} {axes}")
             print(f"      {one_line(candidate['basis'])}")
             for line in declared_lines(candidate):
                 print(f"      {line}")
             for name, before, after in moved.get((entry["pass"], candidate["skill"]), []):
-                print(f"      drift: {name} {before} -> {after}, held job unchanged")
+                # `name` is an AXES constant; the two values came off the disk.
+                print(
+                    f"      drift: {name} {one_line(before)} -> {one_line(after)},"
+                    " held job unchanged"
+                )
             change = declared_moved.get((entry["pass"], candidate["skill"]))
             if change is not None:
-                was, now = (digest[:12] if digest else "none" for digest in change)
+                # Collapse before the slice: truncating a break at twelve
+                # characters still leaves the break, and the line still splits.
+                was, now = (one_line(digest)[:12] if digest else "none" for digest in change)
                 print(f"      drift: declaration {was} -> {now}, held job unchanged")
         for name in entry.get("ungoverned", []):
             print(f"    ungoverned: {one_line(name)}")
