@@ -17,6 +17,13 @@
       "kind": "suite",
       "script": "tests/test_demonstrations.py"
     },
+    "front-door-check": {
+      "title": "Public front-door contract check",
+      "argv": ["python3", "scripts/check_public_front_door.py", "--root", "."],
+      "cwd": ".",
+      "kind": "command",
+      "script": "scripts/check_public_front_door.py"
+    },
     "dead-code-suite": {
       "title": "Report-only dead-code suite",
       "argv": ["python3", "-m", "unittest", "tests.test_dead_code", "-v"],
@@ -221,7 +228,7 @@
   "scopes": {
     "root": {
       "title": "Root contract, shared scripts and root suite",
-      "checks": ["root-suite", "demonstrations-suite"]
+      "checks": ["root-suite", "demonstrations-suite", "front-door-check"]
     },
     "dead-code": {
       "title": "Report-only dead-code discovery",

@@ -140,15 +140,28 @@ class CheckedInReleaseTests(unittest.TestCase):
         self.assertIn("preserve the earlier source, canonical and coverage bytes", policy)
 
     def test_public_docs_mark_the_prototype_built_and_link_the_release(self):
-        root = (support.REPO_ROOT / "README.md").read_text()
+        """The roster moved, so the claim this guards moved with it.
+
+        This case read the root README's `### Lending and credit records`
+        entry. The front-door change removed the inlined roster: `README.md`
+        now links `FUTUREPROOFING.md`, which holds the one complete catalogue,
+        and neither the section nor the one-line entry exists any more.
+
+        The interest is unchanged: the public claim about what Tabularium does
+        must stay coverage-qualified rather than reading as a venue list, and a
+        venue that is not covered must be named as missing rather than left to
+        look covered. Both are checked against the entry that now carries them.
+        """
+        catalogue = (support.REPO_ROOT / "FUTUREPROOFING.md").read_text()
         plugin = (support.PLUGIN_ROOT / "README.md").read_text()
         skill = (support.PLUGIN_ROOT / "skills/tabularium/SKILL.md").read_text()
         for prose in (plugin, skill):
             self.assertIn("goldfinch-v0", prose)
-        self.assertIn("[Tabularium](./plugins/tabularium)", root)
-        commons = root.split("### Lending and credit records", 1)[1].split("\n### ", 1)[0]
-        for protocol in ("Compound", "Euler", "Goldfinch"):
-            self.assertNotIn(protocol, commons)
+        self.assertIn("[Tabularium](./plugins/tabularium)", catalogue)
+        entry = catalogue.split("### Tabularium", 1)[1].split("\n### ", 1)[0]
+        today, _, missing = " ".join(entry.split()).partition("**Missing.**")
+        self.assertIn("supported preserved venue records", today)
+        self.assertIn("Compound Phase 1", missing)
 
 
 if __name__ == "__main__":
