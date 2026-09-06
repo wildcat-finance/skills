@@ -8,11 +8,13 @@ and one accepted record are all covered below.
 """
 
 import contextlib
+import copy
 import hashlib
 import importlib.util
 import io
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -23,6 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "elenchus" / "scripts" / "fixed_and_guarded.py"
+ELENCHUS = ROOT / "skills" / "elenchus" / "scripts" / "elenchus.py"
 
 spec = importlib.util.spec_from_file_location("elenchus_fixed_and_guarded", SCRIPT)
 emitter = importlib.util.module_from_spec(spec)
@@ -37,6 +40,102 @@ EVIDENCE_FIELDS = (
     "reproduction", "causal_mechanism", "minimal_case", "repair", "guard",
     "unfixed_parent", "fixed_tree", "suites", "verdict",
 )
+
+# The scratch repository the end-to-end case builds: one real defect, the
+# regression test that catches it, and the repair that closes it.
+DEFECTIVE_WIDGET = '''\
+"""A widget with a width."""
+
+
+class Widget:
+    def __init__(self, width):
+        self.width = width
+        if width is None:
+            raise ValueError("width is required")
+
+    def area(self, height):
+        return self.width * height
+'''
+
+REPAIRED_WIDGET = '''\
+"""A widget with a width."""
+
+
+class Widget:
+    def __init__(self, width):
+        if width is None:
+            raise ValueError("width is required")
+        if width < 0:
+            raise ValueError("width must not be negative")
+        self.width = width
+
+    def area(self, height):
+        return self.width * height
+'''
+
+REGRESSION_TEST = '''\
+import unittest
+
+from src.widget import Widget
+
+
+class WidgetRegression(unittest.TestCase):
+    def test_negative_width_is_refused(self):
+        with self.assertRaises(ValueError):
+            Widget(width=-1)
+'''
+
+# The scratch repository owns its runner, because `elenchus.py` classifies from
+# a report the runner writes rather than from an exit code.
+SCRATCH_RUNNER = '''\
+"""Run the suite and write the report the declared runner contract names."""
+import json
+import sys
+import unittest
+from pathlib import Path
+
+suite = unittest.defaultTestLoader.discover(".", pattern="test_*.py")
+outcome = unittest.TextTestRunner(verbosity=1).run(suite)
+target = Path(sys.argv[1])
+target.parent.mkdir(parents=True, exist_ok=True)
+target.write_text(json.dumps({
+    "schema": "elenchus.unittest.v1",
+    "complete": True,
+    "testsRun": outcome.testsRun,
+    "failures": len(outcome.failures),
+    "errors": len(outcome.errors),
+    "skipped": len(outcome.skipped),
+    "expectedFailures": len(outcome.expectedFailures),
+    "unexpectedSuccesses": len(outcome.unexpectedSuccesses),
+}), encoding="utf-8")
+raise SystemExit(not outcome.wasSuccessful())
+'''
+
+SCRATCH_IGNORES = "__pycache__/\n.elenchus/\ninputs/\nrecords/\n"
+
+# The line the mechanism starts on, read from the source rather than counted by
+# hand, so the record's `site` stays true if the defective source moves.
+DEFECT_LINE = DEFECTIVE_WIDGET.splitlines().index("        self.width = width") + 1
+
+MECHANISM = (
+    "Widget.__init__ assigns self.width before any bound is checked, so a "
+    "negative width is stored and reaches area()."
+)
+
+
+def normalised(report):
+    """The five counters `elenchus.py` derives from a unittest report.
+
+    The record carries normalised counts on both sides, so the fixed tree's
+    own report is reduced the same way the parent's already was.
+    """
+    return {
+        "complete": report["complete"],
+        "executed": report["testsRun"] - report["skipped"] - report["expectedFailures"],
+        "assertion_failures": report["failures"],
+        "errors": report["errors"] + report["unexpectedSuccesses"],
+        "skipped": report["skipped"] + report["expectedFailures"],
+    }
 
 
 class Fixture:
@@ -78,6 +177,33 @@ class Fixture:
 
     def remove(self):
         shutil.rmtree(self.path, ignore_errors=True)
+
+
+class Scratch(Fixture):
+    """A scratch repository holding a real defect, before it is repaired.
+
+    Everything the end-to-end case writes lives under this temporary
+    directory, including the inputs the emitter reads and the records it
+    writes. The one path outside it belongs to `elenchus.py`, which stages
+    its detached parent worktree under a temporary directory of its own and
+    removes it when the comparison ends.
+    """
+
+    def __init__(self):
+        self.path = Path(tempfile.mkdtemp(prefix="fixed-and-guarded-demo-"))
+        self.run("init", "--quiet", "-b", "main")
+        self.run("config", "--local", "commit.gpgsign", "false")
+        self.run("config", "user.email", "fixture@example.org")
+        self.run("config", "user.name", "Fixture")
+        self.base = self.commit("base", {
+            ".gitignore": SCRATCH_IGNORES,
+            "src/__init__.py": "",
+            "src/widget.py": DEFECTIVE_WIDGET,
+            "tests/__init__.py": "",
+            "runner.py": SCRATCH_RUNNER,
+        })
+        self.inputs = self.path / "inputs"
+        self.inputs.mkdir()
 
 
 def draft_for(fixture, **overrides):
@@ -679,6 +805,165 @@ class Invocation(Harness):
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(checked.returncode, 0, checked.stderr)
+
+
+class EndToEnd(unittest.TestCase):
+    """The demo path, run against a repository with a failure really in it.
+
+    Every other case here hands the emitter a drafted result. This one earns
+    the result: it reproduces a failure, repairs the mechanism, lets
+    `elenchus.py` compare the guard against the detached parent, and emits the
+    record from what those runs actually produced.
+
+    `docs/elenchus-fixed-and-guarded-record/demonstration.md` records one run
+    of the same path by hand, with its commands, exit codes and refusal text.
+    This case drives that path under the suite, so the demonstration is
+    reproduced rather than taken on trust.
+    """
+
+    def setUp(self):
+        self.scratch = Scratch()
+        self.addCleanup(self.scratch.remove)
+
+    def in_scratch(self, *arguments):
+        """One command in the scratch repository, argv only and no shell."""
+        return subprocess.run(
+            arguments, cwd=str(self.scratch.path), capture_output=True,
+            text=True, check=False,
+            env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
+        )
+
+    def test_the_demo_path_emits_a_record_and_refuses_the_ones_it_should(self):
+        scratch = self.scratch
+
+        # Reproduce. The guard is written but not yet committed, so it runs
+        # against the defect: a guard that never went red is not a guard.
+        (scratch.path / GUARD_FILE).write_text(REGRESSION_TEST, encoding="utf-8")
+        reproduction = self.in_scratch(
+            sys.executable, "-m", "unittest", "tests.test_widget", "-v")
+        self.assertEqual(reproduction.returncode, 1, reproduction.stderr)
+        self.assertIn("AssertionError: ValueError not raised", reproduction.stderr)
+        observed = (reproduction.stdout + reproduction.stderr).encode("utf-8")
+
+        # Fix the cause, and commit the repair carrying its guard.
+        repair = scratch.commit(
+            "fix(widget): validate the width before storing it",
+            {"src/widget.py": REPAIRED_WIDGET},
+        )
+        touched = sorted(scratch.run(
+            "diff-tree", "--no-commit-id", "--name-only", "-r", repair).split())
+        self.assertEqual(touched, ["src/widget.py", GUARD_FILE])
+
+        # Verify: the focused guard, then the suite, both on the fixed tree.
+        focused = self.in_scratch(
+            sys.executable, "-m", "unittest", "tests.test_widget", "-v")
+        self.assertEqual(focused.returncode, 0, focused.stderr)
+        suite = self.in_scratch(
+            sys.executable, "runner.py", ".elenchus/fixed-tree.json")
+        self.assertEqual(suite.returncode, 0, suite.stderr)
+        fixed = normalised(json.loads(
+            (scratch.path / ".elenchus/fixed-tree.json").read_text("utf-8")))
+        self.assertGreater(fixed["executed"], 0)
+        self.assertEqual(fixed["assertion_failures"] + fixed["errors"], 0)
+
+        # The guard comparison against the detached parent, which is where the
+        # verdict and the parent's report come from.
+        comparison = self.in_scratch(
+            sys.executable, str(ELENCHUS), "--repo", ".", "--ref", repair,
+            "--test-command",
+            f"{shlex.quote(sys.executable)} runner.py {{report}}",
+            "--report-format", "unittest-json-v1",
+            "--report-file", ".elenchus/parent.json",
+            "--format", "json",
+        )
+        self.assertEqual(comparison.returncode, 0, comparison.stderr)
+        result = json.loads(comparison.stdout)
+        self.assertEqual(result["status"], "guarded", result["detail"])
+        self.assertEqual(result["report"]["assertion_failures"], 1)
+
+        # Emit. Seven fields come from the operator's draft, two from the
+        # result, and the parent commit from one `git rev-parse`.
+        draft = scratch.write("draft.json", {
+            "reproduction": {
+                "command": "python3 -m unittest tests.test_widget -v",
+                "output_sha256": hashlib.sha256(observed).hexdigest(),
+                "output_bytes": len(observed),
+            },
+            "causal_mechanism": {
+                "account": MECHANISM,
+                "site": f"src/widget.py:{DEFECT_LINE}",
+            },
+            "minimal_case": {
+                "description": "Widget(width=-1) returns an instance "
+                               "instead of raising ValueError.",
+                "path": GUARD_FILE,
+            },
+            "repair": {"commit": repair, "files": touched},
+            "guard": {"file": GUARD_FILE, "test": GUARD_TEST},
+            "fixed_tree": {"commit": repair, "report": fixed},
+            "suites": [
+                {"command": "python3 -m unittest tests.test_widget -v",
+                 "exit_code": focused.returncode},
+                {"command": "python3 runner.py .elenchus/fixed-tree.json",
+                 "exit_code": suite.returncode},
+            ],
+        })
+        out = "records/fixed-and-guarded.json"
+        emitted = subprocess.run(
+            [sys.executable, str(SCRIPT), "--repo", str(scratch.path),
+             "--draft", str(draft),
+             "--result", str(scratch.write("result.json", result)),
+             "--out", out],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(emitted.returncode, 0, emitted.stderr)
+        self.assertIn("written", emitted.stdout)
+
+        written = (scratch.path / out).read_text(encoding="utf-8")
+        record = json.loads(written)
+        self.assertEqual(record["unfixed_parent"]["commit"], scratch.base)
+        self.assertEqual(record["verdict"]["status"], "guarded")
+        # A real reproduction output is where a credential in a stack trace
+        # would be. It reaches the record as a digest and never as bytes.
+        self.assertNotIn("AssertionError", written)
+
+        accepted = self.check(scratch.path / out)
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertIn("clean", accepted.stdout)
+
+        # The same record, each way it stops being one the Promise authorises.
+        def without_an_evidence_field(one):
+            del one["guard"]
+
+        def a_verdict_other_than_guarded(one):
+            one["verdict"]["status"] = "inconclusive"
+
+        def a_parent_that_never_failed(one):
+            one["unfixed_parent"]["report"]["assertion_failures"] = 0
+
+        for name, mutate, code, field in (
+            ("one evidence field removed", without_an_evidence_field,
+             "F001", "schema"),
+            ("a verdict other than guarded", a_verdict_other_than_guarded,
+             "F004", "verdict.status"),
+            ("a parent report that never failed", a_parent_that_never_failed,
+             "F012", "verdict.status"),
+        ):
+            with self.subTest(record=name):
+                mutated = copy.deepcopy(record)
+                mutate(mutated)
+                path = scratch.inputs / f"{code}.json"
+                path.write_text(json.dumps(mutated), encoding="utf-8")
+                refused = self.check(path)
+                self.assertEqual(refused.returncode, 1, refused.stdout)
+                self.assertIn(code, refused.stderr)
+                self.assertIn(field, refused.stderr)
+
+    def check(self, path):
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), "--check", str(path)],
+            capture_output=True, text=True, check=False,
+        )
 
 
 if __name__ == "__main__":
