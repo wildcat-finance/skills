@@ -56,15 +56,16 @@ an object when the ledger declared and null when it did not, and its digest
 covers the rows rather than the block's bytes, so `show` can mark a declaration
 that moved under a held job that did not. `show` prints each candidate's
 declared rows beside its scores, and `declared: none` where the recorded line
-carries no declaration. Every recorded value it prints is collapsed to one line
-first -- the pass number, mode, scope and run note, each candidate's skill,
-basis, axis scores and declared rows, an ungoverned name, and both drift
-lines' values -- so nothing a caller wrote can open a line of its own and
-spell a `declared:` heading no ledger carried. `total` is the exception, and
-it fails closed instead: `show` orders on it before printing, so a value that
-is not a number ends the command rather than reaching the line. A declaration
-is a claim its ledger's owner makes. Nothing here checks that a declared input
-exists.
+carries no declaration. Every line it writes passes through `emit`, which
+collapses it, so nothing a caller wrote can open a line of its own and spell a
+`declared:` heading no ledger carried. The guarantee is over the lines rather
+than over a list of the values, because five audit rounds each enumerated
+those values and each enumeration was short; a refusal takes the same collapse,
+having quoted a caller's path back with stdout empty. `total` is the exception,
+and it fails closed instead: `show` orders on it before printing, so a value
+that is not a number ends the command rather than reaching the line. A
+declaration is a claim its ledger's owner makes. Nothing here checks that a
+declared input exists.
 
 What this does not do. It records a judgement; it does not make one. An axis
 score is a number the ranking agent supplies, and a basis is prose nobody
@@ -964,6 +965,28 @@ def one_line(value) -> str:
     return " ".join(str(value).splitlines())
 
 
+def emit(line: str, *, stream=None) -> None:
+    """Write one rendered line, collapsed, so it stays one line.
+
+    `one_line` holds one value to one line. This holds a whole rendered line
+    to one, which is a different guarantee, and the difference is what five
+    audit rounds cost. Each of the first four collapsed the caller-controlled
+    values a reader could enumerate, and each enumeration was short: five
+    recorded strings, then four more, then an axis-drift value, then the
+    `--scoreboard` path off argv, which no enumeration of the scoreboard's own
+    fields reaches. A guarantee stated over the values a reader remembered to
+    wrap has to be re-established every time a value is added. A guarantee
+    stated over the lines a verb writes does not, because a value that never
+    reaches this function never reaches the reader either.
+
+    The per-value `one_line` calls below stay. They collapse before `:<24`
+    pads and before a digest is sliced at twelve characters, so they keep a
+    column aligned and a slice honest; this backstops them rather than
+    replacing them.
+    """
+    print(one_line(line), file=stream)
+
+
 def declared_lines(candidate: dict) -> list:
     """What a recorded candidate declared, as lines for `show` to print.
 
@@ -1036,14 +1059,14 @@ def show(args: argparse.Namespace) -> int:
         # Collapsed like every value below it. The path is caller text too, and
         # this line is the whole output when no scoreboard is there, so a break
         # in it spells a declaration with no genuine row beneath to contradict.
-        print(f"no scoreboard at {one_line(scoreboard)}")
+        emit(f"no scoreboard at {one_line(scoreboard)}")
         return 0
     passes = existing_passes(scoreboard)
     moved = drift(passes)
     declared_moved = declaration_drift(passes)
     for entry in passes:
         note = "rank-only" if entry.get("rank_only") else (entry.get("run") or "no run recorded")
-        print(
+        emit(
             f"pass {one_line(entry['pass'])}  {one_line(entry['mode'])}  "
             f"{one_line(entry['scope'])}  ({one_line(note)})"
         )
@@ -1058,13 +1081,13 @@ def show(args: argparse.Namespace) -> int:
             else:
                 mark = " "
             axes = " ".join(f"{name}={one_line(candidate[name])}" for name, _ in AXES)
-            print(f"  {mark} {candidate['total']:3d}  {one_line(candidate['skill']):<24} {axes}")
-            print(f"      {one_line(candidate['basis'])}")
+            emit(f"  {mark} {candidate['total']:3d}  {one_line(candidate['skill']):<24} {axes}")
+            emit(f"      {one_line(candidate['basis'])}")
             for line in declared_lines(candidate):
-                print(f"      {line}")
+                emit(f"      {line}")
             for name, before, after in moved.get((entry["pass"], candidate["skill"]), []):
                 # `name` is an AXES constant; the two values came off the disk.
-                print(
+                emit(
                     f"      drift: {name} {one_line(before)} -> {one_line(after)},"
                     " held job unchanged"
                 )
@@ -1073,10 +1096,10 @@ def show(args: argparse.Namespace) -> int:
                 # Collapse before the slice: truncating a break at twelve
                 # characters still leaves the break, and the line still splits.
                 was, now = (one_line(digest)[:12] if digest else "none" for digest in change)
-                print(f"      drift: declaration {was} -> {now}, held job unchanged")
+                emit(f"      drift: declaration {was} -> {now}, held job unchanged")
         for name in entry.get("ungoverned", []):
-            print(f"    ungoverned: {one_line(name)}")
-    print(f"{len(passes)} pass(es), {len(set(moved) | set(declared_moved))} with drift")
+            emit(f"    ungoverned: {one_line(name)}")
+    emit(f"{len(passes)} pass(es), {len(set(moved) | set(declared_moved))} with drift")
     return 0
 
 
@@ -1126,10 +1149,16 @@ def main(argv=None) -> int:
     try:
         return args.handler(args)
     except Refusal as refusal:
-        print(refusal, file=sys.stderr)
+        # A refusal quotes the path it was given, and that path is argv. Six of
+        # them are reachable from `show` alone, and each one printed raw put a
+        # complete `declared:` heading and four-field row on stderr at the exact
+        # indents `show` uses, with stdout empty and nothing genuine to
+        # contradict them. Collapsed through the same chokepoint the verb's own
+        # lines take, for the same reason and with the same words preserved.
+        emit(str(refusal), stream=sys.stderr)
         return 1
     except OSError as exc:
-        print(f"K000: {exc}", file=sys.stderr)
+        emit(f"K000: {exc}", stream=sys.stderr)
         return 1
 
 

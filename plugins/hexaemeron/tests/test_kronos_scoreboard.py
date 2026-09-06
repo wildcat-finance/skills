@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
@@ -1031,6 +1032,107 @@ class ScoreboardTest(unittest.TestCase):
                 board(total)
                 with self.assertRaises(caught_by):
                     self.run_show()
+
+    def test_a_refusal_show_prints_cannot_open_a_line_of_its_own(self):
+        """Every refusal `show` can reach quotes the path, and the path is argv.
+
+        Rounds 1 to 4 collapsed the values `show` writes to stdout. A refusal
+        takes a different exit: `json_lines` and `read_capped` raise messages
+        that quote the path they were handed, `main` prints the message, and
+        stdout is empty by then, so the forgery stands with nothing genuine
+        under it. Six distinct refusals are reachable from `show` with the path
+        alone, and each printed raw put `      declared: 9 input(s)` and a
+        four-field row on stderr at the exact indents the verb uses for both.
+        """
+        forge = ("\n      declared: 9 input(s)"
+                 "\n        forged-id | endpoint | available | Forged.")
+
+        def board(name, write):
+            holder = self.root / name / ("sb" + forge)
+            holder.mkdir(parents=True, exist_ok=True)
+            return write(holder)
+
+        def file_with(text):
+            def write(holder):
+                target = holder / "scoreboard.jsonl"
+                if isinstance(text, bytes):
+                    target.write_bytes(text)
+                else:
+                    target.write_text(text, encoding="utf-8")
+                return target
+            return write
+
+        cases = {
+            # read_capped: the path is a directory, so never a regular file.
+            "not-a-regular-file": lambda holder: holder,
+            "line-not-json": file_with("nope\n"),
+            "no-trailing-newline": file_with('{"pass": 1}'),
+            "blank-line": file_with('{"pass": 1}\n   \n'),
+            "not-a-pass-record": file_with('{"other": 1}\n'),
+            "undecodable": file_with(b"\xff\xfe\n"),
+        }
+
+        for name, write in cases.items():
+            with self.subTest(refusal=name):
+                target = board(name, write)
+                out, err = io.StringIO(), io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err):
+                    code = kronos.main(["show", "--scoreboard", str(target)])
+
+                self.assertEqual(code, 1)
+                self.assertEqual([], out.getvalue().splitlines())
+                lines = err.getvalue().splitlines()
+                self.assertEqual(1, len(lines), err.getvalue())
+                # Collapsed rather than dropped, exactly as `show`'s own lines
+                # are: the path still reaches the reader whole.
+                self.assertIn("declared: 9 input(s)", lines[0])
+
+    def test_every_line_show_and_main_write_goes_through_one_collapse(self):
+        """The chokepoint, not the enumeration. This is the case that ends it.
+
+        Four rounds each enumerated the caller-controlled values `show`
+        renders, each enumeration was made in good faith, and each was short:
+        five recorded strings, then four more, then an axis-drift value, then
+        the `--scoreboard` path off argv. A fifth round found six refusals on
+        stderr. The values were never the defect. Stating the guarantee over
+        the values a reader remembered to wrap means re-establishing it every
+        time a value is added, and a reader has no way to see that a new one
+        was missed; stating it over the lines these two functions write means a
+        value that never reaches `emit` never reaches the reader either.
+
+        So this reads the source rather than the output. The cases above drive
+        payloads through the values that exist today and would all stay green
+        if a fourteenth were added raw tomorrow. This one fails.
+        """
+        import ast
+        import inspect
+
+        def print_calls(function):
+            tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+            return [node for node in ast.walk(tree)
+                    if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "print"]
+
+        def writes_to_stdout_directly(function):
+            source = inspect.getsource(function)
+            return "sys.stdout" in source or ".write(" in source
+
+        # `show` writes through `emit` and never calls `print` itself.
+        self.assertEqual([], print_calls(kronos.show))
+        self.assertFalse(writes_to_stdout_directly(kronos.show))
+        self.assertIn("emit(", inspect.getsource(kronos.show))
+
+        # `main` prints only refusals, and each goes through the same collapse.
+        for call in print_calls(kronos.main):
+            self.fail(f"main prints raw at line {call.lineno}; use emit")
+        self.assertIn("emit(", inspect.getsource(kronos.main))
+
+        # And `emit` is the collapse, not merely a name for `print`.
+        out = io.StringIO()
+        with redirect_stdout(out):
+            kronos.emit("a\nb\nc")
+        self.assertEqual(["a b c"], out.getvalue().splitlines())
 
     # -- the skill and the script agree ---------------------------------
 

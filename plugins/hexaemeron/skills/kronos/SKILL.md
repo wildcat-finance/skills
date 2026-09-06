@@ -237,14 +237,19 @@ that moved for a candidate whose held job did not. A declaration digest that
 moved under an unchanged held job is marked the same way. A `none` on either
 side of that mark says the pass recorded no declaration, which a line written
 before the field existed and a ledger declaring nothing both produce. Every
-recorded value it prints is collapsed to one line first -- the pass number,
-mode, scope and run note, each candidate's skill, basis, axis scores and
-declared rows, an ungoverned name, and both drift lines' values -- so nothing a
-caller wrote can open a line of its own and spell a `declared:` heading no
-ledger wrote. The path it echoes when there is no scoreboard there is collapsed
-the same way, because that argument is caller text as well. `total` is the
-exception: `show` orders on it before printing, so a value that is not an
-integer ends the command rather than reaching the line.
+line it writes passes through one collapse on the way out, so nothing a caller
+wrote can open a line of its own and spell a `declared:` heading no ledger
+wrote. That guarantee is stated over the lines rather than over a list of the
+values, and the difference is the point: five audit rounds each enumerated the
+caller-controlled values and each enumeration was short, by four recorded
+strings, then a digest and a mode and a run note and a skill, then an
+axis-drift value, then the `--scoreboard` path off argv, and last by six
+refusals that quote that path back on stderr with stdout empty. A value that
+does not reach the collapse does not reach the reader either, so a value added
+later is covered by the path it takes rather than by whoever adds it. Refusals
+take the same collapse. `total` is the exception and fails closed instead:
+`show` orders on it before printing, so a value that is not an integer ends the
+command rather than reaching the line.
 
 The scoreboard records a judgement; it does not make one. Every score and basis
 is still the ranking's own work, and a loop that skips the writer leaves a
