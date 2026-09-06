@@ -1,0 +1,543 @@
+{
+  "candidates": [
+    {
+      "id": "installed-hooks",
+      "summary": "Commit the gate scripts and install them into the shared hooks directory with one documented command."
+    },
+    {
+      "id": "hooks-path",
+      "summary": "Keep one tracked .githooks directory and activate it with one git config core.hooksPath per clone."
+    },
+    {
+      "id": "ci-only",
+      "summary": "Ship no local gate and enforce the green-tree evidence from a hosted check on the pushed branch instead."
+    },
+    {
+      "id": "hooks-path-plus-visibility",
+      "summary": "The tracked .githooks directory activated by core.hooksPath, plus a root-suite assertion that names the missing activation and the one command that fixes it."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "no-ruleset-change",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "no-push-merge-gate",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-least",
+      "concern": "compatibility",
+      "id": "worktree-activation",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": 2,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "test-assertions-unchanged",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "recorded-green-comparison",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "absence-visible",
+      "kind": "gate",
+      "owner": "ephoros",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "explicit-bypass",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "activation-commands",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "commit-overhead",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "gate-state-bytes",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "index-mutation-regression",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "installed-hooks",
+      "criterion": "no-ruleset-change",
+      "report": {
+        "path": "reports/installed-hooks-no-ruleset-change.json",
+        "sha256": "93fa80c91df5a84da0c4c29be7f392b1c0186cbd9927e1d9cf2dfd4b77450a60"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "no-push-merge-gate",
+      "report": {
+        "path": "reports/installed-hooks-no-push-merge-gate.json",
+        "sha256": "d15a4a8004b7de3c9286987b4ba4cc9ddb571691a230657ac64bd6874740feb8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "worktree-activation",
+      "report": {
+        "path": "reports/installed-hooks-worktree-activation.json",
+        "sha256": "b25631b50d272a3d3e088d6dd26dd695303fe8a7292dade0750f45c5c56f8781"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "test-assertions-unchanged",
+      "report": {
+        "path": "reports/installed-hooks-test-assertions-unchanged.json",
+        "sha256": "bbfd49a0627f7cd036ad87390bdd6aabf522272b7ee914fc6f371d4a9b5887a6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "recorded-green-comparison",
+      "report": {
+        "path": "reports/installed-hooks-recorded-green-comparison.json",
+        "sha256": "bc4bfa04cc9fadfa5275db0e84115d4405bfd6a37ab609ddad6154eda1b2aade"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "absence-visible",
+      "report": {
+        "path": "reports/installed-hooks-absence-visible.json",
+        "sha256": "b109d4c055a90c71a651802d6fb79e68e167af5818d9c67444a9a70a3a910701"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "explicit-bypass",
+      "report": {
+        "path": "reports/installed-hooks-explicit-bypass.json",
+        "sha256": "3fc1edd6741a4d73a28cce20c91923ea0f89a48888c2dce09c9e643ca9fc53cc"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "activation-commands",
+      "report": {
+        "path": "reports/installed-hooks-activation-commands.json",
+        "sha256": "cf2f4ac5c0661cbec82b062b4103eb051ab182192c6d05a4611da496ca54b365"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "commit-overhead",
+      "report": {
+        "path": "reports/installed-hooks-commit-overhead.json",
+        "sha256": "a49e94f62859c8d81fe8c2f39c268e681f01a8aa128efb0cd36eb4981418ad30"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "installed-hooks",
+      "criterion": "gate-state-bytes",
+      "report": {
+        "path": "reports/installed-hooks-gate-state-bytes.json",
+        "sha256": "24e1888cba270f6865aa0c9e7106abc6359aad1326fcf4dddc32e2a4d0a9abd5"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "installed-hooks",
+      "criterion": "index-mutation-regression",
+      "report": "reports/installed-hooks-index-mutation-regression.json",
+      "resolver": "python3 -m unittest tests.test_commit_gate.HookIndexMutationTests -v",
+      "state": "pending"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "no-ruleset-change",
+      "report": {
+        "path": "reports/hooks-path-no-ruleset-change.json",
+        "sha256": "7aae4f29b403d6ce22b57cdd4e609c23073ef4d0e7d6eafa337065a26057d202"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "no-push-merge-gate",
+      "report": {
+        "path": "reports/hooks-path-no-push-merge-gate.json",
+        "sha256": "bac7954d4e6e443a6541e5d08df1cc7128e4c224700b588d0ce81c3733bcd8fa"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "worktree-activation",
+      "report": {
+        "path": "reports/hooks-path-worktree-activation.json",
+        "sha256": "41a69aa8fe858ef7b98ef327e253231ecf1048d7bb75df6da74af19d65f2d124"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "test-assertions-unchanged",
+      "report": {
+        "path": "reports/hooks-path-test-assertions-unchanged.json",
+        "sha256": "8b8e2e983010f4fc25c8e810ad4fc9b6f70826a974806e9699de6fdf8b7051d3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "recorded-green-comparison",
+      "report": {
+        "path": "reports/hooks-path-recorded-green-comparison.json",
+        "sha256": "1a8ec0eb7aa5ce41752b60a35310e72da0488438329e978e2fae8ff33c8aead9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "absence-visible",
+      "report": {
+        "path": "reports/hooks-path-absence-visible.json",
+        "sha256": "e49fc4027120943f216657a5409d41facdd16048055050d03b69eb1100dcdae4"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "explicit-bypass",
+      "report": {
+        "path": "reports/hooks-path-explicit-bypass.json",
+        "sha256": "4687f94a81e76905199061026cb67fe11c91feb4faa1f87a8fe5dc957af5dfea"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "activation-commands",
+      "report": {
+        "path": "reports/hooks-path-activation-commands.json",
+        "sha256": "5e51df3a55ce0e64f77566e582be6b0aa1cc690c73cb8b8553758fdecd66a5b5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "commit-overhead",
+      "report": {
+        "path": "reports/hooks-path-commit-overhead.json",
+        "sha256": "8da068432fa6cfc609380222ab360fe9797d229053bf11490329c59836ebe31c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path",
+      "criterion": "gate-state-bytes",
+      "report": {
+        "path": "reports/hooks-path-gate-state-bytes.json",
+        "sha256": "6aa58eea7cfc63289a1862c1e521672e63f3043008588471c1e37e50bad2c8d3"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "hooks-path",
+      "criterion": "index-mutation-regression",
+      "report": "reports/hooks-path-index-mutation-regression.json",
+      "resolver": "python3 -m unittest tests.test_commit_gate.HookIndexMutationTests -v",
+      "state": "pending"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "no-ruleset-change",
+      "report": {
+        "path": "reports/ci-only-no-ruleset-change.json",
+        "sha256": "96435fd1502f60069afcda6a17664d1d62437937b9eafd178f1f7a4275abb260"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "no-push-merge-gate",
+      "report": {
+        "path": "reports/ci-only-no-push-merge-gate.json",
+        "sha256": "8865335992a7ce0cb0346a9f525287e1ff07adfd5ffccd550ef2f1ce72d7e1f2"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "worktree-activation",
+      "report": {
+        "path": "reports/ci-only-worktree-activation.json",
+        "sha256": "26158f64ec9278172325a0329085d04d6adeea1eac5b9103a8e9618fa385bb76"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "test-assertions-unchanged",
+      "report": {
+        "path": "reports/ci-only-test-assertions-unchanged.json",
+        "sha256": "9ec1b6d3da6b44a03d59a719fb1829538faeadc7b78c612c9f5360e054cf10a9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "recorded-green-comparison",
+      "report": {
+        "path": "reports/ci-only-recorded-green-comparison.json",
+        "sha256": "6eb533afa469f23862f303046fab661c972fdac83aa7368480e527be32e4da19"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "absence-visible",
+      "report": {
+        "path": "reports/ci-only-absence-visible.json",
+        "sha256": "4e34f2bc10ab605e90517a7303da0fa82497a1effad7b58ccbb357cd736e70a4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "explicit-bypass",
+      "report": {
+        "path": "reports/ci-only-explicit-bypass.json",
+        "sha256": "89b054ff4c0573e5852fdf3491a56c3759cd9b8ade4bc8776c26aba2dfce5174"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "activation-commands",
+      "report": {
+        "path": "reports/ci-only-activation-commands.json",
+        "sha256": "0ee046accc15370e73c8db8e48851a32db0b467a82acfe892851ab794304c862"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "commit-overhead",
+      "report": {
+        "path": "reports/ci-only-commit-overhead.json",
+        "sha256": "78a6190c5e050f708982198d081574549272f16aac2f25250ec5e7913161f332"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "ci-only",
+      "criterion": "gate-state-bytes",
+      "report": {
+        "path": "reports/ci-only-gate-state-bytes.json",
+        "sha256": "d92f538aecb91d3162b22b6e65658959f178053eeaf627a68b3988a4996385e2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "ci-only",
+      "criterion": "index-mutation-regression",
+      "report": "reports/ci-only-index-mutation-regression.json",
+      "resolver": "python3 -m unittest tests.test_commit_gate.HookIndexMutationTests -v",
+      "state": "pending"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "no-ruleset-change",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-no-ruleset-change.json",
+        "sha256": "4b2057884c82eaeecf7351ee881b1557f7ab66f157c04b119558bb2e966a4a68"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "no-push-merge-gate",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-no-push-merge-gate.json",
+        "sha256": "09350e0d789051fa6a009cc1d6b7cd6bd8f592690043c51adaf4f0afd35f381c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "worktree-activation",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-worktree-activation.json",
+        "sha256": "83848a6ba8ede131fc51fbc2fe1f09f3f82ac638cca6744870f96496bccb9c88"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "test-assertions-unchanged",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-test-assertions-unchanged.json",
+        "sha256": "096cf3543a45f123d5ea4a094b5228a557279da9534d374dffb6410de1298299"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "recorded-green-comparison",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-recorded-green-comparison.json",
+        "sha256": "8fcccccd6211cd9089b3cb5fd936f37581a1bc2035747b8eaebc149835971f79"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "absence-visible",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-absence-visible.json",
+        "sha256": "c3d7b759b9b07b308b35f11559d38ece1adaa66180c41000638186c27968b9ac"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "explicit-bypass",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-explicit-bypass.json",
+        "sha256": "9abcb3f97526a5039fec9eaa87757442b7f3265af0749f7d573726e09af0fbe2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "activation-commands",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-activation-commands.json",
+        "sha256": "24f42a06424a580660ea7d1dffa2aab5057dbdc9d7c7526698d76681b66562c0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "commit-overhead",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-commit-overhead.json",
+        "sha256": "c72b4f0a2270f3bd40a416812760bcfb849b489ee0bebd3d674a3e54f0fedead"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "gate-state-bytes",
+      "report": {
+        "path": "reports/hooks-path-plus-visibility-gate-state-bytes.json",
+        "sha256": "3ee13f634f6e53e53fbcd58aefb8257a31802401233c4fc9f750aa6e4bb4abd2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "hooks-path-plus-visibility",
+      "criterion": "index-mutation-regression",
+      "report": "reports/hooks-path-plus-visibility-index-mutation-regression.json",
+      "resolver": "python3 -m unittest tests.test_commit_gate.HookIndexMutationTests -v",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "hooks-path-plus-visibility",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
