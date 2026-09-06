@@ -1,4 +1,4 @@
-# Decision: Govern real-data demonstrations separately
+# ADR-084: Govern real-data demonstrations separately
 
 ## Status
 

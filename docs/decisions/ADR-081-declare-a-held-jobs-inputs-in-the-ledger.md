@@ -1,4 +1,4 @@
-# Decision: Declare a held job's required inputs in the ledger
+# ADR-081: Declare a held job's required inputs in the ledger
 
 Stable identity: `adr/declare-a-held-jobs-inputs-in-the-ledger`.
 

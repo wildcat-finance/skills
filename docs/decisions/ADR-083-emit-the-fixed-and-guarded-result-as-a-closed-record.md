@@ -1,9 +1,9 @@
-# Decision: Emit the fixed-and-guarded result as a closed record
+# ADR-083: Emit the fixed-and-guarded result as a closed record
 
 ## Status
 
 Proposed, 2026-09-05. Numberless under
-[ADR-077](../ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md), which
+[ADR-077](ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md), which
 assigns the number at merge.
 
 ## Context
@@ -11,7 +11,7 @@ assigns the number at merge.
 Elenchus reproduces a failure, localises it to a mechanism, repairs the
 mechanism and leaves a guard, then hands the result back as prose. The
 `elenchus-fixed-and-guarded` Promise in
-[the skill file](../../../plugins/hexaemeron/skills/elenchus/SKILL.md) already
+[the skill file](../../plugins/hexaemeron/skills/elenchus/SKILL.md) already
 names every part of that claim, and the skill already holds every part in order
 to make it. Nothing survives the run in a form another program can read.
 
@@ -23,7 +23,7 @@ next wants to count recurrences, unless the reason is written down where the
 shape is.
 
 Both are settled here rather than in
-[the study](../../elenchus-fixed-and-guarded-record/study.md), because a study
+[the study](../elenchus-fixed-and-guarded-record/study.md), because a study
 is read once and a record is read whenever somebody meets the schema.
 
 ## Decision

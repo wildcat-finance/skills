@@ -1,4 +1,4 @@
-# Decision: Derive topology counts from the tree
+# ADR-082: Derive topology counts from the tree
 
 ## Status
 
