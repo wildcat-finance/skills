@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 import glob
+import copy
 import hashlib
 import json
 import os
@@ -866,6 +867,183 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertNotEqual(source_state, state)
         self.assertEqual("checkpoint:restore", json.loads(ledger.splitlines()[-1])["event"])
         self.assertEqual(expected_next, json.loads(result.stdout)["next"])
+
+    def test_checkpoint_identity_is_byte_identical_after_fresh_checkout_restore(self):
+        self.git(
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/wildcat-finance/example.git",
+        )
+        self.to_post_push()
+        producer = self.run_ctl("checkpoint", "identity").stdout
+        capsule, _, exported = self.export("identity-roundtrip")
+        origin, _ = self.fresh_origin_for(capsule)
+        subprocess.run(
+            [
+                "git",
+                "remote",
+                "set-url",
+                "origin",
+                "https://github.com/wildcat-finance/example.git",
+            ],
+            cwd=origin,
+            check=True,
+            capture_output=True,
+        )
+
+        self.restore_into(origin, capsule, exported["manifest_sha256"])
+        restored = self.restored_worktree(origin)
+        receiver = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", str(restored), "checkpoint", "identity"],
+            cwd=restored,
+            capture_output=True,
+            text=True,
+            env=self.direct_environment(),
+        )
+
+        self.assertEqual(receiver.returncode, 0, receiver.stderr)
+        self.assertEqual(producer, receiver.stdout)
+        self.assertEqual(
+            json.loads(producer)["snapshot_id"],
+            json.loads(receiver.stdout)["snapshot_id"],
+        )
+
+    def test_restored_identity_refuses_hostile_join_variants_without_writes(self):
+        self.git(
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/wildcat-finance/example.git",
+        )
+        self.to_post_push()
+        capsule, _, exported = self.export("hostile-identity-join")
+        origin, _ = self.fresh_origin_for(capsule)
+        subprocess.run(
+            [
+                "git",
+                "remote",
+                "set-url",
+                "origin",
+                "https://github.com/wildcat-finance/example.git",
+            ],
+            cwd=origin,
+            check=True,
+            capture_output=True,
+        )
+        self.restore_into(origin, capsule, exported["manifest_sha256"])
+        restored = self.restored_worktree(origin)
+        state_path = restored / ".hexaemeron" / "state.json"
+        ledger_path = restored / ".hexaemeron" / "ledger.jsonl"
+        clean_state = state_path.read_bytes()
+        clean_ledger = ledger_path.read_bytes()
+        module = hexctl_module()
+
+        def rehash(entry):
+            body = {
+                key: entry[key]
+                for key in ("ts", "event", "data", "prev", "state")
+            }
+            entry["hash"] = hashlib.sha256(
+                module.canonical(body).encode("utf-8")
+            ).hexdigest()
+
+        def alter_join(state, entries):
+            entries[-1]["data"]["source_ledger_tail"] = "0" * 64
+            rehash(entries[-1])
+
+        def substitute_ref(state, entries):
+            name = next(iter(entries[-1]["data"]["refs"]))
+            entries[-1]["data"]["refs"][name] = "9" * 40
+            rehash(entries[-1])
+
+        def smuggle_path(state, entries):
+            entries[-1]["data"]["old_origin"] += "/../smuggled"
+            rehash(entries[-1])
+
+        def substitute_anchor(state, entries):
+            state["receipts"]["run_anchor"]["initial_base_sha"] = "8" * 40
+            entries[-1]["state"] = module.state_fingerprint(state)
+            entries[-1]["data"]["relocated_state_fingerprint"] = entries[-1][
+                "state"
+            ]
+            rehash(entries[-1])
+
+        def second_restore(state, entries):
+            duplicate = copy.deepcopy(entries[-1])
+            duplicate["prev"] = entries[-1]["hash"]
+            rehash(duplicate)
+            entries.append(duplicate)
+
+        def arbitrary_suffix(state, entries):
+            suffix = {
+                "ts": entries[-1]["ts"],
+                "event": "record:after-restore",
+                "data": {},
+                "prev": entries[-1]["hash"],
+                "state": entries[-1]["state"],
+            }
+            rehash(suffix)
+            entries.append(suffix)
+
+        for name, mutation in (
+            ("altered-restore-join", alter_join),
+            ("ref-substitution", substitute_ref),
+            ("anchor-substitution", substitute_anchor),
+            ("path-delta-smuggling", smuggle_path),
+            ("second-restore-suffix", second_restore),
+            ("arbitrary-extra-suffix", arbitrary_suffix),
+        ):
+            with self.subTest(name=name):
+                state = json.loads(clean_state)
+                entries = [json.loads(line) for line in clean_ledger.splitlines()]
+                mutation(state, entries)
+                candidate_state = (
+                    json.dumps(state, indent=2, sort_keys=False).encode("utf-8")
+                    + b"\n"
+                )
+                candidate_ledger = b"".join(
+                    json.dumps(entry, sort_keys=True).encode("utf-8") + b"\n"
+                    for entry in entries
+                )
+                state_path.write_bytes(candidate_state)
+                ledger_path.write_bytes(candidate_ledger)
+                before = state_path.read_bytes(), ledger_path.read_bytes()
+                refused = subprocess.run(
+                    [
+                        sys.executable,
+                        HEXCTL,
+                        "--dir",
+                        str(restored),
+                        "checkpoint",
+                        "identity",
+                    ],
+                    cwd=restored,
+                    capture_output=True,
+                    text=True,
+                    env=self.direct_environment(),
+                )
+                self.assertEqual(refused.returncode, 2, refused.stderr)
+                self.assertEqual(refused.stdout, "")
+                self.assertEqual(
+                    before,
+                    (state_path.read_bytes(), ledger_path.read_bytes()),
+                )
+
+        state_path.write_bytes(clean_state)
+        prefix_lines = clean_ledger.splitlines(keepends=True)
+        ledger_path.write_bytes(b"".join(prefix_lines[1:]))
+        before = state_path.read_bytes(), ledger_path.read_bytes()
+        truncated = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", str(restored), "checkpoint", "identity"],
+            cwd=restored,
+            capture_output=True,
+            text=True,
+            env=self.direct_environment(),
+        )
+        self.assertEqual(truncated.returncode, 2, truncated.stderr)
+        self.assertEqual(truncated.stdout, "")
+        self.assertEqual(before, (state_path.read_bytes(), ledger_path.read_bytes()))
 
     def test_restore_controller_local_sources_survive_clone_loss(self):
         self.to_post_push_with_controller_sources()
