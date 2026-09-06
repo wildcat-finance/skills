@@ -14650,6 +14650,11 @@ def _checkpoint_identity_semantic_capture(
     imported = json.loads(json.dumps(current))
     imported["config"]["git"]["origin"] = receipt.get("old_origin")
     imported["config"]["git"]["worktree"] = receipt.get("old_worktree")
+    imported_bytes = (
+        json.dumps(imported, indent=2, sort_keys=False).encode("utf-8") + b"\n"
+    )
+    if hashlib.sha256(imported_bytes).hexdigest() != receipt["source_state_sha256"]:
+        die("checkpoint identity restore source state does not match the receipt")
     manifest = {
         "source": {
             "state_sha256": receipt["source_state_sha256"],
@@ -14679,7 +14684,7 @@ def _checkpoint_identity_semantic_capture(
     )
     if (
         prefix_tail != receipt["source_ledger_tail"]
-        or prefix_entries[-1]["event"] == "checkpoint:restore"
+        or any(entry["event"] == "checkpoint:restore" for entry in prefix_entries)
     ):
         die("checkpoint identity restore prefix is not one accepted producer")
     return (

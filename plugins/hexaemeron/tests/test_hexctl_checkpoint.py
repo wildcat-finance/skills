@@ -952,6 +952,10 @@ class HexctlCheckpointTests(HexctlCase):
             entries[-1]["data"]["source_ledger_tail"] = "0" * 64
             rehash(entries[-1])
 
+        def alter_source_state_digest(state, entries):
+            entries[-1]["data"]["source_state_sha256"] = "7" * 64
+            rehash(entries[-1])
+
         def substitute_ref(state, entries):
             name = next(iter(entries[-1]["data"]["refs"]))
             entries[-1]["data"]["refs"][name] = "9" * 40
@@ -975,6 +979,24 @@ class HexctlCheckpointTests(HexctlCase):
             rehash(duplicate)
             entries.append(duplicate)
 
+        def earlier_restore(state, entries):
+            entries[1]["event"] = "checkpoint:restore"
+            entries[1]["data"] = {}
+            for index in range(1, len(entries) - 1):
+                if index > 1:
+                    entries[index]["prev"] = entries[index - 1]["hash"]
+                rehash(entries[index])
+            prefix = b"".join(
+                json.dumps(entry, sort_keys=True).encode("utf-8") + b"\n"
+                for entry in entries[:-1]
+            )
+            entries[-1]["prev"] = entries[-2]["hash"]
+            entries[-1]["data"]["source_ledger_tail"] = entries[-2]["hash"]
+            entries[-1]["data"]["source_ledger_sha256"] = hashlib.sha256(
+                prefix
+            ).hexdigest()
+            rehash(entries[-1])
+
         def arbitrary_suffix(state, entries):
             suffix = {
                 "ts": entries[-1]["ts"],
@@ -988,10 +1010,12 @@ class HexctlCheckpointTests(HexctlCase):
 
         for name, mutation in (
             ("altered-restore-join", alter_join),
+            ("altered-source-state-digest", alter_source_state_digest),
             ("ref-substitution", substitute_ref),
             ("anchor-substitution", substitute_anchor),
             ("path-delta-smuggling", smuggle_path),
             ("second-restore-suffix", second_restore),
+            ("earlier-restore-in-prefix", earlier_restore),
             ("arbitrary-extra-suffix", arbitrary_suffix),
         ):
             with self.subTest(name=name):

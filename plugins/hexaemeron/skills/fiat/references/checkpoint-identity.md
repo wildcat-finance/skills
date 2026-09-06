@@ -22,9 +22,9 @@ must be one of:
 
 One immediate `checkpoint:restore` tail is transparent only when its closed
 receipt reconstructs the exact imported ledger prefix and producer state. The
-source ledger digest and tail, relocation paths, relocated state fingerprint,
-and fixed ref map must all join. The imported prefix must itself end at one of
-the two boundaries above and must not end in another restore. Identity projects
+source state digest, source ledger digest and tail, relocation paths, relocated
+state fingerprint, and fixed ref map must all join. The imported prefix must
+itself end at one of the two boundaries above and must contain no prior restore. Identity projects
 that prefix and its producer state, so a fresh-checkout receiver emits the exact
 producer bytes and `snapshot_id`.
 
@@ -48,8 +48,8 @@ helper opens no path and writes nothing.
 
 When the captured tail is `checkpoint:restore`, the helper validates and removes
 only that one relocation layer before applying the same boundary classifier.
-It does not skip a second restore, another suffix entry, an altered prefix, or
-an unowned state-path delta.
+It does not skip a second restore anywhere in the prefix, another suffix entry,
+an altered prefix, or an unowned state-path delta.
 
 `evidence` is exactly:
 
