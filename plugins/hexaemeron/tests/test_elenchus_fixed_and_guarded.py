@@ -1111,6 +1111,43 @@ class EndToEnd(unittest.TestCase):
                 self.assertIn(code, refused.stderr)
                 self.assertIn(field, refused.stderr)
 
+        # The demo path of the #1318 study, argv for argv, from inside the
+        # scratch repository: the two hostile drafts the #1275 audit
+        # constructed against the genuine result, then `--check` on the
+        # record emitted above. Each hostile draft is the genuine one with a
+        # single field changed, so the refusal is the emit path's and not a
+        # malformed input's.
+        genuine = json.loads(draft.read_text(encoding="utf-8"))
+        guard_test_absent = copy.deepcopy(genuine)
+        guard_test_absent["guard"]["test"] = (
+            "NoSuchClass.test_this_test_does_not_exist_anywhere")
+        scratch.write("guard-test-absent.json", guard_test_absent)
+        repair_files_short = copy.deepcopy(genuine)
+        repair_files_short["repair"]["files"] = ["src/widget.py"]
+        scratch.write("repair-files-short.json", repair_files_short)
+
+        for name, code, field in (
+            ("guard-test-absent", "F018", "guard.test"),
+            ("repair-files-short", "F019", "repair.files"),
+        ):
+            with self.subTest(draft=name):
+                refused = self.in_scratch(
+                    sys.executable, str(SCRIPT),
+                    "--draft", f"inputs/{name}.json",
+                    "--result", "inputs/result.json",
+                    "--out", f"records/{name}.json",
+                )
+                self.assertEqual(refused.returncode, 1, refused.stdout)
+                self.assertEqual(refused.stdout, "")
+                self.assertIn(f"{code} {field}", refused.stderr)
+                self.assertFalse((scratch.path / "records" / f"{name}.json").exists())
+
+        checked = self.in_scratch(
+            sys.executable, str(SCRIPT), "--check", "records/fixed-and-guarded.json")
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertEqual(checked.stdout, "records/fixed-and-guarded.json: clean\n")
+        self.assertEqual(checked.stderr, "")
+
     def check(self, path):
         return subprocess.run(
             [sys.executable, str(SCRIPT), "--check", str(path)],
