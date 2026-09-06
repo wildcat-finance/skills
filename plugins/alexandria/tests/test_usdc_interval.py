@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -27,10 +28,12 @@ from alexandria_lib.interval import (  # noqa: E402
     JOURNAL_CLASSES,
     OPENING_CLASS,
     Staging,
-    discover_epochs,
+    plan_digest,
+    validate_checkpoint,
 )
 import usdc_interval  # noqa: E402
 from usdc_interval import (  # noqa: E402
+    CODE_COMPONENT,
     Builder,
     Collector,
     HttpsTransport,
@@ -831,45 +834,46 @@ def registry():
     return json.loads(REGISTRY.read_text(encoding="utf-8"))
 
 
-class IntervalCheckTests(CollectorTestCase):
-    """The conformance evidence for `release-verifies-offline`."""
+def component_path(output, name):
+    """Where one named component's bytes live inside a built release."""
+    manifest = json.loads((Path(output) / "manifest.json").read_text())
+    return Path(output) / next(
+        component["object_path"] for component in manifest["components"]
+        if component["name"] == name
+    )
 
-    IMPLEMENTATION = "0x42f9505a376761b180e27a01ba0554244ed1de7d"
+
+def component_document(output, name):
+    return json.loads(component_path(output, name).read_text())
+
+
+class ReleaseTestCase(CollectorTestCase):
+    """Collect, reconcile and build over the fixture, for the release-level cases."""
 
     def setUp(self):
         super().setUp()
         self.registry = registry()
-        self.epochs = self.epoch_table()
 
-    def epoch_table(self, plan=None):
+    def pipeline(self, name="release", second=None, reconcile=True, plan=None):
         plan = plan or self.plan
-        start, end = int(plan["interval"]["start"]), int(plan["interval"]["end"])
-        return discover_epochs(
-            chain=plan["chain"], deployment=plan["deployment"], proxy=plan["proxy"],
-            interval=plan["interval"], upgrade_logs=[],
-            slot_reads={str(start): "0x" + "0" * 24 + self.IMPLEMENTATION[2:]},
-            code_reads={self.IMPLEMENTATION: "0x60806040" + "ab" * 32},
-            block_hashes={
-                str(start): self.state["blocks"][str(plan["shards"][0]["end"])],
-                str(end): self.state["blocks"][str(end)],
-            },
-        )
-
-    def pipeline(self, name="release", second=None, reconcile=True):
         staging = self.scratch(f"{name}-staging")
-        Collector(self.plan, staging, FixtureTransport(self.state)).collect()
+        Collector(plan, staging, FixtureTransport(self.state)).collect()
         if reconcile:
             Reconciler(
-                self.plan, staging, second or FixtureTransport(self.state),
+                plan, staging, second or FixtureTransport(self.state),
                 "second archive endpoint, class only",
             ).reconcile()
         return staging, self.root / name
 
-    def build(self, staging, output, epochs=None, registry_document=None):
-        return Builder(
-            self.plan, staging, epochs or self.epochs,
-            registry_document or self.registry, created_at=CREATED_AT,
+    def build(self, staging, output, registry_document=None, builder=Builder, plan=None):
+        return builder(
+            plan or self.plan, staging, registry_document or self.registry, created_at=CREATED_AT,
         ).build(output)
+
+
+
+class IntervalCheckTests(ReleaseTestCase):
+    """The conformance evidence for `release-verifies-offline`."""
 
     def test_a_release_over_a_clean_interval_verifies_offline(self):
         staging, output = self.pipeline()
@@ -879,7 +883,8 @@ class IntervalCheckTests(CollectorTestCase):
         self.assertEqual(summary["interval"], dict(self.plan["interval"]))
         self.assertEqual(summary["shard_statuses"], {"complete": 5})
         self.assertEqual(summary["reconciliation"], "agreed")
-        self.assertEqual(summary["epochs"], 1)
+        self.assertEqual(summary["epochs"], 2)
+        self.assertEqual(set(summary["implementations"]), {IMPLEMENTATION_A, IMPLEMENTATION_B})
 
     def test_a_second_build_over_the_same_tree_yields_the_same_identity(self):
         staging, output = self.pipeline()
@@ -893,10 +898,11 @@ class IntervalCheckTests(CollectorTestCase):
         manifest = json.loads((output / "manifest.json").read_text())
         self.assertEqual(
             {component["name"] for component in manifest["components"]},
-            {"boundary-blocks", "epoch-table", "error-receipts", "interval-plan",
-             "logs", "reconciliation", "registry", "traces"},
+            {"boundary-blocks", "epoch-evidence", "epoch-table", "error-receipts",
+             "implementation-code", "interval-plan", "logs", "reconciliation",
+             "registry", "traces"},
         )
-        self.assertLess(len(manifest["components"]), 128)
+        self.assertEqual(len(manifest["components"]), 10)
 
     def test_every_coverage_count_is_derived_from_the_component_bytes(self):
         staging, output = self.pipeline()
@@ -914,19 +920,16 @@ class IntervalCheckTests(CollectorTestCase):
         """A count asserted rather than derived must not survive `ingest`."""
 
         class Inflating(Builder):
-            def _capture(self, component, document, reconciliation):
-                capture = super()._capture(component, document, reconciliation)
+            def _capture(self, component, document, reconciliation, boundaries):
+                capture = super()._capture(component, document, reconciliation, boundaries)
                 if component == "logs":
                     capture["coverage"]["collections"][0]["record_count"] += 1
                     capture["coverage"]["record_count"] += 1
                 return capture
 
         staging, output = self.pipeline()
-        builder = Inflating(
-            self.plan, staging, self.epochs, self.registry, created_at=CREATED_AT
-        )
         with self.assertRaisesRegex(AlexandriaError, "declares .* records but found"):
-            builder.build(output)
+            self.build(staging, output, builder=Inflating)
 
     def test_the_uncollected_registry_entries_are_declared_as_a_gap(self):
         staging, output = self.pipeline()
@@ -936,9 +939,10 @@ class IntervalCheckTests(CollectorTestCase):
             capture["id"]: capture["coverage"]["gaps"] for capture in manifest["captures"]
         }
         self.assertTrue(any("27 of the 28 registry entries" in gap for gap in gaps["registry"]))
-        for name in EVIDENCE_CLASSES:
+        for name in JOURNAL_CLASSES:
             self.assertTrue(any("no credit event" in gap for gap in gaps[name]))
-            self.assertTrue(any("first block" in gap for gap in gaps[name]))
+            # The first block is read now, so no scope names it as unread.
+            self.assertFalse(any("first block" in gap for gap in gaps[name]))
 
     def test_no_coverage_reports_complete_while_naming_a_gap(self):
         staging, output = self.pipeline()
@@ -980,17 +984,25 @@ class IntervalCheckTests(CollectorTestCase):
             self.build(staging, self.root / "no-release")
 
     def test_an_epoch_table_that_does_not_tile_the_interval_refuses(self):
+        class Shortening(Builder):
+            def _epochs(self, phase, end_hash):
+                epochs = super()._epochs(phase, end_hash)
+                epochs[-1]["end_block"] = str(int(epochs[-1]["end_block"]) - 1)
+                return epochs
+
         staging, output = self.pipeline("short-epochs")
-        epochs = deepcopy(self.epochs)
-        epochs[0]["end_block"] = str(int(epochs[0]["end_block"]) - 1)
         with self.assertRaisesRegex(AlexandriaError, "uncovered"):
-            self.build(staging, output, epochs=epochs)
+            self.build(staging, output, builder=Shortening)
 
     def test_an_epoch_from_another_market_refuses_at_check(self):
+        class Mislabelling(Builder):
+            def _epochs(self, phase, end_hash):
+                epochs = super()._epochs(phase, end_hash)
+                epochs[0]["proxy"] = "0x" + "ab" * 20
+                return epochs
+
         staging, output = self.pipeline("other-market")
-        epochs = deepcopy(self.epochs)
-        epochs[0]["proxy"] = "0x" + "ab" * 20
-        self.build(staging, output, epochs=epochs)
+        self.build(staging, output, builder=Mislabelling)
         with self.assertRaisesRegex(AlexandriaError, "does not belong to the plan's market"):
             check_interval(output)
 
@@ -1040,9 +1052,7 @@ class IntervalCheckTests(CollectorTestCase):
                     usdc_interval._receipt_shards = original
 
         staging, output = self.pipeline("inflated-receipt")
-        Inflating(
-            self.plan, staging, self.epochs, self.registry, created_at=CREATED_AT
-        ).build(output)
+        self.build(staging, output, builder=Inflating)
         with self.assertRaisesRegex(AlexandriaError, "record counts the journals do not carry"):
             check_interval(output)
 
@@ -1061,23 +1071,63 @@ class IntervalCheckTests(CollectorTestCase):
                 shard["record_counts"], {"boundary-blocks": 1, "logs": 3, "traces": 2}
             )
 
-    def test_only_the_evidence_components_carry_the_unread_first_block_gap(self):
-        staging, output = self.pipeline("gap-scope")
-        self.build(staging, output)
+    def omission_naming(self, output, omitted):
         manifest = json.loads((output / "manifest.json").read_text())
-        naming = {
+        return {
             capture["id"]
             for capture in manifest["captures"]
-            if any("first block" in gap for gap in capture["coverage"]["gaps"])
+            if any(
+                f"the {omitted} evidence class was not declared" in gap
+                for gap in capture["coverage"]["gaps"]
+            )
         }
-        self.assertEqual(naming, set(EVIDENCE_CLASSES))
+
+    def test_a_plan_omitting_traces_names_the_gap_on_every_evidence_component_and_no_other(self):
+        plan = deepcopy(self.plan)
+        plan["evidence_classes"] = ["boundary-blocks", "logs"]
+        staging, output = self.pipeline("no-traces", plan=plan)
+        self.build(staging, output, plan=plan)
+        self.assertEqual(
+            self.omission_naming(output, "traces"), {"boundary-blocks", "logs", OPENING_CLASS}
+        )
+        self.assertEqual(self.omission_naming(output, "logs"), set())
+        gap = next(
+            gap for gap in json.loads((output / "manifest.json").read_text())["captures"][0]["coverage"]["gaps"]
+            if "traces evidence class" in gap
+        )
+        self.assertIn("no internal call to the proxy was preserved", gap)
+        self.assertEqual(check_interval(output)["epochs"], 2)
+
+    def test_a_plan_omitting_logs_names_the_undetectable_upgrade(self):
+        """Without logs the epoch table has one epoch by construction, and every scope says why."""
+        plan = deepcopy(self.plan)
+        plan["evidence_classes"] = ["boundary-blocks"]
+        staging, output = self.pipeline("no-logs", plan=plan)
+        self.build(staging, output, plan=plan)
+        self.assertEqual(self.omission_naming(output, "logs"), {"boundary-blocks", OPENING_CLASS})
+        self.assertEqual(self.omission_naming(output, "traces"), {"boundary-blocks", OPENING_CLASS})
+        manifest = json.loads((output / "manifest.json").read_text())
+        gaps = next(c for c in manifest["captures"] if c["id"] == "boundary-blocks")["coverage"]["gaps"]
+        self.assertTrue(any("Upgraded(address) inside the interval is undetectable" in gap for gap in gaps))
+        self.assertEqual(check_interval(output)["epochs"], 1)
+
+    def test_a_full_plan_names_no_omitted_class(self):
+        staging, output = self.pipeline("all-classes")
+        self.build(staging, output)
+        for name in EVIDENCE_CLASSES:
+            self.assertEqual(self.omission_naming(output, name), set(), name)
 
     def test_an_epoch_and_a_shard_naming_one_block_must_agree(self):
         """Two sources describing the interval's last block cannot disagree."""
+
+        class Clashing(Builder):
+            def _epochs(self, phase, end_hash):
+                epochs = super()._epochs(phase, end_hash)
+                epochs[-1]["end_hash"] = "0x" + "77" * 32
+                return epochs
+
         staging, output = self.pipeline("hash-clash")
-        epochs = deepcopy(self.epochs)
-        epochs[-1]["end_hash"] = "0x" + "77" * 32
-        self.build(staging, output, epochs=epochs)
+        self.build(staging, output, builder=Clashing)
         with self.assertRaisesRegex(AlexandriaError, "name different block hashes"):
             check_interval(output)
 
@@ -1214,6 +1264,28 @@ class FinalityRebindTests(CollectorTestCase):
         self.assertEqual(len(transport.calls), 2)
         self.assertEqual(journals(self.root), {})
 
+    def test_a_tag_at_the_boundary_with_another_hash_refuses_with_a_receipt(self):
+        """A tag standing exactly on the boundary has to name the plan's hash."""
+        boundary = self.boundary()
+
+        def other_hash(envelope):
+            return canonical_bytes({
+                "id": envelope["id"], "jsonrpc": "2.0",
+                "result": {"hash": "0x" + "11" * 32, "number": hex(boundary), "transactions": []},
+            })
+
+        transport = FixtureTransport(
+            self.state, faults={"finality boundary under finalized": other_hash}
+        )
+        with self.assertRaisesRegex(AlexandriaError, "under a hash other than the plan's boundary hash"):
+            self.collect(transport=transport)
+        receipt = self.receipts()[-1]
+        self.assertEqual((receipt["code"], receipt["class"], receipt["status"]),
+                         ("tag-hash-mismatch", "boundary", boundary))
+        self.assertEqual(self.finality_reads(transport), [
+            f"finality boundary block {boundary}", "finality boundary under finalized",
+        ])
+
     def test_a_confirmations_policy_reads_the_boundary_by_number_only(self):
         plan = deepcopy(self.plan)
         plan["finality"] = {
@@ -1298,15 +1370,14 @@ class DeclaredClassTests(CollectorTestCase):
         self.assertEqual(
             document["shards"][0]["record_counts"], {"boundary-blocks": 1, "logs": 3}
         )
-        checks = IntervalCheckTests("test_a_release_over_a_clean_interval_verifies_offline")
-        checks.state = self.state
         release_id = Builder(
-            plan, staging, checks.epoch_table(plan), registry(), created_at=CREATED_AT,
+            plan, staging, registry(), created_at=CREATED_AT,
         ).build(self.root / "release")
         summary = check_interval(self.root / "release")
         self.assertEqual(summary["release_id"], release_id)
         manifest = json.loads((self.root / "release" / "manifest.json").read_text())
         self.assertNotIn("traces", {component["name"] for component in manifest["components"]})
+        self.assertEqual(len(manifest["components"]), 9)
 
     def test_declared_classes_open_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
@@ -1752,6 +1823,23 @@ class OpeningReconciliationTests(CollectorTestCase):
         self.assertEqual([entry["kind"] for entry in record["disputed"]], ["first-block-hash"])
         self.assertEqual(record["disputed"][0]["identity"], f"block {START}")
 
+    def test_a_second_provider_first_block_header_under_another_number_is_disputed(self):
+        """The right hash under another block number is not the first block's header."""
+        root = self.collected()
+
+        def misnumbered(envelope):
+            return canonical_bytes({
+                "id": envelope["id"], "jsonrpc": "2.0",
+                "result": {"hash": self.state["blocks"][str(START)], "number": hex(START + 1), "transactions": []},
+            })
+
+        label = f"{opening_labels()[0]} second provider"
+        record = self.reconcile(
+            root, SecondProviderTransport(self.state, {}, faults={label: misnumbered})
+        )["reconciliation"]
+        self.assertEqual([entry["kind"] for entry in record["disputed"]], ["first-block-hash"])
+        self.assertEqual(record["status"], "disputed")
+
     def test_a_second_provider_disagreeing_on_a_code_read_records_its_digest(self):
         root = self.collected()
         record = self.reconcile(
@@ -1797,11 +1885,24 @@ class OpeningReconciliationTests(CollectorTestCase):
         self.assertGreater(path.stat().st_size, committed)
         before = journals(root)
         with self.assertRaisesRegex(
-            AlexandriaError, "epoch-evidence journal holds bytes the checkpoint has not committed",
+            AlexandriaError,
+            r"epoch-evidence journal holds bytes the checkpoint has not committed "
+            rf"\({path.stat().st_size} bytes on disk, {committed} committed\)",
         ):
             self.reconcile(root, FixtureTransport(self.state))
         self.assertEqual(journals(root), before)
         self.assertFalse((root / "reconciliation" / "reconciliation.json").exists())
+
+    def test_a_journal_shorter_than_its_committed_offset_refuses_by_name(self):
+        root = self.collected("cut")
+        path = root / "journals" / f"{OPENING_CLASS}.jsonl"
+        committed = checkpoint(root)["offsets"][OPENING_CLASS]
+        path.write_bytes(path.read_bytes()[:-1])
+        with self.assertRaisesRegex(
+            AlexandriaError,
+            rf"epoch-evidence journal is shorter than its committed offset \({committed - 1} bytes on disk, {committed} committed\)",
+        ):
+            self.reconcile(root, FixtureTransport(self.state))
 
     def test_the_receipt_schema_names_every_dispute_kind(self):
         schema = json.loads((PLUGIN / "schemas" / "interval-receipt-v1.schema.json").read_text())
@@ -1812,6 +1913,370 @@ class OpeningReconciliationTests(CollectorTestCase):
     def test_the_opening_reconciliation_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.test_two_agreeing_providers_count_the_opening_reads()
+
+
+class ScopeBindingTests(ReleaseTestCase):
+    """The conformance evidence for `scope-binds-both-hashes`.
+
+    The `start-hash-source` guard: against a builder that copies the start
+    hash from the epoch table or an operator, or a check that believes the
+    scope's own word, the cases here that compare the scope with the journal's
+    first-block read fail.
+    """
+
+    def scopes(self, output):
+        manifest = json.loads((output / "manifest.json").read_text())
+        return {capture["id"]: capture["scope"] for capture in manifest["captures"]}
+
+    def first_block_read(self, staging):
+        return json.loads(opening_entries(staging)[0]["response"])["result"]["hash"]
+
+    def test_a_reconciled_tree_builds_ten_components(self):
+        staging, output = self.pipeline("ten")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        self.assertEqual(len(manifest["components"]), 10)
+        self.assertEqual(len(manifest["captures"]), 10)
+
+    def test_every_evidence_scope_is_finalized_with_both_hashes(self):
+        staging, output = self.pipeline("bound")
+        self.build(staging, output)
+        scopes = self.scopes(output)
+        first = self.first_block_read(staging)
+        last = self.state["blocks"][str(self.plan["shards"][-1]["end"])]
+        for name in JOURNAL_CLASSES:
+            with self.subTest(component=name):
+                self.assertEqual(scopes[name]["finality"], "finalized")
+                self.assertEqual(scopes[name]["interval"]["start_hash"], first)
+                self.assertEqual(scopes[name]["interval"]["end_hash"], last)
+        for name in ("epoch-table", "error-receipts", CODE_COMPONENT, "interval-plan", "reconciliation", "registry"):
+            with self.subTest(component=name):
+                self.assertEqual(scopes[name]["finality"], "provider-reported")
+                self.assertNotIn("start_hash", scopes[name]["interval"])
+                self.assertNotIn("end_hash", scopes[name]["interval"])
+
+    def test_the_start_hash_is_the_journals_first_block_read_and_not_the_shard_hash(self):
+        staging, output = self.pipeline("source")
+        self.build(staging, output)
+        first = self.first_block_read(staging)
+        self.assertEqual(first, self.state["blocks"][str(START)])
+        self.assertNotEqual(first, self.state["blocks"][str(self.plan["shards"][0]["end"])])
+        for name in JOURNAL_CLASSES:
+            self.assertEqual(self.scopes(output)[name]["interval"]["start_hash"], first)
+
+    def test_a_safe_plan_emits_safe_scopes(self):
+        plan = deepcopy(self.plan)
+        plan["finality"]["policy"] = "safe"
+        staging, output = self.pipeline("safe", plan=plan)
+        self.build(staging, output, plan=plan)
+        for name in JOURNAL_CLASSES:
+            scope = self.scopes(output)[name]
+            self.assertEqual(scope["finality"], "safe")
+            self.assertIn("start_hash", scope["interval"])
+        check_interval(output)
+
+    def test_a_confirmations_plan_stays_provider_reported_with_both_hashes(self):
+        plan = deepcopy(self.plan)
+        plan["finality"] = dict(plan["finality"], policy="confirmations", confirmations=64)
+        staging, output = self.pipeline("confirmations", plan=plan)
+        self.build(staging, output, plan=plan)
+        for name in JOURNAL_CLASSES:
+            scope = self.scopes(output)[name]
+            self.assertEqual(scope["finality"], "provider-reported")
+            self.assertEqual(scope["interval"]["start_hash"], self.first_block_read(staging))
+        check_interval(output)
+
+    def test_a_tree_with_no_epoch_evidence_journal_refuses_to_build(self):
+        staging = self.scratch("no-journal")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, staging, KillingTransport(self.state, kill_at=opening_labels()[0])).collect()
+        self.assertFalse((staging / "journals" / f"{OPENING_CLASS}.jsonl").exists())
+        with self.assertRaisesRegex(AlexandriaError, "no committed epoch-evidence journal"):
+            self.build(staging, self.root / "no-journal-release")
+
+    def test_a_tree_killed_in_the_opening_phase_refuses_to_build(self):
+        staging = self.scratch("half-open")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, staging, KillingTransport(self.state, kill_at=opening_labels()[4])).collect()
+        with self.assertRaisesRegex(AlexandriaError, "opening reads are not completely collected"):
+            self.build(staging, self.root / "half-open-release")
+
+    def test_a_journal_the_checkpoint_has_not_committed_refuses_to_build(self):
+        staging, output = self.pipeline("uncommitted")
+        path = staging / "journals" / f"{OPENING_CLASS}.jsonl"
+        path.write_bytes(path.read_bytes() + b"\n")
+        with self.assertRaisesRegex(AlexandriaError, "bytes the checkpoint has not committed .* nothing to build"):
+            self.build(staging, output)
+
+    def test_a_scope_with_one_hash_is_refused_by_ingest_and_by_check(self):
+        class HalfBound(Builder):
+            def _capture(self, component, document, reconciliation, boundaries):
+                capture = super()._capture(component, document, reconciliation, boundaries)
+                capture["scope"]["interval"].pop("end_hash", None)
+                return capture
+
+        staging, output = self.pipeline("half")
+        with self.assertRaisesRegex(AlexandriaError, "boundary hashes must be supplied together"):
+            self.build(staging, output, builder=HalfBound)
+        # `check` names it on its own, independent of Alexandria's verifier.
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        for capture in manifest["captures"]:
+            if capture["id"] == "logs":
+                del capture["scope"]["interval"]["end_hash"]
+        (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+            with self.assertRaisesRegex(AlexandriaError, "the logs scope carries one boundary hash and not the other"):
+                check_interval(output)
+
+    def test_check_refuses_a_start_hash_the_first_block_read_does_not_carry(self):
+        staging, output = self.pipeline("copied")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        for capture in manifest["captures"]:
+            if capture["id"] == "traces":
+                capture["scope"]["interval"]["start_hash"] = self.state["blocks"][str(self.plan["shards"][0]["end"])]
+        (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+            with self.assertRaisesRegex(AlexandriaError, "traces scope's start hash is not the hash the collector's first-block read carries"):
+                check_interval(output)
+
+    def test_check_refuses_a_scope_finality_the_plan_does_not_bind(self):
+        staging, output = self.pipeline("class")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        for capture in manifest["captures"]:
+            if capture["id"] == OPENING_CLASS:
+                capture["scope"]["finality"] = "provider-reported"
+        (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+            with self.assertRaisesRegex(AlexandriaError, "carries finality provider-reported while the plan's policy binds finalized"):
+                check_interval(output)
+
+    def test_two_builds_over_one_tree_yield_one_identifier(self):
+        staging, output = self.pipeline("twice")
+        self.assertEqual(self.build(staging, output), self.build(staging, self.root / "twice-again"))
+
+    def test_the_scope_binding_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_every_evidence_scope_is_finalized_with_both_hashes()
+
+
+class CodeHashRecheckTests(ReleaseTestCase):
+    """The conformance evidence for `code-hash-rechecked-from-component`.
+
+    The `code-digest-rebind` guard: against a check that accepts a declared
+    digest without re-hashing the component's bytes, every tampering case
+    here that leaves the manifest's own digests alone passes for the wrong
+    reason and fails this class.
+    """
+
+    def released(self, name="code"):
+        staging, output = self.pipeline(name)
+        self.build(staging, output)
+        return output
+
+    def rewrite(self, output, name, edit):
+        """Edit one component's document in place, leaving the manifest as it was."""
+        path = component_path(output, name)
+        document = json.loads(path.read_text())
+        edit(document)
+        path.write_bytes(canonical_bytes(document))
+        return document
+
+    def rebind_component_digest(self, output):
+        """Point the receipt at the component's current bytes, so only the epoch digests are wrong."""
+        digest = hashlib.sha256(component_path(output, CODE_COMPONENT).read_bytes()).hexdigest()
+        self.rewrite(output, "epoch-table", lambda receipt: receipt["implementation_code"].__setitem__("sha256", digest))
+
+    def check_without_verify(self, output):
+        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
+        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+            return check_interval(output)
+
+    def test_the_epoch_table_names_the_component_and_each_epoch_names_its_digest(self):
+        output = self.released()
+        receipt = component_document(output, "epoch-table")
+        component = component_document(output, CODE_COMPONENT)
+        self.assertEqual(receipt["implementation_code"]["component"], CODE_COMPONENT)
+        self.assertEqual(
+            receipt["implementation_code"]["sha256"],
+            hashlib.sha256(component_path(output, CODE_COMPONENT).read_bytes()).hexdigest(),
+        )
+        bodies = {record["address"]: record["code"] for record in component["records"]}
+        self.assertEqual(set(bodies), {IMPLEMENTATION_A, IMPLEMENTATION_B})
+        for epoch in receipt["epochs"]:
+            self.assertEqual(
+                epoch["implementation_code_sha256"],
+                hashlib.sha256(bytes.fromhex(bodies[epoch["implementation"]][2:])).hexdigest(),
+            )
+        summary = self.check_without_verify(output)
+        self.assertEqual(summary["implementations"], {
+            epoch["implementation"]: epoch["implementation_code_sha256"] for epoch in receipt["epochs"]
+        })
+
+    def test_one_flipped_byte_in_the_component_is_refused_by_name(self):
+        output = self.released("flipped")
+        path = component_path(output, CODE_COMPONENT)
+        data = path.read_bytes()
+        position = data.index(b"0x60806040") + 12
+        flipped = data[:position] + (b"0" if data[position:position + 1] != b"0" else b"1") + data[position + 1:]
+        path.write_bytes(flipped)
+        with self.assertRaisesRegex(AlexandriaError, "component implementation-code digest does not match"):
+            check_interval(output)
+        with self.assertRaisesRegex(AlexandriaError, "names implementation-code digest .* but the component's bytes hash to"):
+            self.check_without_verify(output)
+        self.rebind_component_digest(output)
+        with self.assertRaisesRegex(AlexandriaError, "names implementation code digest .* which the preserved bytes do not carry"):
+            self.check_without_verify(output)
+
+    def test_one_changed_hex_digit_in_an_epoch_digest_is_refused_by_name(self):
+        output = self.released("digit")
+
+        def change(receipt):
+            digest = receipt["epochs"][1]["implementation_code_sha256"]
+            receipt["epochs"][1]["implementation_code_sha256"] = ("0" if digest[0] != "0" else "1") + digest[1:]
+
+        self.rewrite(output, "epoch-table", change)
+        with self.assertRaisesRegex(AlexandriaError, "component epoch-table digest does not match"):
+            check_interval(output)
+        with self.assertRaisesRegex(
+            AlexandriaError, f"the epoch at block {UPGRADE} names implementation code digest .* for {IMPLEMENTATION_B}, which the preserved bytes do not carry",
+        ):
+            self.check_without_verify(output)
+
+    def test_an_implementation_missing_from_the_component_is_refused_by_name(self):
+        output = self.released("missing")
+        self.rewrite(
+            output, CODE_COMPONENT,
+            lambda component: component["records"].__delitem__(
+                next(i for i, r in enumerate(component["records"]) if r["address"] == IMPLEMENTATION_B)
+            ),
+        )
+        self.rebind_component_digest(output)
+        with self.assertRaisesRegex(AlexandriaError, f"implementation {IMPLEMENTATION_B}, .* is missing from the implementation-code component"):
+            self.check_without_verify(output)
+
+    def test_a_stray_implementation_in_the_component_is_refused(self):
+        output = self.released("stray")
+        self.rewrite(
+            output, CODE_COMPONENT,
+            lambda component: component["records"].append({"address": "0x" + "ab" * 20, "code": "0x6080"}),
+        )
+        self.rebind_component_digest(output)
+        with self.assertRaisesRegex(AlexandriaError, "which no epoch names"):
+            self.check_without_verify(output)
+
+    def test_a_release_carrying_a_journal_the_plan_did_not_declare_is_refused(self):
+        class Smuggling(Builder):
+            """Adds a `traces` journal component the plan never declared."""
+
+            def _reconciliation(self):
+                # After the checkpoint is read and before the journals are
+                # written: the release gains an empty `traces` journal.
+                self.staging.classes = tuple(self.staging.classes) + ("traces",)
+                return super()._reconciliation()
+
+        plan = deepcopy(self.plan)
+        plan["evidence_classes"] = ["boundary-blocks", "logs"]
+        staging, output = self.pipeline("undeclared", plan=plan)
+        self.build(staging, output, builder=Smuggling, plan=plan)
+        manifest = json.loads((output / "manifest.json").read_text())
+        self.assertIn("traces", {component["name"] for component in manifest["components"]})
+        with self.assertRaisesRegex(AlexandriaError, "carries a traces component the plan does not declare"):
+            check_interval(output)
+
+    def test_a_journal_whose_class_disagrees_with_its_component_is_refused(self):
+        class Relabelling(Builder):
+            def _journal(self, name):
+                journal = super()._journal(name)
+                if name == "traces":
+                    journal["class"] = "logs"
+                return journal
+
+        staging, output = self.pipeline("relabelled")
+        self.build(staging, output, builder=Relabelling)
+        with self.assertRaisesRegex(AlexandriaError, "traces component carries a logs journal, so the plan and the journals disagree"):
+            check_interval(output)
+
+    def test_a_release_lacking_a_declared_journal_is_refused(self):
+        output = self.released("lacking")
+        manifest = json.loads((output / "manifest.json").read_text())
+        manifest["components"] = [c for c in manifest["components"] if c["name"] != "traces"]
+        manifest["captures"] = [c for c in manifest["captures"] if c["id"] != "traces"]
+        (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+        with self.assertRaisesRegex(AlexandriaError, "lacks its traces component"):
+            self.check_without_verify(output)
+
+    def test_an_epoch_table_the_opening_reads_do_not_derive_is_refused(self):
+        output = self.released("undeclared-epoch")
+
+        def move_boundary(receipt):
+            receipt["epochs"][0]["end_block"] = str(UPGRADE)
+            receipt["epochs"][1]["start_block"] = str(UPGRADE + 1)
+            receipt["epochs"][1]["upgrade"]["block_number"] = str(UPGRADE + 1)
+
+        self.rewrite(output, "epoch-table", move_boundary)
+        with self.assertRaisesRegex(AlexandriaError, "does not match the epochs the preserved opening reads derive|does not open its epoch"):
+            self.check_without_verify(output)
+
+    def test_check_prints_the_epoch_count_and_the_rehashed_digests(self):
+        output = self.released("printed")
+        result = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "usdc_interval.py"), "check", str(output)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        printed = json.loads(result.stdout)
+        self.assertEqual(printed["epochs"], 2)
+        self.assertEqual(set(printed["implementations"]), {IMPLEMENTATION_A, IMPLEMENTATION_B})
+        for digest in printed["implementations"].values():
+            self.assertRegex(digest, r"^[0-9a-f]{64}$")
+
+    def test_the_build_command_takes_no_epoch_table(self):
+        result = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "usdc_interval.py"), "build", "--help"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("--epochs", result.stdout)
+        self.assertIn("--registry", result.stdout)
+
+    def test_the_recheck_opens_no_socket_and_changes_no_file(self):
+        output = self.released("offline")
+        before = {p.relative_to(output): p.read_bytes() for p in sorted(output.rglob("*")) if p.is_file()}
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            check_interval(output)
+        after = {p.relative_to(output): p.read_bytes() for p in sorted(output.rglob("*")) if p.is_file()}
+        self.assertEqual(after, before)
+
+
+class CheckpointOpeningOffsetTests(CollectorTestCase):
+    """A checkpoint below the plan's last shard cannot have committed an opening read."""
+
+    def test_an_opening_offset_under_an_uncollected_shard_refuses(self):
+        with self.assertRaises(_Killed):
+            Collector(self.plan, self.root, KillingTransport(self.state, kill_at="shard 3 logs")).collect()
+        state = checkpoint(self.root)
+        self.assertEqual(state["next_shard"], 3)
+        state["offsets"][OPENING_CLASS] = 1
+        state["history"][-1]["offsets"][OPENING_CLASS] = 1
+        with self.assertRaisesRegex(AlexandriaError, "commits opening reads while a shard is still uncollected"):
+            validate_checkpoint(state, plan_digest(self.plan), len(self.plan["shards"]), JOURNAL_CLASSES)
+        (self.root / "checkpoint.json").write_bytes(canonical_bytes(state))
+        with self.assertRaisesRegex(AlexandriaError, "commits opening reads while a shard is still uncollected"):
+            Staging(self.root, self.plan).committed()
+
+    def test_a_history_entry_committing_opening_reads_under_an_earlier_shard_refuses(self):
+        self.collect()
+        state = checkpoint(self.root)
+        state["history"][0]["offsets"][OPENING_CLASS] = 1
+        with self.assertRaisesRegex(AlexandriaError, "under a shard that is not the plan's last"):
+            validate_checkpoint(state, plan_digest(self.plan), len(self.plan["shards"]), JOURNAL_CLASSES)
+
+    def test_a_completed_checkpoint_is_accepted(self):
+        self.collect()
+        validate_checkpoint(checkpoint(self.root), plan_digest(self.plan), len(self.plan["shards"]), JOURNAL_CLASSES)
 
 
 if __name__ == "__main__":

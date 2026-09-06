@@ -11,18 +11,24 @@ python3 plugins/alexandria/examples/usdc-interval-v0/demo.py build --output <dir
 python3 plugins/alexandria/examples/usdc-interval-v0/demo.py verify <directory>
 ```
 
-`build` collects the fixture interval in bounded shards, is killed once
-mid-shard and resumed, reconciles the finished interval against the second
-fixture provider, builds the Alexandria release and verifies it. `verify`
-re-derives the release identifier from the built release and compares it, and
-the recorded summary, with `expected.json`.
+`build` collects the fixture interval in bounded shards and then its opening
+reads, is killed once mid-shard and resumed, reconciles the finished interval
+against the second fixture provider, builds the Alexandria release from the
+journals alone and verifies it. `verify` re-derives the release identifier
+from the built release, re-hashes the implementation code, and compares both,
+and the recorded summary, with `expected.json`.
 
 ## What it produces
 
 Five shards of twenty blocks over the Ethereum USDC Comet's declared interval,
 one implementation epoch covering all of it, an agreement between the two
-providers, and release
-`sha256:5d0762677e64ed899cf6466f7dc2cc9a343931c8e0f972bc9a35fafa690f2de0`. Two
+providers over 25 shard comparisons and 3 opening-read comparisons, and release
+`sha256:7cf794f07cb74c0383ae3fdd270758324b8036705c9845a7724043993dde40aa`. The
+release carries ten components: the three evidence journals, the
+`epoch-evidence` journal of opening reads, the `implementation-code` component
+the epoch table names by digest, the epoch table, the error receipts, the
+plan, the reconciliation record and the registry. Every evidence scope carries
+finality `finalized` with the first block's hash and the last shard's. Two
 builds of the same fixtures agree byte for byte.
 
 ## What it does not establish
@@ -41,10 +47,11 @@ event: the release's own coverage says all of that in its gaps.
 ## Files
 
 - `demo.py` is the whole path, `build` and `verify`.
-- `fixtures/primary.json` holds the first provider's synthetic chain state and
-  the interval plan it answers for.
-- `fixtures/secondary.json` names the second provider's class; it agrees with
-  the first everywhere, and the tests cover what a disagreement does.
-- `fixtures/epochs.json` holds the epoch evidence `build` consumes: one slot
-  read, one code read and two block hashes.
-- `expected.json` pins what the path produces.
+- `fixtures/primary.json` holds the first provider's synthetic chain state,
+  the interval plan it answers for, and its answers to the opening reads: the
+  first block's hash, one implementation slot word and one runtime code body.
+- `fixtures/secondary.json` names the second provider's class and carries its
+  own copies of the opening-read answers; it agrees with the first everywhere,
+  and the tests cover what a disagreement does.
+- `expected.json` pins what the path produces, including the implementation
+  digest `check` re-hashes from the release.

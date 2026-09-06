@@ -243,6 +243,18 @@ def validate_checkpoint(
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
+    # The opening reads are made after the last shard commits and nowhere
+    # else, so a checkpoint standing below the plan's last shard cannot have
+    # committed one; an offset that says otherwise is a checkpoint this
+    # collector did not write.
+    if (
+        OPENING_CLASS in offsets
+        and offsets[OPENING_CLASS] > 0
+        and checkpoint["next_shard"] != shard_count
+    ):
+        raise AlexandriaError(
+            "interval checkpoint commits opening reads while a shard is still uncollected"
+        )
     history = checkpoint["history"]
     if not isinstance(history, list) or len(history) > MAX_HISTORY:
         raise AlexandriaError(
@@ -278,6 +290,14 @@ def validate_checkpoint(
                 raise AlexandriaError(
                     f"interval checkpoint history offset for {name} is not a byte count"
                 )
+        if (
+            OPENING_CLASS in entry_offsets
+            and entry_offsets[OPENING_CLASS] > 0
+            and shard != shard_count - 1
+        ):
+            raise AlexandriaError(
+                "interval checkpoint history commits opening reads under a shard that is not the plan's last"
+            )
 
     accepted = checkpoint["last_accepted"]
     if accepted is None:
@@ -994,6 +1014,9 @@ def upgrade_logs(records, proxy: str) -> list[dict]:
             "block": block,
             "block_hash": announced_hash,
             "opening": opening,
+            # The record as the provider returned it, so `discover_epochs` can
+            # be handed the preserved log rather than a restatement of it.
+            "record": log,
         })
     return upgrades
 

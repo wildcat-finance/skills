@@ -27,7 +27,7 @@ def demo():
     that failure in a sibling plugin.
     """
     for required in ("demo.py", "expected.json", "fixtures/primary.json",
-                     "fixtures/secondary.json", "fixtures/epochs.json"):
+                     "fixtures/secondary.json"):
         if not (EXAMPLE / required).is_file():
             raise AssertionError(
                 f"the interval demonstration is missing {required} at {EXAMPLE}; this "
@@ -60,6 +60,35 @@ class IntervalDemoTests(unittest.TestCase):
         self.assertEqual(summary["reconciliation"], self.expected["reconciliation"])
         self.assertEqual(summary["epochs"], self.expected["epochs"])
         self.assertEqual(self.module.verify(output)["release_id"], self.expected["release_id"])
+
+    def test_the_release_re_hashes_the_pinned_implementation_code(self):
+        output, summary = self.build()
+        self.assertEqual(summary["implementations"], self.expected["implementations"])
+        checked = self.module.verify(output)
+        self.assertEqual(checked["implementations"], self.expected["implementations"])
+        manifest = json.loads((output / "release" / "manifest.json").read_text())
+        self.assertEqual(len(manifest["components"]), 10)
+        for capture in manifest["captures"]:
+            if capture["id"] in ("boundary-blocks", "logs", "traces", "epoch-evidence"):
+                self.assertEqual(capture["scope"]["finality"], "finalized", capture["id"])
+                self.assertIn("start_hash", capture["scope"]["interval"])
+                self.assertIn("end_hash", capture["scope"]["interval"])
+
+    def test_the_epoch_fixture_is_gone_and_the_providers_answer_the_opening_reads(self):
+        """`build` takes no epoch table; the providers answer what the collector asks."""
+        self.assertFalse((EXAMPLE / "fixtures" / "epochs.json").exists())
+        for name in ("primary.json", "secondary.json"):
+            fixture = json.loads((EXAMPLE / "fixtures" / name).read_text(encoding="utf-8"))
+            for section in ("blocks", "slots", "code"):
+                self.assertIn(section, fixture, f"{name} lacks {section}")
+        self.assertNotIn("epochs.json", (EXAMPLE / "demo.py").read_text(encoding="utf-8"))
+
+    def test_a_missing_fixture_fails_rather_than_skips(self):
+        """A provider fixture that is not there is a failed test, never a silent skip."""
+        with mock.patch.object(self.module, "FIXTURES", self.root / "absent-fixtures"):
+            with self.assertRaisesRegex(AlexandriaError, "primary fixture is missing"):
+                self.module.build(self.root / "unfixtured")
+        self.assertFalse((self.root / "unfixtured").exists())
 
     def test_the_path_is_interrupted_and_resumed_once(self):
         _output, summary = self.build()
