@@ -78,13 +78,33 @@ case, not the exception: a frontend changes and the denominator changes with it.
   entry with no such digest is treated as hand-written and therefore as edited,
   because the conservative reading of an unknown provenance is that a person
   wrote it.
+- An entry a person **attributed**, one carrying `confirmed_by` or `rule`
+  under [ADR-003](decisions/ADR-003-attribution-names-a-person-and-a-stated-rule.md),
+  is carried forward byte for byte. It is always a confirmed entry, so it is
+  always touched, whatever its digest says.
+- The set-level **`rules` table** is copied forward unchanged, including a row
+  no entry applies. A stated rule nobody used is information about the review,
+  and the reconciler reports it as applied zero times rather than refusing it.
 - An entry nobody has touched is replaced by a fresh draft.
 - A scoped item with no entry gains one.
-- An entry whose item is no longer scoped is dropped, and the drop is reported.
+- An entry whose item is no longer scoped is dropped, and the drop is reported,
+  unless it is attributed. An attributed entry on an item that no longer exists
+  is somebody's recorded judgement about nothing, so the regeneration refuses
+  by name and a person removes it.
 
-Every run reports how many entries it preserved, replaced, added and dropped. A
-regeneration that cannot preserve a touched entry refuses and writes nothing,
-leaving the reviewer's file exactly as it was.
+Every run reports on stderr how many entries it preserved and how many of those
+were attributed, how many it replaced, added and dropped, and whether the
+`rules` table travelled with it and with how many rows. That line answers the
+study's third on-call question, whether the last regeneration kept every
+attribution.
+
+A regeneration that cannot carry an attributed entry or the table forward
+refuses and writes nothing, leaving the reviewer's file exactly as it was. Four
+cases refuse: an attributed entry whose item left the scoped set; an entry
+naming a `rule` the table travelling with it does not hold, which is the set a
+regeneration once produced by rebuilding without the table; a `rules` value
+that is not an object; and an unconfirmed entry carrying either attribution
+field, refused at the same pre-write check that refuses a draft carrying one.
 
 The write is staged to a sibling temporary file and renamed into place, so a
 killed regeneration leaves either the previous file or the new one and never a
@@ -98,3 +118,13 @@ socket. It does not write to the target checkout. It does not mark an item
 covered. It does not confirm an entry. It does not report anything as passed,
 and a complete proposal with every entry drafted still reports a closure ratio
 of zero, because nobody has decided anything yet.
+
+It does not write `confirmed_by` or `rule` on any entry, and it does not add,
+remove or reword a row of the `rules` table. The drafting surface holds neither
+field name as a literal, asserted by a test against the module's own source
+beside the `covered` assertion, and a test that drives every branch requires
+each drafted entry to carry exactly `item`, `disposition`, `reason`, `oracle`,
+`confirmed` and `proposed_sha256`. A set in which a draft carries either field
+breaches the pre-write check and is never written. Attribution is a person's
+mark, made in the reviewer's file, and the generator's only relation to it is
+to carry it forward unchanged.

@@ -410,8 +410,8 @@ def propose_command(
                 )
             sys.stdout.write(
                 "dokimasia propose: check clean; a drafted set covers every "
-                "scoped item, closes at zero, and a reviewer's edits survive "
-                "a regeneration\n"
+                "scoped item, closes at zero, and a reviewer's edits, "
+                "attributions and rules table survive a regeneration\n"
             )
             return 0
         missing = [
@@ -446,10 +446,19 @@ def propose_command(
         body = json.dumps(record, indent=2, sort_keys=True) + "\n"
         if target is not None:
             propose_lib.write_set(record, target)
+            # The study's third on-call question, answered where the run is
+            # read: did the last regeneration keep every attribution, and did
+            # the rules table travel with it.
+            table = (
+                f"rules table carried with {counts['rule_rows']} rows"
+                if counts["rules_carried"] else "no rules table"
+            )
             sys.stderr.write(
                 f"dokimasia propose: {counts['scoped']} scoped; "
-                f"{counts['preserved']} preserved, {counts['replaced']} replaced, "
-                f"{counts['added']} added, {counts['dropped']} dropped\n"
+                f"{counts['preserved']} preserved, of which "
+                f"{counts['attributed']} attributed; {counts['replaced']} "
+                f"replaced, {counts['added']} added, {counts['dropped']} "
+                f"dropped; {table}\n"
             )
         else:
             sys.stdout.write(body)
