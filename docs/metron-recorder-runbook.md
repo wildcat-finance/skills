@@ -335,3 +335,10 @@ frontier asked for. elenchus: a ledger, version-propagation or
 demonstration regression stops the step and any repair uses the runner
 above. hypomnema: the evolution row is the ledger's own record of this job,
 and the plugin version bump is the release note an installation reads.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Create `docs/metron-recorder-study.md` and `docs/metron-recorder-runbook.md`. Rewrite `.horos/boundary.json` only through `python3 plugins/horos/skills/horos/scripts/horos.py scan . --write` and `.horos/census.json` only through `python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write`. Append to `audit/rounds/fiat-371-metron-recorder-a-time-verb-that-writes-the.md` and its synopsis only for Warden round records. No script, test, manifest, ledger or dependency changes.
+**Why.** The receipted Files clause named the audit log of the halted predecessor run, `audit/rounds/fiat-371-metron-recorder-time-a-command-into-the-run.md`, where the controller derives this run's log as `audit/rounds/fiat-371-metron-recorder-a-time-verb-that-writes-the.md`; step 1 round 1 recorded the discrepancy as a lead. The same clause named `--census --write` as the command that rewrites `.horos/boundary.json`, and that flag writes `.horos/census.json` while the plain `--write` rewrites the boundary, so both generated files are now named with the command that owns each.
+**Steps touched.** Step 1's Files field only.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
