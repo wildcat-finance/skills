@@ -130,7 +130,68 @@ class FrontierReceiptCase(HexctlCase):
                               check=True, capture_output=True,
                               text=True).stdout.strip()
 
-    def advance_to_merged_step(self):
+    def native_git(self, *args, input_text=None, env=None):
+        executable = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(executable)
+        proc = subprocess.run(
+            [executable, *args],
+            cwd=self.target,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if proc.returncode:
+            self.fail(
+                f"native git {' '.join(args)} -> rc {proc.returncode}\n"
+                f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc.stdout.strip()
+
+    def native_commit(self, tree_parent, changes, *parents, message):
+        self.native_commit_number = getattr(self, "native_commit_number", 0) + 1
+        index = os.path.join(
+            self.dir, f"frontier-sync-index-{self.native_commit_number}"
+        )
+        environment = os.environ.copy()
+        timestamp = 1000000000 + self.native_commit_number
+        environment.update(
+            {
+                "GIT_INDEX_FILE": index,
+                "GIT_AUTHOR_NAME": "Fixture",
+                "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+                "GIT_COMMITTER_NAME": "Fixture",
+                "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+                "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+                "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+            }
+        )
+        try:
+            self.native_git("read-tree", tree_parent, env=environment)
+            for path, content in sorted(changes.items()):
+                blob = self.native_git(
+                    "hash-object", "-w", "--stdin", input_text=content
+                )
+                self.native_git(
+                    "update-index", "--add", "--cacheinfo",
+                    "100644", blob, path, env=environment,
+                )
+            tree = self.native_git("write-tree", env=environment)
+            parent_args = [
+                value for parent in parents for value in ("-p", parent)
+            ]
+            return self.native_git(
+                "commit-tree", tree, *parent_args,
+                input_text=message + "\n", env=environment,
+            )
+        finally:
+            for suffix in ("", ".lock"):
+                try:
+                    os.unlink(index + suffix)
+                except FileNotFoundError:
+                    pass
+
+    def advance_to_merged_step(self, merge_commit):
         """One step from study to its recorded merge, as the fixtures do."""
         study = self.write(
             "study.md",
@@ -162,25 +223,34 @@ class FrontierReceiptCase(HexctlCase):
             "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
         )
         self.run_ctl("done", "merge-step", "--step", "1",
-                     "--merge-commit", "e" * 40)
+                     "--merge-commit", merge_commit)
         self.write_run_pr()
 
-    def receipt_sync(self, base_sha, sync_sha="7" * 40):
+    def receipt_sync(self, base_sha):
         """A green `done sync-run` whose receipt names the real base tip."""
         state = self.state()
         final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
-        base_before = "4" * 40
+        ledger_path = os.path.join(self.target, self.ledger_rel)
+        with open(ledger_path, encoding="utf-8") as handle:
+            run_ledger = handle.read()
+        sync_sha = self.native_commit(
+            final_merge,
+            {self.ledger_rel: run_ledger},
+            final_merge,
+            base_sha,
+            message="fixture frontier integration sync",
+        )
+        origin = os.path.join(self.dir, "native-origin.git")
+        self.native_git("init", "--bare", "--quiet", origin)
+        self.native_git("remote", "add", "origin", origin)
+        self.native_git(
+            "push", "--quiet", "--force", "origin",
+            f"{sync_sha}:refs/heads/{state['run_branch']}",
+            f"{base_sha}:refs/heads/{self.integration_base(state)}",
+        )
         self.fake_refs[state["run_branch"]] = sync_sha
         self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_MERGE_BASE"] = base_before
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
-            {
-                f"{base_before}..{final_merge}": ["product.py"],
-                f"{base_before}..{base_sha}": [self.ledger_rel],
-                f"{final_merge}..{sync_sha}": [self.ledger_rel],
-            }
-        )
         revalidation = self.write(
             os.path.join(".hexaemeron", "integration-revalidation.json"),
             json.dumps(
@@ -210,7 +280,14 @@ class FrontierReceiptCase(HexctlCase):
                      "--frontier", self.ledger_rel)
         self.write_design_evidence()
         base_sha = self.publish_base_rows()
-        self.advance_to_merged_step()
+        base_before = self.native_git("rev-parse", f"{base_sha}^")
+        product_sha = self.native_commit(
+            base_before,
+            {"product.py": "product\n"},
+            base_before,
+            message="fixture frontier product merge",
+        )
+        self.advance_to_merged_step(product_sha)
         self.write_ledger(
             self.target,
             [self.baseline_row,

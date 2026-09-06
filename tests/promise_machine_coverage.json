@@ -4,24 +4,24 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "50db4948ab96bce60a73a97d061e1401dd60c0103e428068ce9dc2068c888249"
+      "sha256": "4a770b0b40095bf4a3c3d0436b7d69e1f06a3e584282dfcf1522bda774fe97b8"
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "84eff33cccbe4a87da4f52d81b1d2df19c6af9700415b8116bd8fdc8b5a6a94f"
+      "sha256": "3d371d6fd53d28ef672e39a8dbf92d75a09685985346cc16a2fd606e6c805d6c"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "6eda1b38aae1a7860c8ca5fdec836d847867c424cfc4fc2fc3c3d2bbabca6967"
+      "sha256": "a6d658ea8e463520c9f8e2b08008c444254ec091ca2debbbc8910557a436c0fd"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "7bf206a385ab4f9e6a634eb538ac0acdab023573da8756246c11006791330176"
+      "sha256": "b6d8b29e577e9f3a45a421393d75e09bf9dda0ec6de65711e8107745a3eba748"
     },
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "eb6a948898585fc14072917998f13e2f12b7dfd222abfceb9717ea6858e31731"
+        "sha256": "2493317728d3d77041c20a33a3c6069b7bc66411a1a322dd11c796f7f4f9cea1"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
@@ -35,11 +35,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "a3a0f5ba028feb859c189312ac813729456f6c64bd61895911759724f9fb1d91"
+        "sha256": "9d86bf856916e0ff1920ae03725669f725c00e3bd54bfbe9707a0257449cdf33"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "0d9c8fe45bad807e2c52842c856d9e77fb903e9840f56683d8491caf96731727"
+        "sha256": "821b243be07c109b3bfa886bf708936eb5458e9a506224637908a2ceaf6174e0"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -51,7 +51,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "539eee9c8e411647305c7d29626797ca229037147bc04919dff2e40e955e95f8"
+        "sha256": "a0cde7da7389a24b011ec4a9aa8334dd31c30ab5b865ecf9b04ea34d40b169d5"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -75,11 +75,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "db0c1aef012d709e488fbcc41db33ebe9c74d1977d31f25524bbbdaf0a129a99"
+        "sha256": "1bae11fa5712fe2977843b769e90110396ad74ed5eae3a3c713963c7d8213945"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "be94156288952db527fe28903806f8576108b4b33b9c5e9981122da1117ab7a1"
+        "sha256": "fcae0bbd76cef0e4194299cd968c49cae984be3eb88de596625bc9796db904fc"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -91,7 +91,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "db707fe6b63c87e4b6508b9e1c73a109b45df487457c74aeeca3e8998533678c"
+        "sha256": "8f0e6689c4a78ccd78afd6f27edd854c017955bf458a7a0bfde8087a5af5155e"
       }
     ],
     "evidence": [
@@ -122,11 +122,13 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "5dcd25863c25a5a203e61577319351cb50108f4109c141cb9f24060c5ea90164",
+      "sha256": "3962980ef96cd5964e0f51cbdbfd71e519129bd16fa9b48998fd3ff09e379a03",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
+        "test_manifest_and_schema_pin_exact_fixture_reviews",
+        "test_manifest_refuses_review_provenance_drift_per_fixture",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
         "test_specialised_coverage_binds_the_reconciliation_prover",
         "test_specialised_coverage_binds_focused_tests",
@@ -144,7 +146,7 @@
         "test_a_consistent_token_count_edit_is_not_detected"
       ]
     },
-    "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
+    "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the current three-round-trip, 17-binding, nine-Fiat-binding, nine-question, 14-mutation structural result and disabled model-evidence status without treating or rerunning frozen historical measurement or parity bytes as current evidence"
   },
   "contract": "promise-machine/v1",
   "contributor_ranking": {
@@ -769,6 +771,31 @@
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
       "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
       "selector": "test_oversized_and_stale_reports_are_rejected_before_parsing"
+    },
+    "elenchus-parent-guard-m": {
+      "claim": "Missing or malformed raw blob evidence is refused before it can become a parent-guard result.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_blob_shape_mode_digest_object_parent_and_order_fail_closed"
+    },
+    "elenchus-parent-guard-o": {
+      "claim": "Runner failures remain inconclusive diagnostics and are not promoted to parent-guard evidence.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_timeout_start_failure_and_signal_are_distinct_inconclusive_results"
+    },
+    "elenchus-parent-guard-p": {
+      "claim": "Exact raw blobs and modes are overlaid on the parent and the exact fresh report is returned before cleanup.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup"
+    },
+    "elenchus-parent-guard-r": {
+      "claim": "Unsafe, linked or oversized reports stay contained as inconclusive results that can be repaired and rerun.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_report_symlink_hardlink_and_cap_are_inconclusive"
+    },
+    "elenchus-parent-guard-s": {
+      "claim": "Replacement objects cannot change the exact supplied native blob evidence.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_git_replacement_objects_do_not_change_supplied_blob_evidence"
     },
     "ephoros-m": {
       "claim": "A supported alert entry without its own nested runbook annotation is refused.",
@@ -2413,6 +2440,22 @@
     },
     {
       "cases": {
+        "M": "elenchus-parent-guard-m",
+        "O": "elenchus-parent-guard-o",
+        "P": "elenchus-parent-guard-p",
+        "R": "elenchus-parent-guard-r",
+        "S": "elenchus-parent-guard-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "elenchus-parent-guard-evidence",
+      "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "ephoros-m",
         "O": "ephoros-o",
         "P": "ephoros-p",
@@ -4010,7 +4053,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd"
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4332,7 +4375,21 @@
         "transition": "fixed-and-guarded verdict joined to the canonical Authorises field",
         "unknowns": "inconclusive, zero-test and infrastructure outcomes"
       },
-      "sha256": "9069e2a4266bf349c963aaad6e22cf2966d14bb34d05d025b72c9e77017d39c5",
+      "sha256": "e8c4b3bff7d87bc16e065f9c86cea405a996f2b4573c7845f7c32f905db7990e",
+      "source": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py"
+    },
+    "elenchus-parent-guard-evidence": {
+      "bindings": {
+        "evidence_classes": "checked raw blob and runner report evidence joined to the canonical Evidence classes field",
+        "evidence_references": "exact parent, ordered raw blob rows, closed argv, raw report, counters, runner exit and unchanged verdict",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "detached-parent raw overlay, reporter execution and four-state classification only",
+        "subject": "exact parent object and Fiat-supplied guard blob identities",
+        "transition": "returning raw parent-guard evidence to Fiat for independent admission and persistence",
+        "unknowns": "fixed-tree state, suite status, Fiat admission, persistence and receipt authority remain outside Elenchus"
+      },
+      "sha256": "e8c4b3bff7d87bc16e065f9c86cea405a996f2b4573c7845f7c32f905db7990e",
       "source": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py"
     },
     "ephoros-observability-review": {
@@ -4360,7 +4417,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-design-evidence": {
@@ -4374,7 +4431,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -4388,7 +4445,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work, disposed of row by row in the run pull request's `carryover` block, and any unrun external check"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4402,7 +4459,7 @@
         "transition": "local archive, checkpoint-store preservation, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -4416,7 +4473,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4430,7 +4487,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -4444,7 +4501,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -4458,7 +4515,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -4472,7 +4529,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -4780,7 +4837,7 @@
         "transition": "verified decision assignment receipt carried to active sync and final integration joined to the canonical Authorises field",
         "unknowns": "decision-text correctness, publication, external merge enforcement and number reservation"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-known-failure-inoculation": {
@@ -4794,7 +4851,7 @@
         "transition": "opening implementation for only the receipted Step joined to the canonical Authorises field",
         "unknowns": "unknown failures, later fix status, Warden verdicts and pre-capture runs"
       },
-      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "sha256": "cc90d5098b202d7918c8d237cbbe01c7be566d7c86b0d8a18f1f07b1a14ff075",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hypomnema-decision-assignment": {

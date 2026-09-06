@@ -14,12 +14,12 @@ cost of an edit is observed rather than argued about.
     span-shift   the edit placements whose reconciliation outcome is proved,
                  because only an edit before a reviewed span start moves the
                  recorded binding offsets.  Its count is placements covered,
-                 not placements green, and the two do not agree: the after-span
-                 placement reconciles accepted, and the before-span placement
-                 refuses `WAI-E-DIGEST.CORPUS` at
-                 `$.evidence.measurement_record` once its offsets are
-                 reconciled.  The seven-key report carries the count and the
-                 exit; the outcome of each placement is on `--detail`.
+                 and both before-span and after-span placements reconcile
+                 structurally while model evidence is disabled.  The check
+                 still verifies the historical reports' frozen byte identity,
+                 but does not interpret their model results or use them as
+                 current-evidence gates.  The seven-key report carries the
+                 count and the exit; each outcome is on `--detail`.
     selftest     the tool's own machinery: fixture-copy isolation, a no-op
                  reconciliation that reproduces the committed bytes, and the
                  path confinement that keeps every write inside the copy.
@@ -507,7 +507,7 @@ class Reconciliation:
 
         spans = self._live_record(self.fixture["artifacts"]["source_spans"]["path"])
         governed = edited[governed_start:governed_end]
-        nodes: dict[str, dict[str, Any]] = {}
+        nodes: list[dict[str, Any]] = []
         for entry in spans["spans"]:
             node = str(entry["node"])
             limit = len(self.source)
@@ -528,11 +528,12 @@ class Reconciliation:
                     f"and the reviewed span moved by {delta}; the recorded offsets and "
                     "the source disagree about the document's shape"
                 )
-            nodes[node] = {
+            nodes.append({
+                "node": node,
                 "recorded": [start, end],
                 "rederived": [new_start, new_end],
                 "sha256": entry["sha256"],
-            }
+            })
 
         return {
             "anchor_sha256": anchor,
@@ -555,9 +556,11 @@ class Reconciliation:
         being moved by arithmetic.
         """
         located = {
-            (node, tuple(value["recorded"])): value["rederived"]
-            for node, value in offsets["nodes"].items()
+            (value["node"], tuple(value["recorded"])): value["rederived"]
+            for value in offsets["nodes"]
         }
+        if len(located) != len(offsets["nodes"]):
+            raise ProverError("re-derived source bindings are duplicated")
         for entry in entries:
             node = str(entry["node"])
             limit = len(self.source)
@@ -624,7 +627,6 @@ class Reconciliation:
         *,
         skip: tuple[str, ...] = (),
         rebind_span: bool = False,
-        rebind_measurement_corpus: bool = False,
     ) -> dict[str, Any]:
         """Write the edit into the copy and apply the mechanical passes.
 
@@ -700,20 +702,6 @@ class Reconciliation:
                     self.checker.read_confined(tree, relative)
                 )
 
-        if rebind_measurement_corpus:
-            # Move the measurement record's recorded corpus digest onto the
-            # recomputed one. Not a reissue: no count and no date is touched,
-            # and no model is consulted. It exists so the refusal waiting at
-            # `$.evidence.parity_record` is reachable, the checker comparing
-            # the measurement record first.
-            measurement = self.checker.load_canonical_record(
-                self.checker.read_confined(tree, MEASUREMENT), allow_integers=True
-            )
-            measurement["corpus_sha256"] = self.checker._corpus_sha256(manifest)
-            written = self.checker.canonical_record_bytes(measurement, allow_integers=True)
-            self._write(tree, MEASUREMENT, written)
-            manifest["evidence"]["measurement_record"]["sha256"] = digest(written)
-
         self._write(tree, MANIFEST, self.checker.canonical_record_bytes(manifest))
         return manifest
 
@@ -754,14 +742,6 @@ class Reconciliation:
 
     def corpus_digest(self, manifest: dict[str, Any]) -> str:
         return self.checker._corpus_sha256(manifest)
-
-    def recorded_corpus_digests(self) -> dict[str, str]:
-        return {
-            "measurement_record": self._live_record(MEASUREMENT, allow_integers=True)[
-                "corpus_sha256"
-            ],
-            "parity_record": self._live_record(PARITY, allow_integers=True)["corpus_sha256"],
-        }
 
     # --- one reconciliation, start to finish ----------------------------
 
@@ -892,11 +872,11 @@ class LiveReconciliation:
         raise ProverError(
             f"{self.source_path} is off its recorded reviewed-span digest at the recorded "
             f"offsets {self.start}-{self.end}, so this edit either changed the reviewed "
-            "bytes or moved them. Neither is reconcilable here. Changed reviewed bytes are "
-            "what the recorded token counts are counts of, and only agent_instruction.py "
-            "measure can reissue those counts, on the machine the tokenizer profile pins. "
-            "Moved reviewed bytes need their offsets re-derived from the pre-edit source, "
-            "which this tree no longer holds; see wildcat-finance/skills#1192"
+            "bytes or moved them. Neither is reconcilable here. Restore the exact reviewed "
+            "bytes, or obtain separate authority for a new source review and any future "
+            "evidence activation. Moved reviewed bytes need their offsets re-derived from "
+            "the pre-edit source, which this tree no longer holds; see "
+            "wildcat-finance/skills#1192"
         )
 
     def apply(self) -> dict[str, Any]:

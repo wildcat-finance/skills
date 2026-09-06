@@ -32,17 +32,17 @@ CASES = {
         "test_kf_453_02_inoculation_precedes_implementation"
     ),
     "kf-453-03": (
-        "plugins.hexaemeron.tests.test_issue_453_guard_evidence."
+        "plugins.hexaemeron.tests.test_guard_evidence."
         "GuardEvidenceTests."
         "test_kf_453_03_parent_report_is_bound"
     ),
     "kf-453-04": (
-        "plugins.hexaemeron.tests.test_issue_453_guard_evidence."
+        "plugins.hexaemeron.tests.test_guard_evidence."
         "GuardEvidenceTests."
         "test_kf_453_04_only_strict_guard_evidence_is_admitted"
     ),
     "kf-453-05": (
-        "plugins.hexaemeron.tests.test_issue_453_inoculation_lifecycle."
+        "plugins.hexaemeron.tests.test_inoculation_lifecycle."
         "InoculationLifecycleTests."
         "test_kf_453_05_undeclared_product_path_refuses"
     ),
@@ -53,8 +53,7 @@ REQUIRED_SURFACE = (
     Path("plugins/hexaemeron/tests/emit_issue_453_guard_report.py"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/inventory.json"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/no-known-findings.json"),
-    Path("plugins/hexaemeron/tests/test_issue_453_guard_evidence.py"),
-    Path("plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py"),
+    Path("plugins/hexaemeron/tests/test_guard_evidence.py"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json"),

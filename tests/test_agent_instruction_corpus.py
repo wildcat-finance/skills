@@ -1,43 +1,15 @@
-"""What a bound instruction-document edit cost, and what it costs after the switch.
+"""Prove deterministic instruction reconciliation with model evidence disabled.
 
-Three instruction documents are bound into `tests/fixtures/agent-instruction-v1`
-by whole-file SHA-256. `_corpus_sha256` digests a subject that carries
-`fixtures`, and `fixtures` carried each bound source's whole-file digest, so
-editing any of those three documents moved the corpus digest and invalidated
-both committed evidence records. Only `agent_instruction.py measure` and
-`parity` can reissue them honestly, and they run through a loopback adapter
-pinned to one macOS install.
+The corpus digest uses the digest-neutral structural projection. Source spans
+still refuse until their review digest is explicitly replaced, while edits
+outside a reviewed span rederive every affected offset from the bound bytes.
+Two source locations may bind the same directive node, so offsets are keyed by
+node and recorded span rather than node alone.
 
-That was the fault skills#1098 reports. This module recorded what the fault
-actually was, in the checker's own refusal codes, so the change that followed
-could be read as a difference rather than taken on trust.
-
-Step 3 switched `_corpus_sha256` onto the widened digest-neutral projection, so
-the two cases that pinned the out-of-span refusal are inverted here and assert
-that the corpus digest no longer moves. The in-span cases are unchanged and
-still refuse: `span_sha256` is never projected, so the review boundary is
-exactly where it was.
-
-Step 4 adds the placement nothing covered: an edit *before* a reviewed span
-start, which moves every recorded binding offset where an edit after it moves
-none. Those offsets are re-derived from the reviewed span's own bytes rather
-than shifted by a byte count, and the two cases that state that difference are
-`test_a_before_span_edit_has_its_offsets_re_derived_rather_than_shifted` and
-`test_a_before_span_edit_still_stales_the_measurement_record`. The second is
-where the placements part company: an after-span edit reconciles green, and a
-before-span edit gets past the reviewed span digest and then refuses at the
-measurement record, because the corpus subject carries the recorded offsets.
-ADR-076 records that as a consequence of the design rather than a gap in it.
-
-What the switch does not reach is pinned by
-`test_the_measurement_record_binds_the_projected_artefact_digests`, which reads
-as the gap it is rather than as a closed question.
-
-Every proof runs against a throwaway copy of the tree, through
-`scripts/prove_agent_instruction_reconciliation.py`. The live bound documents
-are never written: the study's "Never" list rules out editing one to make the
-fixture agree with itself, and `test_proofs_run_against_a_copy_and_leave_the_live_tree_untouched`
-is what holds that. No case here starts a model or opens a socket.
+The committed measurement and parity files are frozen historical records.
+They remain digest-bound but are neither rewritten nor used as transition
+gates. Every proof runs against a throwaway tree copy, and no case starts a
+model, tokenizer, adapter, subprocess-backed generator, or network socket.
 """
 
 from __future__ import annotations
@@ -57,7 +29,6 @@ CHECKER = ROOT / "scripts/agent_instruction.py"
 
 CORPUS_REFUSAL = "WAI-E-DIGEST.CORPUS"
 MEASUREMENT_NODE = "$.evidence.measurement_record"
-PARITY_NODE = "$.evidence.parity_record"
 
 # The refusal each omitted mechanical pass produces, observed at
 # bacb34c0d49a83dea0c4463a61b2cf1525fec60b. Recorded per pass rather than as a
@@ -159,25 +130,7 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             self.assertIn(message, str(raised.exception))
 
     def test_out_of_span_edit_leaves_the_corpus_digest_where_it_was(self):
-        """Inverted from step 1's `..._refuses_the_corpus_digest_...`, replacing it.
-
-        Step 1's assumption was that the corpus subject carried each fixture's
-        whole-file digest, so an edit that changed no reviewed byte still moved
-        the corpus digest and `check` refused `WAI-E-DIGEST.CORPUS` at the
-        measurement record even with all five mechanical passes applied. That
-        was the fault skills#1098 reports, recorded in the checker's own refusal
-        code so the change could be read as a difference.
-
-        Step 3 switched `_corpus_sha256` onto the widened projection, so the
-        subject no longer carries the digest the edit moved and the corpus
-        digest is now the same before and after. The case asserts that instead.
-
-        What is deliberately still asserted is the premise underneath it: the
-        edit really is out of span, and the recorded source bytes really are the
-        reviewed span's bytes. Neither is what step 3 changed, and dropping
-        either would let this case pass on an edit that had quietly moved a
-        reviewed byte.
-        """
+        """An out-of-span edit is structural and leaves frozen evidence alone."""
         self.assertFalse(
             self.work.span_moved(self.after_span),
             "the out-of-span edit moved the reviewed span",
@@ -199,89 +152,34 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             outcome["refusals"],
             "the corpus digest still refuses at the measurement record",
         )
-
-        # The measured bytes did not change; only the digest embedded in them
-        # did. That is what made the reissue a formality the machine could not
-        # perform, and it is what the switch above stops charging for.
-        recorded = self.work._live_record(
-            self.prover.MEASUREMENT, allow_integers=True
-        )
-        document = next(
-            item for item in recorded["documents"]
-            if item["fixture_id"] == self.prover.SUBJECT
-        )
-        self.assertEqual(
-            self.work.end - self.work.start,
-            document["source"]["bytes"],
-            "the recorded source bytes are the reviewed span's bytes",
-        )
+        self.assertTrue(outcome["accepted"], outcome["refusals"])
+        self.assertEqual(self.work.manifest["model_evidence_status"], "disabled")
 
     def test_out_of_span_edit_no_longer_stales_the_parity_record(self):
-        """Inverted from step 1's `..._also_stales_the_parity_record`, replacing it.
-
-        Step 1's assumption was that an out-of-span edit staled both evidence
-        records, not just the one the refusal names. `check` compares the
-        measurement record first and refuses there, so the parity record's
-        staleness was invisible from one run; step 1 reached it by moving the
-        measurement record's recorded digest onto the recomputed one, and found
-        a second `WAI-E-DIGEST.CORPUS` waiting at the parity node.
-
-        That second refusal is what the parity half of the reissue budget was
-        being spent on. Step 3's switch removes its cause: the corpus digest no
-        longer moves under this edit, so neither record is staled by it. The
-        case keeps step 1's two-stage shape -- reconcile, then reconcile again
-        past the measurement record -- because it is the only way to see the
-        parity node at all, and asserts that nothing is refused there now.
-
-        Its failure message under step 1 was "the edit did not move the corpus
-        digest", which is exactly the behaviour the design wants; the assertion
-        is flipped rather than deleted so that a regression putting the raw
-        digests back into the subject is caught here by name.
-
-        Both `assertEqual`s against the recorded digests are red until one
-        `measure` run and one `parity` run reissue the records against the new
-        subject. That is the reissue the runbook budgets, and no value in either
-        record can be written by hand.
-        """
-        recorded = self.work.recorded_corpus_digests()
+        """Disabled historical records are neither rewritten nor transition gates."""
+        frozen = {
+            path: self.work._live_bytes(path)
+            for path in (self.prover.MEASUREMENT, self.prover.PARITY)
+        }
         before = self.work.corpus_digest(self.work.manifest)
-        self.assertEqual(
-            before,
-            recorded["measurement_record"],
-            "the measurement record predates the corpus-subject switch",
-        )
-        self.assertEqual(
-            before,
-            recorded["parity_record"],
-            "the parity record predates the corpus-subject switch",
-        )
-
+        for path, historical_bytes in frozen.items():
+            historical = self.checker.load_canonical_record(
+                historical_bytes, allow_integers=True
+            )
+            self.assertNotEqual(
+                before,
+                historical["corpus_sha256"],
+                f"{path} still claims the current structural corpus",
+            )
         outcome = self.work.reconcile(self.after_span)
         after = outcome["corpus_sha256"]
         self.assertEqual(before, after, "the edit moved the corpus digest")
-        self.assertEqual(after, recorded["parity_record"])
+        self.assertTrue(outcome["accepted"], outcome["refusals"])
+        for path, expected in frozen.items():
+            self.assertEqual(expected, self.work._live_bytes(path))
 
-        # Moving only the measurement record's recorded corpus digest: no count
-        # and no date is touched, and no model is consulted. It exists to reach
-        # the parity node, which `check` never gets to while the measurement
-        # record refuses first.
-        reached = self.work.reconcile(self.after_span, rebind_measurement_corpus=True)
-        self.assertNotIn(
-            {"code": CORPUS_REFUSAL, "node_path": PARITY_NODE},
-            reached["refusals"],
-            "the parity record is still staled by an out-of-span edit",
-        )
-
-    def test_in_span_edit_refuses_with_every_mechanical_pass_applied(self):
-        """The edit that must keep refusing, at both depths it is caught.
-
-        An edit inside the reviewed span changes the bytes the recorded counts
-        are counts of. The reviewed span digest catches it first, before any
-        evidence record is consulted. Rebinding that digest too, which is what
-        a re-review would mean, does not get past it either: the measurement
-        record binds the span digest as well. The design landing at step 3 must
-        leave both of these refusing.
-        """
+    def test_in_span_edit_requires_an_explicit_source_span_rebind(self):
+        """The structural span refuses until its review boundary is replaced."""
         in_span = self.work.in_span_source()
         self.assertTrue(self.work.span_moved(in_span))
         self.assertEqual(
@@ -296,8 +194,8 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             f"$.fixtures.{self.prover.SUBJECT}.source.span_sha256",
         )
 
-        caught_at_the_record = self.work.reconcile(in_span, rebind_span=True)
-        self.assertRefused(caught_at_the_record, CORPUS_REFUSAL, MEASUREMENT_NODE)
+        rebound = self.work.reconcile(in_span, rebind_span=True)
+        self.assertTrue(rebound["accepted"], rebound["refusals"])
 
     def test_every_mechanical_pass_is_load_bearing(self):
         """The passes are five, and omitting any one is visible in the refusal.
@@ -414,10 +312,16 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             self.work.fixture["artifacts"]["source_spans"]["path"]
         )
         self.assertEqual(len(spans["spans"]), len(offsets["nodes"]))
+        located_by_binding = {
+            (item["node"], tuple(item["recorded"])): item
+            for item in offsets["nodes"]
+        }
+        self.assertEqual(len(offsets["nodes"]), len(located_by_binding))
         for entry in spans["spans"]:
             node = entry["node"]
-            with self.subTest(node=node):
-                located = offsets["nodes"][node]
+            recorded = (int(entry["start"]), int(entry["end"]))
+            with self.subTest(node=node, recorded=recorded):
+                located = located_by_binding[(node, recorded)]
                 start, end = located["rederived"]
                 self.assertEqual(
                     entry["sha256"], self.prover.digest(before_span[start:end])
@@ -507,11 +411,8 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                 )
             )
             expected = [
-                [str(start), str(end)]
-                for start, end in (
-                    offsets["nodes"][entry["node"]]["rederived"]
-                    for entry in spans["spans"]
-                )
+                [str(item["rederived"][0]), str(item["rederived"][1])]
+                for item in offsets["nodes"]
             ]
             for label, entries in (
                 ("source-spans", written_spans["spans"]),
@@ -566,27 +467,8 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                 self.prover.Reconciliation(tree, checker=self.checker)
             self.assertIn("padded decimal", str(raised.exception))
 
-    def test_a_before_span_edit_still_stales_the_measurement_record(self):
-        """What the before-span placement costs once its offsets are reconciled.
-
-        The two placements do not cost the same thing, and the design record is
-        explicit about why. `_corpus_sha256` digests a subject carrying
-        `fixtures` whole, and `digest_neutral_projection` substitutes only the
-        digests the manifest binds a path by. A reviewed span's `start` and
-        `end` are neither, so they stay in the subject: ADR-076 records that the
-        corpus digest still distinguishes a change to any recorded offset.
-
-        So an after-span edit reconciles green, and a before-span edit gets past
-        the reviewed span digest and then refuses `WAI-E-DIGEST.CORPUS` at the
-        measurement record. That is the design behaving as recorded and not a
-        gap in the offsets pass, and the distinction matters: the refusal a
-        before-span edit produces is at the corpus, not at the span, which is
-        what says the offsets were reconciled before it was reached.
-
-        The cause is asserted directly rather than inferred from the refusal,
-        by moving the two offsets in a manifest and nothing else. Otherwise a
-        refusal arriving for some other reason would read as this one.
-        """
+    def test_a_before_span_edit_reconciles_without_model_evidence(self):
+        """Offset-only movement is accepted without consulting disabled records."""
         before_span = self.work.edited_source(self.prover.BEFORE_SPAN_PLACEMENT)
         unmoved = self.work.corpus_digest(self.work.manifest)
 
@@ -596,15 +478,12 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertEqual(unmoved, after["corpus_sha256"])
 
         outcome = self.work.reconcile(before_span)
-        self.assertRefused(outcome, CORPUS_REFUSAL, MEASUREMENT_NODE)
+        self.assertTrue(outcome["accepted"], outcome["refusals"])
         self.assertNotEqual(
             unmoved,
             outcome["corpus_sha256"],
             "the recorded offsets moved and the corpus digest did not",
         )
-
-        # The refusal is at the corpus and not at the span, so the offsets were
-        # reconciled before the evidence record was consulted.
         self.assertNotIn(
             "WAI-E-DIGEST.SOURCE_SPAN",
             {refusal["code"] for refusal in outcome["refusals"]},
@@ -950,75 +829,54 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         self.assertEqual(len(bound), projected.count(marker))
         self.assertEqual(len(probe), len(projected))
 
-    def test_the_measurement_record_binds_the_projected_artefact_digests(self):
-        """Inverted from `..._still_binds_the_raw_artefact_digests`, replacing it.
-
-        The assumption this replaces was recorded one commit earlier in this
-        same step, and lasted exactly as long as it took to ask the controller.
-        It was that the switch changed the corpus subject and left the measured
-        bytes alone, so `measure` still recorded each document's
-        `canonical_model` and `compact` as digests of the raw artefact bytes.
-        Observed then, by simulating the reissue in a throwaway copy and
-        applying an out-of-span edit: `check` refused `WAI-E-MEASURE.RECORD` at
-        `$.evidence.measurement_record.documents[0].canonical_model`, with the
-        corpus digest itself unmoved.
-
-        The `digest-neutral-corpus` design record takes the embedded whole-file
-        digest out of the measured bytes *and* out of the corpus subject, so
-        half of it would have shipped a delivery failing its own selected
-        design. `measure` now counts
-        `digest_neutral_projection(manifest, ...)` of the model and the compact
-        document, and `_measurement_material` compares against the same streams.
-
-        What the record must not do is stop binding the raw digests anywhere.
-        It does not: the manifest still binds every artefact by its real
-        digest, `check` still verifies each against the bytes on disk, and this
-        case asserts both halves at once -- the record carries the projected
-        digest, the manifest carries the raw one, and for these two artefacts
-        the two differ. Not measured here has not become not bound anywhere.
-        """
+    def test_the_disabled_measurement_record_is_frozen_not_current(self):
+        """Historical measurement bytes stay bound while current structure diverges."""
         manifest = self.work.manifest
+        self.assertEqual(manifest["model_evidence_status"], "disabled")
+        evidence_path = manifest["evidence"]["measurement_record"]["path"]
+        evidence_bytes = self.work._live_bytes(evidence_path)
+        self.assertEqual(
+            manifest["evidence"]["measurement_record"]["sha256"],
+            self.prover.digest(evidence_bytes),
+        )
         recorded = self.work._live_record(self.prover.MEASUREMENT, allow_integers=True)
         documents = {item["fixture_id"]: item for item in recorded["documents"]}
 
         for entry in manifest["fixtures"]:
-            for record_key, artifact_name in (
-                ("canonical_model", "model"),
-                ("compact", "compact"),
-            ):
-                with self.subTest(fixture=entry["id"], material=record_key):
-                    raw = self.work._live_bytes(entry["artifacts"][artifact_name]["path"])
-                    projected = self.checker.digest_neutral_projection(manifest, raw)
-                    material = documents[entry["id"]][record_key]
-
-                    # The manifest still binds the bytes on disk, by their real
-                    # digest, and check still verifies it.
+            for artifact_name in ("model", "compact", "source_spans"):
+                with self.subTest(fixture=entry["id"], artifact=artifact_name):
+                    raw = self.work._live_bytes(
+                        entry["artifacts"][artifact_name]["path"]
+                    )
                     self.assertEqual(
                         entry["artifacts"][artifact_name]["sha256"],
                         self.prover.digest(raw),
                     )
-                    # The record binds the projection, and says so.
-                    self.assertEqual(self.prover.digest(projected), material["sha256"])
-                    self.assertEqual(
-                        self.checker.MEASURED_PROJECTION_DIGEST_NEUTRAL,
-                        material["projection"],
-                    )
-                    # And the two are genuinely different bytes here, so
-                    # neither assertion is passing on a projection that did
-                    # nothing to this artefact.
-                    self.assertNotEqual(raw, projected)
-                    self.assertNotEqual(
-                        entry["artifacts"][artifact_name]["sha256"], material["sha256"]
-                    )
 
-        # The reviewed span is the exception, and it is checked rather than
-        # carved out: the record counts it raw, names no projection, and the
-        # recorded digest is span_sha256, which is the review boundary.
-        for entry in manifest["fixtures"]:
-            with self.subTest(fixture=entry["id"], material="source"):
-                material = documents[entry["id"]]["source"]
-                self.assertEqual(self.checker.MEASURED_PROJECTION_NONE, material["projection"])
-                self.assertEqual(entry["source"]["span_sha256"], material["sha256"])
+        subject = next(
+            entry
+            for entry in manifest["fixtures"]
+            if entry["id"] == self.prover.SUBJECT
+        )
+        historical = documents[self.prover.SUBJECT]
+        current_model = self.work._live_bytes(subject["artifacts"]["model"]["path"])
+        current_compact = self.work._live_bytes(subject["artifacts"]["compact"]["path"])
+        self.assertNotEqual(
+            historical["canonical_model"]["sha256"],
+            self.prover.digest(
+                self.checker.digest_neutral_projection(manifest, current_model)
+            ),
+        )
+        self.assertNotEqual(
+            historical["compact"]["sha256"],
+            self.prover.digest(
+                self.checker.digest_neutral_projection(manifest, current_compact)
+            ),
+        )
+        self.assertNotEqual(
+            subject["source"]["span_sha256"],
+            historical["source"]["sha256"],
+        )
 
     def test_no_reviewed_span_carries_a_bound_digest(self):
         """Why measuring the reviewed spans raw costs nothing.
@@ -1131,11 +989,10 @@ class LiveReconcileTests(unittest.TestCase):
             self.assertEqual(0, exit_code)
 
     def test_reconcile_refuses_an_edit_inside_the_reviewed_span(self):
-        """Reviewed bytes are what the recorded counts are counts of.
+        """Changed reviewed bytes require restoration or separate new authority.
 
-        No mechanical pass makes a token count true again once the bytes it
-        counted have changed, so the command refuses and names `measure` rather
-        than rebinding the digests around the edit and reporting success.
+        Disabled historical evidence is not a recovery gate, so the refusal
+        cannot direct the caller to a generator that is itself disabled.
         """
         with tempfile.TemporaryDirectory() as scratch:
             tree = self.live_copy(Path(scratch), self.work.in_span_source())
@@ -1144,7 +1001,9 @@ class LiveReconcileTests(unittest.TestCase):
                 live.apply()
             message = str(raised.exception)
             self.assertIn("reviewed-span digest", message)
-            self.assertIn("measure", message)
+            self.assertIn("Restore the exact reviewed bytes", message)
+            self.assertIn("separate authority", message)
+            self.assertNotIn("agent_instruction.py measure", message)
             self.assertIn("1192", message)
 
             # And it refused before writing: the tree is exactly as unreconciled
@@ -1205,8 +1064,10 @@ class LiveReconcileTests(unittest.TestCase):
 
         spawned: list[list[str]] = []
         opened: list[int] = []
+        read_paths: list[str] = []
         real_socket_init = socket_module.socket.__init__
         real_run = self.prover.subprocess.run
+        real_read_confined = self.checker.read_confined
 
         def guarded_init(instance, family=socket_module.AF_INET, *args, **kwargs):
             if family in (socket_module.AF_INET, socket_module.AF_INET6):
@@ -1217,6 +1078,10 @@ class LiveReconcileTests(unittest.TestCase):
             spawned.append([str(item) for item in arguments])
             return real_run(arguments, *args, **kwargs)
 
+        def recording_read_confined(root, relative, *args, **kwargs):
+            read_paths.append(str(relative))
+            return real_read_confined(root, relative, *args, **kwargs)
+
         with tempfile.TemporaryDirectory() as scratch:
             tree = self.live_copy(
                 Path(scratch),
@@ -1224,13 +1089,17 @@ class LiveReconcileTests(unittest.TestCase):
             )
             socket_module.socket.__init__ = guarded_init
             self.prover.subprocess.run = recording_run
+            self.checker.read_confined = recording_read_confined
             try:
                 self.prover.LiveReconciliation(tree, checker=self.checker).apply()
             finally:
                 socket_module.socket.__init__ = real_socket_init
                 self.prover.subprocess.run = real_run
+                self.checker.read_confined = real_read_confined
 
         self.assertEqual([], opened, "the reconciliation opened an internet socket")
+        self.assertNotIn(self.prover.MEASUREMENT, read_paths)
+        self.assertNotIn(self.prover.PARITY, read_paths)
         self.assertTrue(spawned, "the reconciliation spawned nothing, so nothing was checked")
         for arguments in spawned:
             self.assertNotIn("measure", arguments)

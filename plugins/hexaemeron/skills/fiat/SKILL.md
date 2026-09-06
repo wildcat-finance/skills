@@ -555,8 +555,11 @@ and ledger history are not edited to manufacture a holding result.
 delegates Mason the exact study and runbook digests, immutable capture, assigned
 entries, closed guard paths and reporter contracts, exact Step branch and
 parent, and fixed evidence directory. A zero-assigned Step keeps the existing
-bounded `fiat-no-known-findings/v1` record. An assigned Step instead uses the
-successor-only command:
+bounded `fiat-no-known-findings/v1` record. A packet without `guard_commit`
+authorises only atomic create-only creation of the exact Step branch from
+`step_parent`. If that branch already exists at any tip, Mason makes no edit,
+reset, repoint or checkout and requests a fresh `next` packet. An assigned Step
+instead uses the successor-only command:
 
 ```text
 hexctl retain-guard --finding-id <assigned-id> --guard-commit <full-object-id>
@@ -612,10 +615,17 @@ Final paths are controller-derived beneath
 report first and the manifest last through exclusive staging leaves, file
 `fsync`, atomic no-replace publication and directory `fsync`, revalidating all
 bindings before each authority-bearing write. A report orphan remains
-recoverable and incomplete; a manifest is the only completion point. An exact
-completed pair is replayed idempotently without a runner or mutation, while a
-manifest without its exact report or any mismatched final pair refuses rather
-than being repaired in place.
+recoverable and incomplete. Before manifest publication, a canonical pending
+marker binds both final digests and the exact admitted runner exit and counters.
+On restart Fiat validates that marker, its retained report and the current
+immutable context before loading or calling the runner. If the bound manifest
+is absent, Fiat reconstructs its exact canonical bytes, requires the marker
+digest and publishes it no-replace; an existing manifest must already match.
+The manifest is the evidence completion point, but lock-free readers expose it
+only after a positive completion record is durable and the pending gate is
+retired. An exact completed pair is replayed idempotently without a runner or
+mutation. Missing completed evidence or any mismatch refuses without runner or
+repair mutation.
 
 The canonical manifest is at most 8,388,608 bytes and has strict JSON depth at
 most 32. It has exactly `schema`, `finding_id`, `consuming_step`,
@@ -633,7 +643,9 @@ and state generation, and return uniquely sorted completed and remaining ids
 without report content. They never expose a stage or report-only leaf as
 authority. Partial evidence may resume after restart only in the same physical
 managed worktree and controller run with the same immutable context and common
-guard commit. Foreign, mixed, stale or malformed evidence refuses. Once
+guard commit. Pending recovery uses only its bound report, runner exit and
+counters; it never samples a second execution. Foreign, mixed, stale or
+malformed evidence refuses. Once
 implementation starts, read-only replay requires that guard commit only as an
 ancestor and never moves the branch tip backwards.
 
@@ -675,10 +687,12 @@ audit round, so meeting them here is cheaper than meeting them there. The
 runbook step and selected design are the yardsticks: reread both before
 declaring the step complete, and do not add anything they do not ask for.
 The `implement` directive carries `branch` and `branch_from`. A capture-aware
-directive also carries the full `step_parent` and guard commit from its
-inoculation receipt. Continue on that exact already-checked-out Step branch at
-the guard commit; do not recreate it from the parent or resolve a symbolic ref
-again. A pre-capture directive still cuts from `branch_from`. Step 1 chains
+directive also carries the full `step_parent`; an assigned-finding receipt adds
+its exact guard commit, while a zero-assigned receipt does not. Continue on the
+already-checked-out Step branch at that receipt's exact tip: the guard commit
+for an assigned Step or `step_parent` for a zero-assigned Step. Do not recreate
+it from the parent or resolve a symbolic ref again. A pre-capture directive
+still cuts from `branch_from`. Step 1 chains
 from the run branch and every later step from the pushed step below it, so each
 step builds on the reviewed tree below without waiting for a merge.
 
@@ -1043,7 +1057,7 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Evidence: The stored capture and matching current append-only source projections; exact physical worktree, controller run, Step branch, parent, guard tip, local signature and trailers; replacement-free native delta and raw blob rows; immutable reporter contracts; Elenchus raw report returns and unchanged verdicts; Fiat's stricter counter admission; stable no-follow audit-pair checks; report-first, manifest-last no-replace persistence; complete manifest references or bounded stable `fiat-no-known-findings/v1` bytes; `done:inoculate` ledger event; unchanged refusal checks and zero command exit.
 - Evidence classes: checked, recorded
 - Boundary: The capture establishes only its declared known failures and sources. Elenchus classification is not Fiat admission, a retained red guard is not final-green or audit evidence, an id declaration is not guard evidence, and the no-known route establishes no guard ran. The receipt neither discovers unknown failures, replaces Warden, extends checkpoint or verification replay, supports cross-worktree recovery, nor retrofits a pre-capture run.
-- Authorises: Opening implementation for only the receipted Step on the same branch at its common guard commit, and lock-free reporting of the initial inventory digest, assigned count, common guard commit, completed ids and remaining ids without report content.
+- Authorises: Opening implementation for only the receipted Step on the same branch at the common guard commit for an assigned Step or the exact `step_parent` for a no-known Step, and lock-free reporting of the initial inventory digest, assigned count, optional common guard commit, completed ids and remaining ids without report content.
 - Consequence: 2
 - Refuses: An absent, malformed, partial or stale surface or capture; changed prefix, amendment projection, parent, branch or tip; foreign option, run or worktree; invalid signature or trailer; replacement-object, decoded, extra, missing, renamed, copied, deleted, type-changed, invalid-mode, oversized or mismatched blob evidence; unsafe or unstable audit-pair state; non-guarded, incomplete, zero-run, zero-assertion, error, skipped or unittest expected-failure result; missing, duplicate, mixed, malformed or altered final pair; incomplete assigned set; malformed no-known bytes; duplicate receipt; or any authority mutation before all checks pass.
 - Recovery: Restore the exact receipted sources, physical worktree, Step branch and parent; retain every assigned guard again under the same signed guard tip, resuming only exact report orphans and completed pairs, or write the exact no-known record for a zero-assigned Step; then rerun `hexctl done inoculate`. Pre-capture states continue only on their recorded bootstrap path.

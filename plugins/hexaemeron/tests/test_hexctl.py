@@ -80,6 +80,42 @@ class TestLifecycle(HexctlCase):
             controller.DONE_HANDLERS["inoculate"], controller.done_inoculate
         )
 
+    def test_retain_guard_is_a_writer_locked_command(self):
+        controller = hexctl_module()
+        parser = controller.build_parser()
+        args = parser.parse_args(
+            [
+                "retain-guard",
+                "--finding-id",
+                "kf-fixture-01",
+                "--guard-commit",
+                "a" * 40,
+            ]
+        )
+
+        self.assertIs(args.fn, controller.cmd_retain_guard)
+        self.assertIn("cmd_retain_guard", controller.MUTATING)
+        self.assertNotIn("cmd_status", controller.MUTATING)
+        self.assertNotIn("cmd_next", controller.MUTATING)
+
+    def test_guard_command_parser_requires_one_whole_report_argument(self):
+        controller = hexctl_module()
+        self.assertEqual(
+            ["python3", "guard.py", "--report", "{report}"],
+            controller._guard_test_argv(
+                "python3 guard.py --report {report}"
+            ),
+        )
+        for command in (
+            "python3 guard.py",
+            "python3 guard.py --report prefix-{report}",
+            "python3 guard.py {report} {report}",
+            "python3  guard.py --report {report}",
+        ):
+            with self.subTest(command=command):
+                with self.assertRaises(ValueError):
+                    controller._guard_test_argv(command)
+
     def test_init_creates_state_ledger_and_gitignore(self):
         self.init()
         root = os.path.join(self.target, ".hexaemeron")
@@ -2168,33 +2204,141 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("final recorded step merge", proc.stderr)
 
-    def prepare_run_sync(
-        self, sync_sha="7" * 40, base_sha="6" * 40, starting_base=None
-    ):
-        self.to_integrate(base=starting_base)
-        state = self.state()
-        final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
-        base_before = "4" * 40
-        self.fake_refs[state["run_branch"]] = sync_sha
-        self.fake_refs[self.integration_base(state)] = base_sha
-        self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_MERGE_BASE"] = base_before
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+    def native_git(self, *args, input_text=None, env=None):
+        executable = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(executable)
+        proc = subprocess.run(
+            [executable, *args],
+            cwd=self.target,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if proc.returncode:
+            self.fail(
+                f"native git {' '.join(args)} -> rc {proc.returncode}\n"
+                f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc.stdout.strip()
+
+    def native_commit(self, tree_parent, changes, *parents, message):
+        self.native_commit_number = getattr(self, "native_commit_number", 0) + 1
+        index = os.path.join(
+            self.dir, f"native-sync-index-{self.native_commit_number}"
+        )
+        environment = os.environ.copy()
+        environment.update(
             {
-                f"{base_before}..{final_merge}": [
-                    "product.py",
-                    "shared.json",
-                ],
-                f"{base_before}..{base_sha}": [
-                    "shared.json",
-                    "upstream.py",
-                ],
-                f"{final_merge}..{sync_sha}": [
-                    "shared.json",
-                    "upstream.py",
-                ],
+                "GIT_INDEX_FILE": index,
+                "GIT_AUTHOR_NAME": "Fixture",
+                "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+                "GIT_COMMITTER_NAME": "Fixture",
+                "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+                "GIT_AUTHOR_DATE": (
+                    f"{1000000000 + self.native_commit_number} +0000"
+                ),
+                "GIT_COMMITTER_DATE": (
+                    f"{1000000000 + self.native_commit_number} +0000"
+                ),
             }
         )
+        try:
+            self.native_git("read-tree", tree_parent, env=environment)
+            for path, content in sorted(changes.items()):
+                blob = self.native_git(
+                    "hash-object", "-w", "--stdin", input_text=content
+                )
+                self.native_git(
+                    "update-index",
+                    "--add",
+                    "--cacheinfo",
+                    "100644",
+                    blob,
+                    path,
+                    env=environment,
+                )
+            tree = self.native_git("write-tree", env=environment)
+            parent_args = [
+                value for parent in parents for value in ("-p", parent)
+            ]
+            return self.native_git(
+                "commit-tree",
+                tree,
+                *parent_args,
+                input_text=message + "\n",
+                env=environment,
+            )
+        finally:
+            for suffix in ("", ".lock"):
+                try:
+                    os.unlink(index + suffix)
+                except FileNotFoundError:
+                    pass
+
+    def publish_native_sync(self, state, sync_sha, base_sha):
+        run_branch = state["run_branch"]
+        integration_base = self.integration_base(state)
+        self.native_git(
+            "push",
+            "--quiet",
+            "--force",
+            "origin",
+            f"{sync_sha}:refs/heads/{run_branch}",
+            f"{base_sha}:refs/heads/{integration_base}",
+        )
+        self.fake_refs[run_branch] = sync_sha
+        self.fake_refs[integration_base] = base_sha
+        self.fake_parents[sync_sha] = [self.native_product_head, base_sha]
+
+    def prepare_run_sync(self, starting_base=None, *, wrong_parents=False):
+        self.to_merge_step(base=starting_base)
+        state = self.state()
+        self.native_base_before = self.native_git("rev-parse", "HEAD")
+        self.native_product_head = self.native_commit(
+            self.native_base_before,
+            {
+                "product.py": "product\n",
+                "shared.json": '{"side":"product"}\n',
+            },
+            self.native_base_before,
+            message="fixture product merge",
+        )
+        self.native_upstream_files = {
+            "shared.json": '{"side":"upstream"}\n',
+            "upstream.py": "upstream = True\n",
+        }
+        base_sha = self.native_commit(
+            self.native_base_before,
+            self.native_upstream_files,
+            self.native_base_before,
+            message="fixture upstream base",
+        )
+        sync_changes = dict(self.native_upstream_files)
+        sync_changes["shared.json"] = '{"side":"resolved"}\n'
+        first_parent = (
+            self.native_base_before if wrong_parents else self.native_product_head
+        )
+        sync_sha = self.native_commit(
+            self.native_product_head,
+            sync_changes,
+            first_parent,
+            base_sha,
+            message="fixture integration sync",
+        )
+
+        origin = os.path.join(self.dir, "native-origin.git")
+        self.native_git("init", "--bare", "--quiet", origin)
+        self.native_git("remote", "add", "origin", origin)
+        self.run_ctl(
+            "done", "merge-step", "--step", "1",
+            "--merge-commit", self.native_product_head,
+        )
+        self.write_run_pr()
+        state = self.state()
+        self.native_base_head = base_sha
+        self.native_replacement_number = 0
+        self.publish_native_sync(state, sync_sha, base_sha)
         return state, sync_sha, base_sha
 
     def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
@@ -2281,34 +2425,35 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             ),
         )
 
-    def configure_sync_replacement(self, sync_sha, base_sha):
+    def configure_sync_replacement(self):
         state = self.state()
-        final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
-        base_before = "4" * 40
-        self.fake_refs[state["run_branch"]] = sync_sha
-        self.fake_refs[self.integration_base(state)] = base_sha
-        self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
-            {
-                f"{base_before}..{final_merge}": [
-                    "product.py",
-                    "shared.json",
-                ],
-                f"{base_before}..{base_sha}": [
-                    "controller.py",
-                    "shared.json",
-                    "upstream.py",
-                ],
-                f"{final_merge}..{sync_sha}": [
-                    "controller.py",
-                    "shared.json",
-                    "upstream.py",
-                ],
-            }
+        self.native_replacement_number += 1
+        base_changes = {}
+        if self.native_replacement_number == 1:
+            base_changes["controller.py"] = "controller = 1\n"
+            self.native_upstream_files.update(base_changes)
+        base_sha = self.native_commit(
+            self.native_base_head,
+            base_changes,
+            self.native_base_head,
+            message=f"fixture upstream advance {self.native_replacement_number}",
         )
-        return self.write_integration_revalidation(
-            affected_paths=["controller.py", "shared.json", "upstream.py"]
+        sync_changes = dict(self.native_upstream_files)
+        sync_changes["shared.json"] = '{"side":"resolved"}\n'
+        sync_sha = self.native_commit(
+            self.native_product_head,
+            sync_changes,
+            self.native_product_head,
+            base_sha,
+            message=f"fixture replacement sync {self.native_replacement_number}",
         )
+        self.native_base_head = base_sha
+        self.publish_native_sync(state, sync_sha, base_sha)
+        affected_paths = sorted(sync_changes)
+        revalidation = self.write_integration_revalidation(
+            affected_paths=affected_paths
+        )
+        return sync_sha, base_sha, revalidation
 
     def test_sync_run_receipts_exact_merge_and_allows_integration(self):
         state, sync_sha, base_sha = self.prepare_run_sync()
@@ -2321,8 +2466,12 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         after_sync = self.state()
         self.assertEqual(before["steps"], after_sync["steps"])
         sync = after_sync["integrate"]["sync"]
-        self.assertEqual(sync["product_evidence"]["head"], "e" * 40)
-        self.assertEqual(sync["revalidation"]["base_before"], "4" * 40)
+        self.assertEqual(
+            sync["product_evidence"]["head"], self.native_product_head
+        )
+        self.assertEqual(
+            sync["revalidation"]["base_before"], self.native_base_before
+        )
         self.assertEqual(sync["revalidation"]["product_paths"], [
             "product.py", "shared.json",
         ])
@@ -2346,7 +2495,9 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             },
         )
         status = self.run_ctl("status").stdout
-        self.assertIn("product eeeeeeeeeeee preserved", status)
+        self.assertIn(
+            f"product {self.native_product_head[:12]} preserved", status
+        )
         self.assertIn("1 integration revalidation check(s) recorded", status)
         self.write_run_pr()
         self.run_ctl(
@@ -2357,7 +2508,9 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         receipt = self.state()["receipts"]["integrate"]
         self.assertEqual(receipt["run_head"], sync_sha)
         self.assertEqual(receipt["sync"]["base_head"], base_sha)
-        self.assertEqual(receipt["sync"]["parents"], ["e" * 40, base_sha])
+        self.assertEqual(
+            receipt["sync"]["parents"], [self.native_product_head, base_sha]
+        )
 
     def test_sync_run_supersedes_one_failed_composition_without_reopening_product(self):
         _, first_sync, first_base = self.prepare_run_sync()
@@ -2369,11 +2522,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         product = self.state()["integrate"]["sync"]["product_evidence"]
 
-        replacement_sync = "8" * 40
-        replacement_base = "9" * 40
-        replacement_revalidation = self.configure_sync_replacement(
-            replacement_sync, replacement_base
-        )
+        (
+            replacement_sync,
+            replacement_base,
+            replacement_revalidation,
+        ) = self.configure_sync_replacement()
         proc = self.run_ctl(
             "done", "sync-run",
             "--commit", replacement_sync,
@@ -2494,15 +2647,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
 
         for number in range(8):
-            replacement_sync = hashlib.sha1(
-                f"replacement-sync-{number}".encode()
-            ).hexdigest()
-            replacement_base = hashlib.sha1(
-                f"replacement-base-{number}".encode()
-            ).hexdigest()
-            replacement_revalidation = self.configure_sync_replacement(
-                replacement_sync, replacement_base
-            )
+            (
+                replacement_sync,
+                replacement_base,
+                replacement_revalidation,
+            ) = self.configure_sync_replacement()
             self.run_ctl(
                 "done", "sync-run", "--commit", replacement_sync,
                 "--base-commit", replacement_base,
@@ -2651,9 +2800,8 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
 
     def test_sync_run_refuses_wrong_merge_parents(self):
-        _, sync_sha, base_sha = self.prepare_run_sync()
+        _, sync_sha, base_sha = self.prepare_run_sync(wrong_parents=True)
         revalidation = self.write_integration_revalidation()
-        self.fake_parents[sync_sha] = ["9" * 40, base_sha]
         proc = self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
             "--base-commit", base_sha, "--revalidation", revalidation,

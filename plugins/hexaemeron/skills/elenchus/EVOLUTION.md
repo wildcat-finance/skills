@@ -2,11 +2,16 @@
 
 Policy: [../VERSIONING.md](../VERSIONING.md)
 
-- Current version: `elenchus-v1.3.0`
+## Current state
+
+- Current version: `elenchus-v1.4.0`
 - Frontier status: `mature`
 - Frontier revision: `observed-failure-root-cause`
 - Current frontier: A check overlays a fix's changed tests onto the parent and classifies unittest, Forge and Node guards from fresh runner-owned reports, while diagnostics remain inert evidence.
 - Next Fiat job: None -- mature
+
+## Source
+
 - Sources: [../../../../SOURCES.md](../../../../SOURCES.md)
 
 ## History
@@ -17,3 +22,4 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 | `elenchus-v1.1.0` | evolution | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [structured runner fixtures](../../tests/test_elenchus_checker.py), [study](../../docs/elenchus-structured-runner-reports/study.md) | The guard check replaces diagnostic matching with fresh unittest, Forge and Node report adapters; no evidenced next frontier remains. |
 | `elenchus-v1.2.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [audit-round verdict study](../../docs/elenchus-audit-round-verdict/study.md), [runner fixture](../../tests/test_elenchus_checker.py) | A Fiat Warden takes the exact test command, report format, and report file from its source-bound runbook step and returns the four-state Elenchus verdict unchanged. The receipt records that declaration rather than attesting report bytes; stronger evidence binding remains issue 453. |
 | `elenchus-v1.3.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [replay guard example](../../tests/test_elenchus_rpc_boundary_fixture.py), [study](../../../../docs/elenchus-rpc-boundary-fixtures/study.md) | The skill file gains `## Pin an RPC-boundary failure into a fixture`, a seven-step procedure that names the exact exchange, writes the plan with each request marked required or optional, captures with the endpoint URL held in the environment, verifies, guards behind `lazarus replay` with a `-32070` miss read as a failed test, commits plan, fixture and test together, and says what a fixture cannot pin. The example demonstrates the offline half against the shipped Aave v4 fixture over loopback and skips by name where the Lazarus dependencies are absent; no Lazarus file changed. A reference document beside the skill, an example inside the skill tree, a synthetic fixture carrying a recorded provider error and a fake-provider capture round trip were rejected in the linked study. The mature frontier and `None -- mature` stay. |
+| `elenchus-v1.4.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [known-failure inoculation study](../../../../docs/known-failure-inoculation-study.md), [guard evidence tests](../../tests/test_guard_evidence.py) | Adds the narrow `elenchus-parent-guard-evidence` promise: Fiat supplies an exact parent, replacement-free raw blob rows and a closed reporter contract; Elenchus streams a bounded parent, represents gitlinks without requiring foreign submodule objects, overlays and runs the guard in a detached worktree, then returns the fresh raw report bytes, counters, exit and unchanged verdict. Fiat retains ownership of Step-wide Git binding, numeric admission, persistence and receipts. The mature frontier and `None -- mature` stay. |

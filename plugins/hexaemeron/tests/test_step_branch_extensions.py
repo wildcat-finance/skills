@@ -219,7 +219,8 @@ class NativeGraphCase(unittest.TestCase):
         self.assertIsNone(message)
         self.assertEqual(len(calls), 1)
         args, kwargs = calls[0]
-        self.assertEqual(args[1], "git")
+        self.assertEqual(args[1], module._native_git_executable())
+        self.assertTrue(os.path.isabs(args[1]))
         self.assertEqual(
             args[2],
             [
@@ -285,7 +286,7 @@ class DescendantMergeReceiptCase(HexctlCase):
 
     URL_TEMPLATE = "https://github.com/wildcat-finance/example/pull/{}"
 
-    def _finish_step(self, number):
+    def _finish_step(self, number, head_commit=None):
         self.run_ctl(
             "done",
             "implement",
@@ -312,7 +313,7 @@ class DescendantMergeReceiptCase(HexctlCase):
             "--pr-url",
             self.URL_TEMPLATE.format(number),
             "--head-commit",
-            format(number, "x") * 40,
+            head_commit or format(number, "x") * 40,
             "--pr-base",
             self.step_base(number),
         )
@@ -320,13 +321,22 @@ class DescendantMergeReceiptCase(HexctlCase):
     def test_descendant_is_reverified_without_rewriting_the_push_receipt(self):
         self.to_steps(("lower", "extended"))
         self._finish_step(1)
-        self._finish_step(2)
+
+        state = self.state()
+        branch = self.step_branch(2, state)
+        parent = self.git("rev-parse", branch).stdout.strip()
+        tree = self.git("show", "-s", "--format=%T", parent).stdout.strip()
+        recorded = self.git(
+            "commit-tree", tree, "-p", parent, "-m", "recorded step head"
+        ).stdout.strip()
+        extended = self.git(
+            "commit-tree", tree, "-p", recorded, "-m", "extended step head"
+        ).stdout.strip()
+        self._finish_step(2, head_commit=recorded)
 
         state = self.state()
         original_push = copy.deepcopy(state["steps"][1]["receipts"]["push"])
-        branch = self.step_branch(2, state)
         url = original_push["pr_url"]
-        extended = "7" * 40
         self.fake_refs[branch] = extended
         self.fake_prs[url]["head"]["sha"] = extended
 
