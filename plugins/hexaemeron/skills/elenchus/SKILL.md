@@ -343,12 +343,11 @@ python3 "$PLUGIN_ROOT/skills/elenchus/scripts/fixed_and_guarded.py" \
 
 Two inputs go in. `--draft` is operator-written JSON holding the seven fields
 the operator had to establish before the Promise could be claimed at all.
-`--result` is an `elenchus.py --format
-json` result, and five of its keys are read: `status` and `detail` become the
-verdict, `report` becomes the parent's counts, `ref` derives the parent commit,
-and `tests` is what the named guard is checked against. Its `output` is up to
-4000 characters from an arbitrary command, so it never enters the record and is
-never read for meaning.
+`--result` is an `elenchus.py --format json` result, and five of its keys are
+read: `status` and `detail` become the verdict, `report` becomes the parent's
+counts, `ref` derives the parent commit, and `tests` is what the named guard is
+checked against. Its `output` is up to 4000 characters from an arbitrary
+command, so it never enters the record and is never read for meaning.
 
 One output comes out: a single JSON object at `--out`, staged in the
 destination directory and renamed into place, so an interrupted emit leaves no
