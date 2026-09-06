@@ -1,0 +1,16 @@
+## Step 1, round 1 -- 2026-09-06T23:07:26Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: refusal-names-its-own-bypass=reviewed; routed-exit-mistaken-for-success=reviewed; window-undiscriminated-read=reviewed; graphql-transport=not-applicable; prior-body-in-memory=not-applicable; receipt-forgery=not-applicable; partial-write-of-the-receipt=not-applicable; held-job-drift=reviewed; reviewed-span-drift=reviewed; stale-claim-elsewhere=reviewed
+
+Not checked: the skills#1337 edit count and logins were not re-queried and are carried from the receipted study at .hexaemeron/study.md:132 and :160; the Solidity suite is waived by the brief, since the step produces no Solidity and no Foundry or Hardhat project; phylax and ephoros read neither Markdown nor JSON, so their exit 0 covers no byte this step added; hexctl init behaviour is unchanged and untested this round; the study's and runbook's content beyond the claims this step's Exit binds was receipted in their own phases and not re-audited here.
+
+Elenchus verdict: unguarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | docs/decisions/drafts/route-a-filed-zero-as-an-answer.md:62-67 | Study item 12 gives decision 3, that the gate reads no editor identity, the home "the same record's Consequences, alongside the measured fact that all four edits on #1337 carry one login". The record put it in Decision, and Consequences carried neither the decision nor the measurement. The paragraph moved unchanged: the file's sorted-word SHA-256 is e1a50bfa4088a31a79865afd3a9d3302dbebcf6667344c2fa1397b43fb49dfc6 before and after. | fixed in 9e314efff63f17b0958acadef488b27cf192cef4 |
+| S1-R1-02 | medium | docs/route-a-zero-decision-study.md:1 | The shipped study carries no design-bridge fence, so hypomnema 5.8.0 study mode reports "H008 study has no design bridge block" and exits 1 against --design-evidence .hexaemeron/design-evidence.json. That fence would bind the selected candidate decision-age-window to docs/decisions/drafts/route-a-filed-zero-as-an-answer.md, which is the join this step exists to make. The repair is the controller's: the fence has to enter .hexaemeron/study.md through hexctl amend, because the Exit pins the docs copy to the receipted study with only the five link changes. The runbook Tests field names the ordinary walk alone, and that exits 0. | open |
+
+Leads not pursued: Elenchus reports the fix unguarded because the commit changed no test files, which is expected for a prose-only repair and is recorded as that skill requires. Study item 12 gives decision 2 the home "its own section" and the record gives it a bold-led paragraph inside Decision rather than a sixth heading; not raised, because a sixth heading breaks the five-section shape every record under docs/decisions/ uses, and the rejected alternative and its reason are both present in Alternatives. The study names --filing-decision-override at docs/route-a-zero-decision-study.md:178 while rejecting it, and the register scopes that concern to the refusal, the routed directive and the reference, none of which this step builds; revisit when init emits bytes. ADR-067 carries no supersession marker because the study requires it byte-identical, so the supersession claim sits on the draft alone and no contradiction exists until the code changes.
