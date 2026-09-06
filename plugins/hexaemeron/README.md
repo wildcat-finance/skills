@@ -151,7 +151,7 @@ hexctl done <phase> ...     # receipt a phase; validation lives here
 hexctl audit-round --audit-filter sapheneia:sapheneia ... # record one shaped security round
 hexctl record <key> <val>   # named receipts (resolved suite, run context)
 hexctl halt / resume        # put a stop itself on the ledger
-hexctl reset                # archive a completed run and clear active state
+hexctl reset                # archive a completed or halted run and clear active state
 hexctl verify               # check state shape, then prove chain and state integrity
 ```
 
@@ -170,9 +170,10 @@ checkout keeps one breadcrumb line per live run, and `status` or `next` there
 name the tree and the exact `--dir` to use. A target that is not a repository, an
 occupied or escaping path, a branch already checked out, or a failing
 `git worktree add` each refuse by name before anything is written; there is no
-in-place fallback. `reset` archives a completed run into the origin checkout and
-removes the tree when git can do it without force, keeping any tree that holds
-work.
+in-place fallback. `reset` archives a completed or halted run into the origin
+checkout and removes the tree when git can do it without force, keeping any tree
+that holds work. A halted run's archive carries a `retire` ledger entry with the
+phase and reason it stopped at.
 
 Mutating commands hold a kernel lock for their whole run. Separate runs get
 separate trees and separate state, so the lock only bites when a second agent
