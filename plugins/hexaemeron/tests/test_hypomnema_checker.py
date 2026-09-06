@@ -745,6 +745,70 @@ class DesignBridge(unittest.TestCase):
     def test_a_valid_governed_ledger_bridge_is_clean(self):
         self.assertEqual([], design_bridge_findings("studies/valid-ledger.md"))
 
+    def test_a_valid_numberless_draft_bridge_is_clean(self):
+        record = "docs/decisions/drafts/keep-the-draft-home.md"
+        source = COMPLETE_RECORD.replace(
+            "# ADR-051: A complete specimen",
+            "# Decision: Keep the draft home",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            (root / record).write_text(source, encoding="utf-8")
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_a_malformed_numberless_draft_bridge_refuses(self):
+        record = "docs/decisions/drafts/missing-record-shape.md"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root),
+                "draft record",
+            )
+
+    def test_a_draft_with_an_invalid_stable_identity_refuses(self):
+        record = "docs/decisions/drafts/not_a_stable_slug.md"
+        source = COMPLETE_RECORD.replace(
+            "# ADR-051: A complete specimen",
+            "# Decision: Keep the draft home",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            (root / record).write_text(source, encoding="utf-8")
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root),
+                "invalid stable decision slug",
+            )
+
+    def test_a_nested_numberless_draft_bridge_refuses(self):
+        record = "docs/decisions/drafts/nested/not-direct.md"
+        source = COMPLETE_RECORD.replace(
+            "# ADR-051: A complete specimen",
+            "# Decision: Keep the draft home",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            (root / record).write_text(source, encoding="utf-8")
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root),
+                "outside an established",
+            )
+
     def test_the_explicit_cli_mode_emits_one_clean_json_result(self):
         output = io.StringIO()
         with mock.patch("sys.stdout", output):

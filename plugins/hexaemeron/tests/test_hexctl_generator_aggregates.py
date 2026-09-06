@@ -455,6 +455,11 @@ class IncidentAggregateTests(unittest.TestCase):
                     self.module, "_integrate_directive", return_value={"do": "integrate"}
                 ),
                 mock.patch.object(self.module, "carried_forward_fault", return_value=None),
+                mock.patch.object(
+                    self.module,
+                    "filed_issue_publication_records",
+                    return_value=([], []),
+                ),
                 mock.patch.object(self.module, "run_pr_path", return_value="run-pr.md"),
                 mock.patch.object(
                     self.module, "remote_branch_tip", return_value=self.fixture["sync_commit"]
@@ -473,7 +478,7 @@ class IncidentAggregateTests(unittest.TestCase):
                     return_value=resolution_guard,
                 ),
                 mock.patch.object(self.module, "merged_attribution", return_value={}),
-                mock.patch.object(self.module, "carried_forward_record", return_value=[]),
+                mock.patch.object(self.module, "carried_forward_record", return_value={}),
                 mock.patch.object(self.module, "commit"),
             ):
                 self.module.done_integrate(integrate_args, state)

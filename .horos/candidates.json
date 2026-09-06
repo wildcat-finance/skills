@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 18599122,
+    "bytes_blob": 19676890,
     "bytes_generated": 98
   },
   "entries": [
@@ -33,6 +33,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
+    },
+    {
+      "bytes": 131133,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 65566",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1275-elenchus-emits-the-fixed-and-guarded-result.md"
+    },
+    {
+      "bytes": 131855,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1275-elenchus-emits-the-fixed-and-guarded-result.synopsis.md"
     },
     {
       "bytes": 154646,
@@ -294,6 +308,20 @@
       "path": "audit/rounds/fiat-856-framework-13-test-the-remaining-atlas-hand-o.synopsis.md"
     },
     {
+      "bytes": 366493,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 183246 of 366493 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-857-framework-16-the-commit-gate-lives-in-one-cl.md"
+    },
+    {
+      "bytes": 367893,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-857-framework-16-the-commit-gate-lives-in-one-cl.synopsis.md"
+    },
+    {
       "bytes": 90295,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -376,6 +404,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-ship-the-markdown-outline-extractor-the-census-n.synopsis.md"
+    },
+    {
+      "bytes": 79048,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 39524",
+      "grade": "candidate",
+      "path": "docs/commit-gate/runbook.md"
     },
     {
       "bytes": 59394,
@@ -469,9 +504,9 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 76508,
+      "bytes": 77854,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 74460",
+      "evidence": "mean line length above 400 in a window at offset 75806",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

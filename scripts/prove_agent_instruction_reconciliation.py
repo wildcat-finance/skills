@@ -235,7 +235,16 @@ def candidate_choices(root: Path) -> tuple[str, ...]:
         ids = tuple(str(entry["id"]) for entry in record["candidates"])
     except (OSError, ValueError, KeyError, TypeError):
         return FALLBACK_CANDIDATES
-    return ids or FALLBACK_CANDIDATES
+    # A repository self-test can run inside an unrelated Fiat worktree, whose
+    # controller owns a valid design record for a different decision. Only the
+    # exact closed set this prover understands may replace its fallback.
+    if (
+        len(ids) != len(FALLBACK_CANDIDATES)
+        or len(set(ids)) != len(ids)
+        or set(ids) != set(FALLBACK_CANDIDATES)
+    ):
+        return FALLBACK_CANDIDATES
+    return ids
 
 
 def bound_digests(manifest: dict[str, Any]) -> tuple[tuple[str, str], ...]:
