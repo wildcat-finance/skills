@@ -18,35 +18,71 @@
 set -eu
 
 # The suite and the recorded tree have to be the same repository, and git's own
-# answers cannot establish that on their own. Git exports GIT_DIR into every
-# hook and every command it runs, and with GIT_DIR inherited `git rev-parse
-# --show-toplevel` reports the *caller's* directory as the working tree while
-# `git write-tree` still reads the index GIT_DIR names. Run from anywhere with
-# that variable set, the original `cd "$(git rev-parse --show-toplevel)"` landed
-# in the caller's directory, ran whatever `tests/` was there, and recorded a
-# green for another repository's staged tree. The substitution failing was never
-# the only way in: `cd ""` is a no-op and a failed substitution inside a simple
-# command's arguments does not trip `set -e`, but here the substitution
-# succeeds and simply answers about the wrong directory.
+# answers cannot establish that on their own. GIT_DIR reaches this script from
+# whoever started it. Git exports it into a hook it runs in a linked worktree,
+# naming that worktree's own git directory; measured on git 2.50.1, it exports
+# it into neither a hook it runs in a plain checkout nor a `git bisect run` or
+# rebase `exec` command, so in those a caller has to have set it itself. Either
+# way, with GIT_DIR inherited `git rev-parse --show-toplevel` reports the
+# *caller's* directory as the working tree while `git write-tree` still reads
+# the index GIT_DIR names. Run from anywhere with that variable set, the
+# original `cd "$(git rev-parse --show-toplevel)"` landed in the caller's
+# directory, ran whatever `tests/` was there, and recorded a green for another
+# repository's staged tree. The substitution failing was never the only way
+# in: `cd ""` is a no-op and a failed substitution inside a simple command's
+# arguments does not trip `set -e`, but here the substitution succeeds and
+# simply answers about the wrong directory.
 #
 # So drop the redirection git may have exported, then anchor to the one thing
 # the environment cannot move: where this script is. The hook does the opposite
 # and correctly so -- it is invoked by git, and the index git exports is exactly
 # the one it is meant to check.
+#
+# Two more are the configuration half of the same problem. Git carries the
+# caller's one-shot configuration in GIT_CONFIG_PARAMETERS, and in
+# GIT_CONFIG_COUNT with the indexed GIT_CONFIG_KEY_<n>/GIT_CONFIG_VALUE_<n>
+# pairs it drives; the pairs are inert once the count is gone. Either form
+# supplying `core.fsmonitor` makes the git calls below start a command nobody
+# here named, measured on git 2.50.1.
+#
+# GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM reach the same end one indirection
+# further out, because a file either of them names can carry `core.fsmonitor`
+# itself. Unsetting them would be worse than leaving them: git then falls back
+# to `$HOME/.gitconfig` and `/etc/gitconfig`, and a `core.fsmonitor` in
+# `$HOME/.gitconfig` still ran. They are pointed at nothing instead, which is
+# git's documented way to skip a configuration level outright. That is scoped
+# to this script's own git calls through `gate_git` below, because the suite
+# this script runs is not the gate and must keep running in the contributor's
+# own configuration.
+#
+# The anchor below is where this script is, which the paragraph above calls the
+# one thing the environment cannot move. CDPATH moves what `cd` does with it:
+# `cd "$here/.."` has `.githooks` as its first component, so `cd` searches
+# CDPATH for it. Measured on git 2.50.1 with CDPATH naming another clone's root,
+# this script ran that clone's suite and wrote that clone's tree into that
+# clone's record, printing `.git/LAST_GREEN` as though it were this one's.
+# Dropped outright rather than scoped to `gate_git` like the two above, because
+# the `cd` it moves is this script's own; the suite then runs without it too.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
     GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
-    GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX
+    GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX \
+    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+    CDPATH
+
+gate_git() {
+    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git "$@"
+}
 
 here="$(dirname "$0")"
 cd "$here/.."
 
 # Assignment form, so a rev-parse failure reaches `set -e`.
-toplevel="$(git rev-parse --show-toplevel)"
+toplevel="$(gate_git rev-parse --show-toplevel)"
 cd "$toplevel"
 
 python3 -m unittest discover -s tests
 
-tree="$(git write-tree)"
-record="$(git rev-parse --git-dir)/LAST_GREEN"
+tree="$(gate_git write-tree)"
+record="$(gate_git rev-parse --git-dir)/LAST_GREEN"
 printf '%s\n' "$tree" > "$record"
 printf 'greenlight: recorded tree %s in %s\n' "$tree" "$record"

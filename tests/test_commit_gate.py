@@ -166,6 +166,11 @@ INHERITED_GIT_VARIABLES = (
     "GIT_INTERNAL_SUPER_PREFIX",
     "GIT_CONFIG_PARAMETERS",
     "GIT_CONFIG_COUNT",
+    # The file selectors reach the same end one indirection out, so a fixture
+    # that inherited one would be measuring the caller's configuration rather
+    # than the case's.
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
 )
 
 PASSING_SUITE = """import unittest
@@ -182,6 +187,22 @@ FAILING_SUITE = """import unittest
 class FixtureTests(unittest.TestCase):
     def test_the_fixture_suite_is_red_on_purpose(self):
         self.fail("this fixture suite fails so greenlight records nothing")
+"""
+
+# A passing suite that records having run, so a case can say which
+# repository's suite greenlight ran rather than inferring it from where the
+# record landed. It passes, because the point is what greenlight does after a
+# green suite: a red one would stop it before it recorded anything.
+SUITE_MARKER = "suite-ran"
+
+MARKING_SUITE = f"""import pathlib
+import unittest
+
+
+class FixtureTests(unittest.TestCase):
+    def test_the_fixture_suite_records_having_run(self):
+        marker = pathlib.Path(__file__).resolve().parents[1] / "{SUITE_MARKER}"
+        marker.write_text("ran\\n", encoding="utf-8")
 """
 
 MARKER = """#!/bin/sh
@@ -720,6 +741,40 @@ class RefusalLineTests(unittest.TestCase):
             self.assertNotIn("\x1b", refused.stderr)
             self.assertNotIn("\r", refused.stderr)
 
+    def test_a_refusal_outside_any_repository_carries_gits_own_cause(self):
+        """S3-R1-04: when git cannot locate the repository, the line says what git said.
+
+        The hook suppresses git's standard error so a refusal stays one line,
+        and on this path that left the line naming the symptom and a remedy
+        that fails under the same condition. The fixture's parent is a ceiling
+        directory, so discovery from a directory beside the fixture stops
+        there instead of climbing into the repository this suite runs in.
+        """
+        with gate_repository() as root:
+            outside = root.parent / "outside"
+            outside.mkdir()
+            attempted = subprocess.run(
+                [str(root / ".githooks" / "pre-commit")],
+                cwd=str(outside),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=clean_environment({"GIT_CEILING_DIRECTORIES": str(root.parent)}),
+            )
+            self.assertNotEqual(
+                attempted.returncode, 0,
+                "the gate admitted a commit from outside any repository",
+            )
+            lines = attempted.stderr.splitlines()
+            self.assertEqual(
+                len(lines), 1, f"the refusal is not one line: {attempted.stderr!r}"
+            )
+            self.assertEqual(refusals(attempted), lines, f"{attempted.stderr!r}")
+            self.assertIn(
+                "not a git repository", lines[0],
+                f"the refusal does not carry git's own cause: {lines[0]}",
+            )
+
 
 class StagedTreeTests(unittest.TestCase):
     def test_a_failing_write_tree_is_refused_and_named(self):
@@ -727,9 +782,14 @@ class StagedTreeTests(unittest.TestCase):
 
         Driven directly rather than through `git commit`, because git will not
         reach the hook once its own index is unreadable.
+
+        The unreadable index sits in the repository's own git directory. An
+        index anywhere else is refused earlier, on the cause
+        `test_the_hook_refuses_a_work_tree_at_the_enclosing_repositorys_root`
+        holds, and this case is about the state after that one passes.
         """
         with gate_repository() as root:
-            broken = root.parent / "not-an-index"
+            broken = root / ".git" / "not-an-index"
             broken.write_text("this is not an index\n", encoding="utf-8")
             attempted = subprocess.run(
                 [str(root / ".githooks" / "pre-commit")],
@@ -746,6 +806,851 @@ class StagedTreeTests(unittest.TestCase):
             named = refusals(attempted)
             self.assertEqual(len(named), 1, f"{attempted.stderr!r}")
             self.assertIn("git write-tree failed", named[0])
+
+
+# --- the hook path under a polluted environment ---------------------------
+
+HOOK_NAME = HOOK.name
+GREENLIGHT_NAME = GREENLIGHT.name
+
+# An fsmonitor is a command git starts on its own account while reading an
+# index. Supplied through either inherited form it is a process the gate never
+# named, run against a repository the gate never chose, which is the whole of
+# what "reads no configuration an inherited override could redirect" forbids.
+FSMONITOR = """#!/bin/sh
+printf 'ran\\n' > "{marker}"
+printf '/\\0'
+"""
+
+
+def staged_state(root: Path) -> bytes:
+    """What the index, the working tree and the refs of one repository say.
+
+    Mode, object id, stage and path for every index entry, plus the cached diff
+    the original incident showed up in as 1487 deletions, plus the working
+    tree's porcelain status and every ref. The last two are here because the
+    index alone is blind to a file written into the outer repository's working
+    tree, and a command the gate starts by accident can write one.
+    `--no-optional-locks` keeps this measurement from refreshing the index it
+    is measuring, and `core.fsmonitor` is off for it because one case below
+    configures a monitor that records having run in the repository measured:
+    `ls-files`, `diff --cached` and `status` each start it otherwise, and a run
+    the measurement caused would read as one the gate caused.
+
+    Not the index file's own bytes. `git write-tree` does persist a cache tree
+    into an index that lacks one, so those bytes can move while nothing staged
+    does. Measured on git 2.50.1, that does not happen along this path: driving
+    the gate at an outer index leaves the file byte-identical. They are still
+    left out, because asserting them would pin where write-tree happened to
+    persist rather than the staged state the incident class is about.
+    """
+    def measure(*arguments: str) -> str:
+        return git(root, "-c", "core.fsmonitor=false", *arguments).stdout
+
+    entries = measure("ls-files", "--stage")
+    cached = measure("diff", "--cached", "--name-status", "--")
+    head = measure("rev-parse", "HEAD")
+    worktree = measure("--no-optional-locks", "status", "--porcelain")
+    refs = measure("for-each-ref")
+    return "\0".join((entries, cached, head, worktree, refs)).encode("utf-8")
+
+
+def polluted_at(outer: Path, extra: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment git exports into a hook, aimed at another repository."""
+    environment = clean_environment({
+        "GIT_INDEX_FILE": str(outer / ".git" / "index"),
+        "GIT_PREFIX": "",
+    })
+    if extra:
+        environment.update(extra)
+    return environment
+
+
+def config_override(command: Path) -> dict[str, str]:
+    """One `core.fsmonitor` override, in both forms git accepts in-band."""
+    return {
+        "GIT_CONFIG_PARAMETERS": f"'core.fsmonitor={command}'",
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "core.fsmonitor",
+        "GIT_CONFIG_VALUE_0": str(command),
+    }
+
+
+def config_file_override(directory: Path, command: Path) -> Path:
+    """The same `core.fsmonitor`, in a file a selector variable can name."""
+    path = directory / "gitconfig"
+    path.write_text(f"[core]\n\tfsmonitor = {command}\n", encoding="utf-8")
+    return path
+
+
+def repository_override(repository: Path, command: Path) -> None:
+    """The same `core.fsmonitor`, in a repository's own configuration.
+
+    `GIT_DIR` carries no value in-band and names no file; it selects a
+    repository, and git then reads that repository's configuration.
+    """
+    git(repository, "config", "core.fsmonitor", str(command))
+
+
+def selected_by(repository: Path) -> dict[str, str]:
+    """The repository selector a caller leaves behind.
+
+    Git sets it itself only for a commit in a linked worktree, naming that
+    worktree's own git directory; a hook, `git bisect run` or a rebase `exec`
+    line leaves a caller's behind, and the gate is an executable file any of
+    them can start.
+    """
+    return {"GIT_DIR": str(repository / ".git")}
+
+
+def fsmonitor_script(directory: Path) -> tuple[Path, Path]:
+    """A command that records having run, and the file it writes."""
+    marker = directory / "fsmonitor-ran"
+    script = directory / "fsmonitor.sh"
+    script.write_text(FSMONITOR.format(marker=marker), encoding="utf-8")
+    script.chmod(0o755)
+    return script, marker
+
+
+def run_gate(name: str, root: Path, env: dict[str, str]):
+    """Run one of a fixture's own copies of the gate, never the tracked one.
+
+    The tracked `.githooks/greenlight` would run this repository's full suite
+    from inside a test, which is the five-minute hang round 2 recorded.
+    """
+    return subprocess.run(
+        [str(root / ".githooks" / name)],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+
+class HookIndexMutationTests(unittest.TestCase):
+    """The regression for the class that produced the phantom deletions.
+
+    Git exports `GIT_INDEX_FILE` and `GIT_PREFIX` into every hook and every
+    command it runs, and `GIT_CONFIG_PARAMETERS` and `GIT_CONFIG_COUNT` carry
+    the caller's one-shot configuration the same way. The incident the issue
+    cites is what happens when a process inherits the first pair and stages
+    against it: 1487 deletions in a repository nobody was working in, recorded
+    at `tests/test_boundary_currency.py:57-73`. The configuration-file
+    selectors and `GIT_DIR` reach the same configuration one and two
+    indirections out, and the cases below drive every route.
+
+    The guard for that helper lives in the file whose helper caused it, and
+    acceptance condition 5 refuses a guard that lives only there. These cases
+    hold the gate itself, in the file that ships it. `GitEnvironmentIsolation`
+    is untouched and stays where it is.
+    """
+
+    def test_the_hook_leaves_an_outer_repositorys_staged_state_alone(self):
+        """The hook reads the index it is handed and writes nothing to it."""
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+
+            attempted = run_gate(HOOK_NAME, here, polluted_at(outer))
+
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of a repository it was "
+                "merely pointed at",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "the gate wrote a green into a repository it was pointed at",
+            )
+            # The refusal is the gate's, so the run reached the gate's own
+            # logic rather than dying before it could touch anything.
+            self.assertEqual(len(refusals(attempted)), 1, f"{attempted.stderr!r}")
+
+    def test_greenlight_leaves_an_outer_repositorys_staged_state_alone(self):
+        """The recording half, under the same pollution.
+
+        greenlight writes, so it is the half that could stage into the outer
+        repository or record a green there for a tree its suite never saw.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            mine = git(here, "write-tree").stdout.strip()
+
+            recorded = run_gate(GREENLIGHT_NAME, here, polluted_at(outer))
+
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed in its own repository: {recorded.stderr}",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "greenlight changed the staged state of a repository it was "
+                "merely pointed at",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "greenlight recorded a green in a repository whose suite it "
+                "never ran",
+            )
+            self.assertEqual(
+                record_path(here).read_text(encoding="utf-8").strip(), mine,
+                "greenlight recorded something other than its own tree",
+            )
+
+    def test_the_hook_reads_no_configuration_an_override_could_redirect(self):
+        """An inherited `core.fsmonitor` must not become a process the gate starts.
+
+        This fails without the control it guards: with the two variables left
+        in place, the command runs during the hook's own `git write-tree`.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+            script, marker = fsmonitor_script(here.parent)
+
+            run_gate(HOOK_NAME, here, polluted_at(outer, config_override(script)))
+
+            self.assertFalse(
+                marker.exists(),
+                "an inherited configuration override made the gate start a "
+                "process nothing in the gate names",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed an outer repository's staged state under an "
+                "inherited configuration override",
+            )
+
+    def test_greenlight_reads_no_configuration_an_override_could_redirect(self):
+        """The same override, against the half that runs a suite and records."""
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+            script, marker = fsmonitor_script(here.parent)
+
+            recorded = run_gate(
+                GREENLIGHT_NAME, here, polluted_at(outer, config_override(script))
+            )
+
+            self.assertFalse(
+                marker.exists(),
+                "an inherited configuration override made greenlight start a "
+                "process nothing in greenlight names",
+            )
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed under a config override: {recorded.stderr}",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "greenlight changed an outer repository's staged state under "
+                "an inherited configuration override",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "greenlight recorded a green in the repository the override "
+                "named",
+            )
+
+    def _no_file_selector_redirects(self, gate: str):
+        """Drive one half of the gate down all three configuration-file routes.
+
+        `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM` carry no value in-band;
+        each names a file, and a file either names can hold `core.fsmonitor`
+        itself. Unsetting the two selectors does not close that, because git
+        then reads `$HOME/.gitconfig`, so the third route drives that one with
+        both selectors absent. Every route fails without the control it guards.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            before = staged_state(outer)
+            script, marker = fsmonitor_script(here.parent)
+            config = config_file_override(here.parent, script)
+            home = here.parent / "home"
+            home.mkdir()
+            (home / ".gitconfig").write_bytes(config.read_bytes())
+
+            for route in (
+                {"GIT_CONFIG_GLOBAL": str(config)},
+                {"GIT_CONFIG_SYSTEM": str(config)},
+                {"HOME": str(home)},
+            ):
+                if marker.exists():
+                    marker.unlink()
+                run_gate(gate, here, polluted_at(outer, route))
+                self.assertFalse(
+                    marker.exists(),
+                    f"{gate}: an inherited configuration file made the gate "
+                    f"start a process nothing in the gate names, via {route}",
+                )
+                self.assertEqual(
+                    staged_state(outer), before,
+                    f"{gate}: an outer repository's state changed under {route}",
+                )
+                self.assertFalse(
+                    record_path(outer).exists(),
+                    f"{gate}: a green was written into the outer repository "
+                    f"under {route}",
+                )
+
+    def test_the_hook_reads_no_configuration_a_file_selector_could_redirect(self):
+        """The reading half, down all three configuration-file routes."""
+        self._no_file_selector_redirects(HOOK_NAME)
+
+    def test_greenlight_reads_no_configuration_a_file_selector_could_redirect(self):
+        """The recording half, down the same three."""
+        self._no_file_selector_redirects(GREENLIGHT_NAME)
+
+    def test_the_hook_reads_no_configuration_a_repository_selector_could_redirect(self):
+        """S3-R1-02: an inherited `GIT_DIR` must not choose whose configuration runs.
+
+        With the variable left in place, the other repository's own
+        `core.fsmonitor` ran during this hook's `git write-tree`. The hook
+        drops the repository selectors and keeps the index git names, so the
+        command must not run and the repository selected must be untouched.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (outer / "b.txt").write_text("staged elsewhere\n", encoding="utf-8")
+            git(outer, "add", "-A")
+            script, marker = fsmonitor_script(here.parent)
+            repository_override(outer, script)
+            before = staged_state(outer)
+
+            attempted = run_gate(HOOK_NAME, here, polluted_at(outer, selected_by(outer)))
+
+            self.assertFalse(
+                marker.exists(),
+                "an inherited GIT_DIR made the gate read another repository's "
+                "configuration and start the process it names",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of the repository an "
+                "inherited GIT_DIR selected",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "the gate wrote a green into the repository GIT_DIR selected",
+            )
+            self.assertEqual(len(refusals(attempted)), 1, f"{attempted.stderr!r}")
+
+    def test_the_hook_gates_the_repository_it_runs_from_under_an_inherited_git_dir(self):
+        """S3-R1-02, the other half: dropping `GIT_DIR` must not lose the gate.
+
+        Under the same inherited selector the hook still admits the tree its
+        own record names and refuses any other, in the repository git ran it
+        from. `run_gate` stands in for git: the index git would name for the
+        commit in hand, and the selector a caller left behind.
+        """
+        with gate_repository() as here, gate_repository() as outer:
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            green = git(here, "write-tree").stdout.strip()
+            record_path(here).write_text(f"{green}\n", encoding="utf-8")
+            inherited = clean_environment({
+                "GIT_INDEX_FILE": str(here / ".git" / "index"),
+                "GIT_PREFIX": "",
+                **selected_by(outer),
+            })
+
+            admitted = run_gate(HOOK_NAME, here, inherited)
+            self.assertEqual(
+                admitted.returncode, 0,
+                "under an inherited GIT_DIR the gate refused the tree its own "
+                f"record names: {admitted.stderr}",
+            )
+
+            (here / "c.txt").write_text("three\n", encoding="utf-8")
+            git(here, "add", "-A")
+            refused = run_gate(HOOK_NAME, here, inherited)
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "under an inherited GIT_DIR the gate admitted a tree its "
+                "record does not name",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                green, named[0],
+                f"the refusal did not name the recorded tree: {named[0]}",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "a green appeared in the repository GIT_DIR selected",
+            )
+
+    def test_the_hook_refuses_a_work_tree_inside_an_enclosing_repository(self):
+        """S3-R2-01: an enclosing repository's green must not admit this commit.
+
+        A work tree with no `.git` of its own, driven through `--git-dir` and
+        `--work-tree`, leaves discovery nothing to find where the hook stands,
+        so it climbs. Outside any repository it finds nothing and the refusal
+        carries git's own line, which `RefusalLineTests` holds. Inside one it
+        finds the enclosing repository, and every answer after that is that
+        repository's: its `core.fsmonitor` ran during the hook's own `git
+        write-tree`, its object store answered that command, and its
+        `LAST_GREEN` naming the staged tree admitted a commit into a repository
+        it does not hold. `git rev-parse --show-prefix` is what tells the two
+        cases apart -- empty at the root of the work tree git ran the hook
+        from, `inner/tree/` here -- and it is read before any record is located.
+
+        The nested work tree holds bytes the enclosing repository already has,
+        so `git write-tree` run from there can rebuild the staged tree. That is
+        asserted rather than assumed below, because an enclosing repository
+        missing one blob refuses the commit for want of an object instead, and
+        a fixture that refused for that reason would pass without the control.
+        """
+        with gate_repository() as outer:
+            separate = outer / "inner" / "repository"
+            tree = outer / "inner" / "tree"
+            separate.mkdir(parents=True)
+            tree.mkdir(parents=True)
+            git(separate, "init", "-q", "-b", "main", ".")
+            git(separate, *ACTIVATION)
+            hooks = tree / ".githooks"
+            hooks.mkdir()
+            for source in (HOOK, GREENLIGHT):
+                target = hooks / source.name
+                target.write_bytes(source.read_bytes())
+                target.chmod(0o755)
+            (tree / "a.txt").write_text("one\n", encoding="utf-8")
+
+            aimed = ("--git-dir", str(separate / ".git"), "--work-tree", str(tree))
+            git(tree, *aimed, "add", "-A")
+            staged = git(tree, *aimed, "write-tree").stdout.strip()
+            rebuilt = git(
+                outer, "write-tree",
+                env=clean_environment(
+                    {"GIT_INDEX_FILE": str(separate / ".git" / "index")}
+                ),
+            ).stdout.strip()
+            self.assertEqual(
+                rebuilt, staged,
+                "the enclosing repository cannot answer for the nested staged "
+                "tree, so this fixture would refuse for want of an object "
+                "rather than on the record crossing under test",
+            )
+            record_path(outer).write_text(f"{staged}\n", encoding="utf-8")
+
+            script, marker = fsmonitor_script(outer.parent)
+            repository_override(outer, script)
+            before = staged_state(outer)
+            self.assertFalse(
+                marker.exists(), "the fixture itself started the monitor"
+            )
+
+            refused = git(tree, *aimed, "commit", "-qm", "nested", check=False)
+
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "the enclosing repository's green record admitted a commit "
+                "into a repository it does not hold",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "--show-prefix", named[0],
+                f"the refusal does not name the prefix cause: {named[0]}",
+            )
+            self.assertIn(
+                "inner/tree/", named[0],
+                f"the refusal does not carry the prefix git answered: {named[0]}",
+            )
+            self.assertFalse(
+                marker.exists(),
+                "the enclosing repository's configuration chose a process the "
+                "gate never named",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of the enclosing repository",
+            )
+
+    def test_the_hook_refuses_a_work_tree_at_the_enclosing_repositorys_root(self):
+        """S3-R4-01: the same crossing, where the prefix cannot see it.
+
+        Point a second git directory's work tree at the enclosing repository's
+        own root and git runs the hook from that root, so
+        `git rev-parse --show-prefix` answers empty and the control the case
+        above holds never fires. Everything after that is the same: discovery
+        answers the enclosing repository, its `core.fsmonitor` runs during the
+        hook's own `git write-tree`, and its `LAST_GREEN` naming the staged
+        tree admitted a commit into a repository it does not hold and that
+        holds no record of its own. Where the index lives is the only thing
+        that separates the two, so that is what the gate reads here.
+
+        The empty prefix is asserted rather than assumed: a fixture answering
+        anything else would refuse on the control above and prove nothing about
+        this one. The enclosing repository answering for the staged tree is
+        asserted for the reason the case above gives.
+        """
+        with gate_repository() as outer:
+            separate = outer.parent / "separate"
+            separate.mkdir()
+            git(separate, "init", "-q", "-b", "main", ".")
+            aimed = ("--git-dir", str(separate / ".git"), "--work-tree", str(outer))
+            # The ordinary activation, in the repository being committed to:
+            # the tracked gate in the work tree is the hook git runs.
+            git(outer, *aimed, *ACTIVATION)
+            git(outer, *aimed, "add", "-A")
+            staged = git(outer, *aimed, "write-tree").stdout.strip()
+
+            rebuilt = git(outer, "write-tree").stdout.strip()
+            self.assertEqual(
+                rebuilt, staged,
+                "the enclosing repository cannot answer for the staged tree, "
+                "so this fixture would refuse for want of an object rather "
+                "than on the record crossing under test",
+            )
+            record_path(outer).write_text(f"{staged}\n", encoding="utf-8")
+            self.assertEqual(
+                git(outer, "rev-parse", "--show-prefix").stdout.strip(), "",
+                "the work tree is not at the enclosing repository's own root, "
+                "so the prefix control would refuse this fixture",
+            )
+
+            script, marker = fsmonitor_script(outer.parent)
+            repository_override(outer, script)
+            before = staged_state(outer)
+            self.assertFalse(
+                marker.exists(), "the fixture itself started the monitor"
+            )
+
+            refused = git(outer, *aimed, "commit", "-qm", "coincident", check=False)
+
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "the enclosing repository's green record admitted a commit "
+                "into a repository it does not hold",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "GIT_INDEX_FILE", named[0],
+                f"the refusal does not name the index cause: {named[0]}",
+            )
+            self.assertFalse(
+                marker.exists(),
+                "the enclosing repository's configuration chose a process the "
+                "gate never named",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "the gate changed the staged state of the enclosing repository",
+            )
+            self.assertNotEqual(
+                git(separate, "rev-parse", "--verify", "-q", "HEAD",
+                    check=False).returncode, 0,
+                "the repository being committed to took the commit",
+            )
+
+    def test_an_ordinary_gated_commit_from_a_subdirectory_is_still_admitted(self):
+        """Neither control refuses the shape it is not aimed at.
+
+        Git runs a hook from the root of the working tree, so a commit from a
+        subdirectory answers an empty prefix and an index in the git directory
+        discovery answers. Both controls stay silent and the recorded green
+        admits the commit.
+        """
+        with gate_repository() as root:
+            (root / "sub").mkdir()
+            (root / "sub" / "b.txt").write_text("two\n", encoding="utf-8")
+            git(root, "add", "-A")
+            recorded = greenlight(root)
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed on a green fixture: {recorded.stderr}",
+            )
+            staged = git(root, "write-tree").stdout.strip()
+            self.assertEqual(
+                record_path(root).read_text(encoding="utf-8").strip(), staged,
+                "greenlight recorded something other than the staged tree",
+            )
+
+            admitted = commit(root / "sub", "from a subdirectory")
+
+            self.assertEqual(
+                admitted.returncode, 0,
+                f"the gate refused an ordinary commit from a subdirectory: "
+                f"{admitted.stderr}",
+            )
+            self.assertEqual(
+                refusals(admitted), [],
+                f"the gate refused a shape neither control is aimed at: "
+                f"{admitted.stderr!r}",
+            )
+
+    def test_the_hook_reads_no_configuration_where_it_reaches_write_tree(self):
+        """S3-R5-01: the five configuration routes, where write-tree runs.
+
+        `git write-tree` is the command an inherited `core.fsmonitor` becomes
+        observable on, and the two anchoring controls refuse before it. Every
+        configuration case above aims `GIT_INDEX_FILE` at an outer repository,
+        which the amended Exit requires of them and the index control now
+        refuses, so those five routes stop short of the command they were
+        written to hold. Here the index is this repository's own and the prefix
+        is empty, so both controls stay silent and the gate reaches its own
+        `git write-tree` with the override still in the environment.
+
+        Each route is driven twice, once where the record names the staged tree
+        and once where it names another, so the answer is the gate's own
+        comparison rather than an anchoring refusal or anything the override
+        chose. The two in-band forms are driven separately: `GIT_CONFIG_COUNT`
+        is what makes the indexed pairs live, and dropping only one of the two
+        would leave the other route open.
+        """
+        with gate_repository() as here:
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            green = git(here, "write-tree").stdout.strip()
+            other = git(here, "rev-parse", "HEAD^{tree}").stdout.strip()
+            self.assertNotEqual(
+                green, other,
+                "the fixture staged nothing, so the refusing half of each "
+                "route would hold nothing",
+            )
+            record = record_path(here)
+
+            script, marker = fsmonitor_script(here.parent)
+            config = config_file_override(here.parent, script)
+            home = here.parent / "home"
+            home.mkdir()
+            (home / ".gitconfig").write_bytes(config.read_bytes())
+            self.assertFalse(
+                marker.exists(), "the fixture itself started the monitor"
+            )
+
+            in_band = config_override(script)
+            routes = (
+                {"GIT_CONFIG_PARAMETERS": in_band["GIT_CONFIG_PARAMETERS"]},
+                {
+                    "GIT_CONFIG_COUNT": in_band["GIT_CONFIG_COUNT"],
+                    "GIT_CONFIG_KEY_0": in_band["GIT_CONFIG_KEY_0"],
+                    "GIT_CONFIG_VALUE_0": in_band["GIT_CONFIG_VALUE_0"],
+                },
+                {"GIT_CONFIG_GLOBAL": str(config)},
+                {"GIT_CONFIG_SYSTEM": str(config)},
+                {"HOME": str(home)},
+            )
+
+            for route in routes:
+                # The index git names for an ordinary commit, and the prefix it
+                # answers from the root of the working tree: the shape both
+                # anchoring controls admit.
+                environment = clean_environment({
+                    "GIT_INDEX_FILE": str(here / ".git" / "index"),
+                    "GIT_PREFIX": "",
+                    **route,
+                })
+
+                record.write_text(f"{green}\n", encoding="utf-8")
+                admitted = run_gate(HOOK_NAME, here, environment)
+
+                self.assertEqual(
+                    admitted.returncode, 0,
+                    f"the gate refused the tree its own record names, so it "
+                    f"never reached write-tree under {route}: "
+                    f"{admitted.stderr}",
+                )
+                self.assertEqual(
+                    refusals(admitted), [],
+                    f"the gate refused a shape both anchoring controls admit "
+                    f"under {route}: {admitted.stderr!r}",
+                )
+                self.assertFalse(
+                    marker.exists(),
+                    f"an inherited configuration override made the gate start "
+                    f"a process nothing in the gate names, via {route}",
+                )
+
+                record.write_text(f"{other}\n", encoding="utf-8")
+                refused = run_gate(HOOK_NAME, here, environment)
+
+                self.assertNotEqual(
+                    refused.returncode, 0,
+                    f"the gate admitted a tree its record does not name under "
+                    f"{route}",
+                )
+                named = refusals(refused)
+                self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+                self.assertIn(
+                    other, named[0],
+                    f"the refusal did not name the recorded tree, so the "
+                    f"commit was not decided on the gate's own comparison "
+                    f"under {route}: {named[0]}",
+                )
+                self.assertFalse(
+                    marker.exists(),
+                    f"an inherited configuration override made the gate start "
+                    f"a process nothing in the gate names, via {route}",
+                )
+
+    def test_each_half_keeps_its_own_repository_under_an_inherited_cdpath(self):
+        """S3-R7-01: `cd` searches CDPATH, and both halves hand it an operand it
+        will search for.
+
+        CDPATH is not git's, so neither `unset` of git variables reached it and
+        neither `/dev/null` pin covers it. `cd` searches it whenever the operand
+        does not begin with a slash and its first component is neither `.` nor
+        `..`, which is what both halves pass: greenlight anchors on
+        `<clone>/.githooks/..` when a contributor starts it from beside the
+        clone, and the hook resolves the `.git` git answers for `--git-dir` in a
+        plain checkout.
+
+        The two CDPATH entries below are the ones that match those first
+        components: the other fixture's parent, which holds a directory of the
+        same name, and the other fixture's own root, which holds a `.git`.
+        Measured on git 2.50.1 with the entries in place and each half's
+        `CDPATH` cut from its `unset`: greenlight ran the other repository's
+        suite and wrote that repository's tree into that repository's record
+        while this one's stayed absent, and `commit -a` was refused on the index
+        cause, because git makes `GIT_INDEX_FILE` absolute for that shape while
+        `--git-dir` stays relative, so only one side of the comparison moved.
+
+        So this case drives an ordinary green and an ordinary commit, and holds
+        that the inherited value changes neither.
+        """
+        with gate_repository() as here, gate_repository(MARKING_SUITE) as outer:
+            self.assertEqual(
+                here.name, outer.name,
+                "the two fixtures no longer share a directory name, so the "
+                "parent entry in CDPATH below matches nothing",
+            )
+            marker = outer / SUITE_MARKER
+            self.assertFalse(marker.exists(), "the fixture ran its own suite")
+            before = staged_state(outer)
+            environment = clean_environment({
+                "CDPATH": f"{outer.parent}:{outer}",
+            })
+
+            (here / "b.txt").write_text("two\n", encoding="utf-8")
+            git(here, "add", "-A")
+            staged = git(here, "write-tree").stdout.strip()
+
+            # Started the way its own header documents it, from beside the
+            # clone rather than inside it, which is the shape whose first
+            # component CDPATH can match.
+            recorded = subprocess.run(
+                [str(Path(here.name) / ".githooks" / GREENLIGHT_NAME)],
+                cwd=str(here.parent),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=environment,
+            )
+
+            self.assertEqual(
+                recorded.returncode, 0,
+                f"greenlight failed under an inherited CDPATH: "
+                f"{recorded.stderr}",
+            )
+            self.assertFalse(
+                marker.exists(),
+                "greenlight ran the suite of a repository it was not started "
+                "from",
+            )
+            self.assertFalse(
+                record_path(outer).exists(),
+                "greenlight recorded a green in a repository it was not "
+                "started from",
+            )
+            self.assertEqual(
+                staged_state(outer), before,
+                "greenlight changed the staged state of a repository it was "
+                "not started from",
+            )
+            self.assertEqual(
+                record_path(here).read_text(encoding="utf-8").strip(), staged,
+                "greenlight recorded something other than the tree staged in "
+                "the repository it was started from",
+            )
+
+            # `commit -a` and `commit -a --amend` are the two shapes git gives
+            # an absolute GIT_INDEX_FILE, so they are the ones an inherited
+            # CDPATH separated from a relative `--git-dir`. Both commit the
+            # tree the record above names.
+            for arguments in (("commit", "-a"), ("commit", "-a", "--amend")):
+                admitted = git(
+                    here, *arguments, "-qm", "gated under an inherited CDPATH",
+                    env=environment, check=False,
+                )
+
+                self.assertEqual(
+                    admitted.returncode, 0,
+                    f"the gate refused `git {' '.join(arguments)}` on the tree "
+                    f"its own record names: {admitted.stderr}",
+                )
+                self.assertEqual(
+                    refusals(admitted), [],
+                    f"the gate refused a shape no control is aimed at: "
+                    f"{admitted.stderr!r}",
+                )
+                self.assertEqual(
+                    git(here, "rev-parse", "HEAD^{tree}").stdout.strip(),
+                    staged,
+                    f"`git {' '.join(arguments)}` committed a tree other than "
+                    f"the recorded one",
+                )
+
+    def test_the_green_record_resolves_through_the_worktrees_own_git_dir(self):
+        """`git rev-parse --git-dir`, not `--git-common-dir`.
+
+        A green that lands in the shared git directory would authorise a commit
+        in every linked worktree at once, and this clone runs about 39. The
+        record here is correct for the staged tree and sits in the shared
+        directory; only where the gate looks can refuse the commit.
+        """
+        with gate_repository() as root:
+            linked = root.parent / "resolving"
+            git(root, "worktree", "add", "-q", "-b", "resolving", str(linked))
+            (linked / "b.txt").write_text("two\n", encoding="utf-8")
+            git(linked, "add", "-A")
+            staged = git(linked, "write-tree").stdout.strip()
+
+            common = Path(git(linked, "rev-parse", "--git-common-dir").stdout.strip())
+            if not common.is_absolute():
+                common = linked / common
+            own = record_path(linked)
+            self.assertNotEqual(
+                own.parent.resolve(), common.resolve(),
+                "the fixture did not give the linked worktree a git dir of its own",
+            )
+
+            (common / RECORD_NAME).write_text(f"{staged}\n", encoding="utf-8")
+            self.assertFalse(own.exists(), "the worktree already held a record")
+
+            refused = commit(linked, "a green from the shared git dir")
+            self.assertNotEqual(
+                refused.returncode, 0,
+                "a green in the shared git dir authorised a linked worktree's "
+                "commit, so every worktree of this clone shares one record",
+            )
+            named = refusals(refused)
+            self.assertEqual(len(named), 1, f"{refused.stderr!r}")
+            self.assertIn(
+                "no green record", named[0],
+                f"the gate read a record outside its own git dir: {named[0]}",
+            )
+            self.assertIn(
+                str(own), named[0],
+                "the refusal named a record path other than the one "
+                f"`git rev-parse --git-dir` resolves to: {named[0]}",
+            )
+            self.assertEqual(
+                (common / RECORD_NAME).read_text(encoding="utf-8").strip(), staged,
+                "the shared record moved, so the refusal proves nothing about "
+                "where the gate looked",
+            )
 
 
 if __name__ == "__main__":
