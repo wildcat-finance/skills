@@ -229,3 +229,23 @@ reverses no decision.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Tests: `plugins.hexaemeron.tests.test_evolution` covers the row's axis arithmetic and retained frontier line and is not edited. No new executable behaviour is added, so no new test module is written; the emitter's own suite from step 1 stays green. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-2.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, rebound to the current study digest before step 2 opens. The same replacement was receipted twice earlier in this run and un-bound each time by a later study amendment, which changes the digest every runbook amendment records. Step 1's audit is closed and no further study amendment is expected, so this binding is the one the step is built under.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Tests: The existing test module gains the end-to-end case that builds the scratch repository, repairs the failure, emits the record and asserts both the acceptance and the two refusals, so the demonstration is reproduced by the suite rather than only by hand. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-3.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, rebound to the current study digest before step 3 opens. The same replacement was receipted twice earlier in this run and un-bound each time by a later study amendment, which changes the digest every runbook amendment records. Step 1's audit is closed and no further study amendment is expected, so this binding is the one the step is built under.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
