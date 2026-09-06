@@ -4222,7 +4222,7 @@
         "transition": "a closed ratio over an unmoved digest pair, joined to the canonical Authorises field",
         "unknowns": "scoped items no disposition answered for, entries a person has not confirmed and which therefore answer for nothing, workbook cases no covered disposition cites as its oracle, and inventory items no covered disposition holds to an oracle"
       },
-      "sha256": "f8dad00c8c30cacdab0ad71f7d0a7feadb18a713969d7cc0d55c454dcc884ec8",
+      "sha256": "6922833d44d4d79ee507302b6cc4b794b22aefe10760717fac445dfef7655812",
       "source": "plugins/dokimasia/schemas/coverage-v1.json"
     },
     "dokimasia-workbook-lineage": {
@@ -4684,7 +4684,7 @@
         "transition": "a complete draft a reviewer may edit, joined to the canonical Authorises field",
         "unknowns": "whether a drafted state is the right one for its item, whether a drafted reason is a good reason, and whether anybody has read the draft"
       },
-      "sha256": "ace9997023fdf4c73813f1ef2cead473f5fee07edef54f214f2481112cf23e6d",
+      "sha256": "5c71f17ac7d231a0b66b0b3f9c922416d9ed8f752d4bdad19a7e70dacca04a55",
       "source": "plugins/dokimasia/schemas/dispositions-v1.json"
     },
     "fiat-decision-assignment-composition": {

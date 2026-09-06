@@ -2,7 +2,11 @@
   "caps": {
     "dispositions": 40000,
     "input_bytes": 8388608,
-    "reason_bytes": 512
+    "person_bytes": 128,
+    "reason_bytes": 512,
+    "rule_id_bytes": 64,
+    "rule_text_bytes": 512,
+    "rules": 256
   },
   "closure": "dokimasia-disposition-closure/v1",
   "closure_ratio": {
@@ -10,6 +14,20 @@
     "denominator": 261,
     "numerator": 202,
     "value": 0.7739463601532567
+  },
+  "confirmations": {
+    "by_person": {
+      "Laurence Day": 202
+    },
+    "by_rule": {
+      "row-author-owns-walking-it": {
+        "applied": 202,
+        "stated_by": "Laurence Day",
+        "text": "the reviewer who wrote a row owns walking it, which holds by construction of the workbook"
+      }
+    },
+    "individual": 0,
+    "people": 1
   },
   "counts": {
     "by_disposition": {

@@ -306,9 +306,22 @@ class CommittedEvidence(unittest.TestCase):
         self.assertEqual(found[0]["from"], PINNED_COMMIT)
 
     def test_the_committed_record_carries_no_workbook_prose(self):
-        """The phylax boundary: identifiers may be committed, rows may not."""
+        """The phylax boundary: identifiers may be committed, rows may not.
+
+        A person's name and a rule's text are the first prose a reviewer
+        writes that reaches this record, so the rule text is checked here
+        beside the identifiers: it is present, it is the one the disposition
+        set states, and it carries none of the five workbook column names.
+        """
         record = reconcile.read_json(self.coverage_path)
         blob = json.dumps(record)
+        rules = record["confirmations"]["by_rule"]
+        self.assertTrue(rules, "the committed record names no rule")
+        declared = reconcile.read_json(EVIDENCE / "wildcat-app-v2.dispositions.json")
+        for rule_id, row in rules.items():
+            self.assertEqual(row["text"], declared["rules"][rule_id]["text"])
+            self.assertIn(row["text"], blob)
+            self.assertLess(len(row["text"]), 200, "a rule's text is long enough to be a row")
         for key in ("Test step", "Expected result", "Comments", "Tx hash", "Tester"):
             self.assertNotIn(key, blob, f"a workbook column name reached the record")
         for entry in record["undisposed"]:
