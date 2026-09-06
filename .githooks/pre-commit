@@ -1,0 +1,65 @@
+#!/bin/sh
+# Refuse a commit whose staged tree is not the tree the suite passed on.
+#
+# Activate this directory once per clone:
+#
+#     git config core.hooksPath .githooks
+#
+# Record a green after the suite passes:  .githooks/greenlight
+# Skip the gate for one deliberate commit: FIAT_SKIP_PRECOMMIT=1 git commit
+#
+# The gate never runs the suite. It compares the staged tree against the tree
+# identity greenlight recorded, which is why it costs milliseconds. The record
+# is a convenience rather than proof that the suite ran: anyone who can write
+# the git directory can write it. See
+# docs/decisions/draft-activate-the-commit-gate-from-a-tracked-hooks-directory.md
+#
+# One line goes to standard error on a refusal, naming which cause applies, so
+# "why was my commit refused" is answered where it is asked. Git's own stderr
+# from the two commands below is suppressed for that reason: the cause is named
+# here or not at all.
+
+set -u
+
+if [ "${FIAT_SKIP_PRECOMMIT:-0}" = "1" ]; then
+    exit 0
+fi
+
+fix='run .githooks/greenlight on the staged tree, or commit with FIAT_SKIP_PRECOMMIT=1'
+
+if ! git_dir="$(git rev-parse --git-dir 2>/dev/null)"; then
+    printf 'pre-commit: refused, git rev-parse --git-dir failed, so the green record cannot be located; %s\n' "$fix" >&2
+    exit 1
+fi
+
+# --git-dir, not --git-common-dir: a linked worktree keeps its own record, so
+# one worktree's green cannot authorise another worktree's commit.
+record="$git_dir/LAST_GREEN"
+
+if ! staged="$(git write-tree 2>/dev/null)"; then
+    printf 'pre-commit: refused, git write-tree failed, so the staged tree is unknown; %s\n' "$fix" >&2
+    exit 1
+fi
+
+if [ ! -e "$record" ]; then
+    printf 'pre-commit: refused, no green record at %s; %s\n' "$record" "$fix" >&2
+    exit 1
+fi
+
+if [ ! -f "$record" ] || [ ! -r "$record" ] || ! recorded="$(cat "$record" 2>/dev/null)"; then
+    printf 'pre-commit: refused, the green record at %s cannot be read; %s\n' "$record" "$fix" >&2
+    exit 1
+fi
+
+if [ "$recorded" != "$staged" ]; then
+    # The record is a file anyone who can write the git directory can write, so
+    # its bytes are not fit to print raw. Control characters would let a record
+    # erase the line with a carriage return and draw a friendlier one, and an
+    # embedded newline would split this refusal across two lines when the
+    # contract is one. Stripped and bounded, on the refusal path only.
+    shown="$(printf '%s' "$recorded" | tr -d '[:cntrl:]' | cut -c1-64)"
+    printf 'pre-commit: refused, the green record names tree %s, not the staged tree %s; %s\n' "$shown" "$staged" "$fix" >&2
+    exit 1
+fi
+
+exit 0

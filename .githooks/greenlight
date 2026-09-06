@@ -1,0 +1,52 @@
+#!/bin/sh
+# Run the suite and, on exit zero alone, record the staged tree as green.
+#
+#     git add -A && .githooks/greenlight && git commit
+#
+# The recorded identity is the tree `git write-tree` produces from the index as
+# it stands now, so stage before running this. Nothing here stages anything: a
+# command that quietly changed the index would be recording a tree the suite
+# never saw.
+#
+# The record lives under `git rev-parse --git-dir`, which is per-worktree, so a
+# green recorded in one worktree cannot authorise a commit in another.
+#
+# It is a convenience rather than proof that the suite ran. The file carries no
+# provenance and anyone who can write the git directory can write it. See
+# docs/decisions/draft-activate-the-commit-gate-from-a-tracked-hooks-directory.md
+
+set -eu
+
+# The suite and the recorded tree have to be the same repository, and git's own
+# answers cannot establish that on their own. Git exports GIT_DIR into every
+# hook and every command it runs, and with GIT_DIR inherited `git rev-parse
+# --show-toplevel` reports the *caller's* directory as the working tree while
+# `git write-tree` still reads the index GIT_DIR names. Run from anywhere with
+# that variable set, the original `cd "$(git rev-parse --show-toplevel)"` landed
+# in the caller's directory, ran whatever `tests/` was there, and recorded a
+# green for another repository's staged tree. The substitution failing was never
+# the only way in: `cd ""` is a no-op and a failed substitution inside a simple
+# command's arguments does not trip `set -e`, but here the substitution
+# succeeds and simply answers about the wrong directory.
+#
+# So drop the redirection git may have exported, then anchor to the one thing
+# the environment cannot move: where this script is. The hook does the opposite
+# and correctly so -- it is invoked by git, and the index git exports is exactly
+# the one it is meant to check.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY \
+    GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE \
+    GIT_PREFIX GIT_INTERNAL_SUPER_PREFIX
+
+here="$(dirname "$0")"
+cd "$here/.."
+
+# Assignment form, so a rev-parse failure reaches `set -e`.
+toplevel="$(git rev-parse --show-toplevel)"
+cd "$toplevel"
+
+python3 -m unittest discover -s tests
+
+tree="$(git write-tree)"
+record="$(git rev-parse --git-dir)/LAST_GREEN"
+printf '%s\n' "$tree" > "$record"
+printf 'greenlight: recorded tree %s in %s\n' "$tree" "$record"
