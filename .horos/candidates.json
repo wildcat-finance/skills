@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 18546779,
+    "bytes_blob": 18599122,
     "bytes_generated": 98
   },
   "entries": [
@@ -35,14 +35,14 @@
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
     },
     {
-      "bytes": 128497,
+      "bytes": 154646,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 126449",
+      "evidence": "mean line length above 400 in a window at offset 152598",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.md"
     },
     {
-      "bytes": 129143,
+      "bytes": 155337,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
