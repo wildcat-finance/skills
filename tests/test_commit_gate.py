@@ -18,6 +18,8 @@ the run cannot drift back into the collision it is avoiding.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -1651,6 +1653,437 @@ class HookIndexMutationTests(unittest.TestCase):
                 "the shared record moved, so the refusal proves nothing about "
                 "where the gate looked",
             )
+
+
+# --- is the gate on in this checkout? --------------------------------------
+#
+# Git cannot install a hook on clone, so the gate cannot arrive by itself. It
+# can only announce that it is missing, and the root suite is the only thing
+# that runs in a fresh clone early enough to do the announcing.
+
+# The activation as a contributor types it. `ACTIVATION` above is the same
+# command as arguments; assembling this one from it means a rename in either
+# place cannot leave the two disagreeing.
+ACTIVATION_COMMAND = "git " + " ".join(ACTIVATION)
+
+# Executions nobody commits from, each named by a variable whoever started the
+# process sets. Nothing here is inferred from the tree, because a faithful copy
+# of a checkout looks exactly like one:
+#
+#   * `GITHUB_ACTIONS` names a hosted runner. Every workflow under
+#     `.github/workflows/` runs on one, so this one variable covers the whole
+#     hosted half. No evidence of a contributor's local hook reaches a server,
+#     so that half holds the tracked bytes alone -- that the directory exists
+#     and its pre-commit is executable.
+#   * `WILDCAT_CHECK_CONTAINMENT` is set by `scripts/run_checks.py` for every
+#     check it starts, however many sessions deep. It runs the root suite from
+#     a disposable snapshot under `tmp/check-runner` that carries a git
+#     directory of its own, so `git config` there reads the snapshot's
+#     configuration rather than the checkout's, and the snapshot is deleted
+#     when the run ends.
+#
+# `CI` is deliberately not on that list (S4-R1-01). GitHub Actions sets it
+# alongside `GITHUB_ACTIONS`, so it admits no execution this repository has,
+# and it is the one name an unrelated local tool sets by convention: a
+# contributor whose shell exports it would get a silent skip in exactly the
+# unactivated checkout this case exists to report on. An execution that is
+# genuinely nobody's checkout says so with the marker above.
+#
+# A contributor's clone carries none of them, which is why the case below
+# still fires there. The draft record says the same in prose, under "Hosted
+# execution cannot see whether a contributor activated the gate locally".
+NOBODY_COMMITS_HERE = ("GITHUB_ACTIONS", "WILDCAT_CHECK_CONTAINMENT")
+
+# Values that say the variable is set and off. Anything else non-empty counts.
+DECLARED_OFF = frozenset({"0", "false", "no", "off"})
+
+
+def nobody_commits_here() -> str | None:
+    """The variable saying this is not a checkout anybody commits from."""
+    for name in NOBODY_COMMITS_HERE:
+        value = os.environ.get(name, "").strip()
+        if value and value.lower() not in DECLARED_OFF:
+            return name
+    return None
+
+
+def activation_complaint(configured: str | None) -> str | None:
+    """What is wrong with this `core.hooksPath`, or None when nothing is.
+
+    Separate from the case that reads the checkout, so the wording can be
+    driven both ways without a fixture and without making a real checkout
+    wrong to do it. Git runs a hook from the top of the working tree, so a
+    relative value resolves against the repository root rather than against
+    whatever directory the suite was started from.
+    """
+    remedy = (
+        f"Turn it on with `{ACTIVATION_COMMAND}`, run from the top of this "
+        f"working tree. {HOOK.name} and {GREENLIGHT.name} are tracked in "
+        f"{GITHOOKS.name}/, {HOOKS_README.name} says what each one does, and "
+        f"{BYPASS_TOKEN}=1 admits a commit you mean to make without a "
+        "recorded green."
+    )
+    if configured is None or not configured.strip():
+        return (
+            "the commit gate is not activated in this checkout: core.hooksPath "
+            "is unset, so git runs no tracked hook and a commit of a tree no "
+            f"suite has passed on is admitted silently. {remedy}"
+        )
+    value = configured.strip()
+    resolved = Path(value)
+    if not resolved.is_absolute():
+        resolved = REPOSITORY_ROOT / resolved
+    try:
+        elsewhere = resolved.resolve() != GITHOOKS.resolve()
+    except OSError:
+        elsewhere = True
+    if not elsewhere:
+        return None
+    return (
+        "the commit gate is not activated in this checkout: core.hooksPath is "
+        f"{value!r}, which resolves to {resolved} rather than to the tracked "
+        f"{GITHOOKS}, so git runs some other directory's hooks. {remedy}"
+    )
+
+
+def configured_hooks_path() -> str | None:
+    """This checkout's own `core.hooksPath`, or None where it is unset."""
+    read = git(REPOSITORY_ROOT, "config", "--get", "core.hooksPath", check=False)
+    if read.returncode != 0:
+        return None
+    return read.stdout.strip()
+
+
+class ActivationTests(unittest.TestCase):
+    """The gate works only once somebody turns it on, so say when it is off."""
+
+    def test_an_unset_hooks_path_is_refused_and_names_the_activation(self):
+        complaint = activation_complaint(None)
+        self.assertIsNotNone(complaint, "an unset core.hooksPath was accepted")
+        self.assertIn(
+            ACTIVATION_COMMAND, complaint,
+            "the complaint does not name the one command that fixes it, so a "
+            f"reader has to go and find it: {complaint}",
+        )
+
+    def test_a_hooks_path_naming_another_directory_is_refused_the_same_way(self):
+        """Set-but-wrong is the case a contributor reaches by mistake."""
+        elsewhere = (
+            ".git/hooks",
+            "/dev/null",
+            str(REPOSITORY_ROOT / "tmp"),
+            # An absolute path at another worktree's copy: it resolves, and it
+            # is still not this checkout's tracked directory.
+            str(REPOSITORY_ROOT.parent / "other" / ".githooks"),
+        )
+        for value in elsewhere:
+            with self.subTest(value=value):
+                complaint = activation_complaint(value)
+                self.assertIsNotNone(
+                    complaint, f"core.hooksPath={value} was accepted"
+                )
+                self.assertIn(
+                    ACTIVATION_COMMAND, complaint,
+                    f"the complaint does not name the activation: {complaint}",
+                )
+
+    def test_the_tracked_directory_holds_an_executable_pre_commit(self):
+        """Activation points somewhere; this is what has to be there.
+
+        It is also the half that travels with the bytes, which is why it
+        carries no exemption while the case below does.
+        """
+        self.assertTrue(
+            HOOK.is_file(),
+            f"{HOOK} is missing, so the activation points at nothing",
+        )
+        self.assertTrue(
+            os.access(HOOK, os.X_OK),
+            f"{HOOK} is not executable, and git skips a hook it cannot run "
+            "without saying so",
+        )
+
+    def test_this_checkout_has_the_gate_activated(self):
+        """The one case that reads the shipped checkout rather than a fixture.
+
+        Every other case here settles wording or tracked bytes, which hold
+        wherever the suite runs. This one reports on the checkout it is
+        running in, so it is the case that fails in a clone nobody has
+        activated -- and the only place that failure can be raised, because
+        nothing else in a fresh clone runs before the first commit.
+        """
+        declared = nobody_commits_here()
+        if declared is not None:
+            self.skipTest(
+                f"{declared} says this is not a checkout anybody commits from, "
+                "so its core.hooksPath reports on nobody; the tracked bytes "
+                "are what an execution like this one can hold"
+            )
+        complaint = activation_complaint(configured_hooks_path())
+        if complaint is not None:
+            self.fail(complaint)
+
+
+# --- the copy a reader actually gets ---------------------------------------
+#
+# The run's own study, runbook, design record and reports live under
+# `.hexaemeron/`, which is self-ignored and never reaches the repository. What
+# survives is the copy under `docs/commit-gate/`, and a copy is worth having
+# only while it says what its source says. It did not: step 1 shipped the study
+# and eight amendments later it still carried step 1's bytes, so the shipped
+# budget clause was one the study itself had since withdrawn.
+#
+# These cases hold the refresh. Every one of them reads `docs/commit-gate/`
+# and nothing else, so they run in a clone that has no controller state, which
+# is the only place the staleness they catch can be noticed.
+
+SHIPPED = REPOSITORY_ROOT / "docs" / "commit-gate"
+SHIPPED_STUDY = SHIPPED / "study.md"
+SHIPPED_RUNBOOK = SHIPPED / "runbook.md"
+SHIPPED_RECORD = SHIPPED / "design-evidence.json"
+SHIPPED_REPORTS = SHIPPED / "reports"
+
+# The counts in the bytes this step ships, as literals. They are not the counts
+# at the step's entry any more: a study amendment corrected the report count in
+# the mapping paragraph (S4-R1-05), the runbook re-issue that rebound this
+# step's contract to the corrected study added a block of its own, and the
+# copies were refreshed again with both literals moving with them.
+#
+# Recomputing them from `.hexaemeron/` would agree with a stale copy by
+# construction, because the comparison would read the source the copy is
+# supposed to be carrying; and it would be unrunnable in the clone where the
+# staleness matters, since `.hexaemeron/.gitignore` is `*` and nothing under
+# that directory is tracked.
+STUDY_AMENDMENTS = 9
+RUNBOOK_AMENDMENTS = 13
+
+AMENDMENT_HEADING = re.compile(r"^### Amendment --", re.MULTILINE)
+CONTROLLER_REFERENCE = re.compile(r"\.hexaemeron/[A-Za-z0-9_./-]*")
+SHIPPED_PREFIX = "docs/commit-gate/"
+REPORT_PREFIX = "reports/"
+
+
+def amendment_count(path: Path) -> int:
+    return len(AMENDMENT_HEADING.findall(path.read_text(encoding="utf-8")))
+
+
+def mapping_targets(reference: str) -> list[str]:
+    """Every shipped path a mapping for this reference could name.
+
+    A line naming `docs/commit-gate/reports/` maps everything under it, so the
+    directory prefixes count as well as the full path. The prefixes stop at
+    segment boundaries, which is why `design/` is not satisfied by a line
+    naming `design-evidence.json`. A bare `.hexaemeron/` is mapped by the
+    shipped directory itself and by nothing narrower.
+    """
+    tail = reference[len(".hexaemeron/"):]
+    if not tail:
+        return [""]
+    targets = [tail]
+    parts = [part for part in tail.split("/") if part]
+    for stop in range(len(parts) - 1, 0, -1):
+        targets.append("/".join(parts[:stop]) + "/")
+    return targets
+
+
+def says_it_is_not_shipped(text: str, reference: str) -> bool:
+    """Does the file say, at the reference itself, that it did not travel?
+
+    One reference in the study is the evaluator that wrote the reports, and it
+    is genuinely absent from the repository rather than moved into it. Saying
+    so is the honest mapping for that case, and it has to be said where the
+    reader meets the path rather than somewhere else in the file.
+    """
+    return re.search(re.escape(reference) + r"`?\s+is not shipped", text) is not None
+
+
+class ShippedCopyTests(unittest.TestCase):
+    """The shipped artefacts, held against what the run recorded in them."""
+
+    def test_the_shipped_study_carries_every_amendment(self):
+        found = amendment_count(SHIPPED_STUDY)
+        self.assertEqual(
+            found, STUDY_AMENDMENTS,
+            f"{SHIPPED_STUDY} carries {found} amendments where this step "
+            f"shipped {STUDY_AMENDMENTS}. Either the copy is behind its "
+            "source, or it was refreshed without moving the literal here; "
+            "both leave a reader holding a document the run has corrected.",
+        )
+
+    def test_the_shipped_runbook_carries_every_amendment(self):
+        found = amendment_count(SHIPPED_RUNBOOK)
+        self.assertEqual(
+            found, RUNBOOK_AMENDMENTS,
+            f"{SHIPPED_RUNBOOK} carries {found} amendments where this step "
+            f"shipped {RUNBOOK_AMENDMENTS}; the copy is behind its source, or "
+            "the literal here was not moved with it.",
+        )
+
+    def test_every_controller_path_in_the_study_is_mapped_into_the_tree(self):
+        """`.hexaemeron/` resolves to nothing for a reader holding the clone.
+
+        The study is append-only once receipted, so the references cannot be
+        rewritten where they stand. What it carries instead is a mapping, and
+        the mapping only helps while it covers every path the study sends a
+        reader to.
+        """
+        text = SHIPPED_STUDY.read_text(encoding="utf-8")
+        references = sorted(set(CONTROLLER_REFERENCE.findall(text)))
+        self.assertTrue(
+            references,
+            f"{SHIPPED_STUDY} names no `.hexaemeron/` path at all, so this "
+            "case would pass on any file; the study it copies names five",
+        )
+        unmapped = []
+        for reference in references:
+            mapped = any(
+                SHIPPED_PREFIX + target in text
+                for target in mapping_targets(reference)
+            )
+            if mapped or says_it_is_not_shipped(text, reference):
+                continue
+            unmapped.append(reference)
+        self.assertEqual(
+            unmapped, [],
+            "the shipped study sends a reader to a directory the repository "
+            "does not carry, and nothing in the same file says where those "
+            f"artefacts went or that they did not travel: {unmapped}",
+        )
+
+    def test_every_report_the_shipped_record_cites_resolves_beside_it(self):
+        """The record is only evidence while the reports it names are here.
+
+        A row settled at design lock names its report and that report's
+        digest, and both are checked. A row left pending names a path and no
+        digest, so there are no bytes to compare against; it is checked for
+        still being pending, and, where it belongs to the selected candidate,
+        for naming a report that is actually here.
+
+        The record is fixed from design lock onwards, so a pending row keeps
+        the bytes it was written with for the life of the run. What satisfies
+        its criterion is the named report existing at that path, which is why
+        the check below reads the path rather than waiting for a digest.
+        """
+        record = json.loads(SHIPPED_RECORD.read_text(encoding="utf-8"))
+        rows = record["results"]
+        selected = record["selection"]["candidate"]
+        cited = [row for row in rows if isinstance(row.get("report"), dict)]
+        self.assertTrue(
+            cited,
+            f"{SHIPPED_RECORD} cites no report with a digest, so this case "
+            "would pass on an empty record",
+        )
+        wrong = []
+        for row in cited:
+            report = row["report"]
+            path = report["path"]
+            named = f"{row['candidate']}/{row['criterion']}"
+            if not path.startswith(REPORT_PREFIX) or ".." in path.split("/"):
+                wrong.append(f"{named}: {path} is not under {REPORT_PREFIX}")
+                continue
+            target = SHIPPED / path
+            if not target.is_file():
+                wrong.append(f"{named}: {path} is missing")
+                continue
+            digest = hashlib.sha256(target.read_bytes()).hexdigest()
+            if digest != report["sha256"]:
+                wrong.append(
+                    f"{named}: {path} is {digest}, record names "
+                    f"{report['sha256']}"
+                )
+        self.assertEqual(
+            wrong, [],
+            "the shipped design record cites evidence the shipped tree does "
+            f"not carry at the bytes the record names: {wrong}",
+        )
+
+        undigested = [row for row in rows if not isinstance(row.get("report"), dict)]
+        premature = [
+            f"{row['candidate']}/{row['criterion']}: {row.get('state')}"
+            for row in undigested
+            if row.get("state") != "pending"
+            or not isinstance(row.get("report"), str)
+        ]
+        self.assertEqual(
+            premature, [],
+            "a row the record treats as settled carries no report digest, so "
+            f"the case above skipped evidence it should be holding: {premature}",
+        )
+
+        # A pending row still cites a path, and for the candidate the run
+        # selected that citation is one this step is expected to satisfy: its
+        # criterion blocks this step, and writing the report here is the whole
+        # of satisfying it. Nothing rewrites the row afterwards, so this check
+        # is the only thing holding the path it names. Checking only the
+        # digested rows left the one artefact the refresh adds outside every
+        # assertion in this case, so it passed on the tree missing it
+        # (S4-R1-02).
+        # The other candidates' rows name reports that were never produced,
+        # because only the selected design is built, so they stay unchecked.
+        absent = sorted(
+            f"{row['candidate']}/{row['criterion']}: {row['report']}"
+            for row in undigested
+            if row["candidate"] == selected
+            and (
+                not row["report"].startswith(REPORT_PREFIX)
+                or ".." in row["report"].split("/")
+                or not (SHIPPED / row["report"]).is_file()
+            )
+        )
+        self.assertEqual(
+            absent, [],
+            "the shipped record sends a reader to evidence for the selected "
+            f"design that the shipped tree does not carry: {absent}",
+        )
+
+        named = {row["report"]["path"] for row in cited}
+        named.update(row["report"] for row in undigested)
+        orphans = sorted(
+            f"{REPORT_PREFIX}{path.name}"
+            for path in SHIPPED_REPORTS.iterdir()
+            if f"{REPORT_PREFIX}{path.name}" not in named
+        )
+        self.assertEqual(
+            orphans, [],
+            f"{SHIPPED_REPORTS} carries evidence the record does not cite, "
+            f"which is what a copy refreshed from a stale source looks like: "
+            f"{orphans}",
+        )
+
+        # A row can go missing by moving rather than by being deleted, and only
+        # the second was caught. Deleting the selected candidate's undigested
+        # row orphans the report it named, which the check above reports;
+        # re-attributing that same row to another candidate leaves everything
+        # above green, because the selected candidate then has no undigested
+        # row and the pending check passes over an empty set, while the report
+        # stays cited by the row that moved and so is no orphan (S4-R3-01).
+        #
+        # What holds it is the column rather than the row. The record declares
+        # the criteria it judges candidates on, and the shipped copy exists to
+        # carry the evidence for the one candidate the run selected, so that
+        # candidate's column is one row per declared criterion and no more.
+        # It counts rows rather than reading them, so it holds a row naming a
+        # bare path exactly as it holds one carrying a digest. It is not the
+        # whole matrix, which is Protasis's to judge; it is the one column
+        # this copy is evidence about.
+        declared = [criterion["id"] for criterion in record["criteria"]]
+        self.assertTrue(
+            declared,
+            f"{SHIPPED_RECORD} declares no criteria, so this case would pass "
+            "on a record that judges the selected design against nothing",
+        )
+        held = [row["criterion"] for row in rows if row["candidate"] == selected]
+        gaps = sorted(
+            f"{criterion}: {held.count(criterion)} rows"
+            for criterion in set(declared)
+            if held.count(criterion) != 1
+        )
+        self.assertEqual(
+            gaps, [],
+            f"the shipped record does not carry exactly one row per declared "
+            f"criterion for {selected}, the design the run selected, so a row "
+            f"this copy is evidence about has been dropped or moved: {gaps}",
+        )
 
 
 if __name__ == "__main__":

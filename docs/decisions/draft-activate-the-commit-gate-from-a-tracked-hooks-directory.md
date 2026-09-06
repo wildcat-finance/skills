@@ -104,6 +104,13 @@ finding S1-R1-01 on the check runner: a record that supplies its own expected
 value verifies against itself. Read it as a note to the committer, not as
 evidence to a reviewer.
 
+**The visibility assertion is `tests.test_commit_gate.ActivationTests`.** Three
+of its four cases settle wording and tracked bytes and hold wherever the suite
+runs. The fourth reads the checkout's own `core.hooksPath` and fails when it is
+unset or names another directory, with `git config core.hooksPath .githooks` in
+the failure. Nothing else in a fresh clone runs before the first commit, so the
+root suite is where the absence has to be said.
+
 **Hosted execution cannot see whether a contributor activated the gate
 locally,** because no evidence of a local hook reaches the server. The CI half
 of this decision therefore holds only the tracked bytes: that the hooks
@@ -111,10 +118,54 @@ directory exists, that its scripts are tracked and executable, and that they
 name the bypass token. The activation half is visible locally, in the suite run
 that must precede any commit under the discipline.
 
+**The fourth case is skipped where something says nobody commits from this
+tree,** and the skip reason names what said it. Two variables do.
+`GITHUB_ACTIONS` names a hosted runner: `repo.yml` runs the root suite on every
+pull request, and a case asserting local activation there would report on the
+runner's own checkout while turning a required check red for every change in
+the repository. Every workflow in this repository runs on GitHub Actions, so
+that one name covers the hosted half. `WILDCAT_CHECK_CONTAINMENT` is set by
+`scripts/run_checks.py` for every check it starts, and that runner executes the
+root suite from a disposable snapshot under `tmp/check-runner` carrying a git
+directory of its own, so `git config` there reads the snapshot's configuration
+rather than the checkout's. Both are declarations by whoever started the
+process. Nothing is inferred from the tree, because a faithful copy of a
+checkout looks exactly like one, and a contributor's clone carries neither
+variable.
+
+`CI` is deliberately not among them. GitHub Actions sets it alongside
+`GITHUB_ACTIONS`, so admitting it exempts no execution this repository has,
+while it is the one name unrelated local tooling sets by convention. A
+contributor whose shell exported it would run the root suite in an unactivated
+clone, watch it pass, and never learn the gate was off, which is the one thing
+this assertion exists to prevent. The exemption is held to the narrowest pair
+that keeps the required check green.
+
 A contributor who never runs the suite gets no green record, so their first
 commit is refused if the gate is on, and passes silently if it is off. This
 decision does not close that hole. It makes the hole announce itself the first
 time the suite runs.
+
+**The 200-millisecond budget is a steady-state budget, and the first commit
+after the hook file is written breaches it.** Steady state is where the design
+has room: three fresh repositories timed the gate at 18.97, 23.20 and 20.57
+milliseconds against 6.49, 2.13 and 7.03 for a hook whose entire body is a bare
+success, so the gate's own logic costs roughly 14 milliseconds and the budget
+has an order of magnitude in hand. The first execution of a hook file does not.
+It was measured at 219.61, 253.05 and 322.49 milliseconds in one round and at
+150.13 to 250.40 in another for the same quantity, with a bare-success hook
+paying 182.79 of it in the first and 137.11 to 140.75 in the second; nothing
+established why the range moved between the two. That cost is paid per hook
+file rather than per machine or per content, which three clones of one origin
+showed with every hook byte-identical and each paying it again at 159.05,
+165.57 and 152.28 milliseconds against the origin's 158.53. So a contributor
+meets it after a clone and after any pull that rewrites the gate, and no gate
+design avoids it, because the bare-success hook pays most of the same bill. The
+measurements are recorded; that they belong to the operating system's
+first-execution assessment is inferred from the per-file recurrence signature
+on one macOS arm64 machine, with nothing instrumented to confirm it. The
+figures and their conditions are in `docs/commit-gate/study.md`, section 10 and
+the amendments that correct it.
 
 Where the gate lives is expensive to reverse. Once contributors have set
 `core.hooksPath` in their own clones, moving the directory leaves every one of
