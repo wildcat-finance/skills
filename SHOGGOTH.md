@@ -17,11 +17,11 @@ collective. Shortened, altered, or affectionate forms of the name have the same
 possible meanings. Context supplies the scope; wording does not create a new
 identity.
 
-The current roster has <!-- front-door:count key="members" -->27 members:
-<!-- front-door:count key="domain" -->18 domain agents and
-<!-- front-door:count key="phase" -->9 phase agents. Each of those numbers is
-derived from the tree and both marketplace manifests when this page is checked,
-rather than typed here. Synkrisis is included in that count. Its four shipped
+The current roster has <!-- front-door:count key="members" -->27
+members: <!-- front-door:count key="domain" -->18 domain agents
+and <!-- front-door:count key="phase" -->9 phase agents. Each of those numbers
+is derived from the tree and both marketplace manifests when this page is
+checked, rather than typed here. Synkrisis is included in that count. Its four shipped
 operations construct a checked cohort, infer bounded findings over it, render a
 report, and verify that the path recomputes.
 
