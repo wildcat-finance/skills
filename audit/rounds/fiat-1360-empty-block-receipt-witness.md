@@ -29,3 +29,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: none
+
+## Step 2, round 1 -- 2026-09-06T23:26:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: empty-root-binding=reviewed; empty-set-completeness=reviewed; branch-shape-parity=reviewed; evidence-count-zero=reviewed; nonempty-regression=reviewed; rpc-surface-minimisation=reviewed; manifest-report-shape=reviewed; fixture-provenance=reviewed; atomic-fixture-write=reviewed; marketplace-prose-drift=not-applicable
+
+Not checked: Pashov security suite, waived because step 2 changes no Solidity; the external truth of the operator-authored 2026-09-06 live-provider observation was not independently corroborated, and canonical-chain membership and provider independence remain explicitly unclaimed; public marketplace prose remains assigned to step 3.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: live-provider recapture, because no provider input belongs to this offline audit and the fixture claims only a recorded observation.
