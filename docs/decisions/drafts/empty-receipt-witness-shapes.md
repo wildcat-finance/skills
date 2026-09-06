@@ -42,5 +42,7 @@ result on the empty path are refused.
 
 Schema and semantic checks must keep the two formats' shapes aligned. Reversing
 this choice requires changing both schemas and their validators together. The
-capture, manifest, release, and demonstration propagation is deliberately left
-to the later runbook steps.
+capture, manifest, and release paths preserve the same distinction by carrying
+a present witness and root with zero relations; a missing witness or relation
+count is still refused. Demonstration and public guidance remain later runbook
+steps.

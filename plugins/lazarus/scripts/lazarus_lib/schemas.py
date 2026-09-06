@@ -63,7 +63,7 @@ SCHEMAS: dict[tuple[str, int], tuple[str, str]] = {
     ),
     ("release", 2): (
         "release-v2.json",
-        "9e86949866f91e57fc90434d00a9db0ad9383739a151ef5f54166a123b09137a",
+        "bba69f74d1faa4cd61f8cf1f526816db528c5687c3dea09b872640f883f6c4ae",
     ),
 }
 

@@ -56,7 +56,6 @@ class SchemaTests(unittest.TestCase):
             ("receipts_root", "0x1234"),
             ("receipt_trie_proved", None),
             ("receipt_trie_proved", True),
-            ("receipt_trie_proved", 0),
         ):
             document = support.sample_release_v2()
             target = document["verified"]
@@ -69,6 +68,10 @@ class SchemaTests(unittest.TestCase):
             with self.subTest(field=field, value=value):
                 with self.assertRaises(FormatError):
                     validate_document("release", document)
+
+        verified_empty = support.sample_release_v2()
+        verified_empty["verified"]["evidence_counts"]["receipt_trie_proved"] = 0
+        validate_document("release", verified_empty)
 
     def test_release_v2_has_no_transaction_hash_proof_field(self):
         document = support.sample_release_v2()
