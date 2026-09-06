@@ -59,13 +59,6 @@ flag is that same failure with a flag in place of an issue edit, and it is worse
 in one respect: it is faster. Time cannot be named as an instruction, cannot be
 passed as an argument, and clears itself.
 
-**The gate reads no editor identity.** Neither the window refusal nor the
-provenance it records consults who edited the issue. Edit history establishes
-when a line changed and never who decided it. The measurement behind this is that
-all four edits on skills#1337 carry the login `laurenceday`: the agent publishes
-through the maintainer's own account, so editor and operator are one identity,
-and a check on that field would separate nothing.
-
 ## Alternatives
 
 - **Move the recovery sentence into a reference and leave the exit code at 1.**
@@ -108,6 +101,13 @@ advisory: it reads `updated_at` differing from `created_at`, which a comment, a
 label or an assignment also moves. Where neither transport can say whether the
 body itself changed, `init` proceeds and the receipt names the read as
 undiscriminated rather than as an enforced window.
+
+**The gate reads no editor identity.** Neither the window refusal nor the
+provenance it records consults who edited the issue. Edit history establishes
+when a line changed and never who decided it. The measurement behind this is that
+all four edits on skills#1337 carry the login `laurenceday`: the agent publishes
+through the maintainer's own account, so editor and operator are one identity,
+and a check on that field would separate nothing.
 
 Because no override exists, an operator who has legitimately corrected a filing
 decision waits. On an issue under active discussion that wait has no upper bound
