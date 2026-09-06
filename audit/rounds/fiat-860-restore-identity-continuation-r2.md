@@ -29,3 +29,19 @@ Elenchus verdict: unguarded
 | S1-R2-01 | low | .horos/boundary.json | The round-1 audit evidence commit added two tracked files without regenerating the Horos boundary count. Both root boundary-currency tests therefore reported `.horos/boundary.json#counts`: the committed `files_walked` value was 2,629 while a fresh scan found 2,631. | fixed in this audit commit by deterministic Horos regeneration; the two exact tests and the full root suite pass on the refreshed tree |
 
 Leads not pursued: round 1's semantic fix and hostile guards remain unchanged, signed, and green. The Hexaemeron suite passed 2,360/2,360; the first root run exposed only S1-R2-01, its two exact tests then passed 2/2, and the repaired full root suite passed 1,389/1,389. Phylax, Ephoros, and Hypomnema each exited 0 with `clean`; no checkpoint boundary, controller code, schema, or policy changed. The exact audit declaration is `--audit-filter sapheneia:sapheneia`; it records application of the bounded audit-record pass and does not make the controller proof of this record's semantics.
+
+## Step 1, round 3 -- 2026-09-06T10:35:36Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: restore-tail-spoof=reviewed; prefix-truncation=reviewed; path-delta-smuggling=reviewed; anchor-substitution=reviewed; boundary-widening=reviewed; multiple-relocations=reviewed; semantic-transport-confusion=reviewed; source-or-policy-drift=reviewed; ref-or-ancestry-drift=reviewed; diagnostic-leak=reviewed; concurrent-read=reviewed; legacy-reanchor=reviewed
+
+Not checked: the Pashov Solidity suite, waived because the step changes no Solidity; the outer archive, signature, service, clean-machine, lineage, and routing work assigned to issues #861 through #867; live GitHub checks, remotes, push, and controller mutation; and exclusion of same-account mutation after the final userspace read.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1's semantic fix and hostile guards remain unchanged and signed, while round 2's deterministic boundary-count refresh remains current and signed. The Hexaemeron suite passed 2,360/2,360, the root suite passed 1,389/1,389, and Phylax, Ephoros, and Hypomnema each exited 0 with `clean`. No checkpoint boundary, controller code, schema, or policy changed. The exact audit declaration is `--audit-filter sapheneia:sapheneia`; it records application of the bounded audit-record pass and does not make the controller proof of this record's semantics.
