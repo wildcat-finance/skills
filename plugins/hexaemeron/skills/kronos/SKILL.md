@@ -241,8 +241,10 @@ recorded value it prints is collapsed to one line first -- the pass number,
 mode, scope and run note, each candidate's skill, basis, axis scores and
 declared rows, an ungoverned name, and both drift lines' values -- so nothing a
 caller wrote can open a line of its own and spell a `declared:` heading no
-ledger wrote. `total` is the exception: `show` orders on it before printing, so
-a value that is not an integer ends the command rather than reaching the line.
+ledger wrote. The path it echoes when there is no scoreboard there is collapsed
+the same way, because that argument is caller text as well. `total` is the
+exception: `show` orders on it before printing, so a value that is not an
+integer ends the command rather than reaching the line.
 
 The scoreboard records a judgement; it does not make one. Every score and basis
 is still the ranking's own work, and a loop that skips the writer leaves a

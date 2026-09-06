@@ -1033,7 +1033,10 @@ def declaration_drift(passes: list) -> dict:
 def show(args: argparse.Namespace) -> int:
     scoreboard = Path(args.scoreboard).resolve()
     if not scoreboard.exists():
-        print(f"no scoreboard at {scoreboard}")
+        # Collapsed like every value below it. The path is caller text too, and
+        # this line is the whole output when no scoreboard is there, so a break
+        # in it spells a declaration with no genuine row beneath to contradict.
+        print(f"no scoreboard at {one_line(scoreboard)}")
         return 0
     passes = existing_passes(scoreboard)
     moved = drift(passes)

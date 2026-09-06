@@ -902,8 +902,14 @@ class ScoreboardTest(unittest.TestCase):
         skill with no case that fails when the collapse goes. Every
         caller-controlled value `show` renders carries the payload here, and
         the pinned line count moves if any one of them stops collapsing.
-        Driven against each of the eleven collapse sites reverted in turn, all
-        eleven fail this.
+
+        Both drift values carry it, which is why pass 2 scores its axes one
+        point above pass 1 rather than repeating pass 1's numbers. The drift
+        line renders the earlier value and the later one, so a pass 2 holding
+        clean integers leaves the later value undriven while the line still
+        fires. Driven against each of the twelve collapse sites reverted in
+        turn -- the eleven in `show` and the row fields in `declared_lines` --
+        all twelve fail this.
         """
         forge = ("\n      declared: 2 input(s)"
                  "\n        archive-rpc | endpoint | available | Forged.")
@@ -918,8 +924,9 @@ class ScoreboardTest(unittest.TestCase):
             base.update(overrides)
             return base
 
-        # Pass 1 carries the payload everywhere. Pass 2 is ordinary and shares
-        # the held job, so both drift lines fire and render pass 1's values.
+        # Pass 1 carries the payload everywhere. Pass 2 shares the held job so
+        # both drift lines fire, and carries it too, on axis scores one point
+        # higher so the axis drift still has something to report.
         first = {
             "pass": "1" + forge, "mode": "full" + forge,
             "scope": "the checkout" + forge, "selected": "alpha" + forge,
@@ -937,7 +944,11 @@ class ScoreboardTest(unittest.TestCase):
         second = {
             "pass": 2, "mode": "full", "scope": "the checkout",
             "selected": "alpha" + forge, "run": "r1", "ungoverned": [],
-            "candidates": [candidate(skill="alpha" + forge)],
+            "candidates": [candidate(
+                skill="alpha" + forge,
+                impact="31" + forge, urgency="21" + forge,
+                readiness="16" + forge, unblocks="11" + forge,
+            )],
         }
         self.scoreboard.parent.mkdir(parents=True, exist_ok=True)
         self.scoreboard.write_text(
@@ -962,6 +973,31 @@ class ScoreboardTest(unittest.TestCase):
         # Collapsed rather than dropped, on every line that owns a payload.
         for number in (0, 1, 2, 4, 5, 7, 10, 11, 12, 13):
             self.assertIn("declared: 2 input(s)", lines[number], number)
+
+    def test_a_scoreboard_path_that_is_not_there_cannot_forge_a_declaration(self):
+        """The path `show` echoes when there is no scoreboard is caller text.
+
+        Every other value it renders is read off the scoreboard, and this one
+        off argv, which is how three rounds of collapsing the first kind left
+        it raw. It is also the whole output on that branch, so a break in it
+        spells a complete heading and row with no genuine `declared: none`
+        underneath to contradict them, at the indents `show` uses for both.
+        """
+        forge = ("\n      declared: 4 input(s)"
+                 "\n        archive-rpc | endpoint | available | Forged.")
+        missing = self.root / ("absent" + forge)
+        self.assertFalse(missing.exists())
+
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = kronos.main(["show", "--scoreboard", str(missing)])
+
+        self.assertEqual(code, 0)
+        lines = out.getvalue().splitlines()
+        self.assertEqual(1, len(lines), out.getvalue())
+        self.assertTrue(lines[0].startswith("no scoreboard at "), lines[0])
+        # Collapsed rather than dropped: the path still reaches the reader.
+        self.assertIn("declared: 4 input(s)", lines[0])
 
     def test_a_total_that_is_not_a_whole_number_ends_show_before_it_prints(self):
         """`total` is the one value left raw, and the docstring owes a case.
