@@ -11,10 +11,10 @@ measure changes, and hand work on without turning uncertainty into fact.
 
 It is not one general assistant with a cast list. Each member owns a bounded
 job, says what it checked, shows the evidence behind the result, and stops
-where another specialist or a person has to take over. There are
-<!-- front-door:count key="governed" -->27 governed skills in
-<!-- front-door:count key="plugins" -->18 plugins here, and both numbers are
-derived from the tree each time this page is checked.
+where another specialist or a person has to take over. There
+are <!-- front-door:count key="governed" -->27 governed skills
+in <!-- front-door:count key="plugins" -->18 plugins here, and both numbers
+are derived from the tree each time this page is checked.
 
 ## SO, YOU WANT TO BUILD GOD?
 
@@ -160,10 +160,10 @@ claim is true.
 
 [Futureproofing the Shoggoth](./FUTUREPROOFING.md) is the full catalogue: every
 member, what it ships today, what evidence is missing, and what it could become
-with help. <!-- front-door:count key="domain" -->18 domain agents and
-<!-- front-door:count key="phase" -->9 phase agents sit in it, beside the four
-bounded delivery worker roles and the upstream Pashov security suite, which
-ships unchanged. [Hexaemeron](./plugins/hexaemeron) holds the controlled
+with help. <!-- front-door:count key="domain" -->18 domain agents
+and <!-- front-door:count key="phase" -->9 phase agents sit in it, beside the
+four bounded delivery worker roles and the upstream Pashov security suite,
+which ships unchanged. [Hexaemeron](./plugins/hexaemeron) holds the controlled
 delivery loop; naming a coding task does not start it.
 
 ## WHAT IT RUNS ON
