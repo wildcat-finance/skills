@@ -65,9 +65,13 @@ happened.
 That second job is an exemption, so the pages that may carry it are named here
 rather than decided by whoever writes the marker. Only a page carrying the
 history rule has a dated measurement to exempt; anywhere else the marker is a
-refusal and the number under it stays an ordinary count claim. The marker pins
-the numeral and not the noun beside it, so it establishes that the figure was
-not brought up to date and nothing about what the figure counts.
+refusal and the number under it stays an ordinary count claim. Naming the page
+was not enough on its own: `captured` was free text, so a marker could exempt
+any number on that page while naming no date, and the date it did name was
+readable only in the source. It must now be a `YYYY-MM-DD` date that the page
+itself records in prose, which is what a dated capture means. The marker still
+pins the numeral and not the noun beside it, so it establishes that the figure
+was not brought up to date and nothing about what the figure counts.
 
 **Member status.** A sentence saying what a member's current version does or
 does not do is a claim about that member's ledger. It carries a
@@ -78,14 +82,24 @@ anamnesis releases and "its compile path has not shipped" outlived the dokimasia
 release that shipped it: both sentences were true when written, and nothing was
 watching the ledger move underneath them.
 
-On a plugin landing page the marker must also name a member that page ships.
-Without that the marker's skill and the sentence's subject were unrelated, so a
-claim about one member passed under a marker naming another whose ledger
-happened to be current. Two gaps remain and are stated rather than implied: on
-the named pages, which belong to no plugin, nothing narrows the marker at all;
-and on a landing page a sentence about some other member still passes under
-that page's own marker. What a marked claim establishes is that the named
-ledger stands at the declared version, not that the sentence is about it.
+On a plugin landing page the marker must also name that page's entry skill, or
+a member it ships that the marked prose itself names. Shipping the skill was
+too weak alone: the phase host ships ten, so any of ten ledgers vouched for any
+claim on its page and the slowest-moving one held a stale sentence current
+indefinitely. The marker must also agree with any release its own prose names,
+because a sentence written about a superseded version passed under a marker
+that was current.
+
+Three gaps remain and are stated rather than implied. On the named pages, which
+belong to no plugin, nothing narrows the marker at all. On a landing page a
+sentence about another member still passes under the entry skill's marker when
+it names no version. And a subject carried by a pronoun is not read: the marked
+region is a paragraph, not a parse. Requiring the region to name its own skill
+was measured against this tree and refused two claims that are correct --
+`plugins/probitas/README.md` says "This version emits none" on probitas's own
+page -- so the join is bounded rather than asserted. What a marked claim
+establishes is that the named ledger stands at the declared version, not that
+the sentence is about it.
 
 What it does not do: it never grades free-form voice, which belongs to
 Imprimatur, Vulgate, Brevitas and human review. It does not decide whether a
@@ -212,32 +226,62 @@ CHIRP = "Ask the Atlas for a number. Pick your harness. Finish what you start."
 # here. Naming only a few protected headings left every other one exemptible,
 # and a second opening marker widened the span the first one opened.
 #
-# `marketplace-context` is the landing-page arrangement. Its heading is written
-# for the marketplace rather than by an author, and `tests/test_marketplace_prose.py`
-# holds every copy of a plugin's block to one `**Current frontier.**` line. That
-# is presence and agreement, not derivation: nothing in `scripts/` writes these
-# bytes from the ledger, and no case compares a count or a status sentence
-# inside one with what the tree derives. The exclusion is kept because the
-# heading is the marketplace's, and its cost is named in the audit record.
+# `marketplace-context` is the landing-page arrangement, and it is not the same
+# kind of region. Nothing under `scripts/` writes its bytes:
+# `tests/test_marketplace_prose.py` holds every copy of a plugin's block to one
+# `**Current frontier.**` line, which is presence and agreement rather than
+# derivation. So an author writes this prose, and a region that exempted every
+# claim inside it handed 18 landing pages the author-granted exclusion the
+# paragraph above refuses -- a count or a status sentence typed between the two
+# markers was read by no rule at all.
+#
+# Each region therefore declares what it may exempt, rather than exempting
+# everything by being a region. The generator writes the `contributors` heading
+# and its prose, so an author cannot mark a claim there and the next
+# regeneration would delete one: that region exempts all three rules. The
+# marketplace owns only the heading of `marketplace-context`, so that region
+# exempts the heading rule alone, and a count or status claim inside it is
+# exempt only when the skill's own `EVOLUTION.md` carries the sentence holding
+# it. That is the derivation the earlier comment claimed and did not have: the
+# ledger is the source these blocks quote, and a sentence the ledger does not
+# carry is the author's own claim wherever it was typed.
 #
 # Each region also names where its generator writes. Without that, two comment
 # markers around any prose on any swept page exempted every count and status
-# claim between them, which is the author-granted exclusion the paragraph above
-# refuses. A region declared away from its own page is refused and not applied.
+# claim between them. A region declared away from its own page is refused and
+# not applied.
 FRONT_DOOR_HOST = "the root front door"
 LANDING_HOST = "a plugin landing page"
+
+
+@dataclass(frozen=True)
+class Generated:
+    """One region another owner writes, and exactly what it may exempt."""
+
+    opening: str
+    closing: str
+    owned: str
+    host: str
+    exempts: frozenset[str]
+    ledger_backed: bool
+
+
 GENERATED_REGIONS = (
-    (
+    Generated(
         "<!-- contributors:start -->",
         "<!-- contributors:end -->",
         "## Thanks",
         FRONT_DOOR_HOST,
+        frozenset({HEADING_RULE, COUNT_RULE, STATUS_RULE}),
+        False,
     ),
-    (
+    Generated(
         "<!-- marketplace-context:start -->",
         "<!-- marketplace-context:end -->",
         "## In one line",
         LANDING_HOST,
+        frozenset({HEADING_RULE}),
+        True,
     ),
 )
 
@@ -384,15 +428,52 @@ COUNT_CLAIM_RE = re.compile(
 # mask calls contractions normal, so "hasn't shipped" was the phrasing the
 # house style encourages and the rule could not see. Both are closed here
 # rather than left as spellings a sentence can be rewritten into.
-NOT_RE = r"(?:n(?:'|’)t| not)"
+#
+# Four families were silent because the grammar spelled one form of each and
+# stopped. The predicates stay the four this rule has always named -- ship,
+# implement, build, land -- and only the grammar around them widens, because a
+# predicate list is open vocabulary and a conjugation is not.
+#
+# `been` is the passive perfect of a branch that already exists, so
+# "has not shipped" was read and "has not been shipped" was not. `never` is the
+# same negation as `not`, so "has never shipped" was silent. `was`, `were` and
+# `had` are the past of `is`, `are` and `has`, and `remains` is the copula this
+# repository's own landing pages actually use: `remain unimplemented` sat
+# unmarked and unread on a maintained page while this rule was green. The
+# adverb slot held exactly one word, `yet`, so "is not currently implemented"
+# and "has not so far shipped" escaped a rule that reads "is not yet
+# implemented"; it is now a closed list rather than one literal. The `un-`
+# forms negate the same two participles morphologically.
+#
+# What stays out, and why. "is not available", "is still to come" and "is
+# planned, not present" are different predicates, and guessing the predicate
+# set is how a rule starts firing on ordinary prose across 27 documents. "No
+# compile path has shipped" and "nothing has shipped" move the negation onto
+# the subject, which needs a noun phrase read backwards rather than a
+# conjugation. Both are recorded rather than closed.
+NOT_RE = r"(?:n(?:'|’)t| not| never)"
+# One adverb between the negation and the participle, from a closed list.
+ADVERB_RE = r"(?:(?:yet|still|currently|as yet|so far|ever) )?"
+PARTICIPLE_RE = r"(?:shipped|landed|implemented|built)"
+COPULA_RE = r"(?:is|are|was|were|remains?)"
 STATUS_CLAIM_RE = re.compile(
     r"(?i)(?:this version"
-    r"|ha(?:s|ve)" + NOT_RE + r" (?:yet )?shipped"
-    r"|ha(?:s|ve) yet to ship"
-    r"|do(?:es)?" + NOT_RE + r" (?:yet )?ship"
-    r"|(?:is|are)" + NOT_RE + r" (?:yet )?(?:implemented|built)"
-    r"|ha(?:s|ve)" + NOT_RE + r" (?:yet )?landed)"
+    r"|ha(?:s|ve|d)" + NOT_RE + r" " + ADVERB_RE + r"(?:been )?" + ADVERB_RE
+    + PARTICIPLE_RE
+    + r"|ha(?:s|ve|d) yet to ship"
+    r"|do(?:es|)" + NOT_RE + r" " + ADVERB_RE + r"ship"
+    r"|" + COPULA_RE + NOT_RE + r" " + ADVERB_RE + r"(?:been )?" + ADVERB_RE
+    + PARTICIPLE_RE
+    + r"|" + COPULA_RE + r" un(?:shipped|implemented|built))"
 )
+# A release token of the shape every governed ledger records. The status
+# marker declares one and the ledger holds another; nothing read the version a
+# sentence names for itself, so a marker current against its ledger vouched for
+# prose about a release that ledger left behind.
+VERSION_TOKEN_RE = re.compile(r"\b[a-z][a-z0-9-]*-v\d+(?:\.\d+)*\b", re.IGNORECASE)
+# The date a historical marker must name. `captured` was free text, so a
+# marker could assert a dated capture without naming a date at all.
+CAPTURED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # The `- Current version:` row every governed ledger opens with. The value is
 # read from the ledger rather than declared here, so a release moves the whole
 # set of status claims at once.
@@ -438,6 +519,8 @@ REFUSALS = {
     "FD33": "bound member status matches the ledger's current version",
     "FD34": "historical marker only where a dated capture is recorded",
     "FD35": "landing-page member status names a member that page ships",
+    "FD36": "generated-region claim is carried by the skill's own ledger",
+    "FD37": "marked status prose names the version its marker declares",
 }
 
 
@@ -589,7 +672,7 @@ def hosted(host: str, relative: str) -> bool:
 
 def generated_spans(
     text: str, relative: str | None = None
-) -> tuple[list[tuple[int, int]], list[str]]:
+) -> tuple[list[tuple[int, int, frozenset[str], bool]], list[str]]:
     """The half-open ranges another generator owns, and why any was refused.
 
     An unclosed region used to run to the end of the file, so deleting one
@@ -604,9 +687,11 @@ def generated_spans(
     # A marker written inside a fenced block is a quoted example, not a region
     # boundary, so the markers are located in the fence-blanked view.
     outline = unfenced(text)
-    spans: list[tuple[int, int]] = []
+    spans: list[tuple[int, int, frozenset[str], bool]] = []
     refusals: list[str] = []
-    for opening, closing, owned, host in GENERATED_REGIONS:
+    for region_rule in GENERATED_REGIONS:
+        opening, closing = region_rule.opening, region_rule.closing
+        owned, host = region_rule.owned, region_rule.host
         start = outline.find(opening)
         if start < 0:
             continue
@@ -648,12 +733,63 @@ def generated_spans(
                 f"heading other than {owned!r}"
             )
             continue
-        spans.append(span)
+        spans.append(
+            (span[0], span[1], region_rule.exempts, region_rule.ledger_backed)
+        )
     return spans, refusals
 
 
-def inside(spans: Sequence[tuple[int, int]], offset: int) -> bool:
-    return any(start <= offset < end for start, end in spans)
+def inside(
+    spans: Sequence[tuple[int, int, frozenset[str], bool]], offset: int, rule: str
+) -> bool:
+    """Whether `offset` sits in a region whose owner exempts `rule`.
+
+    Being inside a region is no longer the whole answer. A region exempts the
+    rules its owner actually writes, so a heading the marketplace supplies is
+    excused while a count claim typed beside it is not.
+    """
+
+    return any(
+        start <= offset < end and rule in exempts
+        for start, end, exempts, _ in spans
+    )
+
+
+def ledger_backed(
+    spans: Sequence[tuple[int, int, frozenset[str], bool]], offset: int
+) -> bool:
+    """Whether `offset` sits in a region that quotes the skill's own ledger."""
+
+    return any(
+        start <= offset < end and backed for start, end, _, backed in spans
+    )
+
+
+def claim_sentence(display: str, offset: int) -> str:
+    """The flattened sentence carrying `offset`, with emphasis markers dropped.
+
+    A landing block writes its claims as `**Current frontier.** ...`, and the
+    label's own full stop is not a sentence boundary a reader sees. Blanking
+    the asterisks before splitting keeps the label out of the sentence and
+    leaves the claim itself byte-for-byte comparable with the ledger row it
+    was quoted from.
+    """
+
+    body = display.replace("*", " ")
+    starts = [body.rfind(mark, 0, offset) for mark in (". ", "; ", ".\n", ";\n")]
+    start = max(starts)
+    start = 0 if start < 0 else start + 1
+    ends = [body.find(mark, offset) for mark in (". ", "; ", ".\n", ";\n")]
+    end = min([found for found in ends if found >= 0], default=-1)
+    end = len(body) if end < 0 else end + 1
+    return flat(body[start:end])
+
+
+def ledger_carries(display: str, offset: int, ledger: str) -> bool:
+    """Whether the skill's own ledger holds the sentence making this claim."""
+
+    sentence = claim_sentence(display, offset)
+    return bool(sentence) and bool(ledger) and sentence in ledger
 
 
 def markers(text: str) -> list[Marker]:
@@ -797,7 +933,7 @@ def emit_event(event: str, **fields: object) -> None:
 
 def check_regions(
     where: str, text: str, findings: list[Finding]
-) -> list[tuple[int, int]]:
+) -> list[tuple[int, int, frozenset[str], bool]]:
     """The ranges another generator owns on one page, checked once.
 
     Every set-wide rule reads past a generated region, so every set-wide rule
@@ -817,7 +953,7 @@ def check_regions(
 def check_headings(
     where: str,
     display: str,
-    spans: Sequence[tuple[int, int]],
+    spans: Sequence[tuple[int, int, frozenset[str], bool]],
     findings: list[Finding],
 ) -> None:
     """The house all-caps style, over one maintained page.
@@ -829,7 +965,7 @@ def check_headings(
 
     outline = unfenced(display)
     for offset, _, heading in headings(outline):
-        if inside(spans, offset):
+        if inside(spans, offset, HEADING_RULE):
             continue
         # A heading with no letter in it is upper case only because there is
         # nothing to lower, so `## 2026` used to satisfy the house style by
@@ -1026,10 +1162,11 @@ def check_counts(
     text: str,
     display: str,
     counts: dict[str, int],
-    spans: Sequence[tuple[int, int]],
+    spans: Sequence[tuple[int, int, frozenset[str], bool]],
     findings: list[Finding],
     *,
     history: bool = False,
+    ledger: str = "",
 ) -> None:
     """Every current count claim names a derived quantity and agrees with it."""
 
@@ -1068,6 +1205,31 @@ def check_counts(
                 "FD31",
                 f"{where}: the historical marker at word "
                 f"{word_index(display, marker.start)} is not followed by a figure",
+            )
+            continue
+        # Naming the page was half the rule. `captured` was free text, so the
+        # marker could assert a dated capture while naming no date, and the
+        # date it named appeared nowhere a reader could check. Both halves are
+        # required now: the attribute is a date, and the page records it in
+        # prose. The exemption then rests on evidence the reader can see
+        # rather than on an attribute the renderer hides.
+        captured = marker.attributes["captured"]
+        if not CAPTURED_RE.match(captured):
+            _finding(
+                findings,
+                "FD34",
+                f"{where}: the historical marker at word "
+                f"{word_index(display, marker.start)} declares captured="
+                f"{captured!r}, which is not a YYYY-MM-DD date",
+            )
+            continue
+        if captured not in display:
+            _finding(
+                findings,
+                "FD34",
+                f"{where}: the historical marker at word "
+                f"{word_index(display, marker.start)} names the {captured} "
+                "capture, and no prose on this page records that date",
             )
             continue
         marked.add(offset)
@@ -1128,7 +1290,19 @@ def check_counts(
             )
 
     for claim in COUNT_CLAIM_RE.finditer(display):
-        if claim.start() in marked or inside(spans, claim.start()):
+        if claim.start() in marked or inside(spans, claim.start(), COUNT_RULE):
+            continue
+        if ledger_backed(spans, claim.start()):
+            if ledger_carries(display, claim.start(), ledger):
+                continue
+            _finding(
+                findings,
+                "FD36",
+                f"{where}: the count claim {claim.group(0)!r} at word "
+                f"{word_index(display, claim.start())} sits in a generated "
+                "region and no sentence in this skill's own EVOLUTION.md "
+                "carries it, so the region exempts nothing here",
+            )
             continue
         _finding(
             findings,
@@ -1144,11 +1318,13 @@ def check_status(
     text: str,
     display: str,
     versions: dict[str, str],
-    spans: Sequence[tuple[int, int]],
+    spans: Sequence[tuple[int, int, frozenset[str], bool]],
     findings: list[Finding],
     *,
     plugin: str | None = None,
     by_plugin: dict[str, str] | None = None,
+    entry: str | None = None,
+    ledger: str = "",
 ) -> None:
     """Every member-status claim names the ledger version it describes.
 
@@ -1217,6 +1393,45 @@ def check_status(
                 "does not ship; a landing page states its own members' status",
             )
             continue
+        # Shipping the skill was too weak on its own. The phase host ships ten,
+        # so any of ten ledgers could vouch for any claim on its page, and the
+        # slowest-moving one holds a stale sentence current for ever. The page's
+        # own entry skill is the member a landing page is about; any other
+        # member it ships has to be named in the prose it vouches for.
+        text_region = display[region[0]: region[1]]
+        if (
+            plugin is not None
+            and entry is not None
+            and skill != entry
+            and not re.search(rf"\b{re.escape(skill)}\b", text_region, re.IGNORECASE)
+        ):
+            _finding(
+                findings,
+                "FD35",
+                f"{where}: the status marker binds {skill!r}, which is neither "
+                f"{plugin}'s entry skill {entry!r} nor named in the claim it "
+                "governs; a sibling ledger is not evidence about this member",
+            )
+            continue
+        # The marker declares a version and the ledger holds one; nothing read
+        # the version the sentence itself names. A claim written about a
+        # superseded release passed under a marker that was current, which is
+        # the failure this whole rule exists for wearing a version number.
+        stale = [
+            token
+            for token in VERSION_TOKEN_RE.findall(text_region)
+            if token.lower().startswith(f"{skill.lower()}-v")
+            and token != declared
+        ]
+        if stale:
+            _finding(
+                findings,
+                "FD37",
+                f"{where}: the marked prose names {stale[0]!r} and its marker "
+                f"declares {declared!r}; a marker vouches for the release it "
+                "names and for no other",
+            )
+            continue
         if declared != current:
             _finding(
                 findings,
@@ -1227,7 +1442,19 @@ def check_status(
             )
 
     for claim in STATUS_CLAIM_RE.finditer(display):
-        if claim.start() in covered or inside(spans, claim.start()):
+        if claim.start() in covered or inside(spans, claim.start(), STATUS_RULE):
+            continue
+        if ledger_backed(spans, claim.start()):
+            if ledger_carries(display, claim.start(), ledger):
+                continue
+            _finding(
+                findings,
+                "FD36",
+                f"{where}: the member-status claim {claim.group(0)!r} at word "
+                f"{word_index(display, claim.start())} sits in a generated "
+                "region and no sentence in this skill's own EVOLUTION.md "
+                "carries it, so the region exempts nothing here",
+            )
             continue
         _finding(
             findings,
@@ -1465,6 +1692,23 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
     versions = {
         skill: ledger_version(root, directory) for skill, directory in by_skill.items()
     }
+    # The entry skill one landing page is about, and the ledger its generated
+    # region quotes. A landing block is the skill's own frontier prose copied
+    # out of `EVOLUTION.md`, so the ledger is what decides whether a claim
+    # inside the region was derived or typed.
+    entries = {
+        directory.split("/")[1]: directory.rsplit("/", 1)[-1]
+        for directory in topology.canonical
+    }
+    # Normalised the same way `claim_sentence` normalises the page, so the two
+    # sides of the comparison differ only where the prose does.
+    ledgers = {
+        plugin: flat(
+            read_document(root, f"{by_skill[skill]}/{LEDGER_NAME}").replace("*", " ")
+        )
+        for plugin, skill in entries.items()
+        if skill in by_skill
+    }
     counts = topology.counts()
 
     events: list[dict] = []
@@ -1488,6 +1732,7 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
                 spans,
                 findings,
                 history=item.carries(HISTORY_RULE),
+                ledger=ledgers.get(owner or "", ""),
             )
         if item.carries(STATUS_RULE):
             check_status(
@@ -1499,6 +1744,8 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
                 findings,
                 plugin=owner,
                 by_plugin=by_plugin,
+                entry=entries.get(owner or ""),
+                ledger=ledgers.get(owner or "", ""),
             )
         if item.carries(FRONT_DOOR_RULE):
             records = demonstrations.load_records(root)

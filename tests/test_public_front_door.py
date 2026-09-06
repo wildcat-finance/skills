@@ -80,6 +80,14 @@ MEMBERS = (
 # release the ledger has left behind.
 LEDGER_VERSION = "{plugin}-v1.0.0"
 STALE_LEDGER_VERSION = "{plugin}-v0.1.0"
+# The one frontier sentence each planted ledger records and each planted
+# landing page quotes into its generated region. It holds a count claim and a
+# member-status claim, so the clean sweep proves that a region exempts a claim
+# its own ledger carries and the FD36 cases prove it exempts nothing else.
+LEDGER_FRONTIER = (
+    "The seed release holds 41 findings from three skills chosen by hand, "
+    "and the compile path has not shipped."
+)
 
 
 def write(path: Path, body: str) -> str:
@@ -89,25 +97,40 @@ def write(path: Path, body: str) -> str:
 
 
 def record_for(root: Path, member: dict) -> dict:
-    """Plant one governed skill and return the record its ledger carries."""
+    """Plant one governed skill and return the record its ledger carries.
+
+    `host` names the plugin when it is not the skill's own name, which is what
+    the phase host looks like: one plugin shipping several governed skills.
+    Every skill owes a ledger and a demonstration record wherever it sits.
+    """
 
     plugin = member["id"]
+    host = member.get("host", plugin)
     status = member["status"]
-    directory = f"plugins/{plugin}/skills/{plugin}"
+    directory = f"plugins/{host}/skills/{plugin}"
     # The ledger carries the one row the status rule reads. A bare `# ledger`
     # was enough while nothing asked a skill what version it was on.
+    #
+    # It also carries the frontier row a landing page quotes into its
+    # marketplace block. The
+    # live blocks are copied out of this row, so planting it is what lets the
+    # clean run exercise the happy path of the rule that decides whether a
+    # claim inside a generated region was derived or typed. It carries one
+    # count claim and one member-status claim on purpose: both are exempt
+    # there only because this ledger holds the sentence making them.
     write(
         root / directory / "EVOLUTION.md",
         "# LEDGER\n\n"
         f"- Current version: `{LEDGER_VERSION.format(plugin=plugin)}`\n"
-        "- Frontier status: `open`\n",
+        "- Frontier status: `open`\n"
+        f"- Current frontier: {LEDGER_FRONTIER}\n",
     )
     write(root / directory / "SKILL.md", "# skill\n")
 
     line = f"{plugin}: the held specimen rebuilds"
-    program = f"plugins/{plugin}/demo.py"
+    program = f"plugins/{host}/{plugin}-demo.py"
     program_digest = write(root / program, f'print("{line}")\n')
-    held = f"plugins/{plugin}/specimens/held.json"
+    held = f"plugins/{host}/specimens/{plugin}-held.json"
     held_digest = write(root / held, json.dumps({"held": plugin}) + "\n")
 
     sources = [
@@ -120,7 +143,7 @@ def record_for(root: Path, member: dict) -> dict:
         },
     ]
     if status == "mixed":
-        invented = f"plugins/{plugin}/specimens/invented.json"
+        invented = f"plugins/{host}/specimens/{plugin}-invented.json"
         sources.append(
             {
                 "id": "invented",
@@ -135,7 +158,7 @@ def record_for(root: Path, member: dict) -> dict:
     record = {
         "schema": demonstrations.SCHEMA,
         "skill": plugin,
-        "plugin": plugin,
+        "plugin": host,
         "status": status,
         "claim_id": f"{plugin}-held-specimen",
         "claim": f"The {plugin} specimen rebuilds offline from the preserved bytes.",
@@ -245,6 +268,8 @@ LANDING = """# {upper}
 ## In one line
 
 {name} holds one preserved specimen and rebuilds it offline.
+
+**Current frontier.** {frontier}
 <!-- marketplace-context:end -->
 
 ## WHAT IT SHIPS
@@ -266,6 +291,7 @@ def plant(root: Path) -> dict[str, dict]:
                 name=name,
                 upper=name.upper(),
                 version=LEDGER_VERSION.format(plugin=name),
+                frontier=LEDGER_FRONTIER,
             ),
         )
     entries = [{"name": member["id"]} for member in MEMBERS]
@@ -382,6 +408,21 @@ def body_codes(body: str) -> list[str]:
     """Plant the specimen tree, install this front door, and check it."""
 
     return document_codes({front_door.FRONT_DOOR: body})
+
+
+def covered_by_a_region(spans, offset: int) -> bool:
+    """Whether any generated region covers `offset`, whatever it exempts.
+
+    The live cases below ask whether a claim is unmarked, and a claim inside a
+    generated region is answered by the region rules instead. They read the
+    span's two offsets rather than calling the checker's own `inside`, which
+    now takes the rule being decided: these cases decide no single rule, and
+    the checker stays the authority on what a region exempts. That authority is
+    asserted by `test_the_front_door_holds_its_contract` and by the FD36 cases,
+    so a region claim this helper waves past is still read somewhere.
+    """
+
+    return any(span[0] <= offset < span[1] for span in spans)
 
 
 def read_no_follow(root: Path, relative: str) -> str:
@@ -566,8 +607,34 @@ PROVOCATIONS = {
     ),
     "FD35": lambda: {
         "plugins/lantern/README.md": LANDING.format(
-            name="lantern", upper="LANTERN", version="{{version:lantern}}"
+            name="lantern",
+            upper="LANTERN",
+            version="{{version:lantern}}",
+            frontier=LEDGER_FRONTIER,
         ).replace('skill="lantern"', 'skill="thicket"')
+    },
+    "FD36": lambda: {
+        "plugins/lantern/README.md": LANDING.format(
+            name="lantern",
+            upper="LANTERN",
+            version="{{version:lantern}}",
+            frontier=LEDGER_FRONTIER,
+        ).replace(
+            "lantern holds one preserved specimen and rebuilds it offline.",
+            "lantern holds one preserved specimen and rebuilds it offline.\n\n"
+            "**Current frontier.** The tree holds 99 plugins.",
+        )
+    },
+    "FD37": lambda: {
+        "plugins/lantern/README.md": LANDING.format(
+            name="lantern",
+            upper="LANTERN",
+            version="{{version:lantern}}",
+            frontier=LEDGER_FRONTIER,
+        ).replace(
+            "This version rebuilds the held specimen and claims nothing beyond it.",
+            "{{stale:lantern}} has not shipped the rebuild path.",
+        )
     },
 }
 
@@ -1070,7 +1137,10 @@ class StepFiveAuditRoundOneTests(unittest.TestCase):
         codes = document_codes(
             {
                 "plugins/lantern/README.md": LANDING.format(
-                    name="lantern", upper="LANTERN", version="{{version:thicket}}"
+                    name="lantern",
+                    upper="LANTERN",
+                    version="{{version:thicket}}",
+                    frontier=LEDGER_FRONTIER,
                 ).replace('skill="lantern"', 'skill="thicket"')
             }
         )
@@ -1106,6 +1176,278 @@ class StepFiveAuditRoundOneTests(unittest.TestCase):
             }
         )
         self.assertIn("FD32", codes)
+
+
+def plant_phase_host(root: Path) -> None:
+    """Add the one plugin that ships more than one governed skill.
+
+    Round one narrowed a landing page's status marker to a member that page
+    ships, and every plugin in the tree above ships exactly one, so the
+    narrowing was never exercised against the shape it has to survive. The
+    phase host ships ten in the live tree: a marker naming any of them
+    satisfied "a member that page ships" while vouching for a claim about a
+    different one, and binding a fast-moving member's status to a slow-moving
+    sibling's ledger keeps a stale sentence current indefinitely.
+    """
+
+    # Both are planted `mixed`, so neither joins the front door's card set and
+    # these cases stay about the status marker rather than about cards.
+    for skill in ("fiat", "vulgate"):
+        record_for(root, {"id": skill, "host": "hexaemeron", "status": "mixed"})
+    write(
+        root / "plugins" / "hexaemeron" / "README.md",
+        "# HEXAEMERON\n\n## WHAT IT SHIPS\n\n"
+        '<!-- front-door:status skill="fiat" version="fiat-v1.0.0" -->\n'
+        "This version carries the delivery loop and claims nothing beyond it.\n",
+    )
+    for manifest, entry in (
+        (".claude-plugin/marketplace.json", {"name": "hexaemeron", "source": "./plugins/hexaemeron"}),
+        (
+            ".agents/plugins/marketplace.json",
+            {
+                "name": "hexaemeron",
+                "source": {"source": "local", "path": "./plugins/hexaemeron"},
+            },
+        ),
+    ):
+        path = root / manifest
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["plugins"].append(entry)
+        write(path, json.dumps(payload, indent=2) + "\n")
+
+
+def phase_host_codes(landing: str) -> list[str]:
+    """Plant a tree that holds the phase host, then check one landing page."""
+
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        records = plant(root)
+        plant_phase_host(root)
+        install(root, records, {"plugins/hexaemeron/README.md": landing})
+        findings, _ = front_door.check(root)
+    return [finding.code for finding in findings]
+
+
+@unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
+class StepFiveAuditRoundTwoTests(unittest.TestCase):
+    """The partial fixes round one left, and the two rules it wrote.
+
+    Each case below was built as an attack on the round-one tree first and
+    passed there, so every one of them names a claim that the sweep read and
+    reported nothing about.
+    """
+
+    def test_a_historical_marker_names_a_date_the_page_records(self):
+        """Naming the page left every number on it exemptible.
+
+        The exemption was narrowed to the one page that records a dated
+        capture, and then any number on that page could take it -- including a
+        sentence saying the figure is current. The capture the marker names has
+        to be one the reader can find.
+        """
+        codes = document_codes(
+            {
+                "INSTALL.md": COMPANIONS["INSTALL.md"]
+                + "\n## WHAT SHIPS TODAY\n\nThe marketplace ships\n"
+                '<!-- front-door:historical captured="2026-06-05" figure="99" -->99\n'
+                "governed skills right now, and that number is current.\n"
+            }
+        )
+        self.assertIn("FD34", codes)
+        self.assertIn("FD28", codes)
+
+    def test_a_historical_marker_captured_value_is_a_date(self):
+        """`captured` was free text, so a dated capture needed no date."""
+        for value in ("", "last summer", "2026"):
+            with self.subTest(captured=value):
+                codes = document_codes(
+                    {
+                        "INSTALL.md": COMPANIONS["INSTALL.md"].replace(
+                            'captured="2026-01-01"', f'captured="{value}"'
+                        )
+                    }
+                )
+                self.assertIn("FD34", codes)
+                self.assertIn("FD28", codes)
+
+    def test_a_generated_region_exempts_only_a_count_its_ledger_carries(self):
+        """Two comment markers still bought the exclusion on 18 landing pages.
+
+        Round one refused a region declared away from its own page. On the page
+        it belongs to, the region went on exempting every claim between its
+        markers, and nothing in this repository writes those bytes.
+        """
+        codes = document_codes(
+            {
+                "plugins/lantern/README.md": LANDING.format(
+                    name="lantern",
+                    upper="LANTERN",
+                    version="{{version:lantern}}",
+                    frontier="The tree holds 99 plugins today.",
+                )
+            }
+        )
+        self.assertIn("FD36", codes)
+
+    def test_a_generated_region_exempts_only_a_status_its_ledger_carries(self):
+        codes = document_codes(
+            {
+                "plugins/lantern/README.md": LANDING.format(
+                    name="lantern",
+                    upper="LANTERN",
+                    version="{{version:lantern}}",
+                    frontier="The quarry compile path has not shipped.",
+                )
+            }
+        )
+        self.assertIn("FD36", codes)
+
+    def test_a_generated_region_still_exempts_the_heading_its_owner_writes(self):
+        """The heading is the marketplace's, and that half of it holds.
+
+        `## In one line` is sentence case on every landing page in the tree.
+        Scoping the exclusion to what each owner actually writes must not take
+        that with it, or the fix trades one silent rule for a red one.
+        """
+        self.assertEqual(document_codes({}), [])
+
+    def test_a_landing_marker_may_not_vouch_for_a_sibling_it_does_not_name(self):
+        codes = phase_host_codes(
+            "# HEXAEMERON\n\n## WHAT IT SHIPS\n\n"
+            '<!-- front-door:status skill="vulgate" version="vulgate-v1.0.0" -->\n'
+            "Fiat has not shipped its second controller, and this version of fiat\n"
+            "does not ship one either.\n"
+        )
+        self.assertIn("FD35", codes)
+
+    def test_a_landing_marker_may_vouch_for_a_sibling_its_prose_names(self):
+        """A page may state a phase skill's status; it has to say which."""
+        codes = phase_host_codes(
+            "# HEXAEMERON\n\n## WHAT IT SHIPS\n\n"
+            '<!-- front-door:status skill="vulgate" version="vulgate-v1.0.0" -->\n'
+            "Vulgate has not shipped a second register, and this version does not\n"
+            "ship one either.\n"
+        )
+        self.assertEqual(codes, [])
+
+    def test_marked_prose_may_not_name_a_release_its_marker_does_not(self):
+        """The marker was checked against the ledger and never against itself.
+
+        A sentence naming a superseded release passed under a marker standing
+        at the current one, which is the stale-status failure this whole rule
+        exists for wearing a version number.
+        """
+        codes = document_codes(
+            {
+                "plugins/lantern/README.md": LANDING.format(
+                    name="lantern",
+                    upper="LANTERN",
+                    version="{{version:lantern}}",
+                    frontier=LEDGER_FRONTIER,
+                ).replace(
+                    "This version rebuilds the held specimen and claims nothing"
+                    " beyond it.",
+                    "{{stale:lantern}} has not shipped the rebuild path.",
+                )
+            }
+        )
+        self.assertIn("FD37", codes)
+
+    def test_the_status_grammar_reads_the_conjugations_of_its_own_branches(self):
+        """Twelve phrasings were silent; four were spellings of a live branch.
+
+        The eight left over divided in two. These are conjugations of
+        predicates the rule already names -- the passive, the past, `never` for
+        `not`, and the adjective negating the same participle -- and a rule
+        that reads `is not built` and not `was never built` is inconsistent
+        rather than narrow.
+        """
+        for phrasing in (
+            "has not been built",
+            "has not been implemented",
+            "was never built",
+            "has never shipped",
+            "was not implemented",
+            "had not shipped",
+            "remains unbuilt",
+            "is unimplemented",
+            "remain unimplemented",
+        ):
+            with self.subTest(phrasing=phrasing):
+                codes = document_codes(
+                    {
+                        "FUTUREPROOFING.md": COMPANIONS["FUTUREPROOFING.md"]
+                        + f"\nThe compile path {phrasing}.\n"
+                    }
+                )
+                self.assertIn("FD32", codes)
+
+    def test_the_status_grammar_reads_an_adverb_other_than_yet(self):
+        """The adverb slot held one literal, so every other adverb escaped."""
+        for phrasing in (
+            "is not currently implemented",
+            "has not so far shipped",
+            "does not currently ship",
+            "has not ever shipped",
+        ):
+            with self.subTest(phrasing=phrasing):
+                codes = document_codes(
+                    {
+                        "FUTUREPROOFING.md": COMPANIONS["FUTUREPROOFING.md"]
+                        + f"\nThe compile path {phrasing}.\n"
+                    }
+                )
+                self.assertIn("FD32", codes)
+
+    def test_the_heading_rule_is_exempted_only_for_two_named_contracts(self):
+        """The exemption was visible in the code and pinned by no case.
+
+        `test_the_maintained_set_covers_the_named_pages_and_every_plugin`
+        asserts that each swept page carries some rule, so a third page could
+        be given the contract rules and drop out of the house heading style
+        with nothing reporting it. The set is named here instead.
+        """
+        documents = {
+            item.relative: item
+            for item in front_door.maintained_documents(discover_topology(ROOT))
+        }
+        exempt = sorted(
+            relative
+            for relative, item in documents.items()
+            if not item.carries(front_door.HEADING_RULE)
+        )
+        self.assertEqual(
+            exempt,
+            [".agents/skills/promise-machine/SKILL.md", "PROMISE_MACHINE.md"],
+        )
+        self.assertTrue(
+            all(item.carries(front_door.COUNT_RULE) for item in documents.values())
+        )
+
+    def test_the_heading_exemption_is_load_bearing_not_aesthetic(self):
+        """A second checker pins those headings by exact sentence-case bytes.
+
+        `PROMISE_MACHINE.md` is named in the study's own maintained set, so its
+        exemption rests on the boundary clause rather than on the enumeration.
+        This is the evidence behind that clause: upper-casing these headings
+        reddens `python3 scripts/promise_machine.py check`, which is one of the
+        step's own exit commands, so the two rules cannot both be satisfied.
+        """
+        promise_machine = (ROOT / "scripts" / "promise_machine.py").read_text(
+            encoding="utf-8"
+        )
+        contract = (ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        pinned = re.findall(r'(?m)^    "(#{1,6} [^"]+)",$', promise_machine)
+        self.assertTrue(pinned, "promise_machine.py pins no exact heading")
+        sentence_case = [
+            heading
+            for heading in pinned
+            if heading != heading.upper() and heading in contract
+        ]
+        self.assertTrue(
+            sentence_case,
+            "no pinned sentence-case heading occurs in PROMISE_MACHINE.md",
+        )
 
 
 @unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
@@ -1190,7 +1532,7 @@ class LiveFrontDoorTests(unittest.TestCase):
                 (item.relative, claim.group(0))
                 for claim in front_door.COUNT_CLAIM_RE.finditer(display)
                 if claim.start() not in marked
-                and not front_door.inside(spans, claim.start())
+                and not covered_by_a_region(spans, claim.start())
             ]
         self.assertEqual(unmarked, [])
 
@@ -1232,7 +1574,7 @@ class LiveFrontDoorTests(unittest.TestCase):
                         versions[marker.attributes["skill"]],
                     )
             for claim in front_door.STATUS_CLAIM_RE.finditer(display):
-                if front_door.inside(spans, claim.start()):
+                if covered_by_a_region(spans, claim.start()):
                     continue
                 with self.subTest(document=item.relative, claim=claim.group(0)):
                     self.assertIn(claim.start(), covered)
