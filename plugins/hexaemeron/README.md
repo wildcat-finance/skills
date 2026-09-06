@@ -67,7 +67,7 @@ Let there be light. A deterministic controller (`hexctl`) decides what comes nex
 7. Once every step is pushed, merge the stack into the run branch in order, receipt one signed base sync if concurrent work created an integration conflict, then merge the run branch into the base once.
 
 A run works on one integration branch cut from the base. An issue-free run uses
-`fiat/<run slug>`. When a known task issue is supplied during initialization,
+`fiat/<run slug>`. When a known task issue is supplied during initialisation,
 the branch uses `fiat/<issue>-<run slug>` and every step branch keeps that
 prefix. Each step's pull request targets the step below it, step 1 targets the
 run branch, and nothing merges until the whole stack is ready. The base sees

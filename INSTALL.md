@@ -214,11 +214,11 @@ This gap was measured on 2026-08-22 over the 122 commits between an install at
 to 1.5.4 and left the other
 <!-- front-door:historical captured="2026-08-22" figure="thirteen" -->thirteen
 plugins pinned at `793b112`, and all thirteen had real changes under
-`skills/*/SKILL.md`. Hermes was the worst of
-them: its plugin version stayed at 0.1.1 while the skill's own frontmatter went
-from 0.1.0 to 0.1.1, so the cached copy was short a 73-line `SKILL.md` diff
-carrying the pinned 120-rule gas corpus, the reference to that corpus JSON, and
-the rule refusing work outside the target's scope.
+`skills/*/SKILL.md`. Hermes was the worst of them: its plugin version stayed
+at 0.1.1 while the skill's own frontmatter went from 0.1.0 to 0.1.1, so the
+cached copy was short a 73-line `SKILL.md` diff carrying the pinned 120-rule
+gas corpus, the reference to that corpus JSON, and the rule refusing work
+outside the target's scope.
 
 Do not trust the exit code alone. Each install records its pinned commit;
 compare those commits with the marketplace checkout's current head:
