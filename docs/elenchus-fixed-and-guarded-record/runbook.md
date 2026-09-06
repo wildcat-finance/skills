@@ -249,3 +249,23 @@ reverses no decision.
 **Steps touched.** Step 3.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Exit: `plugins/hexaemeron/skills/elenchus/SKILL.md` carries one new section that names the emitter, its two inputs, its output, the nine fields, the four refusals a caller meets most, and what an emitted record does not establish; `## Hand back` gains one sentence pointing at it, and no other section changes. `plugins/hexaemeron/skills/elenchus/EVOLUTION.md` carries `elenchus-v1.4.0` as current version and one new `generation` history row whose frontier revision `observed-failure-root-cause`, frontier SHA-256 `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b`, `Frontier status: mature` and `Next Fiat job: None -- mature` are byte-identical to `elenchus-v1.3.0`. Hexaemeron re-pins from `1.6.24` to `1.6.25` on `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`, with the matching `DELIVERY_PACKAGE_VERSIONS` entry in `tests/test_version_propagation.py` moved to the same value, so an installed copy is offered the changed skill file. `docs/elenchus-fixed-and-guarded-record/runbook.md` and `docs/elenchus-fixed-and-guarded-record/study.md` are byte-identical to the controller artefacts. Proved by `python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/elenchus/SKILL.md` reporting clean, and by `python3 scripts/run_checks.py --base origin/main` at exit zero on the committed tree. Complete replacement Files: `plugins/hexaemeron/skills/elenchus/SKILL.md`, `plugins/hexaemeron/skills/elenchus/EVOLUTION.md`, `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `tests/test_version_propagation.py`, and `docs/elenchus-fixed-and-guarded-record/runbook.md`.
+
+**Why.** Warden lead in round 1 of step 2. The study's constraint 4 states the Hexaemeron re-pin across four files as a delivery constraint, and no step's Exit assigned it, so the run would have shipped a changed skill file that no installed copy is ever offered. The fifth file is the obligation's own consequence: `tests/test_version_propagation.py` pins the expected package version as a literal, so a re-pin that leaves it behind reddens the suite. Round 1 read that literal as forbidding the bump rather than as the value the bump moves.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/elenchus/SKILL.md`, `plugins/hexaemeron/skills/elenchus/EVOLUTION.md`, `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `tests/test_version_propagation.py`, `plugins/hexaemeron/tests/test_phylax_model_proxy.py`, and `docs/elenchus-fixed-and-guarded-record/runbook.md`.
+
+**Why.** The re-pin the previous amendment assigned is complete, so step 2's exit holds again. Its file list gains one path the previous amendment missed: `plugins/hexaemeron/tests/test_phylax_model_proxy.py:5679` asserts the same package version as a second literal, and leaving it at `1.6.24` reddened the Hexaemeron suite on that test alone. The re-pin surface is therefore four manifests and two pinned expectations, not four and one. `python3 scripts/run_checks.py --base origin/main` is green across all ten selected checks on the committed tree.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
