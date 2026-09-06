@@ -1,7 +1,7 @@
 {
   "name": "dokimasia",
   "displayName": "Dokimasia",
-  "version": "2.1.0",
+  "version": "3.1.0",
   "description": "Compiles a frontend's routes, actions and guards into a coverage denominator, imports a reviewed UAT workbook without losing a row, drafts a disposition set a reviewer edits rather than authors, and counts only the entries a person confirmed; a closure ratio states that nothing is unaccounted for, never that anything passed.",
   "author": {
     "name": "Wildcat Labs",

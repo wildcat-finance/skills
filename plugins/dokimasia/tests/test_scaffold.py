@@ -23,7 +23,7 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
-VERSION = "2.1.0"
+VERSION = "3.1.0"
 UNBUILT: tuple[str, ...] = ()
 KEPT_PROMISES = (
     "dokimasia-scaffold-identity",
@@ -77,8 +77,13 @@ class ManifestTests(unittest.TestCase):
 
     def test_the_long_description_refuses_to_promise_a_verdict(self):
         long_description = manifest(".codex-plugin")["interface"]["longDescription"]
-        self.assertIn("Every substantive verb refuses", long_description)
+        self.assertIn("every substantive verb refuses", long_description.lower())
         self.assertIn("never report an item as covered", long_description.lower())
+        # The scaffold-era claims went stale the moment the verbs were built
+        # and stayed in the manifest for two frontiers. Pin their absence.
+        self.assertNotIn("planned home", long_description)
+        self.assertNotIn("compiles no inventory", long_description)
+        self.assertIn("named person confirmed", long_description)
 
 
 class ContractTests(unittest.TestCase):
@@ -137,6 +142,92 @@ class ContractTests(unittest.TestCase):
         self.assertTrue(rows, "the ledger records no history row")
         self.assertEqual(rows[-1][0], VERSION)
         self.assertEqual(rows[0][1], "baseline")
+
+    def test_the_latest_row_is_this_version_on_the_evolution_axis(self):
+        """The frontier row is written once, at this version, as an evolution.
+
+        The version test above reads the row's label; this reads its axis and
+        its revision, because a row at the right version on the wrong axis is
+        the counter arithmetic VERSIONING.md forbids, and a row whose revision
+        disagrees with the header names a frontier the ledger does not hold.
+        """
+        text = LEDGER.read_text(encoding="utf-8")
+        rows = re.findall(
+            r"^\| `dokimasia-v([^`]+)` \| (\w+) \| `([a-z0-9-]+)` \|", text, re.M
+        )
+        self.assertEqual(rows[-1][0], VERSION)
+        self.assertEqual(rows[-1][1], "evolution")
+        revision = re.search(r"^- Frontier revision: `([a-z0-9-]+)`$", text, re.M)
+        self.assertEqual(rows[-1][2], revision.group(1))
+        self.assertEqual(text.count(f"| `dokimasia-v{VERSION}` |"), 1)
+        # Evolution increments the first counter and retains the other two.
+        previous = tuple(int(part) for part in rows[-2][0].split("."))
+        current = tuple(int(part) for part in VERSION.split("."))
+        self.assertEqual(current, (previous[0] + 1, previous[1], previous[2]))
+
+    def test_the_version_agrees_across_every_surface_that_states_it(self):
+        """One version, read from each surface rather than assumed from one."""
+        claude_listing = json.loads(
+            (ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+        )
+        agents_listing = json.loads(
+            (ROOT / ".agents" / "plugins" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        stated = {
+            "ledger": re.search(
+                r"^- Current version: `dokimasia-v([^`]+)`$",
+                LEDGER.read_text(encoding="utf-8"), re.M,
+            ).group(1),
+            "claude-manifest": manifest(".claude-plugin")["version"],
+            "codex-manifest": manifest(".codex-plugin")["version"],
+            "claude-marketplace": next(
+                entry["version"] for entry in claude_listing["plugins"]
+                if entry["name"] == "dokimasia"
+            ),
+            "agents-marketplace": next(
+                entry["version"] for entry in agents_listing["plugins"]
+                if entry["name"] == "dokimasia"
+            ),
+            "skill-metadata": re.search(
+                r'version:\s*"([^"]+)"', SKILL.read_text(encoding="utf-8")
+            ).group(1),
+            "command": VERSION,
+        }
+        self.assertEqual(stated, {surface: VERSION for surface in stated})
+
+    def test_the_frontier_line_is_identical_on_every_marketplace_surface(self):
+        """The README, the runtime contract and the skill state one frontier.
+
+        `tests/test_marketplace_prose.py` holds the same agreement across every
+        plugin; this pins it where a Dokimasia frontier run edits it, and adds
+        the next job: the README's held job must name what the ledger holds,
+        so the two cannot drift a frontier apart.
+        """
+        def frontier(path: Path) -> str:
+            text = path.read_text(encoding="utf-8")
+            match = re.search(r"\*\*Current frontier(?:\.|:)\*\*\s*([^\n]+)", text)
+            self.assertIsNotNone(match, path)
+            return match.group(1).strip()
+
+        readme = PLUGIN / "README.md"
+        stated = {
+            path.name: frontier(path)
+            for path in (readme, PLUGIN / "AGENTS.md", SKILL)
+        }
+        self.assertEqual(len(set(stated.values())), 1, stated)
+        ledger = LEDGER.read_text(encoding="utf-8")
+        self.assertIn(stated["README.md"], ledger)
+        held = re.search(r"^- Next Fiat job: (.+)$", ledger, re.M).group(1)
+        published = re.search(
+            r"^\*\*Next Fiat job\.\*\* Use /hexaemeron:fiat to (.+)$",
+            readme.read_text(encoding="utf-8"), re.M,
+        ).group(1)
+        for term in ("Playwright", "browser version", "`confirmed_by`", "`rule`"):
+            with self.subTest(term=term):
+                self.assertIn(term, held)
+                self.assertIn(term, published)
 
     def test_the_ledger_row_digest_matches_the_frontier_it_describes(self):
         text = LEDGER.read_text(encoding="utf-8")

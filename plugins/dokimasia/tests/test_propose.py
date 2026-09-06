@@ -8,7 +8,9 @@ what a person already decided.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -21,12 +23,36 @@ ROOT = PLUGIN.parents[1]
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
+from dokimasia_lib import inventory as inventory_lib  # noqa: E402
 from dokimasia_lib import propose  # noqa: E402
 from dokimasia_lib import reconcile  # noqa: E402
 from dokimasia_lib import schema  # noqa: E402
+from dokimasia_lib import workbook as workbook_lib  # noqa: E402
 
 sys.path.insert(0, str(PLUGIN / "tests" / "fixtures" / "dispositions"))
 import build  # noqa: E402
+
+EVIDENCE = PLUGIN / "docs" / "evidence"
+PINNED_SET = EVIDENCE / "wildcat-app-v2.dispositions.json"
+# The pinned inputs are not in this repository, for the reason
+# test_demonstration.py gives; the same two variables reach them.
+PINNED_APP = os.environ.get("DOKIMASIA_PINNED_APP")
+PINNED_WORKBOOK = os.environ.get("DOKIMASIA_PINNED_WORKBOOK")
+ATTRIBUTION = (reconcile.CONFIRMED_BY_FIELD, reconcile.RULE_FIELD)
+
+
+def moved(inventory: dict) -> dict:
+    """The inventory with its last item gone and its digest moved."""
+    changed = json.loads(json.dumps(inventory))
+    changed["items"] = changed["items"][:-1]
+    changed["inventory_sha256"] = hashlib.sha256(
+        json.dumps(changed["items"], sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    return changed
+
+
+def canonical(record: dict) -> str:
+    return json.dumps(record, sort_keys=True)
 
 
 class ProposeCase(unittest.TestCase):
@@ -251,6 +277,203 @@ class WriteBoundary(ProposeCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         made = json.loads(result.stdout)
         self.assertEqual(made["schema"], propose.SCHEMA)
+
+
+class AttributionIsCarried(ProposeCase):
+    """ADR-003's regeneration clause: carried byte for byte, never drafted."""
+
+    def setUp(self):
+        super().setUp()
+        self.existing = reconcile.read_json(self.made["regeneration-input.json"])
+        self.closed = reconcile.read_json(self.made["closed.json"])
+        self.attributed = {
+            e["item"]: e for e in self.existing["dispositions"]
+            if any(field in e for field in ATTRIBUTION)
+        }
+
+    def test_an_attributed_entry_survives_a_moved_inventory_byte_for_byte(self):
+        again, counts = propose.propose(
+            moved(self.inventory), self.workbook, self.existing
+        )
+        by_item = {e["item"]: e for e in again["dispositions"]}
+        for item, before in self.attributed.items():
+            with self.subTest(item=item):
+                self.assertEqual(canonical(by_item[item]), canonical(before))
+        self.assertEqual(counts["attributed"], len(self.attributed))
+        self.assertEqual(counts["preserved"], len(self.attributed))
+        self.assertEqual(counts["dropped"], 1)
+
+    def test_the_rules_table_survives_including_a_row_nobody_applies(self):
+        again, counts = propose.propose(
+            moved(self.inventory), self.workbook, self.existing
+        )
+        self.assertEqual(
+            canonical(again[reconcile.RULES_FIELD]),
+            canonical(self.existing[reconcile.RULES_FIELD]),
+        )
+        self.assertIn(build.UNUSED_RULE, again[reconcile.RULES_FIELD])
+        applied = {e.get(reconcile.RULE_FIELD) for e in again["dispositions"]}
+        self.assertNotIn(build.UNUSED_RULE, applied)
+        self.assertEqual(counts["rule_rows"], 2)
+        self.assertTrue(counts["rules_carried"])
+
+    def test_a_regenerated_attributed_set_reconciles_to_its_confirmations(self):
+        """The round 1 lead: the closed set lost its table and refused."""
+        again, counts = self.draft(self.closed)
+        self.assertEqual(counts["preserved"], len(self.closed["dispositions"]))
+        self.assertEqual(counts["replaced"], 0)
+        made = reconcile.reconcile(self.inventory, self.workbook, again)
+        self.assertTrue(made["closure_ratio"]["closed"])
+
+    def test_an_attributed_entry_on_an_unscoped_item_refuses_and_writes_nothing(self):
+        target = Path(self.tmp.name) / "reviewed.dispositions.json"
+        target.write_text(json.dumps(self.closed, indent=2, sort_keys=True) + "\n")
+        before = target.read_bytes()
+        with self.assertRaises(propose.ProposeError) as caught:
+            propose.propose(moved(self.inventory), self.workbook, self.closed)
+        self.assertIn("cannot be carried forward", str(caught.exception))
+        self.assertIn("remove the entry by hand", str(caught.exception))
+        self.assertEqual(target.read_bytes(), before)
+
+    def test_a_rule_the_table_does_not_hold_refuses(self):
+        existing = reconcile.read_json(self.made["unknown-rule.json"])
+        with self.assertRaises(propose.ProposeError) as caught:
+            self.draft(existing)
+        self.assertIn("no-such-rule", str(caught.exception))
+        self.assertIn("cannot be carried forward", str(caught.exception))
+
+    def test_a_table_that_is_not_an_object_refuses(self):
+        existing = reconcile.read_json(self.made["rules-not-object.json"])
+        with self.assertRaises(propose.ProposeError) as caught:
+            self.draft(existing)
+        self.assertIn("list, not an object", str(caught.exception))
+
+    def test_the_verb_reports_the_preserved_and_attributed_counts_on_stderr(self):
+        label = f"regeneration-test-{os.getpid()}"
+        target = EVIDENCE / f"{label}.dispositions.json"
+        self.addCleanup(lambda: target.unlink(missing_ok=True))
+        target.write_text(json.dumps(self.existing, indent=2, sort_keys=True) + "\n")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "propose",
+             "--inventory", str(self.made["inventory.json"]),
+             "--workbook", str(self.made["workbook.json"]), "--label", label],
+            capture_output=True, text=True, cwd=str(ROOT), timeout=60,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            f"{len(self.attributed)} preserved, of which "
+            f"{len(self.attributed)} attributed",
+            result.stderr,
+        )
+        self.assertIn("rules table carried with 2 rows", result.stderr)
+        written = reconcile.read_json(target)
+        self.assertEqual(
+            canonical(written[reconcile.RULES_FIELD]),
+            canonical(self.existing[reconcile.RULES_FIELD]),
+        )
+
+
+class NoBranchDraftsAttribution(ProposeCase):
+    def test_the_drafting_surface_holds_neither_field_as_a_literal(self):
+        """Beside the `covered` assertion: absent from the code, not filtered."""
+        source = (PLUGIN / "scripts" / "dokimasia_lib" / "propose.py").read_text(
+            encoding="utf-8"
+        )
+        executable = re.sub(r'""".*?"""', "", source, flags=re.S)
+        executable = re.sub(r"#.*", "", executable)
+        for field in ATTRIBUTION:
+            for quoted in (f'"{field}"', f"'{field}'"):
+                self.assertNotIn(quoted, executable)
+        self.assertNotIn("covered", executable)
+        self.assertEqual(
+            propose.DRAFT_FIELDS,
+            {"item", "disposition", "reason", "oracle", "confirmed", "proposed_sha256"},
+        )
+
+    def test_every_driven_branch_emits_neither_field(self):
+        existing = reconcile.read_json(self.made["regeneration-input.json"])
+        gone = dict(propose.draft_entry(
+            reconcile.scoped_set(self.inventory, self.workbook)[0]
+        ))
+        gone["item"] = "route:src/app/removed/page.tsx"
+        with_drop = json.loads(json.dumps(existing))
+        with_drop["dispositions"].append(gone)
+        driven = [
+            self.draft(),
+            self.draft(existing),
+            propose.propose(moved(self.inventory), self.workbook, existing),
+            self.draft(with_drop),
+        ]
+        kept = set(
+            e["item"] for e in existing["dispositions"]
+            if any(field in e for field in ATTRIBUTION)
+        )
+        for record, counts in driven:
+            for entry in record["dispositions"]:
+                if entry["item"] in kept and counts["preserved"]:
+                    continue
+                with self.subTest(item=entry["item"]):
+                    self.assertEqual(set(entry), propose.DRAFT_FIELDS)
+
+    def test_a_drafted_entry_carrying_either_field_refuses_before_the_write(self):
+        original = propose.draft_entry
+        for field in ATTRIBUTION:
+            def attributed_draft(scoped, field=field):
+                entry = original(scoped)
+                entry[field] = "nobody"
+                return entry
+            propose.draft_entry = attributed_draft
+            try:
+                with self.subTest(field=field):
+                    with self.assertRaises(propose.ProposeError) as caught:
+                        self.draft()
+                    self.assertIn("breaches its schema", str(caught.exception))
+                    self.assertIn("no draft may", str(caught.exception))
+            finally:
+                propose.draft_entry = original
+
+    def test_an_unconfirmed_entry_carrying_either_field_refuses_at_the_schema_check(self):
+        for name in ("unconfirmed-with-person.json", "unconfirmed-with-rule.json"):
+            with self.subTest(fixture=name):
+                existing = reconcile.read_json(self.made[name])
+                with self.assertRaises(propose.ProposeError) as caught:
+                    self.draft(existing)
+                self.assertIn("breaches its schema", str(caught.exception))
+                self.assertIn("nobody has confirmed it", str(caught.exception))
+
+
+class PinnedSetRegenerates(unittest.TestCase):
+    @unittest.skipUnless(
+        PINNED_APP and PINNED_WORKBOOK,
+        "set DOKIMASIA_PINNED_APP and DOKIMASIA_PINNED_WORKBOOK to regenerate "
+        "the pinned set; neither input lives in this repository",
+    )
+    def test_the_pinned_set_regenerates_against_its_own_inputs_byte_for_byte(self):
+        app = Path(PINNED_APP)
+        source = Path(PINNED_WORKBOOK)
+        inventory = inventory_lib.record(
+            inventory_lib.compile_inventory(app), {"label": "wildcat-app-v2"}
+        )
+        log: list[dict] = []
+        cases = workbook_lib.read_cases(source, sheet_log=log)
+        workbook = workbook_lib.record(
+            cases,
+            {"label": source.name,
+             "sha256": hashlib.sha256(source.read_bytes()).hexdigest()},
+            log,
+        )
+        pinned = reconcile.read_json(PINNED_SET)
+        again, counts = propose.propose(
+            inventory, workbook, pinned, pinned["generated_by"]
+        )
+        self.assertEqual(
+            json.dumps(again, indent=2, sort_keys=True) + "\n",
+            PINNED_SET.read_text(encoding="utf-8"),
+        )
+        self.assertEqual(counts["preserved"], 202)
+        self.assertEqual(counts["attributed"], 202)
+        self.assertEqual(counts["replaced"], 59)
+        self.assertEqual(counts["rule_rows"], 1)
 
 
 class ContractCheck(unittest.TestCase):

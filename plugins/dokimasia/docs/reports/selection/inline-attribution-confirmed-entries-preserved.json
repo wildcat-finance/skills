@@ -1,0 +1,9 @@
+{
+  "candidate": "inline-attribution",
+  "command": "python3 plugins/dokimasia/docs/design/build_attribution_design_evidence.py",
+  "criterion": "confirmed-entries-preserved",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
