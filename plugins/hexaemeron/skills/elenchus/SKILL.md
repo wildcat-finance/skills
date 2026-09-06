@@ -390,9 +390,9 @@ only from those fields and reading nothing outside the record. A twelfth member
 takes an amendment to the study that rule came from,
 `docs/elenchus-fixed-and-guarded-record/study.md`, because the rule does not
 authorise a refusal nobody has written down. The other seven refuse an input
-that will not read as one bounded closed object, a parent that cannot be
-soundly derived from the result's own `ref`, and a destination the emitter will
-not write to.
+that will not read as one bounded closed object, a guard absent from the
+changed test files the comparison used, a parent that cannot be soundly derived
+from the result's own `ref`, and a destination the emitter will not write to.
 
 An emitted record establishes what the Promise says and no more. It covers the
 reproduced failure and the named guard. It does not prove the surrounding
