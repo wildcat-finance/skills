@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.26",
+      "version": "1.6.28",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
