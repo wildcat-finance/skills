@@ -185,14 +185,14 @@
     },
     "lint-phylax": {
       "title": "Phylax boundary lint",
-      "argv": ["python3", "plugins/hexaemeron/skills/phylax/scripts/phylax.py", "plugins", "tests"],
+      "argv": ["python3", "plugins/hexaemeron/skills/phylax/scripts/phylax.py", "plugins", "tests", "scripts", "docs"],
       "cwd": ".",
       "kind": "lint",
       "script": "plugins/hexaemeron/skills/phylax/scripts/phylax.py"
     },
     "lint-ephoros": {
       "title": "Ephoros signal lint",
-      "argv": ["python3", "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py", "plugins", "tests"],
+      "argv": ["python3", "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py", "plugins", "tests", "scripts", "docs"],
       "cwd": ".",
       "kind": "lint",
       "script": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
