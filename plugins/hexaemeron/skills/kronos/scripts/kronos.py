@@ -54,8 +54,18 @@ defines the optional declared-inputs block and tests/test_evolution_contract.py
 checks every governed ledger against it; this reads one. `declared_inputs` is
 an object when the ledger declared and null when it did not, and its digest
 covers the rows rather than the block's bytes, so `show` can mark a declaration
-that moved under a held job that did not. A declaration is a claim its ledger's
-owner makes. Nothing here checks that a declared input exists.
+that moved under a held job that did not. `show` prints each candidate's
+declared rows beside its scores, and `declared: none` where the recorded line
+carries no declaration. Every line it writes passes through `emit`, which
+collapses it, so nothing a caller wrote can open a line of its own and spell a
+`declared:` heading no ledger carried. The guarantee is over the lines rather
+than over a list of the values, because five audit rounds each enumerated
+those values and each enumeration was short; a refusal takes the same collapse,
+having quoted a caller's path back with stdout empty. `total` is the exception,
+and it fails closed instead: `show` orders on it before printing, so a value
+that is not a number ends the command rather than reaching the line. A
+declaration is a claim its ledger's owner makes. Nothing here checks that a
+declared input exists.
 
 What this does not do. It records a judgement; it does not make one. An axis
 score is a number the ranking agent supplies, and a basis is prose nobody
@@ -939,6 +949,72 @@ def recorded_declaration(candidate: dict) -> str | None:
     return declared.get("digest") if isinstance(declared, dict) else None
 
 
+def one_line(value) -> str:
+    """One line of recorded text, so nothing printed can open a second line.
+
+    `show` writes a scoreboard's own words at fixed indents, and a reader
+    tells a basis from a declared row by the line each sits on. A line break
+    inside any recorded string would put text somebody supplied at the start
+    of its own line, where it can spell a `declared:` heading no ledger wrote.
+    `park` prints its reason a line at a time for the same reason; this holds
+    the rest of the verb to that rule. Breaks collapse to a space rather than
+    truncating, so every word the record carries still reaches the reader.
+    `splitlines` is the splitter the block reader already uses, so the two
+    agree on what a line break is, U+2028 and U+0085 included.
+    """
+    return " ".join(str(value).splitlines())
+
+
+def emit(line: str, *, stream=None) -> None:
+    """Write one rendered line, collapsed, so it stays one line.
+
+    `one_line` holds one value to one line. This holds a whole rendered line
+    to one, which is a different guarantee, and the difference is what five
+    audit rounds cost. Each of the first four collapsed the caller-controlled
+    values a reader could enumerate, and each enumeration was short: five
+    recorded strings, then four more, then an axis-drift value, then the
+    `--scoreboard` path off argv, which no enumeration of the scoreboard's own
+    fields reaches. A guarantee stated over the values a reader remembered to
+    wrap has to be re-established every time a value is added. A guarantee
+    stated over the lines a verb writes does not, because a value that never
+    reaches this function never reaches the reader either.
+
+    The per-value `one_line` calls below stay. They collapse before `:<24`
+    pads and before a digest is sliced at twelve characters, so they keep a
+    column aligned and a slice honest; this backstops them rather than
+    replacing them.
+    """
+    print(one_line(line), file=stream)
+
+
+def declared_lines(candidate: dict) -> list:
+    """What a recorded candidate declared, as lines for `show` to print.
+
+    The rows are printed in the form the ledger wrote them, because a reader
+    comparing the record against the ledger should not have to translate
+    between two spellings of the same four fields. `none` covers both a line
+    written before the field existed and a ledger that declared nothing, which
+    is the same conflation the drift mark above already makes.
+
+    The fields go through `one_line` even though `declared_rows` already
+    refuses a break in one: a scoreboard read back from disk was not validated
+    by this process, and the caller who could edit it is the one this guards.
+    """
+    declared = candidate.get("declared_inputs")
+    if not isinstance(declared, dict):
+        return ["declared: none"]
+    rows = declared["rows"]
+    lines = [f"declared: {len(rows)} input(s)"]
+    lines.extend(
+        "  " + " | ".join(
+            one_line(row[name])
+            for name in ("id", "kind", "availability", "note")
+        )
+        for row in rows
+    )
+    return lines
+
+
 def drift(passes: list) -> dict:
     """Axis scores that moved for a skill whose held job did not, by pass."""
     seen = {}
@@ -980,14 +1056,20 @@ def declaration_drift(passes: list) -> dict:
 def show(args: argparse.Namespace) -> int:
     scoreboard = Path(args.scoreboard).resolve()
     if not scoreboard.exists():
-        print(f"no scoreboard at {scoreboard}")
+        # Collapsed like every value below it. The path is caller text too, and
+        # this line is the whole output when no scoreboard is there, so a break
+        # in it spells a declaration with no genuine row beneath to contradict.
+        emit(f"no scoreboard at {one_line(scoreboard)}")
         return 0
     passes = existing_passes(scoreboard)
     moved = drift(passes)
     declared_moved = declaration_drift(passes)
     for entry in passes:
         note = "rank-only" if entry.get("rank_only") else (entry.get("run") or "no run recorded")
-        print(f"pass {entry['pass']}  {entry['mode']}  {entry['scope']}  ({note})")
+        emit(
+            f"pass {one_line(entry['pass'])}  {one_line(entry['mode'])}  "
+            f"{one_line(entry['scope'])}  ({one_line(note)})"
+        )
         for candidate in sorted(entry["candidates"], key=lambda c: -c["total"]):
             # A parked candidate outscoring the selected one is the normal case
             # once anything is parked. Without the mark the output reads as
@@ -998,18 +1080,26 @@ def show(args: argparse.Namespace) -> int:
                 mark = "P"
             else:
                 mark = " "
-            axes = " ".join(f"{name}={candidate[name]}" for name, _ in AXES)
-            print(f"  {mark} {candidate['total']:3d}  {candidate['skill']:<24} {axes}")
-            print(f"      {candidate['basis']}")
+            axes = " ".join(f"{name}={one_line(candidate[name])}" for name, _ in AXES)
+            emit(f"  {mark} {candidate['total']:3d}  {one_line(candidate['skill']):<24} {axes}")
+            emit(f"      {one_line(candidate['basis'])}")
+            for line in declared_lines(candidate):
+                emit(f"      {line}")
             for name, before, after in moved.get((entry["pass"], candidate["skill"]), []):
-                print(f"      drift: {name} {before} -> {after}, held job unchanged")
+                # `name` is an AXES constant; the two values came off the disk.
+                emit(
+                    f"      drift: {name} {one_line(before)} -> {one_line(after)},"
+                    " held job unchanged"
+                )
             change = declared_moved.get((entry["pass"], candidate["skill"]))
             if change is not None:
-                was, now = (digest[:12] if digest else "none" for digest in change)
-                print(f"      drift: declaration {was} -> {now}, held job unchanged")
+                # Collapse before the slice: truncating a break at twelve
+                # characters still leaves the break, and the line still splits.
+                was, now = (one_line(digest)[:12] if digest else "none" for digest in change)
+                emit(f"      drift: declaration {was} -> {now}, held job unchanged")
         for name in entry.get("ungoverned", []):
-            print(f"    ungoverned: {name}")
-    print(f"{len(passes)} pass(es), {len(set(moved) | set(declared_moved))} with drift")
+            emit(f"    ungoverned: {one_line(name)}")
+    emit(f"{len(passes)} pass(es), {len(set(moved) | set(declared_moved))} with drift")
     return 0
 
 
@@ -1059,10 +1149,16 @@ def main(argv=None) -> int:
     try:
         return args.handler(args)
     except Refusal as refusal:
-        print(refusal, file=sys.stderr)
+        # A refusal quotes the path it was given, and that path is argv. Six of
+        # them are reachable from `show` alone, and each one printed raw put a
+        # complete `declared:` heading and four-field row on stderr at the exact
+        # indents `show` uses, with stdout empty and nothing genuine to
+        # contradict them. Collapsed through the same chokepoint the verb's own
+        # lines take, for the same reason and with the same words preserved.
+        emit(str(refusal), stream=sys.stderr)
         return 1
     except OSError as exc:
-        print(f"K000: {exc}", file=sys.stderr)
+        emit(f"K000: {exc}", stream=sys.stderr)
         return 1
 
 
