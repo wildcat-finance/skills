@@ -13,6 +13,7 @@
     "vocabulary",
     "counts",
     "closure_ratio",
+    "confirmations",
     "undisposed",
     "unconfirmed",
     "gaps",
@@ -51,7 +52,11 @@
       "required": [
         "dispositions",
         "reason_bytes",
-        "input_bytes"
+        "input_bytes",
+        "person_bytes",
+        "rule_id_bytes",
+        "rule_text_bytes",
+        "rules"
       ],
       "properties": {
         "dispositions": {
@@ -65,6 +70,24 @@
         "input_bytes": {
           "type": "integer",
           "minimum": 1
+        },
+        "person_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The bound on `confirmed_by` and on a rule's `stated_by`."
+        },
+        "rule_id_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rule_text_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rules": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The bound on the number of rows the set's rules table may hold."
         }
       }
     },
@@ -154,6 +177,66 @@
         },
         "closed": {
           "type": "boolean"
+        }
+      }
+    },
+    "confirmations": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Whose judgement the numerator is. `by_person` sums to `disposed`, and `individual` plus every `by_rule.*.applied` equals `disposed`, so the block reconciles with the ratio three ways. Every row of the set's rules table appears in `by_rule`, applied zero times if no entry named it. The canonical digest covers this block, so a changed attribution is a changed record.",
+      "required": [
+        "people",
+        "by_person",
+        "by_rule",
+        "individual"
+      ],
+      "properties": {
+        "people": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The count of distinct `confirmed_by` values across the admitted entries."
+        },
+        "by_person": {
+          "type": "object",
+          "description": "How many admitted entries each person confirmed, keyed by the name the entries carry.",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "by_rule": {
+          "type": "object",
+          "description": "Each rule the set declares, with its text, the person who stated it and how many admitted entries named it.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "text",
+              "stated_by",
+              "applied"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "stated_by": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "applied": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "individual": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Admitted entries confirmed by a named person with no rule: decided one at a time."
         }
       }
     },

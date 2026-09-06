@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://wildcat.finance/schemas/dokimasia/dispositions/v1.json",
   "title": "Dokimasia disposition set",
-  "description": "The reviewer's own artefact: one entry per scoped item a decision has been drafted or made for, written against the exact inventory and workbook digests it was built from. Every entry carries a `confirmed` boolean, and only a confirmed entry is admitted as a disposition; an unconfirmed one is a draft this tool wrote and nobody has agreed to. Closed, so an unknown key is a refusal. Until this version the set was a hand-written input that nothing emitted and nothing validated; `propose` emits it, which brings it under the rule that every emitted record is checked against its committed schema.",
+  "description": "The reviewer's own artefact: one entry per scoped item a decision has been drafted or made for, written against the exact inventory and workbook digests it was built from. Every entry carries a `confirmed` boolean, and only a confirmed entry is admitted as a disposition; an unconfirmed one is a draft this tool wrote and nobody has agreed to. A confirmed entry names the person whose judgement admits it in `confirmed_by`, and may name a `rule` from the set-level `rules` table, where each rule's text and the person who stated it are written once. Closed, so an unknown key is a refusal. `propose` emits the set, which brings it under the rule that every emitted record is checked against its committed schema; it never writes either attribution field.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "inventory_sha256", "workbook_sha256", "dispositions"],
@@ -27,9 +27,33 @@
       "type": "array",
       "maxItems": 40000,
       "items": { "$ref": "#/definitions/entry" }
+    },
+    "rules": {
+      "type": "object",
+      "description": "The rules confirmed entries may name, keyed by a rule id that is one safe path segment of at most 64 bytes. Optional: a set whose every confirmation was made individually declares none. A row nobody applies is reported as applied zero times, not refused. The reconciler bounds the table at 256 rows.",
+      "additionalProperties": { "$ref": "#/definitions/rule" }
     }
   },
   "definitions": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "stated_by"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "The rule as the person who stated it worded it, written once here rather than on every entry confirmed under it. Bound by the reason cap, and refused blank."
+        },
+        "stated_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "The person who stated the rule. A claim the file makes under a person's name, not a verified identity; nothing here signs it."
+        }
+      }
+    },
     "entry": {
       "type": "object",
       "additionalProperties": false,
@@ -63,6 +87,17 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
           "description": "The digest of the entry as it was drafted, recorded so a regeneration can tell an untouched draft from one a person edited. Absent on an entry written by hand, which is never treated as untouched."
+        },
+        "confirmed_by": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "The person whose judgement admits this entry. Required by the reconciler on every confirmed entry and refused on an unconfirmed one; optional here only because the schema cannot state that conditional. Absent, blank or non-string on a confirmed entry refuses by name rather than defaulting, because defaulting a person is the forgery attribution exists to prevent. No generator writes it."
+        },
+        "rule": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "description": "The id of the row in `rules` this entry was confirmed under, when a person applied a stated rule rather than deciding the entry individually. An id the table does not hold refuses. Refused on an unconfirmed entry. No generator writes it."
         }
       }
     }

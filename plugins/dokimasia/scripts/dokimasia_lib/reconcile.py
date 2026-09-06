@@ -13,6 +13,12 @@ disposition. Every entry is checked whatever its confirmation says, so an
 invalid draft refuses now rather than when somebody confirms it; an unconfirmed
 one is then set aside, named in the record and left holding its item undisposed.
 
+A confirmed entry also says whose judgement admitted it. It names a person in
+`confirmed_by` and may name a `rule`, an id into the set's own `rules` table,
+where that rule's text and the person who stated it are written once. A
+confirmed entry naming nobody refuses before it is counted, because a boolean
+anything with write access can flip is not a judgement. See ADR-003.
+
 The closure ratio is the count of scoped items carrying one valid disposition
 over the count of scoped items. It reaches one when the deciding is finished.
 It never says anything passed. See ADR-001.
@@ -22,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from . import schema as schema_lib
@@ -45,9 +52,36 @@ UNREVIEWED_STATUS = "Not Run"
 # entry holds the ratio down exactly as an absent one does. See ADR-002.
 CONFIRMED_FIELD = "confirmed"
 
+# Attribution. A confirmed entry names the person whose judgement admits it,
+# and may name one row of the set-level rules table. A rule row carries the
+# rule's text and the person who stated it, so an entry confirmed under a rule
+# names two people at most and one at least. The person is required and the
+# rule is additional: a rule with no person would attribute a judgement to a
+# sentence. See ADR-003.
+CONFIRMED_BY_FIELD = "confirmed_by"
+RULE_FIELD = "rule"
+RULES_FIELD = "rules"
+RULE_TEXT_FIELD = "text"
+RULE_AUTHOR_FIELD = "stated_by"
+
 MAX_DISPOSITIONS = 40_000
 MAX_REASON_BYTES = 512
 MAX_FILE_BYTES = 8 * 1024 * 1024
+
+# The attribution caps. Each is a parameter of `reconcile` with one of these
+# as its default, never a module-level value a caller lowers in place, which
+# is the pattern S2-R1-01 and S3-R1-03 of the first run recorded. A person's
+# name and a rule's text are strings a reviewer typed that reach the committed
+# coverage record, so each is bounded where it enters.
+MAX_PERSON_BYTES = 128
+MAX_RULE_ID_BYTES = 64
+MAX_RULE_TEXT_BYTES = MAX_REASON_BYTES
+MAX_RULES = 256
+
+# A rule id is one safe segment, the shape a label already takes under the
+# declared evidence root, so an id can become a file name or a heading without
+# a second check.
+SAFE_RULE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 class ReconcileError(Exception):
@@ -173,12 +207,168 @@ def _check_currency(declared: dict, inventory: dict, workbook: dict) -> None:
             )
 
 
-def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
+def _check_rules(
+    declared: dict,
+    max_rules: int,
+    max_rule_id_bytes: int,
+    max_rule_text_bytes: int,
+    max_person_bytes: int,
+) -> dict[str, dict]:
+    """The set's rules table, checked row by row, or a named refusal.
+
+    A table is optional: a set whose every confirmation was made individually
+    declares none. A table that is present is checked in full before any entry
+    is read, so a dangling `rule` id below refuses against a table that is
+    known to be sound. A row nobody applies is not a defect; the record
+    reports it as applied zero times, because a stated rule nobody used is
+    information about the review rather than a fault in the file.
+    """
+    if RULES_FIELD not in declared:
+        return {}
+    table = declared[RULES_FIELD]
+    if not isinstance(table, dict):
+        raise ReconcileError(
+            f"the disposition set's {RULES_FIELD!r} is "
+            f"{type(table).__name__}, not an object keyed by rule id"
+        )
+    if len(table) > max_rules:
+        raise ReconcileError(
+            f"the {RULES_FIELD} table holds {len(table)} rows, over the "
+            f"{max_rules}-row cap"
+        )
+    rules: dict[str, dict] = {}
+    for rule_id, row in table.items():
+        if len(rule_id.encode("utf-8")) > max_rule_id_bytes:
+            raise ReconcileError(
+                f"a rule id in the {RULES_FIELD} table is over the "
+                f"{max_rule_id_bytes}-byte cap"
+            )
+        if not SAFE_RULE_ID.match(rule_id) or rule_id in (".", ".."):
+            raise ReconcileError(
+                f"rule id {rule_id!r} is not one safe segment"
+            )
+        if not isinstance(row, dict):
+            raise ReconcileError(
+                f"rule {rule_id!r} is {type(row).__name__}, not an object"
+            )
+        text = row.get(RULE_TEXT_FIELD, "")
+        if not isinstance(text, str):
+            raise ReconcileError(
+                f"the {RULE_TEXT_FIELD!r} of rule {rule_id!r} is "
+                f"{type(text).__name__}, not a string"
+            )
+        if len(text.encode("utf-8")) > max_rule_text_bytes:
+            raise ReconcileError(
+                f"the {RULE_TEXT_FIELD} of rule {rule_id!r} is over the "
+                f"{max_rule_text_bytes}-byte cap"
+            )
+        if not text.strip():
+            raise ReconcileError(
+                f"rule {rule_id!r} carries no {RULE_TEXT_FIELD}, so nothing "
+                "states what was applied"
+            )
+        author = row.get(RULE_AUTHOR_FIELD, "")
+        if not isinstance(author, str):
+            raise ReconcileError(
+                f"the {RULE_AUTHOR_FIELD!r} of rule {rule_id!r} is "
+                f"{type(author).__name__}, not a string"
+            )
+        if len(author.encode("utf-8")) > max_person_bytes:
+            raise ReconcileError(
+                f"the {RULE_AUTHOR_FIELD} of rule {rule_id!r} is over the "
+                f"{max_person_bytes}-byte cap"
+            )
+        if not author.strip():
+            raise ReconcileError(
+                f"rule {rule_id!r} carries no {RULE_AUTHOR_FIELD}, so nothing "
+                "states whose judgement it is"
+            )
+        rules[rule_id] = {RULE_TEXT_FIELD: text, RULE_AUTHOR_FIELD: author}
+    return rules
+
+
+def _check_attribution(
+    entry: dict,
+    target: str,
+    confirmed: bool,
+    rules: dict[str, dict],
+    max_person_bytes: int,
+) -> tuple[str, str | None]:
+    """The person and the rule a confirmed entry names, or a named refusal.
+
+    Absence is refused rather than defaulted, for the reason ADR-002 gave for
+    `confirmed`: defaulting a person is the exact forgery attribution exists
+    to make impossible. A set confirmed before this field existed therefore
+    refuses on its first confirmed entry, naming the item and the field, and
+    is attributed by a person rather than by this code.
+
+    An unconfirmed entry may carry neither field. A draft that pre-names its
+    confirmer would read as attributed the moment somebody flipped the boolean.
+    """
+    if not confirmed:
+        for field in (CONFIRMED_BY_FIELD, RULE_FIELD):
+            if field in entry:
+                raise ReconcileError(
+                    f"unconfirmed disposition on {target!r} carries {field!r}; "
+                    "nobody has confirmed it, so nothing may say who did"
+                )
+        return "", None
+    if CONFIRMED_BY_FIELD not in entry:
+        raise ReconcileError(
+            f"confirmed disposition on {target!r} carries no "
+            f"{CONFIRMED_BY_FIELD!r} field, so nothing states whose judgement "
+            "admits it"
+        )
+    person = entry[CONFIRMED_BY_FIELD]
+    if not isinstance(person, str):
+        raise ReconcileError(
+            f"the {CONFIRMED_BY_FIELD!r} field on {target!r} is "
+            f"{type(person).__name__}, not a string"
+        )
+    if len(person.encode("utf-8")) > max_person_bytes:
+        raise ReconcileError(
+            f"the {CONFIRMED_BY_FIELD} on {target!r} is over the "
+            f"{max_person_bytes}-byte cap"
+        )
+    if not person.strip():
+        raise ReconcileError(
+            f"the {CONFIRMED_BY_FIELD!r} field on {target!r} is blank, so "
+            "nothing states whose judgement admits it"
+        )
+    if RULE_FIELD not in entry:
+        return person, None
+    rule = entry[RULE_FIELD]
+    if not isinstance(rule, str):
+        raise ReconcileError(
+            f"the {RULE_FIELD!r} field on {target!r} is "
+            f"{type(rule).__name__}, not a string"
+        )
+    if rule not in rules:
+        raise ReconcileError(
+            f"confirmed disposition on {target!r} names rule {rule!r}, which "
+            f"the {RULES_FIELD} table does not hold"
+        )
+    return person, rule
+
+
+def reconcile(
+    inventory: dict,
+    workbook: dict,
+    declared: dict,
+    *,
+    max_person_bytes: int = MAX_PERSON_BYTES,
+    max_rule_id_bytes: int = MAX_RULE_ID_BYTES,
+    max_rule_text_bytes: int = MAX_RULE_TEXT_BYTES,
+    max_rules: int = MAX_RULES,
+) -> dict:
     """The closed coverage record, or a named refusal.
 
     Nothing here decides a disposition. Every one is read from `declared`, and
     an item the reviewer did not answer for stays unanswered and holds the
     ratio below one.
+
+    The four keyword caps bound the attribution strings a reviewer typed. Each
+    defaults to the module value the record's `caps` block reports.
     """
     if declared.get("schema") != DISPOSITIONS_SCHEMA:
         raise ReconcileError(
@@ -186,6 +376,9 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
             f"not {DISPOSITIONS_SCHEMA!r}"
         )
     _check_currency(declared, inventory, workbook)
+    rules = _check_rules(
+        declared, max_rules, max_rule_id_bytes, max_rule_text_bytes, max_person_bytes
+    )
 
     scoped = scoped_set(inventory, workbook)
     known = {entry["id"] for entry in scoped}
@@ -208,6 +401,11 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
     # beside the two lists because the duplicate check runs once per entry
     # and the declared cap admits 40,000 of them.
     answered: set[str] = set()
+    # Who confirmed what, counted inside this one pass. A person and a rule
+    # are each a dictionary increment, never a second walk of the entries.
+    by_person: dict[str, int] = {}
+    applied: dict[str, int] = {rule_id: 0 for rule_id in rules}
+    individual = 0
     for entry in entries:
         target = entry.get("item", "")
         if target not in known:
@@ -309,6 +507,11 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
                 f"the {CONFIRMED_FIELD!r} field on {target!r} is "
                 f"{type(confirmed).__name__}, not a boolean"
             )
+        # Read after the boolean, because attribution is a claim about a
+        # confirmation and an unconfirmed entry has none to attribute.
+        person, rule = _check_attribution(
+            entry, target, confirmed, rules, max_person_bytes
+        )
         decided = {
             "item": target,
             "disposition": verdict,
@@ -318,6 +521,11 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
         answered.add(target)
         if confirmed:
             assigned[target] = decided
+            by_person[person] = by_person.get(person, 0) + 1
+            if rule is None:
+                individual += 1
+            else:
+                applied[rule] += 1
         else:
             unconfirmed.append(decided)
 
@@ -350,6 +558,10 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
             "dispositions": MAX_DISPOSITIONS,
             "reason_bytes": MAX_REASON_BYTES,
             "input_bytes": MAX_FILE_BYTES,
+            "person_bytes": max_person_bytes,
+            "rule_id_bytes": max_rule_id_bytes,
+            "rule_text_bytes": max_rule_text_bytes,
+            "rules": max_rules,
         },
         "vocabulary": list(DISPOSITIONS),
         "counts": {
@@ -371,6 +583,22 @@ def reconcile(inventory: dict, workbook: dict, declared: dict) -> dict:
             "denominator": denominator,
             "value": (numerator / denominator) if denominator else 0.0,
             "closed": numerator == denominator and denominator > 0,
+        },
+        # Whose judgement the numerator is. `by_person` sums to `disposed`,
+        # and so do `individual` and the applied counts together, so a reader
+        # can reconcile the block against the ratio without trusting it.
+        "confirmations": {
+            "people": len(by_person),
+            "by_person": {name: by_person[name] for name in sorted(by_person)},
+            "by_rule": {
+                rule_id: {
+                    RULE_TEXT_FIELD: rules[rule_id][RULE_TEXT_FIELD],
+                    RULE_AUTHOR_FIELD: rules[rule_id][RULE_AUTHOR_FIELD],
+                    "applied": applied[rule_id],
+                }
+                for rule_id in sorted(rules)
+            },
+            "individual": individual,
         },
         "undisposed": undisposed,
         "unconfirmed": unconfirmed,
@@ -460,7 +688,77 @@ def check() -> list[str]:
     if counts["undisposed"] != counts["unconfirmed"]:
         failures.append("an unconfirmed entry was counted as answering for its item")
 
+    # Whose judgement the numerator is. The block reconciles with `disposed`
+    # three ways, a rule nobody applied reports zero, and every admitted entry
+    # is attributed, because an unattributed one refuses before it is counted.
+    for label, made in (("closed", closed), ("mixed", mixed)):
+        block = made["confirmations"]
+        disposed = made["counts"]["disposed"]
+        if block["people"] != len(block["by_person"]):
+            failures.append(f"the {label} fixture's people count is not its by_person size")
+        if sum(block["by_person"].values()) != disposed:
+            failures.append(f"the {label} fixture's by_person does not sum to disposed")
+        applied = sum(row["applied"] for row in block["by_rule"].values())
+        if block["individual"] + applied != disposed:
+            failures.append(
+                f"the {label} fixture's individual and applied counts do not sum to disposed"
+            )
+        if block["people"] < 2 or block["individual"] == 0 or applied == 0:
+            failures.append(f"the {label} fixture exercises only one attribution shape")
+        if not any(row["applied"] == 0 for row in block["by_rule"].values()):
+            failures.append(f"the {label} fixture holds no rule applied to nothing")
+        for rule_id, row in block["by_rule"].items():
+            if not row[RULE_TEXT_FIELD].strip() or not row[RULE_AUTHOR_FIELD].strip():
+                failures.append(f"rule {rule_id!r} reached the record without its text or author")
+    if drafted["confirmations"] != {
+        "people": 0,
+        "by_person": {},
+        "by_rule": {
+            rule_id: {**row, "applied": 0}
+            for rule_id, row in closed["confirmations"]["by_rule"].items()
+        },
+        "individual": 0,
+    }:
+        failures.append("an all-unconfirmed set attributed something to somebody")
+
+    # A moved attribution is a moved record: the canonical digest covers the
+    # block, so the same dispositions under a different name do not agree.
+    renamed = read_json(root / "closed.json")
+    for entry in renamed["dispositions"]:
+        if entry.get(CONFIRMED_BY_FIELD):
+            entry[CONFIRMED_BY_FIELD] = "Somebody Else"
+            break
+    if coverage_digest(reconcile(inventory, workbook, renamed)) == coverage_digest(closed):
+        failures.append("a changed attribution left the coverage digest unchanged")
+
+    # Each cap at its bound is admitted; one over it refuses below.
+    for name in (
+        "person-at-cap.json", "author-at-cap.json", "rule-text-at-cap.json",
+        "rule-id-at-cap.json", "rules-at-cap.json",
+    ):
+        try:
+            reconcile(inventory, workbook, read_json(root / name))
+        except ReconcileError as error:
+            failures.append(f"{name} sits at its cap and refused: {error}")
+
     hostile = {
+        "confirmed-without-person.json": "carries no 'confirmed_by'",
+        "blank-person.json": "is blank",
+        "non-string-person.json": "not a string",
+        "unknown-rule.json": "the rules table does not hold",
+        "non-string-rule.json": "not a string",
+        "rule-without-text.json": "carries no text",
+        "rule-without-author.json": "carries no stated_by",
+        "rules-not-object.json": "not an object",
+        "unsafe-rule-id.json": "not one safe segment",
+        "unconfirmed-with-person.json": "unconfirmed disposition",
+        "unconfirmed-with-rule.json": "unconfirmed disposition",
+        "prior-shape.json": "carries no 'confirmed_by'",
+        "person-over-cap.json": "over the",
+        "author-over-cap.json": "over the",
+        "rule-text-over-cap.json": "over the",
+        "rule-id-over-cap.json": "over the",
+        "rules-over-cap.json": "over the",
         "missing-confirmed.json": "carries no 'confirmed'",
         "non-boolean-confirmed.json": "not a boolean",
         "unconfirmed-case-covered-by-itself.json": "cannot be covered",
