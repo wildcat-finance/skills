@@ -1,7 +1,7 @@
 # Dokimasia runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Dokimasia.** Dokimasia defines the boundary for compiling a frontend's routes, actions and access guards into a coverage denominator and reconciling a reviewed UAT workbook against it, so every scoped item carries exactly one disposition. Every declared verb is built. Use Horos to decide what an agent does not read, Hexaemeron Fizz to fuzz a contract, and Synkrisis to compare agent runs. None of them compiles a frontend inventory or holds an oracle. **Current frontier:** Dokimasia drafts a complete disposition set a reviewer edits rather than authors, and admits only the entries a person confirmed. The pinned scrutiny of `wildcat-app-v2` at `bb9685fb` closes at 202 over 261, drawn entirely from confirmed entries, with `covered` at zero. What the record cannot say is who confirmed those 202 or under what rule.
+> **Marketplace context: Dokimasia.** Dokimasia defines the boundary for compiling a frontend's routes, actions and access guards into a coverage denominator and reconciling a reviewed UAT workbook against it, so every scoped item carries exactly one disposition. Every declared verb is built. Use Horos to decide what an agent does not read, Hexaemeron Fizz to fuzz a contract, and Synkrisis to compare agent runs. None of them compiles a frontend inventory or holds an oracle. **Current frontier:** Dokimasia admits a confirmed entry only when it names the person who confirmed it and, where a rule was applied, a row in the set's `rules` table stating that rule and who stated it, and its coverage and scrutiny records report confirmations by person and by rule. The pinned scrutiny of `wildcat-app-v2` at `bb9685fb` still closes at 202 over 261 with `covered` at zero, now attributed to one person under one stated rule. Every one of those entries was drafted from the workbook; none records anything observed in the running application.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -38,8 +38,12 @@ A host that cannot preserve the right-hand column cannot run the skill.
 
 ## What this plugin does not yet do
 
-It compiles no inventory, imports no workbook, records no disposition and emits
-no coverage record. In the completed design it will also execute nothing: it
-reads a pinned checkout and never runs the application, drives no browser,
-holds no signing key and reaches no chain. The harness that executes a release
-belongs to the application repository.
+It executes nothing. It reads a pinned checkout and never runs the application,
+drives no browser, holds no signing key and reaches no chain, so no disposition
+it drafts records anything observed in the running application: every drafted
+entry comes from the workbook or the compiled inventory, and only a person's
+confirmation, under that person's name and any rule they applied, admits it to
+a closure ratio. It does not verify that a named person agreed; the name is a
+claim the disposition set makes. It never drafts `covered`, and it cannot
+confirm an entry on its own. The harness that executes a release belongs to the
+application repository.
