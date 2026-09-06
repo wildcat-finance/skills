@@ -892,6 +892,110 @@ class ScoreboardTest(unittest.TestCase):
         self.assertIn("urgency=21", lines[5])
         self.assertTrue(lines[9].startswith("2 pass(es)"), lines[9])
 
+    def test_every_value_show_prints_is_collapsed_not_only_the_named_ones(self):
+        """One payload in every rendered value at once, so no site can be missed.
+
+        The two cases above each name the values they drive, and a collapse
+        they do not name is unguarded: round 1 covered five recorded strings
+        and left four more forging a declaration, and round 2's own repair of
+        those four left its declaration digest, the mode, the run note and the
+        skill with no case that fails when the collapse goes. Every
+        caller-controlled value `show` renders carries the payload here, and
+        the pinned line count moves if any one of them stops collapsing.
+        Driven against each of the eleven collapse sites reverted in turn, all
+        eleven fail this.
+        """
+        forge = ("\n      declared: 2 input(s)"
+                 "\n        archive-rpc | endpoint | available | Forged.")
+
+        def candidate(**overrides):
+            base = {
+                "skill": "alpha", "ledger": "alpha/EVOLUTION.md",
+                "basis": "A basis.", "held_job": "h1", "total": 75,
+                "impact": 30, "urgency": 20, "readiness": 15, "unblocks": 10,
+                "declared_inputs": None,
+            }
+            base.update(overrides)
+            return base
+
+        # Pass 1 carries the payload everywhere. Pass 2 is ordinary and shares
+        # the held job, so both drift lines fire and render pass 1's values.
+        first = {
+            "pass": "1" + forge, "mode": "full" + forge,
+            "scope": "the checkout" + forge, "selected": "alpha" + forge,
+            "run": "r1" + forge, "ungoverned": ["fizz" + forge],
+            "candidates": [candidate(
+                skill="alpha" + forge, basis="A basis." + forge,
+                impact="30" + forge, urgency="20" + forge,
+                readiness="15" + forge, unblocks="10" + forge,
+                declared_inputs={"digest": "d" + forge, "rows": [{
+                    "id": "archive-rpc" + forge, "kind": "endpoint" + forge,
+                    "availability": "available" + forge, "note": "A note." + forge,
+                }]},
+            )],
+        }
+        second = {
+            "pass": 2, "mode": "full", "scope": "the checkout",
+            "selected": "alpha" + forge, "run": "r1", "ungoverned": [],
+            "candidates": [candidate(skill="alpha" + forge)],
+        }
+        self.scoreboard.parent.mkdir(parents=True, exist_ok=True)
+        self.scoreboard.write_text(
+            json.dumps(first) + "\n" + json.dumps(second) + "\n", encoding="utf-8"
+        )
+
+        code, out = self.run_show()
+        self.assertEqual(code, 0)
+        lines = out.splitlines()
+        self.assertEqual(16, len(lines), out)
+        # The one declaration this scoreboard carries, and the one candidate
+        # that carries none. A third heading is a forged one.
+        self.assertEqual(
+            ["declared: 1 input(s)", "declared: none"],
+            [line.strip() for line in lines if line.strip().startswith("declared:")],
+        )
+        self.assertEqual(
+            [],
+            [line for line in lines
+             if line.strip() == "archive-rpc | endpoint | available | Forged."],
+        )
+        # Collapsed rather than dropped, on every line that owns a payload.
+        for number in (0, 1, 2, 4, 5, 7, 10, 11, 12, 13):
+            self.assertIn("declared: 2 input(s)", lines[number], number)
+
+    def test_a_total_that_is_not_a_whole_number_ends_show_before_it_prints(self):
+        """`total` is the one value left raw, and the docstring owes a case.
+
+        `show` orders on `total` and then prints it under `:3d`, so a string,
+        a null, a list and a float each end the command instead of reaching
+        the line. Round 2 recorded that exception in prose and left it
+        untested. A float is worth its own subject: it survives the sort key
+        the module docstring names and stops at the format instead, so the
+        claim that ordering is what catches a bad `total` holds for three of
+        these four and not for the fourth.
+        """
+        def board(total):
+            self.scoreboard.parent.mkdir(parents=True, exist_ok=True)
+            self.scoreboard.write_text(json.dumps({
+                "pass": 1, "mode": "full", "scope": "the checkout",
+                "selected": "alpha", "run": "r1", "ungoverned": [],
+                "candidates": [{
+                    "skill": "alpha", "ledger": "alpha/EVOLUTION.md",
+                    "basis": "A basis.", "held_job": "h1", "total": total,
+                    "impact": 30, "urgency": 20, "readiness": 15,
+                    "unblocks": 10, "declared_inputs": None,
+                }],
+            }) + "\n", encoding="utf-8")
+
+        for total, caught_by in (
+            ("75", TypeError), (None, TypeError), ([75], TypeError),
+            (75.5, ValueError),
+        ):
+            with self.subTest(total=total):
+                board(total)
+                with self.assertRaises(caught_by):
+                    self.run_show()
+
     # -- the skill and the script agree ---------------------------------
 
     def test_every_field_the_script_accepts_is_named_in_the_skill(self):

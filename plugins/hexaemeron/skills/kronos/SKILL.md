@@ -237,9 +237,12 @@ that moved for a candidate whose held job did not. A declaration digest that
 moved under an unchanged held job is marked the same way. A `none` on either
 side of that mark says the pass recorded no declaration, which a line written
 before the field existed and a ledger declaring nothing both produce. Every
-recorded string it prints is collapsed to one line first, so a scope, skill,
-basis, run or declared row cannot open a line of its own and spell a
-`declared:` heading no ledger wrote.
+recorded value it prints is collapsed to one line first -- the pass number,
+mode, scope and run note, each candidate's skill, basis, axis scores and
+declared rows, an ungoverned name, and both drift lines' values -- so nothing a
+caller wrote can open a line of its own and spell a `declared:` heading no
+ledger wrote. `total` is the exception: `show` orders on it before printing, so
+a value that is not an integer ends the command rather than reaching the line.
 
 The scoreboard records a judgement; it does not make one. Every score and basis
 is still the ranking's own work, and a loop that skips the writer leaves a
