@@ -389,11 +389,14 @@ class StagingTests(unittest.TestCase):
         self.assertEqual(checkpoint["format"], CHECKPOINT_FORMAT)
         self.assertEqual(checkpoint["next_shard"], 2)
         self.assertEqual(checkpoint["last_accepted"], {"block_hash": HASH, "block_number": "1001"})
-        self.assertEqual(set(checkpoint["offsets"]), set(EVIDENCE_CLASSES))
+        self.assertEqual(set(checkpoint["offsets"]), set(EVIDENCE_CLASSES) | {"epoch-evidence"})
         self.assertEqual(checkpoint["plan_sha256"], plan_digest(self.plan))
         self.assertEqual(checkpoint["records"], 6)
         for name, offset in checkpoint["offsets"].items():
-            self.assertEqual(offset, (self.root / "journals" / f"{name}.jsonl").stat().st_size)
+            journal = self.root / "journals" / f"{name}.jsonl"
+            # The opening journal is opened only once the last shard has
+            # committed, so before that its committed offset is zero.
+            self.assertEqual(offset, journal.stat().st_size if journal.is_file() else 0)
 
     def test_resume_without_a_checkpoint_starts_at_zero_and_discards_orphans(self):
         with Staging(self.root, self.plan) as staging:
@@ -461,7 +464,7 @@ class StagingTests(unittest.TestCase):
             with self.assertRaisesRegex(AlexandriaError, "'traces' is not declared by the plan"):
                 staging.record(0, "traces", b"{}", b"{}")
             checkpoint = staging.commit(0, 1024, HASH)
-        self.assertEqual(set(checkpoint["offsets"]), {"boundary-blocks", "logs"})
+        self.assertEqual(set(checkpoint["offsets"]), {"boundary-blocks", "logs", "epoch-evidence"})
         self.assertFalse((self.root / "journals" / "traces.jsonl").exists())
         with Staging(self.root, declared) as staging:
             state = staging.resume()
