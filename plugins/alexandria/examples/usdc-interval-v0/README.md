@@ -22,7 +22,7 @@ the recorded summary, with `expected.json`.
 Five shards of twenty blocks over the Ethereum USDC Comet's declared interval,
 one implementation epoch covering all of it, an agreement between the two
 providers, and release
-`sha256:d286ba9f58a2ed6689957a763dfbd45decf54b3b6391db5aff37cf25dcfaa11d`. Two
+`sha256:5d0762677e64ed899cf6466f7dc2cc9a343931c8e0f972bc9a35fafa690f2de0`. Two
 builds of the same fixtures agree byte for byte.
 
 ## What it does not establish
