@@ -208,8 +208,8 @@ Add the specimen marketplace, then install the member that owns your task.
 
 ## A DATED MEASUREMENT
 
-Measured on 2026-01-01 over one install: the update command left
-<!-- front-door:historical captured="2026-01-01" figure="two" -->two plugins
+Measured on 2026-01-01 over one install: the update command
+left <!-- front-door:historical captured="2026-01-01" figure="two" -->two plugins
 pinned at their old commit. That figure describes that day and no other.
 """,
     "FUTUREPROOFING.md": """# FUTUREPROOFING THE SPECIMEN COLLECTIVE
@@ -493,8 +493,8 @@ PROVOCATIONS = {
         "",
     ),
     "FD03": lambda: broken(
-        "A synthetic front door for a synthetic tree. It holds",
-        FILLER + "\nA synthetic front door for a synthetic tree. It holds",
+        "A synthetic front door for a synthetic tree. It",
+        FILLER + "\nA synthetic front door for a synthetic tree. It",
     ),
     "FD04": lambda: broken(
         "## SO, YOU WANT TO BUILD GOD?", "## SO, YOU WANT TO BUILD"
@@ -521,8 +521,8 @@ PROVOCATIONS = {
         "The shared law between",
     ),
     "FD10": lambda: broken(
-        "[The catalogue](./FUTUREPROOFING.md) lists every member, including the",
-        "The catalogue lists every member, including the",
+        "[The catalogue](./FUTUREPROOFING.md) lists every member, including",
+        "The catalogue lists every member, including",
     ),
     "FD11": lambda: broken("## WHAT A RESULT MEANS", "## What a result means"),
     "FD12": lambda: broken(
@@ -581,9 +581,9 @@ PROVOCATIONS = {
     ),
     "FD29": lambda: broken(
         '<!-- front-door:count key="governed" -->{{count:governed}} governed'
-        " skills in",
+        " skills",
         '<!-- front-door:count key="plugins" -->{{count:plugins}} governed'
-        " skills in",
+        " skills",
     ),
     "FD30": lambda: broken(
         "## WHAT A RESULT MEANS",
@@ -602,8 +602,14 @@ PROVOCATIONS = {
     # changed. A callable returning overrides names its own page instead.
     "FD34": lambda: broken(
         "## WHAT A RESULT MEANS",
-        '<!-- front-door:historical captured="2026-01-01" figure="99" -->99'
+        'Counted <!-- front-door:historical captured="2026-01-01" figure="99" -->99'
         " plugins were counted.\n\n## WHAT A RESULT MEANS",
+    ),
+    # The README's own defect: three count markers began their lines, and
+    # GitHub rendered the prose after each as a detached line.
+    "FD38": lambda: broken(
+        'It\nholds <!-- front-door:count key="governed" -->',
+        'It holds\n<!-- front-door:count key="governed" -->',
     ),
     "FD35": lambda: {
         "plugins/lantern/README.md": LANDING.format(
@@ -802,9 +808,9 @@ class AuditRoundOneTests(unittest.TestCase):
         codes = body_codes(
             broken(
                 '<!-- front-door:count key="governed" -->{{count:governed}} '
-                "governed skills in",
+                "governed skills",
                 '<!-- front-door:count key="plugins" -->{{count:plugins}} '
-                "governed skills in",
+                "governed skills",
             )
         )
         self.assertIn("FD29", codes)
@@ -823,8 +829,8 @@ class AuditRoundOneTests(unittest.TestCase):
         """A spelled-out number asserted a derived quantity and escaped."""
         codes = body_codes(
             broken(
-                "A synthetic front door for a synthetic tree. It holds",
-                "A synthetic front door holding thirty governed skills. It holds",
+                "A synthetic front door for a synthetic tree. It",
+                "A synthetic front door holding thirty governed skills. It",
             )
         )
         self.assertIn("FD28", codes)
