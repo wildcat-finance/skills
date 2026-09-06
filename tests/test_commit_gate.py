@@ -1843,11 +1843,13 @@ SHIPPED_RUNBOOK = SHIPPED / "runbook.md"
 SHIPPED_RECORD = SHIPPED / "design-evidence.json"
 SHIPPED_REPORTS = SHIPPED / "reports"
 
-# The counts in the bytes this step ships, as literals. They are not the counts
-# at the step's entry any more: a study amendment corrected the report count in
-# the mapping paragraph (S4-R1-05), the runbook re-issue that rebound this
-# step's contract to the corrected study added a block of its own, and the
-# copies were refreshed again with both literals moving with them.
+# The counts in the bytes this step ships, as literals. The runbook count is
+# not the count at this step's entry any more, and has moved three times
+# inside the step: the amendment carrying audit finding S4-R1-03 into step 5
+# added a block, the one correcting this step's Exit for S5-R1-04 added
+# another, and the one putting the bypass paragraph in scope for S5-R3-02
+# added a third. The copy was refreshed onto each. The study count stands
+# where step 4 left it, its source unchanged since.
 #
 # Recomputing them from `.hexaemeron/` would agree with a stale copy by
 # construction, because the comparison would read the source the copy is
@@ -1855,7 +1857,7 @@ SHIPPED_REPORTS = SHIPPED / "reports"
 # staleness matters, since `.hexaemeron/.gitignore` is `*` and nothing under
 # that directory is tracked.
 STUDY_AMENDMENTS = 9
-RUNBOOK_AMENDMENTS = 13
+RUNBOOK_AMENDMENTS = 16
 
 AMENDMENT_HEADING = re.compile(r"^### Amendment --", re.MULTILINE)
 CONTROLLER_REFERENCE = re.compile(r"\.hexaemeron/[A-Za-z0-9_./-]*")
@@ -2083,6 +2085,126 @@ class ShippedCopyTests(unittest.TestCase):
             f"the shipped record does not carry exactly one row per declared "
             f"criterion for {selected}, the design the run selected, so a row "
             f"this copy is evidence about has been dropped or moved: {gaps}",
+        )
+
+
+# --- the run that answered the acceptance conditions -----------------------
+#
+# The five conditions the study sets are answered by one observed run on a
+# clone that had never seen the gate, and `demonstration.md` is where a later
+# reader finds what that run actually did. These cases hold the record rather
+# than the run: they do not clone the repository or drive the gate again, which
+# costs two full suites and the better part of a quarter of an hour.
+#
+# What they can hold is the property that makes the record worth reading. It
+# reports commands, and a command reported without its exit code is a claim
+# again, which is the thing this step exists to replace. So every command the
+# record names in its own prose has to appear in the transcript table with a
+# code beside it -- every command the recogniser below admits, which is a
+# closed set of leading words rather than every command there is.
+
+DEMONSTRATION = SHIPPED / "demonstration.md"
+
+# The conditions as the study numbers them, by the words each one turns on.
+# Matching the number alone would pass on a record that lists five headings and
+# answers none of them.
+ACCEPTANCE_CONDITIONS = {
+    1: "where the gate lives",
+    2: "survives a clone and absence is visible",
+    3: "green tree against untested tree",
+    4: "deliberate escape hatch",
+    5: "index-mutation regression on the hook path",
+}
+
+CONDITION_HEADING = "### Acceptance condition {number}, {name}"
+
+# A backticked span is a command when it starts the way this run's commands
+# start. `.githooks/greenlight` takes no arguments and is still one, which is
+# why it is named exactly; `.githooks/pre-commit` and the document paths beside
+# it are files rather than commands, and a prefix list leaves them out where
+# "anything holding a slash" would not.
+#
+# S5-R1-02: the list is closed, so a command the record names under any other
+# leading word is invisible to the case below and can be reported with no exit
+# code at all. The record already carries one, the timing driver
+# `metron_commit_overhead.py`, whose exit its measurement section gives in
+# prose rather than as a transcript row. `ls ` is here because the transcript
+# already uses it, at the row that answers acceptance condition 1; measured, a
+# prose mention of `ls -la docs` with no row left the case green before it was
+# added, while `git status` and another `python3 -m unittest` each turned it
+# red.
+COMMAND_PREFIXES = ("git ", "python3 ", "FIAT_SKIP_PRECOMMIT=1 ", "ls ")
+COMMAND_EXACT = (".githooks/greenlight",)
+
+# Output quoted from the run goes in a fenced block, and nothing in a fenced
+# block is read as a command the record is reporting. The gate's own refusal
+# names `.githooks/greenlight` inside the message it prints, and that is the
+# hook talking rather than the record naming something it ran.
+FENCED_BLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+INLINE_CODE = re.compile(r"`([^`\n]+)`")
+TRANSCRIPT_ROW = re.compile(
+    r"^\|\s*\d+\s*\|\s*`(?P<command>[^`]+)`\s*\|\s*(?P<exit>\d+)\s*\|",
+    re.MULTILINE,
+)
+
+
+def demonstration_text() -> str:
+    return DEMONSTRATION.read_text(encoding="utf-8")
+
+
+def reported_commands(text: str) -> set[str]:
+    """Every command the record names outside its quoted output."""
+    prose = FENCED_BLOCK.sub("", text)
+    found = set()
+    for span in INLINE_CODE.findall(prose):
+        span = span.strip()
+        if span in COMMAND_EXACT or span.startswith(COMMAND_PREFIXES):
+            found.add(span)
+    return found
+
+
+class DemonstrationRecordTests(unittest.TestCase):
+    """The record of that run, held to reporting a run rather than a claim."""
+
+    def test_the_demonstration_record_is_here(self):
+        self.assertTrue(
+            DEMONSTRATION.is_file(),
+            f"{DEMONSTRATION} is missing, so the five conditions are answered "
+            "by the study saying what a run would show and by nothing else",
+        )
+        self.assertTrue(
+            demonstration_text().strip(), f"{DEMONSTRATION} is empty"
+        )
+
+    def test_it_answers_every_acceptance_condition(self):
+        text = demonstration_text()
+        missing = [
+            CONDITION_HEADING.format(number=number, name=name)
+            for number, name in ACCEPTANCE_CONDITIONS.items()
+            if CONDITION_HEADING.format(number=number, name=name) not in text
+        ]
+        self.assertEqual(
+            missing, [],
+            f"{DEMONSTRATION} does not answer every condition the study sets, "
+            "so a reader cannot tell whether the ones it leaves out were "
+            f"observed, refused or forgotten: {missing}",
+        )
+
+    def test_every_command_it_reports_carries_an_exit_code(self):
+        text = demonstration_text()
+        rows = TRANSCRIPT_ROW.findall(text)
+        self.assertTrue(
+            rows,
+            f"{DEMONSTRATION} carries no transcript row at all, so nothing in "
+            "it is a command with a code beside it",
+        )
+        recorded = {command.strip() for command, _ in rows}
+        uncoded = sorted(reported_commands(text) - recorded)
+        self.assertEqual(
+            uncoded, [],
+            f"{DEMONSTRATION} names commands its transcript reports no exit "
+            "code for, which is the claim this record exists to replace: "
+            f"{uncoded}",
         )
 
 
