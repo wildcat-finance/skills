@@ -269,3 +269,13 @@ reverses no decision.
 **Steps touched.** Step 2.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Exit: `plugins/hexaemeron/skills/elenchus/SKILL.md` carries one new section that names the emitter, its two inputs, its output, the nine fields, the four refusals a caller meets most, and what an emitted record does not establish; `## Hand back` gains one sentence pointing at it, and no other section changes. `plugins/hexaemeron/skills/elenchus/EVOLUTION.md` carries `elenchus-v1.4.0` as current version and one new `generation` history row whose frontier revision `observed-failure-root-cause`, frontier SHA-256 `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b`, `Frontier status: mature` and `Next Fiat job: None -- mature` are byte-identical to `elenchus-v1.3.0`. Hexaemeron re-pins from `1.6.24` to `1.6.26` in six places: `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` state the version, and `tests/test_version_propagation.py` and `plugins/hexaemeron/tests/test_phylax_model_proxy.py` pin the expectation those four agree on, so an installed copy is offered the changed skill file. The chosen number is a checked property rather than a frozen literal: it must exceed every hexaemeron version claimed by any local or remote ref, it is re-checked immediately before the run's integration push, and a collision found by that check moves all six places to the next free number without a further amendment. `docs/elenchus-fixed-and-guarded-record/runbook.md` and `docs/elenchus-fixed-and-guarded-record/study.md` are byte-identical to the controller artefacts. Proved by `python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/elenchus/SKILL.md` reporting clean, and by `python3 scripts/run_checks.py --base origin/main` at exit zero on the committed tree.
+
+**Why.** Warden finding S2-R2-02 in round 2 of step 2. Run 1276 already carried `1.6.25` on its own step-4 branches. Both runs make the identical edit in all six places, so `git merge-tree` reports no conflict on any of them, and the tree that lands second ships a changed skill file under a version an installed copy has already been offered, which is the outcome the re-pin exists to prevent. No test in this repository reports it. Naming the number as a checked property rather than a literal is what stops the next concurrent run reproducing the same collision against a frozen value.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
