@@ -1,11 +1,18 @@
 {
   "counts": {
     "bytes_asset": 138,
-    "bytes_binary": 11,
+    "bytes_binary": 3435006,
     "bytes_blob": 20115554,
     "bytes_generated": 98
   },
   "entries": [
+    {
+      "bytes": 3434995,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "assets/build_our_machine.mp4"
+    },
     {
       "bytes": 389658,
       "category": "blob",
