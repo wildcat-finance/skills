@@ -43,12 +43,6 @@
       "suffix": ".jsonl"
     },
     {
-      "boundary_bytes": 0,
-      "bytes": 3434995,
-      "files": 1,
-      "suffix": ".mp4"
-    },
-    {
       "boundary_bytes": 949,
       "bytes": 522784,
       "files": 94,
@@ -195,6 +189,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 103456450,
-  "total_files": 2777
+  "total_bytes": 100021455,
+  "total_files": 2776
 }
