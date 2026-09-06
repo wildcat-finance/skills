@@ -20,6 +20,14 @@ must be one of:
 - `audit-round`, while the same step is open at the controller's active
   `audit-verdict`, with `last_local_commit(step)` as the working commit.
 
+One immediate `checkpoint:restore` tail is transparent only when its closed
+receipt reconstructs the exact imported ledger prefix and producer state. The
+source state digest, source ledger digest and tail, relocation paths, relocated
+state fingerprint, and fixed ref map must all join. The imported prefix must
+itself end at one of the two boundaries above and must contain no prior restore. Identity projects
+that prefix and its producer state, so a fresh-checkout receiver emits the exact
+producer bytes and `snapshot_id`.
+
 The working commit must exist locally and descend from the anchor's
 `initial_base_sha`. The step number comes from the ledger tail. A later
 controller receipt closes the earlier boundary.
@@ -37,6 +45,11 @@ be a non-empty, newline-terminated exact prefix within the controller file
 ceiling. Every line is strict UTF-8 JSON with no duplicate key, the chain must
 recompute, and the tail state must equal the captured state fingerprint. The
 helper opens no path and writes nothing.
+
+When the captured tail is `checkpoint:restore`, the helper validates and removes
+only that one relocation layer before applying the same boundary classifier.
+It does not skip a second restore anywhere in the prefix, another suffix entry,
+an altered prefix, or an unowned state-path delta.
 
 `evidence` is exactly:
 
@@ -183,11 +196,14 @@ The command refuses before stdout when:
 - the immutable base or run anchor is absent, unbound, malformed or mismatched;
 - the tail is outside the two checkpoint boundaries, its step is ambiguous,
   or its final local commit is missing or unreceipted;
+- a restore tail has an open or altered shape, does not join the exact imported
+  prefix and relocated state, changes anything outside the owned path delta,
+  substitutes a ref, or follows another restore or suffix;
 - policy, source, observation, ref, repository, commit or ancestry evidence is
   malformed, incomplete or disagrees with the captured run; or
 - state, ledger, source bytes, observation bytes or Git evidence changes during
   the stable-read sequence.
 
 Refusal does not change state, ledger, Git or filesystem bytes. Native
-`checkpoint export` and `checkpoint restore` retain their existing legacy
-behavior and transport meaning.
+`checkpoint export` and `checkpoint restore` retain their transport meaning.
+No intra-step or non-exhausted audit state becomes a checkpoint.
