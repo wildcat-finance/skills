@@ -54,8 +54,10 @@ defines the optional declared-inputs block and tests/test_evolution_contract.py
 checks every governed ledger against it; this reads one. `declared_inputs` is
 an object when the ledger declared and null when it did not, and its digest
 covers the rows rather than the block's bytes, so `show` can mark a declaration
-that moved under a held job that did not. A declaration is a claim its ledger's
-owner makes. Nothing here checks that a declared input exists.
+that moved under a held job that did not. `show` prints each candidate's
+declared rows beside its scores, and `declared: none` where the recorded line
+carries no declaration. A declaration is a claim its ledger's owner makes.
+Nothing here checks that a declared input exists.
 
 What this does not do. It records a judgement; it does not make one. An axis
 score is a number the ranking agent supplies, and a basis is prose nobody
@@ -939,6 +941,27 @@ def recorded_declaration(candidate: dict) -> str | None:
     return declared.get("digest") if isinstance(declared, dict) else None
 
 
+def declared_lines(candidate: dict) -> list:
+    """What a recorded candidate declared, as lines for `show` to print.
+
+    The rows are printed in the form the ledger wrote them, because a reader
+    comparing the record against the ledger should not have to translate
+    between two spellings of the same four fields. `none` covers both a line
+    written before the field existed and a ledger that declared nothing, which
+    is the same conflation the drift mark above already makes.
+    """
+    declared = candidate.get("declared_inputs")
+    if not isinstance(declared, dict):
+        return ["declared: none"]
+    rows = declared["rows"]
+    lines = [f"declared: {len(rows)} input(s)"]
+    lines.extend(
+        "  " + " | ".join((row["id"], row["kind"], row["availability"], row["note"]))
+        for row in rows
+    )
+    return lines
+
+
 def drift(passes: list) -> dict:
     """Axis scores that moved for a skill whose held job did not, by pass."""
     seen = {}
@@ -1001,6 +1024,8 @@ def show(args: argparse.Namespace) -> int:
             axes = " ".join(f"{name}={candidate[name]}" for name, _ in AXES)
             print(f"  {mark} {candidate['total']:3d}  {candidate['skill']:<24} {axes}")
             print(f"      {candidate['basis']}")
+            for line in declared_lines(candidate):
+                print(f"      {line}")
             for name, before, after in moved.get((entry["pass"], candidate["skill"]), []):
                 print(f"      drift: {name} {before} -> {after}, held job unchanged")
             change = declared_moved.get((entry["pass"], candidate["skill"]))
