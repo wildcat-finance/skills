@@ -141,16 +141,19 @@ kebab-case and used once. A filing that carries nothing writes the single row
 run-level pull request body under `## Carried forward`, and `hexctl done
 integrate` refuses without it.
 
-Check a candidate body before filing it:
+Check the complete candidate title, body, and labels before filing it:
 
 ```bash
-python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check --body <path>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check \
+  --body <path> --title '<exact title>' --label '<label>'
 ```
 
-It exits 1 on findings and reports both questions at once. `--issue <url>` reads
-an already-filed issue instead. The check reads shape, never judgement: it does
-not open a referenced issue, and a disposition nobody should have accepted still
-counts as an answer.
+Repeat `--label` for every label; omit it only when the complete candidate has
+none. The command exits 1 on findings and reports the queue and both body
+questions at once. `--issue <url>` reads an already-filed issue's title, body,
+and labels instead. The check reads shape, never judgement: it does not open a
+referenced issue, and a disposition nobody should have accepted still counts as
+an answer.
 
 Closing a delivered issue belongs to whoever merges its pull request. The
 Atlas draws from open issues alone, so one whose delivery has merged keeps
@@ -170,9 +173,11 @@ message.
 3. run Imprimatur and clear every reported defect without dropping protected content;
 4. apply Vulgate to the surface only and compare its content with the source;
 5. re-run Imprimatur on the exact publishable bytes; and
-6. for an issue body, run `hexctl issue-check --body` on those exact bytes and
-   clear every finding. The decision line and the `carryover` block are
-   protected content, so a wording pass may not drop or reword either.
+6. for an issue, run `hexctl issue-check --body <path> --title '<exact title>'`
+   with every label supplied through repeated `--label` flags, and clear every
+   finding. The title prefix, queue label, required opening, decision line and
+   `carryover` block are protected content, so a wording pass may not drop or
+   reword them.
 
 The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
 `framework-N`. Keep every queue-specific body rule from the section above.
@@ -329,6 +334,28 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENT
 Validate every changed skill directory against the Agent Skills frontmatter
 rules. Keep `SKILL.md` names equal to their parent directory names and keep
 descriptions precise enough to select the skill without reading its body.
+
+### Commit gate
+
+The gate is tracked in `.githooks/` and does nothing until a clone turns it
+on. Git cannot install a hook on clone, so this command is the whole of the
+activation. Run it once per clone from the top of a working tree; the value
+stays relative, so every linked worktree resolves it to its own tracked copy:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`.githooks/greenlight` runs the suite and, on exit zero alone, records the
+staged tree it passed on. `.githooks/pre-commit` then refuses any commit whose
+staged tree is not the one that record names. Run in the checkout itself,
+`python3 -m unittest discover -s tests` fails where `core.hooksPath` is unset
+or points anywhere else, and names the command above in the failure; that is
+how a fresh clone finds out the gate is off. The checked runner above executes
+the suite from a snapshot carrying a git directory of its own, and a hosted
+runner reports on the runner's own checkout, so the assertion is skipped in
+both and neither says whether your clone is activated.
+`FIAT_SKIP_PRECOMMIT=1` admits one commit without a recorded green.
 
 ## Reading boundary
 

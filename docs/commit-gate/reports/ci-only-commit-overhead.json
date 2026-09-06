@@ -1,0 +1,9 @@
+{
+  "candidate": "ci-only",
+  "command": "python3 .hexaemeron/design/evaluate_commit_gate.py --candidate ci-only --criterion commit-overhead",
+  "criterion": "commit-overhead",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 0
+}
