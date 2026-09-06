@@ -1930,3 +1930,525 @@ product fix rather than either audit-branch commit.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Entry: Start from the directive's exact
+`branch_from`, which is the signed, audited, prose-checked and pushed Step 1
+head. Its stacked pull request remains open; no Step has merged because stack
+merging belongs to integration. The closed seven-entry inventory, public
+checker and byte-identical committed study and runbook are present. The
+checked-in controller still lacks the inoculation transition, and this run's
+installed controller still follows its recorded bootstrap boundary.
+
+Complete replacement Exit: The public Protasis
+`load_checked_inventory` operation is the only controller ingestion path. It
+returns absent only when neither an inventory nor an assignment surface exists,
+returns the stable K000 through K012 findings on every attempted malformed or
+partial surface, or returns one closed
+`protasis-known-failure-inventory-capture/v1` object after bounded stable reads
+and final revalidation. Its fields are `schema`, `study_sha256`,
+`runbook_sha256`, `inventory_sha256`, `source_views`, `findings`,
+`no_known_findings`, and `assignments`; its inventory digest uses Fiat's
+canonical JSON bytes. The command-line checker projects the same result.
+
+The current runbook machine surface and immutable assignment-generation rules
+remain unchanged. Ordinary records stay active, replacement Exit generations
+stay source ordered, the first nonempty map remains locked, and the final
+generation repeats the complete seven-pair map:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+A clean capture is stored under the runbook receipt and activates `inoculate`.
+`done runbook` opens the first Step there, and `done push` opens every later
+Step there. `next` delegates to Mason with the exact source digests, capture,
+assigned entries, allowed paths, reporter contracts, branch and branch parent,
+and fixed evidence directory. `status --json` exposes phase, inventory digest,
+assigned count, completed ids and remaining ids without printing report
+content. A receipt predating the capture retains its existing phase path and
+receives no fabricated inventory.
+
+The only phase receipt command is `hexctl done inoculate`, with no
+phase-specific option. Its exact `fiat-known-failure-inoculation/v1` fields are
+`schema`, `step`, `study_sha256`, `runbook_sha256`, `inventory_sha256`,
+`step_parent`, `assigned_ids`, `source_views`, `no_known_findings`, and
+`guard_manifests`. Assigned ids and manifest references are uniquely sorted.
+Each manifest reference has exactly `finding_id`, `path`, and `sha256`.
+Foreign `done` options, stale source, a changed parent, duplicate state, or an
+unsupported field refuses before state, design-transition, ledger, or
+checkpoint mutation.
+
+For zero assigned ids, the command reads the fixed
+`.hexaemeron/steps/<n>/inoculation/no-known-findings.json` file. Its
+`fiat-no-known-findings/v1` object has exactly `schema`, `study_sha256`,
+`inventory_sha256`, `source_views`, `consuming_step`, and `assertion`; the
+assertion is `no-known-findings-for-step`. Exact agreement receipts the checked
+record with an empty `guard_manifests` list and opens `implement`. This route is
+available only from a clean capture assigning zero ids. An attempted malformed
+or partial inventory or assignment surface is never absent and never becomes a
+no-known-findings receipt.
+
+For one or more assigned ids, Step 2 records the complete declaration in the
+capture, packet and status but does not treat the declaration as evidence.
+`hexctl done inoculate` refuses while `guard_manifests` is empty, and
+`done implement` refuses while no valid inoculation receipt exists. Step 3
+alone retains and validates reports and supplies the nonempty complete
+manifest-reference list. No Step 2 result claims that a guard ran, a report was
+retained, or product editing is authorised for an assigned finding.
+
+The historical `kf-453-02` guard uses
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` and the
+reporter named by the immutable inventory. The fixed tree renames the module to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and updates the
+reporter to select it, while the signed guard object, command and retained
+report keep the historical path. The Fiat phase instruction model is
+re-authored from every affected source span; its compact form, questions,
+mutations, manifest, measurement, parity and coverage bindings are regenerated.
+A digest-only reconciliation refuses this semantic edit. The committed study
+and runbook equal the current receipted bytes. The existing numberless ADR
+draft remains unchanged. The toolchain, CI, licences and dependencies remain
+unchanged.
+
+Prove the complete exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory plugins.hexaemeron.tests.test_inoculation_lifecycle -v
+python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report .elenchus/issue-453-kf-453-02-green.json
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 scripts/agent_instruction.py format --root . --input tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json --output tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai
+python3 scripts/agent_instruction.py measure --root . --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tests/fixtures/agent-instruction-v1/evidence/measurement.json
+python3 scripts/agent_instruction.py parity --root . --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tests/fixtures/agent-instruction-v1/evidence/parity.json
+python3 scripts/agent_instruction.py check --root . --manifest tests/fixtures/agent-instruction-v1/manifest.json
+python3 -m unittest tests.test_agent_instruction tests.test_agent_instruction_corpus tests.test_repository_naming -v
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py --study .hexaemeron/study.md --design-evidence .hexaemeron/design-evidence.json --repo-root .
+python3 scripts/portable_promise_machine.py sync
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+python3 scripts/promise_machine.py check
+python3 scripts/promise_machine.py coverage --check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/plugins/marketplace.json .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/agents/mason.md docs/agent-instruction-language-v1.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/agents/mason.md docs/agent-instruction-language-v1.md docs/decisions/drafts/require-inoculation-before-implementation.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --mode fiat-audit-record
+git diff --check
+```
+
+Run the root suites from a clean detached worktree at the exact signed Step 2
+candidate. The managed controller worktree contains ignored controller evidence
+and is not a clean root-suite input. The two `cmp` commands and the explicit
+Hypomnema study-mode command run in the managed controller worktree because
+they consume the receipted artefacts and untracked design evidence. The study
+and runbook are completeness-oriented specifications, so Brevitas does not
+budget them; Imprimatur and Hypomnema still inspect them. The audit synopsis,
+Imprimatur audit input, and Fiat-audit-record Brevitas command run on the audit
+branch after Warden owns the audit update.
+
+Complete replacement Files: In the guard-only commit, create
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` and change
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`. In the fixed tree,
+rename the lifecycle module to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and update the reporter
+again. Change
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/test_known_failure_inventory.py`,
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/agents/mason.md`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_fiat_skill.py`,
+`scripts/agent_instruction.py`,
+`tests/test_agent_instruction.py`,
+`tests/test_agent_instruction_corpus.py`,
+`docs/agent-instruction-language-v1.md`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`,
+`tests/fixtures/agent-instruction-v1/evidence/parity.json`,
+`tests/promise_machine_coverage.json`,
+`docs/known-failure-inoculation-study.md`, and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`. Create
+`plugins/hexaemeron/tests/fixtures/issue-453/no-known-findings.json`. Read but do
+not change `docs/decisions/drafts/require-inoculation-before-implementation.md`.
+Refresh the ignored local portable verification payload without staging it.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` only when the repository-owned scan changes them. Warden
+alone changes the configured audit record and synopsis.
+
+Complete replacement Tests: Before changing the loader or controller, make a
+signed guard-only commit on the directive's exact Step 2 branch. Its sole parent
+is the exact `branch_from` head
+`1019fd36326b7e1c51765f3f0d5a0ef57805304a`, and its changed paths are exactly
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` and
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`. Replace
+`<signed-guard-commit>` with that object and run:
+
+```bash
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-guard-commit> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/issue-453-kf-453-02.json --require-guard --format json
+```
+
+Stop unless it reports exactly `guarded`; retain the command, commit, exit and
+bounded JSON outside Git. On the fixed tree run
+`python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report .elenchus/issue-453-kf-453-02-green.json` and require a positive,
+complete, non-skipped, error-free and assertion-free report.
+
+The inventory tests cover explicit absence only when both the inventory and
+assignment surfaces are absent, every attempted malformed or partial surface
+as a K000 through K012 finding rather than absence, one stable clean capture,
+canonical digesting, assignment order and source drift. Lifecycle cases cover
+phase order, exact packet reconstruction, closed receipt shapes, zero-assigned
+no-known evidence, nonempty-assigned empty-manifest refusal, foreign options,
+legacy states, changed parents and unchanged state, design-transition, ledger
+and checkpoint bytes on every refusal. Test the checked-in controller's full
+new-run path in disposable repositories only; this live run remains on the
+installed controller's bootstrap `implement` path. The instruction corpus must
+bind every changed span, add the inoculation node before implementation, and
+reject stale compact, question, mutation, measurement, parity, manifest and
+coverage derivatives. Warden uses command
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, and file
+`.elenchus/fiat-453-step-2-audit.json`, then reruns every Exit command after a
+fix.
+
+Complete replacement Disciplines: phylax: the study, inventory object, source
+views, worker packets, controller arguments, paths, commands and evidence files
+cross parser, process and filesystem boundaries, so closed keys, caps,
+containment, stable no-follow reads, exact Git objects and mutation ordering are
+checked before use. An attempted inventory surface fails closed and can never
+be reclassified as absence. ephoros: `status --json`, `next`, receipt stdout and
+stable named refusals expose phase, inventory digest, assigned count, completed
+ids, remaining ids and no-known provenance without source or report content.
+metron: none, the extra interactive transition is the selected correctness
+design, not a latency claim. elenchus: `kf-453-02` must fail by assertion on the
+exact Step 2 parent through the signed two-path guard commit and finish green
+after the fixed tree lands. hypomnema: the existing ADR draft owns the phase,
+atomic receipt, red-intermediate and bootstrap decisions; Fiat cites its stable
+identity without changing it or inventing an integration number.
+
+**Why.** The current checker returns only a finding list and discards the
+accepted object. Rereading or reparsing after a clean result would lose the
+stable-read boundary and could diverge from the locked replacement-Exit
+projection. The original Step 2 Exit also calls an assigned id set evidence
+even though Step 3 owns report retention, Git binding and verdict admission.
+That would recreate the pre-edit bypass this design closes. Explicit absence
+therefore means that neither machine surface was attempted; malformed or
+partial attempted content stays visible as a checker finding and can never
+open the no-known path. The original Entry incorrectly calls the open Step 1
+stack merged, its Files omit the loader and reporter and retain an
+issue-numbered maintained test, and its broad Hypomnema command traverses
+ignored generated state.
+
+**Steps touched.** Step 2's Entry, Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: In the guard-only commit, create
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` and change
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`. In the fixed tree,
+rename the lifecycle module to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and update the reporter
+again. Change
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/test_known_failure_inventory.py`,
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/agents/mason.md`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_fiat_skill.py`,
+`scripts/agent_instruction.py`,
+`tests/test_agent_instruction.py`,
+`tests/test_agent_instruction_corpus.py`,
+`docs/agent-instruction-language-v1.md`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/manifest.schema.json`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`,
+`tests/fixtures/agent-instruction-v1/evidence/parity.json`,
+`tests/promise_machine_coverage.json`,
+`docs/known-failure-inoculation-study.md`, and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`. Create
+`plugins/hexaemeron/tests/fixtures/issue-453/no-known-findings.json`. Read but do
+not change `docs/decisions/drafts/require-inoculation-before-implementation.md`.
+Refresh the ignored local portable verification payload without staging it.
+Regenerate `.horos/boundary.json`, `.horos/candidates.json`, and
+`.horos/census.json` only when the repository-owned scan changes them. Warden
+alone changes the configured audit record and synopsis.
+
+**Why.** The Fiat instruction fixture is validated twice: the manifest carries
+its counts, and `manifest.schema.json` freezes those same counts as constants.
+Adding the required inoculation directive raises the fixture binding count,
+and its new closed question and hostile mutation raise their corresponding
+counts. Leaving the schema outside the allowed files makes the semantic
+re-authoring impossible to validate. This replacement adds only that already
+governed derivative; it changes no phase design, inventory assignment, source
+authority, test command, toolchain, dependency, licence, or audit ownership.
+
+**Steps touched.** Step 2's Files field only.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Exit: The public Protasis
+`load_checked_inventory` operation is the sole ingestion boundary. It returns
+an explicit absent result only when neither the inventory nor assignment
+surface exists, the existing K000 through K012 refusal set for every attempted
+malformed or partial surface, or one closed
+`protasis-known-failure-inventory-capture/v1` object after the same bounded
+reads and final stability checks as the command-line checker. A clean capture
+has exactly `schema`, `study_sha256`, `runbook_sha256`, `inventory_sha256`,
+`source_views`, `findings`, `no_known_findings`, and `assignments`. The
+inventory digest is SHA-256 over the parsed inventory in Fiat's canonical JSON
+form. Assignments are ordered by Step and finding id. The checker and Fiat
+consume this one operation; neither reparses a clean result or reimplements
+assignment discovery. An attempted, malformed, partial, changed or stale
+surface never becomes absent.
+
+The operation retains the runbook machine surface and immutable generation map
+unchanged. Ordinary records remain active, replacement Exit generations remain
+source ordered, the first nonempty map stays locked, and the final generation
+repeats this same complete seven-pair map exactly:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+The strict bracket, amendment-field, replacement-clause, baseline-Step, fence,
+and single-line inline-code rules remain in force.
+
+For a runbook that yields a clean capture, `done runbook` stores that exact
+capture in its receipt and opens the first Step at `inoculate`; `done push`
+opens every later Step at the same phase. `next` gives Mason the current study
+and runbook digests, capture digest, consuming Step, exact assigned entries,
+allowed guard paths, reporter commands, report formats and logical report
+files, exact branch and branch parent, and the fixed controller evidence
+directory. `status --json` exposes the phase, inventory digest, assigned count,
+completed ids, remaining ids and no-known provenance without source or report
+content. A pre-contract state whose runbook receipt has no capture retains its
+recorded implementation-first route without an invented inventory or receipt.
+
+The sole new receipt command is `hexctl done inoculate`; it takes no
+phase-specific argument. Phase-foreign `done` options refuse before mutation.
+Its closed receipt schema is `fiat-known-failure-inoculation/v1`, with exactly
+`schema`, `step`, `study_sha256`, `runbook_sha256`, `inventory_sha256`,
+`step_parent`, `assigned_ids`, `source_views`, `no_known_findings`, and
+`guard_manifests`. Assigned ids and manifest references are uniquely sorted.
+Each future manifest reference has exactly `finding_id`, `path`, and `sha256`.
+
+For a Step with no assigned finding, Mason writes the fixed
+`.hexaemeron/steps/<n>/inoculation/no-known-findings.json` record under schema
+`fiat-no-known-findings/v1`. It has exactly `schema`, `study_sha256`,
+`inventory_sha256`, `source_views`, `consuming_step`, and `assertion`, with
+assertion `no-known-findings-for-step`. Fiat accepts that route only when the
+checked capture assigns zero ids, the study and source-view digests agree, and
+the file is a bounded stable regular file. Its receipt carries the checked
+record and an empty `guard_manifests` list.
+
+For a Step with assigned findings, Step 2 captures and reports the complete
+declaration but does not call it evidence. `hexctl done inoculate` remains
+refused while `guard_manifests` is empty, and `done implement` remains refused
+while the Step has no valid inoculation receipt. Step 3 alone retains reports,
+checks manifests and fills the nonempty list. This freezes the command and
+receipt shape without allowing an id declaration to authorise product work.
+
+The signed `kf-453-02` guard commit continues to use exactly the historical
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` path and the
+reporter named by the immutable inventory. After retaining that red result,
+rename the maintained module to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and update the reporter
+to select the numberless module on the fixed tree. The historical commit,
+command and report remain unchanged.
+
+The existing `fiat-study-runbook-phase` reviewed span and semantic fixture
+remain byte-for-byte unchanged. Remove the proposed `inoculate` row from the
+measured `## The loop` table. The table still describes the legacy
+implementation-first route for a runbook receipt without a capture. Retain the
+public loader/capture paragraph, standalone Inoculation phase note, hard rule,
+and Promise entry after the existing reviewed envelope; together they document
+the capture-aware exception without extending the old semantic model.
+
+Do not run `agent_instruction.py measure`, `agent_instruction.py parity`, a
+tokenizer, a recorded-family adapter, Ollama, or any other model process. Do
+not change the semantic model's nodes, bindings, questions or mutations, the
+manifest schema or count constants, the instruction implementation or tests,
+the language document, or either evidence record. Use only
+`python3 scripts/prove_agent_instruction_reconciliation.py reconcile --root .`
+after the Fiat source bytes are final. That existing offline operation verifies
+the old reviewed span at its recorded offsets, substitutes only the whole-file
+source digest in the model and source-span record, derives the compact form
+with `format`, refreshes the manifest artefact digests, and rebinds the coverage
+row. It opens no socket and runs no model. The committed `measurement.json` and
+`parity.json` remain byte-for-byte identical to the signed guard parent and
+make no claim about the new prose.
+
+Refresh the committed study and runbook copies to the current receipted bytes.
+The existing ADR draft remains unchanged. All lifecycle tests use the
+checked-in controller only in disposable repositories; the live managed run
+continues through the installed controller's bootstrap `implement` path and
+must not invoke the checked-in controller for a live transition.
+
+Complete replacement Files: The guard-only commit has already created
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` and changed
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`. In the fixed tree,
+rename the former to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and update the reporter
+again. Change
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/test_known_failure_inventory.py`,
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/agents/mason.md`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_fiat_skill.py`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/promise_machine_coverage.json`,
+`docs/known-failure-inoculation-study.md`, and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`. Create
+`plugins/hexaemeron/tests/fixtures/issue-453/no-known-findings.json`.
+
+Read but do not change
+`scripts/prove_agent_instruction_reconciliation.py` and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Do not
+change `scripts/agent_instruction.py`, `tests/test_agent_instruction.py`,
+`tests/test_agent_instruction_corpus.py`,
+`docs/agent-instruction-language-v1.md`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json`,
+`tests/fixtures/agent-instruction-v1/manifest.schema.json`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`, or
+`tests/fixtures/agent-instruction-v1/evidence/parity.json`. Refresh the ignored
+local portable verification payload without staging it. Regenerate
+`.horos/boundary.json`, `.horos/candidates.json`, and `.horos/census.json` only
+when the repository-owned scan changes them. Warden alone changes the
+configured audit record and synopsis.
+
+Complete replacement Tests: The signed guard-only commit is
+`13a2c9f22065c89e85d031bd5bb084b36a487670`, its sole parent is the exact
+`branch_from` head `1019fd36326b7e1c51765f3f0d5a0ef57805304a`, and its changed
+paths are exactly the historical lifecycle module and reporter. Its retained
+Elenchus report is already `guarded`. On the fixed tree run:
+
+```bash
+python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report .elenchus/issue-453-kf-453-02-green.json
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory -v
+python3 -m unittest plugins.hexaemeron.tests.test_inoculation_lifecycle -v
+python3 -m unittest plugins.hexaemeron.tests.test_hexctl -v
+python3 -m unittest plugins.hexaemeron.tests.test_fiat_skill -v
+git diff --exit-code HEAD -- scripts/agent_instruction.py tests/test_agent_instruction.py tests/test_agent_instruction_corpus.py docs/agent-instruction-language-v1.md tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json tests/fixtures/agent-instruction-v1/manifest.schema.json tests/fixtures/agent-instruction-v1/evidence/measurement.json tests/fixtures/agent-instruction-v1/evidence/parity.json
+python3 scripts/prove_agent_instruction_reconciliation.py reconcile --root .
+git diff --exit-code HEAD -- scripts/agent_instruction.py tests/test_agent_instruction.py tests/test_agent_instruction_corpus.py docs/agent-instruction-language-v1.md tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json tests/fixtures/agent-instruction-v1/manifest.schema.json tests/fixtures/agent-instruction-v1/evidence/measurement.json tests/fixtures/agent-instruction-v1/evidence/parity.json
+python3 scripts/agent_instruction.py check --root . --manifest tests/fixtures/agent-instruction-v1/manifest.json
+python3 -m unittest tests.test_agent_instruction tests.test_agent_instruction_corpus tests.test_repository_naming -v
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/agents/mason.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/agents/mason.md docs/decisions/drafts/require-inoculation-before-implementation.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --mode fiat-audit-record
+git diff --check
+```
+
+The inventory cases cover explicit absence only when both surfaces are absent,
+every attempted malformed or partial surface as a K000 through K012 finding,
+one stable clean capture, canonical digesting, assignment order and source
+drift. Lifecycle cases cover phase order, exact packet reconstruction, closed
+receipt shapes, zero-assigned no-known evidence, nonempty-assigned
+empty-manifest refusal, foreign options, legacy states, changed parents and
+unchanged state, design-transition, ledger and checkpoint bytes on every
+refusal. The first and second `git diff --exit-code` commands prove the
+forbidden semantic and model-evidence surfaces are unchanged both before and
+after reconciliation. The instruction check and focused suites prove the
+mechanical digest rebind without executing a model. Warden uses command
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, and file
+`.elenchus/fiat-453-step-2-audit.json`, then reruns every Exit command after a
+fix.
+
+Run the root suites from a clean detached worktree at the exact signed Step 2
+candidate. The managed controller worktree contains ignored controller
+evidence and is not a clean root-suite input. The source-copy comparisons and
+the explicit Hypomnema study-mode command run in the managed controller
+worktree because they consume receipted artefacts and untracked design
+evidence. The study and runbook are completeness-oriented specifications, so
+Brevitas does not budget them; Imprimatur and Hypomnema still inspect them. The
+audit synopsis, Imprimatur audit input, and Fiat-audit-record Brevitas command
+run on the audit branch after Warden owns the audit update.
+
+Complete replacement Disciplines: phylax: the study, inventory object, source
+views, worker packets, controller arguments, paths, commands and evidence files
+cross parser, process and filesystem boundaries, so closed keys, caps,
+containment, stable no-follow reads, exact Git objects and mutation ordering are
+checked before use. An attempted inventory surface fails closed and can never
+be reclassified as absence. ephoros: `status --json`, `next`, receipt stdout and
+stable named refusals expose phase, inventory digest, assigned count, completed
+ids, remaining ids and no-known provenance without source or report content.
+metron: none; no performance or model-measurement claim is in scope. elenchus:
+the retained `kf-453-02` guard must fail by assertion at the exact Step 2 parent
+through the signed two-path guard commit and finish green on the fixed tree.
+hypomnema: the existing ADR draft owns the phase, atomic receipt,
+red-intermediate and bootstrap decisions; Fiat cites its stable identity
+without changing it or inventing an integration number. The offline
+reconciliation is a deterministic digest repair, not measurement or model
+evidence.
+
+**Why.** The prior Step 2 replacement accidentally treated semantic
+re-authoring, tokenizer measurement and two-family parity as consequences of
+documenting the new lifecycle. That contradicts the controller owner's frozen
+boundary. The new text can remain outside the already reviewed source envelope,
+so the old semantic fixture and evidence remain truthful and untouched. Only
+the whole-file source digest and its deterministic derivatives need repair.
+This preserves the complete capture, lifecycle, guard, legacy-state and audit
+requirements while explicitly forbidding the model and measurement paths.
+
+**Steps touched.** Step 2's Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

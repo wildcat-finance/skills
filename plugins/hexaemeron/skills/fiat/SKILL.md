@@ -452,6 +452,18 @@ fault refuses status, `next`, and verification. Recovery is to restore the
 exact receipted source and anchor objects or halt; editing state or accepting a
 partial target set is not recovery.
 
+Protasis's public `load_checked_inventory` operation is the sole ingestion path
+for a known-failure inventory. An explicit absent result means neither the
+study inventory nor the runbook assignment surface exists; any attempted,
+malformed or partial surface stays a named K000 through K012 refusal. A clean
+result is one closed `protasis-known-failure-inventory-capture/v1` object bound
+to the exact study and runbook bytes, canonical inventory digest, checked
+source views, complete finding declarations, no-known claim and Step-sorted
+assignments. `done runbook` stores that capture unchanged and opens the first
+Step at `inoculate`. `done push` opens every later Step at the same boundary.
+A runbook receipt with no capture keeps the earlier implementation-first path;
+Fiat never fabricates an inventory or inoculation receipt for it.
+
 **Amending receipted specifications.** After the study and runbook receipts exist,
 and only while build steps are active, append one final dated Protasis
 amendment to the receipted study and run:
@@ -528,6 +540,35 @@ later study amendment changes that digest, so an older repair no longer
 applies. Recovery remains another checked amendment or an explicit halt; state
 and ledger history are not edited to manufacture a holding result.
 
+**Inoculation.** A capture-aware Step begins before product editing. `next`
+delegates Mason the exact study and runbook digests, the complete capture, the
+entries assigned to that Step, their closed guard paths and reporter contracts,
+the branch and exact parent commit, and the fixed controller evidence directory
+under `.hexaemeron/steps/<n>/inoculation/`. The only receipt command is
+`done inoculate`; it takes no phase-specific options.
+
+Its closed `fiat-known-failure-inoculation/v1` receipt has exactly `schema`,
+`step`, `study_sha256`, `runbook_sha256`, `inventory_sha256`, `step_parent`,
+`assigned_ids`, `source_views`, `no_known_findings`, and `guard_manifests`.
+Assigned ids and the three-field `finding_id`, `path`, `sha256` manifest
+references are uniquely sorted. One or more assigned findings keep
+implementation closed while the complete non-empty manifest set is absent;
+the declaration alone is not guard evidence.
+
+A Step with zero assigned ids instead requires the fixed
+`.hexaemeron/steps/<n>/inoculation/no-known-findings.json` file. Its exact
+`fiat-no-known-findings/v1` fields are `schema`, `study_sha256`,
+`inventory_sha256`, `source_views`, `consuming_step`, and `assertion`, and its
+assertion is `no-known-findings-for-step`. Fiat reads it as one bounded stable
+regular file and accepts it only when every value matches the clean capture
+and current Step. The resulting receipt carries that record and an empty
+`guard_manifests` list. A changed parent, stale source, foreign option,
+duplicate receipt, unsupported field or incomplete evidence refuses without
+changing controller state, the design-transition history, ledger or
+checkpoints. `status --json` and `next` expose only the phase, inventory digest,
+assigned count, completed ids and remaining ids; they do not print report
+content. Only a valid inoculation receipt opens `implement`.
+
 **Implementation.** Build the candidate named by the checked design receipt;
 the design choice is not reopened inside a step. The step runs under the phase skills: `phylax` names
 the boundaries the step introduces and the control each needs, `ephoros` names
@@ -537,10 +578,13 @@ mid-step follows `elenchus` rather than a guess. Their lints run in every
 audit round, so meeting them here is cheaper than meeting them there. The
 runbook step and selected design are the yardsticks: reread both before
 declaring the step complete, and do not add anything they do not ask for.
-The `implement` directive carries `branch` and `branch_from`: cut that exact
-branch from that exact ref. Step 1 branches from the run branch, every later
-step from the step below it, so each step builds on the reviewed tree of the
-one before without waiting for a merge.
+The `implement` directive carries `branch` and `branch_from`. A capture-aware
+directive also carries the full `step_parent` commit from its inoculation
+receipt: cut the exact branch from that immutable commit and do not resolve the
+symbolic ref again. A pre-capture directive still cuts from `branch_from`.
+Step 1 chains from the run branch and every later step from the step below it,
+so each step builds on the reviewed tree of the one before without waiting for
+a merge.
 
 **Audit.** `elenchus` works any failure a round surfaces down to its cause.
 The longest phase by design. One round is the full suite: `x-ray`
@@ -756,6 +800,9 @@ Use `hexctl halt --reason ...` so the stop itself is on the ledger.
 ## Hard rules
 
 - Never advance past a phase whose receipt command failed.
+- Never edit product code for a capture-aware Step before its complete
+  inoculation receipt opens implementation, and never treat an assigned id
+  declaration or an empty list as evidence.
 - Never change run configuration outside `audit.log_path`, `git`, or a path
   below `git`; `config set` refuses every other path without changing state or
   ledger bytes.
@@ -888,6 +935,18 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Consequence: 2
 - Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, unsupported controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
+- Exceptions: none
+
+### fiat-known-failure-inoculation
+
+- Promise: A successful `hexctl done inoculate` establishes that one clean Protasis capture was bound to the current Step and exact parent before implementation opened, and that the Step carried either a complete uniquely sorted guard-manifest set or the exact source-bound no-known-findings record.
+- Evidence: The receipted study and runbook digests, canonical inventory digest, checked source-view identities, Step-sorted assignments, exact parent commit, fixed controller evidence directory, complete manifest references or bounded stable `fiat-no-known-findings/v1` bytes, `done:inoculate` ledger event, unchanged refusal checks and zero command exit.
+- Evidence classes: checked, recorded
+- Boundary: The capture establishes only its declared known failures and sources. An id declaration is not guard evidence; the no-known route establishes no guard ran; neither result discovers unknown failures, proves the later fix green, replaces Warden or retrofits a pre-capture run.
+- Authorises: Opening implementation for only the receipted Step on its unchanged branch parent and reporting its inventory digest, assigned count, completed ids and remaining ids without report content.
+- Consequence: 2
+- Refuses: An absent, malformed, partial or stale attempted surface; changed source or parent; foreign option; missing, duplicate, extra, unordered or partial assigned evidence; an empty manifest set for assigned findings; malformed no-known bytes; duplicate receipt; or any transition that would mutate state, design history, ledger or checkpoints before those checks pass.
+- Recovery: Restore the exact receipted sources and parent, complete the fixed evidence directory for every assigned id or write the exact no-known record for the capture's zero-assigned Step, then rerun `hexctl done inoculate`; pre-capture states continue on their recorded path.
 - Exceptions: none
 
 ### fiat-receipted-delivery
