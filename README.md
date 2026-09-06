@@ -18,9 +18,9 @@ are derived from the tree each time this page is checked.
 
 ## SO, YOU WANT TO BUILD GOD?
 
-<p align="center">
-  <a href="./assets/build_our_machine.mp4"><strong>▶ BUILD OUR MACHINE</strong></a>
-</p>
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/0a078005-7c9f-4fd9-b893-407e72a79f3b"></video>
+</div>
 
 Ask the Atlas for a number. Pick your harness. Finish what you start.
 
