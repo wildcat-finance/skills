@@ -11,7 +11,7 @@ state that anything passed.
 - Inventory digest: `88325a449814`
 - Workbook digest: `21493992f97e`
 - Coverage digest: `0c015a799121`
-- Skill version: `dokimasia-v2.1.0`
+- Skill version: `dokimasia-v3.1.0`
 
 ## The denominator
 

@@ -32,19 +32,19 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "scrutiny",
       "class": "production-run",
       "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.scrutiny.json",
-      "sha256": "455efc68d3f781a751c9d3b813d4f28e50942a930fe1775c527744239a31e600"
+      "sha256": "eb0ad475c7015c4ac6f08ebf6ab1cec2bed1de125bb8e472fd4fc850519fb920"
     },
     {
       "id": "report",
       "class": "production-run",
       "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2-scrutiny.md",
-      "sha256": "199add2d972912ec249329c297eca0fefcb414857dd4a226320b75b861ababe5"
+      "sha256": "8b7a7190e54cb981680ff07cac426e25212d1454853d5d952f4186204a154fdd"
     },
     {
       "id": "program",
       "class": "repository",
       "path": "plugins/dokimasia/scripts/dokimasia.py",
-      "sha256": "01f7365dee6041badbf93f61d5b5eff9fbfee61f05d67e53d0b8d087c342f999"
+      "sha256": "df2b88ed9b06fb7dc6d0f5cc98b3322d87bbad1e8de4937ccbe2728f62276e35"
     }
   ],
   "commands": [

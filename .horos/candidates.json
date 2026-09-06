@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20137722,
+    "bytes_blob": 20145189,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,7 +63,7 @@
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
-      "bytes": 22168,
+      "bytes": 29635,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

@@ -9,7 +9,7 @@ description: >
   person named. Horos decides what an agent does not read; Hexaemeron Fizz
   fuzzes contracts. Neither compiles a frontend inventory or holds an oracle.
 metadata:
-  version: "2.1.0"
+  version: "3.1.0"
 ---
 
 # Dokimasia
@@ -26,7 +26,7 @@ frontier pass after that ledger becomes mature.
 
 Dokimasia compiles a frontend's routes, actions and guards into a coverage denominator and reconciles a reviewed UAT workbook against it, so every scoped item carries exactly one disposition.
 
-**Current frontier.** Dokimasia drafts a complete disposition set a reviewer edits rather than authors, and admits only the entries a person confirmed. The pinned scrutiny of `wildcat-app-v2` at `bb9685fb` closes at 202 over 261, drawn entirely from confirmed entries, with `covered` at zero. What the record cannot say is who confirmed those 202 or under what rule.
+**Current frontier.** Dokimasia admits a confirmed entry only when it names the person who confirmed it and, where a rule was applied, a row in the set's `rules` table stating that rule and who stated it, and its coverage and scrutiny records report confirmations by person and by rule. The pinned scrutiny of `wildcat-app-v2` at `bb9685fb` still closes at 202 over 261 with `covered` at zero, now attributed to one person under one stated rule. Every one of those entries was drafted from the workbook; none records anything observed in the running application.
 <!-- marketplace-context:end -->
 
 Never report an item as covered without a reviewed oracle.
@@ -87,9 +87,10 @@ below its declared root, and no path this skill writes is followed through a
 symlink.
 
 A person owns every disposition. The skill drafts `manual` and `excluded`
-entries and marks every one unconfirmed; only a person's confirmation admits an
-entry as a disposition. It never drafts `covered`, and holds no code path that
-constructs it.
+entries and marks every one unconfirmed; only a person's confirmation, carrying
+that person's name and any rule they applied, admits an entry as a disposition.
+It never drafts `covered`, holds no code path that constructs it, and writes
+neither `confirmed_by` nor `rule` on anything it drafts.
 
 ## Promises
 
@@ -102,8 +103,9 @@ refuses, so nothing else is declared.
 
 Every declared verb is built and every declared promise is kept. A reviewer
 no longer authors a disposition set from nothing: `propose` drafts one covering
-every scoped item, and the reconciler admits only the entries a person
-confirmed, so drafting cannot move a coverage figure.
+every scoped item, and the reconciler admits only the entries a named person
+confirmed, so drafting cannot move a coverage figure and a coverage figure
+states whose judgement it is.
 
 ## Promise Machine contract
 
@@ -157,13 +159,13 @@ confirmed, so drafting cannot move a coverage figure.
 
 ### dokimasia-disposition-closure
 
-- Promise: A successful `dokimasia reconcile` establishes that every scoped item, drawn from both the inventory and the workbook, carried exactly one disposition from the closed set, that each covered item named an oracle the workbook holds and that a person has acted on, that each manual and excluded item carried a reason, and that the disposition set was written against the exact inventory and workbook digests in front of it.
-- Evidence: The two bounded record reads, the declared inventory and workbook digests compared against the records, the scoped set built from both sides, each declared disposition with its reason or oracle, the resolved oracle status, the separately stated numerator and denominator of the closure ratio, the gap list, the undisposed list, and the canonical digest over everything but the subject.
+- Promise: A successful `dokimasia reconcile` establishes that every scoped item, drawn from both the inventory and the workbook, carried exactly one disposition from the closed set, that each covered item named an oracle the workbook holds and that a person has acted on, that each manual and excluded item carried a reason, that every entry counted was confirmed by a named person and, where a rule was applied, under a rule the set's `rules` table states with its author, and that the disposition set was written against the exact inventory and workbook digests in front of it.
+- Evidence: The two bounded record reads, the declared inventory and workbook digests compared against the records, the scoped set built from both sides, each declared disposition with its reason or oracle, the resolved oracle status, each confirmed entry's `confirmed_by` and any `rule` resolved against the set's `rules` table, the separately stated numerator and denominator of the closure ratio, the `confirmations` block reporting people, entries per person, rules applied and individually confirmed entries, the gap list, the unconfirmed and undisposed lists, and the canonical digest over everything but the subject.
 - Evidence classes: checked, recorded
-- Boundary: The record establishes that the deciding was done and by whom it was declared. It does not establish that a covered item works, that its oracle was a good oracle, that a recorded status was right, or that an excluded item was correctly excluded; it establishes that somebody said so and wrote down why. A closure ratio of one means nothing is unaccounted for, never that anything passed.
+- Boundary: The record establishes that the deciding was done and under whose name it was declared. It does not establish that a covered item works, that its oracle was a good oracle, that a recorded status was right, that an excluded item was correctly excluded, or that the named person agreed; it establishes that the set says so, under that name, and wrote down why. A closure ratio of one means nothing is unaccounted for, never that anything passed.
 - Authorises: Reporting the closure ratio and the gap list for a named inventory and workbook pair, and opening the runbook step that demonstrates against a pinned application.
 - Consequence: 2
-- Refuses: A disposition set declaring the wrong schema or no digest, a set naming an inventory or workbook digest that has moved, two dispositions on one item, a disposition naming an item outside the scoped set, a state outside the closed vocabulary, a covered item naming no oracle, a covered item naming an oracle the workbook does not hold, a covered item naming an oracle nobody has acted on, a manual or excluded item with an empty reason, a reason over the byte cap, a symlink or oversized input, and a scoped set over the item cap.
+- Refuses: A disposition set declaring the wrong schema or no digest, a set naming an inventory or workbook digest that has moved, two dispositions on one item, a disposition naming an item outside the scoped set, a state outside the closed vocabulary, a covered item naming no oracle, a covered item naming an oracle the workbook does not hold, a covered item naming an oracle nobody has acted on, a manual or excluded item with an empty reason, a confirmed entry with no, blank or non-string `confirmed_by`, a `rule` id the set's `rules` table does not hold, a rule row with blank text or no stated author, an unconfirmed entry carrying either attribution field, a reason over the byte cap, a symlink or oversized input, and a scoped set over the item cap.
 - Recovery: Read the refusal, which names the item and the condition it breached, correct the disposition set or recompile the record whose digest moved, and rerun `dokimasia reconcile`.
 - Exceptions: none
 
