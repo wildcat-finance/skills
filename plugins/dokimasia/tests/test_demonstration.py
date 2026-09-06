@@ -16,12 +16,25 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from dokimasia_lib import demonstrate  # noqa: E402
 from dokimasia_lib import reconcile  # noqa: E402
+from dokimasia_lib import schema as schema_lib  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location(
     "workbook_build", PLUGIN / "tests" / "fixtures" / "workbooks" / "build.py"
 )
 build = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(build)
+
+_sets_spec = importlib.util.spec_from_file_location(
+    "dispositions_build", PLUGIN / "tests" / "fixtures" / "dispositions" / "build.py"
+)
+sets_build = importlib.util.module_from_spec(_sets_spec)
+_sets_spec.loader.exec_module(sets_build)
+
+_cli_spec = importlib.util.spec_from_file_location(
+    "dokimasia_cli", PLUGIN / "scripts" / "dokimasia.py"
+)
+cli = importlib.util.module_from_spec(_cli_spec)
+_cli_spec.loader.exec_module(cli)
 
 APPLICATION = {"label": "tests/fixtures/app", "commit": "a" * 40}
 EVIDENCE = PLUGIN / "docs" / "evidence"
@@ -42,13 +55,21 @@ class ScrutinyCase(unittest.TestCase):
         self.made = build.build_all(Path(self.tmp.name))
         self.app = PLUGIN / "tests" / "fixtures" / "app"
 
-    def run_one(self, workbook=None, version="0.0.0-fixture", application=None):
+    def run_one(self, workbook=None, version="0.0.0-fixture", application=None,
+                dispositions=None):
         return demonstrate.scrutinise(
             self.app,
             workbook or self.made["benign.xlsx"],
             version,
             application or APPLICATION,
+            dispositions,
         )
+
+    def closed_set(self) -> dict:
+        """The closed fixture: two people, two rules, both confirmation shapes."""
+        sets = tempfile.TemporaryDirectory()
+        self.addCleanup(sets.cleanup)
+        return reconcile.read_json(sets_build.build_all(Path(sets.name))["closed.json"])
 
 
 class Deterministic(ScrutinyCase):
@@ -227,6 +248,175 @@ class RenderedProse(ScrutinyCase):
         )
 
 
+class WhoDecided(ScrutinyCase):
+    """Study question 1, answered in the record and in the prose beside it."""
+
+    def test_the_scrutiny_carries_the_confirmations_its_coverage_computed(self):
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        self.assertEqual(scrutiny["confirmations"], coverage["confirmations"])
+        self.assertEqual(scrutiny["confirmations"]["people"], 2)
+        self.assertEqual(
+            demonstrate.committed_scrutiny(scrutiny)["confirmations"],
+            coverage["confirmations"],
+        )
+
+    def test_an_attributed_scrutiny_validates_against_its_schema(self):
+        scrutiny, _ = self.run_one(dispositions=self.closed_set())
+        self.assertEqual(schema_lib.check(demonstrate.committed_scrutiny(scrutiny)), [])
+
+    def test_a_scrutiny_without_confirmations_breaches_the_schema(self):
+        scrutiny, _ = self.run_one(dispositions=self.closed_set())
+        committed = demonstrate.committed_scrutiny(scrutiny)
+        committed.pop("confirmations")
+        self.assertTrue(schema_lib.check(committed))
+
+    def test_the_confirmations_are_inside_the_digest(self):
+        scrutiny, _ = self.run_one(dispositions=self.closed_set())
+        moved = json.loads(json.dumps(scrutiny))
+        moved["confirmations"]["people"] += 1
+        self.assertNotEqual(
+            demonstrate.scrutiny_digest(scrutiny), demonstrate.scrutiny_digest(moved)
+        )
+
+    def test_the_prose_names_the_people_every_rule_and_the_individual_count(self):
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        prose = demonstrate.render(scrutiny, coverage)
+        block = scrutiny["confirmations"]
+        self.assertIn("## Who decided", prose)
+        section = prose.split("## Who decided", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(f"**{block['people']}** distinct people", section)
+        self.assertIn(f"**{block['individual']}** entries confirmed", section)
+        self.assertIn(f"**{len(block['by_rule'])}**", section)
+        for rule_id, row in block["by_rule"].items():
+            self.assertIn(f"`{rule_id}`", section)
+            self.assertIn(row["text"], section)
+            self.assertIn(row["stated_by"], section)
+            self.assertIn(
+                f"| `{rule_id}` | {row['stated_by']} | {row['applied']} | {row['text']} |",
+                section,
+            )
+        self.assertIn("| 0 |", section, "a rule applied to nothing is listed, not dropped")
+        self.assertEqual(demonstrate.prose_omissions(prose, block), [])
+
+    def test_a_set_with_no_rule_renders_the_section_without_a_table(self):
+        scrutiny, coverage = self.run_one()
+        prose = demonstrate.render(scrutiny, coverage)
+        section = prose.split("## Who decided", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("**0** distinct people", section)
+        self.assertIn("declares no rule", section)
+        self.assertNotIn("| Rule |", section)
+        self.assertEqual(demonstrate.prose_omissions(prose, scrutiny["confirmations"]), [])
+
+    def test_the_attributed_prose_regenerates_byte_for_byte(self):
+        declared = self.closed_set()
+        first, coverage = self.run_one(dispositions=declared)
+        second, coverage_two = self.run_one(dispositions=declared)
+        self.assertEqual(
+            demonstrate.render(first, coverage), demonstrate.render(second, coverage_two)
+        )
+        self.assertEqual(
+            demonstrate.scrutiny_digest(first), demonstrate.scrutiny_digest(second)
+        )
+
+    def test_prose_omitting_the_people_count_is_named(self):
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        block = scrutiny["confirmations"]
+        prose = demonstrate.render(scrutiny, coverage)
+        without = prose.replace(f"**{block['people']}** distinct", "**some** distinct")
+        found = demonstrate.prose_omissions(without, block)
+        self.assertEqual(len(found), 1)
+        self.assertIn(f"{block['people']} people decided", found[0])
+
+    def test_prose_omitting_a_rule_is_named(self):
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        block = scrutiny["confirmations"]
+        prose = demonstrate.render(scrutiny, coverage)
+        dropped = sorted(block["by_rule"])[0]
+        without = "\n".join(
+            line for line in prose.splitlines()
+            if not line.startswith(f"| `{dropped}` |")
+        ) + "\n"
+        found = demonstrate.prose_omissions(without, block)
+        self.assertEqual(len(found), 1)
+        self.assertIn(dropped, found[0])
+
+    def test_prose_with_no_section_is_named_once(self):
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        prose = demonstrate.render(scrutiny, coverage)
+        without = prose.split("## Who decided", 1)[0] + "## Gaps\n"
+        found = demonstrate.prose_omissions(without, scrutiny["confirmations"])
+        self.assertEqual(len(found), 1)
+        self.assertIn("Who decided", found[0])
+
+
+class CommittedEvidenceCheckRefuses(ScrutinyCase):
+    """`demonstrate --check` reads the committed evidence; these hand it a copy."""
+
+    def evidence_copy(self, prose_edit) -> list[str]:
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        prose = prose_edit(demonstrate.render(scrutiny, coverage), scrutiny)
+        root = Path(self.tmp.name) / "evidence"
+        root.mkdir()
+        (root / "c.json").write_text(
+            json.dumps(coverage, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        (root / "s.json").write_text(
+            json.dumps(demonstrate.committed_scrutiny(scrutiny), indent=2, sort_keys=True)
+            + "\n",
+            encoding="utf-8",
+        )
+        (root / "p.md").write_text(prose, encoding="utf-8")
+        return cli._committed_evidence_failures(
+            root / "c.json", root / "s.json", root / "p.md"
+        )
+
+    def test_the_fixture_evidence_is_accepted_as_written(self):
+        self.assertEqual(self.evidence_copy(lambda prose, _: prose), [])
+
+    def test_prose_omitting_the_people_count_refuses(self):
+        found = self.evidence_copy(
+            lambda prose, s: prose.replace(
+                f"**{s['confirmations']['people']}** distinct", "**some** distinct"
+            )
+        )
+        self.assertEqual(len(found), 1)
+        self.assertIn("people decided", found[0])
+
+    def test_prose_omitting_a_rule_refuses(self):
+        def drop(prose, s):
+            rule = sorted(s["confirmations"]["by_rule"])[0]
+            return "\n".join(
+                line for line in prose.splitlines()
+                if not line.startswith(f"| `{rule}` |")
+            ) + "\n"
+
+        found = self.evidence_copy(drop)
+        self.assertEqual(len(found), 1)
+        self.assertIn("does not state rule", found[0])
+
+    def test_a_scrutiny_whose_confirmations_differ_from_its_coverage_refuses(self):
+        scrutiny, coverage = self.run_one(dispositions=self.closed_set())
+        root = Path(self.tmp.name) / "evidence"
+        root.mkdir()
+        prose = demonstrate.render(scrutiny, coverage)
+        committed = json.loads(json.dumps(demonstrate.committed_scrutiny(scrutiny)))
+        committed["confirmations"]["people"] += 1
+        (root / "c.json").write_text(
+            json.dumps(coverage, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        (root / "s.json").write_text(
+            json.dumps(committed, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        (root / "p.md").write_text(prose, encoding="utf-8")
+        found = cli._committed_evidence_failures(
+            root / "c.json", root / "s.json", root / "p.md"
+        )
+        self.assertEqual(
+            found,
+            ["the committed scrutiny and its coverage disagree on the confirmations"],
+        )
+
+
 class CommittedEvidence(unittest.TestCase):
     """The pinned evidence is checkable without the inputs it was made from."""
 
@@ -295,6 +485,30 @@ class CommittedEvidence(unittest.TestCase):
         )
         self.assertEqual(scrutiny["examined"]["scoped"], record["counts"]["scoped"])
 
+    def test_the_committed_scrutiny_carries_the_confirmations_beside_it(self):
+        """Who confirmed the pinned 202, and under what rule, machine-readably."""
+        scrutiny = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")
+        record = reconcile.read_json(self.coverage_path)
+        self.assertEqual(scrutiny["confirmations"], record["confirmations"])
+        self.assertEqual(scrutiny["confirmations"]["people"], 1)
+        self.assertEqual(
+            scrutiny["confirmations"]["by_rule"]["row-author-owns-walking-it"]["applied"],
+            scrutiny["closure_ratio"]["numerator"],
+        )
+        self.assertEqual(scrutiny["confirmations"]["individual"], 0)
+
+    def test_the_committed_scrutiny_validates_against_its_schema(self):
+        scrutiny = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")
+        self.assertEqual(schema_lib.check(scrutiny), [])
+
+    def test_the_committed_prose_states_who_decided(self):
+        record = reconcile.read_json(self.coverage_path)
+        prose = self.prose_path.read_text(encoding="utf-8")
+        self.assertEqual(demonstrate.prose_omissions(prose, record["confirmations"]), [])
+        self.assertIn("**1** distinct person", prose)
+        self.assertIn("`row-author-owns-walking-it`", prose)
+        self.assertIn("Laurence Day", prose)
+
     def test_a_later_scrutiny_can_be_compared_against_the_committed_one(self):
         """The committed record is usable as the earlier side of a comparison."""
         scrutiny = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")
@@ -335,18 +549,39 @@ class CommittedEvidence(unittest.TestCase):
         "the pinned evidence; neither input lives in this repository",
     )
     def test_the_committed_evidence_regenerates_from_the_pinned_inputs(self):
+        """The pinned scrutiny, from its inputs and its attributed set.
+
+        Closes at 202 over 261, attributed to one person under one rule, and
+        records a duration beside the declared budget. The duration is one
+        observation on one machine; only its presence and bound are asserted.
+        """
+        declared = reconcile.read_json(EVIDENCE / "wildcat-app-v2.dispositions.json")
         scrutiny, coverage = demonstrate.scrutinise(
-            Path(PINNED_APP), Path(PINNED_WORKBOOK),
-            "1.1.0", {"label": "wildcat-app-v2", "commit": PINNED_COMMIT},
+            Path(PINNED_APP), Path(PINNED_WORKBOOK), cli.VERSION,
+            {"label": "wildcat-app-v2", "commit": PINNED_COMMIT}, declared,
         )
         self.assertEqual(
             json.dumps(coverage, indent=2, sort_keys=True) + "\n",
             self.coverage_path.read_text(encoding="utf-8"),
         )
         self.assertEqual(
+            json.dumps(demonstrate.committed_scrutiny(scrutiny), indent=2, sort_keys=True)
+            + "\n",
+            (EVIDENCE / "wildcat-app-v2.scrutiny.json").read_text(encoding="utf-8"),
+        )
+        self.assertEqual(
             demonstrate.render(scrutiny, coverage),
             self.prose_path.read_text(encoding="utf-8"),
         )
+        self.assertEqual(scrutiny["closure_ratio"]["numerator"], 202)
+        self.assertEqual(scrutiny["closure_ratio"]["denominator"], 261)
+        self.assertEqual(scrutiny["confirmations"]["people"], 1)
+        self.assertEqual(
+            scrutiny["confirmations"]["by_rule"]["row-author-owns-walking-it"]["applied"],
+            202,
+        )
+        self.assertEqual(scrutiny["timing"]["budget_ms"], demonstrate.BUDGET_MS)
+        self.assertTrue(scrutiny["timing"]["within_budget"])
 
 
 class EvidenceRootIsDeclared(ScrutinyCase):

@@ -121,7 +121,7 @@ venue rows are stated gaps, not clean venues.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 
-<!-- front-door:demo skill="dokimasia" claim="dokimasia-wildcat-app-v2-scrutiny" digest="27b344d92ceec3caaf4ff55ea32e5f5d73e4c91d5df32631ace88584c7c71526" -->
+<!-- front-door:demo skill="dokimasia" claim="dokimasia-wildcat-app-v2-scrutiny" digest="e791905ea2c1d9bd1dfbb109cfe4caa896672482ebad1602a2a5fb5ad0b0dd69" -->
 [Dokimasia](./plugins/dokimasia) regenerates the `wildcat-app-v2` coverage
 record, scrutiny record and rendered report, and checks that the three agree.
 

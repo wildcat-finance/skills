@@ -39,6 +39,20 @@ This is the finding, not a failure of the run. The application
 contributes a denominator that did not exist before, and the
 workbook contributes rows nobody has joined to it.
 
+## Who decided
+
+- People: **1** distinct person confirmed the numerator
+- Individually: **0** entries confirmed by a named person under no rule
+- Rules declared: **1**
+
+| Rule | Stated by | Applied | Text |
+| --- | --- | ---: | --- |
+| `row-author-owns-walking-it` | Laurence Day | 202 | the reviewer who wrote a row owns walking it, which holds by construction of the workbook |
+
+A person's name here is a claim the disposition set makes under that
+name; nothing verified that the person agreed. An entry confirmed
+under a rule carries the judgement of the person who stated the rule.
+
 ## Gaps
 
 | Item | Disposition | Reason |

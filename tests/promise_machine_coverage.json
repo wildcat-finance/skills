@@ -4208,7 +4208,7 @@
         "transition": "a scrutiny whose result either matches an earlier one or names the identity that moved, joined to the canonical Authorises field",
         "unknowns": "items carrying no disposition, and a moved result no identity explains, which is reported as unattributed"
       },
-      "sha256": "0baceaf58dd6f1a24acfcca9c3c3d91d53636d113026e0d9d2c8dfb1fc62b577",
+      "sha256": "c530268f6c9d90b61a0d6ca14dcdf693df979ec7049ae8c53edb5e335bca1064",
       "source": "plugins/dokimasia/schemas/scrutiny-v1.json"
     },
     "dokimasia-disposition-closure": {
