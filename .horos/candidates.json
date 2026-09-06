@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 18343827,
+    "bytes_blob": 18353940,
     "bytes_generated": 98
   },
   "entries": [
@@ -35,7 +35,7 @@
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
     },
     {
-      "bytes": 54688,
+      "bytes": 64801,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
