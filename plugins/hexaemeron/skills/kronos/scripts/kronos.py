@@ -34,6 +34,7 @@ changed. This appends each pass to a file so that movement is visible.
   K019  a state-ref push that is not a fast-forward
   K020  a remote that is a URL or not a configured name
   K021  git could not start, timed out, or exceeded the output cap
+  K022  a declared-inputs block that breaks the shape VERSIONING.md defines
 
 Exit 0 clean, 1 a refusal, 2 bad invocation, and 3 from `parked` alone while a
 park stands. That last is not an error in the tool. It is the loop's reason not
@@ -47,6 +48,15 @@ VERSIONING.md already defines, which is the same digest each ledger stores in
 its own history row. A line written here can therefore be checked against the
 ledger it describes.
 
+What a ledger declared it needs is read the same way, from the same bytes, and
+is likewise refused as an unknown field when a caller states it. VERSIONING.md
+defines the optional declared-inputs block and tests/test_evolution_contract.py
+checks every governed ledger against it; this reads one. `declared_inputs` is
+an object when the ledger declared and null when it did not, and its digest
+covers the rows rather than the block's bytes, so `show` can mark a declaration
+that moved under a held job that did not. A declaration is a claim its ledger's
+owner makes. Nothing here checks that a declared input exists.
+
 What this does not do. It records a judgement; it does not make one. An axis
 score is a number the ranking agent supplies, and a basis is prose nobody
 parses. It also cannot tell that a pass went unrecorded, because a loop that
@@ -57,9 +67,12 @@ git subprocess. Ranking verbs start no subprocess and open no socket. The pass
 document arrives from a caller and is read with a byte cap, an unknown field is
 refused rather than stored, and the candidate count is capped. Each candidate
 names a ledger path the caller chose, so that path is resolved, required to be a
-regular file under the scoreboard's root, and read under a cap. An existing
-scoreboard is validated line by line before anything is appended, so a run
-interrupted mid-append is refused rather than written past.
+regular file under the scoreboard's root, and read under a cap. Inside that
+file, a declared-inputs block is bounded again: a row count, a whole-block byte
+cap, an id and a note cap, and two closed vocabularies. A row breaking any of
+them refuses the pass. An existing scoreboard is validated line by line before
+anything is appended, so a run interrupted mid-append is refused rather than
+written past.
 
 pull and push copy the two JSONL files through a throwaway clone under the
 system temp directory. Git is invoked with a fixed argv list, no shell, a
@@ -111,6 +124,24 @@ GIT_OUTPUT_CAP = 2 * 1024 * 1024
 
 LEDGER_FIELDS = ("Frontier status", "Frontier revision", "Current frontier", "Next Fiat job")
 
+# VERSIONING.md's optional declared-inputs block, made readable here. The rules
+# are its own and tests/test_evolution_contract.py checks all 27 governed
+# ledgers against them; these restate rather than import them because this
+# script ships inside a plugin that carries neither file. A reader that
+# accepted what that check refuses would be a second contract, so
+# test_kronos_scoreboard.py holds the two to one verdict over every specimen.
+DECLARED_INFO = "declared-inputs"
+MAX_DECLARED_ROWS = 16
+MAX_DECLARED_BLOCK_BYTES = 4096
+MAX_DECLARED_ID_BYTES = 64
+MAX_DECLARED_NOTE_BYTES = 200
+DECLARED_KINDS = frozenset({"credential", "endpoint", "person", "corpus", "tool"})
+DECLARED_AVAILABILITY = frozenset({"available", "absent", "unknown"})
+DECLARED_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+FENCE = re.compile(r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>.*)$")
+HEADER_BULLET = re.compile(r"^- [^:]+: .+$")
+HISTORY_HEADING = "## History"
+
 PARK_EVENTS = ("park", "unpark")
 PARKED_NAME = "parked.jsonl"
 SCOREBOARD_NAME = "scoreboard.jsonl"
@@ -136,11 +167,142 @@ def ledger_field(text: str, name: str) -> str:
     return match.group(1).strip().strip("`")
 
 
-def held_job_hash(ledger: Path) -> str:
+def held_job_from_text(text: str) -> str:
     """SHA-256 of the canonical frontier line VERSIONING.md defines."""
-    text = read_capped(ledger, MAX_LEDGER_BYTES, "K007")
     canonical = "|".join(ledger_field(text, name) for name in LEDGER_FIELDS) + "\n"
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def held_job_hash(ledger: Path) -> str:
+    """The same digest, for a caller holding the path rather than the bytes."""
+    return held_job_from_text(read_capped(ledger, MAX_LEDGER_BYTES, "K007"))
+
+
+def ledger_structure(text: str) -> tuple:
+    """Every fenced region, and every line outside one, from a single walk.
+
+    The contract check reads these as two functions over the same lines. They
+    run one state machine between them, because a line is visible exactly when
+    it is not a fence and no block is open, so this walks the ledger once.
+    """
+    blocks, visible, current = [], [], None
+    for index, line in enumerate(text.splitlines()):
+        fence = FENCE.match(line)
+        if fence is None:
+            if current is None:
+                visible.append((index, line))
+            else:
+                current["rows"].append(line)
+                current["raw"].append(line)
+            continue
+        sequence, info = fence.group("mark"), fence.group("info").strip()
+        if current is None:
+            current = {
+                "start": index,
+                "mark": sequence[0],
+                "length": len(sequence),
+                "info": info,
+                "rows": [],
+                "raw": [line],
+                "closed": False,
+            }
+        elif sequence[0] == current["mark"] and len(sequence) >= current["length"] and not info:
+            current["closed"] = True
+            current["raw"].append(line)
+            blocks.append(current)
+            current = None
+        else:
+            current["rows"].append(line)
+            current["raw"].append(line)
+    if current is not None:
+        blocks.append(current)
+    return blocks, visible
+
+
+def declared_block(text: str, where: str) -> dict | None:
+    """The ledger's one declared-inputs block, or None where it declared nothing."""
+    blocks, visible = ledger_structure(text)
+    for block in blocks:
+        # Refused before the placement rules, because an unclosed fence
+        # swallows the History heading the placement rules are measured from.
+        if not block["closed"]:
+            raise Refusal("K022", f"{where} leaves a fenced block never closed")
+    declared = [block for block in blocks if block["info"] == DECLARED_INFO]
+    if len(declared) > 1:
+        raise Refusal("K022", f"{where} carries {len(declared)} declared-inputs blocks, where at most one is allowed")
+    if not declared:
+        return None
+    block = declared[0]
+    history = [index for index, line in visible if line == HISTORY_HEADING]
+    limit = history[0] if history else len(text.splitlines())
+    bullets = [index for index, line in visible if index < limit and HEADER_BULLET.fullmatch(line)]
+    if bullets and block["start"] < bullets[-1]:
+        raise Refusal("K022", f"{where} opens its declared-inputs block above the last frontier header bullet")
+    if history and block["start"] > history[0]:
+        raise Refusal("K022", f"{where} opens its declared-inputs block below the History heading")
+    return block
+
+
+def declared_rows(block: dict, where: str) -> list:
+    """One record per declared input, refusing the first row that breaks shape."""
+    rows = [line for line in block["rows"] if line.strip()]
+    if len(rows) > MAX_DECLARED_ROWS:
+        raise Refusal("K022", f"{where} declares {len(rows)} inputs, over the {MAX_DECLARED_ROWS} cap")
+    measured = len(("\n".join(block["raw"]) + "\n").encode("utf-8"))
+    if measured > MAX_DECLARED_BLOCK_BYTES:
+        raise Refusal("K022", f"{where} declares {measured} bytes, over the {MAX_DECLARED_BLOCK_BYTES} cap")
+    declared, seen = [], set()
+    for line in rows:
+        if line.lstrip()[:1] in {"-", "|", "`"}:
+            raise Refusal("K022", f"{where} declares a row opening with a hyphen, a pipe or a backtick")
+        fields = [part.strip() for part in line.split("|")]
+        if len(fields) != 4:
+            raise Refusal("K022", f"{where} declares a row of {len(fields)} fields rather than four")
+        if not all(fields):
+            raise Refusal("K022", f"{where} declares a row carrying an empty field")
+        identifier, kind, availability, note = fields
+        if DECLARED_ID.fullmatch(identifier) is None:
+            raise Refusal("K022", f"{where} declares id {identifier!r}, which is not kebab-case")
+        size = len(identifier.encode("utf-8"))
+        if size > MAX_DECLARED_ID_BYTES:
+            raise Refusal("K022", f"{where} declares an id of {size} bytes, over the {MAX_DECLARED_ID_BYTES} cap")
+        if identifier in seen:
+            raise Refusal("K022", f"{where} declares id {identifier!r} twice")
+        seen.add(identifier)
+        if kind not in DECLARED_KINDS:
+            raise Refusal("K022", f"{where} declares kind {kind!r}, outside the closed set")
+        if availability not in DECLARED_AVAILABILITY:
+            raise Refusal("K022", f"{where} declares availability {availability!r}, outside the closed set")
+        size = len(note.encode("utf-8"))
+        if size > MAX_DECLARED_NOTE_BYTES:
+            raise Refusal("K022", f"{where} declares a note of {size} bytes, over the {MAX_DECLARED_NOTE_BYTES} cap")
+        declared.append(
+            {"id": identifier, "kind": kind, "availability": availability, "note": note}
+        )
+    return declared
+
+
+def declaration_digest(rows: list) -> str:
+    """SHA-256 over the canonical rows, built the way the frontier line is.
+
+    The fields are digested rather than the block's own bytes, so re-spacing a
+    row or moving the block within its allowed span states no new claim and
+    does not read as a declaration somebody changed.
+    """
+    canonical = "".join(
+        "|".join((row["id"], row["kind"], row["availability"], row["note"])) + "\n"
+        for row in rows
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def declaration(text: str, where: str) -> dict | None:
+    """What a ledger declared it needs, or None where it declared nothing."""
+    block = declared_block(text, where)
+    if block is None:
+        return None
+    rows = declared_rows(block, where)
+    return {"digest": declaration_digest(rows), "rows": rows}
 
 
 def read_capped(path: Path, cap: int, code: str) -> str:
@@ -196,10 +358,16 @@ def score(candidate: dict, root: Path, where: str) -> dict:
     if not isinstance(candidate["ledger"], str) or not candidate["ledger"].strip():
         raise Refusal("K002", f"{where} ledger is empty")
     ledger = resolved_under(root, candidate["ledger"])
+    # One read, two derivations. Both come off the ledger's bytes rather than
+    # off the pass document, and reading the file twice would pay the cost the
+    # design record measured a sidecar file for.
+    text = read_capped(ledger, MAX_LEDGER_BYTES, "K007")
+    relative = str(ledger.relative_to(root))
     return {
         "skill": candidate["skill"],
-        "ledger": str(ledger.relative_to(root)),
-        "held_job": held_job_hash(ledger),
+        "ledger": relative,
+        "held_job": held_job_from_text(text),
+        "declared_inputs": declaration(text, relative),
         **axes,
         "total": total,
         "basis": candidate["basis"],
@@ -760,6 +928,17 @@ def parked(args: argparse.Namespace) -> int:
     return STANDS
 
 
+def recorded_declaration(candidate: dict) -> str | None:
+    """The declaration digest a recorded candidate carries, if it carries one.
+
+    A line written before this field existed carries no key at all, and a
+    ledger that declares nothing records null. Neither declared, so neither
+    may read as a declaration that moved.
+    """
+    declared = candidate.get("declared_inputs")
+    return declared.get("digest") if isinstance(declared, dict) else None
+
+
 def drift(passes: list) -> dict:
     """Axis scores that moved for a skill whose held job did not, by pass."""
     seen = {}
@@ -778,6 +957,26 @@ def drift(passes: list) -> dict:
     return moved
 
 
+def declaration_drift(passes: list) -> dict:
+    """Declarations that moved for a skill whose held job did not, by pass.
+
+    Keyed as the axis drift above is, and read the same way: the held job is
+    half the key, so a candidate whose ledger moved on is a fresh subject
+    rather than a change to the one before it.
+    """
+    seen = {}
+    moved = {}
+    for entry in passes:
+        for candidate in entry["candidates"]:
+            key = (candidate["skill"], candidate["held_job"])
+            digest = recorded_declaration(candidate)
+            before = seen.get(key, ...)
+            if before is not ... and before != digest:
+                moved[(entry["pass"], candidate["skill"])] = (before, digest)
+            seen[key] = digest
+    return moved
+
+
 def show(args: argparse.Namespace) -> int:
     scoreboard = Path(args.scoreboard).resolve()
     if not scoreboard.exists():
@@ -785,6 +984,7 @@ def show(args: argparse.Namespace) -> int:
         return 0
     passes = existing_passes(scoreboard)
     moved = drift(passes)
+    declared_moved = declaration_drift(passes)
     for entry in passes:
         note = "rank-only" if entry.get("rank_only") else (entry.get("run") or "no run recorded")
         print(f"pass {entry['pass']}  {entry['mode']}  {entry['scope']}  ({note})")
@@ -803,9 +1003,13 @@ def show(args: argparse.Namespace) -> int:
             print(f"      {candidate['basis']}")
             for name, before, after in moved.get((entry["pass"], candidate["skill"]), []):
                 print(f"      drift: {name} {before} -> {after}, held job unchanged")
+            change = declared_moved.get((entry["pass"], candidate["skill"]))
+            if change is not None:
+                was, now = (digest[:12] if digest else "none" for digest in change)
+                print(f"      drift: declaration {was} -> {now}, held job unchanged")
         for name in entry.get("ungoverned", []):
             print(f"    ungoverned: {name}")
-    print(f"{len(passes)} pass(es), {len(moved)} with drift")
+    print(f"{len(passes)} pass(es), {len(set(moved) | set(declared_moved))} with drift")
     return 0
 
 
