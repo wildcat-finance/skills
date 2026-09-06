@@ -98,8 +98,12 @@ DOWNGRADED = "plugins/anamnesis/skills/anamnesis"
 PUBLIC_SET_OPTION = "--public-set"
 # A superseded spelling is derived rather than listed. An option whose name
 # joins `public`, `registered` or `demo` to anything is the same selection
-# under another name, so the rule is "exactly one spelling" and not "not these
-# five", which would only ever forbid the spellings somebody remembered.
+# under another name, which forbids every such spelling rather than the five
+# somebody remembered. The pattern bounds that family and nothing wider, so on
+# its own it would pass an alias spelled outside the family. What closes that
+# is `test_the_run_subcommand_exposes_a_closed_option_surface`: the `run`
+# option set is asserted whole, so a second selection cannot arrive under any
+# spelling without a test naming it.
 SELECTION_SHAPE_RE = re.compile(r"^--(?:public|registered|demo)(?:-[a-z0-9]+)*$")
 OPTION_TOKEN_RE = re.compile(r"--[a-z][a-z0-9-]*")
 RUNNER_PATH = "scripts/demonstrations.py"
@@ -113,11 +117,14 @@ INVOCATION_RE = re.compile(
     r"python3\s+scripts/demonstrations\.py\s+run(?P<rest>(?:[^\n`]|\\\n)*)"
 )
 
-# The two committed copies of this delivery's own specification. The runbook
-# names the superseded spelling in order to forbid it, so sweeping the copies
-# for that spelling would report the sentence that bans it. Excluded here for
-# that reason, and for no other: they are the only documents in the tree whose
-# subject is this rule.
+# The two committed copies of this delivery's own specification, excluded
+# because their subject is this rule: a document that has to quote a forbidden
+# spelling in order to forbid it would be reported for carrying it.
+#
+# The exclusion is defensive and today it excludes nothing. Neither copy names
+# a superseded spelling; both name `--public-set` and no other. It is kept so
+# that stating the rule in the specification stays possible without the sweep
+# turning on the sentence that states it.
 SPECIFICATION_COPIES = (
     "docs/shoggoth-public-front-door-runbook.md",
     "docs/shoggoth-public-front-door-study.md",
@@ -713,6 +720,29 @@ class PublicSetOptionSpellingTests(unittest.TestCase):
 
     def test_the_runner_exposes_exactly_one_public_set_spelling(self):
         self.assertEqual(self.selection_options(), [PUBLIC_SET_OPTION])
+
+    def test_the_run_subcommand_exposes_a_closed_option_surface(self):
+        """The rule above reads a family of names; this one reads all of them.
+
+        `SELECTION_SHAPE_RE` recognises a second selection spelled `--public`,
+        `--registered` or `--demo` anything. An alias spelled outside that
+        family -- `--all-demos`, say -- is the same selection under a name the
+        pattern cannot see, and both spelling cases would stay green. Asserting
+        the whole option set closes that: a new option on `run` fails here
+        whatever it is called, and whoever adds one has to say which of the two
+        it is.
+        """
+
+        parser = demonstrations.build_parser()
+        run = None
+        for action in parser._subparsers._group_actions:  # the sub-command map
+            run = run or action.choices.get("run")
+        self.assertIsNotNone(run, "the runner exposes no `run` sub-command")
+        self.assertEqual(
+            sorted({option for item in run._actions for option in item.option_strings}),
+            ["--help", "--output-root", "--public-set", "--record", "--repeat",
+             "--report", "--root", "-h"],
+        )
 
     def test_the_module_carries_no_second_spelling(self):
         source = (ROOT / RUNNER_PATH).read_text(encoding="utf-8")
