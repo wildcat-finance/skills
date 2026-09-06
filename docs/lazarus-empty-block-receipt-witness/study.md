@@ -116,6 +116,12 @@ All three pass the empty truth-table gate, require one receipt RPC request for t
 
 The selected implementation must define mutually exclusive closed branches rather than make target fields independently optional:
 
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | shape-discriminated
+record | docs/decisions/drafts/empty-receipt-witness-shapes.md
+```
+
 - empty plan: only `block_receipts_request`;
 - scoped plan: all four current fields;
 - empty witness: `schema_version`, verified `header`, and `receipts: []` only;

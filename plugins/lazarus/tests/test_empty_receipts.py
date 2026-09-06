@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 import unittest
 
 from lazarus_lib.errors import FormatError, IntegrityError
@@ -77,6 +78,20 @@ def empty_material():
 
 
 class ExclusiveShapeTests(unittest.TestCase):
+    def test_shipped_study_binds_the_selected_shape_to_its_decision(self):
+        root = Path(__file__).resolve(strict=True).parents[3]
+        study = (
+            root / "docs" / "lazarus-empty-block-receipt-witness" / "study.md"
+        ).read_text(encoding="utf-8")
+        bridge = (
+            "```design-bridge\n"
+            "schema | hypomnema-design-bridge/v1\n"
+            "decision | shape-discriminated\n"
+            "record | docs/decisions/drafts/empty-receipt-witness-shapes.md\n"
+            "```"
+        )
+        self.assertEqual(study.count(bridge), 1)
+
     def test_plan_v3_accepts_only_empty_or_complete_scoped_relation(self):
         scoped = support.sample_plan_v3()
         validate_document("plan", scoped)
