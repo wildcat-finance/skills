@@ -29,8 +29,12 @@ nor a hosted runner tells you whether your clone is activated.
 FIAT_SKIP_PRECOMMIT=1 git commit
 ```
 
-That token is the only way past the gate. It is a literal string so you can grep
-for it here rather than hear about it from somebody.
+That token is for a commit you mean to make without a recorded green: the gate
+reads it and stands aside. It is a literal string so you can grep for it here
+rather than hear about it from somebody. It is not the only way past. `git
+commit --no-verify`, and the `-n` short form, tell git to run no pre-commit
+hook at all, so the gate never executes and prints nothing; the commit lands as
+it would in a checkout that was never activated.
 
 ## What lands here
 
