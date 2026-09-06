@@ -229,3 +229,53 @@ reverses no decision.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Tests: `plugins.hexaemeron.tests.test_evolution` covers the row's axis arithmetic and retained frontier line and is not edited. No new executable behaviour is added, so no new test module is written; the emitter's own suite from step 1 stays green. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-2.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, rebound to the current study digest before step 2 opens. The same replacement was receipted twice earlier in this run and un-bound each time by a later study amendment, which changes the digest every runbook amendment records. Step 1's audit is closed and no further study amendment is expected, so this binding is the one the step is built under.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Tests: The existing test module gains the end-to-end case that builds the scratch repository, repairs the failure, emits the record and asserts both the acceptance and the two refusals, so the demonstration is reproduced by the suite rather than only by hand. Step audit runner contract is test command `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`, report format `elenchus.unittest.v1`, report file `.elenchus/fiat-1275-step-3.json`. That runner is the one that reaches this step's tests: `tests/run_tests.py` discovers only the `tests/` directory, so it collects nothing under `plugins/hexaemeron/tests/` and cannot observe the guard a fix to this step claims. The report path must be fresh; a missing, stale, empty, malformed or infrastructure-failed report is `inconclusive` rather than evidence that a repair is guarded.
+
+**Why.** Warden finding S1-R1-06, rebound to the current study digest before step 3 opens. The same replacement was receipted twice earlier in this run and un-bound each time by a later study amendment, which changes the digest every runbook amendment records. Step 1's audit is closed and no further study amendment is expected, so this binding is the one the step is built under.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Exit: `plugins/hexaemeron/skills/elenchus/SKILL.md` carries one new section that names the emitter, its two inputs, its output, the nine fields, the four refusals a caller meets most, and what an emitted record does not establish; `## Hand back` gains one sentence pointing at it, and no other section changes. `plugins/hexaemeron/skills/elenchus/EVOLUTION.md` carries `elenchus-v1.4.0` as current version and one new `generation` history row whose frontier revision `observed-failure-root-cause`, frontier SHA-256 `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b`, `Frontier status: mature` and `Next Fiat job: None -- mature` are byte-identical to `elenchus-v1.3.0`. Hexaemeron re-pins from `1.6.24` to `1.6.25` on `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`, with the matching `DELIVERY_PACKAGE_VERSIONS` entry in `tests/test_version_propagation.py` moved to the same value, so an installed copy is offered the changed skill file. `docs/elenchus-fixed-and-guarded-record/runbook.md` and `docs/elenchus-fixed-and-guarded-record/study.md` are byte-identical to the controller artefacts. Proved by `python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/elenchus/SKILL.md` reporting clean, and by `python3 scripts/run_checks.py --base origin/main` at exit zero on the committed tree. Complete replacement Files: `plugins/hexaemeron/skills/elenchus/SKILL.md`, `plugins/hexaemeron/skills/elenchus/EVOLUTION.md`, `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `tests/test_version_propagation.py`, and `docs/elenchus-fixed-and-guarded-record/runbook.md`.
+
+**Why.** Warden lead in round 1 of step 2. The study's constraint 4 states the Hexaemeron re-pin across four files as a delivery constraint, and no step's Exit assigned it, so the run would have shipped a changed skill file that no installed copy is ever offered. The fifth file is the obligation's own consequence: `tests/test_version_propagation.py` pins the expected package version as a literal, so a re-pin that leaves it behind reddens the suite. Round 1 read that literal as forbidding the bump rather than as the value the bump moves.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/elenchus/SKILL.md`, `plugins/hexaemeron/skills/elenchus/EVOLUTION.md`, `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `tests/test_version_propagation.py`, `plugins/hexaemeron/tests/test_phylax_model_proxy.py`, and `docs/elenchus-fixed-and-guarded-record/runbook.md`.
+
+**Why.** The re-pin the previous amendment assigned is complete, so step 2's exit holds again. Its file list gains one path the previous amendment missed: `plugins/hexaemeron/tests/test_phylax_model_proxy.py:5679` asserts the same package version as a second literal, and leaving it at `1.6.24` reddened the Hexaemeron suite on that test alone. The re-pin surface is therefore four manifests and two pinned expectations, not four and one. `python3 scripts/run_checks.py --base origin/main` is green across all ten selected checks on the committed tree.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Exit: `plugins/hexaemeron/skills/elenchus/SKILL.md` carries one new section that names the emitter, its two inputs, its output, the nine fields, the four refusals a caller meets most, and what an emitted record does not establish; `## Hand back` gains one sentence pointing at it, and no other section changes. `plugins/hexaemeron/skills/elenchus/EVOLUTION.md` carries `elenchus-v1.4.0` as current version and one new `generation` history row whose frontier revision `observed-failure-root-cause`, frontier SHA-256 `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b`, `Frontier status: mature` and `Next Fiat job: None -- mature` are byte-identical to `elenchus-v1.3.0`. Hexaemeron re-pins from `1.6.24` to `1.6.26` in six places: `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` state the version, and `tests/test_version_propagation.py` and `plugins/hexaemeron/tests/test_phylax_model_proxy.py` pin the expectation those four agree on, so an installed copy is offered the changed skill file. The chosen number is a checked property rather than a frozen literal: it must exceed every hexaemeron version claimed by any local or remote ref, it is re-checked immediately before the run's integration push, and a collision found by that check moves all six places to the next free number without a further amendment. `docs/elenchus-fixed-and-guarded-record/runbook.md` and `docs/elenchus-fixed-and-guarded-record/study.md` are byte-identical to the controller artefacts. Proved by `python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/elenchus/SKILL.md` reporting clean, and by `python3 scripts/run_checks.py --base origin/main` at exit zero on the committed tree.
+
+**Why.** Warden finding S2-R2-02 in round 2 of step 2. Run 1276 already carried `1.6.25` on its own step-4 branches. Both runs make the identical edit in all six places, so `git merge-tree` reports no conflict on any of them, and the tree that lands second ships a changed skill file under a version an installed copy has already been offered, which is the outcome the re-pin exists to prevent. No test in this repository reports it. Naming the number as a checked property rather than a literal is what stops the next concurrent run reproducing the same collision against a frozen value.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

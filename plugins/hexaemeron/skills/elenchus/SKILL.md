@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 <p align="center">
@@ -326,6 +326,83 @@ file's leads-not-pursued list, where a reviewer already looks, rather than
 inventing somewhere new for it. Pass `--require-guard` to make it fail instead,
 which is a decision each repository makes for itself.
 
+## Emit the result as a record
+
+The hand-back below is written for a person. When something else has to read
+the result, `fixed_and_guarded.py` writes the same evidence as one closed
+`elenchus-fixed-and-guarded/v1` object:
+
+```bash
+python3 "$PLUGIN_ROOT/skills/elenchus/scripts/fixed_and_guarded.py" \
+  --draft .elenchus/draft.json \
+  --result .elenchus/result.json \
+  --out .elenchus/fixed-and-guarded.json
+python3 "$PLUGIN_ROOT/skills/elenchus/scripts/fixed_and_guarded.py" \
+  --check .elenchus/fixed-and-guarded.json
+```
+
+Two inputs go in. `--draft` is operator-written JSON holding the seven fields
+the operator had to establish before the Promise could be claimed at all.
+`--result` is an `elenchus.py --format json` result, and five of its keys are
+read: `status` and `detail` become the verdict, `report` becomes the parent's
+counts, `ref` derives the parent commit, and `tests` is what the named guard is
+checked against. Its `output` is up to 4000 characters from an arbitrary
+command, so it never enters the record and is never read for meaning.
+
+One output comes out: a single JSON object at `--out`, staged in the
+destination directory and renamed into place, so an interrupted emit leaves no
+file `--check` accepts. `--check` validates a record that already exists and
+writes nothing. Exit 0 is written or clean, 1 refused, 2 a bad invocation.
+
+The record holds the nine evidence fields the `elenchus-fixed-and-guarded`
+Promise names, beside `schema`, and nothing else:
+
+| Field | Carries | Comes from |
+| --- | --- | --- |
+| `reproduction` | the exact command, and the digest and byte count of its observed output | the draft |
+| `causal_mechanism` | the account as a mechanism, and the `path:line` where it starts | the draft |
+| `minimal_case` | the reduced case, or `null` where none was useful | the draft |
+| `repair` | the commit that repaired the mechanism, and the files it touched | the draft |
+| `guard` | the regression test's file, and the test name inside it | the draft, read against the result's changed test files |
+| `unfixed_parent` | the parent commit, and its normalised report counts | the result, and one `git rev-parse <ref>^{commit} <ref>^` |
+| `fixed_tree` | the fixed commit, and its normalised report counts | the draft, from the rerun Verify already demands |
+| `suites` | each suite command and its exit code | the draft |
+| `verdict` | one of the four states, and the runner-report account that produced it | the result, untranslated |
+
+The reproduction output reaches the record as a SHA-256 and a byte count and
+never as bytes. A stack trace can hold an RPC credential, and this leaves the
+credential nowhere in the record to land.
+
+Four refusals are the ones a caller meets most. Each names its code and its
+field on stderr and writes nothing.
+
+- `F002` a field is absent, or its value is not the shape the schema names.
+- `F004` the verdict is not `guarded`.
+- `F005` the draft is not one closed object holding exactly its seven keys.
+- `F007` the guard names a test absent from the repair's changed test files.
+
+Those four are what a first draft hits, not the whole set. Eighteen codes ship,
+`F000` to `F017`, and the script's module docstring is the list. Eleven of them
+are the closed enumeration of one rule: a record is refused when the fields it
+already carries contradict the Promise's Evidence or Boundary clauses, decided
+only from those fields and reading nothing outside the record. A twelfth member
+takes an amendment to the study that rule came from,
+`docs/elenchus-fixed-and-guarded-record/study.md`, because the rule does not
+authorise a refusal nobody has written down. The other seven refuse an input
+that will not read as one bounded closed object, a guard absent from the
+changed test files the comparison used, a parent that cannot be soundly derived
+from the result's own `ref`, and a destination the emitter will not write to.
+
+An emitted record establishes what the Promise says and no more. It covers the
+reproduced failure and the named guard. It does not prove the surrounding
+system defect-free, and it does not turn an inconclusive, zero-test or
+infrastructure-failed comparison into a guard. It carries the verdict
+`elenchus.py` declared rather than attesting that the report counts came from
+the runs they name. It holds no cross-record identifier, so two records naming
+one mechanism say nothing about each other: this script emits, and does not
+resolve one record against another, admit anything to a corpus, or say that two
+records share a cause.
+
 ## Rationalisations
 
 - "I know what this is, I will just fix it." Sometimes true, and the times it
@@ -375,6 +452,9 @@ starts.
 Keep observation separate from inference. What the failing run printed is
 observed. Why it printed that is inferred until the guard test proves it, and
 saying so costs nothing while claiming otherwise costs the next person's day.
+
+When something other than a person has to read the result, `## Emit the result
+as a record` above writes the same evidence as one closed record.
 
 End with one action: the command to rerun, the question that unblocks you, or
 the review the fix now needs.
