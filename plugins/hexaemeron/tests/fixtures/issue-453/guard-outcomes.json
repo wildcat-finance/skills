@@ -1,0 +1,347 @@
+{
+  "schema": "issue-453-guard-outcomes-fixture/v1",
+  "expected_counters": {
+    "complete": true,
+    "executed": 1,
+    "assertion_failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "outcomes": [
+    {
+      "id": "guarded",
+      "admitted": true,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "guarded",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "passed",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "passed",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "incomplete",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": false,
+        "testsRun": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": false,
+          "executed": 1,
+          "assertion_failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "zero-run",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": true,
+          "executed": 0,
+          "assertion_failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "error",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 1,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 0,
+          "errors": 1,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "mixed",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 2,
+        "failures": 1,
+        "errors": 1,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": true,
+          "executed": 2,
+          "assertion_failures": 1,
+          "errors": 1,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "skipped",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": true,
+          "executed": 0,
+          "assertion_failures": 0,
+          "errors": 0,
+          "skipped": 1
+        }
+      }
+    },
+    {
+      "id": "expected-failure",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 1,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": true,
+          "executed": 0,
+          "assertion_failures": 0,
+          "errors": 0,
+          "skipped": 1
+        }
+      }
+    },
+    {
+      "id": "unexpected-success",
+      "admitted": false,
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 1
+      },
+      "result": {
+        "status": "inconclusive",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 0,
+          "errors": 1,
+          "skipped": 0
+        }
+      }
+    }
+  ],
+  "malformed": [
+    {
+      "id": "boolean-testsRun",
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": true,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "guarded",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "boolean-failures",
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": true,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "guarded",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "negative-testsRun",
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": -1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "guarded",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    }
+  ],
+  "counter_mismatches": [
+    {
+      "id": "executed-mismatch",
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "guarded",
+        "report": {
+          "complete": true,
+          "executed": 2,
+          "assertion_failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "id": "assertion-mismatch",
+      "report": {
+        "schema": "elenchus.unittest.v1",
+        "complete": true,
+        "testsRun": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "expectedFailures": 0,
+        "unexpectedSuccesses": 0
+      },
+      "result": {
+        "status": "guarded",
+        "report": {
+          "complete": true,
+          "executed": 1,
+          "assertion_failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    }
+  ]
+}
