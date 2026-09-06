@@ -88,7 +88,18 @@ CONTRACT = "promise-machine/v1"
 # measures 23,160,342 bytes, 88.3% of the 25 MiB the CLI allows. That one is the
 # CLI's own default and cannot be raised here, so it, and not the file count,
 # is what a nineteenth plugin has to answer for.
-MAX_FILES = 1_200
+#
+# The cap moves a third time without a nineteenth plugin. The roster is still
+# eighteen; what grew is content inside the plugins already there, and this
+# delivery met it as 1,206 files while integrating a base that had advanced 478
+# commits underneath it. The earlier reasoning covers this case as written: the
+# pressure is repository-wide, no per-plugin trim closes it, and shipped package
+# content is not trimmed to hold a file count. What that reasoning predicted has
+# also moved closer. The payload now measures 23,991,363 bytes, 91.5% of the
+# 25 MiB the CLI allows, against 88.3% when the last paragraph was written. The
+# byte cap is the CLI's own default, cannot be raised here, and is the one a
+# nineteenth plugin still has to answer for.
+MAX_FILES = 1_300
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {

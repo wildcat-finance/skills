@@ -1005,8 +1005,14 @@ class PhaseSkillInventoryTests(unittest.TestCase):
             if (root / "skills" / name / "scripts" / f"{name}.py").is_file()
         ]
         readme = (root / "README.md").read_text(encoding="utf-8")
+        # The number stays derived from the tree; only the sentence carrying it
+        # moved. `six phase disciplines` put a count in front of a topology
+        # noun, which `scripts/check_public_front_door.py` refuses unless the
+        # number comes from its own topology reader, and this one does not:
+        # it counts the phase skills that ship a script, which is this suite's
+        # question rather than that reader's.
         expected = (
-            f"six phase disciplines; all "
+            "the phase disciplines, of which "
             f"{self.WORDS[len(with_script)]} ship an executable check:"
         )
         self.assertIn(expected, readme,

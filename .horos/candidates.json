@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 19366907,
+    "bytes_blob": 20182741,
     "bytes_generated": 98
   },
   "entries": [
@@ -47,6 +47,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1275-elenchus-emits-the-fixed-and-guarded-result.synopsis.md"
+    },
+    {
+      "bytes": 154646,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 152598",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.md"
+    },
+    {
+      "bytes": 155337,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -392,6 +406,20 @@
       "path": "audit/rounds/fiat-ship-the-markdown-outline-extractor-the-census-n.synopsis.md"
     },
     {
+      "bytes": 218779,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 109389",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.md"
+    },
+    {
+      "bytes": 219885,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.synopsis.md"
+    },
+    {
       "bytes": 79048,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 39524",
@@ -490,9 +518,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 77854,
+      "bytes": 66420,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 75806",
+      "evidence": "mean line length above 400 in a window at offset 33210",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
+    },
+    {
+      "bytes": 78621,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 76573",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

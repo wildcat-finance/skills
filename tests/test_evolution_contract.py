@@ -14,6 +14,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = ROOT / "plugins"
+SPECIMENS = ROOT / "tests" / "fixtures" / "evolution-contract"
+KRONOS_LEDGER = PLUGINS / "hexaemeron" / "skills" / "kronos" / "EVOLUTION.md"
 
 # Vendored or third-party skills are not governed and keep no ledger. The
 # bundled Pashov suite stays covered by Hexaemeron's own plugin frontier.
@@ -41,6 +43,31 @@ PROTASIS_FRONTIER = (
     "relations through one bounded scanner."
 )
 PROTASIS_NEXT_JOB = "None -- mature"
+
+# VERSIONING.md's optional declared-inputs block. The definition lives there;
+# these constants are that definition made executable over every ledger.
+DECLARED_INPUTS_INFO = "declared-inputs"
+DECLARED_INPUTS_MAX_ROWS = 16
+DECLARED_INPUTS_MAX_BLOCK_BYTES = 4096
+DECLARED_INPUTS_MAX_ID_BYTES = 64
+DECLARED_INPUTS_MAX_NOTE_BYTES = 200
+DECLARED_INPUTS_KINDS = frozenset(
+    {"credential", "endpoint", "person", "corpus", "tool"}
+)
+DECLARED_INPUTS_AVAILABILITY = frozenset({"available", "absent", "unknown"})
+DECLARED_INPUTS_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+# hexctl.py's own fence rule, copied rather than imported because this suite
+# governs ledgers in plugins that do not ship the controller. A check that
+# disagreed with the reader it protects would refuse the wrong files.
+FENCE = re.compile(r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>.*)$")
+HEADER_BULLET = re.compile(r"^- [^:]+: .+$")
+# The four fields the canonical frontier line digests, in that order.
+FRONTIER_FIELDS = (
+    "Frontier status",
+    "Frontier revision",
+    "Current frontier",
+    "Next Fiat job",
+)
 
 
 def field(text, name):
@@ -85,6 +112,212 @@ def governed_skills():
         yield directory.name, directory
 
 
+def fenced_blocks(text):
+    """Every fenced region, with its own line numbers and closing state."""
+    blocks, current = [], None
+    for index, line in enumerate(text.splitlines()):
+        fence = FENCE.match(line)
+        if fence is None:
+            if current is not None:
+                current["rows"].append(line)
+                current["raw"].append(line)
+            continue
+        sequence, info = fence.group("mark"), fence.group("info").strip()
+        if current is None:
+            current = {
+                "start": index,
+                "mark": sequence[0],
+                "length": len(sequence),
+                "info": info,
+                "rows": [],
+                "raw": [line],
+                "closed": False,
+            }
+        elif (
+            sequence[0] == current["mark"]
+            and len(sequence) >= current["length"]
+            and not info
+        ):
+            current["closed"] = True
+            current["raw"].append(line)
+            blocks.append(current)
+            current = None
+        else:
+            current["rows"].append(line)
+            current["raw"].append(line)
+    if current is not None:
+        blocks.append(current)
+    return blocks
+
+
+def unfenced_lines(text):
+    """Lines outside fenced code, numbered as they are in the whole file."""
+    visible, mark, length = [], None, None
+    for index, line in enumerate(text.splitlines()):
+        fence = FENCE.match(line)
+        if fence is not None:
+            sequence, info = fence.group("mark"), fence.group("info").strip()
+            if mark is None:
+                mark, length = sequence[0], len(sequence)
+            elif sequence[0] == mark and len(sequence) >= length and not info:
+                mark, length = None, None
+            continue
+        if mark is None:
+            visible.append((index, line))
+    return visible
+
+
+def unfenced_field(text, name):
+    """Read one header field the way hexctl's _ledger_field_bytes reads it."""
+    prefix = f"- {name}: "
+    values = [
+        line[len(prefix):]
+        for _, line in unfenced_lines(text)
+        if line.startswith(prefix)
+    ]
+    if len(values) != 1:
+        raise AssertionError(f"missing or ambiguous {name}")
+    return values[0].strip().strip("`")
+
+
+def declared_inputs_defects(text):
+    """Every way one ledger breaks the declared-inputs contract.
+
+    Codes come back as a list rather than as a raised refusal so a single
+    specimen can show every rule it breaks at once. A ledger carrying no
+    block, which is all 27 of them today, returns nothing.
+    """
+    defects = []
+    blocks = fenced_blocks(text)
+    visible = unfenced_lines(text)
+    for block in blocks:
+        if not block["closed"]:
+            defects.append(
+                "V001 a fenced block is never closed, so every line below it "
+                "is hidden from a reader that skips fenced code"
+            )
+    declared = [block for block in blocks if block["info"] == DECLARED_INPUTS_INFO]
+    if len(declared) > 1:
+        defects.append(
+            f"V002 {len(declared)} declared-inputs blocks, where at most one "
+            "is allowed"
+        )
+    history = [index for index, line in visible if line == "## History"]
+    limit = history[0] if history else len(text.splitlines())
+    bullets = [
+        index
+        for index, line in visible
+        if index < limit and HEADER_BULLET.fullmatch(line)
+    ]
+    for block in declared:
+        if bullets and block["start"] < bullets[-1]:
+            defects.append(
+                "V003 the declared-inputs block opens above the last frontier "
+                "header bullet"
+            )
+        if history and block["start"] > history[0]:
+            defects.append(
+                "V004 the declared-inputs block opens below the History heading"
+            )
+        if block["closed"]:
+            defects.extend(declared_inputs_row_defects(block))
+    return defects
+
+
+def declared_inputs_row_defects(block):
+    """The row, field and byte rules, applied to one closed block."""
+    defects = []
+    rows = [line for line in block["rows"] if line.strip()]
+    if len(rows) > DECLARED_INPUTS_MAX_ROWS:
+        defects.append(
+            f"V014 the declared-inputs block carries {len(rows)} rows, past "
+            f"{DECLARED_INPUTS_MAX_ROWS}"
+        )
+    measured = len(("\n".join(block["raw"]) + "\n").encode("utf-8"))
+    if measured > DECLARED_INPUTS_MAX_BLOCK_BYTES:
+        defects.append(
+            f"V015 the declared-inputs block is {measured} bytes, past "
+            f"{DECLARED_INPUTS_MAX_BLOCK_BYTES}"
+        )
+    seen = set()
+    for line in rows:
+        if line.lstrip()[:1] in {"-", "|", "`"}:
+            defects.append(
+                "V005 a declared-inputs row opens with a hyphen, a pipe or a "
+                "backtick, which another reader would take for ledger prose"
+            )
+            continue
+        fields = [part.strip() for part in line.split("|")]
+        if len(fields) != 4:
+            defects.append(
+                f"V006 a declared-inputs row carries {len(fields)} fields "
+                "rather than four"
+            )
+            continue
+        if not all(fields):
+            defects.append("V007 a declared-inputs row carries an empty field")
+            continue
+        identifier, kind, availability, note = fields
+        if DECLARED_INPUTS_ID.fullmatch(identifier) is None:
+            defects.append(
+                f"V008 declared-inputs id {identifier!r} is not kebab-case"
+            )
+        identifier_bytes = len(identifier.encode("utf-8"))
+        if identifier_bytes > DECLARED_INPUTS_MAX_ID_BYTES:
+            defects.append(
+                f"V012 a declared-inputs id is {identifier_bytes} bytes, past "
+                f"{DECLARED_INPUTS_MAX_ID_BYTES}"
+            )
+        if identifier in seen:
+            defects.append(
+                f"V009 declared-inputs id {identifier!r} is declared twice"
+            )
+        seen.add(identifier)
+        if kind not in DECLARED_INPUTS_KINDS:
+            defects.append(
+                f"V010 declared-inputs kind {kind!r} is outside the closed set"
+            )
+        if availability not in DECLARED_INPUTS_AVAILABILITY:
+            defects.append(
+                f"V011 declared-inputs availability {availability!r} is outside "
+                "the closed set"
+            )
+        note_bytes = len(note.encode("utf-8"))
+        if note_bytes > DECLARED_INPUTS_MAX_NOTE_BYTES:
+            defects.append(
+                f"V013 a declared-inputs note is {note_bytes} bytes, past "
+                f"{DECLARED_INPUTS_MAX_NOTE_BYTES}"
+            )
+    return defects
+
+
+def kronos_ledger():
+    """The live ledger every specimen below is built from."""
+    return KRONOS_LEDGER.read_text(encoding="utf-8")
+
+
+def specimen(name, placement):
+    """The live Kronos ledger carrying one fixture block at one placement.
+
+    Each specimen is built from a ledger the readers actually parse, so a
+    refusal stays bound to real bytes rather than to a hand-written stand-in
+    that can drift from the shape this contract governs.
+    """
+    lines = kronos_ledger().splitlines()
+    block = (SPECIMENS / name).read_text(encoding="utf-8").rstrip("\n").splitlines()
+    history = lines.index("## History")
+    bullets = [
+        index for index in range(history) if HEADER_BULLET.fullmatch(lines[index])
+    ]
+    anchors = {
+        "above-header-bullets": bullets[0],
+        "after-header-bullets": bullets[-1] + 1,
+        "after-history": history + 1,
+    }
+    anchor = anchors[placement]
+    return "\n".join(lines[:anchor] + ["", *block, ""] + lines[anchor:]) + "\n"
+
+
 class EvolutionContractTests(unittest.TestCase):
     def test_sapheneia_generation_keeps_the_held_frontier(self):
         ledger = (
@@ -118,7 +351,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.53.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.54.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -126,20 +359,28 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.53.1")
+        self.assertEqual(latest["version"], "fiat-v5.54.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("Maintainer direction", latest["evidence"])
-        self.assertIn("issue-check", latest["change"])
-        self.assertIn("queue labels", latest["change"])
-        self.assertIn("Sapheneia", latest["change"])
+        self.assertIn("skills#1411", latest["evidence"])
+        self.assertIn("retires a halted run", latest["change"])
+        self.assertIn("`retire` ledger entry", latest["change"])
+        self.assertIn("still refused", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
         # Generations displaced from newest keep their own coverage: each is
         # still a transition the held frontier had to survive.
+        issue_check = by_version["fiat-v5.53.1"]
+        self.assertEqual(issue_check["axis"], "generation")
+        self.assertEqual(issue_check["revision"], "state-shape-validation")
+        self.assertIn("Maintainer direction", issue_check["evidence"])
+        self.assertIn("issue-check", issue_check["change"])
+        self.assertIn("queue labels", issue_check["change"])
+        self.assertIn("Sapheneia", issue_check["change"])
+        self.assertIn("held target stay unchanged", issue_check["change"])
         retarget = by_version["fiat-v5.51.1"]
         self.assertEqual(retarget["axis"], "generation")
         self.assertEqual(retarget["revision"], "state-shape-validation")
@@ -422,6 +663,12 @@ class EvolutionContractTests(unittest.TestCase):
                 else:
                     self.assertNotEqual(field(ledger, "Next Fiat job"), "None -- mature")
 
+    def test_declared_inputs_blocks_hold_over_every_governed_ledger(self):
+        for skill, directory in governed_skills():
+            ledger = (directory / "EVOLUTION.md").read_text(encoding="utf-8")
+            with self.subTest(skill=skill):
+                self.assertEqual(declared_inputs_defects(ledger), [])
+
     def test_ledgers_cite_the_versioning_contract(self):
         policy = (PLUGINS / "hexaemeron" / "skills" / "VERSIONING.md").resolve()
         for skill, directory in governed_skills():
@@ -431,6 +678,110 @@ class EvolutionContractTests(unittest.TestCase):
             with self.subTest(skill=skill):
                 self.assertIsNotNone(match, f"{skill} ledger cites no policy")
                 self.assertEqual((ledger_path.parent / match.group(1)).resolve(), policy)
+
+
+class DeclaredInputsSpecimenTests(unittest.TestCase):
+    """One refusal per risk-register entry, each on a real ledger's bytes.
+
+    Two of these are faults measured before any rule existed. A block above
+    the header bullets splits two readers of the same field, and an unclosed
+    block hides the History heading from the reader that walks unfenced
+    lines. Both are reachable through an ordinary editing mistake.
+    """
+
+    def test_a_well_formed_block_is_accepted(self):
+        text = specimen("well-formed-block.md", "after-header-bullets")
+        self.assertEqual(declared_inputs_defects(text), [])
+        self.assertEqual(unfenced_field(text, "Frontier status"), "mature")
+        self.assertEqual(history_rows(text), history_rows(kronos_ledger()))
+
+    def test_a_carried_block_moves_neither_reader_nor_the_digest(self):
+        """The claim VERSIONING.md makes, measured on a ledger that carries one.
+
+        The case above proves the 27 ledgers that carry no block keep their
+        digests, which is a weaker thing: a block absent from every one of
+        them cannot move anything. This drives the same four fields through
+        both readers on a ledger that does carry a block.
+        """
+        text = specimen("well-formed-block.md", "after-header-bullets")
+        for name in FRONTIER_FIELDS:
+            with self.subTest(field=name):
+                self.assertEqual(field(text, name), unfenced_field(text, name))
+                self.assertEqual(field(text, name), field(kronos_ledger(), name))
+        canonical = "|".join(field(text, name) for name in FRONTIER_FIELDS) + "\n"
+        self.assertEqual(
+            hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+            history_rows(text)[-1]["digest"],
+        )
+
+    def test_a_second_declared_inputs_block_is_refused(self):
+        defects = declared_inputs_defects(
+            specimen("duplicate-block.md", "after-header-bullets")
+        )
+        self.assertEqual(len(defects), 1, defects)
+        self.assertIn("V002", defects[0])
+
+    def test_a_block_above_the_header_bullets_is_refused(self):
+        defects = declared_inputs_defects(
+            specimen("well-formed-block.md", "above-header-bullets")
+        )
+        self.assertEqual(len(defects), 1, defects)
+        self.assertIn("V003", defects[0])
+
+    def test_a_block_below_the_history_heading_is_refused(self):
+        defects = declared_inputs_defects(
+            specimen("well-formed-block.md", "after-history")
+        )
+        self.assertEqual(len(defects), 1, defects)
+        self.assertIn("V004", defects[0])
+
+    def test_a_shadowing_row_is_refused_and_splits_two_readers(self):
+        text = specimen("header-shadowing-block.md", "above-header-bullets")
+        codes = sorted({defect.split()[0] for defect in declared_inputs_defects(text)})
+        self.assertEqual(codes, ["V003", "V005"])
+        # The measured split. A reader searching the whole document finds the
+        # fenced row; one walking unfenced lines finds the real field. The
+        # digest case above also trips on this specimen, but it reports a
+        # mismatched hash rather than the row that caused it.
+        self.assertEqual(field(text, "Frontier status"), "open")
+        self.assertEqual(unfenced_field(text, "Frontier status"), "mature")
+        shadowed = "|".join(
+            (
+                field(text, "Frontier status"),
+                field(text, "Frontier revision"),
+                field(text, "Current frontier"),
+                field(text, "Next Fiat job"),
+            )
+        ) + "\n"
+        self.assertNotEqual(
+            hashlib.sha256(shadowed.encode("utf-8")).hexdigest(),
+            history_rows(text)[-1]["digest"],
+        )
+
+    def test_an_unclosed_block_is_refused_and_hides_the_history_heading(self):
+        text = specimen("unclosed-fence-block.md", "after-header-bullets")
+        defects = declared_inputs_defects(text)
+        self.assertEqual(len(defects), 1, defects)
+        self.assertIn("V001", defects[0])
+        # The measured hiding. hexctl reads history from unfenced lines and
+        # refuses with "has no History section", while a scan over every line
+        # still returns each row the ledger records.
+        self.assertNotIn("## History", [line for _, line in unfenced_lines(text)])
+        self.assertEqual(history_rows(text), history_rows(kronos_ledger()))
+
+    def test_a_row_outside_the_field_contract_is_refused(self):
+        defects = declared_inputs_defects(
+            specimen("row-shape-block.md", "after-header-bullets")
+        )
+        codes = sorted({defect.split()[0] for defect in defects})
+        self.assertEqual(codes, ["V006", "V007", "V008", "V009", "V010", "V011"])
+
+    def test_a_block_past_its_caps_is_refused(self):
+        defects = declared_inputs_defects(
+            specimen("unbounded-block.md", "after-header-bullets")
+        )
+        codes = sorted({defect.split()[0] for defect in defects})
+        self.assertEqual(codes, ["V012", "V013", "V014", "V015"])
 
 
 if __name__ == "__main__":

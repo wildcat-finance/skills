@@ -466,6 +466,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.51.1",
         "fiat-v5.52.1",
         "fiat-v5.53.1",
+        "fiat-v5.54.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14564,13 +14565,155 @@ def _checkpoint_identity_working_commit(
     return kind, step_number, working
 
 
+def _checkpoint_identity_semantic_capture(
+    state_bytes: bytes, ledger_bytes: bytes
+) -> tuple[dict, dict, list[dict], int, str, bytes, dict | None]:
+    """Remove one fully joined relocation receipt from semantic input."""
+    current = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
+        ledger_bytes, current
+    )
+    if entries[-1]["event"] != "checkpoint:restore":
+        return (
+            current,
+            current,
+            entries,
+            ledger_count,
+            ledger_tail,
+            ledger_bytes,
+            None,
+        )
+
+    receipt = entries[-1]["data"]
+    receipt_fields = {
+        "manifest_sha256",
+        "source_state_sha256",
+        "source_ledger_sha256",
+        "source_ledger_tail",
+        "refs",
+        "relocated_state_fingerprint",
+        "old_origin",
+        "old_worktree",
+        "origin",
+        "worktree",
+    }
+    if not isinstance(receipt, dict) or set(receipt) != receipt_fields:
+        die("checkpoint identity restore join has an unsupported shape")
+    for name in (
+        "manifest_sha256",
+        "source_state_sha256",
+        "source_ledger_sha256",
+        "source_ledger_tail",
+        "relocated_state_fingerprint",
+    ):
+        _checkpoint_identity_sha256(receipt.get(name), f"restore {name}")
+    if (
+        configured_git_path(current, "origin") != receipt.get("origin")
+        or configured_git_path(current, "worktree") != receipt.get("worktree")
+        or entries[-1]["prev"] != receipt["source_ledger_tail"]
+        or entries[-1]["state"] != receipt["relocated_state_fingerprint"]
+        or receipt["relocated_state_fingerprint"] != state_fingerprint(current)
+    ):
+        die("checkpoint identity restore join disagrees with relocated state")
+
+    run_branch = run_branch_of(current)
+    if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+        die("checkpoint identity restore path delta is not owned")
+
+    def restore_path(value) -> str:
+        try:
+            encoded = value.encode("utf-8") if isinstance(value, str) else b""
+        except UnicodeEncodeError:
+            encoded = b""
+        if (
+            not encoded
+            or not os.path.isabs(value)
+            or value.replace("\\", "/") != value
+            or os.path.normpath(value) != value
+            or len(encoded) > CHECKPOINT_PATH_BYTES_MAX
+            or any(ord(character) < 32 or ord(character) == 127 for character in value)
+        ):
+            die("checkpoint identity restore path delta is not owned")
+        return value
+
+    for origin_name, worktree_name in (
+        ("old_origin", "old_worktree"),
+        ("origin", "worktree"),
+    ):
+        origin = restore_path(receipt.get(origin_name))
+        worktree = restore_path(receipt.get(worktree_name))
+        expected_worktree = os.path.join(
+            origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if worktree != expected_worktree:
+            die("checkpoint identity restore path delta is not owned")
+
+    imported = json.loads(json.dumps(current))
+    imported["config"]["git"]["origin"] = receipt.get("old_origin")
+    imported["config"]["git"]["worktree"] = receipt.get("old_worktree")
+    imported_bytes = (
+        json.dumps(imported, indent=2, sort_keys=False).encode("utf-8") + b"\n"
+    )
+    if hashlib.sha256(imported_bytes).hexdigest() != receipt["source_state_sha256"]:
+        die("checkpoint identity restore source state does not match the receipt")
+    manifest = {
+        "source": {
+            "state_sha256": receipt["source_state_sha256"],
+            "ledger_sha256": receipt["source_ledger_sha256"],
+            "ledger_tail": receipt["source_ledger_tail"],
+        },
+        "boundary": {"refs": receipt.get("refs")},
+    }
+    expected_current, expected_receipt = _checkpoint_restore_state(
+        imported,
+        receipt.get("origin"),
+        receipt.get("worktree"),
+        manifest,
+        receipt["manifest_sha256"],
+    )
+    if current != expected_current or receipt != expected_receipt:
+        die("checkpoint identity restore path delta is not owned")
+
+    prefix_lines = ledger_bytes.splitlines(keepends=True)
+    prefix = b"".join(prefix_lines[:-1])
+    if (
+        hashlib.sha256(prefix).hexdigest() != receipt["source_ledger_sha256"]
+    ):
+        die("checkpoint identity restore source bytes do not match the receipt")
+    prefix_entries, prefix_count, prefix_tail = _checkpoint_identity_ledger(
+        prefix, imported
+    )
+    if (
+        prefix_tail != receipt["source_ledger_tail"]
+        or any(entry["event"] == "checkpoint:restore" for entry in prefix_entries)
+    ):
+        die("checkpoint identity restore prefix is not one accepted producer")
+    return (
+        imported,
+        current,
+        prefix_entries,
+        prefix_count,
+        prefix_tail,
+        prefix,
+        receipt,
+    )
+
+
 def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> dict:
     """Derive path-free semantics from two already captured bounded byte strings."""
     if type(state_bytes) is not bytes:
         die("checkpoint identity state input must be captured bytes")
     if not state_bytes or len(state_bytes) > CHECKPOINT_FILE_BYTES_MAX:
         die("checkpoint identity state exceeds its byte ceiling")
-    state = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    (
+        state,
+        runtime_state,
+        entries,
+        ledger_count,
+        ledger_tail,
+        semantic_ledger,
+        restore_receipt,
+    ) = _checkpoint_identity_semantic_capture(state_bytes, ledger_bytes)
     if (
         type(state.get("version")) is not int
         or state["version"] != 1
@@ -14590,9 +14733,6 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
         step_numbers.append(number)
     if len(step_numbers) != len(set(step_numbers)):
         die("checkpoint identity step numbers are duplicated")
-    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
-        ledger_bytes, state
-    )
     if (
         not isinstance(state.get("base"), str)
         or COMMIT_RE.fullmatch(state["base"]) is None
@@ -14640,6 +14780,8 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
     )
     return {
         "state": state,
+        "runtime_state": runtime_state,
+        "restore_receipt": restore_receipt,
         "anchor": anchor,
         "anchor_sha256": anchor_sha256,
         "boundary": boundary,
@@ -14651,7 +14793,7 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
         "observations": observations,
         "ledger_entries": ledger_count,
         "ledger_tail": ledger_tail,
-        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "ledger_sha256": hashlib.sha256(semantic_ledger).hexdigest(),
         "state_fingerprint": state_fingerprint(state),
     }
 
@@ -14702,6 +14844,10 @@ def _checkpoint_identity_validate_evidence(
         or git_evidence.get("ancestry") != "verified"
     ):
         die("checkpoint identity Git evidence does not match the captured run")
+
+    restore_receipt = semantics["restore_receipt"]
+    if restore_receipt is not None and refs != restore_receipt["refs"]:
+        die("checkpoint identity restore refs do not match the current Git boundary")
 
     sources = evidence.get("sources")
     if not isinstance(sources, dict) or set(sources) != {
@@ -14819,7 +14965,7 @@ def _checkpoint_identity_git_evidence(
 ) -> dict:
     """Resolve the fixed Git facts without admitting them into hashed identity."""
     state = semantics["state"]
-    origin = configured_git_path(state, "origin")
+    origin = configured_git_path(semantics["runtime_state"], "origin")
     if not isinstance(origin, str) or not origin:
         die("checkpoint identity cannot verify the target repository")
     repository = target_repository_binding(origin)
@@ -14908,7 +15054,7 @@ def cmd_checkpoint_identity(args) -> None:
         die("checkpoint identity source changed during verification")
 
     semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
-    state = semantics["state"]
+    state = semantics["runtime_state"]
     source_evidence, source_token = _checkpoint_identity_source_evidence(
         base_dir, state
     )
@@ -17232,7 +17378,7 @@ def cmd_verify(args) -> None:
 
 
 def cmd_reset(args) -> None:
-    """Archive a completed run, and retire the worktree it ran in.
+    """Archive a completed or halted run, and retire the worktree it ran in.
 
     Retirement belongs here rather than in `done integrate`, because the
     controller's own contract has the caller run `status` and `verify` after the
@@ -17244,14 +17390,36 @@ def cmd_reset(args) -> None:
     A run that lived in a worktree archives into the checkout it was started
     from, because archiving inside the tree and then removing the tree would
     destroy the archive in the same breath.
+
+    A halted run is the other run this command accepts. Its stop is already on
+    the ledger with a reason, and no phase command advances it until `resume`,
+    so clearing it discards no live delivery. Retirement appends one `retire`
+    entry naming the phase the run stopped in and the recorded reason before
+    anything moves, so the archived ledger ends with the retirement rather than
+    with a halt that reads as paused. A run that is merely incomplete has no
+    recorded stop and is still refused.
     """
     count = verify_run(args.dir)
     state = load_state(args.dir)
-    if state["phase"] != "done":
+    halted = state.get("halted")
+    if state["phase"] != "done" and not halted:
         die(
             f"refusing to reset an incomplete run in phase '{state['phase']}'; "
-            "resume it or halt it explicitly"
+            "resume it, or record the stop with `hexctl halt --reason ...` and "
+            "reset again to retire it"
         )
+    if halted:
+        commit(
+            args.dir,
+            state,
+            "retire",
+            {
+                "phase": state["phase"],
+                "reason": halted["reason"],
+                "halted_ts": halted["ts"],
+            },
+        )
+        count += 1
 
     root = state_root(args.dir)
     origin = configured_git_path(state, "origin")
@@ -17262,7 +17430,8 @@ def cmd_reset(args) -> None:
     os.makedirs(archive_root, exist_ok=True)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     topic = re.sub(r"[^a-z0-9]+", "-", state["topic"].lower()).strip("-")[:48]
-    name = f"{stamp}-{topic or 'completed-run'}"
+    kind = "halted" if halted else "completed"
+    name = f"{stamp}-{f'halted-{topic}' if halted and topic else topic or f'{kind}-run'}"
     destination = os.path.join(archive_root, name)
     suffix = 2
     while os.path.exists(destination):
@@ -17276,9 +17445,12 @@ def cmd_reset(args) -> None:
             continue
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
+    stopped = (
+        f", stopped in phase '{state['phase']}': {halted['reason']}" if halted else ""
+    )
     print(
-        f"archived verified completed run ({count} ledger entries) locally at "
-        f"{destination}; active state cleared"
+        f"archived verified {kind} run ({count} ledger entries{stopped}) locally "
+        f"at {destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):
@@ -17508,7 +17680,7 @@ def build_parser() -> argparse.ArgumentParser:
     restore.set_defaults(fn=cmd_checkpoint_restore)
 
     sp = sub.add_parser(
-        "reset", help="archive a completed run and clear its active state"
+        "reset", help="archive a completed or halted run and clear its active state"
     )
     sp.set_defaults(fn=cmd_reset)
 
