@@ -8,7 +8,7 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "608ca6c0309c97250b59f53ebea3c5fc8b009d4c7e7537b1578cc210566eb828"
+      "sha256": "84eff33cccbe4a87da4f52d81b1d2df19c6af9700415b8116bd8fdc8b5a6a94f"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
@@ -35,11 +35,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "f63c5b360576fe066d3065b3951406b13caa9d59a9772167bde25c80aa65b248"
+        "sha256": "a3a0f5ba028feb859c189312ac813729456f6c64bd61895911759724f9fb1d91"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "689c4320f28365860db0e8a2cf5c55b0440f6cf7aec0066428cf4c4440c4267a"
+        "sha256": "0d9c8fe45bad807e2c52842c856d9e77fb903e9840f56683d8491caf96731727"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -51,7 +51,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "7c26e83fbb4321ab910496ab20e548c464c44533665b026bfa7aa24939b58e41"
+        "sha256": "539eee9c8e411647305c7d29626797ca229037147bc04919dff2e40e955e95f8"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -2015,6 +2015,31 @@
       "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
       "selector": "test_superseded_assignment_cannot_remain_in_active_ancestry"
     },
+    "fiat-inoculation-m": {
+      "claim": "An assigned Step with no guard-manifest set refuses before state, ledger or checkpoint mutation.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_assigned_declaration_without_manifests_refuses_unchanged"
+    },
+    "fiat-inoculation-o": {
+      "claim": "Status and delegation expose bounded digest and count metadata without printing or promoting unreceipted report content.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_status_and_next_do_not_print_declared_report_content"
+    },
+    "fiat-inoculation-p": {
+      "claim": "A zero-assigned Step receipts the exact source-bound no-known record, opens only that Step's implementation and verifies.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_zero_assigned_record_receipts_the_closed_shape"
+    },
+    "fiat-inoculation-r": {
+      "claim": "Source drift names the checked failure and preserves controller bytes for restoration of the receipted source and retry.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_source_drift_refuses_next_without_controller_mutation"
+    },
+    "fiat-inoculation-s": {
+      "claim": "A changed parent after receipt cannot inherit authority to delegate implementation and leaves controller bytes unchanged.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_post_receipt_parent_drift_refuses_implementation_delegation"
+    },
     "hypomnema-assignment-m": {
       "claim": "A changed result tree or output blob is refused instead of replayed as the recorded transform.",
       "evidence_class": "checked",
@@ -3855,6 +3880,22 @@
     },
     {
       "cases": {
+        "M": "fiat-inoculation-m",
+        "O": "fiat-inoculation-o",
+        "P": "fiat-inoculation-p",
+        "R": "fiat-inoculation-r",
+        "S": "fiat-inoculation-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-known-failure-inoculation",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "hypomnema-assignment-m",
         "O": "hypomnema-assignment-o",
         "P": "hypomnema-assignment-p",
@@ -3969,7 +4010,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542"
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4319,7 +4360,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-design-evidence": {
@@ -4333,7 +4374,7 @@
         "transition": "design lock, due step entry or integration entry joined to the canonical Authorises field",
         "unknowns": "criterion sufficiency, measurement validity, future pending results and environments outside the recorded evidence"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -4347,7 +4388,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work, disposed of row by row in the run pull request's `carryover` block, and any unrun external check"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4361,7 +4402,7 @@
         "transition": "local archive, checkpoint-store preservation, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -4375,7 +4416,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4389,7 +4430,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -4403,7 +4444,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -4417,7 +4458,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -4431,7 +4472,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -4739,7 +4780,21 @@
         "transition": "verified decision assignment receipt carried to active sync and final integration joined to the canonical Authorises field",
         "unknowns": "decision-text correctness, publication, external merge enforcement and number reservation"
       },
-      "sha256": "d43a2ffe4f30a49ce6cf67022f9e0c6363839a3f41e9f15b8caec2cac4f2b542",
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
+      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    },
+    "fiat-known-failure-inoculation": {
+      "bindings": {
+        "evidence_classes": "checked capture and evidence plus recorded receipt joined to the canonical Evidence classes field",
+        "evidence_references": "receipted source digests, canonical inventory, source views, assignments, exact parent, guard manifests or no-known record and done:inoculate event",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the inoculation receipt schema, controller transition and canonical promise heading",
+        "scope": "one capture-aware Step and its exact assigned finding set",
+        "subject": "current Step, unchanged branch parent and receipted study, runbook and inventory",
+        "transition": "opening implementation for only the receipted Step joined to the canonical Authorises field",
+        "unknowns": "unknown failures, later fix status, Warden verdicts and pre-capture runs"
+      },
+      "sha256": "19fb7a20f9f28bae5078735fe4969697b64f61bb25ca3ee22b344fe30caacddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hypomnema-decision-assignment": {

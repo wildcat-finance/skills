@@ -579,3 +579,131 @@ inside Brevitas.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Step 2 owns the safe join from the Step 1 Protasis inventory
+to Fiat. The read-only inventory module adds one public
+`load_checked_inventory` operation. It returns either an explicit absent result
+when neither an inventory nor an assignment surface exists, the existing K000
+through K012 refusal set, or one closed
+`protasis-known-failure-inventory-capture/v1` object after the same bounded
+reads and final stability checks as the command-line checker. The capture has
+exactly `schema`, `study_sha256`, `runbook_sha256`, `inventory_sha256`,
+`source_views`, `findings`, `no_known_findings`, and `assignments`. The
+inventory digest is SHA-256 over the parsed inventory in Fiat's canonical JSON
+form. Assignments are ordered by Step and finding id. The command-line checker
+and Fiat consume this one operation; neither reparses a clean result or
+reimplements assignment discovery. An attempted, malformed, or partial
+inventory never becomes absent.
+
+The operation retains the current runbook machine surface and immutable
+generation map unchanged. Ordinary records remain active, replacement Exit
+generations remain source ordered, the first nonempty map stays locked, and the
+final generation must repeat the same complete seven-pair map. The strict
+bracket, amendment-field, replacement-clause, baseline-Step, fence, and
+single-line inline-code rules still apply.
+
+For a runbook that yields a clean capture, `done runbook` stores that exact
+capture in its receipt and opens the first Step at `inoculate`; `done push`
+opens each later Step at the same phase. `next` gives Mason the current
+study/runbook digests, capture digest, consuming Step, exact assigned entries,
+allowed guard paths, reporter commands, report formats and logical report
+files, exact branch and branch parent, and the fixed controller evidence
+directory. A pre-contract state whose runbook receipt has no capture retains
+its earlier path without an invented inventory or receipt.
+
+The sole receipt command is `hexctl done inoculate`. It takes no
+phase-specific argument. Phase-foreign `done` options refuse before mutation.
+The receipt schema is `fiat-known-failure-inoculation/v1` with exactly
+`schema`, `step`, `study_sha256`, `runbook_sha256`, `inventory_sha256`,
+`step_parent`, `assigned_ids`, `source_views`, `no_known_findings`, and
+`guard_manifests`. Assigned ids and manifest references are uniquely sorted.
+Each future manifest reference has exactly `finding_id`, `path`, and `sha256`.
+
+For a Step with no assigned finding, Mason writes the fixed
+`.hexaemeron/steps/<n>/inoculation/no-known-findings.json` record under schema
+`fiat-no-known-findings/v1`. It has exactly `schema`, `study_sha256`,
+`inventory_sha256`, `source_views`, `consuming_step`, and `assertion`, with
+assertion `no-known-findings-for-step`. Fiat accepts that route only when the
+checked capture assigns zero ids, the study and source-view digests agree, and
+the file is a bounded stable regular file. Its receipt carries the checked
+record and an empty `guard_manifests` list.
+
+For a Step with assigned findings, Step 2 captures and reports the complete
+declaration but does not call it evidence. `hexctl done inoculate` remains
+refused while `guard_manifests` is empty, and `done implement` remains refused
+while the Step has no valid inoculation receipt. Step 3 alone retains reports,
+checks manifests and fills the nonempty list. This freezes the command and
+receipt shape without allowing an id declaration to authorise product work.
+
+The signed `kf-453-02` guard commit still uses exactly the historical
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` path and the
+reporter named by the immutable inventory. After the guard result is retained,
+the maintained module is renamed to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py`, and the reporter is
+updated to select that numberless module on the fixed tree. The historical
+commit, command and report remain unchanged. Step 2 also changes the reporter,
+the public inventory loader and its focused tests, and refreshes the committed
+study and runbook to the current receipted bytes. Hypomnema names only the four
+tracked `.agents` inputs rather than traversing the ignored generated runtime.
+
+**Why.** The current checker returns only a finding list and discards the
+accepted object. A controller that first observes a clean result and then
+rereads or reparses the study would lose the stable-read boundary and could
+diverge from the locked replacement-Exit projection. The original Step 2 Exit
+also calls an assigned id set evidence even though Step 3 owns report retention,
+Git binding and verdict admission. That would recreate the pre-edit bypass the
+selected design must close. The original Files omit the parser and reporter,
+retain an issue-numbered maintained test name, and the original Hypomnema
+command crosses into ignored generated state. Its Entry also describes Step 1
+as merged even though the stack remains open until integration.
+
+**Steps touched.** Step 2's Entry, Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Step 2's model-execution boundary is explicit. Do not run
+`agent_instruction.py measure`, `agent_instruction.py parity`, a tokenizer,
+either recorded family adapter, Ollama, or any other model process. The
+committed measurement and parity records remain byte-for-byte unchanged and
+make no claim about the new inoculation text.
+
+The existing `fiat-study-runbook-phase` reviewed span and semantic fixture stay
+unchanged. Remove the proposed `inoculate` row from the measured `## The loop`
+table. That table continues to describe the implementation-first route for a
+runbook receipt without a known-failure capture. The new capture-aware
+exception is documented after the existing reviewed envelope: a clean capture
+opens `inoculate`, `done inoculate` is the sole receipt command, and a valid
+receipt alone reaches the table's `implement` action. The public controller,
+Protasis and Mason contracts still carry the complete new behaviour.
+
+Because the authored additions follow the recorded source envelope, the
+reviewed bytes and every semantic node remain fixed while the source file's
+whole-file digest changes. Reconcile that digest only with
+`python3 scripts/prove_agent_instruction_reconciliation.py reconcile --root .`.
+This existing offline operation checks that the reviewed span is still at its
+recorded offsets, substitutes the one source digest in the canonical model and
+source-span record, derives the compact form with `format`, refreshes the
+manifest artefact digests, and rebinds the coverage row. It opens no socket and
+runs no model. The canonical model's nodes, bindings, questions and mutations,
+the manifest schema and count constants, and the measurement and parity records
+must otherwise remain unchanged.
+
+**Why.** The preceding amendment treated a model and measurement run as a
+required consequence of adding the lifecycle, despite this run's explicit
+disabled boundary. Those calls would invoke the pinned tokenizer and two local
+model families; they are neither controller evidence nor needed to prove the
+known-failure transition. Keeping the reviewed span unchanged preserves the
+existing model's actual authority, while the already governed offline
+reconciliation prevents a harmless whole-file digest change from leaving a
+stale manifest. This narrows the work without weakening the lifecycle,
+inventory, guard, receipt, legacy-state, audit, or fixed-tree requirements.
+
+**Steps touched.** Step 2's Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
