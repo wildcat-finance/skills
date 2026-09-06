@@ -2452,3 +2452,63 @@ requirements while explicitly forbidding the model and measurement paths.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: The guard-only commit has already created
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py` and changed
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`. In the fixed tree,
+rename the former to
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and update the reporter
+again. Change
+`plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py`,
+`plugins/hexaemeron/tests/test_known_failure_inventory.py`,
+`plugins/hexaemeron/skills/protasis/SKILL.md`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/agents/mason.md`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_fiat_skill.py`,
+`tests/test_promise_machine_contract.py`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/promise_machine_coverage.json`,
+`docs/known-failure-inoculation-study.md`, and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`. Create
+`plugins/hexaemeron/tests/fixtures/issue-453/no-known-findings.json`.
+
+Read but do not change
+`scripts/prove_agent_instruction_reconciliation.py` and
+`docs/decisions/drafts/require-inoculation-before-implementation.md`. Do not
+change `scripts/agent_instruction.py`, `tests/test_agent_instruction.py`,
+`tests/test_agent_instruction_corpus.py`,
+`docs/agent-instruction-language-v1.md`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json`,
+`tests/fixtures/agent-instruction-v1/manifest.schema.json`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`, or
+`tests/fixtures/agent-instruction-v1/evidence/parity.json`. Refresh the ignored
+local portable verification payload without staging it. Regenerate
+`.horos/boundary.json`, `.horos/candidates.json`, and `.horos/census.json` only
+when the repository-owned scan changes them. Warden alone changes the
+configured audit record and synopsis.
+
+**Why.** The signed Step 2 product range changes
+`tests/test_promise_machine_contract.py` to admit
+`fiat-known-failure-inoculation` into the required Promise set and increase the
+runtime binding cardinality from 47 to 48. That contract test is mechanically
+required by the already-declared promise/runtime binding, but the latest
+complete replacement Files field omitted it. This replacement corrects only
+the file inventory. Every other changed, created, read-only, forbidden,
+ignored-generated, Horos-conditional, and Warden-owned classification remains
+unchanged. The frozen semantic fixture and model evidence remain outside
+scope: measurement, parity, tokenizer, recorded-family adapter, Ollama, and
+every other model process remain explicitly disabled.
+
+**Steps touched.** Step 2's Files field only.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
