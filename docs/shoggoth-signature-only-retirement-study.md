@@ -407,3 +407,25 @@ byte-identical.
 
 The outside-repository Interceptor rule is carried forward by name for its own
 owner. This run does not claim that changing Skills changes the Interceptor.
+
+### Amendment -- 2026-09-06
+
+**What changed.** The selected design is now bound explicitly to its standing
+decision record.
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | signature-only-retirement
+record | docs/decisions/drafts/accept-any-validly-signed-authorship.md
+```
+
+**Why.** Warden finding S1-R1-01 showed that section 12 named the durable home
+but the receipted study carried no machine-readable bridge from the selected
+Protasis candidate to that record. The bridge supplies that exact join without
+changing the selected design, its alternatives, or any acceptance criterion.
+
+**Steps touched.** Step 1 copies this amended study to its tracked path and
+checks the explicit Hypomnema study mode.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
