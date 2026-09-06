@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_right
 import datetime
+from dataclasses import dataclass
 import hashlib
 import json
 import os
@@ -27,6 +28,7 @@ from typing import Iterable
 
 
 SCHEMA = "protasis-known-failure-inventory/v1"
+CAPTURE_SCHEMA = "protasis-known-failure-inventory-capture/v1"
 REPORT_SCHEMA = "protasis-known-failure-inventory-check/v1"
 INVENTORY_INFO = "known-failure-inventory"
 MAX_BYTES = 2 * 1024 * 1024
@@ -126,6 +128,28 @@ class Finding:
         return f"{self.path}:{self.line}: {self.code} {self.message}"
 
 
+@dataclass(frozen=True, slots=True)
+class InventoryLoadResult:
+    """One discriminated inventory result safe for controller ingestion."""
+
+    status: str
+    capture: dict[str, object] | None
+    findings: tuple[Finding, ...]
+
+    def __post_init__(self) -> None:
+        if self.status not in {"absent", "refused", "clean"}:
+            raise ValueError("inventory result status is not admitted")
+        if self.status == "clean":
+            if self.capture is None or self.findings:
+                raise ValueError("a clean inventory result requires only a capture")
+        elif self.capture is not None:
+            raise ValueError("only a clean inventory result may carry a capture")
+        elif self.status == "refused" and not self.findings:
+            raise ValueError("a refused inventory result requires findings")
+        elif self.status == "absent" and self.findings:
+            raise ValueError("an absent inventory result cannot carry findings")
+
+
 class _DuplicateKey(ValueError):
     pass
 
@@ -136,6 +160,31 @@ class _ReadRefusal(OSError):
 
 def _one(path: Path, code: str, message: str, line: int = 1) -> list[Finding]:
     return [Finding(path, line, code, message)]
+
+
+def _refuse(
+    path: Path, code: str, message: str, line: int = 1
+) -> list[Finding]:
+    return _one(path, code, message, line)
+
+
+def _canonical_json_bytes(value: object) -> bytes:
+    """Return the exact UTF-8 bytes produced by Fiat's canonical function."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _surfaces_absent(study_text: str, runbook_text: str) -> bool:
+    """Conservatively recognise a run with no attempted inventory surface.
+
+    A partial or malformed surface must stay on the K000--K012 path. Looking
+    for the stable machine-record names before structural parsing makes
+    absence narrower than acceptance: examples and broken fences cannot hide
+    an attempted record and accidentally open a no-inventory path.
+    """
+    return all(
+        marker not in study_text and marker not in runbook_text
+        for marker in (INVENTORY_INFO, "Known-failure assignment")
+    )
 
 
 def _stable_file(path: Path, limit: int = MAX_BYTES) -> bytes:
@@ -1035,42 +1084,82 @@ def _revalidate_inputs(
     return []
 
 
-def check(
+def _load_checked_inventory(
     study_path: Path | str,
     runbook_path: Path | str,
     repository_root: Path | str,
     expected_ids: Iterable[str] | None = None,
-) -> list[Finding]:
-    """Return a closed list of findings without writing state or ledgers."""
+) -> dict[str, object] | list[Finding] | None:
+    """Build a capture, return findings, or return None for explicit absence."""
     study = Path(study_path)
     runbook = Path(runbook_path)
     repository = Path(repository_root)
     if not _secure_read_primitives():
-        return _one(study, "K000", "secure no-follow file reads are unavailable")
+        return _refuse(study, "K000", "secure no-follow file reads are unavailable")
     try:
         study_bytes = _stable_file(study)
         study_text = study_bytes.decode("utf-8", errors="strict")
     except (OSError, UnicodeError):
-        return _one(study, "K000", "study is not a stable bounded UTF-8 file")
+        return _refuse(study, "K000", "study is not a stable bounded UTF-8 file")
     try:
         runbook_bytes = _stable_file(runbook)
         runbook_text = runbook_bytes.decode("utf-8", errors="strict")
     except (OSError, UnicodeError):
-        return _one(runbook, "K000", "runbook is not a stable bounded UTF-8 file")
+        return _refuse(
+            runbook, "K000", "runbook is not a stable bounded UTF-8 file"
+        )
+
+    if _surfaces_absent(study_text, runbook_text):
+        independent_ids, expected_error = _expected_id_contract(expected_ids, set())
+        if expected_error is not None or independent_ids is None:
+            return _refuse(
+                runbook,
+                "K006",
+                expected_error or "the expected id set is unavailable",
+            )
+        if independent_ids:
+            return _refuse(
+                study,
+                "K006",
+                "an absent inventory cannot satisfy a non-empty independent expected id set",
+            )
+        stability_findings = _revalidate_inputs(
+            study,
+            study_bytes,
+            runbook,
+            runbook_bytes,
+            repository,
+            [],
+        )
+        if stability_findings:
+            return stability_findings
+        return None
 
     body, line, fence_error = _inventory_block(study_text)
     if fence_error is not None or body is None:
-        return _one(study, "K001", fence_error or "inventory block is unavailable", line)
+        return _refuse(
+            study,
+            "K001",
+            fence_error or "inventory block is unavailable",
+            line,
+        )
     try:
         inventory = _json(body)
     except ValueError as error:
-        return _one(study, "K002", str(error), line)
+        return _refuse(study, "K002", str(error), line)
     if not _exact_fields(inventory, TOP_FIELDS) or inventory.get("schema") != SCHEMA:
-        return _one(study, "K003", "inventory top level or schema is not closed", line)
+        return _refuse(
+            study, "K003", "inventory top level or schema is not closed", line
+        )
 
     source_views = inventory["source_views"]
     if not isinstance(source_views, list) or not source_views or len(source_views) > MAX_SOURCE_VIEWS:
-        return _one(study, "K004", "source_views must be one bounded non-empty list", line)
+        return _refuse(
+            study,
+            "K004",
+            "source_views must be one bounded non-empty list",
+            line,
+        )
     source_ids: set[str] = set()
     source_view_paths: set[str] = set()
     checked_views: list[dict[str, str]] = []
@@ -1078,7 +1167,9 @@ def check(
     for index, view in enumerate(source_views):
         label = f"source_views[{index}]"
         if not _exact_fields(view, SOURCE_VIEW_FIELDS):
-            return _one(study, "K004", f"{label} has omitted or extra fields", line)
+            return _refuse(
+                study, "K004", f"{label} has omitted or extra fields", line
+            )
         source_id = view["id"]
         path = _portable_path(view["path"])
         if (
@@ -1092,14 +1183,19 @@ def check(
             or not isinstance(view["view_sha256"], str)
             or SHA256.fullmatch(view["view_sha256"]) is None
         ):
-            return _one(study, "K004", f"{label} has an invalid id, path, or digest", line)
+            return _refuse(
+                study,
+                "K004",
+                f"{label} has an invalid id, path, or digest",
+                line,
+            )
         source_ids.add(source_id)
         source_view_paths.add(_portable_alias(path))
         view_target = repository / path
         try:
             view_bytes = _confined_file(repository, path)
         except OSError:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view path cannot be verified for view_sha256",
@@ -1111,14 +1207,14 @@ def check(
             first_line = first_physical.rstrip("\r\n")
             header = SYNOPSIS_HEADER.fullmatch(first_line)
         except UnicodeError:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view is not UTF-8 for view_sha256",
                 line,
             )
         if header is None:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view header cannot be verified for source_sha256",
@@ -1126,14 +1222,14 @@ def check(
             )
         source_path = _portable_path(header.group("source"))
         if source_path is None:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view header has a non-portable source path",
                 line,
             )
         if header.group("sha256") != view["source_sha256"]:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} source_sha256 differs between inventory and view header",
@@ -1143,7 +1239,7 @@ def check(
         try:
             source_bytes = _confined_file(repository, source_path)
         except OSError:
-            return _one(
+            return _refuse(
                 source_target,
                 "K005",
                 f"{source_id} source path cannot be verified for source_sha256",
@@ -1152,14 +1248,14 @@ def check(
         try:
             view_again = _confined_file(repository, path)
         except OSError:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view path cannot be reverified for view_sha256",
                 line,
             )
         if view_again != view_bytes:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view bytes changed during view_sha256 verification",
@@ -1167,7 +1263,7 @@ def check(
             )
         actual_view_sha256 = hashlib.sha256(view_bytes).hexdigest()
         if actual_view_sha256 != view["view_sha256"]:
-            return _one(
+            return _refuse(
                 view_target,
                 "K005",
                 f"{source_id} view_sha256 expected {view['view_sha256']} got {actual_view_sha256}",
@@ -1175,7 +1271,7 @@ def check(
             )
         actual_source_sha256 = hashlib.sha256(source_bytes).hexdigest()
         if actual_source_sha256 != view["source_sha256"]:
-            return _one(
+            return _refuse(
                 source_target,
                 "K005",
                 f"{source_id} source_sha256 expected {view['source_sha256']} got {actual_source_sha256}",
@@ -1202,23 +1298,33 @@ def check(
 
     step_ids, runbook_ids, runbook_error = _runbook_contract(runbook_text)
     if runbook_error is not None or step_ids is None:
-        return _one(runbook, "K010", runbook_error or "runbook steps are unavailable")
+        return _refuse(
+            runbook,
+            "K010",
+            runbook_error or "runbook steps are unavailable",
+        )
     independent_ids, expected_error = _expected_id_contract(expected_ids, runbook_ids)
     if expected_error is not None or independent_ids is None:
-        return _one(runbook, "K006", expected_error or "the expected id set is unavailable")
+        return _refuse(
+            runbook,
+            "K006",
+            expected_error or "the expected id set is unavailable",
+        )
 
     findings = inventory["findings"]
     if not isinstance(findings, list):
-        return _one(study, "K006", "findings is not a list", line)
+        return _refuse(study, "K006", "findings is not a list", line)
     if len(findings) > MAX_FINDINGS:
-        return _one(study, "K012", "finding count exceeds 128", line)
+        return _refuse(study, "K012", "finding count exceeds 128", line)
     finding_ids: set[str] = set()
     report_paths: set[str] = set()
     guard_path_count = 0
     for index, finding in enumerate(findings):
         label = f"findings[{index}]"
         if not _exact_fields(finding, FINDING_FIELDS):
-            return _one(study, "K006", f"{label} has omitted or extra fields", line)
+            return _refuse(
+                study, "K006", f"{label} has omitted or extra fields", line
+            )
         finding_id = finding["id"]
         source_ref = finding["source_ref"]
         if (
@@ -1229,10 +1335,20 @@ def check(
             or not _bounded_line(source_ref)
             or ":" not in source_ref
         ):
-            return _one(study, "K006", f"{label} has an invalid id, source_ref, or failure", line)
+            return _refuse(
+                study,
+                "K006",
+                f"{label} has an invalid id, source_ref, or failure",
+                line,
+            )
         source_id, source_detail = source_ref.split(":", 1)
         if source_id not in source_ids or not source_detail.strip():
-            return _one(study, "K006", f"{finding_id} does not name one checked source", line)
+            return _refuse(
+                study,
+                "K006",
+                f"{finding_id} does not name one checked source",
+                line,
+            )
         finding_ids.add(finding_id)
 
         guard_paths = finding["guard_paths"]
@@ -1242,10 +1358,20 @@ def check(
             or any(_portable_path(path) is None for path in guard_paths)
             or len({_portable_alias(path) for path in guard_paths}) != len(guard_paths)
         ):
-            return _one(study, "K007", f"{finding_id} guard_paths are not closed", line)
+            return _refuse(
+                study,
+                "K007",
+                f"{finding_id} guard_paths are not closed",
+                line,
+            )
         guard_path_count += len(guard_paths)
         if guard_path_count > MAX_GUARD_PATHS:
-            return _one(study, "K012", "aggregate guard path count exceeds 4096", line)
+            return _refuse(
+                study,
+                "K012",
+                "aggregate guard path count exceeds 4096",
+                line,
+            )
 
         report_file = finding["report_file"]
         report_format = finding["report_format"]
@@ -1275,14 +1401,29 @@ def check(
             or report_alias == green_report_alias
             or finding["expected_guard_verdict"] != "guarded"
         ):
-            return _one(study, "K009", f"{finding_id} report contract is not admitted", line)
+            return _refuse(
+                study,
+                "K009",
+                f"{finding_id} report contract is not admitted",
+                line,
+            )
         report_paths.update((report_alias, green_report_alias))
         test_argv = _argv(finding["test_command"], report_placeholder=True)
         if test_argv is None:
-            return _one(study, "K008", f"{finding_id} test command lacks one exact report argv", line)
+            return _refuse(
+                study,
+                "K008",
+                f"{finding_id} test command lacks one exact report argv",
+                line,
+            )
         green_argv = _argv(finding["green_command"], report_placeholder=False)
         if green_argv is None:
-            return _one(study, "K009", f"{finding_id} green command is malformed", line)
+            return _refuse(
+                study,
+                "K009",
+                f"{finding_id} green command is malformed",
+                line,
+            )
         test_valid, green_valid = _commands_agree(
             finding_id,
             guard_paths,
@@ -1291,9 +1432,19 @@ def check(
             admitted_report_file,
         )
         if not test_valid:
-            return _one(study, "K008", f"{finding_id} test command does not bind its runner and case", line)
+            return _refuse(
+                study,
+                "K008",
+                f"{finding_id} test command does not bind its runner and case",
+                line,
+            )
         if not green_valid:
-            return _one(study, "K009", f"{finding_id} green command or report path does not match", line)
+            return _refuse(
+                study,
+                "K009",
+                f"{finding_id} green command or report path does not match",
+                line,
+            )
         consuming_step = finding["consuming_step"]
         if (
             isinstance(consuming_step, bool)
@@ -1301,7 +1452,7 @@ def check(
             or consuming_step not in step_ids
             or finding_id not in step_ids[consuming_step]
         ):
-            return _one(
+            return _refuse(
                 study,
                 "K010",
                 f"{finding_id} has no one visible assignment to its consuming Step",
@@ -1309,7 +1460,7 @@ def check(
             )
 
     if finding_ids != independent_ids or finding_ids != runbook_ids:
-        return _one(
+        return _refuse(
             study,
             "K006",
             "inventory ids differ from the independent and runbook assignment id sets",
@@ -1319,10 +1470,20 @@ def check(
     no_findings = inventory["no_known_findings"]
     if findings:
         if no_findings is not None:
-            return _one(study, "K011", "non-empty findings require a null no-known-findings claim", line)
+            return _refuse(
+                study,
+                "K011",
+                "non-empty findings require a null no-known-findings claim",
+                line,
+            )
     else:
         if not _exact_fields(no_findings, NO_FINDINGS_FIELDS):
-            return _one(study, "K011", "empty findings require one closed no-known-findings claim", line)
+            return _refuse(
+                study,
+                "K011",
+                "empty findings require one closed no-known-findings claim",
+                line,
+            )
         claim_views = no_findings["source_views"]
         if (
             not isinstance(claim_views, list)
@@ -1333,15 +1494,78 @@ def check(
             or not isinstance(no_findings["consuming_step"], int)
             or no_findings["consuming_step"] not in step_ids
         ):
-            return _one(study, "K011", "no-known-findings claim is stale, incomplete, or unassigned", line)
+            return _refuse(
+                study,
+                "K011",
+                "no-known-findings claim is stale, incomplete, or unassigned",
+                line,
+            )
 
-    return _revalidate_inputs(
+    stability_findings = _revalidate_inputs(
         study,
         study_bytes,
         runbook,
         runbook_bytes,
         repository,
         checked_sources,
+    )
+    if stability_findings:
+        return stability_findings
+
+    assignments = [
+        {"finding_id": finding_id, "step": step}
+        for step in sorted(step_ids)
+        for finding_id in sorted(step_ids[step])
+    ]
+    capture = {
+        "schema": CAPTURE_SCHEMA,
+        "study_sha256": hashlib.sha256(study_bytes).hexdigest(),
+        "runbook_sha256": hashlib.sha256(runbook_bytes).hexdigest(),
+        "inventory_sha256": hashlib.sha256(
+            _canonical_json_bytes(inventory)
+        ).hexdigest(),
+        "source_views": inventory["source_views"],
+        "findings": inventory["findings"],
+        "no_known_findings": inventory["no_known_findings"],
+        "assignments": assignments,
+    }
+    return capture
+
+
+def load_checked_inventory(
+    study_path: Path | str,
+    runbook_path: Path | str,
+    repository_root: Path | str,
+    expected_ids: Iterable[str] | None = None,
+) -> InventoryLoadResult:
+    """Return absent, stable findings, or one closed checked capture."""
+    loaded = _load_checked_inventory(
+        study_path,
+        runbook_path,
+        repository_root,
+        expected_ids=expected_ids,
+    )
+    if loaded is None:
+        return InventoryLoadResult("absent", None, ())
+    if isinstance(loaded, list):
+        return InventoryLoadResult("refused", None, tuple(loaded))
+    return InventoryLoadResult("clean", loaded, ())
+
+
+def check(
+    study_path: Path | str,
+    runbook_path: Path | str,
+    repository_root: Path | str,
+    expected_ids: Iterable[str] | None = None,
+) -> list[Finding]:
+    """Compatibility projection of :func:`load_checked_inventory` findings."""
+    return list(
+        load_checked_inventory(
+            study_path,
+            runbook_path,
+            repository_root,
+            expected_ids=expected_ids,
+        ).findings
     )
 
 
@@ -1357,18 +1581,21 @@ def _arguments(argv):
 
 def main(argv=None) -> int:
     options = _arguments(sys.argv[1:] if argv is None else argv)
-    found = check(
+    result = load_checked_inventory(
         options.study,
         options.runbook,
         options.repository,
         expected_ids=options.expected_id,
     )
+    found = result.findings
     if options.format == "json":
         print(
             json.dumps(
                 {
                     "schema": REPORT_SCHEMA,
-                    "clean": not found,
+                    "status": result.status,
+                    "clean": result.status == "clean",
+                    "capture": result.capture,
                     "finding_count": len(found),
                     "findings": [finding.as_dict() for finding in found],
                 },
@@ -1378,8 +1605,11 @@ def main(argv=None) -> int:
     else:
         for finding in found:
             print(finding)
-        print(f"known-failure-inventory: {len(found)} finding(s)")
-    return 1 if found else 0
+        if result.status == "absent":
+            print("known-failure-inventory: absent")
+        else:
+            print(f"known-failure-inventory: {len(found)} finding(s)")
+    return 1 if result.status == "refused" else 0
 
 
 if __name__ == "__main__":

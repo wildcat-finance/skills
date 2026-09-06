@@ -69,6 +69,17 @@ except ImportError:
 
 
 class TestLifecycle(HexctlCase):
+    def test_inoculate_is_registered_before_implement(self):
+        controller = hexctl_module()
+
+        self.assertLess(
+            controller.STEP_PHASES.index("inoculate"),
+            controller.STEP_PHASES.index("implement"),
+        )
+        self.assertIs(
+            controller.DONE_HANDLERS["inoculate"], controller.done_inoculate
+        )
+
     def test_init_creates_state_ledger_and_gitignore(self):
         self.init()
         root = os.path.join(self.target, ".hexaemeron")

@@ -27,16 +27,17 @@ CASES = {
         "test_kf_453_01_closed_inventory_is_source_bound"
     ),
     "kf-453-02": (
-        "plugins.hexaemeron.tests.test_issue_453_inoculation_lifecycle."
+        "plugins.hexaemeron.tests.test_inoculation_lifecycle."
         "InoculationLifecycleTests."
         "test_kf_453_02_inoculation_precedes_implementation"
     ),
 }
 REQUIRED_SURFACE = (
     Path("plugins/hexaemeron/tests/test_known_failure_inventory.py"),
-    Path("plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py"),
+    Path("plugins/hexaemeron/tests/test_inoculation_lifecycle.py"),
     Path("plugins/hexaemeron/tests/emit_issue_453_guard_report.py"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/inventory.json"),
+    Path("plugins/hexaemeron/tests/fixtures/issue-453/no-known-findings.json"),
 )
 
 
