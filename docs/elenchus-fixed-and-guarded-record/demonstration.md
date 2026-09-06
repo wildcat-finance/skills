@@ -216,10 +216,16 @@ were invented but agree with each other passes `--check`.
 
 The emit path adds four things `--check` cannot: it resolves the parent commit
 from the repository instead of reading it from the draft, and it refuses a ref
-that does not resolve to the commit the draft calls the repair, a guard absent
-from the changed test files the comparison used, and a destination git already
-tracks. Those four hold only for a record its own emitter wrote, and no record
-carries evidence of which path produced it.
+that does not resolve to the commit the draft calls the repair, a `guard.file`
+absent from the changed test files the comparison used, and a destination git
+already tracks. Those four hold only for a record its own emitter wrote, and no
+record carries evidence of which path produced it.
+
+`guard.file` is the whole of the guard either path reads. Its sibling
+`guard.test` names the regression test the record is about, and no rule on
+either path binds that name to anything it could be wrong about: it is checked
+for shape alone, so a draft naming a test that exists in no file is written at
+exit 0 and read back `clean`.
 
 The record carries no cross-record identifier by design, so nothing here says
 this mechanism has been seen before or will be seen again. The reproduction
